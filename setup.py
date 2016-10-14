@@ -6,7 +6,7 @@ setup(
   version = '0.0.0.1',
   install_requires=[
         'requests',
-        'pytest'
+        'pytest',
         'flask',
         'mitie'
   ],
