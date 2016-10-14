@@ -1,5 +1,5 @@
 from mitie import *
-from . import Interpreter
+from parsa import Interpreter
 
 class MITIEInterpreter(Interpreter):
     def __init__(self,classifier_file,ner_file,fe_filepath):
