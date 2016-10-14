@@ -25,5 +25,5 @@ class MITIEInterpreter(Interpreter):
         intent = self.get_intent(tokens)
         entities = self.get_entities(tokens)
 
-        return intent, entities
+        return {'intent':intent,'entities': entities}
 
