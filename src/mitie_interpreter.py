@@ -5,8 +5,6 @@ class MITIEInterpreter(Interpreter):
     def __init__(self,classifier_file,ner_file,fe_filepath):
         self.extractor = named_entity_extractor(ner_file,fe_filepath)
         self.classifier = text_categorizer(classifier_file,fe_filepath)
-        #self.normaliser = text_categorizer(normaliser_file,fe_filename=config.FE_FILEPATH) 
-
         
     def get_entities(self,tokens):
         d = {}
