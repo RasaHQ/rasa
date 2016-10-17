@@ -15,11 +15,13 @@ Training your models always happens in python, whereas you can use them in two d
 ## Getting Started
 
 Pretty simple really, just open your python interpreter and type:
-```
+```python
 from parsa import MITIEInterpreter
 interpreter = MITIEInterpreter('data/intent_classifier.dat','data/ner.dat','data/total_word_feature_extractor.dat')
 interpreter.parse("hello world")
 # -> {'intent':'greet','entities':[]}
+
+# some more examples
 interpreter.parse("I want some chinese food")
 # -> {'intent':'inform','entities':['cuisine':'chinese']}
 interpreter.parse("thanks!")
@@ -28,7 +30,7 @@ interpreter.parse("thanks!")
 
 Alternatively, if you want to use the http API:
 
-```
+```bash
 cd src/
 python main.py &
 curl -XPOST -H "Content-type: application/json" 'http://localhost:5000/parse' -d '{"text":"hello world"}'
