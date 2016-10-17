@@ -10,7 +10,7 @@ setup(
         'flask',
         'mitie'
   ],
-  dependency_links = ['git+https://github.com/mit-nlp/MITIE.git#egg=mitie'],
+  dependency_links = ['git+https://github.com/amn41/MITIE.git#egg=mitie'],
   description = "parsa: a natural language parser for bots",
   author = 'Alan Nichol',
   author_email = 'alan@golastmile.com',
