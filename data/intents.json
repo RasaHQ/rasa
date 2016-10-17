@@ -1,1535 +1,679 @@
 {
     "intents": [
-        "dontcare",
-        "goodbye",
-        "inform",
-        "thankyou",
-        "deny",
-        "affirm",
-        "greet",
-        "state_happy",
+        "dontcare", 
+        "goodbye", 
+        "inform", 
+        "thankyou", 
+        "deny", 
+        "affirm", 
+        "greet", 
+        "state_happy", 
         "ask_constraint"
-    ],
+    ], 
     "utterances": [
         {
-            "intent": "deny",
-            "text": "ok - do you have a different suggestion?"
-        },
-        {
-            "intent": "inform",
-            "text": "what about caribbean"
-        },
-        {
-            "intent": "inform",
-            "text": "i want to make a nice soup"
-        },
-        {
-            "intent": "inform",
-            "text": "what about thai"
-        },
-        {
-            "intent": "inform",
-            "text": "i have whitecurrant"
-        },
-        {
-            "intent": "greet",
-            "text": "hi"
-        },
-        {
-            "intent": "inform",
-            "text": "i want to make wedges"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "does that have eggs in it?"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "but they are vegetarian?"
-        },
-        {
-            "intent": "deny",
-            "text": "nah not for me"
-        },
-        {
-            "intent": "inform",
-            "text": "i would like to eat something greek"
-        },
-        {
-            "intent": "inform",
-            "text": "what about irish"
-        },
-        {
-            "intent": "inform",
-            "text": "lovage"
-        },
-        {
-            "intent": "inform",
-            "text": "i want an italian recipe with eggplant"
-        },
-        {
-            "intent": "inform",
-            "text": "something indian with potatoes"
-        },
-        {
-            "intent": "inform",
-            "text": "what about indian"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "do i need tomatoes?"
-        },
-        {
-            "intent": "inform",
-            "text": "maybe german"
-        },
-        {
-            "intent": "inform",
-            "text": "i want to make chinese food"
-        },
-        {
-            "intent": "state_happy",
-            "text": "looks tasty!"
-        },
-        {
-            "intent": "inform",
-            "text": "i have some mushrooms i want to use"
-        },
-        {
-            "intent": "greet",
-            "text": "hey there"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "do i need tomatoes to make that?"
-        },
-        {
-            "intent": "state_happy",
-            "text": "i love it!"
-        },
-        {
-            "intent": "deny",
-            "text": "that looks gross anyway"
-        },
-        {
-            "intent": "inform",
-            "text": "spring greens"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "are those vegan?"
-        },
-        {
-            "intent": "greet",
-            "text": "hello"
-        },
-        {
-            "intent": "deny",
-            "text": "ok, still i don't think its for me. anything else?"
-        },
-        {
-            "intent": "deny",
-            "text": "ok - do you have something else?"
-        },
-        {
-            "intent": "inform",
-            "text": "i have some mushrooms"
-        },
-        {
-            "intent": "inform",
-            "text": "i'd like something vegetarian"
-        },
-        {
-            "intent": "inform",
-            "text": "american please"
-        },
-        {
-            "intent": "inform",
-            "text": "i have some potatoes i want to use"
-        },
-        {
-            "intent": "inform",
-            "text": "i want to make some delicious italian food"
-        },
-        {
-            "intent": "inform",
-            "text": "maybe thai"
-        },
-        {
-            "intent": "goodbye",
-            "text": "bye"
-        },
-        {
-            "intent": "inform",
-            "text": "i have cottage cheese"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "does that have egg in it?"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "does that have beans in it?"
-        },
-        {
-            "intent": "inform",
-            "text": "what about german"
-        },
-        {
-            "intent": "inform",
-            "text": "i want to make somethin with this spinach i have"
-        },
-        {
-            "intent": "inform",
-            "text": "caribbean"
-        },
-        {
-            "intent": "affirm",
-            "text": "that's right"
-        },
-        {
-            "intent": "inform",
-            "text": "do you have any soup recipes?"
-        },
-        {
-            "intent": "deny",
-            "text": "don't do that"
-        },
-        {
-            "intent": "deny",
-            "text": "hm ok anything else?"
-        },
-        {
-            "intent": "goodbye",
-            "text": "good bye"
-        },
-        {
-            "intent": "inform",
-            "text": "what about spanish"
-        },
-        {
-            "intent": "inform",
-            "text": "i would rather have something with chicken"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "are those vegan ?"
-        },
-        {
-            "intent": "inform",
-            "text": "i'm looking for an italian recipes"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "ok, do you have anything which does?"
-        },
-        {
-            "intent": "inform",
-            "text": "what about cajun"
-        },
-        {
-            "intent": "deny",
-            "text": "no i don't think that's for me"
-        },
-        {
-            "intent": "deny",
-            "text": "no thanks"
-        },
-        {
-            "intent": "deny",
-            "text": "nah i don't think i'd like that"
-        },
-        {
-            "intent": "inform",
-            "text": "what can i make with this prosciutto i have?"
-        },
-        {
-            "intent": "inform",
-            "text": "show me some soup recipes"
-        },
-        {
-            "intent": "inform",
-            "text": "preferably with cucumbers as well"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "does that have beans in it"
-        },
-        {
-            "intent": "affirm",
-            "text": "great"
-        },
-        {
-            "intent": "inform",
-            "text": "jewish please"
-        },
-        {
-            "intent": "inform",
-            "text": "i want to make vegan food"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "does that have cucumbers in it?"
-        },
-        {
-            "intent": "state_happy",
-            "text": "nice!"
-        },
-        {
-            "intent": "inform",
-            "text": "maybe middle eastern"
-        },
-        {
-            "intent": "inform",
-            "text": "there are no recipes with cucumbers in them at all?"
-        },
-        {
-            "intent": "inform",
-            "text": "i want some italian food"
-        },
-        {
-            "intent": "inform",
-            "text": "with meat"
-        },
-        {
-            "intent": "affirm",
-            "text": "please"
-        },
-        {
-            "intent": "state_happy",
-            "text": "sounds delicious!"
-        },
-        {
-            "intent": "state_happy",
-            "text": "yum!"
-        },
-        {
-            "intent": "deny",
-            "text": "i think that would take too long"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "is there chicken in that?"
-        },
-        {
-            "intent": "inform",
-            "text": "i have some mushrooms i would like to use"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "is that recipe vegan?"
-        },
-        {
-            "intent": "state_happy",
-            "text": "great!"
-        },
-        {
-            "intent": "inform",
-            "text": "what cajun options do i have?"
-        },
-        {
-            "intent": "inform",
-            "text": "british"
-        },
-        {
-            "intent": "state_happy",
-            "text": "that looks amazing, i love curry!"
-        },
-        {
-            "intent": "deny",
-            "text": "no not that one"
-        },
-        {
-            "intent": "inform",
-            "text": "show me soup recipes"
-        },
-        {
-            "intent": "deny",
-            "text": "no"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "is that vegetarian?"
-        },
-        {
-            "intent": "inform",
-            "text": "i'm looking for a bit of chinese food"
-        },
-        {
-            "intent": "affirm",
-            "text": "yes"
-        },
-        {
-            "intent": "inform",
-            "text": "french"
-        },
-        {
-            "intent": "inform",
-            "text": "korean please"
-        },
-        {
-            "intent": "inform",
-            "text": "hmm maybe something indian instead"
-        },
-        {
-            "intent": "inform",
-            "text": "something weird"
-        },
-        {
-            "intent": "inform",
-            "text": "african"
-        },
-        {
-            "intent": "inform",
-            "text": "i'm looking for some chinese food"
-        },
-        {
-            "intent": "inform",
-            "text": "i want to make some chinese food with eggplant"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "hmm is that vegetarian?"
-        },
-        {
-            "intent": "inform",
-            "text": "how do i make spaghetti carbonara?"
-        },
-        {
-            "intent": "greet",
-            "text": "hello!"
-        },
-        {
-            "intent": "inform",
-            "text": "thai"
-        },
-        {
-            "intent": "inform",
-            "text": "i want something with beef in it"
-        },
-        {
-            "intent": "inform",
-            "text": "i'm looking for an italian recipe with eggplant"
-        },
-        {
-            "intent": "inform",
-            "text": "what korean options do i have?"
-        },
-        {
-            "intent": "deny",
-            "text": "fucking useless"
-        },
-        {
-            "intent": "greet",
-            "text": "hey"
-        },
-        {
-            "intent": "inform",
-            "text": "i would like indian food"
-        },
-        {
-            "intent": "inform",
-            "text": "i'm looking for a curry recipe"
-        },
-        {
-            "intent": "inform",
-            "text": "maybe some pasta?"
-        },
-        {
-            "intent": "inform",
-            "text": "indian"
-        },
-        {
-            "intent": "inform",
-            "text": "i want to make something with tomatoes in it"
-        },
-        {
-            "intent": "deny",
-            "text": "thats the most disgusting sounding thing ever"
-        },
-        {
-            "intent": "inform",
-            "text": "i'm looking for some italian food"
-        },
-        {
-            "intent": "inform",
-            "text": "i would like chinese food"
-        },
-        {
-            "intent": "inform",
-            "text": "maybe cajun"
-        },
-        {
-            "intent": "inform",
-            "text": "maybe mexican"
-        },
-        {
-            "intent": "affirm",
-            "text": "yeah"
-        },
-        {
-            "intent": "inform",
-            "text": "i'm hungry, baby"
-        },
-        {
-            "intent": "inform",
-            "text": "i'm looking for a thai recipe with corn in it"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "does that have chicken in it?"
-        },
-        {
-            "intent": "deny",
-            "text": "i wouldn't give that to my dog"
-        },
-        {
-            "intent": "inform",
-            "text": "i want to make nordic food"
-        },
-        {
-            "intent": "inform",
-            "text": "hey, i have some ham i want to use"
-        },
-        {
-            "intent": "deny",
-            "text": "i don't think that's for me"
-        },
-        {
-            "intent": "inform",
-            "text": "i want to make paleo food"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "are either of those vegan?"
-        },
-        {
-            "intent": "dontcare",
-            "text": "whatever"
-        },
-        {
-            "intent": "inform",
-            "text": "ok but i want something jewish"
-        },
-        {
-            "intent": "goodbye",
-            "text": "thanks"
-        },
-        {
-            "intent": "inform",
-            "text": "irish please"
-        },
-        {
-            "intent": "inform",
-            "text": "ok show me something with corn in it"
-        },
-        {
-            "intent": "goodbye",
-            "text": "thanks bye"
-        },
-        {
-            "intent": "inform",
-            "text": "southern please"
-        },
-        {
-            "intent": "state_happy",
-            "text": "that looks great, i love curry!"
-        },
-        {
-            "intent": "inform",
-            "text": "what japanese options do i have?"
-        },
-        {
-            "intent": "inform",
-            "text": "indian obviously"
-        },
-        {
-            "intent": "deny",
-            "text": "nah i don't think i would like that"
-        },
-        {
-            "intent": "inform",
-            "text": "i want to make indian food"
-        },
-        {
-            "intent": "state_happy",
-            "text": "i like the sound of that!"
-        },
-        {
-            "intent": "state_happy",
-            "text": "sounds delish!"
-        },
-        {
-            "intent": "inform",
-            "text": "i have some ham i would like to use"
-        },
-        {
-            "intent": "inform",
-            "text": "i have bamboo shoots"
-        },
-        {
-            "intent": "inform",
-            "text": "i want to make vegetarian food"
-        },
-        {
-            "intent": "inform",
-            "text": "i want to make something thai"
-        },
-        {
-            "intent": "inform",
-            "text": "something indian"
-        },
-        {
-            "intent": "thankyou",
-            "text": "thanks!"
-        },
-        {
-            "intent": "state_happy",
-            "text": "looks tasty"
-        },
-        {
-            "intent": "inform",
-            "text": "use mushrooms"
-        },
-        {
-            "intent": "thankyou",
-            "text": "thanks a bunch"
-        },
-        {
-            "intent": "deny",
-            "text": "shut up"
-        },
-        {
-            "intent": "inform",
-            "text": "i want to make korean food"
-        },
-        {
-            "intent": "inform",
-            "text": "show me something thai"
-        },
-        {
-            "intent": "deny",
-            "text": "that looks disgusting"
-        },
-        {
-            "intent": "inform",
-            "text": "maybe eastern european"
-        },
-        {
-            "intent": "inform",
-            "text": "i'm looking for something to cook"
-        },
-        {
-            "intent": "affirm",
-            "text": "ok"
-        },
-        {
-            "intent": "thankyou",
-            "text": "thank you !"
-        },
-        {
-            "intent": "inform",
-            "text": "jewish"
-        },
-        {
-            "intent": "inform",
-            "text": "want something to eat"
-        },
-        {
-            "intent": "inform",
-            "text": "cajun please"
-        },
-        {
-            "intent": "inform",
-            "text": "italian maybe"
-        },
-        {
-            "intent": "inform",
-            "text": "maybe something indian"
-        },
-        {
-            "intent": "inform",
-            "text": "carribbean"
-        },
-        {
-            "intent": "inform",
-            "text": "i want to make greek food"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "is it vegetarian?"
-        },
-        {
-            "intent": "inform",
-            "text": "maybe korean"
-        },
-        {
-            "intent": "deny",
-            "text": "nah i don't like pasta"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "is that vegan?"
-        },
-        {
-            "intent": "inform",
-            "text": "i want to eat asparagus"
-        },
-        {
-            "intent": "inform",
-            "text": "maybe british"
-        },
-        {
-            "intent": "inform",
-            "text": "eel"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "does it have cheese in it?"
-        },
-        {
-            "intent": "inform",
-            "text": "gelatine"
-        },
-        {
-            "intent": "inform",
-            "text": "i have asparagus i need to use up"
-        },
-        {
-            "intent": "inform",
-            "text": "nice, what about some indian?"
-        },
-        {
-            "intent": "greet",
-            "text": "hello?"
-        },
-        {
-            "intent": "affirm",
-            "text": "yep"
-        },
-        {
-            "intent": "inform",
-            "text": "what mexican options do i have?"
-        },
-        {
-            "intent": "deny",
-            "text": "no definitely not that"
-        },
-        {
-            "intent": "inform",
-            "text": "vegetarian"
-        },
-        {
-            "intent": "inform",
-            "text": "i have lager"
-        },
-        {
-            "intent": "inform",
-            "text": "italian"
-        },
-        {
-            "intent": "inform",
-            "text": "what about chinese"
-        },
-        {
-            "intent": "inform",
-            "text": "i have a courgette i want to use"
-        },
-        {
-            "intent": "inform",
-            "text": "eastern european"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "does that have carrot in it?"
-        },
-        {
-            "intent": "inform",
-            "text": "maybe greek"
-        },
-        {
-            "intent": "deny",
-            "text": "nah"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "are those vegetarian?"
-        },
-        {
-            "intent": "inform",
-            "text": "i have arrowroot"
-        },
-        {
-            "intent": "inform",
-            "text": "what latin american options do i have?"
-        },
-        {
-            "intent": "inform",
-            "text": "i'd like something paleo"
-        },
-        {
-            "intent": "inform",
-            "text": "what about greek"
-        },
-        {
-            "intent": "greet",
-            "text": "howdy"
-        },
-        {
-            "intent": "inform",
-            "text": "what about korean"
-        },
-        {
-            "intent": "inform",
-            "text": "irish"
-        },
-        {
-            "intent": "inform",
-            "text": "i have wild duck"
-        },
-        {
-            "intent": "inform",
-            "text": "what can i make with this angelica i have?"
-        },
-        {
-            "intent": "inform",
-            "text": "what can i make with this kohlrabi i have?"
-        },
-        {
-            "intent": "inform",
-            "text": "i want to make irish food"
-        },
-        {
-            "intent": "greet",
-            "text": "hey ho"
-        },
-        {
-            "intent": "inform",
-            "text": "what can i make with this rice vinegar i have?"
-        },
-        {
-            "intent": "inform",
-            "text": "what about french"
-        },
-        {
-            "intent": "state_happy",
-            "text": "yum"
-        },
-        {
-            "intent": "inform",
-            "text": "i have madeira cake"
-        },
-        {
-            "intent": "inform",
-            "text": "what greek options do i have?"
-        },
-        {
-            "intent": "state_happy",
-            "text": "looks great!"
-        },
-        {
-            "intent": "inform",
-            "text": "meat"
-        },
-        {
-            "intent": "deny",
-            "text": "not"
-        },
-        {
-            "intent": "inform",
-            "text": "i want to make german food"
-        },
-        {
-            "intent": "inform",
-            "text": "american"
-        },
-        {
-            "intent": "inform",
-            "text": "chinese"
-        },
-        {
-            "intent": "affirm",
-            "text": "correct"
-        },
-        {
-            "intent": "inform",
-            "text": "spanish please"
-        },
-        {
-            "intent": "deny",
-            "text": "incorrect"
-        },
-        {
-            "intent": "inform",
-            "text": "i'm looking for some food with tomatoes in it"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "oh do i need tomatoes for that?"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "do i need apples to make that?"
-        },
-        {
-            "intent": "inform",
-            "text": "i want to make something with apples in it"
-        },
-        {
-            "intent": "inform",
-            "text": "i'd like something vegan"
-        },
-        {
-            "intent": "affirm",
-            "text": "okay"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "does that have spinach in it?"
-        },
-        {
-            "intent": "inform",
-            "text": "russian"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "does that have tomato in it?"
-        },
-        {
-            "intent": "inform",
-            "text": "what about something indian?"
-        },
-        {
-            "intent": "state_happy",
-            "text": "omg i love that!"
-        },
-        {
-            "intent": "inform",
-            "text": "i have beef ribs"
-        },
-        {
-            "intent": "goodbye",
-            "text": "thank you"
-        },
-        {
-            "intent": "deny",
-            "text": "nah not that"
-        },
-        {
-            "intent": "thankyou",
-            "text": "perfect thank you"
-        },
-        {
-            "intent": "inform",
-            "text": "i have some anchovies i would like to use"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "does that have carrots in it?"
-        },
-        {
-            "intent": "inform",
-            "text": "what italian options do i have?"
-        },
-        {
-            "intent": "inform",
-            "text": "what can i make with this date i have?"
-        },
-        {
-            "intent": "inform",
-            "text": "african please"
-        },
-        {
-            "intent": "deny",
-            "text": "not that one"
-        },
-        {
-            "intent": "dontcare",
-            "text": "any"
-        },
-        {
-            "intent": "dontcare",
-            "text": "whichever"
-        },
-        {
-            "intent": "dontcare",
-            "text": "i don't mind"
-        },
-        {
-            "intent": "dontcare",
-            "text": "i don't care"
-        },
-        {
-            "intent": "dontcare",
-            "text": "whatever you have"
-        },
-        {
-            "intent": "inform",
-            "text": "i want to make some wedges"
-        },
-        {
-            "intent": "inform",
-            "text": "ok maybe soup instead"
-        },
-        {
-            "intent": "dontcare",
-            "text": "i don't really care"
-        },
-        {
-            "intent": "dontcare",
-            "text": "i dont really care"
-        },
-        {
-            "intent": "inform",
-            "text": "i wanna make soup"
-        },
-        {
-            "intent": "inform",
-            "text": "ok - maybe i want to make some bread to go with it?"
-        },
-        {
-            "intent": "inform",
-            "text": "how do i make tomato sauce?"
-        },
-        {
-            "intent": "inform",
-            "text": "what's the best way to make tomato sauce?"
-        },
-        {
-            "intent": "inform",
-            "text": "cool - what about some bread to go with it?"
-        },
-        {
-            "intent": "inform",
-            "text": "i want to make italian food"
-        },
-        {
-            "intent": "deny",
-            "text": "no i don't want to make that"
-        },
-        {
-            "intent": "inform",
-            "text": "i want to make spaghetti"
-        },
-        {
-            "intent": "inform",
-            "text": "soup"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "awesome - does that contain lettuce?"
-        },
-        {
-            "intent": "inform",
-            "text": "i want to make soup"
-        },
-        {
-            "intent": "deny",
-            "text": "ok suggest me something else"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "does that have cabbage in it?"
-        },
-        {
-            "intent": "greet",
-            "text": "hola"
-        },
-        {
-            "intent": "inform",
-            "text": "something vegan?"
-        },
-        {
-            "intent": "greet",
-            "text": "he"
-        },
-        {
-            "intent": "deny",
-            "text": "something else?"
-        },
-        {
-            "intent": "inform",
-            "text": "spanish"
-        },
-        {
-            "intent": "inform",
-            "text": "i want some thai food"
-        },
-        {
-            "intent": "deny",
-            "text": "ok , anything else?"
-        },
-        {
-            "intent": "inform",
-            "text": "vegan curry"
-        },
-        {
-            "intent": "inform",
-            "text": "with mushrooms"
-        },
-        {
-            "intent": "inform",
-            "text": "i'm hungry"
-        },
-        {
-            "intent": "goodbye",
-            "text": "goodbye"
-        },
-        {
-            "intent": "deny",
-            "text": "no i don't want fucking cabbage"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "does that include pork?"
-        },
-        {
-            "intent": "deny",
-            "text": "more"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "does it have carrot in it?"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "does that include meat?"
-        },
-        {
-            "intent": "deny",
-            "text": "anything else?"
-        },
-        {
-            "intent": "inform",
-            "text": "show me a curry recipe"
-        },
-        {
-            "intent": "inform",
-            "text": "pizza"
-        },
-        {
-            "intent": "inform",
-            "text": "what about italian?"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "does that contain beef?"
-        },
-        {
-            "intent": "inform",
-            "text": "with meat?"
-        },
-        {
-            "intent": "inform",
-            "text": "curry"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "is it vegan?"
-        },
-        {
-            "intent": "inform",
-            "text": "show me pizza recipes"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "is it veggie?"
-        },
-        {
-            "intent": "inform",
-            "text": "japanese"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "ah because it has cheese in it?"
-        },
-        {
-            "intent": "inform",
-            "text": "show me italian food"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "does that contain pea?"
-        },
-        {
-            "intent": "inform",
-            "text": "i want british food"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "is it with chicken?"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "and tomato?"
-        },
-        {
-            "intent": "inform",
-            "text": "chicken curry"
-        },
-        {
-            "intent": "inform",
-            "text": "asian"
-        },
-        {
-            "intent": "inform",
-            "text": "i am hungry"
-        },
-        {
-            "intent": "inform",
-            "text": "show me cambodian food"
-        },
-        {
-            "intent": "inform",
-            "text": "i want chicken"
-        },
-        {
-            "intent": "deny",
-            "text": "something else without chicken?"
-        },
-        {
-            "intent": "inform",
-            "text": "ok vietnamese then"
-        },
-        {
-            "intent": "inform",
-            "text": "i'd like to eat british food"
-        },
-        {
-            "intent": "inform",
-            "text": "i'd like to eat dutch food"
-        },
-        {
-            "intent": "inform",
-            "text": "i'd like to eat chinese food"
-        },
-        {
-            "intent": "deny",
-            "text": "no i don't want that"
-        },
-        {
-            "intent": "inform",
-            "text": "i'd like to eat thai food"
-        },
-        {
-            "intent": "inform",
-            "text": "i want to eat something"
-        },
-        {
-            "intent": "inform",
-            "text": "i'd like to eat sri lankan food"
-        },
-        {
-            "intent": "inform",
-            "text": "i'd like to eat indonesian food"
-        },
-        {
-            "intent": "state_happy",
-            "text": "ok great!"
-        },
-        {
-            "intent": "deny",
-            "text": "no not tht"
-        },
-        {
-            "intent": "inform",
-            "text": "i want to make japanese food"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "does that have fish in it?"
-        },
-        {
-            "intent": "inform",
-            "text": "i'm looking for some indonesian food"
-        },
-        {
-            "intent": "deny",
-            "text": "ok something else then?"
-        },
-        {
-            "intent": "inform",
-            "text": "i want to cook sri lankan food"
-        },
-        {
-            "intent": "inform",
-            "text": "i want to make sri lankan food"
-        },
-        {
-            "intent": "inform",
-            "text": "let's make something with eggs"
-        },
-        {
-            "intent": "thankyou",
-            "text": "ok thanks!"
-        },
-        {
-            "intent": "deny",
-            "text": "no not that"
-        },
-        {
-            "intent": "inform",
-            "text": "actually no show me japanese food with beef"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "is that vegetarian ?"
-        },
-        {
-            "intent": "inform",
-            "text": "vietnamese"
-        },
-        {
-            "intent": "inform",
-            "text": "i have some potatoes i would like to use"
-        },
-        {
-            "intent": "inform",
-            "text": "do you have any vegetarian korean recipes?"
-        },
-        {
-            "intent": "inform",
-            "text": "i want vietnamese food"
-        },
-        {
-            "intent": "inform",
-            "text": "ok what about indian?"
-        },
-        {
-            "intent": "deny",
-            "text": "no i don't think so"
-        },
-        {
-            "intent": "deny",
-            "text": "others"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "does that have cream in it?"
-        },
-        {
-            "intent": "state_happy",
-            "text": "oh, so you do have indonesian!"
-        },
-        {
-            "intent": "deny",
-            "text": "others?"
-        },
-        {
-            "intent": "ask_constraint",
-            "text": "is that veggie?"
-        },
-        {
-            "intent": "inform",
-            "text": "italian food"
-        },
-        {
-            "intent": "inform",
-            "text": "something with foie gras in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with patatoes"
-        },
-        {
-            "intent": "inform",
-            "text": "i want something with potatoes"
-        },
-        {
-            "intent": "inform",
-            "text": "i wanna cook something chinese"
-        },
-        {
-            "intent": "inform",
-            "text": "something with dried fruit in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with sweet sherry in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with perry in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with glucose in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with chicory in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with carob in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with monkfish in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with hot cross buns in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with tomato juice in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with pecan in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with chocolate cake in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with apple sauce in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with spaghetti squash in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with soda bread in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with sourdough bread in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with root vegetable in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with vanilla extract in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with five-spice powder in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with chestnut in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with baguette in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with breadsticks in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with english muffin in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with porcini in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with hazelnut oil in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with flank in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with blood orange in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with hollandaise sauce in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with alfalfa sprouts in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with sage in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with silverside in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with shortbread in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with raspberry jam in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with lamb neck in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with haricot beans in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with beef rump in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with runner beans in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with tapioca in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with soda in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with emmental in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with meringue in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with blini in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with salsa in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with tongue in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with pork in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with curacao in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with swiss chard in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with aduki beans in it"
-        },
-        {
-            "intent": "inform",
-            "text": "something with galangal in it"
+            "text": "ok - do you have a different suggestion?", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "hi", 
+            "intent": "greet"
+        }, 
+        {
+            "text": "nah not for me", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "looks tasty!", 
+            "intent": "state_happy"
+        }, 
+        {
+            "text": "hey there", 
+            "intent": "greet"
+        }, 
+        {
+            "text": "i love it!", 
+            "intent": "state_happy"
+        }, 
+        {
+            "text": "that looks gross anyway", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "hello", 
+            "intent": "greet"
+        }, 
+        {
+            "text": "ok, still i don't think its for me. anything else?", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "ok - do you have something else?", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "bye", 
+            "intent": "goodbye"
+        }, 
+        {
+            "text": "that's right", 
+            "intent": "affirm"
+        }, 
+        {
+            "text": "don't do that", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "hm ok anything else?", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "good bye", 
+            "intent": "goodbye"
+        }, 
+        {
+            "text": "no i don't think that's for me", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "no thanks", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "nah i don't think i'd like that", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "great", 
+            "intent": "affirm"
+        }, 
+        {
+            "text": "nice!", 
+            "intent": "state_happy"
+        }, 
+        {
+            "text": "please", 
+            "intent": "affirm"
+        }, 
+        {
+            "text": "sounds delicious!", 
+            "intent": "state_happy"
+        }, 
+        {
+            "text": "yum!", 
+            "intent": "state_happy"
+        }, 
+        {
+            "text": "i think that would take too long", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "great!", 
+            "intent": "state_happy"
+        }, 
+        {
+            "text": "that looks amazing, i love curry!", 
+            "intent": "state_happy"
+        }, 
+        {
+            "text": "no not that one", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "no", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "yes", 
+            "intent": "affirm"
+        }, 
+        {
+            "text": "hello!", 
+            "intent": "greet"
+        }, 
+        {
+            "text": "fucking useless", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "hey", 
+            "intent": "greet"
+        }, 
+        {
+            "text": "thats the most disgusting sounding thing ever", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "yeah", 
+            "intent": "affirm"
+        }, 
+        {
+            "text": "i wouldn't give that to my dog", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "i don't think that's for me", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "whatever", 
+            "intent": "dontcare"
+        }, 
+        {
+            "text": "thanks", 
+            "intent": "goodbye"
+        }, 
+        {
+            "text": "thanks bye", 
+            "intent": "goodbye"
+        }, 
+        {
+            "text": "that looks great, i love curry!", 
+            "intent": "state_happy"
+        }, 
+        {
+            "text": "nah i don't think i would like that", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "i like the sound of that!", 
+            "intent": "state_happy"
+        }, 
+        {
+            "text": "sounds delish!", 
+            "intent": "state_happy"
+        }, 
+        {
+            "text": "thanks!", 
+            "intent": "thankyou"
+        }, 
+        {
+            "text": "looks tasty", 
+            "intent": "state_happy"
+        }, 
+        {
+            "text": "thanks a bunch", 
+            "intent": "thankyou"
+        }, 
+        {
+            "text": "shut up", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "that looks disgusting", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "ok", 
+            "intent": "affirm"
+        }, 
+        {
+            "text": "thank you !", 
+            "intent": "thankyou"
+        }, 
+        {
+            "text": "nah i don't like pasta", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "hello?", 
+            "intent": "greet"
+        }, 
+        {
+            "text": "yep", 
+            "intent": "affirm"
+        }, 
+        {
+            "text": "no definitely not that", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "nah", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "howdy", 
+            "intent": "greet"
+        }, 
+        {
+            "text": "hey ho", 
+            "intent": "greet"
+        }, 
+        {
+            "text": "yum", 
+            "intent": "state_happy"
+        }, 
+        {
+            "text": "looks great!", 
+            "intent": "state_happy"
+        }, 
+        {
+            "text": "not", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "correct", 
+            "intent": "affirm"
+        }, 
+        {
+            "text": "incorrect", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "okay", 
+            "intent": "affirm"
+        }, 
+        {
+            "text": "omg i love that!", 
+            "intent": "state_happy"
+        }, 
+        {
+            "text": "thank you", 
+            "intent": "goodbye"
+        }, 
+        {
+            "text": "nah not that", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "perfect thank you", 
+            "intent": "thankyou"
+        }, 
+        {
+            "text": "not that one", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "any", 
+            "intent": "dontcare"
+        }, 
+        {
+            "text": "whichever", 
+            "intent": "dontcare"
+        }, 
+        {
+            "text": "i don't mind", 
+            "intent": "dontcare"
+        }, 
+        {
+            "text": "i don't care", 
+            "intent": "dontcare"
+        }, 
+        {
+            "text": "whatever you have", 
+            "intent": "dontcare"
+        }, 
+        {
+            "text": "i don't really care", 
+            "intent": "dontcare"
+        }, 
+        {
+            "text": "i dont really care", 
+            "intent": "dontcare"
+        }, 
+        {
+            "text": "no i don't want to make that", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "ok suggest me something else", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "hola", 
+            "intent": "greet"
+        }, 
+        {
+            "text": "he", 
+            "intent": "greet"
+        }, 
+        {
+            "text": "something else?", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "ok , anything else?", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "goodbye", 
+            "intent": "goodbye"
+        }, 
+        {
+            "text": "no i don't want fucking cabbage", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "more", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "anything else?", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "something else without chicken?", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "no i don't want that", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "ok great!", 
+            "intent": "state_happy"
+        }, 
+        {
+            "text": "no not tht", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "ok something else then?", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "ok thanks!", 
+            "intent": "thankyou"
+        }, 
+        {
+            "text": "no not that", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "no i don't think so", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "others", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "oh, so you do have indonesian!", 
+            "intent": "state_happy"
+        }, 
+        {
+            "text": "others?", 
+            "intent": "deny"
+        }, 
+        {
+            "text": "whatever is not expensive", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "looks cheap?", 
+            "intent": "ask_constraint"
+        }, 
+        {
+            "text": "please find me a french restaurant", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "please find me a iranian restaurant", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "looks not expensive?", 
+            "intent": "ask_constraint"
+        }, 
+        {
+            "text": "is it a german place?", 
+            "intent": "ask_constraint"
+        }, 
+        {
+            "text": "mexican please", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "looks expensive?", 
+            "intent": "ask_constraint"
+        }, 
+        {
+            "text": "isn't that very expensive", 
+            "intent": "ask_constraint"
+        }, 
+        {
+            "text": "is it a indian place?", 
+            "intent": "ask_constraint"
+        }, 
+        {
+            "text": "whatever is expensive", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "expensive and italian", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "is that american", 
+            "intent": "ask_constraint"
+        }, 
+        {
+            "text": "indian please", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "please find me a chinese restaurant", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "isn't that very not expensive", 
+            "intent": "ask_constraint"
+        }, 
+        {
+            "text": "looks cheap?", 
+            "intent": "ask_constraint"
+        }, 
+        {
+            "text": "please find me a indian restaurant", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "show me french spots", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "whatever is cheap", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "indian", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "pricey and french", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "it should be cheap", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "is that iranian", 
+            "intent": "ask_constraint"
+        }, 
+        {
+            "text": "looks not expensive?", 
+            "intent": "ask_constraint"
+        }, 
+        {
+            "text": "whatever is pricey", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "is it a american place?", 
+            "intent": "ask_constraint"
+        }, 
+        {
+            "text": "is that pricey", 
+            "intent": "ask_constraint"
+        }, 
+        {
+            "text": "I want chinese or american food", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "show me iranian spots", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "is that french", 
+            "intent": "ask_constraint"
+        }, 
+        {
+            "text": "iranian", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "cheap and iranian", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "it should be expensive", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "cheap and mexican", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "isn't that very pricey", 
+            "intent": "ask_constraint"
+        }, 
+        {
+            "text": "looks expensive?", 
+            "intent": "ask_constraint"
+        }, 
+        {
+            "text": "please find me a italian restaurant", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "is that expensive", 
+            "intent": "ask_constraint"
+        }, 
+        {
+            "text": "anything not expensive", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "mexican", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "isn't that very cheap", 
+            "intent": "ask_constraint"
+        }, 
+        {
+            "text": "isn't that very expensive", 
+            "intent": "ask_constraint"
+        }, 
+        {
+            "text": "I want french or italian food", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "I want chinese or french food", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "is it a iranian place?", 
+            "intent": "ask_constraint"
+        }, 
+        {
+            "text": "chinese", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "italian please", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "is it a british place?", 
+            "intent": "ask_constraint"
+        }, 
+        {
+            "text": "cheap and french", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "show me british spots", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "I want mexican or german food", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "not expensive and chinese", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "show me indian spots", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "is it a german place?", 
+            "intent": "ask_constraint"
+        }, 
+        {
+            "text": "anything cheap", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "looks pricey?", 
+            "intent": "ask_constraint"
+        }, 
+        {
+            "text": "is that italian", 
+            "intent": "ask_constraint"
+        }, 
+        {
+            "text": "is it a indian place?", 
+            "intent": "ask_constraint"
+        }, 
+        {
+            "text": "it should be not expensive", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "show me chinese spots", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "cheap and american", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "I want mexican or mexican food", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "italian", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "is that not expensive", 
+            "intent": "ask_constraint"
+        }, 
+        {
+            "text": "I want american or chinese food", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "is that cheap", 
+            "intent": "ask_constraint"
+        }, 
+        {
+            "text": "french", 
+            "intent": "inform"
+        }, 
+        {
+            "text": "is it a chinese place?", 
+            "intent": "ask_constraint"
+        }, 
+        {
+            "text": "not expensive and indian", 
+            "intent": "inform"
         }
     ]
 }

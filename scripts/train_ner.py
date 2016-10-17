@@ -4,7 +4,8 @@ from collections import defaultdict
 
 num_training_pts=100
 temp_filename="temp_ner_model.dat"
-fe_filepath = config.data_dir + '/total_word_feature_extractor.dat'
+data_dir = "../data/"
+fe_filepath = data_dir + 'total_word_feature_extractor.dat'
 
 class SafeDict(dict):
     def __missing__(self, key):

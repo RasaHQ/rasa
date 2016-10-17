@@ -2,6 +2,7 @@ from flask import Flask, request
 
 from mitie_interpreter import MITIEInterpreter
 import config
+import json
 
 interpreter = MITIEInterpreter(config.classifier_file,config.ner_file,config.fe_file)
 
@@ -15,10 +16,11 @@ def parse():
     if request.method == 'POST':
         body = request.json
         try:
-            return interpreter.parse(body['text'])
+            return json.dumps(interpreter.parse(body['text']))
         except:
             if (config.debug_mode):
                 raise
+                return "error"
             else:
                 return "error"
 
