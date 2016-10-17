@@ -49,5 +49,9 @@ The current version only includes support for MITIE, but we are working on conne
 
 ## Roadmap (message me if you'd like to submit a PR)
 - entity normalisation: as is, the named entity extractor will happily extract `cheap` & `inexpensive` as entities of the `expense` class, but will not tell you that these are realisations of the same underlying concept. You can easily handle that with a list of aliases in your code, but we want to offer a more elegant & generalisable solution.
-- add scripts to read in LUIS and wit model exports directly to make 
-- add optional compatibility arguments to the `/parse` endpoint to return data in LUIS/wit/api.ai format. 
+- parsing structured data, e.g. dates. We might use [parsedatetime](https://pypi.python.org/pypi/parsedatetime/) or possibly wit.ai's very own [duckling](https://duckling.wit.ai/). 
+- simplify the switch from existing services by:
+  - adding scripts to read in LUIS and wit model exports.
+  - adding optional compatibility arguments to the `/parse` endpoint to return data in LUIS/wit/api.ai format. 
+- support for more languages
+
