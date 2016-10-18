@@ -11,6 +11,10 @@ These points are laid out in more detail in a [blog post](https://medium.com/las
 
 Training your models always happens in python, whereas you can use them in two different ways: (1) by instantiating the relevant `Interpreter` subclass in your python project, or (2) by running a simple http API locally (if you're not using python). The file `src/main.py` contains an example of the latter.
 
+## installation:
+from the main dir run
+`python setup.py install`
+
  
 ## Getting Started
 
