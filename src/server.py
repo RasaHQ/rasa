@@ -1,4 +1,5 @@
 from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
+import urlparse
 import json
 
 PORT_NUMBER = 5000
@@ -51,19 +52,28 @@ class ParsaRequestHandler(BaseHTTPRequestHandler):
         self.send_header('Content-type', 'application/json')
         self.end_headers()
 
+    def get_response(self,data_dict):
+        print("response for {0}".format(data_dict))
+        data = router.extract(data_dict) 
+        print("extracted : {0}".format(data))
+        result = router.parse(data["text"])
+        response = router.format(result)
+        return json.dumps(response)
+
     def do_GET(self):
-        self._set_headers()
-        self.wfile.write('{"result":"ok"}')
+        if self.path.startswith("/parse"):
+            self._set_headers()
+            parsed_path = urlparse.urlparse(self.path)
+            data = urlparse.parse_qs(parsed_path.query)
+            self.wfile.write(self.get_response(data))
         return
 
     def do_POST(self):
         if self.path=="/parse":
             self._set_headers()
-            self.data_string = self.rfile.read(int(self.headers['Content-Length']))            
-            data = router.extract(json.loads(self.data_string))            
-            result = router.parse(data["text"])
-            response = router.format(result)
-            self.wfile.write(json.dumps(response))
+            data_string = self.rfile.read(int(self.headers['Content-Length']))            
+            data_dict = json.loads(data_string)
+            self.wfile.write(self.get_response(data_dict))
         return
 
 
