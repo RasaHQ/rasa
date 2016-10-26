@@ -32,7 +32,7 @@ def create_emulator(service):
 
 
 class DataRouter(object):
-    def __init__(self,backend=None,service=None):
+    def __init__(self,backend=None,service=None,**kwargs):
         self.interpreter = create_interpreter(backend)
         self.emulator = create_emulator(service)
 
@@ -81,13 +81,14 @@ class ParsaRequestHandler(BaseHTTPRequestHandler):
 parser = argparse.ArgumentParser(description='parse incoming text')
 parser.add_argument('--backend', default=None, choices=['mitie','sklearn'],help='which backend to use to interpret text (default: None i.e. use built in keyword matcher).')
 parser.add_argument('--service', default=None, choices=['wit','luis'], help='which service to emulate (default: None i.e. use simple built in format)')
+parser.add_argument('--port', default=5000, type=int, help='port on which to run server')
 args = parser.parse_args()
 print(args)
 print(vars(args))
 try:
     router = DataRouter(**vars(args))
-    server = HTTPServer(('', PORT_NUMBER), ParsaRequestHandler)
-    print 'Started httpserver on port ' , PORT_NUMBER
+    server = HTTPServer(('', args.port), ParsaRequestHandler)
+    print 'Started httpserver on port ' , args.port
     server.serve_forever()
 
 except KeyboardInterrupt:

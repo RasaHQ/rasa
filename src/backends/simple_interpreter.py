@@ -13,4 +13,4 @@ class HelloGoodbyeInterpreter():
         elif (True in map(is_present,self.byes)):
             intent="goodbye"
 
-        return {'intent':intent,'entities':[]}
+        return {'text':text,'intent':intent,'entities':[]}
