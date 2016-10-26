@@ -6,9 +6,10 @@ PORT_NUMBER = 5000
 
 def create_interpreter(backend):
     if (backend is None):
+        from backends.simple_interpreter import HelloGoodbyeInterpreter
         return HelloGoodbyeInterpreter()
     elif(backend.lower() == 'mitie'):
-        from mitie_interpreter import MITIEInterpreter
+        from backends.mitie_interpreter import MITIEInterpreter
         return MITIEInterpreter(config.classifier_file,config.ner_file,config.fe_file)
     else:
         raise ValueError("unknown backend : {0}".format(backend))
@@ -69,7 +70,6 @@ class ParsaRequestHandler(BaseHTTPRequestHandler):
 try:
     router = DataRouter()
     server = HTTPServer(('', PORT_NUMBER), ParsaRequestHandler)
-    print(vars(server))
     print 'Started httpserver on port ' , PORT_NUMBER
     server.serve_forever()
 
