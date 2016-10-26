@@ -16,25 +16,25 @@ def create_interpreter(backend):
     else:
         raise ValueError("unknown backend : {0}".format(backend))
 
-def create_emulator(service):
-    if (service is None):
+def create_emulator(mode):
+    if (mode is None):
         from emulators import NoEmulator
         return NoEmulator()
-    elif(service.lower() == 'wit'):
+    elif(mode.lower() == 'wit'):
         from emulators.wit import WitEmulator
         return WitEmulator()
-    elif(service.lower() == 'luis'):
+    elif(mode.lower() == 'luis'):
         from emulators.luis import LUISEmulator
         return LUISEmulator()
     else:
-        raise ValueError("unknown service : {0}".format(service))
+        raise ValueError("unknown mode : {0}".format(mode))
 
 
 
 class DataRouter(object):
-    def __init__(self,backend=None,service=None,**kwargs):
+    def __init__(self,backend=None,mode=None,**kwargs):
         self.interpreter = create_interpreter(backend)
-        self.emulator = create_emulator(service)
+        self.emulator = create_emulator(mode)
 
     def extract(self,data):
         return self.emulator.normalise_request_json(data)    
@@ -80,7 +80,7 @@ class ParsaRequestHandler(BaseHTTPRequestHandler):
 
 parser = argparse.ArgumentParser(description='parse incoming text')
 parser.add_argument('--backend', default=None, choices=['mitie','sklearn'],help='which backend to use to interpret text (default: None i.e. use built in keyword matcher).')
-parser.add_argument('--service', default=None, choices=['wit','luis'], help='which service to emulate (default: None i.e. use simple built in format)')
+parser.add_argument('--mode', default=None, choices=['wit','luis'], help='which service to emulate (default: None i.e. use simple built in format)')
 parser.add_argument('--port', default=5000, type=int, help='port on which to run server')
 args = parser.parse_args()
 print(args)
