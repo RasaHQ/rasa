@@ -5,12 +5,26 @@ class LUISEmulator(object):
         self.name='luis'
 
     def normalise_request_json(self,data):
-        pass
-    def normalise_response_json(data):
-        intent = data['intents'][0]['intent']
-        entities = {}
-        slots = [e for e in data.get("entities") or []]
-        for ent in slots:
-            entities[ent["type"]]=ent["entity"]
+        _data = {}
+        _data["text"]=data['q'][0]
+        return _data
+
+    def normalise_response_json(self,data):
+        return {
+          "query": data["text"],
+            "topScoringIntent": {
+              "intent": "inform",
+              "score": None
+            },
+          "entities": [
+            {
+              "entity": e[0],
+              "type": e[1],
+              "startIndex": None,
+              "endIndex": None,
+              "score": None
+            } for e in data["entities"]
+          ]
+         }        
 
 
