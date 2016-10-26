@@ -1,6 +1,7 @@
 from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
 import urlparse
 import json
+import argparse
 
 PORT_NUMBER = 5000
 
@@ -77,8 +78,14 @@ class ParsaRequestHandler(BaseHTTPRequestHandler):
         return
 
 
+parser = argparse.ArgumentParser(description='parse incoming text')
+parser.add_argument('--backend', default=None, choices=['mitie','sklearn'],help='which backend to use to interpret text (default: None i.e. use built in keyword matcher).')
+parser.add_argument('--service', default=None, choices=['wit','luis'], help='which service to emulate (default: None i.e. use simple built in format)')
+args = parser.parse_args()
+print(args)
+print(vars(args))
 try:
-    router = DataRouter()
+    router = DataRouter(**vars(args))
     server = HTTPServer(('', PORT_NUMBER), ParsaRequestHandler)
     print 'Started httpserver on port ' , PORT_NUMBER
     server.serve_forever()
