@@ -1,7 +1,7 @@
 from setuptools import setup
 setup(
   name = 'parsa',
-  packages = ['parsa'],
+  packages = ['parsa','parsa.backends','parsa.emulators'],
   package_dir = {'parsa': 'src'},
   version = '0.0.0.1',
   install_requires=[

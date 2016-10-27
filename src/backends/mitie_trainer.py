@@ -11,7 +11,7 @@ class MITIETrainer(object):
         self.entity_extractor = None
         self.training_data = None
     
-    def train(data):
+    def train(self,data):
         self.training_data = data
         self.intent_classifier = self.train_intent_classifier(data.intent_examples)
         self.entity_extractor = self.train_entity_extractor(data.entity_examples)
@@ -22,7 +22,7 @@ class MITIETrainer(object):
     def train_intent_classifier(self,intent_examples):
         trainer = text_categorizer_trainer(fe_file)
         for example in intent_examples:
-            tokens = tokenize(example["text"))
+            tokens = tokenize(example["text"])
             trainer.add_labeled_text(tokens,example["intent"])            
         intent_classifier = trainer.train()
         return intent_classifier
