@@ -4,12 +4,13 @@ import datetime
 
 
 class MITIETrainer(object):
-    def __init__(self):
+    def __init__(self,config):
         self.name="mitie"
         self.training_data = None
         self.intent_classifier = None
         self.entity_extractor = None
         self.training_data = None
+        self.fe_file = config["fe_file"]
     
     def train(self,data):
         self.training_data = data
@@ -20,7 +21,7 @@ class MITIETrainer(object):
         return None
     
     def train_intent_classifier(self,intent_examples):
-        trainer = text_categorizer_trainer(fe_file)
+        trainer = text_categorizer_trainer(self.fe_file)
         for example in intent_examples:
             tokens = tokenize(example["text"])
             trainer.add_labeled_text(tokens,example["intent"])            
