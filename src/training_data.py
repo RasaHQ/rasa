@@ -16,6 +16,15 @@ class TrainingData(object):
             self.load_data(self.filedata)
         else:
             raise ValueError("unknown training file format : {0}".format(self.fformat))
+    
+    def as_json(self,**kwargs):
+        return json.dumps( {
+          "parsa_data" : {
+            "intent_examples" : self.intent_examples,
+            "entity_examples" : self.entity_examples
+          }
+        }, **kwargs)
+        
             
     def guess_format(self,filedata):
         fformat = 'unk'
@@ -34,6 +43,8 @@ class TrainingData(object):
             intent = intents[0] if intents else 'None'
             
             entities = [e for e in entities if (e.has_key("start") and e.has_key("end"))]
+            for e in entities:
+                e["value"] = e["value"][1:-1]
 
             self.intent_examples.append({"text":text,"intent":intent})            
             self.entity_examples.append({"text":text,"intent":intent,"entities":entities})
