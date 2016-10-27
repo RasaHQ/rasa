@@ -77,6 +77,5 @@ interpreter.parse("hello world")  # -> {'intent':'greet','entities':[]}
 ## Roadmap (message me if you'd like to submit a PR)
 - entity normalisation: as is, the named entity extractor will happily extract `cheap` & `inexpensive` as entities of the `expense` class, but will not tell you that these are realisations of the same underlying concept. You can easily handle that with a list of aliases in your code, but we want to offer a more elegant & generalisable solution.
 - parsing structured data, e.g. dates. We might use [parsedatetime](https://pypi.python.org/pypi/parsedatetime/) or possibly wit.ai's very own [duckling](https://duckling.wit.ai/). 
-- adding scripts to read in LUIS and wit model exports.
 - support for more languages
 
