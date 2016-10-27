@@ -49,16 +49,18 @@ and then download the [MITIE models](https://github.com/mit-nlp/MITIE/releases/d
 Install one of the above & then also a ML lib, e.g. scikit-learn or keras. 
 
 
-## Creating your own parser
-### From an existing wit or LUIS app:
+## Creating your own language parser
+### Cloning an existing wit or LUIS app:
 
-Download your data from wit or LUIS, and run
+Download your data from wit or LUIS. When you export your model from wit you will get a zipped directory. The file you need is `expressions.json`.
+If you're exporting from LUIS you get a single json file, and that's the one you need. Just pass your data file to the train script:
+
 ```bash
-python -m parsa.train --wit-data=expressions.json --backend=mitie
+python -m parsa.train --data=expressions.json --backend=mitie --path=/save/models/here
 ```
-Once you’ve trained your model, you will have a few new files in your working dir. You can then run a parsa server which runs your new model: 
+Once you’ve trained your model, you will have a few new files in the dir you specified. You can then run a parsa server which runs your new model: 
 ```bash
-python -mparsa.server --mode=wit --backend=mitie --path=/path/to/data
+python -mparsa.server --mode=wit --backend=mitie --path=/path/to/models
 ```
 
 
