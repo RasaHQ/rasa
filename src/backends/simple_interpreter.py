@@ -5,9 +5,9 @@ class HelloGoodbyeInterpreter(object):
         self.byes = ["bye","goodbye"]
 
     def parse(self,text):
-        text, intent = text, "None"
+        _text, intent = text.lower(), "None"
+        is_present = lambda x: x in _text
 
-        is_present = lambda x: x in text.lower()
         if (True in map(is_present,self.his)):
             intent="hello"
         elif (True in map(is_present,self.byes)):
