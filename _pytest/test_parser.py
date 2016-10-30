@@ -1,15 +1,13 @@
-from parsa.mitie_interpreter import MITIEInterpreter
-from parsa import config
+from parsa.backends.simple_interpreter import HelloGoodbyeInterpreter
 
-
-interpreter = MITIEInterpreter(config.classifier_file,config.ner_file,config.fe_file)
+interpreter = HelloGoodbyeInterpreter()
 
 
 
 def test_samples():
     samples = [
-      ("I would like some chinese food please",{'intent':'inform', 'entities' : {'cuisine': 'chinese'}}),
-      ("Is that vegetarian",{'intent':'ask_constraint', 'entities' :{'diet': 'vegetarian'}})
+      ("Hey there",{'text':"Hey there",'intent':'hello', 'entities' : []}),
+      ("good bye for now",{'text':"good bye for now",'intent':'goodbye', 'entities' : []})
     ]   
 
     for text, result in samples:
