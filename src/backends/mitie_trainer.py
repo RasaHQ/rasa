@@ -23,11 +23,8 @@ class MITIETrainer(object):
         print(entity_tokens)
         size = len(entity_tokens)
         max_loc = 1+len(text_tokens)-size
-        #print(shift)
-        #print(max_loc)
         for i in range(max_loc):
             print(text_tokens[i:i+size])
-            
         locs = [ i for i in range(max_loc) if \
                  text_tokens[i:i+size] == entity_tokens ]
         print(locs)
@@ -37,12 +34,10 @@ class MITIETrainer(object):
     def train_entity_extractor(self,entity_examples):
         trainer = ner_trainer(self.fe_file)
         for example in entity_examples:        
-            print(example)
             tokens = tokenize(example["text"])
             sample = ner_training_instance(tokens)
             for ent in example["entities"]:
                 _slice = example["text"][ent["start"]:ent["end"]]
-                print(_slice)
                 val_tokens = tokenize(_slice)
                 start, end = self.start_and_end(tokens,val_tokens)
                 sample.add_entity(xrange(start,end),ent["entity"])
