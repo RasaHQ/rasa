@@ -1,5 +1,5 @@
 # parsa
-[ ![Codeship Status for amn41/parsa](https://app.codeship.com/projects/b06f6000-7444-0134-8053-76df66f7aa2d/status?branch=multi-backend)](https://app.codeship.com/projects/179147)
+[ ![Codeship Status for amn41/parsa](https://app.codeship.com/projects/b06f6000-7444-0134-8053-76df66f7aa2d/status?branch=master)](https://app.codeship.com/projects/179147)
 
 Parsa is a tool for intent classification and entity extraction. 
 The intended audience is mainly people developing bots. 
