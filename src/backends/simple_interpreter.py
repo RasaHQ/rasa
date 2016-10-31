@@ -9,7 +9,7 @@ class HelloGoodbyeInterpreter(object):
         is_present = lambda x: x in _text
 
         if (True in map(is_present,self.his)):
-            intent="hello"
+            intent="greet"
         elif (True in map(is_present,self.byes)):
             intent="goodbye"
 
