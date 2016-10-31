@@ -38,7 +38,6 @@ def do_train(config):
 
 
 config = init()
-exit(0)
 do_train(config)
 print("done")
 
