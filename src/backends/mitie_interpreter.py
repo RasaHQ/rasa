@@ -2,9 +2,9 @@ from mitie import *
 from parsa import Interpreter
 
 class MITIEInterpreter(Interpreter):
-    def __init__(self,classifier_file,ner_file,fe_filepath):
-        self.extractor = named_entity_extractor(ner_file,fe_filepath)
-        self.classifier = text_categorizer(classifier_file,fe_filepath)
+    def __init__(self,metadata):
+        self.extractor = named_entity_extractor(metadata["entity_extractor"])#,metadata["feature_extractor"])
+        self.classifier = text_categorizer(metadata["intent_classifier"])#,metadata["feature_extractor"])
         
     def get_entities(self,tokens):
         d = {}

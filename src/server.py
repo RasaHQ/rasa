@@ -1,22 +1,28 @@
 from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
-import urlparse
-import json
-import argparse
-
-PORT_NUMBER = 5000
+import urlparse, json, argparse, os
+from parsa.util import update_config
 
 
-def create_interpreter(backend):
+def create_interpreter(config):
+
+    model_dir = config.get("server_model_dir")    
+    backend = None
+    if (model_dir is not None):
+        metadata = json.loads(open(os.path.join(model_dir,'metadata.json'),'rb').read())
+        backend = metadata["backend"]
+
     if (backend is None):
         from backends.simple_interpreter import HelloGoodbyeInterpreter
         return HelloGoodbyeInterpreter()
     elif(backend.lower() == 'mitie'):
+        print("using mitie backend")
         from backends.mitie_interpreter import MITIEInterpreter
-        return MITIEInterpreter(config.classifier_file,config.ner_file,config.fe_file)
+        return MITIEInterpreter(metadata)
     else:
         raise ValueError("unknown backend : {0}".format(backend))
 
-def create_emulator(mode):
+def create_emulator(config):
+    mode = config.get('emulate')
     if (mode is None):
         from emulators import NoEmulator
         return NoEmulator()
@@ -29,14 +35,21 @@ def create_emulator(mode):
     else:
         raise ValueError("unknown mode : {0}".format(mode))
 
-
-
+def create_argparser():
+    parser = argparse.ArgumentParser(description='parse incoming text')
+    parser.add_argument('-d','--server_model_dir', default=None, help='directory where model files are saved')
+    parser.add_argument('-e','--emulate', default=None, choices=['wit','luis'], help='which service to emulate (default: None i.e. use simple built in format)')
+    parser.add_argument('-p','--port', default=5000, type=int, help='port on which to run server') 
+    parser.add_argument('-c','--config', default=None, help="config file")  
+    parser.add_argument('-l','--logfile', default='parsa_log.json', help='file where logs are saved')
+         
+    return parser
 
 class DataRouter(object):
-    def __init__(self,backend=None,mode=None,log_file='parsa_log.json',**kwargs):
-        self.interpreter = create_interpreter(backend)
-        self.emulator = create_emulator(mode)
-        self.log_file=log_file
+    def __init__(self,**config):
+        self.interpreter = create_interpreter(config)
+        self.emulator = create_emulator(config)
+        self.logfile=config["logfile"]
         self.responses = set()
 
     def extract(self,data):
@@ -44,14 +57,14 @@ class DataRouter(object):
 
     def parse(self,text):
         result = self.interpreter.parse(text)
-        self.responses.add(json.dumps(result))
-        return 
+        self.responses.add(json.dumps(result,sort_keys=True))
+        return result
 
     def format(self,data):
         return self.emulator.normalise_response_json(data)
 
     def write_logs(self):
-        with open(self.log_file,'w') as f:
+        with open(self.logfile,'w') as f:
             responses = [json.loads(r) for r in self.responses]
             f.write(json.dumps(responses,indent=2))
 
@@ -63,9 +76,7 @@ class ParsaRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def get_response(self,data_dict):
-        print("response for {0}".format(data_dict))
         data = router.extract(data_dict) 
-        print("extracted : {0}".format(data))
         result = router.parse(data["text"])
         response = router.format(result)
         return json.dumps(response)
@@ -86,17 +97,20 @@ class ParsaRequestHandler(BaseHTTPRequestHandler):
             self.wfile.write(self.get_response(data_dict))
         return
 
+def init():
+    parser = create_argparser()
+    args = parser.parse_args()
+    config = {} if args.config is None else json.loads(open(args.config,'rb').read())
+    config = update_config(config,args,exclude=['config'])
+    return config
 
-parser = argparse.ArgumentParser(description='parse incoming text')
-parser.add_argument('--backend', default=None, choices=['mitie','sklearn'],help='which backend to use to interpret text (default: None i.e. use built in keyword matcher).')
-parser.add_argument('--mode', default=None, choices=['wit','luis'], help='which service to emulate (default: None i.e. use simple built in format)')
-parser.add_argument('--port', default=5000, type=int, help='port on which to run server')
-args = parser.parse_args()
 
 try:
-    router = DataRouter(**vars(args))
-    server = HTTPServer(('', args.port), ParsaRequestHandler)
-    print 'Started httpserver on port ' , args.port
+    config = init()
+    print(config)
+    router = DataRouter(**config)
+    server = HTTPServer(('', config["port"]), ParsaRequestHandler)
+    print 'Started httpserver on port ' , config["port"]
     server.serve_forever()
 
 except KeyboardInterrupt:

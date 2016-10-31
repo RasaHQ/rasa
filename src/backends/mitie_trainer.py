@@ -70,7 +70,7 @@ class MITIETrainer(object):
           "backend":self.name,
           "intent_classifier":classifier_file,
           "entity_extractor": entity_extractor_file,
-          "fe_file": self.fe_file
+          "feature_extractor": self.fe_file
         }
         
         with open(os.path.join(dirname,'metadata.json'),'w') as f:

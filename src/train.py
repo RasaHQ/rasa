@@ -1,18 +1,9 @@
 import argparse
 from training_data import TrainingData
+from parsa.util import update_config
 import json
 
-def update_config(config,args):
-    "override config params with cmd line args, raise err if undefined"
-    _args = dict(vars(args))
-    for param in ["backend","data","path"]:
-        replace = (_args.get(param) is not None)
-        if (replace):
-            config[param] = _args[param]
-        if (config.get(param) is None):
-            raise ValueError("parameter {0} unspecified. Please provide a value via the command line or in the config file.".format(param))
 
-    return config
 
 def create_argparser():
     parser = argparse.ArgumentParser(description='train a custom language parser')
@@ -35,7 +26,7 @@ def init():
     parser = create_argparser()
     args = parser.parse_args()
     config = json.loads(open(args.config,'rb').read())
-    config = update_config(config,args)
+    config = update_config(config,args,exclude=['config'],required=['path','backend','data'])
     return config
 
 def do_train(config):
