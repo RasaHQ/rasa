@@ -31,20 +31,29 @@ def create_emulator(mode):
 
 
 
+
 class DataRouter(object):
-    def __init__(self,backend=None,mode=None,**kwargs):
+    def __init__(self,backend=None,mode=None,log_file='parsa_log.json',**kwargs):
         self.interpreter = create_interpreter(backend)
         self.emulator = create_emulator(mode)
+        self.log_file=log_file
+        self.responses = set()
 
     def extract(self,data):
         return self.emulator.normalise_request_json(data)    
 
     def parse(self,text):
-        return self.interpreter.parse(text)
+        result = self.interpreter.parse(text)
+        self.responses.add(json.dumps(result))
+        return 
 
     def format(self,data):
         return self.emulator.normalise_response_json(data)
 
+    def write_logs(self):
+        with open(self.log_file,'w') as f:
+            responses = [json.loads(r) for r in self.responses]
+            f.write(json.dumps(responses,indent=2))
 
 class ParsaRequestHandler(BaseHTTPRequestHandler):
     
@@ -83,8 +92,7 @@ parser.add_argument('--backend', default=None, choices=['mitie','sklearn'],help=
 parser.add_argument('--mode', default=None, choices=['wit','luis'], help='which service to emulate (default: None i.e. use simple built in format)')
 parser.add_argument('--port', default=5000, type=int, help='port on which to run server')
 args = parser.parse_args()
-print(args)
-print(vars(args))
+
 try:
     router = DataRouter(**vars(args))
     server = HTTPServer(('', args.port), ParsaRequestHandler)
@@ -92,7 +100,9 @@ try:
     server.serve_forever()
 
 except KeyboardInterrupt:
-    print '^C received, shutting down the web server'
+    print '^C received, saving logs'
+    router.write_logs()
+    print 'shutting down server'
     server.socket.close()
 
 
