@@ -25,27 +25,29 @@ If your project *is* written in Python you can simply import the relevant classe
 ## Getting Started
 ```bash
 python setup.py install
-python -m parsa.server --mode=wit &
+python -m parsa.server -e wit &
 curl 'http://localhost:5000/parse?q=hello'
 # returns e.g. '{"intent":"greet","entities":[]}'
 ```
 
 There you go! you just parsed some text. Important command line options for `parsa.server` are as follows:
-- mode: which service to emulate, can be 'wit' or 'luis', or just leave blank for default mode.
-- path: dir where your trained models are saved. If you leave this blank parsa will just use a naive keyword matcher.
+- emulate: which service to emulate, can be 'wit' or 'luis', or just leave blank for default mode.
+- server_model_dir: dir where your trained models are saved. If you leave this blank parsa will just use a naive keyword matcher.
 
+run `python -m parsa.server -h` to see more details.
 
 
 ## Configuring a backend
-Parsa itself doesn't have any external requirements, but in order to make it useful you need to install & configure a backend. 
+Parsa itself doesn't have any external requirements, but to do something useful with it you need to install & configure a backend. 
 
 #### MITIE
-
 Currently, the only fully supported backend is [MITIE](https://github.com/mit-nlp/MITIE).
 
 `pip install git+https://github.com/mit-nlp/MITIE.git`
 and then download the [MITIE models](https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2). The file you need is `total_word_feature_extractor.dat`
 
+support for spaCy & NLTK is under development.
+<!---
 #### spaCy,  NLTK
 Support for these NLP backends is in development and will be available soon:
 
@@ -55,7 +57,7 @@ Support for these NLP backends is in development and will be available soon:
 NB that if you use spaCy or NLTK you will also need to use a separate machine learning library like scikit-learn or keras.
 
 Install one of the above & then also a ML lib, e.g. scikit-learn or keras. 
-
+-->
 
 ## Creating your own language parser
 ### Cloning an existing wit or LUIS app:
@@ -70,19 +72,19 @@ If you're exporting from LUIS you get a single json file, and that's the one you
   "backend" : "mitie",
   "backends" : {
     "mitie": {
-      "fe_file":"/path/to/total_word_feature_extractor.dat"
+      "feature_extractor":"/path/to/total_word_feature_extractor.dat"
     }
   }
 }
 ```
 
-and then pass this to the training script
+and then pass this file to the training script
 
 ```bash
 python -m parsa.train -c config.json
 ```
 
-you can also override any of the params in config.json with command line arguments.
+you can also override any of the params in config.json with command line arguments. Run `python -m parsa.train -h` for details.
 
 ### Running the server with your newly trained models
 
@@ -93,15 +95,16 @@ Just pass this path to the `parsa.server` script:
 python -m parsa.server --mode=wit -p '/path/to/save/models/model_XXXXXX'
 ```
 
-
+<!---
 ### Using Parsa from python
 Pretty simple really, just open your python interpreter and type:
 ```python
 from parsa.backends import MITIEInterpreter
+
 interpreter = MITIEInterpreter('data/intent_classifier.dat','data/ner.dat','data/total_word_feature_extractor.dat')
 interpreter.parse("hello world")  # -> {'intent':'greet','entities':[]}
 ```
-
+-->
 
 ## Roadmap 
 - full support for spaCy backend
