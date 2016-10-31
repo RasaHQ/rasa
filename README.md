@@ -1,10 +1,16 @@
 # parsa
 [ ![Codeship Status for amn41/parsa](https://app.codeship.com/projects/b06f6000-7444-0134-8053-76df66f7aa2d/status?branch=master)](https://app.codeship.com/projects/179147)
 
+## Motivation
+
 Parsa is a tool for intent classification and entity extraction. 
-The intended audience is mainly people developing bots. 
-It can be used as a drop-in replacement [wit](https://wit.ai), [LUIS](https://luis.ai), or [api.ai](https://api.ai), but as a local service rather than a web API. 
 You can think of parsa as a set of high level APIs for building your own language parser using existing NLP and ML libraries.
+The intended audience is mainly people developing bots. 
+It can be used as a drop-in replacement for [wit](https://wit.ai) or [LUIS](https://luis.ai), but works as a local service rather than a web API. 
+
+The setup process is designed to be as simple as possible. If you're currently using wit or LUIS, you just:
+1. download your app data from wit or LUIS and feed it into parsa
+2. run parsa on your machine and switch the URL of your wit/LUIS api calls to `localhost:5000/parse`.
 
 Reasons you might use this over one of the aforementioned services: 
 - you don't have to hand over your data to FB/MSFT/GOOG
@@ -15,7 +21,6 @@ These points are laid out in more detail in a [blog post](https://medium.com/las
 
 Parsa is written in Python, but it you can use it from any language through a HTTP API. 
 If your project *is* written in Python you can simply import the relevant classes.
-Training your models always happens in python, whereas you can use them in two different ways: (1) by instantiating the relevant `Interpreter` subclass in your python project, or (2) by running a simple http API locally (if you're not using python). The file `src/main.py` contains an example of the latter.
  
 ## Getting Started
 ```bash
@@ -25,28 +30,30 @@ curl 'http://localhost:5000/parse?q=hello'
 # returns e.g. '{"intent":"greet","entities":[]}'
 ```
 
-There you go! you just parsed some text. The command line options for the `parsa.server` are as follows:
-- mode: which service to emulate, can be 'wit' or 'luis', or just leave blank for default (clutter-free) mode.
-- backend: which backend to use. default is to use a built in, extremely naive keyword matcher. Valid options are 'mitie', 'sklearn', 'spacy-keras'
+There you go! you just parsed some text. Important command line options for `parsa.server` are as follows:
+- mode: which service to emulate, can be 'wit' or 'luis', or just leave blank for default mode.
+- path: dir where your trained models are saved. If you leave this blank parsa will just use a naive keyword matcher.
+
 
 
 ## Configuring a backend
 Parsa itself doesn't have any external requirements, but in order to make it useful you need to install & configure a backend. 
 
-There are several supported NLP backends:
+#### MITIE
 
-- [MITIE](https://github.com/mit-nlp/MITIE)
+Currently, the only fully supported backend is [MITIE](https://github.com/mit-nlp/MITIE).
+
+`pip install git+https://github.com/mit-nlp/MITIE.git`
+and then download the [MITIE models](https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2). The file you need is `total_word_feature_extractor.dat`
+
+#### spaCy,  NLTK
+Support for these NLP backends is in development and will be available soon:
+
 - [spaCy](https://github.com/spacy-io/spaCy)
 - [NLTK](www.nltk.org/)
 
 NB that if you use spaCy or NLTK you will also need to use a separate machine learning library like scikit-learn or keras.
 
-#### MITIE
-Using MITIE is the simplest way to get started. Just install with
-`pip install git+https://github.com/mit-nlp/MITIE.git`
-and then download the [MITIE models](https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2)
-
-#### SpaCy,  NLTK
 Install one of the above & then also a ML lib, e.g. scikit-learn or keras. 
 
 
@@ -54,27 +61,50 @@ Install one of the above & then also a ML lib, e.g. scikit-learn or keras.
 ### Cloning an existing wit or LUIS app:
 
 Download your data from wit or LUIS. When you export your model from wit you will get a zipped directory. The file you need is `expressions.json`.
-If you're exporting from LUIS you get a single json file, and that's the one you need. Just pass your data file to the train script:
+If you're exporting from LUIS you get a single json file, and that's the one you need. Create a config file (json format) like this one:
+
+```json
+{
+  "path" : "/path/to/save/models/",
+  "data" : "expressions.json",
+  "backend" : "mitie",
+  "backends" : {
+    "mitie": {
+      "fe_file":"/path/to/total_word_feature_extractor.dat"
+    }
+  }
+}
+```
+
+and then pass this to the training script
 
 ```bash
-python -m parsa.train --data=expressions.json --backend=mitie --path=/save/models/here
+python -m parsa.train -c config.json
 ```
-Once you’ve trained your model, you will have a few new files in the dir you specified. You can then run a parsa server which runs your new model: 
+
+you can also override any of the params in config.json with command line arguments.
+
+### Running the server with your newly trained models
+
+After training you will have a new dir containing your models, e.g. `/path/to/save/models/model_XXXXXX`. 
+Just pass this path to the `parsa.server` script:
+
 ```bash
-python -mparsa.server --mode=wit --backend=mitie --path=/path/to/models
+python -m parsa.server --mode=wit -p '/path/to/save/models/model_XXXXXX'
 ```
 
 
 ### Using Parsa from python
 Pretty simple really, just open your python interpreter and type:
 ```python
-from parsa import MITIEInterpreter
+from parsa.backends import MITIEInterpreter
 interpreter = MITIEInterpreter('data/intent_classifier.dat','data/ner.dat','data/total_word_feature_extractor.dat')
 interpreter.parse("hello world")  # -> {'intent':'greet','entities':[]}
 ```
 
 
 ## Roadmap (message me if you'd like to submit a PR)
+- full support for spaCy backend
 - entity normalisation: as is, the named entity extractor will happily extract `cheap` & `inexpensive` as entities of the `expense` class, but will not tell you that these are realisations of the same underlying concept. You can easily handle that with a list of aliases in your code, but we want to offer a more elegant & generalisable solution.
 - parsing structured data, e.g. dates. We might use [parsedatetime](https://pypi.python.org/pypi/parsedatetime/) or possibly wit.ai's very own [duckling](https://duckling.wit.ai/). 
 - support for more languages

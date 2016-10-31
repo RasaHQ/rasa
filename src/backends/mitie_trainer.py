@@ -57,7 +57,7 @@ class MITIETrainer(object):
 
         
     def persist(self,path):
-        tstamp = datetime.datetime.now().strftime('%Y%m%d-%H%M')
+        tstamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
         dirname = os.path.join(path,"model_"+tstamp)
         os.mkdir(dirname)
         data_file = os.path.join(dirname,"training_data.json")
@@ -69,7 +69,8 @@ class MITIETrainer(object):
           "training_data":data_file,
           "backend":self.name,
           "intent_classifier":classifier_file,
-          "entity_extractor": entity_extractor_file
+          "entity_extractor": entity_extractor_file,
+          "fe_file": self.fe_file
         }
         
         with open(os.path.join(dirname,'metadata.json'),'w') as f:
@@ -77,8 +78,8 @@ class MITIETrainer(object):
         with open(data_file,'w') as f:
             f.write(self.training_data.as_json(indent=2))
 
-        self.intent_classifier.save_to_disk(classifier_file)
-        self.entity_extractor.save_to_disk(entity_extractor_file)
+        self.intent_classifier.save_to_disk(classifier_file,pure_model=True)
+        self.entity_extractor.save_to_disk(entity_extractor_file,pure_model=True)
         
         
         
