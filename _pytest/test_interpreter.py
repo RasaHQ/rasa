@@ -6,7 +6,7 @@ interpreter = HelloGoodbyeInterpreter()
 
 def test_samples():
     samples = [
-      ("Hey there",{'text':"Hey there",'intent':'hello', 'entities' : []}),
+      ("Hey there",{'text':"Hey there",'intent':'greet', 'entities' : []}),
       ("good bye for now",{'text':"good bye for now",'intent':'goodbye', 'entities' : []})
     ]   
 
