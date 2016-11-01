@@ -1,6 +1,8 @@
 # parsa
 [ ![Codeship Status for amn41/parsa](https://app.codeship.com/projects/b06f6000-7444-0134-8053-76df66f7aa2d/status?branch=master)](https://app.codeship.com/projects/179147)
 
+**preface: if you're reading this now, you're an alpha tester of this code - your feedback is super valuable! thanks for trying it out**
+
 ## Motivation
 
 Parsa is a tool for intent classification and entity extraction. 
@@ -26,12 +28,13 @@ If your project *is* written in Python you can simply import the relevant classe
 ```bash
 python setup.py install
 python -m parsa.server -e wit &
+
 curl 'http://localhost:5000/parse?q=hello'
 # returns e.g. '{"intent":"greet","entities":[]}'
 ```
 
 There you go! you just parsed some text. Important command line options for `parsa.server` are as follows:
-- emulate: which service to emulate, can be 'wit' or 'luis', or just leave blank for default mode.
+- emulate: which service to emulate, can be 'wit' or 'luis', or just leave blank for default mode. This only affects the format of the json response.
 - server_model_dir: dir where your trained models are saved. If you leave this blank parsa will just use a naive keyword matcher.
 
 run `python -m parsa.server -h` to see more details.
@@ -67,7 +70,7 @@ If you're exporting from LUIS you get a single json file, and that's the one you
 
 ```json
 {
-  "path" : "/path/to/save/models/",
+  "path" : "/path/to/models/",
   "data" : "expressions.json",
   "backend" : "mitie",
   "backends" : {
@@ -88,11 +91,11 @@ you can also override any of the params in config.json with command line argumen
 
 ### Running the server with your newly trained models
 
-After training you will have a new dir containing your models, e.g. `/path/to/save/models/model_XXXXXX`. 
+After training you will have a new dir containing your models, e.g. `/path/to/models/model_XXXXXX`. 
 Just pass this path to the `parsa.server` script:
 
 ```bash
-python -m parsa.server --mode=wit -p '/path/to/save/models/model_XXXXXX'
+python -m parsa.server -e wit -p '/path/to/models/model_XXXXXX'
 ```
 
 <!---
@@ -105,6 +108,10 @@ interpreter = MITIEInterpreter('data/intent_classifier.dat','data/ner.dat','data
 interpreter.parse("hello world")  # -> {'intent':'greet','entities':[]}
 ```
 -->
+
+### Improving your models
+When the parsa server is running, it keeps track of all the predictions it's made and saves these to a log file. By default this is called `parsa_log.json`
+You can fix any incorrect predictions and add them to your training set to improve your parser.
 
 ## Roadmap 
 - full support for spaCy backend
