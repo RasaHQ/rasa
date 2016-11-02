@@ -3,7 +3,7 @@ setup(
   name = 'parsa',
   packages = ['parsa','parsa.backends','parsa.emulators'],
   package_dir = {'parsa': 'src'},
-  version = '0.2.0',
+  version = '0.2.1',
   install_requires=[
         'pytest'
   ],
