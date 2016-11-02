@@ -50,6 +50,7 @@ Currently, the only fully supported backend is [MITIE](https://github.com/mit-nl
 and then download the [MITIE models](https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2). The file you need is `total_word_feature_extractor.dat`
 
 support for spaCy & NLTK is under development.
+
 <!---
 #### spaCy,  NLTK
 Support for these NLP backends is in development and will be available soon:
@@ -63,6 +64,10 @@ Install one of the above & then also a ML lib, e.g. scikit-learn or keras.
 -->
 
 ## Creating your own language parser
+
+As of now, parsa doesn't provide a tool to help you create & annotate training data. 
+If you don't have an existing wit or LUIS app, you can try this example using the `data/demo-restaurants.json` file, or create your own json file in the same format. 
+
 ### Cloning an existing wit or LUIS app:
 
 Download your data from wit or LUIS. When you export your model from wit you will get a zipped directory. The file you need is `expressions.json`.
@@ -95,7 +100,7 @@ After training you will have a new dir containing your models, e.g. `/path/to/mo
 Just pass this path to the `parsa.server` script:
 
 ```bash
-python -m parsa.server -e wit -p '/path/to/models/model_XXXXXX'
+python -m parsa.server -e wit -d '/path/to/models/model_XXXXXX'
 ```
 
 <!---
