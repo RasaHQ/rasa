@@ -3,8 +3,8 @@ from parsa import Interpreter
 
 class MITIEInterpreter(Interpreter):
     def __init__(self,metadata):
-        self.extractor = named_entity_extractor(metadata["entity_extractor"])#,metadata["feature_extractor"])
-        self.classifier = text_categorizer(metadata["intent_classifier"])#,metadata["feature_extractor"])
+        self.extractor = named_entity_extractor(metadata["entity_extractor"],metadata["feature_extractor"])
+        self.classifier = text_categorizer(metadata["intent_classifier"],metadata["feature_extractor"])
         
     def get_entities(self,tokens):
         d = {}
@@ -23,5 +23,5 @@ class MITIEInterpreter(Interpreter):
         intent = self.get_intent(tokens)
         entities = self.get_entities(tokens)
 
-        return {'intent':intent,'entities': entities}
+        return {'text':text,'intent':intent,'entities': entities}
 

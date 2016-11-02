@@ -10,6 +10,7 @@ class WitEmulator(object):
         return _data
 
     def normalise_response_json(self,data):
+        print('plain response {0}'.format(data))
         return [
           {
             "_text": data["text"],
