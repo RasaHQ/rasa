@@ -80,7 +80,7 @@ If you're exporting from LUIS you get a single json file, and that's the one you
   "backend" : "mitie",
   "backends" : {
     "mitie": {
-      "feature_extractor":"/path/to/total_word_feature_extractor.dat"
+      "fe_file":"/path/to/total_word_feature_extractor.dat"
     }
   }
 }
