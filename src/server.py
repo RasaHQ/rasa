@@ -17,7 +17,7 @@ def create_interpreter(config):
     elif(backend.lower() == 'mitie'):
         print("using mitie backend")
         from backends.mitie_interpreter import MITIEInterpreter
-        return MITIEInterpreter(metadata)
+        return MITIEInterpreter(**metadata)
     else:
         raise ValueError("unknown backend : {0}".format(backend))
 
