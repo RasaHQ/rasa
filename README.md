@@ -122,7 +122,12 @@ You can fix any incorrect predictions and add them to your training set to impro
 - full support for spaCy backend
 - entity normalisation: as is, the named entity extractor will happily extract `cheap` & `inexpensive` as entities of the `expense` class, but will not tell you that these are realisations of the same underlying concept. You can easily handle that with a list of aliases in your code, but we want to offer a more elegant & generalisable solution.
 - parsing structured data, e.g. dates. We might use [parsedatetime](https://pypi.python.org/pypi/parsedatetime/) or possibly wit.ai's very own [duckling](https://duckling.wit.ai/). 
-- support for more languages
+- python 3 support
+- support for more (human) languages
+
+## Troubleshooting
+- not tested with python 3, so probably won't work
+
 
 ## License
 Copyright 2016 LastMile Technologies Ltd
