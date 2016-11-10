@@ -3,6 +3,7 @@ import json
 import pathlib
 import random
 from pprint import pprint
+from os import path
 
 import spacy
 from spacy.pipeline import EntityRecognizer
@@ -12,7 +13,7 @@ from spacy.tagger import Tagger
 class SpacyEntityExtractor(object):
     def __init__(self,nlp=None,extractor_file=None):
         if (extractor_file):
-            self.ner = EntityRecognizer.load(extractor_file,nlp.vocab)
+            self.ner = EntityRecognizer.load(pathlib.Path(extractor_file),nlp.vocab)
         else:            
             self.ner = None
 
