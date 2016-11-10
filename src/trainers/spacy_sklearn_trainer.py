@@ -33,16 +33,17 @@ class SpacySklearnTrainer(object):
         os.mkdir(dirname)
         data_file = os.path.join(dirname,"training_data.json")
         classifier_file = os.path.join(dirname,"intent_classifier.pkl")
-        entity_extractor_config_file = os.path.join(dirname,"entity_extractor.json")
-        entity_extractor_file = os.path.join(dirname,"entity_extractor")
+        ner_dir = os.path.join(dirname,'ner')
+        os.mkdir(ner_dir)
+        entity_extractor_config_file = os.path.join(ner_dir,"config.json")
+        entity_extractor_file = os.path.join(ner_dir,"model")
         
         metadata = {
           "trained_at":tstamp,
           "training_data":data_file,
           "backend":self.name,
           "intent_classifier":classifier_file,
-          "entity_extractor": entity_extractor_file,
-          "entity_extractor_config" : entity_extractor_config_file
+          "entity_extractor": ner_dir
         }
         
         with open(os.path.join(dirname,'metadata.json'),'w') as f:
