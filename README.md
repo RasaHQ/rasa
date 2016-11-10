@@ -44,23 +44,25 @@ run `python -m parsa.server -h` to see more details.
 Parsa itself doesn't have any external requirements, but to do something useful with it you need to install & configure a backend. 
 
 #### MITIE
-Currently, the only fully supported backend is [MITIE](https://github.com/mit-nlp/MITIE).
+The [MITIE](https://github.com/mit-nlp/MITIE) backend is all-inclusive, in the sense that it provides both the NLP and the ML parts.
 
 `pip install git+https://github.com/mit-nlp/MITIE.git`
 and then download the [MITIE models](https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2). The file you need is `total_word_feature_extractor.dat`
 
-support for spaCy & NLTK is under development.
+#### spaCy + scikit-learn
+You can also run using these two in combination. 
+[spaCy](https://spacy.io/) is an excellent library for NLP tasks.
+[scikit-learn](http://scikit-learn.org/) is a popular ML library.
+
+`pip install -U spacy`
+`python -m spacy.en.download all`
+`pip install -U scikit-learn`
+OR if you prefer
+`conda install scikit-learn`
+
 
 <!---
-#### spaCy,  NLTK
-Support for these NLP backends is in development and will be available soon:
-
-- [spaCy](https://github.com/spacy-io/spaCy)
 - [NLTK](www.nltk.org/)
-
-NB that if you use spaCy or NLTK you will also need to use a separate machine learning library like scikit-learn or keras.
-
-Install one of the above & then also a ML lib, e.g. scikit-learn or keras. 
 -->
 
 ## Creating your own language parser
