@@ -12,12 +12,16 @@ def create_interpreter(config):
         backend = metadata["backend"]
 
     if (backend is None):
-        from backends.simple_interpreter import HelloGoodbyeInterpreter
+        from interpreters.simple_interpreter import HelloGoodbyeInterpreter
         return HelloGoodbyeInterpreter()
     elif(backend.lower() == 'mitie'):
         print("using mitie backend")
-        from backends.mitie_interpreter import MITIEInterpreter
+        from interpreters.mitie_interpreter import MITIEInterpreter
         return MITIEInterpreter(**metadata)
+    elif(backend.lower() == 'spacy_sklearn'):
+        print("using spacy + sklearn backend")
+        from interpreters.spacy_sklearn_interpreter import SpacySklearnInterpreter
+        return SpacySklearnInterpreter(**metadata)        
     else:
         raise ValueError("unknown backend : {0}".format(backend))
 

@@ -8,58 +8,37 @@ from spacy.pipeline import EntityRecognizer
 from spacy.gold import GoldParse
 from spacy.tagger import Tagger
 
+class SpacyEntityExtractor(self,nlp):
+    def __init__(self,nlp):
+        self.nlp = nlp
+        self.ner = None
 
-def train_ner(nlp, train_data, entity_types):
-    ner = EntityRecognizer(nlp.vocab, entity_types=entity_types)
-    for itn in range(5):
-        random.shuffle(train_data)
-        for raw_text, entity_offsets in train_data:
-            doc = nlp.make_doc(raw_text)
-            gold = GoldParse(doc, entities=entity_offsets)
-            ner.update(doc, gold)
-    ner.model.end_training()
-    return ner
+    def train(self,entity_examples):
+        train_data = [
+           ( ex["text"],[(ent["start"],ent["end"],ent["entity"]) for ent in ex["entities"]])
+           for ex in entity_examples
+         ]
+        entity_types = list(set([ent["entity"] for ent in ex for ex in entity_examples]))
 
+        self.ner = EntityRecognizer(self.nlp.vocab, entity_types=entity_types)
+        for itn in range(5):
+            random.shuffle(train_data)
+            for raw_text, entity_offsets in train_data:
+                doc = self.nlp.make_doc(raw_text)
+                gold = GoldParse(doc, entities=entity_offsets)
+                self.ner.update(doc, gold)
+        self.ner.model.end_training()
+        
+    def extract_entities(self,sentence):
+        doc = self.nlp.make_doc(sentence)
+        self.nlp.tagger(doc)
+        self.ner(doc)
+        for word in doc:
+            print(word.text, word.tag_, word.ent_type_, word.ent_iob)
 
-def main(model_dir=None):
-    if model_dir is not None:
-        model_dir = pathlib.Path(model_dir)
-        if not model_dir.exists():
-            model_dir.mkdir()
-        assert model_dir.is_dir()
-
-    nlp = spacy.load('en', parser=False, entity=False, add_vectors=False)
-
-    # v1.1.2 onwards
-    if nlp.tagger is None:
-        print('---- WARNING ----')
-        print('Data directory not found')
-        print('please run: `python -m spacy.en.download –force all` for better performance')
-        print('Using feature templates for tagging')
-        print('-----------------')
-        nlp.tagger = Tagger(nlp.vocab, features=Tagger.feature_templates)
-
-    train_data = [
-        (
-            'Who is Shaka Khan?',
-            [(len('Who is '), len('Who is Shaka Khan'), 'PERSON')]
-        ),
-        (
-            'I like London and Berlin.',
-            [(len('I like '), len('I like London'), 'LOC'),
-            (len('I like London and '), len('I like London and Berlin'), 'LOC')]
-        )
-    ]
-    ner = train_ner(nlp, train_data, ['PERSON', 'LOC'])
-
-    doc = nlp.make_doc('Who is Shaka Khan?')
-    nlp.tagger(doc)
-    ner(doc)
-    for word in doc:
-        print(word.text, word.tag_, word.ent_type_, word.ent_iob)
-
-    if model_dir is not None:
-        with (model_dir / 'config.json').open('w') as file_:
-            json.dump(ner.cfg, file_)
-        ner.model.dump(str(model_dir / 'model'))
+         
+         
+         
+         
+         
 

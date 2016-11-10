@@ -2,8 +2,8 @@ import spacy
 import numpy as np
 
 class SpacyFeaturizer(object):
-    def __init__(self):        
-        self.nlp = spacy.load('en')
+    def __init__(self,nlp):        
+        self.nlp = nlp
         self.ndim = 300
         
     def create_bow_vecs(self,sentences):
