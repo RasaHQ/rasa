@@ -1,13 +1,24 @@
 import json, warnings, re
-from mitie import tokenize
 
 class TrainingData(object):
-    def __init__(self,filename):
+    def __init__(self,filename,backend):
         self.intent_examples = []
         self.entity_examples = []
         self.filename = filename
         self.filedata = json.loads(open(filename,'rb').read())
         self.fformat = self.guess_format(self.filedata)
+        self.tokenizer = None
+
+        if (backend in ['mitie','mitie_sklearn']):
+            from parsa.tokenizers.mitie_tokenizer import MITIETokenizer
+            self.tokenizer = MITIETokenizer()
+        elif (backend in ['spacy_sklearn']):
+            from parsa.tokenizers.spacy_tokenizer import SpacyTokenizer
+            self.tokenizer = SpacyTokenizer()
+        else :
+            from parsa.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+            self.tokenizer = WhitespaceTokenizer()
+            warnings.warn("backend not recognised by TrainingData : defaulting to tokenizing by splitting on whitespace")
         
         if (self.fformat == 'luis'):
             self.load_luis_data(self.filedata)
@@ -17,6 +28,8 @@ class TrainingData(object):
             self.load_data(self.filedata)
         else:
             raise ValueError("unknown training file format : {0}".format(self.fformat))
+            
+            
     
     def as_json(self,**kwargs):
         return json.dumps( {
@@ -56,7 +69,7 @@ class TrainingData(object):
         If you use a tokenizer which behaves differently from LUIS's your entities might not be correct""")
         for s in data["utterances"]:
             text = unicode(s.get("text"))
-            tokens = [t.decode('utf-8') for t in tokenize(text)]
+            tokens = [t.decode('utf-8') for t in self.tokenizer.tokenize(text)]
             intent = s.get("intent")
             entities = []
             for e in s.get("entities") or []:

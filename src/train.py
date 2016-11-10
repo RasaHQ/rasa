@@ -34,7 +34,7 @@ def init():
 
 def do_train(config):
     trainer = create_trainer(config)
-    training_data = TrainingData(config["data"])
+    training_data = TrainingData(config["data"],config["backend"])
     trainer.train(training_data)
     trainer.persist(config["path"])
             

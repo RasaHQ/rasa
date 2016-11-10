@@ -8,7 +8,8 @@ setup(
     'parsa.extractors',
     'parsa.featurizers',
     'parsa.interpreters',
-    'parsa.trainers'
+    'parsa.trainers',
+    'parsa.tokenizers'
   ],
   package_dir = {'parsa': 'src'},
   version = '0.2.2',
