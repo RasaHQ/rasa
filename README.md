@@ -60,9 +60,10 @@ python -m spacy.en.download all
 pip install -U scikit-learn
 ```
 
-OR if you prefer (especially if you don't already have `numpy/scipy` installed), you can install scikit-learn via:
-install [anaconda](https://www.continuum.io/downloads)
-`conda install scikit-learn`
+OR if you prefer (especially if you don't already have `numpy/scipy` installed), you can install scikit-learn by:
+
+1. installing [anaconda](https://www.continuum.io/downloads)
+2. `conda install scikit-learn`
 
 
 <!---
