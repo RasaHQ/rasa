@@ -4,7 +4,9 @@ import datetime
 import json
 
 
-class MITIETrainer(object):
+
+
+class MITIESklearnTrainer(object):
     def __init__(self,config):
         self.name="mitie"
         self.training_data = None
@@ -12,6 +14,7 @@ class MITIETrainer(object):
         self.entity_extractor = None
         self.training_data = None
         self.fe_file = config["fe_file"]
+        self.feature_extractor = total_word_feature_extractor(self.fe_file)
     
     def train(self,data):
         self.training_data = data
@@ -19,15 +22,15 @@ class MITIETrainer(object):
         self.entity_extractor = self.train_entity_extractor(data.entity_examples)
 
     def start_and_end(self,text_tokens,entity_tokens):
-        print(text_tokens)
-        print(entity_tokens)
+        #print("full string : {0}".format(text_tokens))
+        #print("entity : {0}, size {1}".format(entity_tokens,len(entity_tokens)))
         size = len(entity_tokens)
         max_loc = 1+len(text_tokens)-size
-        for i in range(max_loc):
-            print(text_tokens[i:i+size])
+        #for i in range(max_loc):
+        #    print("slice at {0} : {1}".format(i,text_tokens[i:i+size]))
         locs = [ i for i in range(max_loc) if \
                  text_tokens[i:i+size] == entity_tokens ]
-        print(locs)
+        #print(locs)
         start, end = locs[0], locs[0]+len(entity_tokens)        
         return start, end
                 
@@ -37,9 +40,9 @@ class MITIETrainer(object):
             tokens = tokenize(example["text"])
             sample = ner_training_instance(tokens)
             for ent in example["entities"]:
-                _slice = example["text"][ent["start"]:ent["end"]]
+                _slice = example["text"][ent["start"]:ent["end"]+1]
                 val_tokens = tokenize(_slice)
-                start, end = self.start_and_end(tokens,val_tokens)
+                start, end = self.start_and_end(tokens,val_tokens)               
                 sample.add_entity(xrange(start,end),ent["entity"])
             trainer.add(sample)
             
@@ -47,7 +50,7 @@ class MITIETrainer(object):
         return ner
     
     def train_intent_classifier(self,intent_examples):
-        trainer = text_categorizer_trainer(self.fe_file)
+        trainer = sklearn_text_categorizer_trainer(self.fe_file)
         for example in intent_examples:
             tokens = tokenize(example["text"])
             trainer.add_labeled_text(tokens,example["intent"])   

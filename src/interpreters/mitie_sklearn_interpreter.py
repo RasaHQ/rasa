@@ -1,10 +1,10 @@
-from mitie import *
-from parsa import Interpreter
+from mitie import tokenize
+from rasa_nlu import Interpreter
 
-class MITIEInterpreter(Interpreter):
-    def __init__(self,intent_classifier=None,entity_extractor=None,feature_extractor=None,**kwargs):
-        self.extractor = named_entity_extractor(entity_extractor,feature_extractor)
-        self.classifier = text_categorizer(intent_classifier,feature_extractor)
+class MITIESklearnInterpreter(Interpreter):
+    def __init__(self,metadata):
+        self.extractor = named_entity_extractor(metadata["entity_extractor"])#,metadata["feature_extractor"])
+        self.classifier = text_categorizer(metadata["intent_classifier"])#,metadata["feature_extractor"])
         
     def get_entities(self,tokens):
         d = {}
@@ -23,5 +23,6 @@ class MITIEInterpreter(Interpreter):
         intent = self.get_intent(tokens)
         entities = self.get_entities(tokens)
 
-        return {'text':text,'intent':intent,'entities': entities}
+        return {'intent':intent,'entities': entities}
+
 

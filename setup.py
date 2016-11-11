@@ -1,14 +1,23 @@
 from setuptools import setup
 setup(
-  name = 'parsa',
-  packages = ['parsa','parsa.backends','parsa.emulators'],
-  package_dir = {'parsa': 'src'},
-  version = '0.2.2',
+  name = 'rasa_nlu',
+  packages = [
+    'rasa_nlu',
+    'rasa_nlu.classifiers',
+    'rasa_nlu.emulators',
+    'rasa_nlu.extractors',
+    'rasa_nlu.featurizers',
+    'rasa_nlu.interpreters',
+    'rasa_nlu.trainers',
+    'rasa_nlu.tokenizers'
+  ],
+  package_dir = {'rasa_nlu': 'src'},
+  version = '0.3.0',
   install_requires=[
         'pytest'
   ],
-  description = "parsa: a natural language parser for bots",
+  description = "rasa_nlu: a natural language parser for bots",
   author = 'Alan Nichol',
   author_email = 'alan@golastmile.com',
-  url = 'https://github.com/amn41/parsa'
+  url = 'https://github.com/amn41/rasa_nlu'
 )
