@@ -1,4 +1,4 @@
-from parsa.backends.simple_interpreter import HelloGoodbyeInterpreter
+from parsa.interpreters.simple_interpreter import HelloGoodbyeInterpreter
 
 interpreter = HelloGoodbyeInterpreter()
 
