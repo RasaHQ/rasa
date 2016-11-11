@@ -12,7 +12,7 @@ setup(
     'parsa.tokenizers'
   ],
   package_dir = {'parsa': 'src'},
-  version = '0.2.2',
+  version = '0.3.0',
   install_requires=[
         'pytest'
   ],
