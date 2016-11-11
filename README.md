@@ -1,5 +1,5 @@
 # rasa_nlu
-[ ![Codeship Status for amn41/rasa_nlu](https://app.codeship.com/projects/b06f6000-7444-0134-8053-76df66f7aa2d/status?branch=master)](https://app.codeship.com/projects/179147)
+[ ![Codeship Status for amn41/rasa_nlu](https://app.codeship.com/projects/8ab4d1e0-8a27-0134-70ee-5a7c9acf56e8/status?branch=master)](https://app.codeship.com/projects/184386)
 
 **preface: if you're reading this now, you're an alpha tester of this code - your feedback is super valuable! thanks for trying it out**
 
