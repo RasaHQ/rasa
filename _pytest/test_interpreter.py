@@ -1,4 +1,4 @@
-from parsa.interpreters.simple_interpreter import HelloGoodbyeInterpreter
+from rasa_nlu.interpreters.simple_interpreter import HelloGoodbyeInterpreter
 
 interpreter = HelloGoodbyeInterpreter()
 

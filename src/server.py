@@ -1,6 +1,6 @@
 from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
 import urlparse, json, argparse, os
-from parsa.util import update_config
+from rasa_nlu.util import update_config
 
 
 def create_interpreter(config):
@@ -45,7 +45,7 @@ def create_argparser():
     parser.add_argument('-e','--emulate', default=None, choices=['wit','luis'], help='which service to emulate (default: None i.e. use simple built in format)')
     parser.add_argument('-P','--port', default=5000, type=int, help='port on which to run server') 
     parser.add_argument('-c','--config', default=None, help="config file, all the command line options can also be passed via a (json-formatted) config file. NB command line args take precedence")  
-    parser.add_argument('-l','--logfile', default='parsa_log.json', help='file where logs will be saved')
+    parser.add_argument('-l','--logfile', default='rasa_nlu_log.json', help='file where logs will be saved')
          
     return parser
 
@@ -72,7 +72,7 @@ class DataRouter(object):
             responses = [json.loads(r) for r in self.responses]
             f.write(json.dumps(responses,indent=2))
 
-class ParsaRequestHandler(BaseHTTPRequestHandler):
+class RasaRequestHandler(BaseHTTPRequestHandler):
     
     def _set_headers(self):
         self.send_response(200)
@@ -113,7 +113,7 @@ try:
     config = init()
     print(config)
     router = DataRouter(**config)
-    server = HTTPServer(('', config["port"]), ParsaRequestHandler)
+    server = HTTPServer(('', config["port"]), RasaRequestHandler)
     print 'Started httpserver on port ' , config["port"]
     server.serve_forever()
 

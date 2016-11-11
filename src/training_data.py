@@ -10,13 +10,13 @@ class TrainingData(object):
         self.tokenizer = None
 
         if (backend in ['mitie','mitie_sklearn']):
-            from parsa.tokenizers.mitie_tokenizer import MITIETokenizer
+            from rasa_nlu.tokenizers.mitie_tokenizer import MITIETokenizer
             self.tokenizer = MITIETokenizer()
         elif (backend in ['spacy_sklearn']):
-            from parsa.tokenizers.spacy_tokenizer import SpacyTokenizer
+            from rasa_nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
             self.tokenizer = SpacyTokenizer()
         else :
-            from parsa.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+            from rasa_nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
             self.tokenizer = WhitespaceTokenizer()
             warnings.warn("backend not recognised by TrainingData : defaulting to tokenizing by splitting on whitespace")
         
@@ -24,7 +24,7 @@ class TrainingData(object):
             self.load_luis_data(self.filedata)
         elif (self.fformat == 'wit'):
             self.load_wit_data(self.filedata)
-        elif (self.fformat == 'parsa'):
+        elif (self.fformat == 'rasa_nlu'):
             self.load_data(self.filedata)
         else:
             raise ValueError("unknown training file format : {0}".format(self.fformat))
@@ -33,7 +33,7 @@ class TrainingData(object):
     
     def as_json(self,**kwargs):
         return json.dumps( {
-          "parsa_data" : {
+          "rasa_nlu_data" : {
             "intent_examples" : self.intent_examples,
             "entity_examples" : self.entity_examples
           }

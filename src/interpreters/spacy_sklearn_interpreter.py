@@ -1,10 +1,10 @@
-from parsa import Interpreter
+from rasa_nlu import Interpreter
 import pickle as pickle
 import cloudpickle
 import spacy
-from parsa.featurizers.spacy_featurizer import SpacyFeaturizer
-from parsa.extractors.spacy_entity_extractor import SpacyEntityExtractor
-#from parsa.
+from rasa_nlu.featurizers.spacy_featurizer import SpacyFeaturizer
+from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
+#from rasa_nlu.
 
 class SpacySklearnInterpreter(Interpreter):
     def __init__(self,entity_extractor=None,intent_classifier=None,**kwargs):

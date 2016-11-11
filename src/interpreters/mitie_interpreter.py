@@ -1,5 +1,5 @@
 from mitie import *
-from parsa import Interpreter
+from rasa_nlu import Interpreter
 
 class MITIEInterpreter(Interpreter):
     def __init__(self,intent_classifier=None,entity_extractor=None,feature_extractor=None,**kwargs):

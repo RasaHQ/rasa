@@ -1,5 +1,5 @@
 from mitie import tokenize
-from parsa import Interpreter
+from rasa_nlu import Interpreter
 
 class MITIESklearnInterpreter(Interpreter):
     def __init__(self,metadata):

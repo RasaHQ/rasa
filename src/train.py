@@ -1,6 +1,6 @@
 import argparse
 from training_data import TrainingData
-from parsa.util import update_config
+from rasa_nlu.util import update_config
 import json
 
 

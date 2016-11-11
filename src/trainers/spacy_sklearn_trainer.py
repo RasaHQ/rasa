@@ -1,9 +1,9 @@
 import spacy
 import os, datetime, json
 import cloudpickle
-from parsa.featurizers.spacy_featurizer import SpacyFeaturizer
-from parsa.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
-from parsa.extractors.spacy_entity_extractor import SpacyEntityExtractor
+from rasa_nlu.featurizers.spacy_featurizer import SpacyFeaturizer
+from rasa_nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
+from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 
 class SpacySklearnTrainer(object):
     def __init__(self,config):
