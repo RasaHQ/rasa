@@ -126,6 +126,7 @@ When the rasa_nlu server is running, it keeps track of all the predictions it's 
 You can fix any incorrect predictions and add them to your training set to improve your parser.
 
 ## Roadmap 
+- better test coverage
 - entity normalisation: as is, the named entity extractor will happily extract `cheap` & `inexpensive` as entities of the `expense` class, but will not tell you that these are realisations of the same underlying concept. You can easily handle that with a list of aliases in your code, but we want to offer a more elegant & generalisable solution. [Word Forms](https://github.com/gutfeeling/word_forms) looks promising.
 - parsing structured data, e.g. dates. We might use [parsedatetime](https://pypi.python.org/pypi/parsedatetime/) or [parserator](https://github.com/datamade/parserator) or wit.ai's very own [duckling](https://duckling.wit.ai/). 
 - python 3 support
