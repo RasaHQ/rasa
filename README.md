@@ -5,7 +5,7 @@
 
 ## Motivation
 
-rasa_nlu is a tool for intent classification and entity extraction. It's the natural language understanding component of the `rasa` dialogue engine.
+rasa_nlu is a tool for intent classification and entity extraction. 
 You can think of rasa_nlu as a set of high level APIs for building your own language parser using existing NLP and ML libraries.
 The intended audience is mainly people developing bots. 
 It can be used as a drop-in replacement for [wit](https://wit.ai) or [LUIS](https://luis.ai), but works as a local service rather than a web API. 
@@ -23,6 +23,8 @@ These points are laid out in more detail in a [blog post](https://medium.com/las
 
 rasa_nlu is written in Python, but it you can use it from any language through a HTTP API. 
 If your project *is* written in Python you can simply import the relevant classes.
+
+rasa is a set of tools for building more advanced bots, developed by [LASTMILE](https://golastmile.com). This is the natural language understanding module, and the first component to be open sourced. 
  
 ## Getting Started
 ```bash
