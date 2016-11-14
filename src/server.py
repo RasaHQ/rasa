@@ -91,6 +91,9 @@ class RasaRequestHandler(BaseHTTPRequestHandler):
             parsed_path = urlparse.urlparse(self.path)
             data = urlparse.parse_qs(parsed_path.query)
             self.wfile.write(self.get_response(data))
+        else:
+            self._set_headers()
+            self.wfile.write("hello")
         return
 
     def do_POST(self):
