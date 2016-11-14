@@ -1,1 +1,1 @@
-web: python -m rasa_nlu.server
+web: python setup.py install; python -m rasa_nlu.server
