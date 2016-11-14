@@ -1,1 +1,1 @@
-python -m rasa_nlu.server
+web: python -m rasa_nlu.server
