@@ -1,6 +1,7 @@
 # rasa_nlu
 [ ![Codeship Status for amn41/rasa_nlu](https://app.codeship.com/projects/8ab4d1e0-8a27-0134-70ee-5a7c9acf56e8/status?branch=master)](https://app.codeship.com/projects/184386)
-[![Coverage Status](https://coveralls.io/repos/golastmile/rasa_nlu/badge.svg?branch=master)](https://coveralls.io/r/golastmile/rasa_nlu?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/golastmile/rasa_nlu/badge.svg?branch=master)](https://coveralls.io/github/golastmile/rasa_nlu?branch=master)
+
 **preface: if you're reading this now, you're an alpha tester of this code - your feedback is super valuable! thanks for trying it out**
 
 ## Motivation
