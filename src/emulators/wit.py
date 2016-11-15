@@ -1,4 +1,3 @@
-# data = {'intent':intent,'entities':[slot,val]}
 
 class WitEmulator(object):
     def __init__(self):

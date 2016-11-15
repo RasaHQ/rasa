@@ -12,6 +12,6 @@ class MITIEFeaturizer(object):
             tokens = tokenize(sent)
             vec = np.zeros(self.ndim)
             for token in tokens:
-                vec += feature_extractor.get_feature_vector(token)
+                vec += self.feature_extractor.get_feature_vector(token)
             X[idx,:] =  vec / len(tokens)
         return X
