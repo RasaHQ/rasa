@@ -1,4 +1,4 @@
 
 class WhitespaceTokenizer(object):
-    def tokenize(text):
+    def tokenize(self,text):
         return text.split()
