@@ -3,6 +3,6 @@
   "description": "a service for interpreting natural language",
   "image": "heroku/python",
   "repository": "https://github.com/golastmile/rasa_nlu",
-  "keywords": ["python", ],
+  "keywords": ["python" ],
   "addons": []
 }
