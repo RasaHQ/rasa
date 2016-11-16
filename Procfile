@@ -1,1 +1,1 @@
-web: python setup.py install; python -m rasa_nlu.server -p $PORT
+web: python setup.py install; python -m rasa_nlu.server -P $PORT
