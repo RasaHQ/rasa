@@ -36,5 +36,26 @@ def test_wit_request():
     assert norm == {"text":"arb text"}
 
 def test_wit_response():
-    assert True    
+    from rasa_nlu.emulators.wit import WitEmulator
+    em = WitEmulator()
+    data = {"text":"I want italian food","intent":"inform","entities":{"cuisine":"italian"}}
+    norm = em.normalise_response_json(data)
+    assert norm == [{'entities': {'cuisine': {'confidence': None, 'type': 'value', 'value': 'italian'}}, 'confidence': None, 'intent': 'inform', '_text': 'I want italian food'}]
+
+
+
+
+
+def test_dummy_request():
+    from rasa_nlu.emulators import NoEmulator
+    em = NoEmulator()
+    norm = em.normalise_request_json({"text":["arb text"]})
+    assert norm == {"text":"arb text"}
+
+
+def test_dummy_response():
+    from rasa_nlu.emulators import NoEmulator
+    em = NoEmulator()    
+    data = {"intent":"greet","text":"hi","entities":{}}
+    assert em.normalise_response_json(data) == data
 

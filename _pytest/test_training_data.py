@@ -7,5 +7,7 @@ def test_luis_mitie():
     # some more assertions
 
 
-def test_wit():
-    assert True
+def test_wit_spacy():
+    td = TrainingData('data/demo-flights.json','spacy_sklearn')
+    assert td.fformat == 'wit'
+
