@@ -39,10 +39,6 @@ def create_emulator(config):
     else:
         raise ValueError("unknown mode : {0}".format(mode))
 
-#def create_datareader(config)
-#    backend = config.get("backend")
-#    read_data = lambda data: TrainingData(data,backend)
-#    return read_data
     
 def create_argparser():
     parser = argparse.ArgumentParser(description='parse incoming text')
@@ -51,6 +47,7 @@ def create_argparser():
     parser.add_argument('-P','--port', default=5000, type=int, help='port on which to run server') 
     parser.add_argument('-c','--config', default=None, help="config file, all the command line options can also be passed via a (json-formatted) config file. NB command line args take precedence")  
     parser.add_argument('-l','--logfile', default='rasa_nlu_log.json', help='file where logs will be saved')
+    parser.add_argument('-t','--token', default=None, help="auth token. If set, reject requests which don't provide this token as a query parameter")      
          
     return parser
 
@@ -62,6 +59,7 @@ class DataRouter(object):
         self.responses = set()
         self.train_proc = None
         self.model_dir = config["path"]
+        self.token = config.get("token")
 
     def extract(self,data):
         return self.emulator.normalise_request_json(data)    
@@ -91,6 +89,16 @@ class DataRouter(object):
           "available_models" : models
         })
     
+    def auth(self,path):
+        if (self.token is None):
+            return True
+        else:
+            parsed_path = urlparse.urlparse(path)
+            data = urlparse.parse_qs(parsed_path.query)
+            valid = (data.get("token") and data.get("token")[0] == self.token)
+            return valid 
+        
+    
     def start_train_proc(self,data):
         if (self.train_proc is not None):
             try:
@@ -112,6 +120,9 @@ class RasaRequestHandler(BaseHTTPRequestHandler):
         self.send_header('Content-type', 'application/json')
         self.end_headers()
 
+    def auth_err(self):
+        self.send_response(401)
+
     def get_response(self,data_dict):
         data = router.extract(data_dict) 
         result = router.parse(data["text"])
@@ -119,19 +130,23 @@ class RasaRequestHandler(BaseHTTPRequestHandler):
         return json.dumps(response)
 
     def do_GET(self):
-        self._set_headers()
-        if self.path.startswith("/parse"):
-            parsed_path = urlparse.urlparse(self.path)
-            data = urlparse.parse_qs(parsed_path.query)
-            self.wfile.write(self.get_response(data))
-        elif (self.path.startswith("/status")):
-            response = router.get_status()
-            self.wfile.write(response)            
+        if (router.auth(self.path)):
+            self._set_headers()
+            if self.path.startswith("/parse"):
+                parsed_path = urlparse.urlparse(self.path)
+                data = urlparse.parse_qs(parsed_path.query)
+                self.wfile.write(self.get_response(data))
+            elif (self.path.startswith("/status")):
+                response = router.get_status()
+                self.wfile.write(response)            
+            else:
+                self.wfile.write("hello")            
         else:
-            self.wfile.write("hello")            
+            self.auth_err()
         return
 
     def do_POST(self):
+        self.check_token()
         if self.path=="/parse":
             self._set_headers()
             data_string = self.rfile.read(int(self.headers['Content-Length']))            
@@ -155,7 +170,6 @@ def init():
 
 try:
     config = init()
-    print(config)
     router = DataRouter(**config)
     server = HTTPServer(('', config["port"]), RasaRequestHandler)
     print 'Started httpserver on port ' , config["port"]
