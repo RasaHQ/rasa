@@ -46,6 +46,8 @@ class TrainingData(object):
             fformat = 'wit'
         elif (filedata.has_key("luis_schema_version")):
             fformat = 'luis'
+        elif (filedata.has_key("rasa_nlu_data")):
+            fformat = 'rasa_nlu'
         return fformat
         
     def load_wit_data(self,data):
@@ -89,8 +91,8 @@ class TrainingData(object):
                             
                 
             
-        
     def load_data(self,data):
-        raise NotImplementedError()
+        self.intent_examples = data['rasa_nlu_data'].get("intent_examples")
+        self.entity_examples = data['rasa_nlu_data'].get("entity_examples")
         
         
