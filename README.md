@@ -42,6 +42,8 @@ There you go! you just parsed some text. Important command line options for `ras
 
 run `python -m rasa_nlu.server -h` to see more details.
 
+### Deploying to Heroku
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
 
 ## Configuring a backend
 rasa_nlu itself doesn't have any external requirements, but to do something useful with it you need to install & configure a backend. 
