@@ -44,6 +44,7 @@ run `python -m rasa_nlu.server -h` to see more details.
 
 ### Deploying to Heroku
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
+Click the button to deploy this to heroku. For now this only runs the server, you can't yet train models through the HTTP API.
 
 ## Configuring a backend
 rasa_nlu itself doesn't have any external requirements, but to do something useful with it you need to install & configure a backend. 
@@ -131,7 +132,7 @@ When the rasa_nlu server is running, it keeps track of all the predictions it's 
 You can fix any incorrect predictions and add them to your training set to improve your parser.
 
 ## Roadmap 
-- better test coverage
+- training models through the HTTP API
 - entity normalisation: as is, the named entity extractor will happily extract `cheap` & `inexpensive` as entities of the `expense` class, but will not tell you that these are realisations of the same underlying concept. You can easily handle that with a list of aliases in your code, but we want to offer a more elegant & generalisable solution. [Word Forms](https://github.com/gutfeeling/word_forms) looks promising.
 - parsing structured data, e.g. dates. We might use [parsedatetime](https://pypi.python.org/pypi/parsedatetime/) or [parserator](https://github.com/datamade/parserator) or wit.ai's very own [duckling](https://duckling.wit.ai/). 
 - python 3 support
@@ -139,7 +140,7 @@ You can fix any incorrect predictions and add them to your training set to impro
 
 ## Troubleshooting
 - not tested with python 3, so probably won't work
-
+- any other issues, reach out to alan@golastmile.com
 
 ## License
 Copyright 2016 LastMile Technologies Ltd
