@@ -1,11 +1,11 @@
 from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
-import urlparse, json, argparse, os
+import urlparse, json, argparse, os, subprocess, glob
 from rasa_nlu.util import update_config
 
 
 def create_interpreter(config):
 
-    model_dir = config.get("server_model_dir")    
+    model_dir = config.get("server_model_dir")
     backend = None
     if (model_dir is not None):
         metadata = json.loads(open(os.path.join(model_dir,'metadata.json'),'rb').read())
@@ -39,6 +39,11 @@ def create_emulator(config):
     else:
         raise ValueError("unknown mode : {0}".format(mode))
 
+#def create_datareader(config)
+#    backend = config.get("backend")
+#    read_data = lambda data: TrainingData(data,backend)
+#    return read_data
+    
 def create_argparser():
     parser = argparse.ArgumentParser(description='parse incoming text')
     parser.add_argument('-d','--server_model_dir', default=None, help='directory where model files are saved')
@@ -55,6 +60,8 @@ class DataRouter(object):
         self.emulator = create_emulator(config)
         self.logfile=config["logfile"]
         self.responses = set()
+        self.train_proc = None
+        self.model_dir = config["path"]
 
     def extract(self,data):
         return self.emulator.normalise_request_json(data)    
@@ -71,6 +78,32 @@ class DataRouter(object):
         with open(self.logfile,'w') as f:
             responses = [json.loads(r) for r in self.responses]
             f.write(json.dumps(responses,indent=2))
+    
+    def get_status(self):
+        training = False
+        if (self.train_proc is not None):
+            print("found training process, poll : {0}".format(self.train_proc.poll()))
+            if (self.train_proc.poll() is None):                
+                training = True                
+        models = glob.glob(os.path.join(self.model_dir,'model*'))
+        return json.dumps({
+          "training" : training,
+          "available_models" : models
+        })
+    
+    def start_train_proc(self,data):
+        if (self.train_proc is not None):
+            try:
+                self.train_proc.kill()
+            except:
+                pass                 
+        fname = 'tmp_training_data.json'
+        with open(fname,'w') as f:
+            f.write(data)
+        cmd_str = "python -m rasa_nlu.train -c config.json -d {0}".format(fname)
+        outfile = open('train.out','w')
+        self.train_proc = subprocess.Popen(cmd_str,shell=True,stdin=None, stdout=outfile, stderr=None, close_fds=True)
+        
 
 class RasaRequestHandler(BaseHTTPRequestHandler):
     
@@ -86,14 +119,16 @@ class RasaRequestHandler(BaseHTTPRequestHandler):
         return json.dumps(response)
 
     def do_GET(self):
+        self._set_headers()
         if self.path.startswith("/parse"):
-            self._set_headers()
             parsed_path = urlparse.urlparse(self.path)
             data = urlparse.parse_qs(parsed_path.query)
             self.wfile.write(self.get_response(data))
+        elif (self.path.startswith("/status")):
+            response = router.get_status()
+            self.wfile.write(response)            
         else:
-            self._set_headers()
-            self.wfile.write("hello")
+            self.wfile.write("hello")            
         return
 
     def do_POST(self):
@@ -102,6 +137,12 @@ class RasaRequestHandler(BaseHTTPRequestHandler):
             data_string = self.rfile.read(int(self.headers['Content-Length']))            
             data_dict = json.loads(data_string)
             self.wfile.write(self.get_response(data_dict))
+
+        if self.path=="/train":
+            self._set_headers()
+            data_string = self.rfile.read(int(self.headers['Content-Length']))   
+            router.start_train_proc(data_string)
+            self.wfile.write('training started with pid {0}'.format(router.train_proc.pid))
         return
 
 def init():
