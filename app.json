@@ -4,5 +4,30 @@
   "image": "heroku/python",
   "repository": "https://github.com/golastmile/rasa_nlu",
   "keywords": ["python" ],
-  "addons": []
+  "addons": [],
+  "scripts": {
+    "postdeploy": "mkdir data; mkdir logs"
+  },
+  "env" : {
+    "RASA_TOKEN": {
+      "generator": "secret",
+      "description": "token for validating requests"
+    },
+    "RASA_BACKEND": {
+      "description": "which backend to use",
+      "value": "spacy_sklearn"
+    },
+    "RASA_PATH": {
+      "description": "where to save models",
+      "value": "/app/data"
+    },
+    "RASA_LOGDIR": {
+      "description": "where to save logs",
+      "value": "/app/logs"
+    },
+    "RASA_SERVER_MODEL_DIR": {
+      "description": "dir containing model which should be used to process requests",
+      "required": false
+    }
+  }
 }
