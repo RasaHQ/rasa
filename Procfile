@@ -1,1 +1,1 @@
-web: pip install "file:///app#egg=rasa_nlu[mitie,spacy,sklearn]"; python -m rasa_nlu.server -P $PORT
+web: pip install "file:///app#egg=rasa_nlu[spacy,sklearn]"; python -m rasa_nlu.server -P $PORT
