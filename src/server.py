@@ -122,6 +122,7 @@ class RasaRequestHandler(BaseHTTPRequestHandler):
 
     def auth_err(self):
         self.send_response(401)
+        self.wfile.write("unauthorized")
 
     def get_response(self,data_dict):
         data = router.extract(data_dict) 
