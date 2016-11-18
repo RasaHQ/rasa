@@ -19,5 +19,5 @@ setup(
   description = "rasa_nlu: a natural language parser for bots",
   author = 'Alan Nichol',
   author_email = 'alan@golastmile.com',
-  url = 'https://github.com/amn41/rasa_nlu'
+  url="http://rasa.ai"
 )
