@@ -1,1 +1,1 @@
-web: python setup.py install; python -m rasa_nlu.server -P $PORT
+web: WDIR=$(pwd);pip install "file://$WDIR#egg=rasa_nlu[mitie,spacy,sklearn]"; python -m rasa_nlu.server -P $PORT
