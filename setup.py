@@ -16,8 +16,14 @@ setup(
   install_requires=[
         'pytest'
   ],
+  extras_require = {
+    'spacy': ["spacy"],
+    'mitie': ["mitie"],
+    'sklearn': ["scikit-learn"]
+  },
+  dependency_links = ["git+https://github.com/mit-nlp/MITIE.git#egg=mitie"]
   description = "rasa_nlu: a natural language parser for bots",
   author = 'Alan Nichol',
   author_email = 'alan@golastmile.com',
-  url = 'https://github.com/amn41/rasa_nlu'
+  url = 'https://github.com/golastmile/rasa_nlu'
 )
