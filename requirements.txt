@@ -1,0 +1,3 @@
+spacy
+git+https://github.com/mit-nlp/MITIE.git#egg=mitie
+scikit-learn
