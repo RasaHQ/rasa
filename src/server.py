@@ -96,8 +96,7 @@ class DataRouter(object):
             parsed_path = urlparse.urlparse(path)
             data = urlparse.parse_qs(parsed_path.query)
             valid = (data.get("token") and data.get("token")[0] == self.token)
-            return valid 
-        
+            return valid         
     
     def start_train_proc(self,data):
         if (self.train_proc is not None):
