@@ -24,6 +24,5 @@ setup(
   dependency_links = ["git+https://github.com/mit-nlp/MITIE.git#egg=mitie"],
   description = "rasa_nlu: a natural language parser for bots",
   author = 'Alan Nichol',
-  author_email = 'alan@golastmile.com',
-  url = 'https://github.com/golastmile/rasa_nlu'
+  author_email = 'alan@golastmile.com'
 )
