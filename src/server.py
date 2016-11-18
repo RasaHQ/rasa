@@ -100,6 +100,7 @@ class DataRouter(object):
             return valid         
     
     def start_train_proc(self,data):
+        print("starting train")
         if (self.train_proc is not None):
             try:
                 self.train_proc.kill()
