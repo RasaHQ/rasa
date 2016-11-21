@@ -149,11 +149,15 @@ class RasaRequestHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         if (router.auth(self.path)):
+            print("authorized")
             if self.path=="/parse":
+                print("is a parse request")
                 self._set_headers()
+                print("headers set")
                 data_string = self.rfile.read(int(self.headers['Content-Length']))            
                 data_dict = json.loads(data_string)
                 self.wfile.write(self.get_response(data_dict))
+                print("data written")
 
             if self.path=="/train":
                 self._set_headers()
