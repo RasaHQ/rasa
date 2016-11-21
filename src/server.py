@@ -91,9 +91,11 @@ class DataRouter(object):
         })
     
     def auth(self,path):
+        print("checking auth")
         if (self.token is None):
             return True
         else:
+            print("path : {0}".format(path))
             parsed_path = urlparse.urlparse(path)
             data = urlparse.parse_qs(parsed_path.query)
             valid = (data.get("token") and data.get("token")[0] == self.token)
