@@ -1,1 +1,1 @@
-web: python setup.py install; python -m rasa_nlu.server -P $PORT
+web: echo '{}'>config.json; python setup.py install; python -m rasa_nlu.server -P $PORT
