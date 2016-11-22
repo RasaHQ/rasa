@@ -9,7 +9,7 @@ class SpacySklearnTrainer(object):
     def __init__(self,config):
         self.name="spacy_sklearn"
         self.training_data = None
-        self.nlp = spacy.load('en')
+        self.nlp = spacy.load('en', tagger=False, parser=False, entity=False)
 
         self.featurizer = SpacyFeaturizer(self.nlp)
         self.intent_classifier = SklearnIntentClassifier()
