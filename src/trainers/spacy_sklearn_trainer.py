@@ -6,7 +6,7 @@ from rasa_nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifi
 from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 
 class SpacySklearnTrainer(object):
-    def __init__(self,config):
+    def __init__(self):
         self.name="spacy_sklearn"
         self.training_data = None
         self.nlp = spacy.load('en', tagger=False, parser=False, entity=False)
