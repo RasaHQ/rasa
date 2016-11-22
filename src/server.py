@@ -47,6 +47,7 @@ def create_argparser():
     parser.add_argument('-P','--port', default=5000, type=int, help='port on which to run server') 
     parser.add_argument('-p','--path', default=None, help="path where model files will be saved")
     parser.add_argument('-c','--config', default=None, help="config file, all the command line options can also be passed via a (json-formatted) config file. NB command line args take precedence")  
+    parser.add_argument('-m','--mitie_file', default='data/total_word_feature_extractor.dat', help='file with mitie total_word_feature_extractor')    
     parser.add_argument('-l','--logfile', default='rasa_nlu_log.json', help='file where logs will be saved')
     parser.add_argument('-t','--token', default=None, help="auth token. If set, reject requests which don't provide this token as a query parameter")      
          
