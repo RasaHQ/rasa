@@ -1,4 +1,4 @@
 .
 pytest
 boto3
-git+https://github.com/mit-nlp/MITIE.git#egg=mitie
+git+https://github.com/amn41/MITIE.git#egg=mitie
