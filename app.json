@@ -42,11 +42,11 @@
       "required": false
     },
     "BUCKET_NAME": {
-      "description": "key id for S3 access",
+      "description": "name of s3 bucket",
       "required": false
     },
     "AWS_REGION": {
-      "description": "key id for S3 access",
+      "description": "aws region of S3 bucket",
       "required": false
     }
   }
