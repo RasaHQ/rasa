@@ -1,7 +1,7 @@
 import argparse
 from training_data import TrainingData
 from rasa_nlu.util import update_config
-import json
+import json, warnings
 
 
 
@@ -38,7 +38,11 @@ def create_persistor(config):
 def init():
     parser = create_argparser()
     args = parser.parse_args()
-    config = json.loads(open(args.config,'rb').read())
+    config = {}
+    if (os.path.isfile(args.config)):
+        config = json.loads(open(args.config,'rb').read())
+    else:
+        warnings.warn("could not find config file {0}, ignoring".format(args.config))
     config = update_config(config,args,exclude=['config'],required=['path','backend','data'])
     return config
 

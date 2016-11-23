@@ -6,7 +6,7 @@
   "keywords": ["python" ],
   "addons": [],
   "scripts": {
-    "postdeploy": "mkdir logs;python -m spacy.en.download all"
+    "postdeploy": "echo '{}' > config.json;mkdir logs;python -m spacy.en.download all"
   },
   "env" : {
     "RASA_TOKEN": {
@@ -47,7 +47,7 @@
     },
     "AWS_REGION": {
       "description": "aws region of S3 bucket",
-      "required": "eu-west-1"
+      "value": "eu-west-1"
     }
   }
 }
