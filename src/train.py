@@ -1,7 +1,7 @@
 import argparse
 from training_data import TrainingData
 from rasa_nlu.util import update_config
-import json, warnings
+import json, warnings, os
 
 
 
