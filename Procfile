@@ -1,1 +1,1 @@
-web: echo '{}'>config.json; python setup.py install; python -m spacy.en.download; python -m rasa_nlu.server -P $PORT
+web: python -m rasa_nlu.server -P $PORT
