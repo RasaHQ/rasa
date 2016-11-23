@@ -1,7 +1,11 @@
 {
-  "backends" : {
+  "backends": {
     "mitie": {
-      "fe_file":"/path/to/total_word_feature_extractor.dat"
+      "fe_file": "/path/to/total_word_feature_extractor.dat"
+    },
+
+    "spacy_sklearn": {
+
     }
   }
 }
