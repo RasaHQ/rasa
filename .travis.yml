@@ -23,6 +23,5 @@ install:
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION scipy numpy scikit-learn spacy
   - source activate test-environment
   - pip install -r requirements.txt
-
-script:
+  - python -m spacy.en.download all
 script: pytest
