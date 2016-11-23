@@ -7,7 +7,6 @@ import json
 
 def create_argparser():
     parser = argparse.ArgumentParser(description='train a custom language parser')
-    # TODO add args for training only entity extractor or only intent
     parser.add_argument('-b','--backend', default=None, choices=['mitie','sklearn'],help='which backend to use to interpret text (default: None i.e. use built in keyword matcher).')
     parser.add_argument('-p','--path', default=None, help="path where model files will be saved")
     parser.add_argument('-m','--mitie_file', default='data/total_word_feature_extractor.dat', help='file with mitie total_word_feature_extractor')    
@@ -26,6 +25,16 @@ def create_trainer(config):
     else:
         raise NotImplementedError("other backend trainers not implemented yet")
 
+
+def create_persistor(config):
+    persistor = None
+    try:
+        from rasa_nlu.persistor import Persistor
+        persistor = Persistor(config['path'],config['aws_region'],config['bucket_name'])        
+    except:
+        pass
+    return persistor
+
 def init():
     parser = create_argparser()
     args = parser.parse_args()
@@ -35,9 +44,11 @@ def init():
 
 def do_train(config):
     trainer = create_trainer(config)
+    persistor = create_persistor(config)
+    
     training_data = TrainingData(config["data"],config["backend"])
     trainer.train(training_data)
-    trainer.persist(config["path"])
+    trainer.persist(config["path"],persistor)
             
 
 
