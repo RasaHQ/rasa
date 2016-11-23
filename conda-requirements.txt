@@ -1,2 +1,4 @@
 scikit-learn
+scipy
 spacy
+
