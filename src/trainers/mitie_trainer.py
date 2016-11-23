@@ -6,13 +6,13 @@ from rasa_nlu.featurizers.mitie_featurizer import MITIEFeaturizer
 
 
 class MITIETrainer(object):
-    def __init__(self,config):
+    def __init__(self,fe_file):
         self.name="mitie"
         self.training_data = None
         self.intent_classifier = None
         self.entity_extractor = None
         self.training_data = None
-        self.fe_file = config["fe_file"]
+        self.fe_file = fe_file
         self.featurizer = MITIEFeaturizer(self.fe_file)
         del self.featurizer
     
