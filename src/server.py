@@ -7,7 +7,17 @@ def create_interpreter(config):
 
     model_dir = config.get("server_model_dir")
     backend = None
+    
     if (model_dir is not None):
+        # download model from S3 if needed
+        if (not os.path.isdir(model_dir)):
+            try:
+                from rasa_nlu.persistor import Persistor
+                p = Persistor(config['path'],config['aws_region'],config['bucket_name'])
+                p.fetch_and_extract('{0}.tar.gz'.format(os.path.basename(model_dir)))
+            except:
+                raise ValueError("server_model_dir {0} is not a directory, and couldn't be fetched from S3.".format(model_dir))
+                
         metadata = json.loads(open(os.path.join(model_dir,'metadata.json'),'rb').read())
         backend = metadata["backend"]
 
