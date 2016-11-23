@@ -2,6 +2,7 @@ from mitie import *
 import os
 import datetime
 import json
+from rasa_nlu.featurizers.mitie_featurizer import MITIEFeaturizer
 
 
 class MITIETrainer(object):
@@ -12,6 +13,8 @@ class MITIETrainer(object):
         self.entity_extractor = None
         self.training_data = None
         self.fe_file = config["fe_file"]
+        self.featurizer = MITIEFeaturizer(self.fe_file)
+        del self.featurizer
     
     def train(self,data):
         self.training_data = data
