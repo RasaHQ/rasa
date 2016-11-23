@@ -1,7 +1,7 @@
 import spacy
 import os, datetime, json
 import cloudpickle
-import util 
+from rasa_nlu import util 
 from rasa_nlu.featurizers.spacy_featurizer import SpacyFeaturizer
 from rasa_nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
 from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
@@ -28,7 +28,7 @@ class SpacySklearnTrainer(object):
         X = self.featurizer.create_bow_vecs(sents)
         self.intent_classifier.train(X,y)
         
-    def persist(self,path):
+    def persist(self,path,persistor=None):
         tstamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
         dirname = os.path.join(path,"model_"+tstamp)
         os.mkdir(dirname)
@@ -57,8 +57,8 @@ class SpacySklearnTrainer(object):
             json.dump(self.entity_extractor.ner.cfg, f)
             
         self.entity_extractor.ner.model.dump(entity_extractor_file)
-        
-        util.sync_to_s3(dirname,'us-east-1','rasa_nlu')
+        if (persistor is not None):
+            persistor.send_tar_to_s3(dirname)
         
         
         
