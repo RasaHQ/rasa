@@ -1,3 +1,3 @@
 class Interpreter(object):
-    def parse(self):
+    def parse(self, text):
         raise NotImplementedError()
