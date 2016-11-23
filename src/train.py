@@ -18,7 +18,7 @@ def create_trainer(config):
     backend = config["backend"].lower()
     if (backend == 'mitie'):
         from trainers.mitie_trainer import MITIETrainer
-        return MITIETrainer(config['backends']['mitie'])
+        return MITIETrainer(config['mitie_file'])
     if (backend == 'spacy_sklearn'):
         from trainers.spacy_sklearn_trainer import SpacySklearnTrainer
         return SpacySklearnTrainer()    
