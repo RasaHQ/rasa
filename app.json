@@ -43,11 +43,11 @@
     },
     "BUCKET_NAME": {
       "description": "name of s3 bucket",
-      "required": false
+      "value": "rasanlu"
     },
     "AWS_REGION": {
       "description": "aws region of S3 bucket",
-      "required": false
+      "required": "eu-west-1"
     }
   }
 }
