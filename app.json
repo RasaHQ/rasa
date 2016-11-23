@@ -6,7 +6,7 @@
   "keywords": ["python" ],
   "addons": [],
   "scripts": {
-    "postdeploy": "mkdir data; mkdir logs;python -m spacy.en.download all"
+    "postdeploy": "mkdir logs;python -m spacy.en.download all"
   },
   "env" : {
     "RASA_TOKEN": {

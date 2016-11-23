@@ -1,4 +1,4 @@
-scikit-learn
 scipy
-spacy
+scikit-learn
+
 

@@ -1,4 +1,5 @@
 .
 pytest
 boto3
+spacy
 git+https://github.com/amn41/MITIE.git#egg=mitie
