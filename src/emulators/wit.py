@@ -15,7 +15,7 @@ class WitEmulator(object):
             "_text": data["text"],
             "confidence": None,
             "intent": data["intent"],
-            "entities" : {key:{"confidence":None,"type":"value","value":val} for key,val in data["entities"].items()}
+            "entities" : {key:{"confidence":None,"type":"value","value":val} for key,val in data["entities"]}
           }
         ]
 
