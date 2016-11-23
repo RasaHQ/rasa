@@ -26,3 +26,5 @@ config.json
 *log.json
 .coverage
 .coveralls.yml
+.idea/
+*.iml
