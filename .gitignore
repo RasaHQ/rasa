@@ -28,3 +28,4 @@ config.json
 .coveralls.yml
 .idea/
 *.iml
+rasa_nlu
