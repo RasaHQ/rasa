@@ -8,7 +8,7 @@ import json
 def create_argparser():
     parser = argparse.ArgumentParser(description='train a custom language parser')
     # TODO add args for training only entity extractor or only intent
-    parser.add_argument('-b','--backend', default=None, choices=['mitie','sklearn'],help='which backend to use to interpret text (default: None i.e. use built in keyword matcher).')
+    parser.add_argument('-b','--backend', default=None, choices=['mitie','spacy_sklearn'],help='which backend to use to interpret text (default: None i.e. use built in keyword matcher).')
     parser.add_argument('-p','--path', default=None, help="path where model files will be saved")
     parser.add_argument('-d','--data', default=None, help="file containing training data")
     parser.add_argument('-c','--config', required=True, help="config file")    
