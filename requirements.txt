@@ -1,3 +1,4 @@
 .
+pytest
 boto3
 git+https://github.com/mit-nlp/MITIE.git#egg=mitie
