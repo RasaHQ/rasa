@@ -1,5 +1,5 @@
 from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
-import urlparse, json, argparse, os, subprocess, glob
+import urlparse, json, argparse, os, subprocess, glob, warnings
 from rasa_nlu.util import update_config
 
 
@@ -16,7 +16,7 @@ def create_interpreter(config):
                 p = Persistor(config['path'],config['aws_region'],config['bucket_name'])
                 p.fetch_and_extract('{0}.tar.gz'.format(os.path.basename(model_dir)))
             except:
-                raise ValueError("server_model_dir {0} is not a directory, and couldn't be fetched from S3.".format(model_dir))
+                warnings.warn("using default interpreter, couldn't find model dir or fetch it from S3")
                 
         metadata = json.loads(open(os.path.join(model_dir,'metadata.json'),'rb').read())
         backend = metadata["backend"]
