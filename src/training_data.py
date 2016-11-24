@@ -92,7 +92,9 @@ class TrainingData(object):
                 
             
     def load_data(self,data):
-        self.intent_examples = data['rasa_nlu_data'].get("intent_examples")
-        self.entity_examples = data['rasa_nlu_data'].get("entity_examples")
-        
-        
+        common = data['rasa_nlu_data'].get("common_examples", list())
+        intent = data['rasa_nlu_data'].get("intent_examples", list())
+        entity = data['rasa_nlu_data'].get("entity_examples", list())
+
+        self.intent_examples = intent + common
+        self.entity_examples = entity + common
