@@ -15,3 +15,7 @@ def test_wit_spacy():
 def test_rasa_whitespace():
     td = TrainingData('data/demo-rasa.json', '', 'en')
     assert td.fformat == 'rasa_nlu'
+
+def test_api_mitie():
+    td = TrainingData('data/restaurantBot', 'mitie', 'en')
+    assert td.fformat == 'api'
