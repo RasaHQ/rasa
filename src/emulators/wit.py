@@ -18,4 +18,3 @@ class WitEmulator(object):
             "entities" : {key:{"confidence":None,"type":"value","value":val} for key,val in data["entities"].items()}
           }
         ]
-
