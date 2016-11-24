@@ -10,10 +10,10 @@ def create_argparser():
     # TODO add args for training only entity extractor or only intent
     parser.add_argument('-b','--backend', default=None, choices=['mitie','sklearn'],help='which backend to use to interpret text (default: None i.e. use built in keyword matcher).')
     parser.add_argument('-p','--path', default=None, help="path where model files will be saved")
-    parser.add_argument('-d','--data', default=None, help="file containing training data")
-    parser.add_argument('-c','--config', required=True, help="config file")    
+    parser.add_argument('-d','--data', default=None, help="file or folder containing training data")
+    parser.add_argument('-c','--config', required=True, help="config file")
     return parser
-    
+
 def create_trainer(config):
     backend = config["backend"].lower()
     if (backend == 'mitie'):
@@ -21,7 +21,7 @@ def create_trainer(config):
         return MITIETrainer(config['backends']['mitie'])
     if (backend == 'spacy_sklearn'):
         from trainers.spacy_sklearn_trainer import SpacySklearnTrainer
-        return SpacySklearnTrainer(config['backends']['spacy_sklearn'])    
+        return SpacySklearnTrainer(config['backends']['spacy_sklearn'])
     else:
         raise NotImplementedError("other backend trainers not implemented yet")
 
@@ -37,10 +37,7 @@ def do_train(config):
     training_data = TrainingData(config["data"],config["backend"])
     trainer.train(training_data)
     trainer.persist(config["path"])
-            
-
 
 config = init()
 do_train(config)
 print("done")
-
