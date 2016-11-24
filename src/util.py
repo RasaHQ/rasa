@@ -1,3 +1,4 @@
+import os
 
 def update_config(config,args,exclude=[],required=[]):
     "override config params with cmd line args, raise err if undefined"
