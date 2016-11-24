@@ -9,7 +9,8 @@ def test_spacy():
     doc=nlp(sentence)
     ftr = SpacyFeaturizer(nlp)
     vecs = ftr.create_bow_vecs([sentence])
-    assert np.allclose(doc.vector[:5],np.array([-0.19649599,  0.32493639, -0.37408298, -0.10622784,  0.062756]),atol=1e-5)
+    _ref = np.array([0.02188552,  0.00557156, -0.01211646, -0.00866477,  0.02179166])
+    assert np.allclose(doc.vector[:5],_ref,atol=1e-5)
     assert np.allclose(vecs[0], doc.vector,atol=1e-5)
 
 
