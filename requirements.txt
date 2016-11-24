@@ -1,3 +1,7 @@
 git+https://github.com/mit-nlp/MITIE.git#egg=mitie
 spacy
 scikit-learn
+pathlib
+cloudpickle
+
+

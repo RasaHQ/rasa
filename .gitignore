@@ -26,3 +26,7 @@ config.json
 *log.json
 .coverage
 .coveralls.yml
+.idea/
+*.iml
+rasa_nlu
+out/

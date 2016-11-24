@@ -1,4 +1,7 @@
-class HelloGoodbyeInterpreter(object):
+from rasa_nlu import Interpreter
+
+
+class HelloGoodbyeInterpreter(Interpreter):
     def __init__(self):
         self.name="hello_goodbye"
         self.his = ["hello","hi","hey"]

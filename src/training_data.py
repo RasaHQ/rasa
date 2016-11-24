@@ -1,20 +1,22 @@
 import json, warnings, re
 
+
 class TrainingData(object):
-    def __init__(self,filename,backend):
+    def __init__(self, filename, backend, language_name):
         self.intent_examples = []
         self.entity_examples = []
         self.filename = filename
         self.filedata = json.loads(open(filename,'rb').read())
         self.fformat = self.guess_format(self.filedata)
         self.tokenizer = None
+        self.language_name = language_name
 
         if (backend in ['mitie','mitie_sklearn']):
             from rasa_nlu.tokenizers.mitie_tokenizer import MITIETokenizer
             self.tokenizer = MITIETokenizer()
         elif (backend in ['spacy_sklearn']):
             from rasa_nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
-            self.tokenizer = SpacyTokenizer()
+            self.tokenizer = SpacyTokenizer(language_name)
         else :
             from rasa_nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
             self.tokenizer = WhitespaceTokenizer()
