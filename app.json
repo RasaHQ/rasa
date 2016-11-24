@@ -8,6 +8,11 @@
   "scripts": {
     "postdeploy": "echo '{}' > config.json;mkdir logs;python -m spacy.en.download all"
   },
+  "buildpacks": [
+    {
+      "url": "https://github.com/kennethreitz/conda-buildpack.git"
+    }
+  ]
   "env" : {
     "RASA_TOKEN": {
       "generator": "secret",
