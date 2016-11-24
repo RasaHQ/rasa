@@ -16,8 +16,10 @@ def update_config(config,args,exclude=[],required=[]):
     
 def recursively_find_files(resource_name):
     """resource_name can be a folder or a file. In both cases we will return a list of files"""
-    resources = []
-    if os.path.isdir(resource_name):
+    if os.path.isfile(resource_name):
+        return [resource_name]        
+    elif os.path.isdir(resource_name):
+        resources = []
         # walk the fs tree and return a list of files
         nodes_to_visit = [resource_name]
         while(len(nodes_to_visit) > 0):
@@ -31,7 +33,6 @@ def recursively_find_files(resource_name):
             else:
                 resources += [current_node]
             nodes_to_visit = nodes_to_visit[1:]
+        return resources
     else:
-        resources += [current_node]
-
-    return resources    
+        raise ValueError("resource name must be a dir or a file")

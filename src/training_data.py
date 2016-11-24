@@ -119,7 +119,8 @@ class TrainingData(object):
                 self.intent_examples.append({"text":text,"intent":intent})
                 self.entity_examples.append({"text":text,"intent":intent,"entities":entities})
 
-    def load_data(self,data):
+    def load_data(self,filename):
+        data = json.loads(open(filename,'rb').read())
         common = data['rasa_nlu_data'].get("common_examples", list())
         intent = data['rasa_nlu_data'].get("intent_examples", list())
         entity = data['rasa_nlu_data'].get("entity_examples", list())
