@@ -1,6 +1,6 @@
 -e .
 git+https://github.com/mit-nlp/MITIE.git#egg=mitie
-spacy
+spacy==1.2.0
 scikit-learn
 pathlib
 cloudpickle

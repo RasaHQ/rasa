@@ -1,20 +1,25 @@
+import pytest
 
 
 def test_whitespace():
     from rasa_nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-    tk =  WhitespaceTokenizer()
+    tk = WhitespaceTokenizer()
     str = "Hi. My name is rasa"
     assert tk.tokenize(str) == ['Hi.', 'My', 'name', 'is', 'rasa']
 
+
 def test_spacy():
-    from rasa_nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
-    tk = SpacyTokenizer('en')
-    str = u"Hi. My name is rasa"
-    assert tk.tokenize(str) == [u'Hi',u'.', u'My', u'name', u'is', u'rasa']
+    def tokenize_sentence(sentence, expected_result, language):
+        from rasa_nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
+        tk = SpacyTokenizer(language)
+        assert tk.tokenize(sentence) == expected_result
+
+    tokenize_sentence(u"Hi. My name is rasa", [u'Hi', u'.', u'My', u'name', u'is', u'rasa'], 'en')
+    tokenize_sentence(u"Hallo. Mein name ist rasa", [u'Hallo', u'.', u'Mein', u'name', u'ist', u'rasa'], 'de')
+
 
 def test_mitie():
     from rasa_nlu.tokenizers.mitie_tokenizer import MITIETokenizer
-    tk =  MITIETokenizer()
+    tk = MITIETokenizer()
     str = u"Hi. My name is rasa"
     assert tk.tokenize(str) == ['Hi', 'My', 'name', 'is', 'rasa']
-

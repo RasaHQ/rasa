@@ -6,16 +6,20 @@ import cloudpickle
 from rasa_nlu.featurizers.spacy_featurizer import SpacyFeaturizer
 from rasa_nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
 from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
+from rasa_nlu.trainers.trainer import Trainer
 from training_utils import write_training_metadata
 
 
-class SpacySklearnTrainer(object):
+class SpacySklearnTrainer(Trainer):
+    SUPPORTED_LANGUAGES = {"en", "de"}
+
     def __init__(self, config, language_name):
+        self.ensure_language_support(language_name)
+
         self.name = "spacy_sklearn"
         self.language_name = language_name
         self.training_data = None
         self.nlp = spacy.load(self.language_name)
-
         self.featurizer = SpacyFeaturizer(self.nlp)
         self.intent_classifier = SklearnIntentClassifier()
         self.entity_extractor = SpacyEntityExtractor()
