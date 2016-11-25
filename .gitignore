@@ -2,6 +2,7 @@
 *pyc
 dist/
 data/
+docs/_build
 server/
 *.log
 tokens.dat
