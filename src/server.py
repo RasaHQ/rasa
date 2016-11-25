@@ -111,7 +111,7 @@ class RasaRequestHandler(BaseHTTPRequestHandler):
 def init():
     parser = create_argparser()
     args = parser.parse_args()
-    config = {} if args.config is None else json.loads(open(args.config,'rb').read())
+    config = {'logfile': os.path.join(os.getcwd(), 'rasa_nlu_logs.json')} if args.config is None else json.loads(open(args.config,'rb').read())
     config = update_config(config,args,exclude=['config'])
     return config
 
