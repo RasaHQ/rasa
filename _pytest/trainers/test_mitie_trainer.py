@@ -1,6 +1,6 @@
 import pytest
 
-from trainers.mitie_trainer import MITIETrainer
+from rasa_nlu.trainers.mitie_trainer import MITIETrainer
 from train import load_configuration
 
 class TestMitieTrainer:
