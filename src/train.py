@@ -15,6 +15,7 @@ def create_argparser():
     parser.add_argument('-l', '--language', default='en', choices=['de', 'en'], help="model and data language")
     return parser
 
+
 def create_trainer(config):
     backend = config['backend'].lower()
     if (backend == 'mitie'):
@@ -26,6 +27,7 @@ def create_trainer(config):
     else:
         raise NotImplementedError("other backend trainers not implemented yet")
 
+
 def init():
     parser = create_argparser()
     args = parser.parse_args()
@@ -33,12 +35,15 @@ def init():
     config = update_config(config,args,exclude=['config'],required=['path','backend','data'])
     return config
 
+
 def do_train(config):
     trainer = create_trainer(config)
     training_data = TrainingData(config["data"], config["backend"], config["language"])
     trainer.train(training_data)
     trainer.persist(config["path"])
+            
 
-config = init()
-do_train(config)
-print("done")
+if __name__ == '__main__':
+    config = init()
+    do_train(config)
+    print("done")
