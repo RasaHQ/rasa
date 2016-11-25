@@ -8,7 +8,7 @@ def test_whitespace():
 
 def test_spacy():
     from rasa_nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
-    tk =  SpacyTokenizer()
+    tk = SpacyTokenizer('en')
     str = u"Hi. My name is rasa"
     assert tk.tokenize(str) == [u'Hi',u'.', u'My', u'name', u'is', u'rasa']
 

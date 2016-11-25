@@ -4,12 +4,15 @@ import cloudpickle
 from rasa_nlu.featurizers.spacy_featurizer import SpacyFeaturizer
 from rasa_nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
 from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
+from training_utils import write_training_metadata
+
 
 class SpacySklearnTrainer(object):
-    def __init__(self,config):
+    def __init__(self, config, language_name):
         self.name="spacy_sklearn"
+        self.language_name = language_name
         self.training_data = None
-        self.nlp = spacy.load('en')
+        self.nlp = spacy.load(self.language_name)
 
         self.featurizer = SpacyFeaturizer(self.nlp)
         self.intent_classifier = SklearnIntentClassifier()
@@ -37,17 +40,10 @@ class SpacySklearnTrainer(object):
         os.mkdir(ner_dir)
         entity_extractor_config_file = os.path.join(ner_dir,"config.json")
         entity_extractor_file = os.path.join(ner_dir,"model")
-        
-        metadata = {
-          "trained_at":tstamp,
-          "training_data":data_file,
-          "backend":self.name,
-          "intent_classifier":classifier_file,
-          "entity_extractor": ner_dir
-        }
-        
-        with open(os.path.join(dirname,'metadata.json'),'w') as f:
-            f.write(json.dumps(metadata,indent=4))
+
+        write_training_metadata(dirname, tstamp, data_file, self.name, self.language_name,
+                                classifier_file, ner_dir)
+
         with open(data_file,'w') as f:
             f.write(self.training_data.as_json(indent=2))
         with open(classifier_file,'w') as f:
@@ -56,6 +52,3 @@ class SpacySklearnTrainer(object):
             json.dump(self.entity_extractor.ner.cfg, f)
             
         self.entity_extractor.ner.model.dump(entity_extractor_file)
-        
-        
-        

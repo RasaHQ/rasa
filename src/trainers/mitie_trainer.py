@@ -2,7 +2,7 @@ from mitie import *
 import os
 import datetime
 import json
-
+from training_utils import write_training_metadata
 
 class MITIETrainer(object):
     def __init__(self,config):
@@ -55,7 +55,6 @@ class MITIETrainer(object):
         intent_classifier = trainer.train()
         return intent_classifier
 
-        
     def persist(self,path):
         tstamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
         dirname = os.path.join(path,"model_"+tstamp)
@@ -63,25 +62,12 @@ class MITIETrainer(object):
         data_file = os.path.join(dirname,"training_data.json")
         classifier_file = os.path.join(dirname,"intent_classifier.dat")
         entity_extractor_file = os.path.join(dirname,"entity_extractor.dat")
-        
-        metadata = {
-          "trained_at":tstamp,
-          "training_data":data_file,
-          "backend":self.name,
-          "intent_classifier":classifier_file,
-          "entity_extractor": entity_extractor_file,
-          "feature_extractor": self.fe_file
-        }
-        
-        with open(os.path.join(dirname,'metadata.json'),'w') as f:
-            f.write(json.dumps(metadata,indent=4))
+
+        write_training_metadata(dirname, tstamp, data_file, self.name, 'en',
+                                classifier_file, entity_extractor_file, self.fe_file)
+
         with open(data_file,'w') as f:
             f.write(self.training_data.as_json(indent=2))
 
         self.intent_classifier.save_to_disk(classifier_file,pure_model=True)
         self.entity_extractor.save_to_disk(entity_extractor_file,pure_model=True)
-        
-        
-        
-        
-        
