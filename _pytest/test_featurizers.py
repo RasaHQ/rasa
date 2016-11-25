@@ -19,7 +19,7 @@ def test_spacy():
 
     test_sentence(u"hey wie geht es dir",
                   'de',
-                  _ref=np.array([0.02188552, 0.00557156, -0.01211646, -0.00866477, 0.02179166]))
+                  _ref=np.array([-0.0518572, -0.13645099,  0.34630662,  0.29546982, -0.0153512]))
 
 
 def test_mitie():
