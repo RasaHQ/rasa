@@ -24,5 +24,5 @@ install:
   - source activate test-environment
   - pip install -r requirements.txt
   - python setup.py install
-  - python -m spacy.en.download all
+  - python -m spacy.en.download all > jnk
 script: py.test
