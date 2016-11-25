@@ -15,7 +15,7 @@ def test_spacy():
 
     test_sentence(u"hey how are you today",
                   'en',
-                  _ref=np.array([-0.19649599,  0.32493639, -0.37408298, -0.10622784,  0.062756])
+                  _ref=np.array([-0.19649599,  0.32493639, -0.37408298, -0.10622784,  0.062756]))
 
     test_sentence(u"hey wie geht es dir",
                   'de',
