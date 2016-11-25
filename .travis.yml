@@ -25,4 +25,5 @@ install:
   - pip install -r requirements.txt
   - python setup.py install
   - python -m spacy.en.download all > jnk
+  - python -m spacy.de.download all > jnk
 script: py.test
