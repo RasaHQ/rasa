@@ -48,7 +48,8 @@ def create_argparser():
     parser.add_argument('-e','--emulate', default=None, choices=['wit','luis', 'api'], help='which service to emulate (default: None i.e. use simple built in format)')
     parser.add_argument('-P','--port', default=5000, type=int, help='port on which to run server')
     parser.add_argument('-c','--config', default=None, help="config file, all the command line options can also be passed via a (json-formatted) config file. NB command line args take precedence")
-    parser.add_argument('-l','--logfile', default='rasa_nlu_log.json', help='file where logs will be saved')
+    parser.add_argument('-w','--write', default='rasa_nlu_log.json', help='file where logs will be saved')
+    parser.add_argument('-l', '--language', default='en', choices=['de', 'en'], help="model and data language")
 
     return parser
 
