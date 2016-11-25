@@ -1,5 +1,5 @@
 .
 pytest
 boto3
-spacy
+spacy==0.101.0
 git+https://github.com/amn41/MITIE.git#egg=mitie
