@@ -2,7 +2,7 @@ from mitie import *
 import os
 import datetime
 
-from trainers.trainer import Trainer
+from rasa_nlu.trainers.trainer import Trainer
 from training_utils import write_training_metadata
 
 

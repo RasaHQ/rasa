@@ -6,7 +6,7 @@ import cloudpickle
 from rasa_nlu.featurizers.spacy_featurizer import SpacyFeaturizer
 from rasa_nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
 from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
-from trainers.trainer import Trainer
+from rasa_nlu.trainers.trainer import Trainer
 from training_utils import write_training_metadata
 
 
