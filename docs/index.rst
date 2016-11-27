@@ -57,6 +57,7 @@ Read Next:
    config
    troubleshoot
    roadmap
+   contribute
    license
 
 
