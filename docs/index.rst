@@ -46,7 +46,7 @@ There you go! you just parsed some text. Important command line options for ``ra
 run ``python -m rasa_nlu.server -h`` to see more details.
 
 
-Contents:
+Read Next:
 
 .. toctree::
    :maxdepth: 1
@@ -54,6 +54,7 @@ Contents:
    migrating
    http   
    closeloop
+   config
    troubleshoot
    roadmap
    license
