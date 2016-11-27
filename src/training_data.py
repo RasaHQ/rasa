@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import json, warnings, re, os, codecs
 from rasa_nlu import util
 
@@ -86,11 +88,12 @@ class TrainingData(object):
             for e in s.get("entities") or []:
                 i, ii = e["startPos"], e["endPos"]+1
                 #print(u"full text:  {0}".format(text))
-                val = u"\s*".join([s for s in tokens[i:ii+1]])
-                #print(u"entity val : {0}".format(val))
-                expr = re.compile(val)
+                _regex = u"\s*".join([s for s in tokens[i:ii]])
+                expr = re.compile(_regex)
                 m = expr.search(text)
                 start, end = m.start(), m.end()
+                val = text[start:end]
+                #print(u"entity val : {0}".format(val))
                 #print(u"match : {0}".format(m.group()))
                 #print(text[start:end])
                 entities.append({"entity":e["entity"],"value":val,"start":start,"end":end})
@@ -111,9 +114,9 @@ class TrainingData(object):
                 # add entities to each token, if available
                 entities = []
                 for e in filter(lambda chunk: "alias" in chunk or "meta" in chunk, s.get("data")):
-                    val = u"\s*" + e["text"]
                     start = text.find(e["text"])
                     end = start + len(e["text"])
+                    val = text[start:end]
                     entities.append({"entity":e["alias"] if "alias" in e else e["meta"],"value":val,"start":start,"end":end})
 
                 self.intent_examples.append({"text":text,"intent":intent})
