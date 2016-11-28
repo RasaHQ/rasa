@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 
-import json, warnings, re, os, codecs
+import codecs
+import json
+import re
+import warnings
+
 from rasa_nlu import util
 
 
