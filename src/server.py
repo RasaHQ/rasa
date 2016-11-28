@@ -1,5 +1,5 @@
 from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
-import urlparse, json, argparse, os
+import urlparse, json, argparse, os, subprocess, glob, warnings
 from rasa_nlu.util import update_config
 
 
@@ -7,7 +7,17 @@ def create_interpreter(config):
 
     model_dir = config.get("server_model_dir")
     backend = None
+    
     if (model_dir is not None):
+        # download model from S3 if needed
+        if (not os.path.isdir(model_dir)):
+            try:
+                from rasa_nlu.persistor import Persistor
+                p = Persistor(config['path'],config['aws_region'],config['bucket_name'])
+                p.fetch_and_extract('{0}.tar.gz'.format(os.path.basename(model_dir)))
+            except:
+                warnings.warn("using default interpreter, couldn't find model dir or fetch it from S3")
+                
         metadata = json.loads(open(os.path.join(model_dir,'metadata.json'),'rb').read())
         backend = metadata["backend"]
 
@@ -42,15 +52,18 @@ def create_emulator(config):
     else:
         raise ValueError("unknown mode : {0}".format(mode))
 
+    
 def create_argparser():
     parser = argparse.ArgumentParser(description='parse incoming text')
     parser.add_argument('-d','--server_model_dir', default=None, help='directory where model files are saved')
     parser.add_argument('-e','--emulate', default=None, choices=['wit','luis', 'api'], help='which service to emulate (default: None i.e. use simple built in format)')
+    parser.add_argument('-m','--mitie_file', default='data/total_word_feature_extractor.dat', help='file with mitie total_word_feature_extractor')    
     parser.add_argument('-P','--port', default=5000, type=int, help='port on which to run server')
+    parser.add_argument('-p','--path', default=None, help="path where model files will be saved")
     parser.add_argument('-c','--config', default=None, help="config file, all the command line options can also be passed via a (json-formatted) config file. NB command line args take precedence")
     parser.add_argument('-w','--write', default='rasa_nlu_log.json', help='file where logs will be saved')
-    parser.add_argument('-l', '--language', default='en', choices=['de', 'en'], help="model and data language")
-
+    parser.add_argument('-l', '--language', default='en', choices=['de', 'en'], help="model and data language"
+    parser.add_argument('-t','--token', default=None, help="auth token. If set, reject requests which don't provide this token as a query parameter") 
     return parser
 
 class DataRouter(object):
@@ -59,6 +72,9 @@ class DataRouter(object):
         self.emulator = create_emulator(config)
         self.logfile=config["logfile"]
         self.responses = set()
+        self.train_proc = None
+        self.model_dir = config["path"]
+        self.token = config.get("token")
 
     def extract(self,data):
         return self.emulator.normalise_request_json(data)
@@ -75,6 +91,44 @@ class DataRouter(object):
         with open(self.logfile,'w') as f:
             responses = [json.loads(r) for r in self.responses]
             f.write(json.dumps(responses,indent=2))
+    
+    def get_status(self):
+        training = False
+        if (self.train_proc is not None):
+            print("found training process, poll : {0}".format(self.train_proc.poll()))
+            if (self.train_proc.poll() is None):                
+                training = True                
+        models = glob.glob(os.path.join(self.model_dir,'model*'))
+        return json.dumps({
+          "training" : training,
+          "available_models" : models
+        })
+    
+    def auth(self,path):
+        print("checking auth")
+        if (self.token is None):
+            return True
+        else:
+            print("path : {0}".format(path))
+            parsed_path = urlparse.urlparse(path)
+            data = urlparse.parse_qs(parsed_path.query)
+            valid = (data.get("token") and data.get("token")[0] == self.token)
+            return valid         
+    
+    def start_train_proc(self,data):
+        print("starting train")
+        if (self.train_proc is not None):
+            try:
+                self.train_proc.kill()
+            except:
+                pass                 
+        fname = 'tmp_training_data.json'
+        with open(fname,'w') as f:
+            f.write(data)
+        cmd_str = "python -m rasa_nlu.train -c config.json -d {0}".format(fname)
+        outfile = open('train.out','w')
+        self.train_proc = subprocess.Popen(cmd_str,shell=True,stdin=None, stdout=outfile, stderr=None, close_fds=True)
+        
 
 class RasaRequestHandler(BaseHTTPRequestHandler):
 
@@ -83,6 +137,10 @@ class RasaRequestHandler(BaseHTTPRequestHandler):
         self.send_header('Content-type', 'application/json')
         self.end_headers()
 
+    def auth_err(self):
+        self.send_response(401)
+        self.wfile.write("unauthorized")
+
     def get_response(self,data_dict):
         data = router.extract(data_dict)
         result = router.parse(data["text"])
@@ -90,22 +148,48 @@ class RasaRequestHandler(BaseHTTPRequestHandler):
         return json.dumps(response)
 
     def do_GET(self):
-        if self.path.startswith("/parse"):
+        if (router.auth(self.path)):
             self._set_headers()
-            parsed_path = urlparse.urlparse(self.path)
-            data = urlparse.parse_qs(parsed_path.query)
-            self.wfile.write(self.get_response(data))
+            if self.path.startswith("/parse"):
+                parsed_path = urlparse.urlparse(self.path)
+                data = urlparse.parse_qs(parsed_path.query)
+                self.wfile.write(self.get_response(data))
+            elif (self.path.startswith("/status")):
+                response = router.get_status()
+                self.wfile.write(response)            
+            else:
+                self.wfile.write("hello")            
         else:
-            self._set_headers()
-            self.wfile.write("hello")
+            self.auth_err()
         return
 
     def do_POST(self):
+<<<<<<< HEAD
         if self.path=="/parse":
             self._set_headers()
             data_string = self.rfile.read(int(self.headers['Content-Length']))
             data_dict = json.loads(data_string)
             self.wfile.write(self.get_response(data_dict))
+=======
+        if (router.auth(self.path)):
+            print("authorized")
+            if self.path.startswith("/parse"):
+                print("is a parse request")
+                self._set_headers()
+                print("headers set")
+                data_string = self.rfile.read(int(self.headers['Content-Length']))            
+                data_dict = json.loads(data_string)
+                self.wfile.write(self.get_response(data_dict))
+                print("data written")
+
+            if self.path.startswith("/train"):
+                self._set_headers()
+                data_string = self.rfile.read(int(self.headers['Content-Length']))   
+                router.start_train_proc(data_string)
+                self.wfile.write('training started with pid {0}'.format(router.train_proc.pid))
+        else:
+            self.auth_err()
+>>>>>>> train_http
         return
 
 def init():
@@ -118,7 +202,6 @@ def init():
 
 try:
     config = init()
-    print(config)
     router = DataRouter(**config)
     server = HTTPServer(('', config["port"]), RasaRequestHandler)
     print 'Started httpserver on port ' , config["port"]
