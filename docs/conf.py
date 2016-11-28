@@ -47,8 +47,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'rasa_nlu'
-copyright = u'2016, Alan Nichol'
+project = u'rasa NLU'
+copyright = u'2016, Lastmile Technologies Ltd'
 author = u'Alan Nichol'
 
 # The version info for the project you're documenting, acts as replacement for

@@ -1,3 +1,4 @@
+.. _section_migration:
 
 Migrating an existing app from {wit,LUIS,api}.ai
 ====================================

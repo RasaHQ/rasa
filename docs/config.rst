@@ -1,3 +1,4 @@
+.. _section_configuration:
 
 Configuration
 ==================================
