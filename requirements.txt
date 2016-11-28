@@ -4,5 +4,4 @@ spacy==1.2.0
 scikit-learn
 pathlib
 cloudpickle
-
-
+pytest-pep8
