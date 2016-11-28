@@ -12,7 +12,7 @@
     {
       "url": "https://github.com/kennethreitz/conda-buildpack.git"
     }
-  ]
+  ],
   "env" : {
     "RASA_TOKEN": {
       "generator": "secret",
