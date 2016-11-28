@@ -7,4 +7,4 @@ class SpacyTokenizer(object):
                               entity=False, matcher=False)
 
     def tokenize(self, text):
-        return [t.text.encode('utf-8') for t in self.nlp(text)]
+        return [t.text for t in self.nlp(text)]

@@ -1,4 +1,6 @@
-import json, warnings, re, os
+# -*- coding: utf-8 -*-
+
+import json, warnings, re, os, codecs
 from rasa_nlu import util
 
 class TrainingData(object):
@@ -45,7 +47,7 @@ class TrainingData(object):
 
     def guess_format(self,files):
         for filename in files:
-            filedata = json.loads(open(filename,'rb').read())
+            filedata = json.loads(codecs.open(filename, encoding='utf-8').read())
             if (filedata.has_key("data") and type(filedata.get("data")) is list ):
                 return 'wit'
             elif (filedata.has_key("luis_schema_version")):
@@ -58,7 +60,7 @@ class TrainingData(object):
         return 'unk'
 
     def load_wit_data(self,filename):
-        data = json.loads(open(filename,'rb').read())
+        data = json.loads(codecs.open(filename, encoding='utf-8').read())
         for s in data["data"]:
             entities = s.get("entities")
             if (entities is None): continue
@@ -77,20 +79,21 @@ class TrainingData(object):
         warnings.warn(
         """LUIS data may not always be correctly imported because entity locations are specified by tokens.
         If you use a tokenizer which behaves differently from LUIS's your entities might not be correct""")
-        data = json.loads(open(filename,'rb').read())
+        data = json.loads(codecs.open(filename, encoding='utf-8').read())
         for s in data["utterances"]:
-            text = unicode(s.get("text"))
-            tokens = [t.decode('utf-8') for t in self.tokenizer.tokenize(text)]
+            text = s.get("text")
+            tokens = [t for t in self.tokenizer.tokenize(text)]
             intent = s.get("intent")
             entities = []
             for e in s.get("entities") or []:
                 i, ii = e["startPos"], e["endPos"]+1
                 #print(u"full text:  {0}".format(text))
-                val = u"\s*".join([unicode(s) for s in tokens[i:ii+1]])
-                #print(u"entity val : {0}".format(val))
-                expr = re.compile(val)
+                _regex = u"\s*".join([s for s in tokens[i:ii]])
+                expr = re.compile(_regex)
                 m = expr.search(text)
                 start, end = m.start(), m.end()
+                val = text[start:end]
+                #print(u"entity val : {0}".format(val))
                 #print(u"match : {0}".format(m.group()))
                 #print(text[start:end])
                 entities.append({"entity":e["entity"],"value":val,"start":start,"end":end})
@@ -100,20 +103,20 @@ class TrainingData(object):
 
     def load_api_data(self, files):
         for filename in files:
-            data = json.loads(open(filename,'rb').read())
+            data = json.loads(codecs.open(filename, encoding='utf-8').read())
             # get only intents, skip the rest. The property name is the target class
             if "userSays" not in data:
                 continue
 
             intent = data.get("name")
             for s in data["userSays"]:
-                text = unicode("".join(map(lambda chunk: chunk["text"], s.get("data"))))
+                text = "".join(map(lambda chunk: chunk["text"], s.get("data")))
                 # add entities to each token, if available
                 entities = []
                 for e in filter(lambda chunk: "alias" in chunk or "meta" in chunk, s.get("data")):
-                    val = u"\s*" + unicode(e["text"])
-                    start = text.find(unicode(e["text"]))
+                    start = text.find(e["text"])
                     end = start + len(e["text"])
+                    val = text[start:end]
                     entities.append({"entity":e["alias"] if "alias" in e else e["meta"],"value":val,"start":start,"end":end})
 
                 self.intent_examples.append({"text":text,"intent":intent})

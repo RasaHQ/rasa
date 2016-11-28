@@ -12,7 +12,7 @@ class ApiEmulator(object):
 
     def normalise_response_json(self,data):
         return {
-            "id": str(uuid.uuid1()),
+            "id": unicode(uuid.uuid1()),
             "timestamp": datetime.now().isoformat("T"),
             "result": {
                 "source": "agent",
@@ -22,7 +22,7 @@ class ApiEmulator(object):
                 "parameters": {key:val for key,val in data["entities"].items()},
                 "contexts": [],
                 "metadata": {
-                  "intentId": str(uuid.uuid1()),
+                  "intentId": unicode(uuid.uuid1()),
                   "webhookUsed": "false",
                   "intentName": data["intent"]
                 },
@@ -33,5 +33,5 @@ class ApiEmulator(object):
                 "code": 200,
                 "errorType": "success"
             },
-            "sessionId": str(uuid.uuid1())
+            "sessionId": unicode(uuid.uuid1())
         }
