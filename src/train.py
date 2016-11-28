@@ -32,10 +32,10 @@ def create_trainer(config):
 
 def load_configuration(file_name):
     config = {}
-    if (os.path.isfile(args.config)):
+    if (os.path.isfile(file_name)):
         config = json.loads(open(file_name, 'rb').read())
     else:
-        warnings.warn("could not find config file {0}, ignoring".format(args.config))
+        warnings.warn("could not find config file {0}, ignoring".format(file_name))
     return config
 
 def create_persistor(config):
