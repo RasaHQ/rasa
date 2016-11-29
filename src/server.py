@@ -12,7 +12,7 @@ from rasa_nlu.util import update_config
 
 def create_interpreter(config):
     model_dir = config.get("server_model_dir")
-    metadata, backend = None
+    metadata, backend = None, None
 
     if (model_dir is not None):
         # download model from S3 if needed
