@@ -17,15 +17,15 @@ class MITIEFeaturizer(object):
         chunk_size = 4096
         _fe_file = urllib2.urlopen("https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat")
         with open(fe_file, 'wb') as output:
-            done = False        
+            done = False
             while (not done):
                 try:
                     data = _fe_file.read(chunk_size)
                 except httplib.IncompleteRead, e:
-                    data = e.partial                    
+                    data = e.partial
                     done = True
                 output.write(data)
-        
+
     def create_bow_vecs(self, sentences):
         X = np.zeros((len(sentences), self.ndim))
 

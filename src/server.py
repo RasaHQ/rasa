@@ -72,7 +72,8 @@ def create_argparser():
                              "config file. NB command line args take precedence")
     parser.add_argument('-w', '--write', default='rasa_nlu_log.json', help='file where logs will be saved')
     parser.add_argument('-l', '--language', default='en', choices=['de', 'en'], help="model and data language")
-    parser.add_argument('-t', '--token', default=None, help="auth token. If set, reject requests which don't provide this token as a query parameter")
+    parser.add_argument('-t', '--token', default=None,
+                        help="auth token. If set, reject requests which don't provide this token as a query parameter")
 
     return parser
 
@@ -124,7 +125,7 @@ class DataRouter(object):
             parsed_path = urlparse.urlparse(path)
             data = urlparse.parse_qs(parsed_path.query)
             valid = ("token" in data and data["token"][0] == self.token)
-            return valid         
+            return valid
 
     def start_train_proc(self, data):
         print("starting train")
