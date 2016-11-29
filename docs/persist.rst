@@ -1,6 +1,6 @@
 .. _section_persistence:
 
-Model Peristence
+Model Persistence
 ==================================
 
 
