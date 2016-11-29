@@ -23,7 +23,7 @@ Option 2 : spaCy + scikit-learn
 
 You can also run using these two in combination. 
 `spaCy <https://spacy.io/>`_ is an excellent library for NLP tasks.
-`scikit-learn` http://scikit-learn.org/`_ is a popular ML library.
+`scikit-learn <http://scikit-learn.org>`_ is a popular ML library.
 
 .. code-block:: console
 
@@ -35,5 +35,5 @@ You can also run using these two in combination.
 If you haven't used ``numpy/scipy`` before, it is highly recommended to use conda.
 steps are
 
-- install [anaconda](https://www.continuum.io/downloads)
+- install `anaconda <https://www.continuum.io/downloads>`_
 - ``conda install scikit-learn``

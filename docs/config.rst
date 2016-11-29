@@ -20,7 +20,7 @@ Here is a list of all rasa NLU configuration options:
 - ``config`` : configuration file (can only be set as env var or command line option)
 - ``data`` : file containing training data.
 - ``language`` : language of your app, can be ``en`` (English) or ``de`` (German).
-- ``mitie_file`` : file containing ``total_word_feature_extractor.dat`` (see `here <>`_)
+- ``mitie_file`` : file containing ``total_word_feature_extractor.dat`` (see :ref:`backends`)
 - ``path`` : where trained models will be saved.
 - ``port`` : port on which to run server.
 - ``server_model_dir`` : dir containing the model to be used by server.
