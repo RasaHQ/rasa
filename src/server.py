@@ -19,12 +19,12 @@ def create_interpreter(config):
         if (not os.path.isdir(model_dir)):
             try:
                 from rasa_nlu.persistor import Persistor
-                p = Persistor(config['path'],config['aws_region'],config['bucket_name'])
+                p = Persistor(config['path'], config['aws_region'], config['bucket_name'])
                 p.fetch_and_extract('{0}.tar.gz'.format(os.path.basename(model_dir)))
             except:
                 warnings.warn("using default interpreter, couldn't find model dir or fetch it from S3")
-                
-        metadata = json.loads(open(os.path.join(model_dir,'metadata.json'),'rb').read())
+
+        metadata = json.loads(open(os.path.join(model_dir, 'metadata.json'), 'rb').read())
         backend = metadata["backend"]
 
     if backend is None:
@@ -72,7 +72,7 @@ def create_argparser():
                              "config file. NB command line args take precedence")
     parser.add_argument('-w', '--write', default='rasa_nlu_log.json', help='file where logs will be saved')
     parser.add_argument('-l', '--language', default='en', choices=['de', 'en'], help="model and data language")
-    parser.add_argument('-t', '--token', default=None, help="auth token. If set, reject requests which don't provide this token as a query parameter") 
+    parser.add_argument('-t', '--token', default=None, help="auth token. If set, reject requests which don't provide this token as a query parameter")
 
     return parser
 
@@ -102,20 +102,20 @@ class DataRouter(object):
         with open(self.logfile, 'w') as f:
             responses = [json.loads(r) for r in self.responses]
             f.write(json.dumps(responses, indent=2))
-    
+
     def get_status(self):
         training = False
         if (self.train_proc is not None):
             print("found training process, poll : {0}".format(self.train_proc.poll()))
-            if (self.train_proc.poll() is None):                
-                training = True                
-        models = glob.glob(os.path.join(self.model_dir,'model*'))
+            if (self.train_proc.poll() is None):
+                training = True
+        models = glob.glob(os.path.join(self.model_dir, 'model*'))
         return json.dumps({
-          "training" : training,
-          "available_models" : models
+          "training": training,
+          "available_models": models
         })
-    
-    def auth(self,path):
+
+    def auth(self, path):
 
         if (self.token is None):
             return True
@@ -123,23 +123,22 @@ class DataRouter(object):
             print("path : {0}".format(path))
             parsed_path = urlparse.urlparse(path)
             data = urlparse.parse_qs(parsed_path.query)
-            valid = (data.get("token") and data.get("token")[0] == self.token)
+            valid = ("token" in data and data["token"][0] == self.token)
             return valid         
-    
-    def start_train_proc(self,data):
+
+    def start_train_proc(self, data):
         print("starting train")
         if (self.train_proc is not None):
             try:
                 self.train_proc.kill()
             except:
-                pass                 
+                pass
         fname = 'tmp_training_data.json'
-        with open(fname,'w') as f:
+        with open(fname, 'w') as f:
             f.write(data)
         cmd_str = "python -m rasa_nlu.train -c config.json -d {0}".format(fname)
-        outfile = open('train.out','w')
-        self.train_proc = subprocess.Popen(cmd_str,shell=True,stdin=None, stdout=outfile, stderr=None, close_fds=True)
-        
+        outfile = open('train.out', 'w')
+        self.train_proc = subprocess.Popen(cmd_str, shell=True, stdin=None, stdout=outfile, stderr=None, close_fds=True)
 
 
 class RasaRequestHandler(BaseHTTPRequestHandler):
@@ -167,9 +166,9 @@ class RasaRequestHandler(BaseHTTPRequestHandler):
                 self.wfile.write(self.get_response(data))
             elif (self.path.startswith("/status")):
                 response = router.get_status()
-                self.wfile.write(response)            
+                self.wfile.write(response)
             else:
-                self.wfile.write("hello")            
+                self.wfile.write("hello")
         else:
             self.auth_err()
         return
@@ -181,14 +180,14 @@ class RasaRequestHandler(BaseHTTPRequestHandler):
                 print("is a parse request")
                 self._set_headers()
                 print("headers set")
-                data_string = self.rfile.read(int(self.headers['Content-Length']))            
+                data_string = self.rfile.read(int(self.headers['Content-Length']))
                 data_dict = json.loads(data_string)
                 self.wfile.write(self.get_response(data_dict))
                 print("data written")
 
             if self.path.startswith("/train"):
                 self._set_headers()
-                data_string = self.rfile.read(int(self.headers['Content-Length']))   
+                data_string = self.rfile.read(int(self.headers['Content-Length']))
                 router.start_train_proc(data_string)
                 self.wfile.write('training started with pid {0}'.format(router.train_proc.pid))
         else:

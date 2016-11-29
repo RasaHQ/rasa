@@ -15,18 +15,17 @@ def update_config(config, args, exclude=None, required=None):
 
     for param in params:
 
-        # override with environment variable   
+        # override with environment variable
         environ_key = "RASA_{0}".format(param.upper())
-        replace  = (os.environ.get(environ_key) is not None)
+        replace = (environ_key in os.environ)
         if (replace):
             config[param] = os.environ[environ_key]
-        
-        # override with command line arg     
-        replace = (_args.get(param) is not None)
+
+        # override with command line arg
+        replace = (param in _args)
         if replace:
             config[param] = _args[param]
 
-    
     for param in required:
         if config.get(param) is None:
             raise ValueError(
@@ -34,6 +33,7 @@ def update_config(config, args, exclude=None, required=None):
                     param))
 
     return config
+
 
 def recursively_find_files(resource_name):
     """resource_name can be a folder or a file. In both cases we will return a list of files"""
@@ -47,7 +47,6 @@ def recursively_find_files(resource_name):
         while len(nodes_to_visit) > 0:
             # skip hidden files
             nodes_to_visit = filter(lambda f: not f.split("/")[-1].startswith('.'), nodes_to_visit)
-
 
             current_node = nodes_to_visit[0]
             # if current node is a folder, schedule its children for a visit. Else add them to the resources.

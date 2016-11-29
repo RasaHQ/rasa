@@ -1,8 +1,9 @@
 from mitie import *
-import os, datetime, json
+import os
+import datetime
+import json
+
 from rasa_nlu.featurizers.mitie_featurizer import MITIEFeaturizer
-
-
 from rasa_nlu.trainers.trainer import Trainer
 from training_utils import write_training_metadata
 
@@ -20,8 +21,8 @@ class MITIETrainer(Trainer):
         self.ensure_language_support(language_name)
         self.featurizer = MITIEFeaturizer(self.fe_file)
         del self.featurizer
-    
-    def train(self,data):
+
+    def train(self, data):
         self.training_data = data
         self.intent_classifier = self.train_intent_classifier(data.intent_examples)
         self.entity_extractor = self.train_entity_extractor(data.entity_examples)

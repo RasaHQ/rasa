@@ -1,7 +1,9 @@
 import argparse
 from training_data import TrainingData
 from rasa_nlu.util import update_config
-import json, warnings, os
+import json
+import warnings
+import os
 
 
 def create_argparser():
@@ -14,7 +16,7 @@ def create_argparser():
     parser.add_argument('-d', '--data', default=None, help="file containing training data")
     parser.add_argument('-c', '--config', required=True, help="config file")
     parser.add_argument('-l', '--language', default='en', choices=['de', 'en'], help="model and data language")
-    parser.add_argument('-m','--mitie_file', default='data/total_word_feature_extractor.dat', help='file with mitie total_word_feature_extractor')    
+    parser.add_argument('-m', '--mitie_file', default='data/total_word_feature_extractor.dat', help='file with mitie total_word_feature_extractor')
     return parser
 
 
@@ -38,11 +40,12 @@ def load_configuration(file_name):
         warnings.warn("could not find config file {0}, ignoring".format(file_name))
     return config
 
+
 def create_persistor(config):
     persistor = None
     try:
         from rasa_nlu.persistor import Persistor
-        persistor = Persistor(config['path'],config['aws_region'],config['bucket_name'])        
+        persistor = Persistor(config['path'], config['aws_region'], config['bucket_name'])
     except:
         pass
     return persistor
@@ -52,7 +55,7 @@ def init():
     parser = create_argparser()
     args = parser.parse_args()
     config = load_configuration(args.config)
-    config = update_config(config,args,exclude=['config'],required=['path','backend','data'])
+    config = update_config(config, args, exclude=['config'], required=['path', 'backend', 'data'])
 
     return config
 
@@ -61,11 +64,10 @@ def do_train(config):
     trainer = create_trainer(config)
 
     persistor = create_persistor(config)
-    
-    training_data = TrainingData(config["data"],config["backend"], config["language"])
+
+    training_data = TrainingData(config["data"], config["backend"], config["language"])
     trainer.train(training_data)
-    trainer.persist(config["path"],persistor)
-            
+    trainer.persist(config["path"], persistor)
 
 
 if __name__ == '__main__':

@@ -3,12 +3,13 @@ import os
 import datetime
 import json
 import cloudpickle
-from rasa_nlu import util 
+from rasa_nlu import util
 from rasa_nlu.featurizers.spacy_featurizer import SpacyFeaturizer
 from rasa_nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
 from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa_nlu.trainers.trainer import Trainer
 from training_utils import write_training_metadata
+
 
 class SpacySklearnTrainer(Trainer):
     SUPPORTED_LANGUAGES = {"en", "de"}
@@ -37,8 +38,8 @@ class SpacySklearnTrainer(Trainer):
         y = self.intent_classifier.transform_labels(labels)
         X = self.featurizer.create_bow_vecs(sentences)
         self.intent_classifier.train(X, y)
-        
-    def persist(self,path,persistor=None):
+
+    def persist(self, path, persistor=None):
 
         timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
         dir_name = os.path.join(path, "model_" + timestamp)

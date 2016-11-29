@@ -3,7 +3,8 @@ import json
 
 
 def write_training_metadata(output_folder, timestamp, data_file, backend_name,
-                            language_name, intent_file, entity_file, feature_file=None):
+                            language_name, intent_file, entity_file,
+                            feature_file=None):
     metadata = {
         "trained_at": timestamp,
         "training_data": data_file,
