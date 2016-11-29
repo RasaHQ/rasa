@@ -3,17 +3,20 @@ from rasa_nlu import Interpreter
 
 class HelloGoodbyeInterpreter(Interpreter):
     def __init__(self):
-        self.name="hello_goodbye"
-        self.his = ["hello","hi","hey"]
-        self.byes = ["bye","goodbye"]
+        self.name = "hello_goodbye"
+        self.his = ["hello", "hi", "hey"]
+        self.byes = ["bye", "goodbye"]
 
-    def parse(self,text):
-        _text, intent = text.lower(), "None"
-        is_present = lambda x: x in _text
+    def parse(self, text):
+        _text = text.lower()
 
-        if (True in map(is_present,self.his)):
-            intent="greet"
-        elif (True in map(is_present,self.byes)):
-            intent="goodbye"
+        def is_present(x): return x in _text
 
-        return {'text':text,'intent':intent,'entities':{}}
+        if any(map(is_present, self.his)):
+            intent = "greet"
+        elif any(map(is_present, self.byes)):
+            intent = "goodbye"
+        else:
+            intent = "None"
+
+        return {'text': text, 'intent': intent, 'entities': {}}

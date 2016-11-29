@@ -2,6 +2,7 @@
 
 import pytest
 
+
 def test_whitespace():
     from rasa_nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
     tk = WhitespaceTokenizer()

@@ -31,8 +31,7 @@ class MITIETrainer(Trainer):
         max_loc = 1 + len(text_tokens) - size
         # for i in range(max_loc):
         #    print("slice at {0} : {1}".format(i,text_tokens[i:i+size]))
-        locs = [i for i in range(max_loc) if \
-                text_tokens[i:i + size] == entity_tokens]
+        locs = [i for i in range(max_loc) if text_tokens[i:i + size] == entity_tokens]
         # print(locs)
         start, end = locs[0], locs[0] + len(entity_tokens)
         return start, end
