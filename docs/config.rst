@@ -27,10 +27,4 @@ Here is a list of all rasa NLU configuration options:
 - ``write`` : file where logs will be saved
 
 
-You can also persist your trained models to S3, and fetch them from there. This requires the following options to be set.
-Note these do not have a ``RASA_`` prefix when set as environment vars.
-
-- ``aws_region`` : region for S3 bucket where models are saved
-- ``bucket_name`` : name of S3 bucket where models are saved
-- ``aws_secret_access_key`` : secret
-- ``aws_access_key_id`` : key
+If you want to persist your trained models to S3, there are additinoal configuration options, see :ref:`section:persistence`
