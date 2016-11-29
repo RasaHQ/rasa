@@ -22,9 +22,10 @@ and returning structured data like
     }
 
 
-You can use rasa as a drop-in replacement for `wit <https://wit.ai>`_ , `LUIS <https://luis.ai>`_ , or `api.ai <https://api.ai>`_ 
+The intended audience is mainly people developing bots. 
+You can use rasa as a drop-in replacement for `wit <https://wit.ai>`_ , `LUIS <https://luis.ai>`_ , or `api.ai <https://api.ai>`_ It's incredibly simple to clone your existing apps from those services, and rasa NLU can emulate each of those APIs, so that they only thing you have to change in your code is to send your requests to ``localhost`` instead of wit/LUIS/api. See :ref:`section_migration` for details. 
 
-The intended audience is mainly people developing bots. Why might you use rasa instead of one of those services?
+Why might you use rasa instead of one of those services?
 
 - you don't have to hand over your data to FB/MSFT/GOOG
 - you don't have to make a `https` call every time.
