@@ -1,3 +1,4 @@
+.. _section_backends:
 
 Setting up a backend
 ====================================

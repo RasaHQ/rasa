@@ -5,3 +5,5 @@ scikit-learn
 pathlib
 cloudpickle
 boto3
+pytest-pep8
+

@@ -69,6 +69,8 @@ Read Next:
 .. toctree::
    :maxdepth: 1
 
+   tutorial
+   backends
    config
    migrating
    http
