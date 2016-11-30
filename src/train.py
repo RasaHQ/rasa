@@ -44,11 +44,10 @@ def load_configuration(file_name):
 
 def create_persistor(config):
     persistor = None
-    try:
+    if "bucket_name" in config:
         from rasa_nlu.persistor import Persistor
         persistor = Persistor(config['path'], config['aws_region'], config['bucket_name'])
-    except:
-        pass
+
     return persistor
 
 
