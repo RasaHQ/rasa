@@ -55,7 +55,7 @@ def init():
     parser = create_argparser()
     args = parser.parse_args()
     config = load_configuration(args.config)
-    config = update_config(config, args, exclude=['config'], required=['path', 'backend', 'data'])
+    config = update_config(config, vars(args), os.environ, exclude=['config'], required=['path', 'backend', 'data'])
 
     return config
 

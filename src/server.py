@@ -63,19 +63,21 @@ def create_emulator(config):
 
 def create_argparser():
     parser = argparse.ArgumentParser(description='parse incoming text')
+    parser.add_argument('-c', '--config', default=None,
+                        help="config file, all the command line options can also be passed via a (json-formatted) " +
+                             "config file. NB command line args take precedence")
     parser.add_argument('-d', '--server_model_dir', default=None,
                         help='directory containing model to for parser to use')
     parser.add_argument('-e', '--emulate', default=None, choices=['wit', 'luis', 'api'],
                         help='which service to emulate (default: None i.e. use simple built in format)')
+    parser.add_argument('-l', '--language', default='en', choices=['de', 'en'], help="model and data language")
+    parser.add_argument('-m', '--mitie_file', default='data/total_word_feature_extractor.dat',
+                        help='file with mitie total_word_feature_extractor')
     parser.add_argument('-p', '--path', default=None, help="path where model files will be saved")
     parser.add_argument('-P', '--port', default=5000, type=int, help='port on which to run server')
-    parser.add_argument('-c', '--config', default=None,
-                        help="config file, all the command line options can also be passed via a (json-formatted) " +
-                             "config file. NB command line args take precedence")
-    parser.add_argument('-w', '--write', default='rasa_nlu_log.json', help='file where logs will be saved')
-    parser.add_argument('-l', '--language', default='en', choices=['de', 'en'], help="model and data language")
     parser.add_argument('-t', '--token', default=None,
                         help="auth token. If set, reject requests which don't provide this token as a query parameter")
+    parser.add_argument('-w', '--write', default='rasa_nlu_log.json', help='file where logs will be saved')
 
     return parser
 
@@ -200,7 +202,7 @@ def init():
     args = parser.parse_args()
     config = {'logfile': os.path.join(os.getcwd(), 'rasa_nlu_logs.json')} if args.config is None else json.loads(
         open(args.config, 'rb').read())
-    config = update_config(config, args, exclude=['config'])
+    config = update_config(config, vars(args), os.environ, exclude=['config'])
     return config
 
 router = None

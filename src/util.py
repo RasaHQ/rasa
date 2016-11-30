@@ -1,7 +1,8 @@
 import os
+from rasa_nlu import config_keys
 
 
-def update_config(config, args, exclude=None, required=None):
+def update_config(init_config, cmdline_args, env_vars, exclude=None, required=None):
     """override config params with cmd line args, default to env vars, & raise err if undefined"""
 
     if exclude is None:
@@ -10,26 +11,36 @@ def update_config(config, args, exclude=None, required=None):
     if required is None:
         required = []
 
-    _args = vars(args)
-    params = [k for k in _args.keys() if k not in exclude]
+    params = [k for k in config_keys if k not in exclude]
+    config = init_config.copy()
+
     for param in params:
 
         # override with environment variable
         environ_key = "RASA_{0}".format(param.upper())
-        replace = os.environ.get(environ_key) is not None
+        replace = env_vars.get(environ_key) is not None
         if replace:
-            config[param] = os.environ[environ_key]
+            config[param] = env_vars[environ_key]
 
         # override with command line arg
-        replace = _args.get(param) is not None
+        replace = cmdline_args.get(param) is not None
         if replace:
-            config[param] = _args[param]
+            config[param] = cmdline_args[param]
+
+    # Error checking
+    def is_set(x): return config.get(x) is not None
 
     for param in required:
-        if config.get(param) is None:
+        if not is_set(param):
             raise ValueError(
                 "parameter {0} unspecified. Please provide a value via the command line or in the config file.".format(
                     param))
+
+    if config.get("backend") == 'mitie':
+        if not is_set("mitie_file"):
+            raise ValueError("backend set to 'mitie' but mitie_file not specified")
+        if config.get("language") != 'en':
+            raise ValueError("backend set to 'mitie' but language not set to 'en'.")
 
     return config
 
