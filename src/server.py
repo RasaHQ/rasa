@@ -2,12 +2,13 @@ import argparse
 import json
 import os
 import urlparse
-import subprocess
+import multiprocessing
 import glob
 import warnings
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 
 from rasa_nlu.util import update_config
+from rasa_nlu.train import do_train
 
 
 def create_interpreter(config):
@@ -62,7 +63,7 @@ def create_emulator(config):
 
 def create_argparser():
     parser = argparse.ArgumentParser(description='parse incoming text')
-    parser.add_argument('-d', '--server_model_dir', default=None, help='directory where model files are saved')
+    parser.add_argument('-d', '--server_model_dir', default=None, help='directory containing model to for parser to use')
     parser.add_argument('-e', '--emulate', default=None, choices=['wit', 'luis', 'api'],
                         help='which service to emulate (default: None i.e. use simple built in format)')
     parser.add_argument('-p', '--path', default=None, help="path where model files will be saved")
@@ -79,7 +80,8 @@ def create_argparser():
 
 
 class DataRouter(object):
-    def __init__(self, **config):
+    def __init__(self, config):
+        self.config = config
         self.interpreter = create_interpreter(config)
         self.emulator = create_emulator(config)
         self.logfile = config["logfile"]
@@ -105,11 +107,11 @@ class DataRouter(object):
             f.write(json.dumps(responses, indent=2))
 
     def get_status(self):
-        training = False
         if self.train_proc is not None:
-            print("found training process, poll : {0}".format(self.train_proc.poll()))
-            if self.train_proc.poll() is None:
-                training = True
+            training = self.train_proc.is_alive()
+        else:
+            training = False
+
         models = glob.glob(os.path.join(self.model_dir, 'model*'))
         return json.dumps({
           "training": training,
@@ -128,18 +130,18 @@ class DataRouter(object):
 
     def start_train_proc(self, data):
         print("starting train")
-        if self.train_proc is not None:
-            try:
-                print("training process {0} killed".format(self.train_proc))
-                self.train_proc.kill() 
-            except:
-                pass
+        if self.train_proc is not None and self.train_proc.is_alive():
+            self.train_proc.terminate()
+            print("training process {0} killed".format(self.train_proc))
+
         fname = 'tmp_training_data.json'
         with open(fname, 'w') as f:
             f.write(data)
-        cmd_str = "python -m rasa_nlu.train -c config.json -d {0}".format(fname)
-        outfile = open('train.out', 'w')
-        self.train_proc = subprocess.Popen(cmd_str, shell=True, stdin=None, stdout=outfile, stderr=None, close_fds=True)
+        train_config = self.config.copy()
+        train_config["data"] = fname
+        self.train_proc = multiprocessing.Process(target=do_train, args=(train_config,))
+        self.train_proc.start()
+        print("training process {0} started".format(self.train_proc))
 
 
 class RasaRequestHandler(BaseHTTPRequestHandler):
@@ -205,7 +207,7 @@ server = None
 
 try:
     config = init()
-    router = DataRouter(**config)
+    router = DataRouter(config)
     server = HTTPServer(('', config["port"]), RasaRequestHandler)
     print 'Started http server on port ', config["port"]
     server.serve_forever()
