@@ -14,9 +14,9 @@ def create_interpreter(config):
     model_dir = config.get("server_model_dir")
     metadata, backend = None, None
 
-    if (model_dir is not None):
+    if model_dir is not None:
         # download model from S3 if needed
-        if (not os.path.isdir(model_dir)):
+        if not os.path.isdir(model_dir):
             try:
                 from rasa_nlu.persistor import Persistor
                 p = Persistor(config['path'], config['aws_region'], config['bucket_name'])
@@ -106,9 +106,9 @@ class DataRouter(object):
 
     def get_status(self):
         training = False
-        if (self.train_proc is not None):
+        if self.train_proc is not None:
             print("found training process, poll : {0}".format(self.train_proc.poll()))
-            if (self.train_proc.poll() is None):
+            if self.train_proc.poll() is None:
                 training = True
         models = glob.glob(os.path.join(self.model_dir, 'model*'))
         return json.dumps({
@@ -118,10 +118,9 @@ class DataRouter(object):
 
     def auth(self, path):
 
-        if (self.token is None):
+        if self.token is None:
             return True
         else:
-            print("path : {0}".format(path))
             parsed_path = urlparse.urlparse(path)
             data = urlparse.parse_qs(parsed_path.query)
             valid = ("token" in data and data["token"][0] == self.token)
@@ -129,9 +128,10 @@ class DataRouter(object):
 
     def start_train_proc(self, data):
         print("starting train")
-        if (self.train_proc is not None):
+        if self.train_proc is not None:
             try:
-                self.train_proc.kill()
+                print("training process {0} killed".format(self.train_proc))
+                self.train_proc.kill() 
             except:
                 pass
         fname = 'tmp_training_data.json'
@@ -159,13 +159,13 @@ class RasaRequestHandler(BaseHTTPRequestHandler):
         return json.dumps(response)
 
     def do_GET(self):
-        if (router.auth(self.path)):
+        if router.auth(self.path):
             self._set_headers()
             if self.path.startswith("/parse"):
                 parsed_path = urlparse.urlparse(self.path)
                 data = urlparse.parse_qs(parsed_path.query)
                 self.wfile.write(self.get_response(data))
-            elif (self.path.startswith("/status")):
+            elif self.path.startswith("/status"):
                 response = router.get_status()
                 self.wfile.write(response)
             else:
@@ -175,16 +175,12 @@ class RasaRequestHandler(BaseHTTPRequestHandler):
         return
 
     def do_POST(self):
-        if (router.auth(self.path)):
-            print("authorized")
+        if router.auth(self.path):
             if self.path.startswith("/parse"):
-                print("is a parse request")
                 self._set_headers()
-                print("headers set")
                 data_string = self.rfile.read(int(self.headers['Content-Length']))
                 data_dict = json.loads(data_string)
                 self.wfile.write(self.get_response(data_dict))
-                print("data written")
 
             if self.path.startswith("/train"):
                 self._set_headers()

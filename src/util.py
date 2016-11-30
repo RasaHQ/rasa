@@ -2,7 +2,7 @@ import os
 
 
 def update_config(config, args, exclude=None, required=None):
-    "override config params with cmd line args, default to env vars, & raise err if undefined"
+    """override config params with cmd line args, default to env vars, & raise err if undefined"""
 
     if exclude is None:
         exclude = []
