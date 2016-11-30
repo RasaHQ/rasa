@@ -3,7 +3,7 @@
 Migrating an existing app
 ====================================
 
-rasa NLU is designed to make this as simple as possible. 
+rasa NLU is designed to make migrating from wit/LUIS/api.ai as simple as possible. 
 The TLDR instructions for migrating are: 
 
 - download an export of your app data from wit/LUIS/api.ai
