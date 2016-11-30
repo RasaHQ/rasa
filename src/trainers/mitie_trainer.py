@@ -19,8 +19,6 @@ class MITIETrainer(Trainer):
         self.training_data = None
         self.fe_file = fe_file
         self.ensure_language_support(language_name)
-        self.featurizer = MITIEFeaturizer(self.fe_file)
-        del self.featurizer
 
     def train(self, data):
         self.training_data = data
