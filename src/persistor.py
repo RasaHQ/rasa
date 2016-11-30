@@ -1,4 +1,5 @@
 import boto3
+import botocore
 import tarfile
 import os
 import shutil
@@ -11,7 +12,7 @@ class Persistor(object):
         self.bucket_name = bucket_name
         try:
             self.s3.create_bucket(Bucket=bucket_name, CreateBucketConfiguration={'LocationConstraint': aws_region})
-        except:
+        except botocore.exceptions.ClientError, e:
             pass  # bucket already exists
         self.bucket = self.s3.Bucket(bucket_name)
 
