@@ -1,7 +1,11 @@
+.. _section_tutorial:
+
 .. _tutorial:
 
 Tutorial: building a restaurant search bot
 ====================================
+
+Note: see :ref:`section_migration` for how to clone your existing wit/LUIS/api.ai app.
 
 As an example we'll use the domain of searching for restaurants. 
 We'll start with an extremely simple model of those conversations, and build up from there.
