@@ -1,6 +1,6 @@
 .. _section_migration:
 
-Migrating an existing app from {wit,LUIS,api}.ai
+Migrating an existing app
 ====================================
 
 rasa NLU is designed to make this as simple as possible. 
