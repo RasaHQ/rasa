@@ -12,17 +12,16 @@ def update_config(config, args, exclude=None, required=None):
 
     _args = vars(args)
     params = [k for k in _args.keys() if k not in exclude]
-
     for param in params:
 
         # override with environment variable
         environ_key = "RASA_{0}".format(param.upper())
-        replace = (environ_key in os.environ)
-        if (replace):
+        replace = os.environ.get(environ_key) is not None
+        if replace:
             config[param] = os.environ[environ_key]
 
         # override with command line arg
-        replace = (param in _args)
+        replace = _args.get(param) is not None
         if replace:
             config[param] = _args[param]
 
