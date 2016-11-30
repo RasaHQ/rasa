@@ -63,7 +63,7 @@ def create_emulator(config):
 
 def create_argparser():
     parser = argparse.ArgumentParser(description='parse incoming text')
-    parser.add_argument('-d', '--server_model_dir', default=None, 
+    parser.add_argument('-d', '--server_model_dir', default=None,
                         help='directory containing model to for parser to use')
     parser.add_argument('-e', '--emulate', default=None, choices=['wit', 'luis', 'api'],
                         help='which service to emulate (default: None i.e. use simple built in format)')
