@@ -7,6 +7,7 @@ import time
 import json
 import codecs
 
+
 @pytest.fixture
 def http_server():
     def url(port):
@@ -16,8 +17,8 @@ def http_server():
         'logfile': os.path.join(os.getcwd(), "rasa_nlu_logs.json"),
         'port': 5022,
         "backend": "mitie",
-        "path" : "./",
-        "data" : "./data/demo-restaurants.json",
+        "path": "./",
+        "data": "./data/demo-restaurants.json",
         "emulate": "wit"
     }
     # run server in background
@@ -30,26 +31,37 @@ def http_server():
     yield url(config["port"])
     p.terminate()
 
+
 def test_root(http_server):
     req = requests.get(http_server)
     ret = req.text
 
     assert req.status_code == 200 and ret == "hello"
 
+
 def test_status(http_server):
     req = requests.get(http_server + "/status")
     ret = req.json()
     assert req.status_code == 200 and ("training" in ret and "available_models" in ret)
 
+
 def test_get_parse(http_server):
     req = requests.get(http_server + "/parse?q=hello")
-    assert req.status_code == 200 and req.json() == [{"entities": {}, "confidence": None, "intent": "greet", "_text": "hello"}]
+    expected = [{"entities": {}, "confidence": None, "intent": "greet", "_text": "hello"}]
+    assert req.status_code == 200 and req.json() == expected
+
 
 def test_post_parse(http_server):
     req = requests.post(http_server + "/parse", json={"q": "hello"})
-    assert req.status_code == 200 and req.json() == [{"entities": {}, "confidence": None, "intent": "greet", "_text": "hello"}]
-    
+    expected = [{"entities": {}, "confidence": None, "intent": "greet", "_text": "hello"}]
+    assert req.status_code == 200 and req.json() == expected
+
+
 def test_post_train(http_server):
-    req = requests.post(http_server + "/parse", json=json.loads(codecs.open('data/examples/luis/demo-restaurants.json', encoding='utf-8').read()))
-    # TODO: POST /train oddly returns an error msg but training works fine. For now check only status code. Later on take a look at actual response
-    assert req.status_code == 200 # and "training started with pid" in req.text
+    train_data = json.loads(codecs.open('data/examples/luis/demo-restaurants.json',
+                                        encoding='utf-8').read())
+    req = requests.post(http_server + "/parse", json=train_data)
+    # TODO: POST /train oddly returns an error msg but training works fine
+    # For now check only status code. Later on take a look at actual response
+    # assert req.status_code == 200 and "training started with pid" in req.text
+    assert req.status_code == 200

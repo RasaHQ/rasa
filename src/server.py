@@ -6,9 +6,9 @@ import multiprocessing
 import glob
 import warnings
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
-
 from rasa_nlu.util import update_config
 from rasa_nlu.train import do_train
+
 
 class RasaNLUServer(object):
     def __init__(self, config):
@@ -80,6 +80,7 @@ class RasaNLUServer(object):
         if self.server is not None:
             print 'shutting down server'
             self.server.socket.close()
+
 
 class DataRouter(object):
     def __init__(self, config, interpreter, emulator):
@@ -199,6 +200,7 @@ class RasaRequestHandler(BaseHTTPRequestHandler):
             self.auth_err()
         return
 
+
 def create_argparser():
     parser = argparse.ArgumentParser(description='parse incoming text')
     parser.add_argument('-c', '--config', default=None,
@@ -219,6 +221,7 @@ def create_argparser():
 
     return parser
 
+
 if __name__ == "__main__":
     parser = create_argparser()
     args = parser.parse_args()
@@ -231,4 +234,3 @@ if __name__ == "__main__":
         server.start()
     except KeyboardInterrupt:
         server.stop()
-
