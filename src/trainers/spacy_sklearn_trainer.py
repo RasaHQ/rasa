@@ -63,5 +63,5 @@ class SpacySklearnTrainer(Trainer):
 
         self.entity_extractor.ner.model.dump(entity_extractor_file)
 
-        if (persistor is not None):
+        if persistor is not None:
             persistor.send_tar_to_s3(dirname)

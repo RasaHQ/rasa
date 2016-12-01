@@ -5,6 +5,13 @@
 
 **preface: if you're reading this now, you're an alpha tester of this code - your feedback is super valuable! thanks for trying it out**
 
+documentation is [here](http://rasa-nlu.readthedocs.io/)
+
+### Deploying to Heroku
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
+Click the button to deploy a rasa NLU server to Heroku.
+
+
 ## Motivation
 
 rasa_nlu is a tool for intent classification and entity extraction. 
@@ -27,117 +34,6 @@ rasa_nlu is written in Python, but it you can use it from any language through a
 If your project *is* written in Python you can simply import the relevant classes.
 
 rasa is a set of tools for building more advanced bots, developed by [LASTMILE](https://golastmile.com). This is the natural language understanding module, and the first component to be open sourced. 
- 
-## Getting Started
-```bash
-python setup.py install
-python -m rasa_nlu.server -e wit &
-
-curl 'http://localhost:5000/parse?q=hello'
-# returns e.g. '{"intent":"greet","entities":[]}'
-```
-
-There you go! you just parsed some text. Important command line options for `rasa_nlu.server` are as follows:
-- emulate: which service to emulate, can be 'wit' or 'luis', or just leave blank for default mode. This only affects the format of the json response.
-- server_model_dir: dir where your trained models are saved. If you leave this blank rasa_nlu will just use a naive keyword matcher.
-
-run `python -m rasa_nlu.server -h` to see more details.
-
-### Deploying to Heroku
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
-Click the button to deploy this to heroku. For now this only runs the server, you can't yet train models through the HTTP API.
-
-## Configuring a backend
-rasa_nlu itself doesn't have any external requirements, but to do something useful with it you need to install & configure a backend. 
-
-#### Option 1 : MITIE
-The [MITIE](https://github.com/mit-nlp/MITIE) backend is all-inclusive, in the sense that it provides both the NLP and the ML parts.
-
-`pip install git+https://github.com/mit-nlp/MITIE.git`
-and then download the [MITIE models](https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2). The file you need is `total_word_feature_extractor.dat`
-
-#### Option 2 : spaCy + scikit-learn
-You can also run using these two in combination. 
-[spaCy](https://spacy.io/) is an excellent library for NLP tasks.
-[scikit-learn](http://scikit-learn.org/) is a popular ML library.
-
-```bash
-pip install -U spacy
-python -m spacy.en.download all
-pip install -U scikit-learn
-```
-
-OR if you prefer (especially if you don't already have `numpy/scipy` installed), you can install scikit-learn by:
-
-1. installing [anaconda](https://www.continuum.io/downloads)
-2. `conda install scikit-learn`
-
-
-<!---
-- [NLTK](www.nltk.org/)
--->
-
-## Creating your own language parser
-
-As of now, rasa_nlu doesn't provide a tool to help you create & annotate training data. 
-If you don't have an existing wit or LUIS app, you can try this example using the `data/demo-restaurants.json` file, or create your own json file in the same format. 
-
-### Cloning an existing wit or LUIS app:
-
-Download your data from wit or LUIS. When you export your model from wit you will get a zipped directory. The file you need is `expressions.json`.
-If you're exporting from LUIS you get a single json file, and that's the one you need. Create a config file (json format) like this one:
-
-```json
-{
-  "path" : "/path/to/models/",
-  "data" : "expressions.json",
-  "backend" : "mitie",
-  "mitie_file" : "/path/to/total_word_feature_extractor.dat"
-}
-```
-
-and then pass this file to the training script
-
-```bash
-python -m rasa_nlu.train -c config.json
-```
-
-you can also override any of the params in config.json with command line arguments. Run `python -m rasa_nlu.train -h` for details.
-
-### Running the server with your newly trained models
-
-After training you will have a new dir containing your models, e.g. `/path/to/models/model_XXXXXX`. 
-Just pass this path to the `rasa_nlu.server` script:
-
-```bash
-python -m rasa_nlu.server -e wit -d '/path/to/models/model_XXXXXX'
-```
-
-<!---
-### Using Rasa from python
-Pretty simple really, just open your python interpreter and type:
-```python
-from rasa.backends import MITIEInterpreter
-
-interpreter = MITIEInterpreter('data/intent_classifier.dat','data/ner.dat','data/total_word_feature_extractor.dat')
-interpreter.parse("hello world")  # -> {'intent':'greet','entities':[]}
-```
--->
-
-### Improving your models
-When the rasa_nlu server is running, it keeps track of all the predictions it's made and saves these to a log file. By default this is called `rasa_nlu_log.json`
-You can fix any incorrect predictions and add them to your training set to improve your parser.
-
-## Roadmap 
-- training models through the HTTP API
-- entity normalisation: as is, the named entity extractor will happily extract `cheap` & `inexpensive` as entities of the `expense` class, but will not tell you that these are realisations of the same underlying concept. You can easily handle that with a list of aliases in your code, but we want to offer a more elegant & generalisable solution. [Word Forms](https://github.com/gutfeeling/word_forms) looks promising.
-- parsing structured data, e.g. dates. We might use [parsedatetime](https://pypi.python.org/pypi/parsedatetime/) or [parserator](https://github.com/datamade/parserator) or wit.ai's very own [duckling](https://duckling.wit.ai/). 
-- python 3 support
-- support for more (human) languages
-
-## Troubleshooting
-- not tested with python 3, so probably won't work
-- any other issues, reach out to alan@golastmile.com
 
 ## License
 Copyright 2016 LastMile Technologies Ltd

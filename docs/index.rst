@@ -23,12 +23,12 @@ and returning structured data like
 
 
 The intended audience is mainly people developing bots. 
-You can use rasa as a drop-in replacement for `wit <https://wit.ai>`_ , `LUIS <https://luis.ai>`_ , or `api.ai <https://api.ai>`_ It's incredibly simple to clone your existing apps from those services, and rasa NLU can emulate each of those APIs, so that they only thing you have to change in your code is to send your requests to ``localhost`` instead of wit/LUIS/api. See :ref:`section_migration` for details. 
+You can use rasa as a drop-in replacement for `wit <https://wit.ai>`_ , `LUIS <https://luis.ai>`_ , or `api.ai <https://api.ai>`_, the only change in your code is to send requests to ``localhost`` instead (see :ref:`section_migration` for details). 
 
 Why might you use rasa instead of one of those services?
 
 - you don't have to hand over your data to FB/MSFT/GOOG
-- you don't have to make a `https` call every time.
+- you don't have to make a ``https`` call every time.
 - you can tune models to work well on your particular use case.
 
 These points are laid out in more detail in a `blog post <https://medium.com/lastmile-conversations/do-it-yourself-nlp-for-bot-developers-2e2da2817f3d>`_ .
@@ -43,12 +43,10 @@ The quickest quickstart in the west
     $ python setup.py install
     $ python -m rasa_nlu.server -e wit &
     $ curl 'http://localhost:5000/parse?q=hello'
-    {"intent":"greet","entities":[]}
+    [{"_text":"hello","confidence":null,"entities":{},"intent":"greet"}]
 
 
-There you go! you just parsed some text. 
-See :ref:`section_configuration` for how to configure rasa NLU,
-and :ref:`section_migration` for how to clone your existing app.
+There you go! you just parsed some text. Next step, do the :ref:`tutorial`.
 
 About 
 ---------------------------------------
@@ -59,7 +57,7 @@ The setup process is designed to be as simple as possible. If you're currently u
 1. download your app data from wit or LUIS and feed it into rasa NLU
 2. run rasa NLU on your machine and switch the URL of your wit/LUIS api calls to ``localhost:5000/parse``.
 
-rasa NLU is written in Python, but it you can use it from any language through the HTTP API. 
+rasa NLU is written in Python, but it you can use it from any language through :ref:`section_http`.
 If your project *is* written in Python you can simply import the relevant classes.
 
 rasa is a set of tools for building more advanced bots, developed by `LASTMILE <https://golastmile.com>`_ . This is the natural language understanding module, and the first component to be open sourced. 

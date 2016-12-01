@@ -92,15 +92,11 @@ class TrainingData(object):
             entities = []
             for e in s.get("entities") or []:
                 i, ii = e["startPos"], e["endPos"] + 1
-                # print(u"full text:  {0}".format(text))
                 _regex = u"\s*".join([s for s in tokens[i:ii]])
                 expr = re.compile(_regex)
                 m = expr.search(text)
                 start, end = m.start(), m.end()
                 val = text[start:end]
-                # print(u"entity val : {0}".format(val))
-                # print(u"match : {0}".format(m.group()))
-                # print(text[start:end])
                 entities.append({"entity": e["entity"], "value": val, "start": start, "end": end})
 
             self.intent_examples.append({"text": text, "intent": intent})
