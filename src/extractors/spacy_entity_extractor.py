@@ -41,5 +41,13 @@ class SpacyEntityExtractor(object):
         doc = nlp.make_doc(sentence)
         nlp.tagger(doc)
         self.ner(doc)
-        entities = {ent.label_: ent.text for ent in doc.ents}
+
+        entities = [
+          {
+            "entity": ent.label_,
+            "value": ent.text,
+            "start": ent.start_char,
+            "end": ent.end_char
+          }
+          for ent in doc.ents]
         return entities

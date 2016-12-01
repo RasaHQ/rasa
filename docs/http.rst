@@ -54,7 +54,7 @@ also returns a list of available models the server can use to fulfill ``/parse``
       "models" : []
     }
 
-
+.. _section_auth:
 
 Authorization
 -------------------------

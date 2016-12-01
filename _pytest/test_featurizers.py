@@ -3,6 +3,7 @@ import os
 
 
 def test_spacy():
+
     def test_sentence(sentence, language, _ref):
         import spacy
         from rasa_nlu.featurizers.spacy_featurizer import SpacyFeaturizer
@@ -24,6 +25,7 @@ def test_spacy():
 
 def test_mitie():
     from rasa_nlu.featurizers.mitie_featurizer import MITIEFeaturizer
+
     filename = os.environ.get('MITIE_FILE')
     if (filename and os.path.isfile(filename)):
         ftr = MITIEFeaturizer(os.environ.get('MITIE_FILE'))

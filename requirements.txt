@@ -4,4 +4,5 @@ spacy==1.2.0
 scikit-learn
 pathlib
 cloudpickle
+boto3
 pytest-pep8

@@ -1,7 +1,9 @@
 from mitie import *
 import os
 import datetime
+import json
 
+from rasa_nlu.featurizers.mitie_featurizer import MITIEFeaturizer
 from rasa_nlu.trainers.trainer import Trainer
 from training_utils import write_training_metadata
 
@@ -9,14 +11,13 @@ from training_utils import write_training_metadata
 class MITIETrainer(Trainer):
     SUPPORTED_LANGUAGES = {"en"}
 
-    def __init__(self, config, language_name):
+    def __init__(self, fe_file, language_name):
         self.name = "mitie"
         self.training_data = None
         self.intent_classifier = None
         self.entity_extractor = None
         self.training_data = None
-        self.fe_file = config["fe_file"]
-
+        self.fe_file = fe_file
         self.ensure_language_support(language_name)
 
     def train(self, data):
@@ -60,7 +61,7 @@ class MITIETrainer(Trainer):
         intent_classifier = trainer.train()
         return intent_classifier
 
-    def persist(self, path):
+    def persist(self, path, persistor=None):
         tstamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
         dirname = os.path.join(path, "model_" + tstamp)
         os.mkdir(dirname)
@@ -76,3 +77,6 @@ class MITIETrainer(Trainer):
 
         self.intent_classifier.save_to_disk(classifier_file, pure_model=True)
         self.entity_extractor.save_to_disk(entity_extractor_file, pure_model=True)
+
+        if persistor is not None:
+            persistor.send_tar_to_s3(dirname)

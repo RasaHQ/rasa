@@ -92,11 +92,7 @@ If you're exporting from LUIS you get a single json file, and that's the one you
   "path" : "/path/to/models/",
   "data" : "expressions.json",
   "backend" : "mitie",
-  "backends" : {
-    "mitie": {
-      "fe_file":"/path/to/total_word_feature_extractor.dat"
-    }
-  }
+  "mitie_file" : "/path/to/total_word_feature_extractor.dat"
 }
 ```
 

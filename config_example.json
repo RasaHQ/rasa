@@ -1,11 +1,5 @@
 {
-  "backends": {
-    "mitie": {
-      "fe_file": "/path/to/total_word_feature_extractor.dat"
-    },
-
-    "spacy_sklearn": {
-
-    }
-  }
+  "backend": "spacy_sklearn",
+  "path" : "./",
+  "data" : "./data/demo-restaurants.json"
 }

@@ -1,6 +1,11 @@
+.. _section_tutorial:
+
+.. _tutorial:
 
 Tutorial: building a restaurant search bot
 ====================================
+
+Note: see :ref:`section_migration` for how to clone your existing wit/LUIS/api.ai app.
 
 As an example we'll use the domain of searching for restaurants. 
 We'll start with an extremely simple model of those conversations, and build up from there.
@@ -55,15 +60,79 @@ Download the file and open it, and you'll see a list of training examples like t
     }
 
 hopefully the format is intuitive if you've read this far into the tutorial.
+In your working directory, create a ``data`` folder, and copy the ``demo-rasa.json`` file there.
 
 
-Now we're going to create a configuration file. Make sure first that you've set up a backend, see :ref:`section_migration` .
-Create a file called ``config.json`` which looks like this
+Now we're going to create a configuration file. Make sure first that you've set up a backend, see :ref:`section_backends` .
+Create a file called ``config.json`` in your working directory which looks like this
 
  
 .. code-block:: json
 
     {
       "backend": "spacy_sklearn",
+      "path" : "./",
+      "data" : "./data/demo-restaurants.json"
+    }
+
+
+Now we can train the model by running:
+
+.. code-block:: console
+
+    $ python -m rasa_nlu.train -c config.json
+
+After a few minutes, rasa NLU will finish training, and you'll see a new dir called something like ``model_YYYYMMDD-HHMMSS`` with the timestamp when training finished. 
+
+To run your trained model, update your ``config.json``: 
+
+.. code-block:: json
+
+    {
+      "backend": "spacy_sklearn",
+      "path" : "./",
+      "data" : "./data/demo-restaurants.json",
+      "server_model_dir" : "./model_YYYYMMDD-HHMMSS"
+    }
+
+and run the server with 
+
+
+.. code-block:: console
+
+    $ python -m rasa_nlu.server -c config.json
+
+you can then test our your new model by sending a request. Open a new tab/window on your terminal and run
+
+
+.. code-block:: console
+
+    $ curl -XPOST localhost:5000/parse -d '{"text":"I am looking for Chinese food"}' | python -mjson.tool
+
+which should return 
+
+.. code-block:: json
+
+    {
+      "intent" : "restaurant_search",
+      "entities" : {
+        "cuisine": "Chinese"
+      }
+    }
+
+whereas with a different text:
+
+
+.. code-block:: console
+
+    $ curl -XPOST localhost:5000/parse -d '{"text":"any other suggestions?"}' | python -mjson.tool
+
+you should get
+
+.. code-block:: json
+
+    {
+      "intent" : "reject",
+      "entities" : {}
     }
 

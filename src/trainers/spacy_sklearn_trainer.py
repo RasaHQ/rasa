@@ -3,6 +3,7 @@ import os
 import datetime
 import json
 import cloudpickle
+from rasa_nlu import util
 from rasa_nlu.featurizers.spacy_featurizer import SpacyFeaturizer
 from rasa_nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
 from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
@@ -15,11 +16,10 @@ class SpacySklearnTrainer(Trainer):
 
     def __init__(self, config, language_name):
         self.ensure_language_support(language_name)
-
         self.name = "spacy_sklearn"
         self.language_name = language_name
         self.training_data = None
-        self.nlp = spacy.load(self.language_name)
+        self.nlp = spacy.load(self.language_name, tagger=False, parser=False, entity=False)
         self.featurizer = SpacyFeaturizer(self.nlp)
         self.intent_classifier = SklearnIntentClassifier()
         self.entity_extractor = SpacyEntityExtractor()
@@ -39,7 +39,8 @@ class SpacySklearnTrainer(Trainer):
         X = self.featurizer.create_bow_vecs(sentences)
         self.intent_classifier.train(X, y)
 
-    def persist(self, path):
+    def persist(self, path, persistor=None):
+
         timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
         dir_name = os.path.join(path, "model_" + timestamp)
         os.mkdir(dir_name)
@@ -61,3 +62,6 @@ class SpacySklearnTrainer(Trainer):
             json.dump(self.entity_extractor.ner.cfg, f)
 
         self.entity_extractor.ner.model.dump(entity_extractor_file)
+
+        if persistor is not None:
+            persistor.send_tar_to_s3(dirname)

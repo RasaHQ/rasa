@@ -19,18 +19,14 @@ Here is a list of all rasa NLU configuration options:
 - ``backend`` : (optional) if present, can be ``mitie`` or ``spacy_sklearn``
 - ``config`` : configuration file (can only be set as env var or command line option)
 - ``data`` : file containing training data.
+- ``emulate`` : (optional) service to emulate. can be ``wit``, ``luis``, or ``api``.
 - ``language`` : language of your app, can be ``en`` (English) or ``de`` (German).
-- ``mitie_file`` : file containing ``total_word_feature_extractor.dat`` (see `here <>`_)
+- ``mitie_file`` : file containing ``total_word_feature_extractor.dat`` (see :ref:`backends`)
 - ``path`` : where trained models will be saved.
 - ``port`` : port on which to run server.
 - ``server_model_dir`` : dir containing the model to be used by server.
+- ``token`` : (optional) if set, all requests to server must have a ``?token=<token>`` query param. see :ref:`section:auth`
 - ``write`` : file where logs will be saved
 
 
-You can also persist your trained models to S3, and fetch them from there. This requires the following options to be set.
-Note these do not have a ``RASA_`` prefix when set as environment vars.
-
-- ``aws_region`` : region for S3 bucket where models are saved
-- ``bucket_name`` : name of S3 bucket where models are saved
-- ``aws_secret_access_key`` : secret
-- ``aws_access_key_id`` : key
+If you want to persist your trained models to S3, there are additinoal configuration options, see :ref:`section:persistence`

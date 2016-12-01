@@ -1,1 +1,1 @@
-web: python setup.py install; python -m rasa_nlu.server -P $PORT
+web: python setup.py install --force; python -m spacy.en.download glove; python -m rasa_nlu.server -P $PORT

@@ -14,7 +14,7 @@
       "name": "greet"
     },
     {
-      "name": "inform"
+      "name": "restaurant_search"
     },
     {
       "name": "None"
@@ -60,13 +60,13 @@
       "entities": []
     },
     {
-      "text": "i'm looking for a place to eat",
-      "intent": "inform",
+      "text": "i'm looking for something to eat",
+      "intent": "restaurant_search",
       "entities": []
     },
     {
       "text": "i'm looking for a place in the north of town",
-      "intent": "inform",
+      "intent": "restaurant_search",
       "entities": [
         {
           "entity": "location",
@@ -77,7 +77,7 @@
     },
     {
       "text": "show me chinese restaurants",
-      "intent": "greet",
+      "intent": "restaurant_search",
       "entities": [
         {
           "entity": "cuisine",
@@ -103,7 +103,7 @@
     },
     {
       "text": "show me a mexican place in the centre",
-      "intent": "inform",
+      "intent": "restaurant_search",
       "entities": [
         {
           "entity": "location",
@@ -144,17 +144,23 @@
     },
     {
       "text": "i am looking for an indian spot",
-      "intent": "inform",
-      "entities": []
+      "intent": "restaurant_search",
+      "entities": [
+        {
+          "entity": "cuisine",
+          "startPos": 5,
+          "endPos": 5
+        }
+      ]
     },
     {
       "text": "search for restaurants",
-      "intent": "inform",
+      "intent": "restaurant_search",
       "entities": []
     },
     {
       "text": "anywhere in the west",
-      "intent": "inform",
+      "intent": "restaurant_search",
       "entities": [
         {
           "entity": "location",

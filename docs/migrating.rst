@@ -1,42 +1,13 @@
 .. _section_migration:
 
-Migrating an existing app from {wit,LUIS,api}.ai
+Migrating an existing app
 ====================================
 
+rasa NLU is designed to make migrating from wit/LUIS/api.ai as simple as possible. 
+The TLDR instructions for migrating are: 
 
-Download your data from wit or LUIS. When you export your model from wit you will get a zipped directory. The file you need is `expressions.json`.
-If you're exporting from LUIS you get a single json file, and that's the one you need. Create a config file (json format) like this one:
-
-.. code-block:: json
-
-     {
-       "path" : "/path/to/models/",
-       "data" : "expressions.json",
-       "backend" : "mitie",
-       "mitie_file":"/path/to/total_word_feature_extractor.dat"
-     }
-
-and then pass this file to the training script
-
-.. code-block:: console
-
-    python -m rasa_nlu.train -c config.json
-
-
-you can also override any of the params in ``config.json`` with command line arguments. Run ``python -m rasa_nlu.train -h`` for details.
-
-
-Running the server with your newly trained models
------------------------------------------------
-
-After training you will have a new dir containing your models, e.g. ``/path/to/models/model_XXXXXX``. 
-Just pass this path to the ``rasa_nlu.server`` script
-
-.. code-block:: console
-
-    python -m rasa_nlu.server -d '/path/to/models/model_XXXXXX'
-
-or otherwise set the ``server_model_dir`` flag in your config file.
+- download an export of your app data from wit/LUIS/api.ai
+- follow the :ref:`tutorial`, using your downloaded data instead of ``demo-rasa.json``
 
 
 Banana Peels
@@ -47,19 +18,101 @@ Just some specific things to watch out for for each of the services you might wa
 wit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-it used to be that wit handled ``intents`` natively. Now they are slightly obscured. To create an ``intent`` in wit you have to create and ``entity`` which spans the entire text.
-
+Wit used to handle ``intents`` natively. 
+Now they are somewhat obfuscated. 
+To create an ``intent`` in wit you have to create and ``entity`` which spans the entire text.
+The file you want from your download is called ``expressions.json``
 
 LUIS
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-when you download your model, the entity locations are specified by the index of the tokens. This is pretty fragile because not every tokenizer will behave the same as LUIS's, so your entities may be incorrectly labelled. Run your training once and you'll get a copy of your training data in the ``model_XXXXX`` dir. Do any fixes required and use that to train. 
+When you download your model, the entity locations are specified by the index of the tokens. 
+This is pretty fragile because not every tokenizer will behave the same as LUIS's, so your entities may be incorrectly labelled. 
+Run your training once and you'll get a copy of your training data in the ``model_XXXXX`` dir. 
+Do any fixes required and use that to train. 
 
 api.ai
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-api app exports generate multiple files rather than just one. so put them all in a directory (see ``data/restaurantBot``) and pass that path to the trainer. 
+api app exports generate multiple files rather than just one. 
+Put them all in a directory (see ``data/restaurantBot`` in the repo) 
+and pass that path to the trainer. 
 
 
-.. toctree::
-   :maxdepth: 1
+
+Emulation
+--------------------------
+
+To make rasa NLU easy to try out with existing projects, the server can `emulate` wit, LUIS, or api.ai.
+In native mode, a request / response looks like this : 
+
+.. code-block:: console
+
+    $ curl -XPOST localhost:5000/parse -d '{"text":"I am looking for Chinese food"}' | python -mjson.tool
+    {
+      "intent" : "restaurant_search",
+      "entities" : {
+        "cuisine": "Chinese"
+      }
+    }
+
+if we run in ``wit`` mode (e.g. ``python -m rasa_nlu.server -e wit``)
+
+then instead have to make a GET request
+
+.. code-block:: console
+
+    $ curl 'localhost:5000/parse?q=hello' | python -mjson.tool
+    [
+        {
+            "_text": "hello",
+            "confidence": null,
+            "entities": {},
+            "intent": "greet"
+        }
+    ]
+
+similarly for LUIS, but with a slightly different response format
+
+
+.. code-block:: console
+
+    $ curl 'localhost:5000/parse?q=hello' | python -mjson.tool
+    {
+        "entities": [],
+        "query": "hello",
+        "topScoringIntent": {
+            "intent": "inform",
+            "score": null
+        }
+    }
+
+and finally for api.ai
+
+.. code-block:: console
+
+    $ curl 'localhost:5000/parse?q=hello' | python -mjson.tool
+    {
+        "id": "ffd7ede3-b62f-11e6-b292-98fe944ee8c2",
+        "result": {
+            "action": null,
+            "actionIncomplete": null,
+            "contexts": [],
+            "fulfillment": {},
+            "metadata": {
+                "intentId": "ffdbd6f3-b62f-11e6-8504-98fe944ee8c2",
+                "intentName": "greet",
+                "webhookUsed": "false"
+            },
+            "parameters": {},
+            "resolvedQuery": "hello",
+            "score": null,
+            "source": "agent"
+        },
+        "sessionId": "ffdbd814-b62f-11e6-93b2-98fe944ee8c2",
+        "status": {
+            "code": 200,
+            "errorType": "success"
+        },
+        "timestamp": "2016-11-29T12:33:15.369411"
+    }
