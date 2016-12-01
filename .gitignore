@@ -7,8 +7,7 @@ server/
 *.log
 tokens.dat
 config.py
-scala/
-mongodb/
+.DS_Store
 .cache/
 build/lib/
 build/
