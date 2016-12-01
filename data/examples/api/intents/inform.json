@@ -1,0 +1,155 @@
+{
+  "id": "fd566317-b15d-4685-9158-63028b6fb5bf",
+  "name": "inform",
+  "auto": true,
+  "contexts": [],
+  "userSays": [
+    {
+      "id": "d5562a99-f039-4bc7-a1bd-53d6cc811206",
+      "data": [
+        {
+          "text": "central",
+          "alias": "location",
+          "meta": "@location",
+          "userDefined": false
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "indian",
+          "alias": "cuisine",
+          "meta": "@cuisine",
+          "userDefined": true
+        },
+        {
+          "text": " restaurant"
+        }
+      ],
+      "isTemplate": false,
+      "count": 0
+    },
+    {
+      "id": "5e043d29-a4ce-4642-a191-e287d397b02f",
+      "data": [
+        {
+          "text": "anywhere in the "
+        },
+        {
+          "text": "west",
+          "alias": "location",
+          "meta": "@location",
+          "userDefined": false
+        }
+      ],
+      "isTemplate": false,
+      "count": 0
+    },
+    {
+      "id": "540cbb16-4c62-4bc7-b3f2-8f1107e65471",
+      "data": [
+        {
+          "text": "search for restaurants"
+        }
+      ],
+      "isTemplate": false,
+      "count": 0
+    },
+    {
+      "id": "cb096268-a8e5-49d5-8771-60bb1a511151",
+      "data": [
+        {
+          "text": "i am looking for an "
+        },
+        {
+          "text": "indian",
+          "alias": "cuisine",
+          "meta": "@cuisine",
+          "userDefined": true
+        },
+        {
+          "text": " spot"
+        }
+      ],
+      "isTemplate": false,
+      "count": 0
+    },
+    {
+      "id": "2cf1b035-62f1-40cd-867c-af92cbbaf5c7",
+      "data": [
+        {
+          "text": "show me "
+        },
+        {
+          "text": "chinese",
+          "alias": "cuisine",
+          "meta": "@cuisine",
+          "userDefined": true
+        },
+        {
+          "text": " restaurants"
+        }
+      ],
+      "isTemplate": false,
+      "count": 0
+    },
+    {
+      "id": "51f618be-e5a9-4007-a0d5-d6f12475a9b1",
+      "data": [
+        {
+          "text": "i\u0027m looking for a place in the "
+        },
+        {
+          "text": "north",
+          "alias": "location",
+          "meta": "@location",
+          "userDefined": true
+        },
+        {
+          "text": " of "
+        }
+      ],
+      "isTemplate": false,
+      "count": 0
+    },
+    {
+      "id": "20a723ce-1efc-4c03-84ec-ee17c3219329",
+      "data": [
+        {
+          "text": "i\u0027m looking for a place to eat"
+        }
+      ],
+      "isTemplate": false,
+      "count": 0
+    }
+  ],
+  "responses": [
+    {
+      "resetContexts": false,
+      "affectedContexts": [],
+      "parameters": [
+        {
+          "dataType": "@location",
+          "name": "location",
+          "value": "$location",
+          "isList": true
+        },
+        {
+          "dataType": "@cuisine",
+          "name": "cuisine",
+          "value": "$cuisine",
+          "isList": false
+        }
+      ],
+      "messages": [
+        {
+          "type": 0,
+          "speech": "Here is a great spot I am sure you\u0027ll like, pal!"
+        }
+      ]
+    }
+  ],
+  "priority": 500000,
+  "webhookUsed": false,
+  "fallbackIntent": false
+}

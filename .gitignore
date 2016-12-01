@@ -2,7 +2,7 @@
 *pyc
 dist/
 data/*
-!data/examples/*
+!data/examples
 docs/_build
 server/
 *.log
