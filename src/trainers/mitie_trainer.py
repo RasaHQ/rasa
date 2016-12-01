@@ -61,7 +61,7 @@ class MITIETrainer(Trainer):
         intent_classifier = trainer.train()
         return intent_classifier
 
-    def persist(self, path):
+    def persist(self, path, persistor=None):
         tstamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
         dirname = os.path.join(path, "model_" + tstamp)
         os.mkdir(dirname)
@@ -77,3 +77,6 @@ class MITIETrainer(Trainer):
 
         self.intent_classifier.save_to_disk(classifier_file, pure_model=True)
         self.entity_extractor.save_to_disk(entity_extractor_file, pure_model=True)
+
+        if (persistor is not None):
+            persistor.send_tar_to_s3(dirname)
