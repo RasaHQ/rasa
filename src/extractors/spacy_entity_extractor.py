@@ -49,5 +49,5 @@ class SpacyEntityExtractor(object):
             "start": ent.start_char,
             "end": ent.end_char
           }
-          for ent in doc.ents ]
+          for ent in doc.ents]
         return entities

@@ -2,6 +2,7 @@ from mitie import *
 from rasa_nlu import Interpreter
 import re
 
+
 class MITIEInterpreter(Interpreter):
     def __init__(self, intent_classifier=None, entity_extractor=None, feature_extractor=None, **kwargs):
         self.extractor = named_entity_extractor(entity_extractor, feature_extractor)
@@ -11,7 +12,7 @@ class MITIEInterpreter(Interpreter):
         tokens = tokenize(text)
         ents = []
         entities = self.extractor.extract_entities(tokens)
-        for e in entities:            
+        for e in entities:
             _range = e[0]
             _regex = u"\s*".join(tokens[i] for i in _range)
             expr = re.compile(_regex)
@@ -23,7 +24,7 @@ class MITIEInterpreter(Interpreter):
                 "start": start,
                 "end": end
             })
-            
+
         return ents
 
     def get_intent(self, text):

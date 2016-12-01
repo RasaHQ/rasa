@@ -72,6 +72,6 @@ class MITIESklearnTrainer(object):
 
         self.intent_classifier.save_to_disk(classifier_file, pure_model=True)
         self.entity_extractor.save_to_disk(entity_extractor_file, pure_model=True)
-        
+
         if persistor is not None:
             persistor.send_tar_to_s3(dirname)
