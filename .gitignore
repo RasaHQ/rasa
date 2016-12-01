@@ -32,3 +32,5 @@ config.json
 *.iml
 rasa_nlu
 out/
+.vscode/
+rasa_nlu_logs.json
