@@ -7,6 +7,11 @@
 
 documentation is [here](http://rasa-nlu.readthedocs.io/)
 
+### Deploying to Heroku
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
+Click the button to deploy a rasa NLU server to Heroku.
+
+
 ## Motivation
 
 rasa_nlu is a tool for intent classification and entity extraction. 
