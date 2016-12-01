@@ -1,0 +1,9 @@
+{
+    "intent_classifier": "/Users/gio/Developer/lastmile/outputs/model_20161125-233235/intent_classifier.dat", 
+    "entity_extractor": "/Users/gio/Developer/lastmile/outputs/model_20161125-233235/entity_extractor.dat", 
+    "language": "en", 
+    "trained_at": "20161125-233235", 
+    "training_data": "/Users/gio/Developer/lastmile/outputs/model_20161125-233235/training_data.json", 
+    "feature_extractor": "/Users/gio/Downloads/MITIE-models/english/total_word_feature_extractor.dat", 
+    "backend": "mitie"
+}

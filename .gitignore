@@ -1,7 +1,8 @@
 *~
 *pyc
 dist/
-data/
+data/*
+!data/examples/*
 docs/_build
 server/
 *.log
