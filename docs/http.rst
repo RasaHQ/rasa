@@ -1,3 +1,4 @@
+.. _section_http:
 
 The HTTP api
 ====================================
@@ -7,9 +8,10 @@ The HTTP api exists to make it easy for non-python projects to use rasa NLU, and
 Emulation
 -------------------------
 rasa NLU can 'emulate' any of these three services by making the ``/parse`` endpoint compatible with your existing code.
+To activate this, either add ``'emulate' : 'luis'`` to your config file or run the server with ``-e luis``.
 For example, if you would normally send your text to be parsed to LUIS, you would make a ``GET`` request to
 
-``https://api.projectoxford.ai/luis/v2.0/apps/<app-id>?subscription-key=<key>&q=hello%20there&verbose=true``
+``https://api.projectoxford.ai/luis/v2.0/apps/<app-id>?q=hello%20there``
 
 in luis emulation mode you can call rasa by just sending this request to 
 
@@ -28,7 +30,7 @@ you must POST data in this format ``'{"text":"<your text to parse>"}'``, you can
 
 .. code-block:: console
 
-    $ curl -XPOST localhost:5000/parse -d '{"text":"<your text to parse>"}'
+    $ curl -XPOST localhost:5000/parse -d '{"text":"hello there"}'
 
 
 ``POST /train``
@@ -38,6 +40,7 @@ you can post your training data to this endpoint to train a new model.
 this starts a separate process which you can monitor with the ``/status`` endpoint. 
 
 .. code-block:: console
+
     $ curl -XPOST localhost:5000/train -d @data/demo-restaurants.json
 
 
@@ -48,6 +51,7 @@ this checks if there is currently a training process running (you can only run o
 also returns a list of available models the server can use to fulfill ``/parse`` requests.
 
 .. code-block:: console
+
     $ curl localhost:5000/status | python -mjson.tool
     {
       "training" : False
@@ -58,7 +62,8 @@ also returns a list of available models the server can use to fulfill ``/parse``
 
 Authorization
 -------------------------
-To protect your server, you can specify a token in your rasa NLU configuration, which must be passed as a query parameter in all requests, e.g. :
+To protect your server, you can specify a token in your rasa NLU configuration, e.g. by adding ``"token" : "12345"`` to your config file, or by setting the ``RASA_TOKEN`` environment variable.
+If set, this token must be passed as a query parameter in all requests, e.g. :
 
 .. code-block:: console
 

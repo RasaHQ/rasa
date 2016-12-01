@@ -57,7 +57,7 @@ The setup process is designed to be as simple as possible. If you're currently u
 1. download your app data from wit or LUIS and feed it into rasa NLU
 2. run rasa NLU on your machine and switch the URL of your wit/LUIS api calls to ``localhost:5000/parse``.
 
-rasa NLU is written in Python, but it you can use it from any language through the HTTP API. 
+rasa NLU is written in Python, but it you can use it from any language through :ref:`section_http`.
 If your project *is* written in Python you can simply import the relevant classes.
 
 rasa is a set of tools for building more advanced bots, developed by `LASTMILE <https://golastmile.com>`_ . This is the natural language understanding module, and the first component to be open sourced. 
