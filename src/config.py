@@ -29,9 +29,11 @@ class RasaNLUConfig(object):
 
         if env_vars is not None:
             env_config = self.format_env_vars(env_vars)
+            print("env_config : {0}".format(env_config))
             self.override(env_config)
 
         if cmdline_args is not None:
+            print("cmdline_args : {0}".format(cmdline_args))
             self.override(cmdline_args)
 
         for key, value in self.items():
