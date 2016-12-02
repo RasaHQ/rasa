@@ -19,7 +19,7 @@ class RasaNLUServer(object):
         self.data_router = DataRouter(config, self.interpreter, self.emulator)
 
     def __create_interpreter(self):
-        model_dir = self.config.get("server_model_dir")
+        model_dir = self.config.server_model_dir
         metadata, backend = None, None
 
         if model_dir is not None:
@@ -50,7 +50,7 @@ class RasaNLUServer(object):
             raise ValueError("unknown backend : {0}".format(backend))
 
     def __create_emulator(self):
-        mode = self.config.get('emulate')
+        mode = self.config.emulate
         if mode is None:
             from emulators import NoEmulator
             return NoEmulator()

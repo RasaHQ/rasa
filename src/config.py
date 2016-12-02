@@ -65,8 +65,11 @@ class RasaNLUConfig(object):
         keys = [key for key in env_vars.keys() if "RASA" in key]
         return {key.split('RASA_')[1].lower(): env_vars[key] for key in keys}
 
+    def get(self, key):
+        self.__dict__.get(key)
+
     def is_set(self, key):
-        return key in self.__dict__ and self[key] is not None
+        return self.get(key) is not None
 
     def override(self, new_dict):
         self.__dict__.update(new_dict)
