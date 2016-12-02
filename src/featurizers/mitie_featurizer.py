@@ -27,7 +27,7 @@ class MITIEFeaturizer(object):
                 output.write(data)
 
     def download(self, fe_file):
-        download = multiprocessing.Process(target=download_fe_file, args=(fe_file,))
+        download = multiprocessing.Process(target=self.download_fe_file, args=(fe_file,))
         download.start()
 
     def create_bow_vecs(self, sentences):
