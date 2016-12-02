@@ -227,7 +227,7 @@ def create_argparser():
 
 if __name__ == "__main__":
     parser = create_argparser()
-    args = parser.parse_args()
+    args = {key: val for key, val in parser.parse_args().items() if val is not None}
     config = RasaNLUConfig(args.config, os.environ, vars(args))
     print(config.view())
 
