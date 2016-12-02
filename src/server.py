@@ -20,7 +20,7 @@ class RasaNLUServer(object):
 
         if 'DYNO' in os.environ and config.backend == 'mitie':  # running on Heroku
             from rasa_nlu.featurizers.mitie_featurizer import MITIEFeaturizer
-            self.featurizer = MITIEFeaturizer(config.mitie_file)
+            MITIEFeaturizer(config.mitie_file)
 
     def __create_interpreter(self):
         model_dir = self.config.server_model_dir

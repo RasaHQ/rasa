@@ -3,13 +3,13 @@ import numpy as np
 import urllib2
 import os
 import httplib
-
+import multiprocessing
 
 class MITIEFeaturizer(object):
 
     def __init__(self, fe_file):
         if not os.path.isfile(fe_file):
-            self.download_fe_file(fe_file)
+            self.download(fe_file)
         self.feature_extractor = total_word_feature_extractor(fe_file)
         self.ndim = self.feature_extractor.num_dimensions
 
@@ -25,6 +25,10 @@ class MITIEFeaturizer(object):
                     data = e.partial
                     done = True
                 output.write(data)
+
+    def download(self, fe_file):
+        download = multiprocessing.Process(target=download_fe_file, args=(fe_file,))
+        download.start()
 
     def create_bow_vecs(self, sentences):
         X = np.zeros((len(sentences), self.ndim))
