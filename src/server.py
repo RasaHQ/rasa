@@ -13,7 +13,7 @@ class RasaNLUServer(object):
     def __init__(self, config):
         self.server = None
         self.config = config
-        self.logfile = config.logfile
+        self.logfile = config.write
         self.emulator = self.__create_emulator()
         self.interpreter = self.__create_interpreter()
         self.data_router = DataRouter(config, self.interpreter, self.emulator)
@@ -90,7 +90,7 @@ class DataRouter(object):
         self.config = config
         self.interpreter = interpreter
         self.emulator = emulator
-        self.logfile = config.logfile
+        self.logfile = config.write
         self.responses = set()
         self.train_proc = None
         self.model_dir = config.path
