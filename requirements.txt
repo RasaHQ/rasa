@@ -6,3 +6,4 @@ pathlib
 cloudpickle
 boto3
 pytest-pep8
+requests
