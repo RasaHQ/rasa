@@ -227,8 +227,8 @@ def create_argparser():
 
 if __name__ == "__main__":
     parser = create_argparser()
-    args = {key: val for key, val in parser.parse_args().items() if val is not None}
-    config = RasaNLUConfig(args.config, os.environ, vars(args))
+    cmdline_args = {key: val for key, val in vars(parser.parse_args()).items() if val is not None}
+    config = RasaNLUConfig(cmdline_args.get("config"), os.environ, cmdline_args)
     print(config.view())
 
     try:
