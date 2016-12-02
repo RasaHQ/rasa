@@ -2,6 +2,7 @@ import pytest
 import requests
 import os
 from rasa_nlu.server import RasaNLUServer
+from rasa_nlu.config import RasaNLUConfig
 from multiprocessing import Process
 import time
 import json
@@ -13,7 +14,7 @@ def http_server():
     def url(port):
         return "http://localhost:{0}".format(port)
     # basic conf
-    config = {
+    _config = {
         'logfile': os.path.join(os.getcwd(), "rasa_nlu_logs.json"),
         'port': 5022,
         "backend": "mitie",
@@ -21,6 +22,7 @@ def http_server():
         "data": "./data/demo-restaurants.json",
         "emulate": "wit"
     }
+    config = RasaNLUConfig(cmdline_args=_config)
     # run server in background
     server = RasaNLUServer(config)
     p = Process(target=server.start)
@@ -28,7 +30,7 @@ def http_server():
     p.start()
     # TODO: implement better way to notify when server is up
     time.sleep(2)
-    yield url(config["port"])
+    yield url(config.port)
     p.terminate()
 
 
