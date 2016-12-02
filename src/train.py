@@ -1,6 +1,6 @@
 import argparse
 from training_data import TrainingData
-from rasa_nlu.util import update_config
+from config import RasaNLUConfig
 import json
 import warnings
 import os
