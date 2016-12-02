@@ -15,7 +15,7 @@ def http_server():
         return "http://localhost:{0}".format(port)
     # basic conf
     _config = {
-        'logfile': os.path.join(os.getcwd(), "rasa_nlu_logs.json"),
+        'write': os.path.join(os.getcwd(), "rasa_nlu_logs.json"),
         'port': 5022,
         "backend": "mitie",
         "path": "./",
