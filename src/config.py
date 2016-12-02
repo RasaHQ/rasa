@@ -58,7 +58,7 @@ class RasaNLUConfig(object):
         return self.__dict__.items()
 
     def view(self):
-        return json.dumps(self._prep_metadata(), indent=4)
+        return json.dumps(self.__dict__, indent=4)
 
     def format_env_vars(self, env_vars):
         keys = [key for key in env_vars.keys() if "RASA" in key]
