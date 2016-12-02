@@ -22,31 +22,22 @@ def create_argparser():
 
 
 def create_trainer(config):
-    backend = config['backend'].lower()
+    backend = config.backend.lower()
     if backend == 'mitie':
         from trainers.mitie_trainer import MITIETrainer
-        return MITIETrainer(config['mitie_file'], config['language'])
+        return MITIETrainer(config.mitie_file, config.language)
     if backend == 'spacy_sklearn':
         from trainers.spacy_sklearn_trainer import SpacySklearnTrainer
-        return SpacySklearnTrainer(config['language'])
+        return SpacySklearnTrainer(config.language)
     else:
         raise NotImplementedError("other backend trainers not implemented yet")
-
-
-def load_configuration(file_name):
-    config = {}
-    if (os.path.isfile(file_name)):
-        config = json.loads(open(file_name, 'rb').read())
-    else:
-        warnings.warn("could not find config file {0}, ignoring".format(file_name))
-    return config
 
 
 def create_persistor(config):
     persistor = None
     if "bucket_name" in config:
         from rasa_nlu.persistor import Persistor
-        persistor = Persistor(config['path'], config['aws_region'], config['bucket_name'])
+        persistor = Persistor(config.path, config.aws_region, config.bucket_name)
 
     return persistor
 
@@ -54,8 +45,7 @@ def create_persistor(config):
 def init():
     parser = create_argparser()
     args = parser.parse_args()
-    config = load_configuration(args.config)
-    config = update_config(config, vars(args), os.environ, exclude=['config'], required=['path', 'backend', 'data'])
+    config = RasaNLUConfig(args.config, os.environ, vars(args))
     return config
 
 
@@ -64,9 +54,9 @@ def do_train(config):
 
     persistor = create_persistor(config)
 
-    training_data = TrainingData(config["data"], config["backend"], config["language"])
+    training_data = TrainingData(config.data, config.backend, config.language)
     trainer.train(training_data)
-    trainer.persist(config["path"], persistor)
+    trainer.persist(config.path, persistor)
 
 
 if __name__ == '__main__':

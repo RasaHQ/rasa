@@ -6,15 +6,14 @@ import multiprocessing
 import glob
 import warnings
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
-from rasa_nlu.util import update_config
 from rasa_nlu.train import do_train
-
+from rasa_nlu.config import RasaNLUConfig
 
 class RasaNLUServer(object):
     def __init__(self, config):
         self.server = None
         self.config = config
-        self.logfile = config["logfile"]
+        self.logfile = config.logfile
         self.emulator = self.__create_emulator()
         self.interpreter = self.__create_interpreter()
         self.data_router = DataRouter(config, self.interpreter, self.emulator)
@@ -28,7 +27,7 @@ class RasaNLUServer(object):
             if not os.path.isdir(model_dir):
                 try:
                     from rasa_nlu.persistor import Persistor
-                    p = Persistor(self.config['path'], self.config['aws_region'], self.config['bucket_name'])
+                    p = Persistor(self.config.path, self.config.aws_region, self.config.bucket_name)
                     p.fetch_and_extract('{0}.tar.gz'.format(os.path.basename(model_dir)))
                 except:
                     warnings.warn("using default interpreter, couldn't find model dir or fetch it from S3")
@@ -68,8 +67,8 @@ class RasaNLUServer(object):
             raise ValueError("unknown mode : {0}".format(mode))
 
     def start(self):
-        self.server = HTTPServer(('', self.config["port"]), lambda *args: RasaRequestHandler(self.data_router, *args))
-        print 'Started http server on port ', self.config["port"]
+        self.server = HTTPServer(('', self.config.port), lambda *args: RasaRequestHandler(self.data_router, *args))
+        print 'Started http server on port ', self.config.port
         self.server.serve_forever()
 
     def stop(self):
@@ -87,11 +86,11 @@ class DataRouter(object):
         self.config = config
         self.interpreter = interpreter
         self.emulator = emulator
-        self.logfile = config["logfile"]
+        self.logfile = config.logfile
         self.responses = set()
         self.train_proc = None
-        self.model_dir = config["path"]
-        self.token = config.get("token")
+        self.model_dir = config.path
+        self.token = config.token
 
     def extract(self, data):
         return self.emulator.normalise_request_json(data)
@@ -140,7 +139,7 @@ class DataRouter(object):
         fname = 'tmp_training_data.json'
         with open(fname, 'w') as f:
             f.write(data)
-        train_config = self.config.copy()
+        train_config = dict(self.config.items())
         train_config["data"] = fname
         self.train_proc = multiprocessing.Process(target=do_train, args=(train_config,))
         self.train_proc.start()
@@ -225,9 +224,7 @@ def create_argparser():
 if __name__ == "__main__":
     parser = create_argparser()
     args = parser.parse_args()
-    config = {'logfile': os.path.join(os.getcwd(), 'rasa_nlu_logs.json')} if args.config is None else json.loads(
-        open(args.config, 'rb').read())
-    config = update_config(config, vars(args), os.environ, exclude=['config'])
+    config = RasaNLUConfig(args.config, os.environ, vars(args))
 
     try:
         server = RasaNLUServer(config)

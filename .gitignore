@@ -6,8 +6,6 @@ data/*
 docs/_build
 server/
 *.log
-tokens.dat
-config.py
 scala/
 mongodb/
 .cache/
