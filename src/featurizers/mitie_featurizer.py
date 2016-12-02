@@ -21,12 +21,14 @@ class MITIEFeaturizer(object):
         with open(fe_file, 'wb') as output:
             done = False
             while not done:
+                print("fetching more...")
                 try:
                     data = _fe_file.read(chunk_size)
                 except httplib.IncompleteRead, e:
                     data = e.partial
                     done = True
                 output.write(data)
+        print("file written! {0}, {1}".format(fe_file,os.path.exists(fe_file)))
 
     def download(self, fe_file):
         download = multiprocessing.Process(target=self.download_fe_file, args=(fe_file,))
