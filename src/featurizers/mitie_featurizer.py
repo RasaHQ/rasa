@@ -16,7 +16,7 @@ class MITIEFeaturizer(object):
 
     def download_fe_file(self, fe_file):
         print("DOWNLOADING MITIE FILE")
-        chunk_size = 4096
+        chunk_size = 30000000
         _fe_file = urllib2.urlopen("https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat")
         with open(fe_file, 'wb') as output:
             done = False
