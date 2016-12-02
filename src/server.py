@@ -143,8 +143,10 @@ class DataRouter(object):
         fname = 'tmp_training_data.json'
         with open(fname, 'w') as f:
             f.write(data)
-        train_config = dict(self.config.items())
-        train_config["data"] = fname
+        _config = dict(self.config.items())
+        _config["data"] = fname
+        train_config = RasaNLUConfig(cmdline_args=_config)
+
         self.train_proc = multiprocessing.Process(target=do_train, args=(train_config,))
         self.train_proc.start()
         print("training process {0} started".format(self.train_proc))
