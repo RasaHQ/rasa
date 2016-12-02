@@ -229,6 +229,7 @@ if __name__ == "__main__":
     parser = create_argparser()
     args = parser.parse_args()
     config = RasaNLUConfig(args.config, os.environ, vars(args))
+    print(config.view)
 
     try:
         server = RasaNLUServer(config)

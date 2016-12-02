@@ -14,7 +14,7 @@ class RasaNLUConfig(object):
           "emulate": None,
           "language": "en",
           "mitie_file": "./data/total_word_feature_extractor.dat",
-          "path": os.getcwd(),
+          "path": "./data",
           "port": 5000,
           "server_model_dir": None,
           "token": None,
