@@ -29,7 +29,6 @@ class RasaNLUConfig(object):
 
         if env_vars is not None:
             env_config = self.format_env_vars(env_vars)
-            print("env config : {0}".format(env_config))
             self.override(env_config)
 
         if cmdline_args is not None:
@@ -65,11 +64,8 @@ class RasaNLUConfig(object):
         keys = [key for key in env_vars.keys() if "RASA" in key]
         return {key.split('RASA_')[1].lower(): env_vars[key] for key in keys}
 
-    def get(self, key):
-        self.__dict__.get(key)
-
     def is_set(self, key):
-        return self.get(key) is not None
+        return key in self.__dict__ and self[key] is not None
 
     def override(self, new_dict):
         self.__dict__.update(new_dict)
@@ -77,6 +73,7 @@ class RasaNLUConfig(object):
     def validate(self):
         if self.backend == "mitie":
             if not self.is_set("mitie_file"):
+                print(self.view)
                 raise ValueError("backend set to 'mitie' but mitie_file not specified")
             if self.language != "en":
                 raise ValueError("backend set to 'mitie' but language not set to 'en'.")
