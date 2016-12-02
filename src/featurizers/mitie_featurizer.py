@@ -10,6 +10,7 @@ class MITIEFeaturizer(object):
     def __init__(self, fe_file):
         if not os.path.isfile(fe_file):
             self.download(fe_file)
+            return  # need a cleaner solution for this
         self.feature_extractor = total_word_feature_extractor(fe_file)
         self.ndim = self.feature_extractor.num_dimensions
 
