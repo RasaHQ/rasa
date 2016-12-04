@@ -9,6 +9,7 @@ from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from rasa_nlu.train import do_train
 from rasa_nlu.config import RasaNLUConfig
 
+
 class RasaNLUServer(object):
     def __init__(self, config):
         self.server = None

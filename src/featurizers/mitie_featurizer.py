@@ -5,6 +5,7 @@ import os
 import httplib
 import multiprocessing
 
+
 class MITIEFeaturizer(object):
 
     def __init__(self, fe_file):
@@ -28,7 +29,7 @@ class MITIEFeaturizer(object):
                     data = e.partial
                     done = True
                 output.write(data)
-        print("file written! {0}, {1}".format(fe_file,os.path.exists(fe_file)))
+        print("file written! {0}, {1}".format(fe_file, os.path.exists(fe_file)))
 
     def download(self, fe_file):
         download = multiprocessing.Process(target=self.download_fe_file, args=(fe_file,))
