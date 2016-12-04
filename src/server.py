@@ -6,21 +6,25 @@ import multiprocessing
 import glob
 import warnings
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
-from rasa_nlu.util import update_config
 from rasa_nlu.train import do_train
+from rasa_nlu.config import RasaNLUConfig
 
 
 class RasaNLUServer(object):
     def __init__(self, config):
         self.server = None
         self.config = config
-        self.logfile = config["logfile"]
+        self.logfile = config.write
         self.emulator = self.__create_emulator()
         self.interpreter = self.__create_interpreter()
         self.data_router = DataRouter(config, self.interpreter, self.emulator)
 
+        if 'DYNO' in os.environ and config.backend == 'mitie':  # running on Heroku
+            from rasa_nlu.featurizers.mitie_featurizer import MITIEFeaturizer
+            MITIEFeaturizer(config.mitie_file)
+
     def __create_interpreter(self):
-        model_dir = self.config.get("server_model_dir")
+        model_dir = self.config.server_model_dir
         metadata, backend = None, None
 
         if model_dir is not None:
@@ -28,7 +32,7 @@ class RasaNLUServer(object):
             if not os.path.isdir(model_dir):
                 try:
                     from rasa_nlu.persistor import Persistor
-                    p = Persistor(self.config['path'], self.config['aws_region'], self.config['bucket_name'])
+                    p = Persistor(self.config.path, self.config.aws_region, self.config.bucket_name)
                     p.fetch_and_extract('{0}.tar.gz'.format(os.path.basename(model_dir)))
                 except:
                     warnings.warn("using default interpreter, couldn't find model dir or fetch it from S3")
@@ -51,7 +55,7 @@ class RasaNLUServer(object):
             raise ValueError("unknown backend : {0}".format(backend))
 
     def __create_emulator(self):
-        mode = self.config.get('emulate')
+        mode = self.config.emulate
         if mode is None:
             from emulators import NoEmulator
             return NoEmulator()
@@ -68,8 +72,8 @@ class RasaNLUServer(object):
             raise ValueError("unknown mode : {0}".format(mode))
 
     def start(self):
-        self.server = HTTPServer(('', self.config["port"]), lambda *args: RasaRequestHandler(self.data_router, *args))
-        print 'Started http server on port ', self.config["port"]
+        self.server = HTTPServer(('', self.config.port), lambda *args: RasaRequestHandler(self.data_router, *args))
+        print 'Started http server on port ', self.config.port
         self.server.serve_forever()
 
     def stop(self):
@@ -87,11 +91,11 @@ class DataRouter(object):
         self.config = config
         self.interpreter = interpreter
         self.emulator = emulator
-        self.logfile = config["logfile"]
+        self.logfile = config.write
         self.responses = set()
         self.train_proc = None
-        self.model_dir = config["path"]
-        self.token = config.get("token")
+        self.model_dir = config.path
+        self.token = config.token
 
     def extract(self, data):
         return self.emulator.normalise_request_json(data)
@@ -140,8 +144,10 @@ class DataRouter(object):
         fname = 'tmp_training_data.json'
         with open(fname, 'w') as f:
             f.write(data)
-        train_config = self.config.copy()
-        train_config["data"] = fname
+        _config = dict(self.config.items())
+        _config["data"] = fname
+        train_config = RasaNLUConfig(cmdline_args=_config)
+
         self.train_proc = multiprocessing.Process(target=do_train, args=(train_config,))
         self.train_proc.start()
         print("training process {0} started".format(self.train_proc))
@@ -203,31 +209,30 @@ class RasaRequestHandler(BaseHTTPRequestHandler):
 
 def create_argparser():
     parser = argparse.ArgumentParser(description='parse incoming text')
-    parser.add_argument('-c', '--config', default=None,
+    parser.add_argument('-c', '--config',
                         help="config file, all the command line options can also be passed via a (json-formatted) " +
                              "config file. NB command line args take precedence")
-    parser.add_argument('-d', '--server_model_dir', default=None,
+    parser.add_argument('-d', '--server_model_dir',
                         help='directory containing model to for parser to use')
-    parser.add_argument('-e', '--emulate', default=None, choices=['wit', 'luis', 'api'],
+    parser.add_argument('-e', '--emulate', choices=['wit', 'luis', 'api'],
                         help='which service to emulate (default: None i.e. use simple built in format)')
-    parser.add_argument('-l', '--language', default='en', choices=['de', 'en'], help="model and data language")
-    parser.add_argument('-m', '--mitie_file', default='data/total_word_feature_extractor.dat',
+    parser.add_argument('-l', '--language', choices=['de', 'en'], help="model and data language")
+    parser.add_argument('-m', '--mitie_file',
                         help='file with mitie total_word_feature_extractor')
-    parser.add_argument('-p', '--path', default=None, help="path where model files will be saved")
-    parser.add_argument('-P', '--port', default=5000, type=int, help='port on which to run server')
-    parser.add_argument('-t', '--token', default=None,
+    parser.add_argument('-p', '--path', help="path where model files will be saved")
+    parser.add_argument('-P', '--port', type=int, help='port on which to run server')
+    parser.add_argument('-t', '--token',
                         help="auth token. If set, reject requests which don't provide this token as a query parameter")
-    parser.add_argument('-w', '--write', default='rasa_nlu_log.json', help='file where logs will be saved')
+    parser.add_argument('-w', '--write', help='file where logs will be saved')
 
     return parser
 
 
 if __name__ == "__main__":
     parser = create_argparser()
-    args = parser.parse_args()
-    config = {'logfile': os.path.join(os.getcwd(), 'rasa_nlu_logs.json')} if args.config is None else json.loads(
-        open(args.config, 'rb').read())
-    config = update_config(config, vars(args), os.environ, exclude=['config'])
+    cmdline_args = {key: val for key, val in vars(parser.parse_args()).items() if val is not None}
+    config = RasaNLUConfig(cmdline_args.get("config"), os.environ, cmdline_args)
+    print(config.view())
 
     try:
         server = RasaNLUServer(config)

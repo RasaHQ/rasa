@@ -12,7 +12,7 @@ class MITIESklearnTrainer(object):
         self.intent_classifier = None
         self.entity_extractor = None
         self.training_data = None
-        self.fe_file = config["fe_file"]
+        self.fe_file = config.mitie_file
         self.feature_extractor = total_word_feature_extractor(self.fe_file)
 
     def train(self, data):
