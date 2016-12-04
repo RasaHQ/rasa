@@ -92,7 +92,7 @@ class TrainingData(object):
             entities = []
             for e in s.get("entities") or []:
                 i, ii = e["startPos"], e["endPos"] + 1
-                _regex = u"\s*".join([s for s in tokens[i:ii]])
+                _regex = u"\s*".join([re.escape(s.decode("utf-8")) for s in tokens[i:ii]])
                 expr = re.compile(_regex)
                 m = expr.search(text)
                 start, end = m.start(), m.end()
