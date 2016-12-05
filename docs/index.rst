@@ -46,7 +46,7 @@ The quickest quickstart in the west
     [{"_text":"hello","confidence":null,"entities":{},"intent":"greet"}]
 
 
-There you go! you just parsed some text. Next step, do the :ref:`tutorial`.
+There you go! you just parsed some text. Next step, do the :ref:`section_tutorial`.
 
 About 
 ---------------------------------------
@@ -73,6 +73,7 @@ Read Next:
    config
    migrating
    http
+   visualize
    closeloop
    persist
    troubleshoot

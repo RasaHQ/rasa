@@ -21,7 +21,7 @@ Here is a list of all rasa NLU configuration options:
 - ``data`` : file containing training data.
 - ``emulate`` :  service to emulate. can be ``wit``, ``luis``, or ``api``.
 - ``language`` : language of your app, can be ``en`` (English) or ``de`` (German).
-- ``mitie_file`` : file containing ``total_word_feature_extractor.dat`` (see :ref:`backends`)
+- ``mitie_file`` : file containing ``total_word_feature_extractor.dat`` (see :ref:`section_backends`)
 - ``path`` : where trained models will be saved.
 - ``port`` : port on which to run server.
 - ``server_model_dir`` : dir containing the model to be used by server.

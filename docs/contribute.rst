@@ -3,7 +3,7 @@ Contributing
 ==================================
 
 contributions are very much encouraged! 
-Please create an issue before doing any work to avoid disaapointment
+Please create an issue before doing any work to avoid disappointment
 
 
 Python Conventions
