@@ -30,6 +30,7 @@ When you download your model, the entity locations are specified by the index of
 This is pretty fragile because not every tokenizer will behave the same as LUIS's, so your entities may be incorrectly labelled. 
 Run your training once and you'll get a copy of your training data in the ``model_XXXXX`` dir. 
 Do any fixes required and use that to train. 
+Use the visualizer (see :ref:`section_visualization`) to spot mistakes easily.
 
 api.ai
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
