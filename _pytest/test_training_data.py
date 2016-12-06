@@ -1,4 +1,3 @@
-# -*- coding: UTF-8 -*-
 from rasa_nlu.training_data import TrainingData
 
 
