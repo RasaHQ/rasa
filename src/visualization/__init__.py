@@ -1,4 +1,4 @@
-from itertools import cycle
+from itertools import cycle, groupby
 
 
 def entity_spec(name, red, green, blue):
@@ -79,10 +79,19 @@ def format_example(example):
     chunks.append(text[end:])
     return u"<div>{0}</div>".format(u"".join(chunks))
 
+def intent_group(examples):
+    content = u"<h4>{0}</h4>".format(examples[0]["intent"])
+    content += u"".join([format_example(example) for example in examples])
+    return content
 
 def create_html(training_data):
-    examples = [e for e in training_data.entity_examples if len(e["entities"]) > 0]
-    body = u"".join([format_example(example) for example in examples])
+    #list(set(training_data.entity_examples + training_data.intent_examples))
+    examples = sorted(training_data.entity_examples, key=lambda e:e["intent"])
+    intentgroups = []
+    for _, group in groupby(examples, lambda e: e["intent"]):
+        intentgroups.append(list(group))
+
+    body = u"".join([intent_group(g) for g in intentgroups])
     head = create_css(examples)
     template = html_wrapper()
     return template.format(head=head, body=body)
