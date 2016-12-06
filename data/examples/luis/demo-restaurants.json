@@ -171,7 +171,7 @@
     },
     {
       "text": "central indian restaurant",
-      "intent": "greet",
+      "intent": "restaurant_search",
       "entities": [
         {
           "entity": "location",
