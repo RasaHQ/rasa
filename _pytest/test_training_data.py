@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 from rasa_nlu.training_data import TrainingData
 
 
@@ -20,6 +21,7 @@ def test_rasa_whitespace():
 def test_api_mitie():
     td = TrainingData('data/examples/api/', 'mitie', 'en')
     assert td.fformat == 'api'
+
 
 def test_nonascii_entities():
     data = u"""
