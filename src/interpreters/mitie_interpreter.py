@@ -1,5 +1,6 @@
 from mitie import *
 from rasa_nlu import Interpreter
+from rasa_nlu.tokenizers.mitie_tokenizer import MITIETokenizer
 import re
 
 
@@ -7,9 +8,10 @@ class MITIEInterpreter(Interpreter):
     def __init__(self, intent_classifier=None, entity_extractor=None, feature_extractor=None, **kwargs):
         self.extractor = named_entity_extractor(entity_extractor, feature_extractor)
         self.classifier = text_categorizer(intent_classifier, feature_extractor)
+        self.tokenizer = MITIETokenizer()
 
     def get_entities(self, text):
-        tokens = tokenize(text)
+        tokens = self.tokenizer.tokenize(text)
         ents = []
         entities = self.extractor.extract_entities(tokens)
         for e in entities:

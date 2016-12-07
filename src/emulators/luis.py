@@ -16,8 +16,8 @@ class LUISEmulator(object):
             },
             "entities": [
                 {
-                    "entity": e[0],
-                    "type": e[1],
+                    "entity": e["value"],
+                    "type": e["entity"],
                     "startIndex": None,
                     "endIndex": None,
                     "score": None

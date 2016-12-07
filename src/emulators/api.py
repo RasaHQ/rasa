@@ -13,6 +13,11 @@ class ApiEmulator(object):
         return _data
 
     def normalise_response_json(self, data):
+        # populate entities dict
+        entities = {entity_type: [] for entity_type in set(map(lambda x: x["entity"], data["entities"]))}
+        for entity in data["entities"]:
+            entities[entity["entity"]].append(entity["value"])
+
         return {
             "id": unicode(uuid.uuid1()),
             "timestamp": datetime.now().isoformat("T"),
@@ -21,7 +26,7 @@ class ApiEmulator(object):
                 "resolvedQuery": data["text"],
                 "action": None,
                 "actionIncomplete": None,
-                "parameters": {key: val for key, val in data["entities"].items()},
+                "parameters": entities,
                 "contexts": [],
                 "metadata": {
                     "intentId": unicode(uuid.uuid1()),
