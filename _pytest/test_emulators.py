@@ -8,7 +8,7 @@ def test_luis_request():
 def test_luis_response():
     from rasa_nlu.emulators.luis import LUISEmulator
     em = LUISEmulator()
-    data = {"text": "I want italian food", "intent": "inform", "entities": {"cuisine": "italian"}}
+    data = {"text": "I want italian food", "intent": "inform", "entities": [{"entity": "cuisine", "value": "italian"}]}
     norm = em.normalise_response_json(data)
     assert norm == {
         "query": data["text"],
@@ -18,8 +18,8 @@ def test_luis_response():
         },
         "entities": [
             {
-                "entity": e[0],
-                "type": e[1],
+                "entity": e["value"],
+                "type": e["entity"],
                 "startIndex": None,
                 "endIndex": None,
                 "score": None
@@ -38,7 +38,7 @@ def test_wit_request():
 def test_wit_response():
     from rasa_nlu.emulators.wit import WitEmulator
     em = WitEmulator()
-    data = {"text": "I want italian food", "intent": "inform", "entities": {"cuisine": "italian"}}
+    data = {"text": "I want italian food", "intent": "inform", "entities": [{"entity": "cuisine", "value": "italian"}]}
     norm = em.normalise_response_json(data)
     assert norm == [
         {'entities': {'cuisine': {'confidence': None, 'type': 'value', 'value': 'italian'}}, 'confidence': None,
