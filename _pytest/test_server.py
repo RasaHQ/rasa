@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import pytest
 import requests
 import os
@@ -49,13 +51,13 @@ def test_status(http_server):
 
 def test_get_parse(http_server):
     req = requests.get(http_server + "/parse?q=hello")
-    expected = [{"entities": {}, "confidence": None, "intent": "greet", "_text": "hello"}]
+    expected = [{u"entities": {}, u"confidence": None, u"intent": u"greet", u"_text": u"hello"}]
     assert req.status_code == 200 and req.json() == expected
 
 
 def test_post_parse(http_server):
     req = requests.post(http_server + "/parse", json={"q": "hello"})
-    expected = [{"entities": {}, "confidence": None, "intent": "greet", "_text": "hello"}]
+    expected = [{u"entities": {}, u"confidence": None, u"intent": u"greet", u"_text": u"hello"}]
     assert req.status_code == 200 and req.json() == expected
 
 

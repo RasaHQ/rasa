@@ -17,6 +17,7 @@ def test_spacy():
         assert tk.tokenize(sentence) == expected_result
 
     tokenize_sentence(u"Hi. My name is rasa", [u'Hi', u'.', u'My', u'name', u'is', u'rasa'], 'en')
+    tokenize_sentence(u"hello ńöñàśçií", [u'hello', u'ńöñàśçií'], 'en')
     tokenize_sentence(u"Hallo. Mein name ist rasa", [u'Hallo', u'.', u'Mein', u'name', u'ist', u'rasa'], 'de')
 
 
