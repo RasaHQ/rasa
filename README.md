@@ -14,14 +14,14 @@ Click the button to deploy a rasa NLU server to Heroku.
 
 ## Motivation
 
-rasa_nlu is a tool for intent classification and entity extraction. 
-You can think of rasa_nlu as a set of high level APIs for building your own language parser using existing NLP and ML libraries.
+rasa NLU is a tool for intent classification and entity extraction. 
+You can think of rasa NLU as a set of high level APIs for building your own language parser using existing NLP and ML libraries.
 The intended audience is mainly people developing bots. 
 It can be used as a drop-in replacement for [wit](https://wit.ai) or [LUIS](https://luis.ai), but works as a local service rather than a web API. 
 
 The setup process is designed to be as simple as possible. If you're currently using wit or LUIS, you just:
-1. download your app data from wit or LUIS and feed it into rasa_nlu
-2. run rasa_nlu on your machine and switch the URL of your wit/LUIS api calls to `localhost:5000/parse`.
+1. download your app data from wit or LUIS and feed it into rasa NLU
+2. run rasa NLU on your machine and switch the URL of your wit/LUIS api calls to `localhost:5000/parse`.
 
 Reasons you might use this over one of the aforementioned services: 
 - you don't have to hand over your data to FB/MSFT/GOOG
@@ -30,7 +30,7 @@ Reasons you might use this over one of the aforementioned services:
 
 These points are laid out in more detail in a [blog post](https://medium.com/lastmile-conversations/do-it-yourself-nlp-for-bot-developers-2e2da2817f3d).
 
-rasa_nlu is written in Python, but it you can use it from any language through a HTTP API. 
+rasa NLU is written in Python, but it you can use it from any language through a HTTP API. 
 If your project *is* written in Python you can simply import the relevant classes.
 
 rasa is a set of tools for building more advanced bots, developed by [LASTMILE](https://golastmile.com). This is the natural language understanding module, and the first component to be open sourced. 
