@@ -38,11 +38,14 @@ def test_wit_request():
 def test_wit_response():
     from rasa_nlu.emulators.wit import WitEmulator
     em = WitEmulator()
-    data = {"text": "I want italian food", "intent": "inform", "entities": [{"entity": "cuisine", "value": "italian"}]}
+    data = {
+        "text": "I want italian food",
+        "intent": "inform",
+        "entities": [{"entity": "cuisine", "value": "italian", "start": 7, "end": 14}]}
     norm = em.normalise_response_json(data)
     assert norm == [
-        {'entities': {'cuisine': {'confidence': None, 'type': 'value', 'value': 'italian'}}, 'confidence': None,
-         'intent': 'inform', '_text': 'I want italian food'}]
+        {'entities': {'cuisine': {'confidence': None, 'type': 'value', 'value': 'italian', 'start': 7, 'end': 14}},
+         'confidence': None, 'intent': 'inform', '_text': 'I want italian food'}]
 
 
 def test_dummy_request():

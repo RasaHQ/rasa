@@ -59,11 +59,11 @@ def test_status(http_server):
 def test_get_parse(http_server):
     tests = [
         ResponseTest(
-            "/parse?q=hello",
+            u"/parse?q=hello",
             [{u"entities": {}, u"confidence": None, u"intent": u"greet", u"_text": u"hello"}]
         ),
         ResponseTest(
-            "/parse?q=hello ńöñàśçií",
+            u"/parse?q=hello ńöñàśçií",
             [{u"entities": {}, u"confidence": None, u"intent": u"greet", u"_text": u"hello ńöñàśçií"}]
         ),
     ]
@@ -75,14 +75,14 @@ def test_get_parse(http_server):
 def test_post_parse(http_server):
     tests = [
         ResponseTest(
-            "/parse",
+            u"/parse",
             [{u"entities": {}, u"confidence": None, u"intent": u"greet", u"_text": u"hello"}],
-            payload={"q": "hello"}
+            payload={u"q": u"hello"}
         ),
         ResponseTest(
-            "/parse",
+            u"/parse",
             [{u"entities": {}, u"confidence": None, u"intent": u"greet", u"_text": u"hello ńöñàśçií"}],
-            payload={"q": "hello ńöñàśçií"}
+            payload={u"q": u"hello ńöñàśçií"}
         ),
     ]
     for test in tests:

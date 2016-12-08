@@ -4,7 +4,6 @@ class WitEmulator(object):
 
     def normalise_request_json(self, data):
         _data = {}
-        print data
         _data["text"] = data["q"][0] if type(data["q"]) == list else data["q"]
         return _data
 
@@ -12,7 +11,13 @@ class WitEmulator(object):
         print('plain response {0}'.format(data))
         entities = {}
         for entity in data["entities"]:
-            entities[entity["entity"]] = {"confidence": None, "type": "value", "value": entity["value"]}
+            entities[entity["entity"]] = {
+                "confidence": None,
+                "type": "value",
+                "value": entity["value"],
+                "start": entity["start"],
+                "end": entity["end"]
+            }
 
         return [
             {

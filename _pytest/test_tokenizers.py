@@ -6,8 +6,8 @@ import pytest
 def test_whitespace():
     from rasa_nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
     tk = WhitespaceTokenizer()
-    sentence = u"Hi. My name is rasa"
-    assert tk.tokenize(sentence) == [u'Hi.', u'My', u'name', u'is', u'rasa']
+    assert tk.tokenize(u"Hi. My name is rasa") == [u'Hi.', u'My', u'name', u'is', u'rasa']
+    assert tk.tokenize(u"hello ńöñàśçií") == [u'hello', u'ńöñàśçií']
 
 
 def test_spacy():
