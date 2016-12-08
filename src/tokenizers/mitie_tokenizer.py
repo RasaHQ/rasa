@@ -6,4 +6,4 @@ class MITIETokenizer(object):
         pass
 
     def tokenize(self, text):
-        return tokenize(text)
+        return [w.decode('utf-8') for w in tokenize(text.encode('utf-8'))]

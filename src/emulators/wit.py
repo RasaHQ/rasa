@@ -9,12 +9,21 @@ class WitEmulator(object):
 
     def normalise_response_json(self, data):
         print('plain response {0}'.format(data))
+        entities = {}
+        for entity in data["entities"]:
+            entities[entity["entity"]] = {
+                "confidence": None,
+                "type": "value",
+                "value": entity["value"],
+                "start": entity["start"],
+                "end": entity["end"]
+            }
+
         return [
             {
                 "_text": data["text"],
                 "confidence": None,
                 "intent": data["intent"],
-                "entities": {key: {"confidence": None, "type": "value", "value": val} for key, val in
-                             data["entities"].items()}
+                "entities": entities
             }
         ]

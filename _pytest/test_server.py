@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import pytest
 import requests
 import os
@@ -7,6 +9,13 @@ from multiprocessing import Process
 import time
 import json
 import codecs
+
+
+class ResponseTest():
+    def __init__(self, endpoint, expected_response, payload=None):
+        self.endpoint = endpoint
+        self.expected_response = expected_response
+        self.payload = payload
 
 
 @pytest.fixture
@@ -48,22 +57,41 @@ def test_status(http_server):
 
 
 def test_get_parse(http_server):
-    req = requests.get(http_server + "/parse?q=hello")
-    expected = [{"entities": {}, "confidence": None, "intent": "greet", "_text": "hello"}]
-    assert req.status_code == 200 and req.json() == expected
+    tests = [
+        ResponseTest(
+            u"/parse?q=hello",
+            [{u"entities": {}, u"confidence": None, u"intent": u"greet", u"_text": u"hello"}]
+        ),
+        ResponseTest(
+            u"/parse?q=hello ńöñàśçií",
+            [{u"entities": {}, u"confidence": None, u"intent": u"greet", u"_text": u"hello ńöñàśçií"}]
+        ),
+    ]
+    for test in tests:
+        req = requests.get(http_server + test.endpoint)
+        assert req.status_code == 200 and req.json() == test.expected_response
 
 
 def test_post_parse(http_server):
-    req = requests.post(http_server + "/parse", json={"q": "hello"})
-    expected = [{"entities": {}, "confidence": None, "intent": "greet", "_text": "hello"}]
-    assert req.status_code == 200 and req.json() == expected
+    tests = [
+        ResponseTest(
+            u"/parse",
+            [{u"entities": {}, u"confidence": None, u"intent": u"greet", u"_text": u"hello"}],
+            payload={u"q": u"hello"}
+        ),
+        ResponseTest(
+            u"/parse",
+            [{u"entities": {}, u"confidence": None, u"intent": u"greet", u"_text": u"hello ńöñàśçií"}],
+            payload={u"q": u"hello ńöñàśçií"}
+        ),
+    ]
+    for test in tests:
+        req = requests.post(http_server + test.endpoint, json=test.payload)
+        assert req.status_code == 200 and req.json() == test.expected_response
 
 
 def test_post_train(http_server):
     train_data = json.loads(codecs.open('data/examples/luis/demo-restaurants.json',
                                         encoding='utf-8').read())
     req = requests.post(http_server + "/parse", json=train_data)
-    # TODO: POST /train oddly returns an error msg but training works fine
-    # For now check only status code. Later on take a look at actual response
-    # assert req.status_code == 200 and "training started with pid" in req.text
     assert req.status_code == 200

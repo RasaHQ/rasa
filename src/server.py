@@ -168,6 +168,9 @@ class RasaRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write("unauthorized")
 
     def get_response(self, data_dict):
+        if u'q' not in data_dict:
+            return json.dumps({"error": "Invalid parse parameter specified"})
+
         data = self.data_router.extract(data_dict)
         result = self.data_router.parse(data["text"])
         response = self.data_router.format(result)
@@ -177,7 +180,7 @@ class RasaRequestHandler(BaseHTTPRequestHandler):
         if self.data_router.auth(self.path):
             self._set_headers()
             if self.path.startswith("/parse"):
-                parsed_path = urlparse.urlparse(self.path)
+                parsed_path = urlparse.urlparse(urlparse.unquote(self.path).decode('utf-8'))
                 data = urlparse.parse_qs(parsed_path.query)
                 self.wfile.write(self.get_response(data))
             elif self.path.startswith("/status"):
@@ -194,14 +197,17 @@ class RasaRequestHandler(BaseHTTPRequestHandler):
             if self.path.startswith("/parse"):
                 self._set_headers()
                 data_string = self.rfile.read(int(self.headers['Content-Length']))
-                data_dict = json.loads(data_string)
+                data_dict = json.loads(data_string.decode("utf-8"))
                 self.wfile.write(self.get_response(data_dict))
 
             if self.path.startswith("/train"):
                 self._set_headers()
                 data_string = self.rfile.read(int(self.headers['Content-Length']))
                 self.data_router.start_train_proc(data_string)
-                self.wfile.write('training started with pid {0}'.format(self.data_router.train_proc.pid))
+                self.data_router.start_train_proc(data_string.decode("utf-8"))
+                self.wfile.write(
+                    json.dumps({"info": "training started with pid {0}".format(self.data_router.train_proc.pid)})
+                )
         else:
             self.auth_err()
         return
