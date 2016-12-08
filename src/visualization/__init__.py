@@ -23,7 +23,7 @@ def create_css(entity_examples):
     return u"""
     <style media="screen" type="text/css">
     .entities {{
-        line-height: 2;
+        line-height: 3;
     }}
     [data-entity] {{
         padding: 0.25em 0.35em;
@@ -66,18 +66,20 @@ def html_wrapper():
 
 def format_example(example):
     text = example["text"]
-    entities = sorted(example["entities"], key=lambda e: e['start'])
+    inserts = []
+    for entity in example["entities"]:
+        inserts.append((entity["start"], u"""<mark data-entity="{0}">""".format(entity["entity"])))
+        inserts.append((entity["end"], u"</mark>"))
+
+    inserts = sorted(inserts, key=lambda i: i[0])
     chunks = []
     end = 0
-    while len(entities) > 0:
-        entity = entities.pop(0)
-        start = entity["start"]
-        chunks.append(text[end:start])
-        end = entity["end"]
-        markup = u"""<mark data-entity="{0}">{1}</mark>""".format(entity["entity"], text[start:end])
-        chunks.append(markup)
+    for ins in inserts:
+        chunks.append(text[end:ins[0]])
+        chunks.append(ins[1])
+        end = ins[0]
     chunks.append(text[end:])
-    return u"<div>{0}</div>".format(u"".join(chunks))
+    return u"""<div class="entities">{0}</div>""".format(u"".join(chunks))
 
 
 def intent_group(examples):

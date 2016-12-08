@@ -1,4 +1,4 @@
-# rasa_nlu
+# rasa NLU
 [![Build Status](https://travis-ci.org/golastmile/rasa_nlu.svg?branch=master)](https://travis-ci.org/golastmile/rasa_nlu)
 [![Coverage Status](https://coveralls.io/repos/github/golastmile/rasa_nlu/badge.svg?branch=master)](https://coveralls.io/github/golastmile/rasa_nlu?branch=master)
 [![Documentation Status](https://readthedocs.org/projects/rasa-nlu/badge/?version=latest)](http://rasa-nlu.readthedocs.io/en/latest/?badge=latest)
