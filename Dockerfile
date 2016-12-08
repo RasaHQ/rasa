@@ -18,12 +18,7 @@ WORKDIR /app
 
 # Install dependencies, use cache if possible
 COPY . /app
-RUN pip install -r requirements.txt
 RUN python setup.py install
-
-# Download spacy data
-RUN python -m spacy.en.download all
-RUN python -m spacy.de.download all
 
 EXPOSE 5000
 
