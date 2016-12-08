@@ -19,7 +19,7 @@ class RasaNLUServer(object):
         self.interpreter = self.__create_interpreter()
         self.data_router = DataRouter(config, self.interpreter, self.emulator)
 
-        if 'DYNO' in os.environ and config.backend == 'mitie':  # running on Heroku
+        if ('DYNO' in os.environ or 'RASA_NLU_DOCKER' in os.environ) and config.backend == 'mitie':  # running on Heroku
             from rasa_nlu.featurizers.mitie_featurizer import MITIEFeaturizer
             MITIEFeaturizer(config.mitie_file)
 
