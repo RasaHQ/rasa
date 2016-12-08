@@ -27,4 +27,4 @@ RUN python -m spacy.de.download all
 
 EXPOSE 5000
 
-ENTRYPOINT ["python", "-m rasa_nlu.server"]
+ENTRYPOINT ["python", "-m", "rasa_nlu.server"]
