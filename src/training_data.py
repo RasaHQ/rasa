@@ -4,6 +4,7 @@ import codecs
 import json
 import re
 import warnings
+from itertools import groupby
 
 from rasa_nlu import util
 
@@ -17,6 +18,8 @@ class TrainingData(object):
         self.fformat = self.guess_format(self.files)
         self.tokenizer = None
         self.language_name = language_name
+        self.min_examples_per_intent = 2
+        self.min_examples_per_entity = 2
 
         if backend in ['mitie', 'mitie_sklearn']:
             from rasa_nlu.tokenizers.mitie_tokenizer import MITIETokenizer
@@ -40,6 +43,8 @@ class TrainingData(object):
             self.load_data(self.files[0])
         else:
             raise ValueError("unknown training file format : {0}".format(self.fformat))
+
+        self.validate()
 
     def as_json(self, **kwargs):
         return json.dumps({
@@ -132,3 +137,20 @@ class TrainingData(object):
 
         self.intent_examples = intent + common
         self.entity_examples = entity + common
+
+    def validate(self):
+        examples = sorted(self.intent_examples, key=lambda e: e["intent"])
+        intentgroups = []
+        for intent, group in groupby(examples, lambda e: e["intent"]):
+            size = len(list(group))
+            if size < self.min_examples_per_intent:
+                template = "intent {0} has only {1} training examples! minimum is {2}, training may fail."
+                warnings.warn(template.format(intent, size, self.min_examples_per_intent))
+
+        entitygroups = []
+        examples = sorted([e for ex in self.entity_examples for e in ex["entities"]], key=lambda e: e["entity"])
+        for entity, group in groupby(examples, lambda e: e["entity"]):
+            size = len(list(group))
+            if size < self.min_examples_per_entity:
+                template = "entity {0} has only {1} training examples! minimum is {2}, training may fail."
+                warnings.warn(template.format(entity, size, self.min_examples_per_entity))
