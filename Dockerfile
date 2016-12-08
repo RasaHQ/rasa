@@ -1,7 +1,4 @@
 FROM python:2.7-slim
-MAINTAINER p@dialoganalytics.com
-
-ENV PORT 5000
 
 # Run updates, install basics and cleanup
 # - build-essential: Compile specific dependencies
