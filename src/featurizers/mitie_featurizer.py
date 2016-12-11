@@ -26,7 +26,7 @@ class MITIEFeaturizer(object):
         widgets = ['Progress: ',
                    progressbar.Percentage(),
                    ' ',
-                   progressbar.Bar(marker='#', left='[',right=']')]
+                   progressbar.Bar(marker='#', left='[', right=']')]
         bar = progressbar.ProgressBar(maxval=file_size, widgets=widgets)
         bar.start()
         bytes_read = 0
