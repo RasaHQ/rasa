@@ -3,6 +3,7 @@ import sys
 import argparse
 from rasa_nlu.config import RasaNLUConfig
 
+
 def create_argparser():
     parser = argparse.ArgumentParser(description='parse download commands')
     parser.add_argument('-c', '--config',
@@ -15,7 +16,8 @@ def create_argparser():
 
     return parser
 
-def download(config, pkg = "mitie"):
+
+def download(config, pkg="mitie"):
     if pkg == "mitie":
         from rasa_nlu.featurizers.mitie_featurizer import MITIEFeaturizer
         MITIEFeaturizer(config.mitie_file)
@@ -26,4 +28,5 @@ if __name__ == '__main__':
     parser = create_argparser()
     cmdline_args = {key: val for key, val in vars(parser.parse_args()).items() if val is not None}
     config = RasaNLUConfig(cmdline_args.get("config"), os.environ, cmdline_args)
-    download(config, cmdline_args["package"])    
+    download(config, cmdline_args["package"])
+
