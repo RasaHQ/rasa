@@ -4,7 +4,7 @@ import urllib2
 import os
 import httplib
 import multiprocessing
-from progressbar import *
+import progressbar
 
 
 class MITIEFeaturizer(object):
@@ -24,10 +24,10 @@ class MITIEFeaturizer(object):
         file_size = int(_file_meta.getheaders("Content-Length")[0])
         print "Downloading: %s (%s MB)" % (fe_file, file_size/1024/1024)
         widgets = ['Progress: ',
-                   Percentage(), 
-                   ' ', 
-                   Bar(marker='#',left='[',right=']')] 
-        bar = ProgressBar(maxval=file_size, widgets=widgets)
+                   progressbar.Percentage(),
+                   ' ',
+                   progressbar.Bar(marker='#', left='[',right=']')]
+        bar = progressbar.ProgressBar(maxval=file_size, widgets=widgets)
         bar.start()
         bytes_read = 0
         with open(fe_file, 'wb') as output:
