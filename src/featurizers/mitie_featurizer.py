@@ -4,6 +4,7 @@ import urllib2
 import os
 import httplib
 import multiprocessing
+from progressbar import *
 
 
 class MITIEFeaturizer(object):
@@ -17,18 +18,29 @@ class MITIEFeaturizer(object):
 
     def download_fe_file(self, fe_file):
         print("DOWNLOADING MITIE FILE")
-        chunk_size = 30000000
+        chunk_size = 5000000
         _fe_file = urllib2.urlopen("https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat")
+        _file_meta = _fe_file.info()
+        file_size = int(_file_meta.getheaders("Content-Length")[0])
+        print "Downloading: %s (%s MB)" % (fe_file, file_size/1024/1024)
+        widgets = ['Progress: ',
+                   Percentage(), 
+                   ' ', 
+                   Bar(marker='#',left='[',right=']')] 
+        bar = ProgressBar(maxval=file_size, widgets=widgets)
+        bar.start()
+        bytes_read = 0
         with open(fe_file, 'wb') as output:
             done = False
             while not done:
-                print("fetching more...")
-                try:
-                    data = _fe_file.read(chunk_size)
-                except httplib.IncompleteRead, e:
-                    data = e.partial
+                data = _fe_file.read(chunk_size)
+                if not data:
                     done = True
-                output.write(data)
+                    bar.finish()
+                else:
+                    output.write(data)
+                    bytes_read += len(data)
+                    bar.update(bytes_read)
         print("file written! {0}, {1}".format(fe_file, os.path.exists(fe_file)))
 
     def download(self, fe_file):
