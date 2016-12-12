@@ -49,7 +49,7 @@ In native mode, a request / response looks like this :
 
 .. code-block:: console
 
-    $ curl -XPOST localhost:5000/parse -d '{"text":"I am looking for Chinese food"}' | python -mjson.tool
+    $ curl -XPOST localhost:5000/parse -d '{"q":"I am looking for Chinese food"}' | python -mjson.tool
     {
       "intent" : "restaurant_search",
       "entities" : {

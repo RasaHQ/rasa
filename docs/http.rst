@@ -26,11 +26,11 @@ Endpoints
 ``POST /parse`` (no emulation)
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-you must POST data in this format ``'{"text":"<your text to parse>"}'``, you can do this with
+you must POST data in this format ``'{"q":"<your text to parse>"}'``, you can do this with
 
 .. code-block:: console
 
-    $ curl -XPOST localhost:5000/parse -d '{"text":"hello there"}'
+    $ curl -XPOST localhost:5000/parse -d '{"q":"hello there"}'
 
 
 ``POST /train``

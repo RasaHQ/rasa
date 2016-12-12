@@ -135,7 +135,7 @@ you can then test our your new model by sending a request. Open a new tab/window
 
 .. code-block:: console
 
-    $ curl -XPOST localhost:5000/parse -d '{"text":"I am looking for Chinese food"}' | python -mjson.tool
+    $ curl -XPOST localhost:5000/parse -d '{"q":"I am looking for Chinese food"}' | python -mjson.tool
 
 which should return 
 
@@ -158,7 +158,7 @@ with very little data, rasa NLU can already generalise this concept, for example
 
 .. code-block:: console
 
-    $ curl -XPOST localhost:5000/parse -d '{"text":"I want some italian"}' | python -mjson.tool
+    $ curl -XPOST localhost:5000/parse -d '{"q":"I want some italian"}' | python -mjson.tool
     {
       "entities": [
         {
