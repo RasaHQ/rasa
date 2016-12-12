@@ -3,9 +3,8 @@
 [![Coverage Status](https://coveralls.io/repos/github/golastmile/rasa_nlu/badge.svg?branch=master)](https://coveralls.io/github/golastmile/rasa_nlu?branch=master)
 [![Documentation Status](https://readthedocs.org/projects/rasa-nlu/badge/?version=latest)](http://rasa-nlu.readthedocs.io/en/latest/?badge=latest)
 
-**preface: if you're reading this now, you're an alpha tester of this code - your feedback is super valuable! thanks for trying it out**
-
 documentation is [here](http://rasa-nlu.readthedocs.io/)
+homepage is here [here](https://rasa.ai/)
 
 ### Deploying to Heroku
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)

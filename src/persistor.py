@@ -24,7 +24,6 @@ class Persistor(object):
         base_name = os.path.basename(target_dir)
         base_dir = os.path.dirname(target_dir)
         tarname = shutil.make_archive(base_name, 'gztar', root_dir=base_dir, base_dir=base_name)
-        print("tarname : {0}".format(tarname))
         filekey = os.path.basename(tarname)
         self.s3.Object(self.bucket_name, filekey).put(Body=open(tarname, 'rb'))
 

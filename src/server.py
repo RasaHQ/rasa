@@ -5,6 +5,7 @@ import urlparse
 import multiprocessing
 import glob
 import warnings
+import logging
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from rasa_nlu.train import do_train
 from rasa_nlu.config import RasaNLUConfig
@@ -44,11 +45,11 @@ class RasaNLUServer(object):
             from interpreters.simple_interpreter import HelloGoodbyeInterpreter
             return HelloGoodbyeInterpreter()
         elif backend.lower() == 'mitie':
-            print("using mitie backend")
+            logging.info("using mitie backend")
             from interpreters.mitie_interpreter import MITIEInterpreter
             return MITIEInterpreter(**metadata)
         elif backend.lower() == 'spacy_sklearn':
-            print("using spacy + sklearn backend")
+            logging.info("using spacy + sklearn backend")
             from interpreters.spacy_sklearn_interpreter import SpacySklearnInterpreter
             return SpacySklearnInterpreter(**metadata)
         else:
@@ -73,16 +74,16 @@ class RasaNLUServer(object):
 
     def start(self):
         self.server = HTTPServer(('', self.config.port), lambda *args: RasaRequestHandler(self.data_router, *args))
-        print 'Started http server on port ', self.config.port
+        logging.info('Started http server on port %s' % self.config.port)
         self.server.serve_forever()
 
     def stop(self):
-        print '^C received. Aborting.'
+        logging.info('^C received. Aborting.')
         if len(self.data_router.responses) > 0:
-            print 'saving logs'
+            logging.info('saving logs')
             self.data_router.write_logs()
         if self.server is not None:
-            print 'shutting down server'
+            logging.info('shutting down server')
             self.server.socket.close()
 
 
@@ -136,10 +137,10 @@ class DataRouter(object):
             return valid
 
     def start_train_proc(self, data):
-        print("starting train")
+        logging.info("starting train")
         if self.train_proc is not None and self.train_proc.is_alive():
             self.train_proc.terminate()
-            print("training process {0} killed".format(self.train_proc))
+            logging.info("training process {0} killed".format(self.train_proc))
 
         fname = 'tmp_training_data.json'
         with open(fname, 'w') as f:
@@ -150,7 +151,7 @@ class DataRouter(object):
 
         self.train_proc = multiprocessing.Process(target=do_train, args=(train_config,))
         self.train_proc.start()
-        print("training process {0} started".format(self.train_proc))
+        logging.info("training process {0} started".format(self.train_proc))
 
 
 class RasaRequestHandler(BaseHTTPRequestHandler):
@@ -239,7 +240,9 @@ if __name__ == "__main__":
     cmdline_args = {key: val for key, val in vars(parser.parse_args()).items() if val is not None}
     config = RasaNLUConfig(cmdline_args.get("config"), os.environ, cmdline_args)
     print(config.view())
-
+    logging.basicConfig(filename=config.log_file, level=config.log_level)
+    logging.captureWarnings(True)
+    logging.debug(config.view())
     try:
         server = RasaNLUServer(config)
         server.start()

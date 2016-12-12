@@ -4,6 +4,7 @@ from config import RasaNLUConfig
 import json
 import warnings
 import os
+import logging
 
 
 def create_argparser():
@@ -62,4 +63,4 @@ def do_train(config):
 if __name__ == '__main__':
     config = init()
     do_train(config)
-    print("done")
+    logging.info("done")
