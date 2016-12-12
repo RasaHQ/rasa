@@ -20,6 +20,6 @@ setup(
     author='Alan Nichol',
     author_email='alan@golastmile.com',
     url="https://rasa.ai",
-    keywords = ["NLP","bots"],
+    keywords=["NLP", "bots"],
     download_url="https://github.com/golastmile/rasa_nlu/tarball/0.4.2"
 )
