@@ -6,9 +6,9 @@
 documentation is [here](http://rasa-nlu.readthedocs.io/)
 homepage is here [here](https://rasa.ai/)
 
-### Deploying to Heroku
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
-Click the button to deploy a rasa NLU server to Heroku.
+### Deploying to Docker Cloud
+[![Deploy to Docker Cloud](https://files.cloud.docker.com/images/deploy-to-dockercloud.svg)](https://cloud.docker.com/stack/deploy/)
+Click the button to deploy a rasa NLU server to Docker Cloud.
 
 
 ## Motivation
