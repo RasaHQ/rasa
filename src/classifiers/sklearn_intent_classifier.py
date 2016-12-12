@@ -24,7 +24,7 @@ class SklearnIntentClassifier(object):
         self.clf.fit(X_train, y_train)
 
         # Test the trained model
-        logging.info("Score of intent model on test data: ", self.clf.score(X_test, y_test))
+        logging.info("Score of intent model on test data: %s " % self.clf.score(X_test, y_test))
 
     def predict(self, X, to_labels=True):
         y_pred = self.clf.predict(X)
