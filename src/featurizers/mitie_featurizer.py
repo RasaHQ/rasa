@@ -43,7 +43,6 @@ class MITIEFeaturizer(object):
                     bar.update(bytes_read)
         logging.debug("file written! {0}, {1}".format(fe_file, os.path.exists(fe_file)))
 
-
     def download(self, fe_file):
         download = multiprocessing.Process(target=self.download_fe_file, args=(fe_file,))
         download.start()
