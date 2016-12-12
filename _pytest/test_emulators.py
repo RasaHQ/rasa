@@ -51,7 +51,7 @@ def test_wit_response():
 def test_dummy_request():
     from rasa_nlu.emulators import NoEmulator
     em = NoEmulator()
-    norm = em.normalise_request_json({"text": ["arb text"]})
+    norm = em.normalise_request_json({"q": ["arb text"]})
     assert norm == {"text": "arb text"}
 
 

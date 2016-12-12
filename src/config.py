@@ -1,6 +1,7 @@
 import codecs
 import json
 import os
+import logging
 
 
 class RasaNLUConfig(object):
@@ -13,6 +14,8 @@ class RasaNLUConfig(object):
           "data": None,
           "emulate": None,
           "language": "en",
+          "log_file": None,
+          "log_level": logging.INFO,
           "mitie_file": "./data/total_word_feature_extractor.dat",
           "path": os.getcwd(),
           "port": 5000,
@@ -29,11 +32,9 @@ class RasaNLUConfig(object):
 
         if env_vars is not None:
             env_config = self.format_env_vars(env_vars)
-            print("env_config : {0}".format(env_config))
             self.override(env_config)
 
         if cmdline_args is not None:
-            print("cmdline_args : {0}".format(cmdline_args))
             self.override(cmdline_args)
 
         for key, value in self.items():
@@ -75,7 +76,6 @@ class RasaNLUConfig(object):
     def validate(self):
         if self.backend == "mitie":
             if not self.is_set("mitie_file"):
-                print(self.view)
                 raise ValueError("backend set to 'mitie' but mitie_file not specified")
             if self.language != "en":
                 raise ValueError("backend set to 'mitie' but language not set to 'en'.")

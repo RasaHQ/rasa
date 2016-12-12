@@ -2,6 +2,7 @@ from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from rasa_nlu.visualization import create_html
 from rasa_nlu.training_data import TrainingData
 import sys
+import logging
 
 
 class NLUVisualizationServer(object):
@@ -11,13 +12,13 @@ class NLUVisualizationServer(object):
 
     def start(self):
         self.server = HTTPServer(('', 8080), lambda *args: VisualizationRequestHandler(*args))
-        print('Started http server at http://0.0.0.0:8080')
+        logging.info('Started http server at http://0.0.0.0:8080')
         self.server.serve_forever()
 
     def stop(self):
-        print '^C received. Aborting.'
+        logging.info('^C received. Aborting.')
         if self.server is not None:
-            print 'shutting down server'
+            logging.info('shutting down server')
             self.server.socket.close()
 
 
