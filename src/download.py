@@ -29,4 +29,3 @@ if __name__ == '__main__':
     cmdline_args = {key: val for key, val in vars(parser.parse_args()).items() if val is not None}
     config = RasaNLUConfig(cmdline_args.get("config"), os.environ, cmdline_args)
     download(config, cmdline_args["package"])
-
