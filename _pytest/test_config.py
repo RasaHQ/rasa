@@ -1,7 +1,7 @@
 from rasa_nlu.config import RasaNLUConfig
 import json
 import os
-
+import logging
 
 defaults = {
   "backend": "mitie",
@@ -9,6 +9,8 @@ defaults = {
   "data": None,
   "emulate": None,
   "language": "en",
+  "log_file": None,
+  "log_level": logging.INFO,
   "mitie_file": "./data/total_word_feature_extractor.dat",
   "path": os.getcwd(),
   "port": 5000,
