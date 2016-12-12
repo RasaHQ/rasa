@@ -1,4 +1,4 @@
-rasa_nlu:
+rasanlu:
   image: rasa/rasa_nlu
   ports:
     - "5000:5000"
