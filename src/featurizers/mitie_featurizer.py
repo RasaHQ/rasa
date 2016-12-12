@@ -1,5 +1,4 @@
 from mitie import *
-import numpy as np
 import urllib2
 import os
 import httplib
@@ -36,6 +35,7 @@ class MITIEFeaturizer(object):
         download.start()
 
     def create_bow_vecs(self, sentences):
+        import numpy as np
         X = np.zeros((len(sentences), self.ndim))
 
         for idx, sent in enumerate(sentences):

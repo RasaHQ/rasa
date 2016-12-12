@@ -3,7 +3,6 @@ import os
 import datetime
 import json
 
-from rasa_nlu.featurizers.mitie_featurizer import MITIEFeaturizer
 from rasa_nlu.trainers.trainer import Trainer
 from training_utils import write_training_metadata
 
