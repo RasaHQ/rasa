@@ -9,7 +9,7 @@ To use it, run
 
 .. code-block:: bash
 
-    $ python -m rasa_nlu visualize path/to/data.json
+    $ python -m rasa_nlu.visualize path/to/data.json
 
 
 and visit http://0.0.0.0:8080/ in your web browser. 
