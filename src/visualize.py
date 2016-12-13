@@ -36,7 +36,7 @@ class VisualizationRequestHandler(BaseHTTPRequestHandler):
         data_file = sys.argv[1]
         training_data = TrainingData(data_file, 'mitie', 'en')
         data = create_html(training_data)
-        self.wfile.write(data)
+        self.wfile.write(data.encode('utf-8'))
         return
 
 

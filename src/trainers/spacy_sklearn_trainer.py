@@ -19,7 +19,7 @@ class SpacySklearnTrainer(Trainer):
         self.name = "spacy_sklearn"
         self.language_name = language_name
         self.training_data = None
-        self.nlp = spacy.load(self.language_name, tagger=False, parser=False, entity=False)
+        self.nlp = spacy.load(self.language_name, parser=False, entity=False)
         self.featurizer = SpacyFeaturizer(self.nlp)
         self.intent_classifier = SklearnIntentClassifier()
         self.entity_extractor = SpacyEntityExtractor()
