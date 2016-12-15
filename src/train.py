@@ -11,7 +11,7 @@ def create_argparser():
     parser = argparse.ArgumentParser(description='train a custom language parser')
 
     # TODO add args for training only entity extractor or only intent
-    parser.add_argument('-b', '--backend', default='keyword', choices=['mitie', 'spacy_sklearn', 'keyword'],
+    parser.add_argument('-b', '--backend', default=None, choices=['mitie', 'spacy_sklearn', 'keyword'],
                         help='backend to use to interpret text (default: built in keyword matcher).')
     parser.add_argument('-p', '--path', default=None, help="path where model files will be saved")
     parser.add_argument('-d', '--data', default=None, help="file containing training data")

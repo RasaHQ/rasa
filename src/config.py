@@ -25,7 +25,6 @@ class RasaNLUConfig(object):
         }
 
         self.override(defaults)
-
         if filename is not None:
             file_config = json.loads(codecs.open(filename, encoding='utf-8').read())
             self.override(file_config)
@@ -35,7 +34,8 @@ class RasaNLUConfig(object):
             self.override(env_config)
 
         if cmdline_args is not None:
-            self.override(cmdline_args)
+            cmdline_config = {k: v for k, v in cmdline_args.items() if v is not None}
+            self.override(cmdline_config)
 
         for key, value in self.items():
             setattr(self, key, value)
