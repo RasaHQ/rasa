@@ -6,9 +6,6 @@
 documentation is [here](http://rasa-nlu.readthedocs.io/)
 homepage is here [here](https://rasa.ai/)
 
-### Deploying to Docker Cloud
-[![Deploy to Docker Cloud](https://files.cloud.docker.com/images/deploy-to-dockercloud.svg)](https://cloud.docker.com/stack/deploy/)
-Click the button to deploy a rasa NLU server to Docker Cloud.
 
 
 ## Motivation
@@ -33,6 +30,12 @@ rasa NLU is written in Python, but it you can use it from any language through a
 If your project *is* written in Python you can simply import the relevant classes.
 
 rasa is a set of tools for building more advanced bots, developed by [LASTMILE](https://golastmile.com). This is the natural language understanding module, and the first component to be open sourced. 
+
+### Experimental : Deploying to Docker Cloud
+[![Deploy to Docker Cloud](https://files.cloud.docker.com/images/deploy-to-dockercloud.svg)](https://cloud.docker.com/stack/deploy/)
+
+
+
 
 ## License
 Copyright 2016 LastMile Technologies Ltd
