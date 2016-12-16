@@ -29,7 +29,7 @@ def create_trainer(config):
         return MITIETrainer(config.mitie_file, config.language)
     if backend == 'spacy_sklearn':
         from trainers.spacy_sklearn_trainer import SpacySklearnTrainer
-        return SpacySklearnTrainer(config.language)
+        return SpacySklearnTrainer(config, config.language)
     else:
         raise NotImplementedError("other backend trainers not implemented yet")
 
