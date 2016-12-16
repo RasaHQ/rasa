@@ -36,7 +36,7 @@ In this tutorial we'll build a model which does exactly that.
 Preparing the Training Data
 ------------------------------------
 
-The best way to get training data is from *real users*, and the best way to do that is to `pretend to be the bot yourself <https://conversations.golastmile.com/put-on-your-robot-costume-and-be-the-minimum-viable-bot-yourself-3e48a5a59308#.d4tmdan68>`_. But to help get you started we have some data saved `here <https://github.com/golastmile/rasa_nlu/blob/master/data/demo-rasa.json>`_
+The best way to get training data is from *real users*, and the best way to do that is to `pretend to be the bot yourself <https://conversations.golastmile.com/put-on-your-robot-costume-and-be-the-minimum-viable-bot-yourself-3e48a5a59308#.d4tmdan68>`_. But to help get you started we have some data saved `here <https://github.com/golastmile/rasa_nlu/blob/master/data/examples/rasa/demo-rasa.json>`_
 
 Download the file and open it, and you'll see a list of training examples like these:
 
