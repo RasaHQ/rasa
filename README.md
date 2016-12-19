@@ -4,7 +4,8 @@
 [![Documentation Status](https://readthedocs.org/projects/rasa-nlu/badge/?version=latest)](http://rasa-nlu.readthedocs.io/en/latest/?badge=latest)
 
 documentation is [here](http://rasa-nlu.readthedocs.io/)
-homepage is here [here](https://rasa.ai/)
+
+homepage is [here](https://rasa.ai/) where you can also sign up for the mailing list
 
 
 
