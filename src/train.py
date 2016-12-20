@@ -16,8 +16,8 @@ def create_argparser():
     parser.add_argument('-p', '--path', default=None, help="path where model files will be saved")
     parser.add_argument('-d', '--data', default=None, help="file containing training data")
     parser.add_argument('-c', '--config', required=True, help="config file")
-    parser.add_argument('-l', '--language', default='en', choices=['de', 'en'], help="model and data language")
-    parser.add_argument('-m', '--mitie_file', default='data/total_word_feature_extractor.dat',
+    parser.add_argument('-l', '--language', default=None, choices=['de', 'en'], help="model and data language")
+    parser.add_argument('-m', '--mitie_file', default=None,
                         help='file with mitie total_word_feature_extractor')
     return parser
 

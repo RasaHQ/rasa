@@ -37,7 +37,7 @@ class MITIETrainer(Trainer):
             tokens = tokenize(example["text"])
             sample = ner_training_instance(tokens)
             for ent in example["entities"]:
-                _slice = example["text"][ent["start"]:ent["end"] + 1]
+                _slice = example["text"][ent["start"]:ent["end"]]
                 val_tokens = tokenize(_slice)
                 start, end = self.start_and_end(tokens, val_tokens)
                 sample.add_entity(xrange(start, end), ent["entity"])
