@@ -11,18 +11,18 @@ Find the [extended documentation here](http://rasa-nlu.readthedocs.io/), or find
 rasa NLU (Natural Language Understanding) is a tool for intent classification and entity extraction. You can think of rasa NLU as a set of high level APIs for building your own language parser using existing NLP and ML libraries.
 
 ### For Who
-The intended audience is mainly __people developing bots__, looking to find a a drop-in replacement for [wit](https://wit.ai) or [LUIS](https://luis.ai). The setup process is designed to be as simple as possible. rasa NLU is written in Python, but you can use it from any language through a HTTP API. If your project is written in Python you can simply import the relevant classes. If you're currently using wit or LUIS, you just:
+The intended audience is mainly __people developing bots__, looking to find a a drop-in replacement for [wit](https://wit.ai), [LUIS](https://luis.ai), or [api.ai](https://api.ai). The setup process is designed to be as simple as possible. rasa NLU is written in Python, but you can use it from any language through a HTTP API. If your project is written in Python you can simply import the relevant classes. If you're currently using wit/LUIS/api.ai, you just:
 
-1. Download your app data from wit or LUIS and feed it into rasa NLU
+1. Download your app data from wit, LUIS, or api.ai and feed it into rasa NLU
 2. Run rasa NLU on your machine and switch the URL of your wit/LUIS api calls to `localhost:5000/parse`.
 
 ### Why
 Reasons you might use this over one of the aforementioned services: 
 * You don't have to hand over your data to FB/MSFT/GOOG
-* You don't have to make a `https` call every time.
+* You don't have to make a `https` call to parse every message.
 * You can tune models to work well on your particular use case.
 
-These points are laid out in more detail in a [blog post](https://medium.com/lastmile-conversations/do-it-yourself-nlp-for-bot-developers-2e2da2817f3d). rasa NLU is a set of tools for building more advanced bots, developed by [LASTMILE](https://golastmile.com). This is the natural language understanding module, and the first component to be open sourced. 
+These points are laid out in more detail in a [blog post](https://medium.com/lastmile-conversations/do-it-yourself-nlp-for-bot-developers-2e2da2817f3d). rasa is a set of tools for building more advanced bots, developed by [LASTMILE](https://golastmile.com). rasa NLU is the natural language understanding module, and the first component to be open sourced. 
 
 ## Use
 ### A. Install Locally
