@@ -12,7 +12,7 @@ def write_training_metadata(output_folder, timestamp, data_file, backend_name,
         "intent_classifier": intent_file,
         "entity_extractor": entity_file,
         "feature_extractor": feature_file,
-        "language": language_name
+        "language_name": language_name
     }
 
     with open(os.path.join(output_folder, 'metadata.json'), 'w') as f:
