@@ -2,75 +2,21 @@ import argparse
 import json
 import os
 import urlparse
-import multiprocessing
 import glob
 import warnings
 import logging
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
-from rasa_nlu.train import do_train
 from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu.data_router import DataRouter
 
 
 class RasaNLUServer(object):
     def __init__(self, config):
         self.server = None
         self.config = config
-        self.logfile = config.write
-        self.emulator = self.__create_emulator()
-        self.interpreter = self.__create_interpreter()
-        self.data_router = DataRouter(config, self.interpreter, self.emulator)
-
+        self.data_router = DataRouter(config)
         if 'DYNO' in os.environ and config.backend == 'mitie':  # running on Heroku
             from rasa_nlu.featurizers.mitie_featurizer import MITIEFeaturizer
-            MITIEFeaturizer(config.mitie_file)
-
-    def __create_interpreter(self):
-        model_dir = self.config.server_model_dir
-        metadata, backend = None, None
-
-        if model_dir is not None:
-            # download model from S3 if needed
-            if not os.path.isdir(model_dir):
-                try:
-                    from rasa_nlu.persistor import Persistor
-                    p = Persistor(self.config.path, self.config.aws_region, self.config.bucket_name)
-                    p.fetch_and_extract('{0}.tar.gz'.format(os.path.basename(model_dir)))
-                except:
-                    warnings.warn("using default interpreter, couldn't find model dir or fetch it from S3")
-
-            metadata = json.loads(open(os.path.join(model_dir, 'metadata.json'), 'rb').read())
-            backend = metadata["backend"]
-
-        if backend is None:
-            from interpreters.simple_interpreter import HelloGoodbyeInterpreter
-            return HelloGoodbyeInterpreter()
-        elif backend.lower() == 'mitie':
-            logging.info("using mitie backend")
-            from interpreters.mitie_interpreter import MITIEInterpreter
-            return MITIEInterpreter(**metadata)
-        elif backend.lower() == 'spacy_sklearn':
-            logging.info("using spacy + sklearn backend")
-            from interpreters.spacy_sklearn_interpreter import SpacySklearnInterpreter
-            return SpacySklearnInterpreter(**metadata)
-        else:
-            raise ValueError("unknown backend : {0}".format(backend))
-
-    def __create_emulator(self):
-        mode = self.config.emulate
-        if mode is None:
-            from emulators import NoEmulator
-            return NoEmulator()
-        elif mode.lower() == 'wit':
-            from emulators.wit import WitEmulator
-            return WitEmulator()
-        elif mode.lower() == 'luis':
-            from emulators.luis import LUISEmulator
-            return LUISEmulator()
-        elif mode.lower() == 'api':
-            from emulators.api import ApiEmulator
-            return ApiEmulator()
-        else:
-            raise ValueError("unknown mode : {0}".format(mode))
 
     def start(self):
         self.server = HTTPServer(('', self.config.port), lambda *args: RasaRequestHandler(self.data_router, *args))
@@ -85,73 +31,6 @@ class RasaNLUServer(object):
         if self.server is not None:
             logging.info('shutting down server')
             self.server.socket.close()
-
-
-class DataRouter(object):
-    def __init__(self, config, interpreter, emulator):
-        self.config = config
-        self.interpreter = interpreter
-        self.emulator = emulator
-        self.logfile = config.write
-        self.responses = set()
-        self.train_proc = None
-        self.model_dir = config.path
-        self.token = config.token
-
-    def extract(self, data):
-        return self.emulator.normalise_request_json(data)
-
-    def parse(self, text):
-        result = self.interpreter.parse(text)
-        self.responses.add(json.dumps(result, sort_keys=True))
-        return result
-
-    def format(self, data):
-        return self.emulator.normalise_response_json(data)
-
-    def write_logs(self):
-        with open(self.logfile, 'w') as f:
-            responses = [json.loads(r) for r in self.responses]
-            f.write(json.dumps(responses, indent=2))
-
-    def get_status(self):
-        if self.train_proc is not None:
-            training = self.train_proc.is_alive()
-        else:
-            training = False
-
-        models = glob.glob(os.path.join(self.model_dir, 'model*'))
-        return json.dumps({
-          "training": training,
-          "available_models": models
-        })
-
-    def auth(self, path):
-
-        if self.token is None:
-            return True
-        else:
-            parsed_path = urlparse.urlparse(path)
-            data = urlparse.parse_qs(parsed_path.query)
-            valid = ("token" in data and data["token"][0] == self.token)
-            return valid
-
-    def start_train_proc(self, data):
-        logging.info("starting train")
-        if self.train_proc is not None and self.train_proc.is_alive():
-            self.train_proc.terminate()
-            logging.info("training process {0} killed".format(self.train_proc))
-
-        fname = 'tmp_training_data.json'
-        with open(fname, 'w') as f:
-            f.write(data)
-        _config = dict(self.config.items())
-        _config["data"] = fname
-        train_config = RasaNLUConfig(cmdline_args=_config)
-
-        self.train_proc = multiprocessing.Process(target=do_train, args=(train_config,))
-        self.train_proc.start()
-        logging.info("training process {0} started".format(self.train_proc))
 
 
 class RasaRequestHandler(BaseHTTPRequestHandler):
@@ -173,7 +52,7 @@ class RasaRequestHandler(BaseHTTPRequestHandler):
             return json.dumps({"error": "Invalid parse parameter specified"})
 
         data = self.data_router.extract(data_dict)
-        result = self.data_router.parse(data["text"])
+        result = self.data_router.parse(data)
         response = self.data_router.format(result)
         return json.dumps(response)
 

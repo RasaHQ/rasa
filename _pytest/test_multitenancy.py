@@ -1,0 +1,66 @@
+# -*- coding: utf-8 -*-
+
+import pytest
+import requests
+import os
+from rasa_nlu.server import RasaNLUServer
+from rasa_nlu.config import RasaNLUConfig
+from multiprocessing import Process
+import time
+import json
+import codecs
+
+
+class ResponseTest():
+    def __init__(self, endpoint, expected_response, payload=None):
+        self.endpoint = endpoint
+        self.expected_response = expected_response
+        self.payload = payload
+
+
+@pytest.fixture
+def http_server():
+    def url(port):
+        return "http://localhost:{0}".format(port)
+    # basic conf
+    _config = {
+        'write': os.path.join(os.getcwd(), "rasa_nlu_logs.json"),
+        'port': 5022,
+        "backend": "mitie",
+        "path": "./",
+        "data": "./data/demo-restaurants.json",
+        "server_model_dir": {
+          "one": "./models/model_1",
+          "two": "./models/model_2"
+        }
+    }
+    config = RasaNLUConfig(cmdline_args=_config)
+    # run server in background
+    server = RasaNLUServer(config)
+    p = Process(target=server.start)
+    p.daemon = True
+    p.start()
+    # TODO: implement better way to notify when server is up
+    time.sleep(2)
+    yield url(config.port)
+    p.terminate()
+
+
+def test_get_parse(http_server):
+    tests = [
+        ResponseTest(
+            u"/parse?q=hello&model=one",
+            {u"entities": [], u"intent": u"greet", u"text": u"hello"}
+        ),
+        #ResponseTest(
+    #        u"/parse?q=food&model=two",
+#            {u"entities": [], u"intent": u"restaurant_search", u"text": u"food"}#
+        #),
+        ResponseTest(
+            u"/parse?q=food",
+            {u"error": u"no model found with alias: default"}
+        ),        
+    ]
+    for test in tests:
+        req = requests.get(http_server + test.endpoint)
+        assert req.status_code == 200 and req.json() == test.expected_response

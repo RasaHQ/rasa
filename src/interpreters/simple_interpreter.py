@@ -7,7 +7,7 @@ class HelloGoodbyeInterpreter(Interpreter):
         self.his = ["hello", "hi", "hey"]
         self.byes = ["bye", "goodbye"]
 
-    def parse(self, text):
+    def parse(self, text, nlp=None, featurizer=None):
         _text = text.lower()
 
         def is_present(x): return x in _text

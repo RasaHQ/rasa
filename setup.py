@@ -14,7 +14,7 @@ setup(
         'rasa_nlu.visualization'
     ],
     package_dir={'rasa_nlu': 'src'},
-    version='0.4.2.1',
+    version='0.5.0',
     install_requires=[],
     description="rasa NLU a natural language parser for bots",
     author='Alan Nichol',

@@ -34,7 +34,7 @@ class MITIEInterpreter(Interpreter):
         label, _ = self.classifier(tokens)  # don't use the score
         return label
 
-    def parse(self, text):
+    def parse(self, text, **kwargs):
         intent = self.get_intent(text)
         entities = self.get_entities(text)
 
