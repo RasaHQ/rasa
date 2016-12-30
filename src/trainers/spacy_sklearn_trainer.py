@@ -20,7 +20,7 @@ class SpacySklearnTrainer(Trainer):
         self.language_name = language_name
         self.training_data = None
         self.nlp = spacy.load(self.language_name, parser=False, entity=False)
-        self.featurizer = SpacyFeaturizer(self.nlp)
+        self.featurizer = SpacyFeaturizer()
         self.intent_classifier = SklearnIntentClassifier()
         self.entity_extractor = SpacyEntityExtractor()
 
@@ -36,7 +36,7 @@ class SpacySklearnTrainer(Trainer):
         labels = [e["intent"] for e in intent_examples]
         sentences = [e["text"] for e in intent_examples]
         y = self.intent_classifier.transform_labels(labels)
-        X = self.featurizer.create_bow_vecs(sentences)
+        X = self.featurizer.create_bow_vecs(sentences, nlp=self.nlp)
         self.intent_classifier.train(X, y)
 
     def persist(self, path, persistor=None):

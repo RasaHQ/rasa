@@ -8,7 +8,7 @@ from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 
 class SpacySklearnInterpreter(Interpreter):
 
-    def __init__(self, model_dir, nlp=None, entity_extractor=None, intent_classifier=None, **kwargs):    
+    def __init__(self, model_dir, nlp=None, entity_extractor=None, intent_classifier=None, **kwargs):
         classifier_file = os.path.join(model_dir, intent_classifier)
         with open(classifier_file, 'rb') as f:
             self.classifier = cloudpickle.load(f)

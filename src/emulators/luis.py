@@ -4,7 +4,11 @@ class LUISEmulator(object):
 
     def normalise_request_json(self, data):
         _data = {}
-        _data["text"] = data["q"][0] if type(data["q"]) == list else data["q"]
+        _data["text"] = data["q"][0]
+        if "model" not in data:
+            _data["model"] = "default"
+        else:
+            _data["model"] = data["model"][0]
         return _data
 
     def normalise_response_json(self, data):

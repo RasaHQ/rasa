@@ -28,29 +28,29 @@
       }, 
       {
         "text": "i'm looking for a place to eat", 
-        "intent": "inform", 
+        "intent": "restaurant_search", 
         "entities": []
       }, 
       {
         "text": "i'm looking for a place in the north of town", 
-        "intent": "inform", 
+        "intent": "restaurant_search", 
         "entities": [
           {
-            "start": 37, 
-            "end": 44, 
-            "value": "of\\s*town", 
+            "start": 31, 
+            "end": 36, 
+            "value": "north", 
             "entity": "location"
           }
         ]
       }, 
       {
         "text": "show me chinese restaurants", 
-        "intent": "greet", 
+        "intent": "restaurant_search", 
         "entities": [
           {
             "start": 8, 
-            "end": 27, 
-            "value": "chinese\\s*restaurants", 
+            "end": 15, 
+            "value": "chinese", 
             "entity": "cuisine"
           }
         ]
@@ -72,7 +72,7 @@
       }, 
       {
         "text": "show me a mexican place in the centre", 
-        "intent": "inform", 
+        "intent": "restaurant_search", 
         "entities": [
           {
             "start": 31, 
@@ -82,8 +82,8 @@
           }, 
           {
             "start": 10, 
-            "end": 23, 
-            "value": "mexican\\s*place", 
+            "end": 17, 
+            "value": "mexican", 
             "entity": "cuisine"
           }
         ]
@@ -115,17 +115,24 @@
       }, 
       {
         "text": "i am looking for an indian spot", 
-        "intent": "inform", 
-        "entities": []
+        "intent": "restaurant_search", 
+        "entities": [
+          {
+            "start": 20, 
+            "end": 26, 
+            "value": "indian", 
+            "entity": "cuisine"
+          }
+        ]
       }, 
       {
         "text": "search for restaurants", 
-        "intent": "inform", 
+        "intent": "restaurant_search", 
         "entities": []
       }, 
       {
         "text": "anywhere in the west", 
-        "intent": "inform", 
+        "intent": "restaurant_search", 
         "entities": [
           {
             "start": 16, 
@@ -137,18 +144,18 @@
       }, 
       {
         "text": "central indian restaurant", 
-        "intent": "greet", 
+        "intent": "restaurant_search", 
         "entities": [
           {
             "start": 0, 
-            "end": 14, 
-            "value": "central\\s*indian", 
+            "end": 7, 
+            "value": "central", 
             "entity": "location"
           }, 
           {
             "start": 8, 
-            "end": 25, 
-            "value": "indian\\s*restaurant", 
+            "end": 14, 
+            "value": "indian", 
             "entity": "cuisine"
           }
         ]
@@ -197,15 +204,15 @@
       }, 
       {
         "text": "i'm looking for a place to eat", 
-        "intent": "inform"
+        "intent": "restaurant_search"
       }, 
       {
         "text": "i'm looking for a place in the north of town", 
-        "intent": "inform"
+        "intent": "restaurant_search"
       }, 
       {
         "text": "show me chinese restaurants", 
-        "intent": "greet"
+        "intent": "restaurant_search"
       }, 
       {
         "text": "yes", 
@@ -221,7 +228,7 @@
       }, 
       {
         "text": "show me a mexican place in the centre", 
-        "intent": "inform"
+        "intent": "restaurant_search"
       }, 
       {
         "text": "bye", 
@@ -245,19 +252,19 @@
       }, 
       {
         "text": "i am looking for an indian spot", 
-        "intent": "inform"
+        "intent": "restaurant_search"
       }, 
       {
         "text": "search for restaurants", 
-        "intent": "inform"
+        "intent": "restaurant_search"
       }, 
       {
         "text": "anywhere in the west", 
-        "intent": "inform"
+        "intent": "restaurant_search"
       }, 
       {
         "text": "central indian restaurant", 
-        "intent": "greet"
+        "intent": "restaurant_search"
       }, 
       {
         "text": "indeed", 

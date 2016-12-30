@@ -1,8 +1,9 @@
 {
-    "trained_at": "20161123-135628", 
-    "entity_extractor": "ner", 
-    "intent_classifier": "intent_classifier.pkl", 
-    "training_data": "training_data.json", 
-    "backend": "spacy_sklearn",
-    "language_name": "en"
+    "intent_classifier": "/Users/alan/meetup-demo/model_20161230-101200/intent_classifier.pkl", 
+    "entity_extractor": "/Users/alan/meetup-demo/model_20161230-101200/ner", 
+    "trained_at": "20161230-101200", 
+    "training_data": "/Users/alan/meetup-demo/model_20161230-101200/training_data.json", 
+    "language_name": "en", 
+    "feature_extractor": null, 
+    "backend": "spacy_sklearn"
 }

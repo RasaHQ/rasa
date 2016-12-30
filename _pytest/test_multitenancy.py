@@ -49,17 +49,17 @@ def http_server():
 def test_get_parse(http_server):
     tests = [
         ResponseTest(
-            u"/parse?q=hello&model=one",
-            {u"entities": [], u"intent": u"greet", u"text": u"hello"}
+            u"/parse?q=food&model=one",
+            {u"entities": [], u"intent": u"affirm", u"text": u"food"}
         ),
-        #ResponseTest(
-    #        u"/parse?q=food&model=two",
-#            {u"entities": [], u"intent": u"restaurant_search", u"text": u"food"}#
-        #),
+        ResponseTest(
+            u"/parse?q=food&model=two",
+            {u"entities": [], u"intent": u"restaurant_search", u"text": u"food"}
+        ),
         ResponseTest(
             u"/parse?q=food",
             {u"error": u"no model found with alias: default"}
-        ),        
+        ),
     ]
     for test in tests:
         req = requests.get(http_server + test.endpoint)

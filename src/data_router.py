@@ -26,15 +26,15 @@ class DataRouter(object):
         model_dict = self.config.server_model_dir
         if model_dict is None:
             return {"default": {
-                     "metadata": None, 
+                     "metadata": None,
                      "interpreter": self.__create_interpreter({'backend': None}, None)
                    }}
         elif type(model_dict) is unicode:
             model_dict = {"default": model_dict}
         aliases = model_dict.keys()
-        interpreter_store = {alias: 
-                              {'metadata': self.__read_model_metadata(model_dict[alias]) }
-                              for alias in aliases}
+        interpreter_store = {
+            alias: {'metadata': self.__read_model_metadata(model_dict[alias])}
+            for alias in aliases}
         backends = set([md['metadata']['backend'] for md in interpreter_store.values()])
         languages = set([md['metadata']['language_name'] for md in interpreter_store.values()])
 
@@ -47,12 +47,14 @@ class DataRouter(object):
             from rasa_nlu.featurizers.spacy_featurizer import SpacyFeaturizer
             self.nlp = spacy.load(languages.pop(), parser=False, entity=False, matcher=False)
             self.featurizer = SpacyFeaturizer()
-    
+
         for alias in aliases:
-            interpreter_store[alias]['interpreter'] = self.__create_interpreter(interpreter_store[alias]['metadata'], model_dict[alias])
+            interpreter_store[alias]['interpreter'] = self.__create_interpreter(
+                interpreter_store[alias]['metadata'],
+                model_dict[alias])
 
         return interpreter_store
-    
+
     def __read_model_metadata(self, model_dir):
         metadata = None
 
@@ -68,7 +70,6 @@ class DataRouter(object):
 
             metadata = json.loads(open(os.path.join(model_dir, 'metadata.json'), 'rb').read().decode('utf-8'))
         return metadata
-
 
     def __create_interpreter(self, metadata, model_dir):
 
@@ -102,7 +103,7 @@ class DataRouter(object):
             from emulators.api import ApiEmulator
             return ApiEmulator()
         else:
-            raise ValueError("unknown mode : {0}".format(mode))        
+            raise ValueError("unknown mode : {0}".format(mode))
 
     def extract(self, data):
         return self.emulator.normalise_request_json(data)
@@ -111,7 +112,10 @@ class DataRouter(object):
         alias = data.get("model") or "default"
         if alias not in self.interpreter_store:
             return {"error": "no model found with alias: {0}".format(alias)}
-        result = self.interpreter_store[alias]["interpreter"].parse(data['text'], nlp=self.nlp, featurizer=self.featurizer)
+        result = self.interpreter_store[alias]["interpreter"].parse(
+                   data['text'],
+                   nlp=self.nlp,
+                   featurizer=self.featurizer)
         self.responses.add(json.dumps(result, sort_keys=True))
         return result
 

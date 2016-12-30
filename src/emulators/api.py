@@ -10,6 +10,10 @@ class ApiEmulator(object):
         _data = {}
         # for GET req data["q"] is a list. For POST req data["q"] should be a string
         _data["text"] = data["q"][0] if type(data["q"]) == list else data["q"]
+        if "model" not in data:
+            _data["model"] = "default"
+        else:
+            _data["model"] = data["model"][0]
         return _data
 
     def normalise_response_json(self, data):
