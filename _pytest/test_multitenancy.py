@@ -28,7 +28,7 @@ def http_server():
         root_dir = os.path.join(wd, '/')
         print("{0} exists {1}".format(root_dir,os.path.exists(root_dir)))
         model_dir = os.path.join(root_dir, 'models/model_1')
-        print("{0} exists {1}".format(model_dir,os.path.exists(model_dir))
+        print("{0} exists {1}".format(model_dir,os.path.exists(model_dir)))
     else:
         root_dir = "./"
     # basic conf
