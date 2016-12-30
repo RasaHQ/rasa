@@ -10,9 +10,10 @@ from training_utils import write_training_metadata
 class MITIETrainer(Trainer):
     SUPPORTED_LANGUAGES = {"en"}
 
-    def __init__(self, fe_file, language_name):
+    def __init__(self, fe_file, language_name, nlp=None):
         self.name = "mitie"
         self.training_data = None
+        self.nlp = None
         self.intent_classifier = None
         self.entity_extractor = None
         self.training_data = None

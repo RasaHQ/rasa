@@ -10,14 +10,13 @@ from rasa_nlu import util
 
 
 class TrainingData(object):
-    def __init__(self, resource_name, backend, language_name):
+    def __init__(self, resource_name, backend, nlp=None):
         self.intent_examples = []
         self.entity_examples = []
         self.resource_name = resource_name
         self.files = util.recursively_find_files(resource_name)
         self.fformat = self.guess_format(self.files)
         self.tokenizer = None
-        self.language_name = language_name
         self.min_examples_per_intent = 2
         self.min_examples_per_entity = 2
 
@@ -26,7 +25,7 @@ class TrainingData(object):
             self.tokenizer = MITIETokenizer()
         elif backend in ['spacy_sklearn']:
             from rasa_nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
-            self.tokenizer = SpacyTokenizer(language_name)
+            self.tokenizer = SpacyTokenizer()
         else:
             from rasa_nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
             self.tokenizer = WhitespaceTokenizer()
@@ -34,7 +33,7 @@ class TrainingData(object):
                 "backend not recognised by TrainingData : defaulting to tokenizing by splitting on whitespace")
 
         if self.fformat == 'luis':
-            self.load_luis_data(self.files[0])
+            self.load_luis_data(self.files[0], nlp=nlp)
         elif self.fformat == 'wit':
             self.load_wit_data(self.files[0])
         elif self.fformat == 'api':
@@ -85,14 +84,14 @@ class TrainingData(object):
             self.intent_examples.append({"text": text, "intent": intent})
             self.entity_examples.append({"text": text, "intent": intent, "entities": entities})
 
-    def load_luis_data(self, filename):
+    def load_luis_data(self, filename, nlp=None):
         warnings.warn(
             """LUIS data may not always be correctly imported because entity locations are specified by tokens.
             If you use a tokenizer which behaves differently from LUIS's your entities might not be correct""")
         data = json.loads(codecs.open(filename, encoding='utf-8').read())
         for s in data["utterances"]:
             text = s.get("text")
-            tokens = [t for t in self.tokenizer.tokenize(text)]
+            tokens = [t for t in self.tokenizer.tokenize(text, nlp=nlp)]
             intent = s.get("intent")
             entities = []
             for e in s.get("entities") or []:
