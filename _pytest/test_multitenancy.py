@@ -23,12 +23,7 @@ def http_server():
     def url(port):
         return "http://localhost:{0}".format(port)
     if "TRAVIS_BUILD_DIR" in os.environ:
-        wd = os.environ["TRAVIS_BUILD_DIR"]
-        print("travis dir: {0}".format(wd))
-        root_dir = os.path.join(wd, '/')
-        print("{0} exists {1}".format(root_dir,os.path.exists(root_dir)))
-        model_dir = os.path.join(root_dir, 'models/model_1')
-        print("{0} exists {1}".format(model_dir,os.path.exists(model_dir)))
+        root_dir = os.environ["TRAVIS_BUILD_DIR"]
     else:
         root_dir = os.getcwd()
         print("model at")
