@@ -30,7 +30,9 @@ def http_server():
         model_dir = os.path.join(root_dir, 'models/model_1')
         print("{0} exists {1}".format(model_dir,os.path.exists(model_dir)))
     else:
-        root_dir = "./"
+        root_dir = os.getcwd()
+        print("model at")
+        print(os.path.join(root_dir, "models/model_1"))
     # basic conf
     _config = {
         'write': os.path.join(os.getcwd(), "rasa_nlu_logs.json"),
@@ -39,8 +41,8 @@ def http_server():
         "path": root_dir,
         "data": os.path.join(root_dir, "data/demo-restaurants.json"),
         "server_model_dir": {
-          "one": os.path.join(root_dir, "/models/model_1"),
-          "two": os.path.join(root_dir, "/models/model_2")
+          "one": os.path.join(root_dir, "models/model_1"),
+          "two": os.path.join(root_dir, "models/model_2")
         }
     }
     config = RasaNLUConfig(cmdline_args=_config)
