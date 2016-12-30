@@ -26,7 +26,7 @@ def http_server():
         wd = os.environ["TRAVIS_BUILD_DIR"]
         print("travis dir: {0}".format(wd))
         root_dir = os.path.join(wd, '/')
-        print("{0} exists {1}".format(root_dir,os.path.exists(root_dir))
+        print("{0} exists {1}".format(root_dir,os.path.exists(root_dir)))
         model_dir = os.path.join(root_dir, 'models/model_1')
         print("{0} exists {1}".format(model_dir,os.path.exists(model_dir))
     else:
