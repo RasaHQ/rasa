@@ -51,11 +51,18 @@ In native mode, a request / response looks like this :
 
     $ curl -XPOST localhost:5000/parse -d '{"q":"I am looking for Chinese food"}' | python -mjson.tool
     {
-      "intent" : "restaurant_search",
-      "entities" : {
-        "cuisine": "Chinese"
-      }
+      "text": "I am looking for Chinese food", 
+      "intent": "restaurant_search", 
+      "entities": [
+        {
+          "start": 17,
+          "end": 24, 
+          "value": "chinese", 
+          "entity": "cuisine"
+        }
+      ]
     }
+
 
 if we run in ``wit`` mode (e.g. ``python -m rasa_nlu.server -e wit``)
 
