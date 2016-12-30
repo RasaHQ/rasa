@@ -1,8 +1,8 @@
 {
-    "intent_classifier": "/Users/alan/meetup-demo/model_20161230-095946/intent_classifier.pkl", 
-    "entity_extractor": "/Users/alan/meetup-demo/model_20161230-095946/ner", 
-    "trained_at": "20161230-095946", 
-    "training_data": "/Users/alan/meetup-demo/model_20161230-095946/training_data.json", 
+    "intent_classifier": "intent_classifier.pkl", 
+    "entity_extractor": "ner", 
+    "trained_at": "20161230-121517", 
+    "training_data": "training_data.json", 
     "language_name": "en", 
     "feature_extractor": null, 
     "backend": "spacy_sklearn"
