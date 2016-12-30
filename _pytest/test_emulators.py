@@ -54,7 +54,7 @@ def test_dummy_request():
     norm = em.normalise_request_json({"q": ["arb text"]})
     assert norm == {"text": "arb text", "model": "default"}
 
-    norm = em.normalise_request_json({"q": ["arb text"], "model":"specific"})
+    norm = em.normalise_request_json({"q": ["arb text"], "model": "specific"})
     assert norm == {"text": "arb text", "model": "specific"}
 
 

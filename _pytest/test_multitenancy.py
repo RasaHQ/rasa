@@ -22,16 +22,22 @@ class ResponseTest():
 def http_server():
     def url(port):
         return "http://localhost:{0}".format(port)
+    if "TRAVIS_BUILD_DIR" in os.environ:
+        wd = os.environ["TRAVIS_BUILD_DIR"]
+        print("travis dir: {0}".format(wd))
+        root_dir = os.path.join(wd, 'rasa_nlu')
+    else:
+        root_dir = "./"
     # basic conf
     _config = {
         'write': os.path.join(os.getcwd(), "rasa_nlu_logs.json"),
         'port': 5022,
         "backend": "mitie",
-        "path": "./",
-        "data": "./data/demo-restaurants.json",
+        "path": root_dir,
+        "data": os.path.join(root_dir, "data/demo-restaurants.json"),
         "server_model_dir": {
-          "one": "./models/model_1",
-          "two": "./models/model_2"
+          "one": os.path.join(root_dir, "/models/model_1"),
+          "two": os.path.join(root_dir, "/models/model_2")
         }
     }
     config = RasaNLUConfig(cmdline_args=_config)
@@ -65,6 +71,7 @@ def test_get_parse(http_server):
         req = requests.get(http_server + test.endpoint)
         assert req.status_code == 200 and req.json() == test.expected_response
 
+
 def test_post_parse(http_server):
     tests = [
         ResponseTest(
@@ -83,6 +90,6 @@ def test_post_parse(http_server):
             payload={u"q": u"food"}
         ),
     ]
-    for test in tests:    
+    for test in tests:
         req = requests.post(http_server + test.endpoint, json=test.payload)
-        assert req.status_code == 200 and req.json() == test.expected_response        
+        assert req.status_code == 200 and req.json() == test.expected_response

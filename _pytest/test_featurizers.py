@@ -9,8 +9,8 @@ def test_spacy():
         from rasa_nlu.featurizers.spacy_featurizer import SpacyFeaturizer
         nlp = spacy.load(language, tagger=False, parser=False)
         doc = nlp(sentence)
-        ftr = SpacyFeaturizer(nlp)
-        vecs = ftr.create_bow_vecs([sentence])
+        ftr = SpacyFeaturizer()
+        vecs = ftr.create_bow_vecs([sentence], nlp)
         assert np.allclose(doc.vector[:5], _ref, atol=1e-5)
         assert np.allclose(vecs[0], doc.vector, atol=1e-5)
 
