@@ -64,3 +64,25 @@ def test_get_parse(http_server):
     for test in tests:
         req = requests.get(http_server + test.endpoint)
         assert req.status_code == 200 and req.json() == test.expected_response
+
+def test_post_parse(http_server):
+    tests = [
+        ResponseTest(
+            u"/parse",
+            {u"entities": [], u"intent": u"affirm", u"text": u"food"},
+            payload={u"q": u"food", u"model": "one"}
+        ),
+        ResponseTest(
+            u"/parse",
+            {u"entities": [], u"intent": u"restaurant_search", u"text": u"food"},
+            payload={u"q": u"food", u"model": "two"}
+        ),
+        ResponseTest(
+            u"/parse",
+            {u"error": u"no model found with alias: default"},
+            payload={u"q": u"food"}
+        ),
+    ]
+    for test in tests:    
+        req = requests.post(http_server + test.endpoint, json=test.payload)
+        assert req.status_code == 200 and req.json() == test.expected_response        
