@@ -56,7 +56,7 @@ class SpacySklearnTrainer(Trainer):
 
         with open(data_file, 'w') as f:
             f.write(self.training_data.as_json(indent=2))
-        with open(classifier_file, 'w') as f:
+        with open(classifier_file, 'wb') as f:
             cloudpickle.dump(self.intent_classifier, f)
         with open(entity_extractor_config_file, 'w') as f:
             json.dump(self.entity_extractor.ner.cfg, f)
