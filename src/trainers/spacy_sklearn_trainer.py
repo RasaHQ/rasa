@@ -39,15 +39,20 @@ class SpacySklearnTrainer(Trainer):
         X = self.featurizer.create_bow_vecs(sentences)
         self.intent_classifier.train(X, y)
 
-    def persist(self, path, persistor=None):
-
+    def persist(self, path, persistor=None, create_unique_subfolder=True):
         timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
-        dir_name = os.path.join(path, "model_" + timestamp)
-        os.mkdir(dir_name)
+
+        if create_unique_subfolder:
+            dir_name = os.path.join(path, "model_" + timestamp)
+            os.mkdir(dir_name)
+        else:
+            dir_name = path
+
         data_file = os.path.join(dir_name, "training_data.json")
         classifier_file = os.path.join(dir_name, "intent_classifier.pkl")
         ner_dir = os.path.join(dir_name, 'ner')
-        os.mkdir(ner_dir)
+        if not os.path.exists(ner_dir):
+            os.mkdir(ner_dir)
         entity_extractor_config_file = os.path.join(ner_dir, "config.json")
         entity_extractor_file = os.path.join(ner_dir, "model")
 
@@ -64,4 +69,4 @@ class SpacySklearnTrainer(Trainer):
         self.entity_extractor.ner.model.dump(entity_extractor_file)
 
         if persistor is not None:
-            persistor.send_tar_to_s3(dirname)
+            persistor.send_tar_to_s3(dir_name)
