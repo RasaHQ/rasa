@@ -11,8 +11,10 @@ class SpacyFeaturizer(object):
         X = np.zeros((len(sentences), self.ndim))
         for idx, sentence in enumerate(sentences):
             doc = self.nlp(sentence)
-            vec = np.zeros(self.ndim)
+            vec = []
             for token in doc:
-                vec += token.vector
-            X[idx, :] = vec / len(doc)
+                if token.has_vector:
+                    vec.append(token.vector)
+            if vec:
+                X[idx, :] = np.sum(vec, axis=0) / len(vec)
         return X
