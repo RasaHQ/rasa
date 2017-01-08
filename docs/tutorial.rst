@@ -64,7 +64,8 @@ Download the file and open it, and you'll see a list of training examples like t
       ]
     }
 
-hopefully the format is intuitive if you've read this far into the tutorial.
+hopefully the format is intuitive if you've read this far into the tutorial, for details see :ref:`section_dataformat`
+
 In your working directory, create a ``data`` folder, and copy the ``demo-rasa.json`` file there.
 
 It's always a good idea to `look` at your data before, during, and after training a model. 
@@ -153,7 +154,10 @@ which should return
       ]
     }
 
-with very little data, rasa NLU can already generalise this concept, for example:
+If you are using the ``spacy_sklearn`` backend and the entities aren't found, don't panic!
+This tutorial is just a toy example, with far too little training data to expect good performance.
+
+With very little data, rasa NLU can in certain cases already generalise concepts, for example:
 
 
 .. code-block:: console
