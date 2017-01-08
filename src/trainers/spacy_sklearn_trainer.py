@@ -35,7 +35,7 @@ class SpacySklearnTrainer(Trainer):
     def train_intent_classifier(self, intent_examples):
         labels = [e["intent"] for e in intent_examples]
         sentences = [e["text"] for e in intent_examples]
-        y = self.intent_classifier.transform_labels(labels)
+        y = self.intent_classifier.transform_labels_str2num(labels)
         X = self.featurizer.create_bow_vecs(sentences)
         self.intent_classifier.train(X, y)
 
