@@ -56,16 +56,19 @@ class SklearnIntentClassifier(object):
         logging.info("Score of intent model on test data: %s " % self.clf.score(X_test, y_test))
 
     def predict_prob(self, X):
-        """Given a bow vector of an input text, predict the intent label. Returns probabilites for all labels.
+        """Given a bow vector of an input text, predict the intent label. Returns probabilities for all labels.
 
         :param X: bow of input text
-        :return: tuple of first, the vector of labels (eother numeric or string) and second vector of probabilities"""
+        :return: vector of probabilities containing one entry for each label"""
 
         if hasattr(self, 'uses_probabilities') and self.uses_probabilities:
             return self.clf.predict_proba(X)
         else:
-            y_pred = self.clf.predict(X)
-            return y_pred, np.full(y_pred.shape, 1.0 / len(y_pred))
+            y_pred_indices = self.clf.predict(X)
+            # convert representation to one-hot. all labels are zero, only the predicted label gets assigned prob=1
+            y_pred = np.zeros((np.size(X, 0), len(self.le.classes_)))
+            y_pred[np.arange(y_pred.shape[0]), y_pred_indices] = 1
+            return y_pred
 
     def predict(self, X):
         """Given a bow vector of an input text, predict most probable label. Returns only the most likely label.
