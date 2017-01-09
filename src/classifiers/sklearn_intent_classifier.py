@@ -61,7 +61,7 @@ class SklearnIntentClassifier(object):
         :param X: bow of input text
         :return: tuple of first, the vector of labels (eother numeric or string) and second vector of probabilities"""
 
-        if self.uses_probabilities:
+        if hasattr(self, 'uses_probabilities') and self.uses_probabilities:
             return self.clf.predict_proba(X)
         else:
             y_pred = self.clf.predict(X)
