@@ -144,6 +144,7 @@ which should return
 
     {
       "intent" : "restaurant_search",
+      "confidence": 0.6127775465094253,
       "entities" : [
         {
           "start": 8,
@@ -156,6 +157,9 @@ which should return
 
 If you are using the ``spacy_sklearn`` backend and the entities aren't found, don't panic!
 This tutorial is just a toy example, with far too little training data to expect good performance.
+rasa NLU will also print a ``confidence`` value.
+You can use this to do some error handling in your bot (maybe asking the user again if the confidence is low)
+and it's also helpful for prioritising which intents need more training data.
 
 With very little data, rasa NLU can in certain cases already generalise concepts, for example:
 
@@ -174,6 +178,7 @@ With very little data, rasa NLU can in certain cases already generalise concepts
       ],
       "intent": "restaurant_search",
       "text": "I want some italian"
+      "confidence": 0.4794813722432127
     }
 
 even though there's nothing quite like this sentence in the examples used to train the model. 

@@ -11,7 +11,6 @@ class WitEmulator(object):
         entities = {}
         for entity in data["entities"]:
             entities[entity["entity"]] = {
-                "confidence": None,
                 "type": "value",
                 "value": entity["value"],
                 "start": entity["start"],
@@ -21,7 +20,7 @@ class WitEmulator(object):
         return [
             {
                 "_text": data["text"],
-                "confidence": None,
+                "confidence": data["confidence"],
                 "intent": data["intent"],
                 "entities": entities
             }
