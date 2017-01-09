@@ -19,4 +19,4 @@ class HelloGoodbyeInterpreter(Interpreter):
         else:
             intent = "None"
 
-        return {'text': text, 'intent': intent, 'entities': {}}
+        return {'text': text, 'intent': intent, 'entities': [], 'confidence': 1.0}
