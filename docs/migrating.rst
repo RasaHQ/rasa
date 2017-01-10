@@ -52,6 +52,7 @@ In native mode, a request / response looks like this :
     $ curl -XPOST localhost:5000/parse -d '{"q":"I am looking for Chinese food"}' | python -mjson.tool
     {
       "intent" : "restaurant_search",
+      "confidence": 0.4794813722432127,
       "entities" : {
         "cuisine": "Chinese"
       }
@@ -67,7 +68,7 @@ then instead have to make a GET request
     [
         {
             "_text": "hello",
-            "confidence": null,
+            "confidence": 0.4794813722432127,
             "entities": {},
             "intent": "greet"
         }
@@ -84,7 +85,7 @@ similarly for LUIS, but with a slightly different response format
         "query": "hello",
         "topScoringIntent": {
             "intent": "inform",
-            "score": null
+            "score": 0.4794813722432127
         }
     }
 

@@ -31,11 +31,11 @@ class MITIEInterpreter(Interpreter):
 
     def get_intent(self, text):
         tokens = tokenize(text)
-        label, _ = self.classifier(tokens)  # don't use the score
-        return label
+        label, score = self.classifier(tokens)
+        return label, score
 
     def parse(self, text):
-        intent = self.get_intent(text)
+        intent, score = self.get_intent(text)
         entities = self.get_entities(text)
 
-        return {'text': text, 'intent': intent, 'entities': entities}
+        return {'text': text, 'intent': intent, 'entities': entities, 'confidence': score}

@@ -60,11 +60,11 @@ def test_get_parse(http_server):
     tests = [
         ResponseTest(
             u"/parse?q=hello",
-            [{u"entities": {}, u"confidence": None, u"intent": u"greet", u"_text": u"hello"}]
+            [{u"entities": {}, u"confidence": 1.0, u"intent": u"greet", u"_text": u"hello"}]
         ),
         ResponseTest(
             u"/parse?q=hello ńöñàśçií",
-            [{u"entities": {}, u"confidence": None, u"intent": u"greet", u"_text": u"hello ńöñàśçií"}]
+            [{u"entities": {}, u"confidence": 1.0, u"intent": u"greet", u"_text": u"hello ńöñàśçií"}]
         ),
     ]
     for test in tests:
@@ -76,12 +76,12 @@ def test_post_parse(http_server):
     tests = [
         ResponseTest(
             u"/parse",
-            [{u"entities": {}, u"confidence": None, u"intent": u"greet", u"_text": u"hello"}],
+            [{u"entities": {}, u"confidence": 1.0, u"intent": u"greet", u"_text": u"hello"}],
             payload={u"q": u"hello"}
         ),
         ResponseTest(
             u"/parse",
-            [{u"entities": {}, u"confidence": None, u"intent": u"greet", u"_text": u"hello ńöñàśçií"}],
+            [{u"entities": {}, u"confidence": 1.0, u"intent": u"greet", u"_text": u"hello ńöñàśçií"}],
             payload={u"q": u"hello ńöñàśçií"}
         ),
     ]

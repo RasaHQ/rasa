@@ -26,4 +26,4 @@ class MITIESklearnInterpreter(Interpreter):
         intent = self.get_intent(tokens)
         entities = self.get_entities(tokens)
 
-        return {'intent': intent, 'entities': entities}
+        return {'text': text, 'intent': intent, 'entities': entities}
