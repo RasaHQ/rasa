@@ -49,12 +49,19 @@ def test_wit_response():
         "confidence": 0.4794813722432127,
         "entities": [{"entity": "cuisine", "value": "italian", "start": 7, "end": 14}]}
     norm = em.normalise_response_json(data)
-    assert norm == [
-        {'entities': 
-          {'cuisine': {'confidence': None, 'type': 'value', 'value': 'italian', 'start': 7, 'end': 14}},
-         'intent': 'inform',
-         '_text': 'I want italian food',
-         'confidence': 0.4794813722432127, 
+    assert norm == [{
+        'entities': {
+            'cuisine': {
+                'confidence': None,
+                'type': 'value',
+                'value': 'italian',
+                'start': 7,
+                'end': 14
+            }
+        },
+        'intent': 'inform',
+        '_text': 'I want italian food',
+        'confidence': 0.4794813722432127,
     }]
 
 
