@@ -6,6 +6,7 @@ import multiprocessing
 import glob
 import warnings
 import logging
+import signal
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from rasa_nlu.train import do_train
 from rasa_nlu.config import RasaNLUConfig
@@ -244,7 +245,12 @@ if __name__ == "__main__":
     logging.captureWarnings(True)
     logging.debug(config.view())
     try:
+        def stop(signal_number, frame):
+            raise KeyboardInterrupt()
+
+        signal.signal(signal.SIGTERM, stop)
         server = RasaNLUServer(config)
         server.start()
+
     except KeyboardInterrupt:
         server.stop()
