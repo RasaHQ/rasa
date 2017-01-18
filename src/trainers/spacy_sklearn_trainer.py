@@ -24,20 +24,20 @@ class SpacySklearnTrainer(Trainer):
         self.intent_classifier = SklearnIntentClassifier()
         self.entity_extractor = SpacyEntityExtractor()
 
-    def train(self, data):
+    def train(self, data, test_split_size=0.1):
         self.training_data = data
         self.train_entity_extractor(data.entity_examples)
-        self.train_intent_classifier(data.intent_examples)
+        self.train_intent_classifier(data.intent_examples, test_split_size)
 
     def train_entity_extractor(self, entity_examples):
         self.entity_extractor.train(self.nlp, entity_examples)
 
-    def train_intent_classifier(self, intent_examples):
+    def train_intent_classifier(self, intent_examples, test_split_size=0.1):
         labels = [e["intent"] for e in intent_examples]
         sentences = [e["text"] for e in intent_examples]
         y = self.intent_classifier.transform_labels_str2num(labels)
         X = self.featurizer.create_bow_vecs(sentences)
-        self.intent_classifier.train(X, y)
+        self.intent_classifier.train(X, y, test_split_size)
 
     def persist(self, path, persistor=None, create_unique_subfolder=True):
         timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
