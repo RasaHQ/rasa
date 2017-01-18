@@ -154,3 +154,14 @@ class TrainingData(object):
             if size < self.min_examples_per_entity:
                 template = "entity {0} has only {1} training examples! minimum is {2}, training may fail."
                 warnings.warn(template.format(entity, size, self.min_examples_per_entity))
+
+        for example in self.entity_examples:
+            text = example["text"]
+            text_tokens = self.tokenizer.tokenize(text)
+            for ent in example["entities"]:
+                ent_tokens = self.tokenizer.tokenize(text[ent["start"]:ent["end"]])
+                for token in ent_tokens:
+                    if token not in text_tokens:
+                        warnings.warn(
+                            "token {0} does not appear in tokenized sentence {1}.".format(token, text_tokens) +
+                            "Entities must span whole tokens.")
