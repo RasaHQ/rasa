@@ -10,8 +10,7 @@ setup(
         'rasa_nlu.featurizers',
         'rasa_nlu.interpreters',
         'rasa_nlu.trainers',
-        'rasa_nlu.tokenizers',
-        'rasa_nlu.visualization'
+        'rasa_nlu.tokenizers'
     ],
     package_dir={'rasa_nlu': 'src'},
     version='0.6.0.0',
