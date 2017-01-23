@@ -14,7 +14,7 @@ class TrainingData(object):
         self.intent_examples = []
         self.entity_examples = []
         self.resource_name = resource_name
-        self.files = util.recursively_find_files(resource_name)
+        self.files = self.resolve_data_files(resource_name)
         self.fformat = self.guess_format(self.files)
         self.tokenizer = None
         self.language_name = language_name
@@ -46,6 +46,12 @@ class TrainingData(object):
 
         self.validate()
 
+    def resolve_data_files(self, resource_name):
+        try:
+            return util.recursively_find_files(resource_name)
+        except ValueError, e:
+            raise ValueError("Invalid training data file / folder specified. " + e.message)
+
     def as_json(self, **kwargs):
         return json.dumps({
             "rasa_nlu_data": {
@@ -57,7 +63,7 @@ class TrainingData(object):
     def guess_format(self, files):
         for filename in files:
             filedata = json.loads(codecs.open(filename, encoding='utf-8').read())
-            if "data" in "data" and type(filedata.get("data")) is list:
+            if "data" in filedata and type(filedata.get("data")) is list:
                 return 'wit'
             elif "luis_schema_version" in filedata:
                 return 'luis'
