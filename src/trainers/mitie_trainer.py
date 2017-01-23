@@ -1,3 +1,4 @@
+import logging
 from mitie import *
 import os
 import datetime
@@ -24,12 +25,13 @@ class MITIETrainer(Trainer):
         self.intent_classifier = self.train_intent_classifier(data.intent_examples)
         self.entity_extractor = self.train_entity_extractor(data.entity_examples)
 
-    def start_and_end(self, text_tokens, entity_tokens):
-        size = len(entity_tokens)
-        max_loc = 1 + len(text_tokens) - size
-        locs = [i for i in range(max_loc) if text_tokens[i:i + size] == entity_tokens]
-        start, end = locs[0], locs[0] + len(entity_tokens)
-        return start, end
+    def find_location_of_entity(self, text_tokens, entity_tokens):
+        num_entity_tokens = len(entity_tokens)
+        max_loc = 1 + len(text_tokens) - num_entity_tokens
+        for i in range(max_loc):
+            if text_tokens[i:i + num_entity_tokens] == entity_tokens:
+                return i, i + num_entity_tokens
+        return None
 
     def train_entity_extractor(self, entity_examples):
         trainer = ner_trainer(self.fe_file)
@@ -39,8 +41,12 @@ class MITIETrainer(Trainer):
             for ent in example["entities"]:
                 _slice = example["text"][ent["start"]:ent["end"]]
                 val_tokens = tokenize(_slice)
-                start, end = self.start_and_end(tokens, val_tokens)
-                sample.add_entity(xrange(start, end), ent["entity"])
+                entity_location = self.find_location_of_entity(tokens, val_tokens)
+                if entity_location:
+                    sample.add_entity(xrange(entity_location[0], entity_location[1]), ent["entity"])
+                else:
+                    logging.warn("Ignored invalid entity example. Make sure indices are correct. " +
+                                 "Text: \"{}\", Invalid entity: \"{}\".".format(example["text"], _slice))
             trainer.add(sample)
 
         ner = trainer.train()
