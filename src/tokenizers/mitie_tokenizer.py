@@ -1,4 +1,5 @@
 from mitie import tokenize
+import nltk
 
 
 class MITIETokenizer(object):
@@ -6,4 +7,4 @@ class MITIETokenizer(object):
         pass
 
     def tokenize(self, text):
-        return [w.decode('utf-8') for w in tokenize(text.encode('utf-8'))]
+        return [w.decode('utf-8') for w in nltk.word_tokenize(text.encode('utf-8'))]
