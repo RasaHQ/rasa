@@ -17,7 +17,6 @@ logs/
 tmp/
 profile.*
 *.sqlite
-*dat
 lastmile_ai/learn/plots/
 *npy
 *#
