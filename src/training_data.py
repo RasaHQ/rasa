@@ -14,7 +14,7 @@ class TrainingData(object):
         self.intent_examples = []
         self.entity_examples = []
         self.resource_name = resource_name
-        self.files = util.recursively_find_files(resource_name)
+        self.files = self.resolve_data_files(resource_name)
         self.fformat = self.guess_format(self.files)
         self.tokenizer = None
         self.language_name = language_name
@@ -46,6 +46,12 @@ class TrainingData(object):
 
         self.validate()
 
+    def resolve_data_files(self, resource_name):
+        try:
+            return util.recursively_find_files(resource_name)
+        except ValueError, e:
+            raise ValueError("Invalid training data file / folder specified. " + e.message)
+
     def as_json(self, **kwargs):
         return json.dumps({
             "rasa_nlu_data": {
@@ -57,7 +63,7 @@ class TrainingData(object):
     def guess_format(self, files):
         for filename in files:
             filedata = json.loads(codecs.open(filename, encoding='utf-8').read())
-            if "data" in "data" and type(filedata.get("data")) is list:
+            if "data" in filedata and type(filedata.get("data")) is list:
                 return 'wit'
             elif "luis_schema_version" in filedata:
                 return 'luis'
@@ -144,7 +150,7 @@ class TrainingData(object):
         for intent, group in groupby(examples, lambda e: e["intent"]):
             size = len(list(group))
             if size < self.min_examples_per_intent:
-                template = "intent {0} has only {1} training examples! minimum is {2}, training may fail."
+                template = u"intent {0} has only {1} training examples! minimum is {2}, training may fail."
                 warnings.warn(template.format(intent, size, self.min_examples_per_intent))
 
         entitygroups = []
@@ -152,7 +158,7 @@ class TrainingData(object):
         for entity, group in groupby(examples, lambda e: e["entity"]):
             size = len(list(group))
             if size < self.min_examples_per_entity:
-                template = "entity {0} has only {1} training examples! minimum is {2}, training may fail."
+                template = u"entity {0} has only {1} training examples! minimum is {2}, training may fail."
                 warnings.warn(template.format(entity, size, self.min_examples_per_entity))
 
         for example in self.entity_examples:

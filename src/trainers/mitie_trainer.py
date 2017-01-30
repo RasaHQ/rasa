@@ -1,3 +1,4 @@
+import logging
 from mitie import *
 import os
 import datetime
@@ -42,6 +43,7 @@ class MITIETrainer(Trainer):
         end = start + len(val_tokens)
         return start, end
 
+
     def train_entity_extractor(self, entity_examples):
         trainer = ner_trainer(self.fe_file)
         for example in entity_examples:
@@ -51,6 +53,7 @@ class MITIETrainer(Trainer):
             for ent in example["entities"]:
                 start, end = self.find_entity(ent, text)
                 sample.add_entity(xrange(start, end), ent["entity"])
+
             trainer.add(sample)
 
         ner = trainer.train()
