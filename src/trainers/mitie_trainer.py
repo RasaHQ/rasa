@@ -43,7 +43,6 @@ class MITIETrainer(Trainer):
         end = start + len(val_tokens)
         return start, end
 
-
     def train_entity_extractor(self, entity_examples):
         trainer = ner_trainer(self.fe_file)
         for example in entity_examples:
