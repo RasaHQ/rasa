@@ -22,7 +22,10 @@ class MITIETrainer(Trainer):
     def train(self, data):
         self.training_data = data
         self.intent_classifier = self.train_intent_classifier(data.intent_examples)
-        self.entity_extractor = self.train_entity_extractor(data.entity_examples)
+
+        num_entity_examples = len([e for e in data.entity_examples if len(e["entities"]) > 0])
+        if num_entity_examples > 0:
+            self.entity_extractor = self.train_entity_extractor(data.entity_examples)
 
     def start_and_end(self, text_tokens, entity_tokens):
         size = len(entity_tokens)
@@ -60,8 +63,12 @@ class MITIETrainer(Trainer):
         dirname = os.path.join(path, "model_" + tstamp)
         os.mkdir(dirname)
         data_file = os.path.join(dirname, "training_data.json")
-        classifier_file = os.path.join(dirname, "intent_classifier.dat")
-        entity_extractor_file = os.path.join(dirname, "entity_extractor.dat")
+
+        classifier_file, entity_extractor_file = None, None
+        if self.intent_classifier:
+            classifier_file = os.path.join(dirname, "intent_classifier.dat")
+        if self.entity_extractor:
+            entity_extractor_file = os.path.join(dirname, "entity_extractor.dat")
 
         write_training_metadata(dirname, tstamp, data_file, self.name, 'en',
                                 classifier_file, entity_extractor_file, self.fe_file)
@@ -70,7 +77,9 @@ class MITIETrainer(Trainer):
             f.write(self.training_data.as_json(indent=2))
 
         self.intent_classifier.save_to_disk(classifier_file, pure_model=True)
-        self.entity_extractor.save_to_disk(entity_extractor_file, pure_model=True)
+
+        if self.entity_extractor:
+            self.entity_extractor.save_to_disk(entity_extractor_file, pure_model=True)
 
         if persistor is not None:
             persistor.send_tar_to_s3(dirname)
