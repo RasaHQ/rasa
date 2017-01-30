@@ -1,0 +1,5 @@
+{
+  "backend": "mitie",
+  "path" : "./",
+  "server_model_dir": "model_20170126-231038"
+}
