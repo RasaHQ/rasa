@@ -5,6 +5,7 @@ import json
 
 from rasa_nlu.trainers.trainer import Trainer
 from training_utils import write_training_metadata
+from rasa_nlu.tokenizers.mitie_tokenizer import MITIETokenizer
 
 
 class MITIETrainer(Trainer):
@@ -27,22 +28,28 @@ class MITIETrainer(Trainer):
         if num_entity_examples > 0:
             self.entity_extractor = self.train_entity_extractor(data.entity_examples)
 
-    def start_and_end(self, text_tokens, entity_tokens):
-        size = len(entity_tokens)
-        max_loc = 1 + len(text_tokens) - size
-        locs = [i for i in range(max_loc) if text_tokens[i:i + size] == entity_tokens]
-        start, end = locs[0], locs[0] + len(entity_tokens)
+    @classmethod
+    def find_entity(cls, ent, text):
+        tk = MITIETokenizer()
+        tokens, offsets = tk.tokenize_with_offsets(text)
+        if ent["start"] not in offsets:
+            message = u"invalid entity {0} in example {1}:".format(ent, text) + \
+                u" entities must span whole tokens"
+            raise ValueError(message)
+        start = offsets.index(ent["start"])
+        _slice = text[ent["start"]:ent["end"]]
+        val_tokens = tokenize(_slice)
+        end = start + len(val_tokens)
         return start, end
 
     def train_entity_extractor(self, entity_examples):
         trainer = ner_trainer(self.fe_file)
         for example in entity_examples:
-            tokens = tokenize(example["text"])
+            text = example["text"]
+            tokens = tokenize(text)
             sample = ner_training_instance(tokens)
             for ent in example["entities"]:
-                _slice = example["text"][ent["start"]:ent["end"]]
-                val_tokens = tokenize(_slice)
-                start, end = self.start_and_end(tokens, val_tokens)
+                start, end = self.find_entity(ent, text)
                 sample.add_entity(xrange(start, end), ent["entity"])
             trainer.add(sample)
 
