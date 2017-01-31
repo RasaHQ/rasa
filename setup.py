@@ -13,12 +13,12 @@ setup(
         'rasa_nlu.tokenizers'
     ],
     package_dir={'rasa_nlu': 'src'},
-    version='0.6.0.0',
+    version='0.6-beta',
     install_requires=[],
     description="rasa NLU a natural language parser for bots",
     author='Alan Nichol',
     author_email='alan@golastmile.com',
     url="https://rasa.ai",
     keywords=["NLP", "bots"],
-    download_url="https://github.com/golastmile/rasa_nlu/tarball/0.4.2"
+    download_url="https://github.com/golastmile/rasa_nlu/tarball/0.6-beta"
 )
