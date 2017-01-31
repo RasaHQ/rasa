@@ -10,11 +10,10 @@ setup(
         'rasa_nlu.featurizers',
         'rasa_nlu.interpreters',
         'rasa_nlu.trainers',
-        'rasa_nlu.tokenizers',
-        'rasa_nlu.visualization'
+        'rasa_nlu.tokenizers'
     ],
     package_dir={'rasa_nlu': 'src'},
-    version='0.5.0.0',
+    version='0.6.0.0',
     install_requires=[],
     description="rasa NLU a natural language parser for bots",
     author='Alan Nichol',
