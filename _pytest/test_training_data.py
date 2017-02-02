@@ -1,5 +1,6 @@
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 from rasa_nlu.training_data import TrainingData
+from rasa_nlu.trainers.mitie_trainer import MITIETrainer
 
 
 def test_luis_mitie():
@@ -21,6 +22,72 @@ def test_rasa_whitespace():
 def test_api_mitie():
     td = TrainingData('data/examples/api/', 'mitie', 'en')
     assert td.fformat == 'api'
+
+
+def test_repeated_entities():
+    data = u"""
+{
+  "rasa_nlu_data": {
+    "common_examples" : [
+      {
+        "text": "book a table today from 3 to 6 for 3 people",
+        "intent": "unk",
+        "entities": [
+          {
+            "entity": "description",
+            "start": 35,
+            "end": 36,
+            "value": 3
+          }
+        ]
+      }
+    ]
+  }
+}"""
+    filename = 'tmp_training_data.json'
+    with open(filename, 'w') as f:
+        f.write(data.encode("utf-8"))
+    td = TrainingData(filename, 'mitie', 'en')
+    assert len(td.entity_examples) == 1
+    example = td.entity_examples[0]
+    entities = example["entities"]
+    assert len(entities) == 1
+    start, end = MITIETrainer.find_entity(entities[0], example["text"])
+    assert start == 9
+    assert end == 10
+
+
+def test_multiword_entities():
+    data = u"""
+{
+  "rasa_nlu_data": {
+    "common_examples" : [
+      {
+        "text": "show me flights to New York City",
+        "intent": "unk",
+        "entities": [
+          {
+            "entity": "destination",
+            "start": 19,
+            "end": 32,
+            "value": "New York City"
+          }
+        ]
+      }
+    ]
+  }
+}"""
+    filename = 'tmp_training_data.json'
+    with open(filename, 'w') as f:
+        f.write(data.encode("utf-8"))
+    td = TrainingData(filename, 'mitie', 'en')
+    assert len(td.entity_examples) == 1
+    example = td.entity_examples[0]
+    entities = example["entities"]
+    assert len(entities) == 1
+    start, end = MITIETrainer.find_entity(entities[0], example["text"])
+    assert start == 4
+    assert end == 7
 
 
 def test_nonascii_entities():

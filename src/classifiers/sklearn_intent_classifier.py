@@ -42,18 +42,19 @@ class SklearnIntentClassifier(object):
         labels = self.le.inverse_transform(y)
         return labels
 
-    def train(self, X, y):
+    def train(self, X, y, test_split_size=0.1):
         """Train the intent classifier on a data set.
 
+        :param test_split_size: defines the percentage of examples to reserve for testing
         :param X: Train data set
         :param y: Train labels (numeric)"""
 
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.1, random_state=0)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_split_size, random_state=0)
         self.clf.fit(X_train, y_train)
 
         # Test the trained model
-        logging.info("Score of intent model on test data: %s " % self.clf.score(X_test, y_test))
+        if test_split_size != 0.0:
+            logging.info("Score of intent model on test data: %s " % self.clf.score(X_test, y_test))
 
     def predict_prob(self, X):
         """Given a bow vector of an input text, predict the intent label. Returns probabilities for all labels.

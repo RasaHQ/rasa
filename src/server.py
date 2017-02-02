@@ -6,6 +6,7 @@ import multiprocessing
 import glob
 import warnings
 import logging
+import signal
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from rasa_nlu.train import do_train
 from rasa_nlu.config import RasaNLUConfig
@@ -40,9 +41,13 @@ class RasaNLUServer(object):
 
             metadata = json.loads(open(os.path.join(model_dir, 'metadata.json'), 'rb').read())
             backend = metadata["backend"]
+        elif self.config.backend:
+            logging.warn("backend '%s' specified in config, but no model directory is configured. " +
+                         "Using 'hello-goodby' backend instead!", self.config.backend)
 
         if backend is None:
             from interpreters.simple_interpreter import HelloGoodbyeInterpreter
+            logging.info("using default hello-goodby backend")
             return HelloGoodbyeInterpreter()
         elif backend.lower() == 'mitie':
             logging.info("using mitie backend")
@@ -244,7 +249,12 @@ if __name__ == "__main__":
     logging.captureWarnings(True)
     logging.debug(config.view())
     try:
+        def stop(signal_number, frame):
+            raise KeyboardInterrupt()
+
+        signal.signal(signal.SIGTERM, stop)
         server = RasaNLUServer(config)
         server.start()
+
     except KeyboardInterrupt:
         server.stop()

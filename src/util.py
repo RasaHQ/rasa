@@ -3,8 +3,9 @@ import os
 
 def recursively_find_files(resource_name):
     """resource_name can be a folder or a file. In both cases we will return a list of files"""
-
-    if os.path.isfile(resource_name):
+    if not resource_name:
+        raise ValueError("Resource name '{}' must be an existing directory or file.".format(resource_name))
+    elif os.path.isfile(resource_name):
         return [resource_name]
     elif os.path.isdir(resource_name):
         resources = []
