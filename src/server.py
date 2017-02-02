@@ -209,7 +209,6 @@ class RasaRequestHandler(BaseHTTPRequestHandler):
             if self.path.startswith("/train"):
                 self._set_headers()
                 data_string = self.rfile.read(int(self.headers['Content-Length']))
-                self.data_router.start_train_proc(data_string)
                 self.data_router.start_train_proc(data_string.decode("utf-8"))
                 self.wfile.write(
                     json.dumps({"info": "training started with pid {0}".format(self.data_router.train_proc.pid)})
