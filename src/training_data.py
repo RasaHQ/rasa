@@ -150,7 +150,7 @@ class TrainingData(object):
         for intent, group in groupby(examples, lambda e: e["intent"]):
             size = len(list(group))
             if size < self.min_examples_per_intent:
-                template = "intent {0} has only {1} training examples! minimum is {2}, training may fail."
+                template = u"intent {0} has only {1} training examples! minimum is {2}, training may fail."
                 warnings.warn(template.format(intent, size, self.min_examples_per_intent))
 
         entitygroups = []
@@ -158,5 +158,16 @@ class TrainingData(object):
         for entity, group in groupby(examples, lambda e: e["entity"]):
             size = len(list(group))
             if size < self.min_examples_per_entity:
-                template = "entity {0} has only {1} training examples! minimum is {2}, training may fail."
+                template = u"entity {0} has only {1} training examples! minimum is {2}, training may fail."
                 warnings.warn(template.format(entity, size, self.min_examples_per_entity))
+
+        for example in self.entity_examples:
+            text = example["text"]
+            text_tokens = self.tokenizer.tokenize(text)
+            for ent in example["entities"]:
+                ent_tokens = self.tokenizer.tokenize(text[ent["start"]:ent["end"]])
+                for token in ent_tokens:
+                    if token not in text_tokens:
+                        warnings.warn(
+                            "token {0} does not appear in tokenized sentence {1}.".format(token, text_tokens) +
+                            "Entities must span whole tokens.")
