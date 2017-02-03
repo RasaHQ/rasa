@@ -138,8 +138,6 @@ class TrainingData(object):
 
     def load_data(self, filename):
         data = json.loads(open(filename, 'rb').read())
-        import pprint
-        pprint.pprint(data)
         private_extras = data['rasa_nlu_data'].get("private_extras", None)
         common = data['rasa_nlu_data'].get("common_examples", list())
         intent = data['rasa_nlu_data'].get("intent_examples", list())
