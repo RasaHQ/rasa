@@ -60,7 +60,8 @@ class MITIESklearnTrainer(object):
         entity_extractor_file = os.path.join(dirname, "entity_extractor.dat")
 
         write_training_metadata(dirname, tstamp, data_file, self.name, 'en',
-                                classifier_file, entity_extractor_file, self.fe_file)
+                                classifier_file, entity_extractor_file, self.fe_file,
+                                self.training_data.private_extras)
 
         with open(data_file, 'w') as f:
             f.write(self.training_data.as_json(indent=2))

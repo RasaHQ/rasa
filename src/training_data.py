@@ -11,6 +11,7 @@ from rasa_nlu import util
 
 class TrainingData(object):
     def __init__(self, resource_name, backend, language_name):
+        self.private_extras = None
         self.intent_examples = []
         self.entity_examples = []
         self.resource_name = resource_name
@@ -137,12 +138,16 @@ class TrainingData(object):
 
     def load_data(self, filename):
         data = json.loads(open(filename, 'rb').read())
+        import pprint
+        pprint.pprint(data)
+        private_extras = data['rasa_nlu_data'].get("private_extras", None)
         common = data['rasa_nlu_data'].get("common_examples", list())
         intent = data['rasa_nlu_data'].get("intent_examples", list())
         entity = data['rasa_nlu_data'].get("entity_examples", list())
 
         self.intent_examples = intent + common
         self.entity_examples = entity + common
+        self.private_extras = private_extras
 
     def validate(self):
         examples = sorted(self.intent_examples, key=lambda e: e["intent"])

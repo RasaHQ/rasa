@@ -126,9 +126,21 @@ class DataRouter(object):
             training = False
 
         models = glob.glob(os.path.join(self.model_dir, 'model*'))
+
+        model_details = []
+        for model_dir in models:
+            meta = json.loads(open(model_dir + "/metadata.json", 'rb').read())
+            detail = {
+                'dir': model_dir
+            }
+            if 'private_extras' in meta:
+                detail['private_extras'] = meta['private_extras']
+            model_details.append(detail)
+
         return json.dumps({
           "training": training,
-          "available_models": models
+          "available_models": models,
+          "models_found": model_details
         })
 
     def auth(self, path):
