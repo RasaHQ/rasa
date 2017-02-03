@@ -1,5 +1,5 @@
 import argparse
-from training_data import TrainingData
+from rasa_nlu.training_data import TrainingData
 from rasa_nlu.config import RasaNLUConfig
 import json
 import warnings

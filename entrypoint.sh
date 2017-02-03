@@ -41,10 +41,10 @@ function download_package {
 
 case ${1} in
     start)
-        python -m rasa_nlu.server "${@:2}" 
+        exec python -m rasa_nlu.server "${@:2}" 
         ;;
     run)
-        "${@:2}"
+        exec "${@:2}"
         ;;
     download)
         download_package ${@:2}

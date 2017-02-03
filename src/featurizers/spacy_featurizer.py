@@ -8,9 +8,11 @@ class SpacyFeaturizer(object):
     def create_bow_vecs(self, sentences, nlp=None):
         X = np.zeros((len(sentences), self.ndim))
         for idx, sentence in enumerate(sentences):
-            doc = nlp(sentence)
-            vec = np.zeros(self.ndim)
+            doc = self.nlp(sentence)
+            vec = []
             for token in doc:
-                vec += token.vector
-            X[idx, :] = vec / len(doc)
+                if token.has_vector:
+                    vec.append(token.vector)
+            if vec:
+                X[idx, :] = np.sum(vec, axis=0) / len(vec)
         return X

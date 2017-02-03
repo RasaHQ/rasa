@@ -53,6 +53,7 @@ In native mode, a request / response looks like this :
     {
       "text": "I am looking for Chinese food", 
       "intent": "restaurant_search", 
+      "confidence": 0.4794813722432127,
       "entities": [
         {
           "start": 17,
@@ -74,7 +75,7 @@ then instead have to make a GET request
     [
         {
             "_text": "hello",
-            "confidence": null,
+            "confidence": 0.4794813722432127,
             "entities": {},
             "intent": "greet"
         }
@@ -91,7 +92,7 @@ similarly for LUIS, but with a slightly different response format
         "query": "hello",
         "topScoringIntent": {
             "intent": "inform",
-            "score": null
+            "score": 0.4794813722432127
         }
     }
 

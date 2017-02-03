@@ -8,3 +8,4 @@ boto3
 pytest-pep8
 requests
 progressbar
+scipy==0.18.1
