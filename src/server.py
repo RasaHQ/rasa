@@ -68,7 +68,6 @@ class RasaNLUServer(object):
             return ApiEmulator()
         else:
             raise ValueError("unknown mode : {0}".format(mode))
->>>>>>> master
 
     def start(self):
         self.server = HTTPServer(('', self.config.port), lambda *args: RasaRequestHandler(self.data_router, *args))
