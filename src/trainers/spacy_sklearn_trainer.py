@@ -45,7 +45,6 @@ class SpacySklearnTrainer(Trainer):
         X = self.featurizer.create_bow_vecs(sentences, nlp=self.nlp)
         self.intent_classifier.train(X, y, test_split_size)
 
-
     def persist(self, path, persistor=None, create_unique_subfolder=True):
         timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
 
