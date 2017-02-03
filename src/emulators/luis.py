@@ -11,7 +11,7 @@ class LUISEmulator(object):
         return {
             "query": data["text"],
             "topScoringIntent": {
-                "intent": "inform",
+                "intent": data["intent"],
                 "score": data["confidence"]
             },
             "entities": [
