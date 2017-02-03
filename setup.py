@@ -21,5 +21,4 @@ setup(
     url="https://rasa.ai",
     keywords=["NLP", "bots"],
     download_url="https://github.com/golastmile/rasa_nlu/tarball/0.6-beta"
-
 )
