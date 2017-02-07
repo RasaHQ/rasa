@@ -5,8 +5,9 @@ import rasa_nlu
 
 def write_training_metadata(output_folder, timestamp, data_file, backend_name,
                             language_name, intent_file, entity_file,
-                            feature_file=None):
+                            feature_file=None, private_extras=None):
     metadata = {
+        "private_extras": private_extras,
         "trained_at": timestamp,
         "training_data": data_file,
         "backend": backend_name,

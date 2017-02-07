@@ -5,6 +5,7 @@ data/*
 !data/examples
 docs/_build
 server/
+model_*
 *.log
 scala/
 mongodb/
