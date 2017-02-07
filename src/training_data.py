@@ -33,7 +33,7 @@ class TrainingData(object):
                 "backend not recognised by TrainingData : defaulting to tokenizing by splitting on whitespace")
 
         if self.fformat == 'luis':
-            self.load_luis_data(self.files[0], nlp=nlp)
+            self.load_luis_data(self.files[0],nlp=nlp)
         elif self.fformat == 'wit':
             self.load_wit_data(self.files[0])
         elif self.fformat == 'api':
@@ -43,7 +43,7 @@ class TrainingData(object):
         else:
             raise ValueError("unknown training file format : {0}".format(self.fformat))
 
-        self.validate()
+        self.validate(nlp=nlp)
 
     def resolve_data_files(self, resource_name):
         try:
@@ -143,7 +143,7 @@ class TrainingData(object):
         self.intent_examples = intent + common
         self.entity_examples = entity + common
 
-    def validate(self):
+    def validate(self, nlp=None):
         examples = sorted(self.intent_examples, key=lambda e: e["intent"])
         intentgroups = []
         for intent, group in groupby(examples, lambda e: e["intent"]):
@@ -162,9 +162,9 @@ class TrainingData(object):
 
         for example in self.entity_examples:
             text = example["text"]
-            text_tokens = self.tokenizer.tokenize(text)
+            text_tokens = self.tokenizer.tokenize(text, nlp=nlp)
             for ent in example["entities"]:
-                ent_tokens = self.tokenizer.tokenize(text[ent["start"]:ent["end"]])
+                ent_tokens = self.tokenizer.tokenize(text[ent["start"]:ent["end"]], nlp=nlp)
                 for token in ent_tokens:
                     if token not in text_tokens:
                         warnings.warn(
