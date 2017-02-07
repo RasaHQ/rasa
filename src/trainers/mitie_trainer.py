@@ -12,12 +12,13 @@ from rasa_nlu.tokenizers.mitie_tokenizer import MITIETokenizer
 class MITIETrainer(Trainer):
     SUPPORTED_LANGUAGES = {"en"}
 
-    def __init__(self, fe_file, language_name):
+    def __init__(self, fe_file, language_name, max_num_threads=1):
         self.name = "mitie"
         self.training_data = None
         self.intent_classifier = None
         self.entity_extractor = None
         self.training_data = None
+        self.max_num_threads = max_num_threads
         self.fe_file = fe_file
         self.ensure_language_support(language_name)
 
@@ -45,6 +46,7 @@ class MITIETrainer(Trainer):
 
     def train_entity_extractor(self, entity_examples):
         trainer = ner_trainer(self.fe_file)
+        trainer.num_threads = self.max_num_threads
         for example in entity_examples:
             text = example["text"]
             tokens = tokenize(text)
@@ -60,6 +62,7 @@ class MITIETrainer(Trainer):
 
     def train_intent_classifier(self, intent_examples):
         trainer = text_categorizer_trainer(self.fe_file)
+        trainer.num_threads = self.max_num_threads
         for example in intent_examples:
             tokens = tokenize(example["text"])
             trainer.add_labeled_text(tokens, example["intent"])

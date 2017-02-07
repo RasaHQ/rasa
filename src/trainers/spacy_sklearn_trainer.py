@@ -14,10 +14,11 @@ from training_utils import write_training_metadata
 class SpacySklearnTrainer(Trainer):
     SUPPORTED_LANGUAGES = {"en", "de"}
 
-    def __init__(self, config, language_name):
+    def __init__(self, config, language_name, max_num_threads=1):
         self.ensure_language_support(language_name)
         self.name = "spacy_sklearn"
         self.language_name = language_name
+        self.max_num_threads = max_num_threads
         self.training_data = None
         self.nlp = spacy.load(self.language_name, parser=False, entity=False)
         self.featurizer = SpacyFeaturizer(self.nlp)
@@ -37,7 +38,7 @@ class SpacySklearnTrainer(Trainer):
         self.entity_extractor.train(self.nlp, entity_examples)
 
     def train_intent_classifier(self, intent_examples, test_split_size=0.1):
-        self.intent_classifier = SklearnIntentClassifier()
+        self.intent_classifier = SklearnIntentClassifier(max_num_threads=self.max_num_threads)
         labels = [e["intent"] for e in intent_examples]
         sentences = [e["text"] for e in intent_examples]
         y = self.intent_classifier.transform_labels_str2num(labels)
