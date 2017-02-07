@@ -23,7 +23,7 @@ class SklearnIntentClassifier(object):
         self.tuned_parameters = [{'C': [1, 2, 5, 10, 20, 100], 'kernel': ['linear']}]
         self.score = 'f1'
         self.clf = GridSearchCV(SVC(C=1, probability=uses_probabilities),
-                                self.tuned_parameters, n_jobs= max_num_threads,
+                                self.tuned_parameters, n_jobs=max_num_threads,
                                 cv=2, scoring='%s_weighted' % self.score)
 
     def transform_labels_str2num(self, labels):
