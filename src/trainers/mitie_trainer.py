@@ -70,19 +70,24 @@ class MITIETrainer(Trainer):
         intent_classifier = trainer.train()
         return intent_classifier
 
-    def persist(self, path, persistor=None):
-        tstamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
-        dirname = os.path.join(path, "model_" + tstamp)
-        os.mkdir(dirname)
-        data_file = os.path.join(dirname, "training_data.json")
+    def persist(self, path, persistor=None, create_unique_subfolder=True):
+        timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+
+        if create_unique_subfolder:
+            dir_name = os.path.join(path, "model_" + timestamp)
+            os.mkdir(dir_name)
+        else:
+            dir_name = path
+
+        data_file = os.path.join(dir_name, "training_data.json")
 
         classifier_file, entity_extractor_file = None, None
         if self.intent_classifier:
-            classifier_file = os.path.join(dirname, "intent_classifier.dat")
+            classifier_file = os.path.join(dir_name, "intent_classifier.dat")
         if self.entity_extractor:
-            entity_extractor_file = os.path.join(dirname, "entity_extractor.dat")
+            entity_extractor_file = os.path.join(dir_name, "entity_extractor.dat")
 
-        write_training_metadata(dirname, tstamp, data_file, self.name, 'en',
+        write_training_metadata(dir_name, timestamp, data_file, self.name, 'en',
                                 classifier_file, entity_extractor_file, self.fe_file)
 
         with open(data_file, 'w') as f:
@@ -94,4 +99,4 @@ class MITIETrainer(Trainer):
             self.entity_extractor.save_to_disk(entity_extractor_file, pure_model=True)
 
         if persistor is not None:
-            persistor.send_tar_to_s3(dirname)
+            persistor.send_tar_to_s3(dir_name)
