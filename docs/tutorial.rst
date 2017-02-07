@@ -68,7 +68,7 @@ hopefully the format is intuitive if you've read this far into the tutorial, for
 
 In your working directory, create a ``data`` folder, and copy the ``demo-rasa.json`` file there.
 
-.. _section_visualization:
+.. _visualizing-the-training-data:
 Visualizing the Training Data
 ------------------------------------
 
