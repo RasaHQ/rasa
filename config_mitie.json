@@ -2,5 +2,5 @@
   "backend": "mitie",
   "mitie_file": "./data/total_word_feature_extractor.dat",
   "path" : "./",
-  "data" : "./data/demo-restaurants.json"
+  "data" : "./data/examples/rasa/demo-rasa.json"
 }

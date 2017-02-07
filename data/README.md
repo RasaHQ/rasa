@@ -3,7 +3,10 @@ They are in the format of the services rasa NLU can emulate, e.g. when you downl
 of your app from one of these services it should look like one of these files.
 
 
-demo-rasa.json : this is in the native rasa NLU format
-demo-restaurants.json : in LUIS format
-demo-flights.json : in wit format
-restaurantBot : this is a dir and in api.ai format
+[examples/rasa](examples/rasa): examples in the native rasa NLU format
+
+[examples/luis](examples/luis): in LUIS format
+
+[examples/wit](examples/wit): in wit format
+
+[examples/api](examples/api): this is a dir and in api.ai format
