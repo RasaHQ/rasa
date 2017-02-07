@@ -34,6 +34,7 @@ def test_train_mitie_noents():
     }
     run_train(_config)
 
+
 def test_train_mitie_multithread():
     # basic conf
     _config = {
@@ -69,6 +70,7 @@ def test_train_spacy_sklearn_noents():
         "data": "./data/examples/rasa/demo-rasa-noents.json"
     }
     run_train(_config)
+
 
 def test_train_spacy_sklearn_multithread():
     # basic conf
