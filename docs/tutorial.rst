@@ -68,6 +68,10 @@ hopefully the format is intuitive if you've read this far into the tutorial, for
 
 In your working directory, create a ``data`` folder, and copy the ``demo-rasa.json`` file there.
 
+
+Visualizing the Training Data
+------------------------------------
+
 It's always a good idea to `look` at your data before, during, and after training a model. 
 There's a great tool for creating training data in rasa's format `here <https://github.com/golastmile/rasa-nlu-trainer>`_
 - created by `@azazdeaz <https://github.com/azazdeaz>`_ - and it's also extremely helpful for inspecting existing data. 
