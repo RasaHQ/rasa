@@ -34,6 +34,18 @@ def test_train_mitie_noents():
     }
     run_train(_config)
 
+def test_train_mitie_multithread():
+    # basic conf
+    _config = {
+        'write': os.path.join(os.getcwd(), "rasa_nlu_logs.json"),
+        'port': 5022,
+        "backend": "mitie",
+        "path": "./",
+        "num_threads": 8,
+        "data": "./data/examples/rasa/demo-rasa.json"
+    }
+    run_train(_config)
+
 
 def test_train_spacy_sklearn():
     # basic conf
@@ -55,5 +67,17 @@ def test_train_spacy_sklearn_noents():
         "backend": "spacy_sklearn",
         "path": "./",
         "data": "./data/examples/rasa/demo-rasa-noents.json"
+    }
+    run_train(_config)
+
+def test_train_spacy_sklearn_multithread():
+    # basic conf
+    _config = {
+        'write': os.path.join(os.getcwd(), "rasa_nlu_logs.json"),
+        'port': 5022,
+        "backend": "spacy_sklearn",
+        "path": "./",
+        "num_threads": 8,
+        "data": "./data/examples/rasa/demo-rasa.json"
     }
     run_train(_config)
