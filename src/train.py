@@ -55,7 +55,7 @@ def do_train(config):
 
     persistor = create_persistor(config)
 
-    training_data = TrainingData(config.data, config.backend, config.language, nlp=trainer.nlp)
+    training_data = TrainingData(config.data, config.backend, nlp=trainer.nlp)
     trainer.train(training_data)
     trainer.persist(config.path, persistor)
 
