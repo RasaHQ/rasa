@@ -42,7 +42,7 @@ def test_train_mitie_multithread():
         'port': 5022,
         "backend": "mitie",
         "path": "./",
-        "num_threads": 8,
+        "num_threads": 2,
         "data": "./data/examples/rasa/demo-rasa.json"
     }
     run_train(_config)
@@ -79,7 +79,7 @@ def test_train_spacy_sklearn_multithread():
         'port': 5022,
         "backend": "spacy_sklearn",
         "path": "./",
-        "num_threads": 8,
+        "num_threads": 2,
         "data": "./data/examples/rasa/demo-rasa.json"
     }
     run_train(_config)
