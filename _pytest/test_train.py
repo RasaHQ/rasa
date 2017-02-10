@@ -3,7 +3,7 @@
 import pytest
 import os
 from rasa_nlu.config import RasaNLUConfig
-from rasa_nlu.server import do_train
+from rasa_nlu.train import do_train
 
 
 def run_train(_config):
