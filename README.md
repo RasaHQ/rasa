@@ -1,7 +1,7 @@
 # rasa NLU
 [![Build Status](https://travis-ci.org/golastmile/rasa_nlu.svg?branch=master)](https://travis-ci.org/golastmile/rasa_nlu)
 [![Coverage Status](https://coveralls.io/repos/github/golastmile/rasa_nlu/badge.svg?branch=master)](https://coveralls.io/github/golastmile/rasa_nlu?branch=master)
-[![Documentation Status](https://readthedocs.org/projects/rasa-nlu/badge/?version=latest)](http://rasa-nlu.readthedocs.io/en/latest/?badge=latest)
+[![Documentation Status](https://readthedocs.org/projects/rasa-nlu/badge/)](https://rasa-nlu.readthedocs.io/en/latest/)
 
 Find the [extended documentation here](http://rasa-nlu.readthedocs.io/), or find out more on the [homepage of the project](https://rasa.ai/), where you can also sign up for the mailing list.
 
