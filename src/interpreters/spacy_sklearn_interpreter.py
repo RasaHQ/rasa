@@ -1,5 +1,7 @@
 import cloudpickle
 import spacy
+import json
+import codecs
 
 from rasa_nlu import Interpreter
 from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
@@ -8,7 +10,7 @@ from rasa_nlu.utils.spacy import ensure_proper_language_model
 
 
 class SpacySklearnInterpreter(Interpreter):
-    def __init__(self, entity_extractor=None, intent_classifier=None, language_name='en', **kwargs):
+    def __init__(self, entity_extractor=None, entity_synonyms=None, intent_classifier=None, language_name='en', **kwargs):
         self.extractor = None
         self.classifier = None
         self.nlp = spacy.load(language_name, parser=False, entity=False, matcher=False)
@@ -21,6 +23,8 @@ class SpacySklearnInterpreter(Interpreter):
                 self.classifier = cloudpickle.load(f)
         if entity_extractor:
             self.extractor = SpacyEntityExtractor(self.nlp, entity_extractor)
+        if entity_synonyms:
+            self.entity_synonyms = json.loads(codecs.open(entity_synonyms, encoding='utf-8').read())
 
     def get_intent(self, text):
         """Returns the most likely intent and its probability for the input text.
@@ -47,5 +51,9 @@ class SpacySklearnInterpreter(Interpreter):
 
         intent, probability = self.get_intent(text)
         entities = self.get_entities(text)
+        for i in range(len(entities)):
+            entity_value = entities[i]["value"]
+            if entity_value in self.entity_synonyms:
+                entities[i]["value"] = self.entity_synonyms[entity_value]
 
         return {'text': text, 'intent': intent, 'entities': entities, 'confidence': probability}

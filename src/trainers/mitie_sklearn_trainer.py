@@ -58,12 +58,18 @@ class MITIESklearnTrainer(object):
         data_file = os.path.join(dirname, "training_data.json")
         classifier_file = os.path.join(dirname, "intent_classifier.dat")
         entity_extractor_file = os.path.join(dirname, "entity_extractor.dat")
+        entity_synonyms_file = os.path.join(dirname, "index.json") if self.training_data.entity_synonyms else None
 
         write_training_metadata(dirname, tstamp, data_file, self.name, 'en',
-                                classifier_file, entity_extractor_file, self.fe_file)
+                                classifier_file, entity_extractor_file, entity_synonyms_file,
+                                self.fe_file)
 
         with open(data_file, 'w') as f:
             f.write(self.training_data.as_json(indent=2))
+
+        if self.training_data.entity_synonyms:
+            with open(entity_synonyms_file, 'w') as f:
+                json.dump(self.training_data.entity_synonyms, f)
 
         self.intent_classifier.save_to_disk(classifier_file, pure_model=True)
         self.entity_extractor.save_to_disk(entity_extractor_file, pure_model=True)

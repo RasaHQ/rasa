@@ -2,10 +2,12 @@ from mitie import *
 from rasa_nlu import Interpreter
 from rasa_nlu.tokenizers.mitie_tokenizer import MITIETokenizer
 import re
+import json
+import codecs
 
 
 class MITIEInterpreter(Interpreter):
-    def __init__(self, intent_classifier=None, entity_extractor=None, feature_extractor=None, **kwargs):
+    def __init__(self, intent_classifier=None, entity_extractor=None, feature_extractor=None, entity_synonyms=None, **kwargs):
         self.extractor = None
         self.classifier = None
         if entity_extractor:
@@ -13,6 +15,8 @@ class MITIEInterpreter(Interpreter):
         if intent_classifier:
             self.classifier = text_categorizer(intent_classifier, feature_extractor)
         self.tokenizer = MITIETokenizer()
+        if entity_synonyms:
+            self.entity_synonyms = json.loads(codecs.open(entity_synonyms, encoding='utf-8').read())
 
     def get_entities(self, text):
         tokens = self.tokenizer.tokenize(text)
@@ -25,9 +29,12 @@ class MITIEInterpreter(Interpreter):
                 expr = re.compile(_regex)
                 m = expr.search(text)
                 start, end = m.start(), m.end()
+                entity_value = text[start:end]
+                if entity_value in self.entity_synonyms:
+                    entity_value = self.entity_synonyms[entity_value],
                 ents.append({
                     "entity": e[1],
-                    "value": text[start:end],
+                    "value": entity_value,
                     "start": start,
                     "end": end
                 })

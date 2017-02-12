@@ -56,6 +56,7 @@ class SpacySklearnTrainer(Trainer):
             dir_name = path
 
         data_file = os.path.join(dir_name, "training_data.json")
+        entity_synonyms_file = os.path.join(dir_name, "index.json") if self.training_data.entity_synonyms else None
         classifier_file, ner_dir = None, None
         if self.intent_classifier:
             classifier_file = os.path.join(dir_name, "intent_classifier.pkl")
@@ -67,7 +68,7 @@ class SpacySklearnTrainer(Trainer):
             entity_extractor_file = os.path.join(ner_dir, "model")
 
         write_training_metadata(dir_name, timestamp, data_file, self.name, self.language_name,
-                                classifier_file, ner_dir)
+                                classifier_file, ner_dir, entity_synonyms=entity_synonyms_file)
 
         with open(data_file, 'w') as f:
             f.write(self.training_data.as_json(indent=2))
@@ -77,8 +78,10 @@ class SpacySklearnTrainer(Trainer):
         if self.entity_extractor:
             with open(entity_extractor_config_file, 'w') as f:
                 json.dump(self.entity_extractor.ner.cfg, f)
-
             self.entity_extractor.ner.model.dump(entity_extractor_file)
+        if self.training_data.entity_synonyms:
+            with open(entity_synonyms_file, 'w') as f:
+                json.dump(self.training_data.entity_synonyms, f)
 
         if persistor is not None:
             persistor.send_tar_to_s3(dir_name)
