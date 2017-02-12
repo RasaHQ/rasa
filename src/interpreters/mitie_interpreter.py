@@ -7,7 +7,12 @@ import codecs
 
 
 class MITIEInterpreter(Interpreter):
-    def __init__(self, intent_classifier=None, entity_extractor=None, feature_extractor=None, entity_synonyms=None, **kwargs):
+    def __init__(self,
+                 intent_classifier=None,
+                 entity_extractor=None,
+                 feature_extractor=None,
+                 entity_synonyms=None,
+                 **kwargs):
         self.extractor = None
         self.classifier = None
         if entity_extractor:

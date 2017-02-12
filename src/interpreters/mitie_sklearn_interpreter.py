@@ -4,6 +4,7 @@ from rasa_nlu.tokenizers.mitie_tokenizer import MITIETokenizer
 import json
 import codecs
 
+
 class MITIESklearnInterpreter(Interpreter):
     def __init__(self, metadata, entity_synonyms=None):
         self.extractor = named_entity_extractor(metadata["entity_extractor"])  # ,metadata["feature_extractor"])

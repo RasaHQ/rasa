@@ -133,7 +133,13 @@ class TrainingData(object):
                         end = start + len(e["text"])
                         val = text[start:end]
                         entities.append(
-                            {"entity": e["alias"] if "alias" in e else e["meta"], "value": val, "start": start, "end": end})
+                            {
+                                "entity": e["alias"] if "alias" in e else e["meta"],
+                                "value": val,
+                                "start": start,
+                                "end": end
+                            }
+                        )
 
                     self.intent_examples.append({"text": text, "intent": intent})
                     self.entity_examples.append({"text": text, "intent": intent, "entities": entities})

@@ -10,7 +10,12 @@ from rasa_nlu.utils.spacy import ensure_proper_language_model
 
 
 class SpacySklearnInterpreter(Interpreter):
-    def __init__(self, entity_extractor=None, entity_synonyms=None, intent_classifier=None, language_name='en', **kwargs):
+    def __init__(self,
+                 entity_extractor=None,
+                 entity_synonyms=None,
+                 intent_classifier=None,
+                 language_name='en',
+                 **kwargs):
         self.extractor = None
         self.classifier = None
         self.nlp = spacy.load(language_name, parser=False, entity=False, matcher=False)
