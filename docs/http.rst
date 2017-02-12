@@ -24,7 +24,7 @@ Endpoints
 -------------------------
 
 ``POST /parse`` (no emulation)
-^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 you must POST data in this format ``'{"q":"<your text to parse>"}'``, you can do this with
 
@@ -41,7 +41,7 @@ this starts a separate process which you can monitor with the ``/status`` endpoi
 
 .. code-block:: console
 
-    $ curl -XPOST localhost:5000/train -d @data/demo-restaurants.json
+    $ curl -XPOST localhost:5000/train -d @data/examples/rasa/demo-rasa.json
 
 
 ``GET /status``

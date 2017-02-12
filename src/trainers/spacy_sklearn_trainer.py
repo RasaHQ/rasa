@@ -9,6 +9,7 @@ from rasa_nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifi
 from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa_nlu.trainers.trainer import Trainer
 from training_utils import write_training_metadata
+from rasa_nlu.utils.spacy import ensure_proper_language_model
 
 
 class SpacySklearnTrainer(Trainer):
@@ -24,6 +25,7 @@ class SpacySklearnTrainer(Trainer):
         self.featurizer = SpacyFeaturizer(self.nlp)
         self.intent_classifier = None
         self.entity_extractor = None
+        ensure_proper_language_model(self.nlp)
 
     def train(self, data, test_split_size=0.1):
         self.training_data = data

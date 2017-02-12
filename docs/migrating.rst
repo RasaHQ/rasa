@@ -36,7 +36,7 @@ api.ai
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 api app exports generate multiple files rather than just one. 
-Put them all in a directory (see ``data/restaurantBot`` in the repo) 
+Put them all in a directory (see ``data/examples/api`` in the repo)
 and pass that path to the trainer. 
 
 

@@ -1,5 +1,5 @@
 {
   "backend": "spacy_sklearn",
   "path" : "./",
-  "data" : "./data/demo-restaurants.json"
+  "data" : "./data/examples/rasa/demo-rasa.json"
 }
