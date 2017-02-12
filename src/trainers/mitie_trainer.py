@@ -7,13 +7,13 @@ import json
 from rasa_nlu.trainers.trainer import Trainer
 from training_utils import write_training_metadata
 from rasa_nlu.tokenizers.mitie_tokenizer import MITIETokenizer
+from utils.mitie import MITIE_BACKEND_NAME
 
 
 class MITIETrainer(Trainer):
     SUPPORTED_LANGUAGES = {"en"}
 
     def __init__(self, fe_file, language_name, max_num_threads=1):
-        self.name = "mitie"
         self.training_data = None
         self.intent_classifier = None
         self.entity_extractor = None
@@ -87,7 +87,7 @@ class MITIETrainer(Trainer):
         if self.entity_extractor:
             entity_extractor_file = os.path.join(dir_name, "entity_extractor.dat")
 
-        write_training_metadata(dir_name, timestamp, data_file, self.name, 'en',
+        write_training_metadata(dir_name, timestamp, data_file, MITIE_BACKEND_NAME, 'en',
                                 classifier_file, entity_extractor_file, self.fe_file)
 
         with open(data_file, 'w') as f:

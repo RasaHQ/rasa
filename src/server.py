@@ -10,37 +10,42 @@ import signal
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from rasa_nlu.train import do_train
 from rasa_nlu.config import RasaNLUConfig
+from utils import spacy, mitie
 
 
 class RasaNLUServer(object):
     def __init__(self, config):
         self.server = None
         self.config = config
-        self.logfile = config.write
+        self.logfile = config['write']
         self.emulator = self.__create_emulator()
         self.interpreter = self.__create_interpreter()
         self.data_router = DataRouter(config, self.interpreter, self.emulator)
 
-        if 'DYNO' in os.environ and config.backend == 'mitie':  # running on Heroku
+        if 'DYNO' in os.environ and config['backend'] == 'mitie':  # running on Heroku
             from rasa_nlu.featurizers.mitie_featurizer import MITIEFeaturizer
-            MITIEFeaturizer(config.mitie_file)
+            MITIEFeaturizer(config['mitie_file'])
 
     def __create_interpreter(self):
+        def load_model_from_s3(model_dir):
+            try:
+                from rasa_nlu.persistor import Persistor
+                p = Persistor(self.config.path, self.config.aws_region, self.config.bucket_name)
+                p.fetch_and_extract('{0}.tar.gz'.format(os.path.basename(model_dir)))
+            except Exception as e:
+                warnings.warn("Using default interpreter, couldn't fetch model: {}".format(e.message))
+
         model_dir = self.config.server_model_dir
         metadata, backend = None, None
 
         if model_dir is not None:
             # download model from S3 if needed
             if not os.path.isdir(model_dir):
-                try:
-                    from rasa_nlu.persistor import Persistor
-                    p = Persistor(self.config.path, self.config.aws_region, self.config.bucket_name)
-                    p.fetch_and_extract('{0}.tar.gz'.format(os.path.basename(model_dir)))
-                except:
-                    warnings.warn("using default interpreter, couldn't find model dir or fetch it from S3")
+                load_model_from_s3(model_dir)
 
-            metadata = json.loads(open(os.path.join(model_dir, 'metadata.json'), 'rb').read())
-            backend = metadata["backend"]
+            with open(os.path.join(model_dir, 'metadata.json'), 'rb') as meta_file:
+                metadata = json.loads(meta_file.read())
+            backend = metadata.get("backend")
         elif self.config.backend:
             logging.warn("backend '%s' specified in config, but no model directory is configured. " +
                          "Using 'hello-goodby' backend instead!", self.config.backend)
@@ -49,11 +54,11 @@ class RasaNLUServer(object):
             from interpreters.simple_interpreter import HelloGoodbyeInterpreter
             logging.info("using default hello-goodby backend")
             return HelloGoodbyeInterpreter()
-        elif backend.lower() == 'mitie':
+        elif backend.lower() == mitie.MITIE_BACKEND_NAME:
             logging.info("using mitie backend")
             from interpreters.mitie_interpreter import MITIEInterpreter
             return MITIEInterpreter(**metadata)
-        elif backend.lower() == 'spacy_sklearn':
+        elif backend.lower() == spacy.SPACY_BACKEND_NAME:
             logging.info("using spacy + sklearn backend")
             from interpreters.spacy_sklearn_interpreter import SpacySklearnInterpreter
             return SpacySklearnInterpreter(**metadata)
@@ -97,11 +102,11 @@ class DataRouter(object):
         self.config = config
         self.interpreter = interpreter
         self.emulator = emulator
-        self.logfile = config.write
+        self.logfile = config['write']
         self.responses = set()
         self.train_proc = None
-        self.model_dir = config.path
-        self.token = config.token
+        self.model_dir = config['path']
+        self.token = config['token']
 
     def extract(self, data):
         return self.emulator.normalise_request_json(data)
@@ -127,8 +132,8 @@ class DataRouter(object):
 
         models = glob.glob(os.path.join(self.model_dir, 'model*'))
         return json.dumps({
-          "training": training,
-          "available_models": models
+            "training": training,
+            "available_models": models
         })
 
     def auth(self, path):
@@ -240,20 +245,20 @@ def create_argparser():
 
 
 if __name__ == "__main__":
-    parser = create_argparser()
-    cmdline_args = {key: val for key, val in vars(parser.parse_args()).items() if val is not None}
-    config = RasaNLUConfig(cmdline_args.get("config"), os.environ, cmdline_args)
-    print(config.view())
-    logging.basicConfig(filename=config.log_file, level=config.log_level)
+    arg_parser = create_argparser()
+    cmdline_args = {key: val for key, val in vars(arg_parser.parse_args()).items() if val is not None}
+    nlu_config = RasaNLUConfig(cmdline_args.get("config"), os.environ, cmdline_args)
+    print(nlu_config.view())
+    logging.basicConfig(filename=nlu_config['log_file'], level=nlu_config['log_level'])
     logging.captureWarnings(True)
-    logging.debug(config.view())
+    logging.debug(nlu_config.view())
+    server = RasaNLUServer(nlu_config)
     try:
         def stop(signal_number, frame):
             raise KeyboardInterrupt()
 
-        signal.signal(signal.SIGTERM, stop)
-        server = RasaNLUServer(config)
-        server.start()
 
+        signal.signal(signal.SIGTERM, stop)
+        server.start()
     except KeyboardInterrupt:
         server.stop()

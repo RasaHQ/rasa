@@ -3,11 +3,11 @@ import os
 import datetime
 import json
 from training_utils import write_training_metadata
+from utils.mitie import MITIE_BACKEND_NAME
 
 
 class MITIESklearnTrainer(object):
     def __init__(self, config):
-        self.name = "mitie"
         self.training_data = None
         self.intent_classifier = None
         self.entity_extractor = None
@@ -59,7 +59,7 @@ class MITIESklearnTrainer(object):
         classifier_file = os.path.join(dirname, "intent_classifier.dat")
         entity_extractor_file = os.path.join(dirname, "entity_extractor.dat")
 
-        write_training_metadata(dirname, tstamp, data_file, self.name, 'en',
+        write_training_metadata(dirname, tstamp, data_file, MITIE_BACKEND_NAME, 'en',
                                 classifier_file, entity_extractor_file, self.fe_file)
 
         with open(data_file, 'w') as f:
