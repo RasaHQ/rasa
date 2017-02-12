@@ -24,6 +24,11 @@ def test_api_mitie():
     assert td.fformat == 'api'
 
 
+def test_api_mitie_sklearn():
+    td = TrainingData('data/examples/api/', 'mitie_sklearn', 'en')
+    assert td.fformat == 'api'
+
+
 def test_repeated_entities():
     data = u"""
 {

@@ -23,6 +23,18 @@ def test_train_mitie():
     run_train(_config)
 
 
+def test_train_mitie_sklearn():
+    # basic conf
+    _config = {
+        'write': os.path.join(os.getcwd(), "rasa_nlu_logs.json"),
+        'port': 5022,
+        "backend": "mitie_sklearn",
+        "path": "./",
+        "data": "./data/examples/rasa/demo-rasa.json"
+    }
+    run_train(_config)
+
+
 def test_train_mitie_noents():
     # basic conf
     _config = {

@@ -1,12 +1,16 @@
-from mitie import named_entity_extractor, text_categorizer
+from mitie import named_entity_extractor
+import cloudpickle
 from rasa_nlu import Interpreter
+from rasa_nlu.featurizers.mitie_featurizer import MITIEFeaturizer
 from rasa_nlu.tokenizers.mitie_tokenizer import MITIETokenizer
 
 
 class MITIESklearnInterpreter(Interpreter):
-    def __init__(self, metadata):
-        self.extractor = named_entity_extractor(metadata["entity_extractor"])  # ,metadata["feature_extractor"])
-        self.classifier = text_categorizer(metadata["intent_classifier"])  # ,metadata["feature_extractor"])
+    def __init__(self, intent_classifier=None, entity_extractor=None, feature_extractor=None, **kwargs):
+        self.extractor = named_entity_extractor(entity_extractor)  # ,metadata["feature_extractor"])
+        with open(intent_classifier, 'rb') as f:
+            self.classifier = cloudpickle.load(f)
+        self.featurizer = MITIEFeaturizer(feature_extractor)
         self.tokenizer = MITIETokenizer()
 
     def get_entities(self, tokens):
@@ -18,12 +22,23 @@ class MITIESklearnInterpreter(Interpreter):
         return d
 
     def get_intent(self, tokens):
-        label, _ = self.classifier(tokens)  # don't use the score
-        return label
+        """Returns the most likely intent and its probability for the input text.
+
+        :param text: text to classify
+        :return: tuple of most likely intent name and its probability"""
+        if self.classifier:
+            X = self.featurizer.create_bow_vecs(tokens)
+            intent_ids, probabilities = self.classifier.predict(X)
+            intents = self.classifier.transform_labels_num2str(intent_ids)
+            intent, score = intents[0], probabilities[0]
+        else:
+            intent, score = "None", 0.0
+
+        return intent, score
 
     def parse(self, text):
         tokens = self.tokenizer.tokenize(text)
-        intent = self.get_intent(tokens)
+        intent, probability = self.get_intent(tokens)
         entities = self.get_entities(tokens)
 
-        return {'text': text, 'intent': intent, 'entities': entities}
+        return {'text': text, 'intent': intent, 'entities': entities, 'confidence': probability}
