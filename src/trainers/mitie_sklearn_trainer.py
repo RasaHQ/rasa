@@ -1,6 +1,7 @@
 from mitie import *
 import cloudpickle
 import datetime
+import json
 import os
 
 from rasa_nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
@@ -71,22 +72,29 @@ class MITIESklearnTrainer(Trainer):
             dir_name = path
 
         data_file = os.path.join(dir_name, "training_data.json")
-        classifier_file, ner_dir = None, None
+        classifier_file, ner_dir = None, None, None
         if self.intent_classifier:
             classifier_file = os.path.join(dir_name, "intent_classifier.pkl")
         if self.entity_extractor:
-            entity_extractor_file = os.path.join(dir_name, "entity_extractor.dat")
+            ner_dir = os.path.join(dir_name, 'ner')
+            if not os.path.exists(ner_dir):
+                os.mkdir(ner_dir)
+            entity_extractor_config_file = os.path.join(ner_dir, "config.json")
+            entity_extractor_file = os.path.join(ner_dir, "model")
 
         write_training_metadata(dir_name, timestamp, data_file, self.name, 'en',
-                                classifier_file, entity_extractor_file, self.fe_file)
+                                classifier_file, ner_dir, self.fe_file)
 
         with open(data_file, 'w') as f:
             f.write(self.training_data.as_json(indent=2))
-        if self.entity_extractor:
-            self.entity_extractor.save_to_disk(entity_extractor_file)
         if self.intent_classifier:
             with open(classifier_file, 'wb') as f:
                 cloudpickle.dump(self.intent_classifier, f)
+        if self.entity_extractor:
+            with open(entity_extractor_config_file, 'w') as f:
+                json.dump(self.entity_extractor.ner.cfg, f)
+
+            self.entity_extractor.ner.model.dump(entity_extractor_file)
 
         if persistor is not None:
             persistor.send_tar_to_s3(dir_name)
