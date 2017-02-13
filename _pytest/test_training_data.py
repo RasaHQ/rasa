@@ -160,4 +160,4 @@ def test_entities_synonyms():
         f.write(data.encode("utf-8"))
     td = TrainingData(filename, 'mitie', 'en')
     assert len(td.entity_synonyms) == 1
-    assert td.entity_synonyms["New York City"] == "NYC"
+    assert td.entity_synonyms["new york city"] == "nyc"

@@ -28,8 +28,7 @@ class SpacySklearnInterpreter(Interpreter):
                 self.classifier = cloudpickle.load(f)
         if entity_extractor:
             self.extractor = SpacyEntityExtractor(self.nlp, entity_extractor)
-        if entity_synonyms:
-            self.entity_synonyms = json.loads(codecs.open(entity_synonyms, encoding='utf-8').read())
+        self.entity_synonyms = Interpreter.load_synonyms(entity_synonyms)
 
     def get_intent(self, text):
         """Returns the most likely intent and its probability for the input text.
@@ -56,9 +55,6 @@ class SpacySklearnInterpreter(Interpreter):
 
         intent, probability = self.get_intent(text)
         entities = self.get_entities(text)
-        for i in range(len(entities)):
-            entity_value = entities[i]["value"]
-            if entity_value in self.entity_synonyms:
-                entities[i]["value"] = self.entity_synonyms[entity_value]
+        Interpreter.replace_synonyms(entities, self.entity_synonyms)
 
         return {'text': text, 'intent': intent, 'entities': entities, 'confidence': probability}

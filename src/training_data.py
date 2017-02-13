@@ -90,8 +90,7 @@ class TrainingData(object):
                 e["value"] = e["value"][1:-1]
                 # create synonyms dictionary
                 text_value = text[e["start"]:e["end"]]
-                if text_value != e["value"]:
-                    self.entity_synonyms[text_value] = e["value"]
+                util.add_entities_if_synonyms(self.entity_synonyms, text_value, e["value"])
 
             self.intent_examples.append({"text": text, "intent": intent})
             self.entity_examples.append({"text": text, "intent": intent, "entities": entities})
@@ -149,8 +148,7 @@ class TrainingData(object):
                 for entry in data["entries"]:
                     if "value" in entry and "synonyms" in entry:
                         for synonym in entry["synonyms"]:
-                            if synonym != entry["value"]:
-                                self.entity_synonyms[synonym] = entry["value"]
+                            util.add_entities_if_synonyms(self.entity_synonyms, synonym, entry["value"])
 
     def load_data(self, filename):
         data = json.loads(open(filename, 'rb').read())
@@ -164,8 +162,7 @@ class TrainingData(object):
         for example in self.entity_examples:
             for entity in example["entities"]:
                 entity_val = example["text"][entity["start"]:entity["end"]]
-                if entity["value"] != entity_val:
-                    self.entity_synonyms[entity_val] = entity["value"]
+                util.add_entities_if_synonyms(self.entity_synonyms, entity_val, entity["value"])
 
     def validate(self):
         examples = sorted(self.intent_examples, key=lambda e: e["intent"])

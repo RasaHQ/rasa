@@ -20,8 +20,7 @@ class MITIEInterpreter(Interpreter):
         if intent_classifier:
             self.classifier = text_categorizer(intent_classifier, feature_extractor)
         self.tokenizer = MITIETokenizer()
-        if entity_synonyms:
-            self.entity_synonyms = json.loads(codecs.open(entity_synonyms, encoding='utf-8').read())
+        self.entity_synonyms = Interpreter.load_synonyms(entity_synonyms)
 
     def get_entities(self, text):
         tokens = self.tokenizer.tokenize(text)
@@ -35,8 +34,6 @@ class MITIEInterpreter(Interpreter):
                 m = expr.search(text)
                 start, end = m.start(), m.end()
                 entity_value = text[start:end]
-                if entity_value in self.entity_synonyms:
-                    entity_value = self.entity_synonyms[entity_value],
                 ents.append({
                     "entity": e[1],
                     "value": entity_value,
@@ -57,5 +54,6 @@ class MITIEInterpreter(Interpreter):
     def parse(self, text):
         intent, score = self.get_intent(text)
         entities = self.get_entities(text)
+        Interpreter.replace_synonyms(entities, self.entity_synonyms)
 
         return {'text': text, 'intent': intent, 'entities': entities, 'confidence': score}
