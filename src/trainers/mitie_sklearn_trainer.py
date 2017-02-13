@@ -6,6 +6,7 @@ import os
 
 from rasa_nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
 from rasa_nlu.featurizers.mitie_featurizer import MITIEFeaturizer
+from rasa_nlu.tokenizers.mitie_tokenizer import MITIETokenizer
 from rasa_nlu.trainers.trainer import Trainer
 from training_utils import write_training_metadata
 
@@ -30,7 +31,7 @@ class MITIESklearnTrainer(Trainer):
 
         num_entity_examples = len([e for e in data.entity_examples if len(e["entities"]) > 0])
         if num_entity_examples > 0:
-            self.train_entity_extractor(data.entity_examples)
+            self.entity_extractor = self.train_entity_extractor(data.entity_examples)
 
     def start_and_end(self, text_tokens, entity_tokens):
         size = len(entity_tokens)
@@ -39,16 +40,32 @@ class MITIESklearnTrainer(Trainer):
         start, end = locs[0], locs[0] + len(entity_tokens)
         return start, end
 
+    @classmethod
+    def find_entity(cls, ent, text):
+        tk = MITIETokenizer()
+        tokens, offsets = tk.tokenize_with_offsets(text)
+        if ent["start"] not in offsets:
+            message = u"invalid entity {0} in example {1}:".format(ent, text) + \
+                u" entities must span whole tokens"
+            raise ValueError(message)
+        start = offsets.index(ent["start"])
+        _slice = text[ent["start"]:ent["end"]]
+        val_tokens = tokenize(_slice)
+        end = start + len(val_tokens)
+        return start, end
+
+
     def train_entity_extractor(self, entity_examples):
         trainer = ner_trainer(self.fe_file)
+        trainer.num_threads = self.max_num_threads
         for example in entity_examples:
-            tokens = tokenize(example["text"])
+            text = example["text"]
+            tokens = tokenize(text)
             sample = ner_training_instance(tokens)
             for ent in example["entities"]:
-                _slice = example["text"][ent["start"]:ent["end"] + 1]
-                val_tokens = tokenize(_slice)
-                start, end = self.start_and_end(tokens, val_tokens)
+                start, end = self.find_entity(ent, text)
                 sample.add_entity(xrange(start, end), ent["entity"])
+
             trainer.add(sample)
 
         ner = trainer.train()
@@ -72,29 +89,24 @@ class MITIESklearnTrainer(Trainer):
             dir_name = path
 
         data_file = os.path.join(dir_name, "training_data.json")
-        classifier_file, ner_dir = None, None
+        classifier_file, entity_extractor_file = None, None
         if self.intent_classifier:
             classifier_file = os.path.join(dir_name, "intent_classifier.pkl")
         if self.entity_extractor:
-            ner_dir = os.path.join(dir_name, 'ner')
-            if not os.path.exists(ner_dir):
-                os.mkdir(ner_dir)
-            entity_extractor_config_file = os.path.join(ner_dir, "config.json")
-            entity_extractor_file = os.path.join(ner_dir, "model")
+            entity_extractor_file = os.path.join(dir_name, "entity_extractor.dat")
 
         write_training_metadata(dir_name, timestamp, data_file, self.name, 'en',
-                                classifier_file, ner_dir, self.fe_file)
+                                classifier_file, entity_extractor_file, self.fe_file)
 
         with open(data_file, 'w') as f:
             f.write(self.training_data.as_json(indent=2))
+
         if self.intent_classifier:
             with open(classifier_file, 'wb') as f:
                 cloudpickle.dump(self.intent_classifier, f)
-        if self.entity_extractor:
-            with open(entity_extractor_config_file, 'w') as f:
-                json.dump(self.entity_extractor.ner.cfg, f)
 
-            self.entity_extractor.ner.model.dump(entity_extractor_file)
+        if self.entity_extractor:
+            self.entity_extractor.save_to_disk(entity_extractor_file)
 
         if persistor is not None:
             persistor.send_tar_to_s3(dir_name)
