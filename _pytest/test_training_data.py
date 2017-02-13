@@ -125,6 +125,7 @@ def test_nonascii_entities():
         assert entity["end"] == 27
         assert entity["entity"] == "description"
 
+
 def test_entities_synonyms():
     data = u"""
 {
