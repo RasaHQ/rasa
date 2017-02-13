@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import tempfile
 
 import pytest
 import requests
@@ -11,7 +12,7 @@ import json
 import codecs
 
 
-class ResponseTest():
+class ResponseTest(object):
     def __init__(self, endpoint, expected_response, payload=None):
         self.endpoint = endpoint
         self.expected_response = expected_response
@@ -19,13 +20,14 @@ class ResponseTest():
 
 
 @pytest.fixture
-def http_server():
+def http_server(port_getter):
     def url(port):
         return "http://localhost:{0}".format(port)
     # basic conf
+    _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
     _config = {
-        'write': os.path.join(os.getcwd(), "rasa_nlu_logs.json"),
-        'port': 5022,
+        'write': nlu_log_file,
+        'port': port_getter(),
         "backend": "mitie",
         "path": "./",
         "data": "./data/demo-restaurants.json",
@@ -39,8 +41,9 @@ def http_server():
     p.start()
     # TODO: implement better way to notify when server is up
     time.sleep(2)
-    yield url(config.port)
+    yield url(config['port'])
     p.terminate()
+    os.remove(nlu_log_file)
 
 
 def test_root(http_server):
