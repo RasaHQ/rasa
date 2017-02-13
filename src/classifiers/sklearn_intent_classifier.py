@@ -10,11 +10,12 @@ from sklearn.svm import SVC
 class SklearnIntentClassifier(object):
     """Intent classifier using the sklearn framework"""
 
-    def __init__(self, uses_probabilities=True):
+    def __init__(self, uses_probabilities=True, max_num_threads=1):
         """Construct a new intent classifier using the sklearn framework.
 
         :param uses_probabilities: defines if the model should be trained
                                            to be able to predict label probabilities
+        :param max_num_threads: number of threads used during training time
         :type uses_probabilities: bool"""
 
         self.le = LabelEncoder()
@@ -22,7 +23,8 @@ class SklearnIntentClassifier(object):
         self.tuned_parameters = [{'C': [1, 2, 5, 10, 20, 100], 'kernel': ['linear']}]
         self.score = 'f1'
         self.clf = GridSearchCV(SVC(C=1, probability=uses_probabilities),
-                                self.tuned_parameters, cv=2, scoring='%s_weighted' % self.score)
+                                self.tuned_parameters, n_jobs=max_num_threads,
+                                cv=2, scoring='%s_weighted' % self.score)
 
     def transform_labels_str2num(self, labels):
         """Transforms a list of strings into numeric label representation.

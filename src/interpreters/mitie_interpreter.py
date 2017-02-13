@@ -29,7 +29,7 @@ class MITIEInterpreter(Interpreter):
             entities = self.extractor.extract_entities(tokens)
             for e in entities:
                 _range = e[0]
-                _regex = u"\s*".join(tokens[i] for i in _range)
+                _regex = u"\s*".join(re.escape(tokens[i]) for i in _range)
                 expr = re.compile(_regex)
                 m = expr.search(text)
                 start, end = m.start(), m.end()
