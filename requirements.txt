@@ -6,6 +6,7 @@ pathlib
 cloudpickle
 boto3
 pytest-pep8
+pytest-xdist
 requests
 progressbar
 scipy==0.18.1
