@@ -10,7 +10,7 @@ import signal
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from rasa_nlu.train import do_train
 from rasa_nlu.config import RasaNLUConfig
-from utils import spacy, mitie
+from rasa_nlu.utils import spacy, mitie
 
 
 class RasaNLUServer(object):
@@ -22,7 +22,7 @@ class RasaNLUServer(object):
         self.interpreter = self.__create_interpreter()
         self.data_router = DataRouter(config, self.interpreter, self.emulator)
 
-        if 'DYNO' in os.environ and config['backend'] == 'mitie':  # running on Heroku
+        if 'DYNO' in os.environ and config['backend'] == mitie.MITIE_BACKEND_NAME:  # running on Heroku
             from rasa_nlu.featurizers.mitie_featurizer import MITIEFeaturizer
             MITIEFeaturizer(config['mitie_file'])
 
