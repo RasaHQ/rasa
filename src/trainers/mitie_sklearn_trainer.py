@@ -12,7 +12,7 @@ from training_utils import write_training_metadata
 class MITIESklearnTrainer(Trainer):
     SUPPORTED_LANGUAGES = {"en"}
 
-    def __init__(self, fe_file, language_name):
+    def __init__(self, fe_file, language_name, max_num_threads=1):
         self.name = "mitie_sklearn"
         self.training_data = None
         self.intent_classifier = None
@@ -20,12 +20,16 @@ class MITIESklearnTrainer(Trainer):
         self.training_data = None
         self.fe_file = fe_file
         self.featurizer = MITIEFeaturizer(self.fe_file)
+        self.max_num_threads = max_num_threads
         self.ensure_language_support(language_name)
 
-    def train(self, data):
+    def train(self, data, test_split_size=0.1):
         self.training_data = data
-        self.intent_classifier = self.train_intent_classifier(data.intent_examples)
-        self.entity_extractor = self.train_entity_extractor(data.entity_examples)
+        self.train_intent_classifier(data.intent_examples, test_split_size)
+
+        num_entity_examples = len([e for e in data.entity_examples if len(e["entities"]) > 0])
+        if num_entity_examples > 0:
+            self.train_entity_extractor(data.entity_examples)
 
     def start_and_end(self, text_tokens, entity_tokens):
         size = len(entity_tokens)
@@ -50,13 +54,12 @@ class MITIESklearnTrainer(Trainer):
         return ner
 
     def train_intent_classifier(self, intent_examples, test_split_size=0.1):
-        intent_classifier = SklearnIntentClassifier()
+        self.intent_classifier = SklearnIntentClassifier(max_num_threads=self.max_num_threads)
         labels = [e["intent"] for e in intent_examples]
         sentences = [e["text"] for e in intent_examples]
-        y = intent_classifier.transform_labels_str2num(labels)
+        y = self.intent_classifier.transform_labels_str2num(labels)
         X = self.featurizer.create_bow_vecs(sentences)
-        intent_classifier.train(X, y, test_split_size)
-        return intent_classifier
+        self.intent_classifier.train(X, y, test_split_size)
 
     def persist(self, path, persistor=None, create_unique_subfolder=True):
         timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')

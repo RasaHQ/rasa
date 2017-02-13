@@ -17,6 +17,8 @@ def create_argparser():
     parser.add_argument('-d', '--data', default=None, help="file containing training data")
     parser.add_argument('-c', '--config', required=True, help="config file")
     parser.add_argument('-l', '--language', default=None, choices=['de', 'en'], help="model and data language")
+    parser.add_argument('-t', '--num_threads', default=1, type=int,
+                        help="number of threads to use during model training")
     parser.add_argument('-m', '--mitie_file', default=None,
                         help='file with mitie total_word_feature_extractor')
     return parser
@@ -26,13 +28,13 @@ def create_trainer(config):
     backend = config.backend.lower()
     if backend == 'mitie':
         from trainers.mitie_trainer import MITIETrainer
-        return MITIETrainer(config.mitie_file, config.language)
+        return MITIETrainer(config.mitie_file, config.language, config.num_threads)
     if backend == 'mitie_sklearn':
         from trainers.mitie_sklearn_trainer import MITIESklearnTrainer
-        return MITIESklearnTrainer(config.mitie_file, config.language)
+        return MITIESklearnTrainer(config.mitie_file, config.language, config.num_threads)
     if backend == 'spacy_sklearn':
         from trainers.spacy_sklearn_trainer import SpacySklearnTrainer
-        return SpacySklearnTrainer(config, config.language)
+        return SpacySklearnTrainer(config, config.language, config.num_threads)
     else:
         raise NotImplementedError("other backend trainers not implemented yet")
 
