@@ -22,7 +22,7 @@ class MITIEInterpreter(Interpreter):
             for e in entities:
                 _range = e[0]
                 _regex = u"\s*".join(tokens[i] for i in _range)
-                expr = re.compile(_regex)
+                expr = re.compile(re.escape(_regex))
                 m = expr.search(text)
                 start, end = m.start(), m.end()
                 ents.append({
