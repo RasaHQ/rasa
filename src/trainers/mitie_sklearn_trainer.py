@@ -72,7 +72,7 @@ class MITIESklearnTrainer(Trainer):
             dir_name = path
 
         data_file = os.path.join(dir_name, "training_data.json")
-        classifier_file, ner_dir = None, None, None
+        classifier_file, ner_dir = None, None
         if self.intent_classifier:
             classifier_file = os.path.join(dir_name, "intent_classifier.pkl")
         if self.entity_extractor:
