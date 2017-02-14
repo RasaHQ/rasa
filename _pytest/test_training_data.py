@@ -1,19 +1,21 @@
 # -*- coding: utf-8 -*-
 import os
 import tempfile
+import spacy
 
 from rasa_nlu.training_data import TrainingData
 from rasa_nlu.trainers.mitie_trainer import MITIETrainer
 
 
 def test_luis_mitie():
-    td = TrainingData('data/examples/luis/demo-restaurants.json', 'mitie', 'en')
+    td = TrainingData('data/examples/luis/demo-restaurants.json', 'mitie')
     assert td.fformat == 'luis'
     # some more assertions
 
 
 def test_wit_spacy():
-    td = TrainingData('data/examples/wit/demo-flights.json', 'spacy_sklearn', 'en')
+    nlp = spacy.load('en')
+    td = TrainingData('data/examples/wit/demo-flights.json', 'spacy_sklearn', nlp=nlp)
     assert td.fformat == 'wit'
 
 

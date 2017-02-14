@@ -22,7 +22,7 @@ class SpacySklearnTrainer(Trainer):
         self.max_num_threads = max_num_threads
         self.training_data = None
         self.nlp = spacy.load(self.language_name, parser=False, entity=False)
-        self.featurizer = SpacyFeaturizer(self.nlp)
+        self.featurizer = SpacyFeaturizer()
         self.intent_classifier = None
         self.entity_extractor = None
         ensure_proper_language_model(self.nlp)
