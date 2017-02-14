@@ -3,7 +3,7 @@
 .. _tutorial:
 
 Tutorial: building a restaurant search bot
-====================================
+==========================================
 
 Note: see :ref:`section_migration` for how to clone your existing wit/LUIS/api.ai app.
 
@@ -64,9 +64,14 @@ Download the file and open it, and you'll see a list of training examples like t
       ]
     }
 
-hopefully the format is intuitive if you've read this far into the tutorial, for details see :ref:`section_dataformat`
+hopefully the format is intuitive if you've read this far into the tutorial, for details see :ref:`section_dataformat`.
 
 In your working directory, create a ``data`` folder, and copy the ``demo-rasa.json`` file there.
+
+.. _visualizing-the-training-data:
+
+Visualizing the Training Data
+------------------------------------
 
 It's always a good idea to `look` at your data before, during, and after training a model. 
 There's a great tool for creating training data in rasa's format `here <https://github.com/golastmile/rasa-nlu-trainer>`_
@@ -88,51 +93,28 @@ Now we're going to create a configuration file. Make sure first that you've set 
 Create a file called ``config.json`` in your working directory which looks like this
 
  
-.. code-block:: json
-
-    {
-      "backend": "spacy_sklearn",
-      "path" : "./",
-      "data" : "./data/demo-restaurants.json"
-    }
+.. literalinclude:: ../config_spacy.json
+    :language: json
 
 or if you've installed the MITIE backend instead:
 
  
-.. code-block:: json
+.. literalinclude:: ../config_mitie.json
+    :language: json
 
-    {
-      "backend": "mitie",
-      "path" : "./",
-      "mitie_file" : "path/to/total_word_feature_extractor.dat",
-      "data" : "./data/demo-restaurants.json"
-    }
-
-Now we can train the model by running:
+Now we can train a spacy model by running:
 
 .. code-block:: console
 
-    $ python -m rasa_nlu.train -c config.json
+    $ python -m rasa_nlu.train -c config_spacy.json
 
 After a few minutes, rasa NLU will finish training, and you'll see a new dir called something like ``model_YYYYMMDD-HHMMSS`` with the timestamp when training finished. 
 
-To run your trained model, add a ``server_model_dir`` to your ``config.json``: 
-
-.. code-block:: json
-
-    {
-      "backend": "spacy_sklearn",
-      "path" : "./",
-      "data" : "./data/demo-restaurants.json",
-      "server_model_dir" : "./model_YYYYMMDD-HHMMSS"
-    }
-
-and run the server with 
-
+To run your trained model, pass the configuration value ``server_model_dir`` when running the server using
 
 .. code-block:: console
 
-    $ python -m rasa_nlu.server -c config.json
+    $ python -m rasa_nlu.server -c config_spacy.json --server_model_dir=./model_YYYYMMDD-HHMMSS
 
 you can then test our your new model by sending a request. Open a new tab/window on your terminal and run
 

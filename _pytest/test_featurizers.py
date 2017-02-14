@@ -27,7 +27,7 @@ def test_mitie():
     from rasa_nlu.featurizers.mitie_featurizer import MITIEFeaturizer
 
     filename = os.environ.get('MITIE_FILE')
-    if (filename and os.path.isfile(filename)):
+    if filename and os.path.isfile(filename):
         ftr = MITIEFeaturizer(os.environ.get('MITIE_FILE'))
         sentence = "Hey how are you today"
         vecs = ftr.create_bow_vecs([sentence])

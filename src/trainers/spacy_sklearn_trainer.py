@@ -9,20 +9,23 @@ from rasa_nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifi
 from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa_nlu.trainers.trainer import Trainer
 from training_utils import write_training_metadata
+from rasa_nlu.utils.spacy import ensure_proper_language_model
 
 
 class SpacySklearnTrainer(Trainer):
     SUPPORTED_LANGUAGES = {"en", "de"}
 
-    def __init__(self, config, language_name):
+    def __init__(self, config, language_name, max_num_threads=1):
         self.ensure_language_support(language_name)
         self.name = "spacy_sklearn"
         self.language_name = language_name
+        self.max_num_threads = max_num_threads
         self.training_data = None
         self.nlp = spacy.load(self.language_name, parser=False, entity=False)
         self.featurizer = SpacyFeaturizer(self.nlp)
         self.intent_classifier = None
         self.entity_extractor = None
+        ensure_proper_language_model(self.nlp)
 
     def train(self, data, test_split_size=0.1):
         self.training_data = data
@@ -37,7 +40,7 @@ class SpacySklearnTrainer(Trainer):
         self.entity_extractor.train(self.nlp, entity_examples)
 
     def train_intent_classifier(self, intent_examples, test_split_size=0.1):
-        self.intent_classifier = SklearnIntentClassifier()
+        self.intent_classifier = SklearnIntentClassifier(max_num_threads=self.max_num_threads)
         labels = [e["intent"] for e in intent_examples]
         sentences = [e["text"] for e in intent_examples]
 

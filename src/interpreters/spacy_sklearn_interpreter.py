@@ -6,6 +6,7 @@ import spacy
 from rasa_nlu import Interpreter
 from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa_nlu.featurizers.spacy_featurizer import SpacyFeaturizer
+from rasa_nlu.utils.spacy import ensure_proper_language_model
 
 
 class SpacySklearnInterpreter(Interpreter):
@@ -14,7 +15,9 @@ class SpacySklearnInterpreter(Interpreter):
         self.extractor = None
         self.classifier = None
         self.nlp = spacy.load(language_name, parser=False, entity=False, matcher=False)
-        self.featurizer = SpacyFeaturizer()
+        self.featurizer = SpacyFeaturizer(self.nlp)
+        ensure_proper_language_model(self.nlp)
+
         if intent_classifier:
             with open(intent_classifier, 'rb') as f:
                 self.classifier = cloudpickle.load(f)

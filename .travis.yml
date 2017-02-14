@@ -29,5 +29,4 @@ install:
   - python -m spacy.en.download all > jnk
   - python -m spacy.de.download all > jnk
   - wget -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
-script: py.test --pep8
-
+script: py.test --pep8 --boxed -n0
