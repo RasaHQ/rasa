@@ -10,9 +10,9 @@ class MITIEInterpreter(Interpreter):
         self.extractor = None
         self.classifier = None
         if entity_extractor:
-            self.extractor = named_entity_extractor(entity_extractor, None, True)
+            self.extractor = named_entity_extractor(entity_extractor, feature_extractor)
         if intent_classifier:
-            self.classifier = text_categorizer(intent_classifier, None, True)
+            self.classifier = text_categorizer(intent_classifier, feature_extractor)
         self.tokenizer = MITIETokenizer()
 
     def get_entities(self, text, featurizer=None):
