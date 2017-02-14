@@ -38,7 +38,7 @@ class MITIEInterpreter(Interpreter):
 
         return ents
 
-    def get_intent(self, text):
+    def get_intent(self, text, featurizer=None):
         if self.classifier:
             tokens = tokenize(text)
             if isinstance(featurizer, MITIEFeaturizer):
