@@ -54,7 +54,6 @@ class MITIESklearnTrainer(Trainer):
         end = start + len(val_tokens)
         return start, end
 
-
     def train_entity_extractor(self, entity_examples):
         trainer = ner_trainer(self.fe_file)
         trainer.num_threads = self.max_num_threads
