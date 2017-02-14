@@ -33,7 +33,7 @@ class TrainingData(object):
                 "backend not recognised by TrainingData : defaulting to tokenizing by splitting on whitespace")
 
         if self.fformat == 'luis':
-            self.load_luis_data(self.files[0],nlp=nlp)
+            self.load_luis_data(self.files[0], nlp=nlp)
         elif self.fformat == 'wit':
             self.load_wit_data(self.files[0])
         elif self.fformat == 'api':
