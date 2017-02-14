@@ -7,7 +7,7 @@ import json
 from rasa_nlu.trainers.trainer import Trainer
 from training_utils import write_training_metadata
 from rasa_nlu.tokenizers.mitie_tokenizer import MITIETokenizer
-from utils.mitie import MITIE_BACKEND_NAME
+from rasa_nlu.utils.mitie import MITIE_BACKEND_NAME
 
 
 class MITIETrainer(Trainer):
