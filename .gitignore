@@ -11,6 +11,7 @@ mongodb/
 .cache/
 build/lib/
 build/
+model_*/
 *.egg-info/
 jnk/
 logs/

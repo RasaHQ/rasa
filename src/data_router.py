@@ -37,9 +37,11 @@ class DataRouter(object):
             for alias in aliases}
         backends = set([md['metadata']['backend'] for md in interpreter_store.values()])
         languages = set([md['metadata']['language_name'] for md in interpreter_store.values()])
+        fe_files = set([md['metadata']['feature_extractor'] for md in interpreter_store.values()])
 
         assert len(languages) == 1, "models are not all in the same language, this is not supported"
         assert len(backends) == 1, "models with different backends cannot be run by same server"
+        assert len(fe_files) == 1, "models with different feature extractors cannot be run by same server"
 
         # for spacy can share large memory objects across models
         if 'spacy_sklearn' in backends:
@@ -47,6 +49,10 @@ class DataRouter(object):
             from rasa_nlu.featurizers.spacy_featurizer import SpacyFeaturizer
             self.nlp = spacy.load(languages.pop(), parser=False, entity=False, matcher=False)
             self.featurizer = SpacyFeaturizer()
+
+        elif 'mitie' in backends:
+            from rasa_nlu.featurizers.mitie_featurizer import MITIEFeaturizer
+            self.featurizer = MITIEFeaturizer(list(fe_files)[0])
 
         for alias in aliases:
             interpreter_store[alias]['interpreter'] = self.__create_interpreter(
@@ -80,7 +86,7 @@ class DataRouter(object):
         elif backend.lower() == 'mitie':
             logging.info("using mitie backend")
             from interpreters.mitie_interpreter import MITIEInterpreter
-            return MITIEInterpreter(model_dir, **metadata)
+            return MITIEInterpreter(intent_classifier=metadata['intent_classifier'], entity_extractor=metadata['entity_extractor'])
         elif backend.lower() == 'spacy_sklearn':
             logging.info("using spacy + sklearn backend")
             from interpreters.spacy_sklearn_interpreter import SpacySklearnInterpreter
