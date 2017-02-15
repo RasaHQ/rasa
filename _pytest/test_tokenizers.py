@@ -30,3 +30,4 @@ def test_mitie():
 
     tk.tokenize(u"Hi. My name is rasa") == [u'Hi', u'My', u'name', u'is', u'rasa']
     tk.tokenize(u"ὦ ἄνδρες ᾿Αθηναῖοι.") == [u'ὦ', u'ἄνδρες', u'᾿Αθηναῖοι']
+    tk.tokenize_with_offsets(u"Forecast for lunch") == ([u'Forecast', u'for', u'lunch'], [0, 9, 13])
