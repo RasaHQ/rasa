@@ -23,6 +23,9 @@ class LoadedModel(object):
     def language_name(self):
         return self.metadata.get('language_name')
 
+    def featurizer_path(self):
+        return self.metadata.get('feature_extractor')
+
     def model_group(self):
         """Groups models by backend and language name."""
         if self.language_name() is not None and self.backend_name() is not None:
@@ -41,12 +44,15 @@ class DataRouter(object):
         self.emulator = self.__create_emulator()
         self.model_store = self.__create_model_store()
 
-    def __featurizer_for_backend(self, backend):
+    def __featurizer_for_model(self, model):
         """Initialize featurizer for backends. If it can NOT be shared between models, `None` should be returned."""
 
-        if 'spacy_sklearn' == backend:
+        if model.backend_name() == 'spacy_sklearn':
             from featurizers.spacy_featurizer import SpacyFeaturizer
             return SpacyFeaturizer()
+        elif model.backend_name() == 'mitie':
+            from rasa_nlu.featurizers.mitie_featurizer import MITIEFeaturizer
+            return MITIEFeaturizer(model.featurizer_path())
         else:
             return None
 
@@ -81,7 +87,7 @@ class DataRouter(object):
                 model.featurizer = cache[cache_key]['featurizer']
             else:
                 model.nlp = self.__nlp_for_backend(model.backend_name(), model.language_name())
-                model.featurizer = self.__featurizer_for_backend(model.backend_name())
+                model.featurizer = self.__featurizer_for_model(model)
                 cache[cache_key] = {'nlp': model.nlp, 'featurizer': model.featurizer}
 
             model_store[alias] = model
@@ -90,7 +96,8 @@ class DataRouter(object):
     def __default_model_metadata(self):
         return {
             "backend": None,
-            "language_name": None
+            "language_name": None,
+            "feature_extractor": None
         }
 
     def __read_model_metadata(self, model_dir):
@@ -117,7 +124,7 @@ class DataRouter(object):
         elif backend.lower() == 'mitie':
             logging.info("using mitie backend")
             from interpreters.mitie_interpreter import MITIEInterpreter
-            return MITIEInterpreter(model_dir, **metadata)
+            return MITIEInterpreter(intent_classifier=metadata['intent_classifier'], entity_extractor=metadata['entity_extractor'])
         elif backend.lower() == 'spacy_sklearn':
             logging.info("using spacy + sklearn backend")
             from interpreters.spacy_sklearn_interpreter import SpacySklearnInterpreter
