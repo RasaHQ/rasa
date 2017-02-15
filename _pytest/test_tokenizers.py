@@ -17,7 +17,7 @@ def test_spacy():
         nlp = spacy.load(language, parser=False, entity=False, matcher=False)
         from rasa_nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
         tk = SpacyTokenizer()
-        assert tk.tokenize(sentence, nlp=nlp) == expected_result
+        assert tk.tokenize(sentence, nlp) == expected_result
 
     tokenize_sentence(u"Hi. My name is rasa", [u'Hi', u'.', u'My', u'name', u'is', u'rasa'], 'en')
     tokenize_sentence(u"hello ńöñàśçií", [u'hello', u'ńöñàśçií'], 'en')
