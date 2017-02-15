@@ -31,7 +31,7 @@ def test_train_mitie():
 def test_train_mitie_sklearn():
     # basic conf
     _config = {
-        'write': os.path.join(os.getcwd(), "rasa_nlu_logs.json"),
+        'write': temp_log_file_location(),
         'port': 5022,
         "backend": "mitie_sklearn",
         "path": "./",
