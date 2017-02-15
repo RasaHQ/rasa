@@ -11,12 +11,11 @@ from rasa_nlu.utils.spacy import ensure_proper_language_model
 
 class SpacySklearnInterpreter(Interpreter):
 
-    def __init__(self, entity_extractor=None, intent_classifier=None, language_name='en', **kwargs):
+    def __init__(self, entity_extractor=None, intent_classifier=None, nlp=None, **kwargs):
         self.extractor = None
         self.classifier = None
-        self.nlp = spacy.load(language_name, parser=False, entity=False, matcher=False)
-        self.featurizer = SpacyFeaturizer(self.nlp)
-        ensure_proper_language_model(self.nlp)
+        self.featurizer = SpacyFeaturizer()
+        ensure_proper_language_model(nlp)
 
         if intent_classifier:
             with open(intent_classifier, 'rb') as f:
@@ -24,13 +23,13 @@ class SpacySklearnInterpreter(Interpreter):
         if entity_extractor:
             self.extractor = SpacyEntityExtractor(self.nlp, entity_extractor)
 
-    def get_intent(self, text):
+    def get_intent(self, text, nlp):
         """Returns the most likely intent and its probability for the input text.
 
         :param text: text to classify
         :return: tuple of most likely intent name and its probability"""
         if self.classifier:
-            X = self.featurizer.create_bow_vecs([text], nlp=self.nlp)
+            X = self.featurizer.create_bow_vecs([text], nlp=nlp)
             intent_ids, probabilities = self.classifier.predict(X)
             intents = self.classifier.transform_labels_num2str(intent_ids)
             intent, score = intents[0], probabilities[0]
@@ -39,15 +38,15 @@ class SpacySklearnInterpreter(Interpreter):
 
         return intent, score
 
-    def get_entities(self, text):
+    def get_entities(self, text, nlp):
         if self.extractor:
-            return self.extractor.extract_entities(self.nlp, text)
+            return self.extractor.extract_entities(nlp, text)
         return []
 
-    def parse(self, text):
+    def parse(self, text, nlp=None, featurizer=None):
         """Parse the input text, classify it and return an object containing its intent and entities."""
 
-        intent, probability = self.get_intent(text)
-        entities = self.get_entities(text)
+        intent, probability = self.get_intent(text, nlp)
+        entities = self.get_entities(text, nlp)
 
         return {'text': text, 'intent': intent, 'entities': entities, 'confidence': probability}

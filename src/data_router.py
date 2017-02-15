@@ -84,7 +84,7 @@ class DataRouter(object):
         elif backend.lower() == 'spacy_sklearn':
             logging.info("using spacy + sklearn backend")
             from interpreters.spacy_sklearn_interpreter import SpacySklearnInterpreter
-            return SpacySklearnInterpreter(model_dir, **metadata)
+            return SpacySklearnInterpreter(model_dir, nlp=self.nlp, **metadata)
         else:
             raise ValueError("unknown backend : {0}".format(backend))
 
