@@ -13,22 +13,8 @@ class MITIETrainer(Trainer):
     SUPPORTED_LANGUAGES = {"en"}
 
     def __init__(self, fe_file, language_name, max_num_threads=1):
-        self.name = "mitie"
-        self.training_data = None
-        self.intent_classifier = None
-        self.entity_extractor = None
-        self.training_data = None
-        self.max_num_threads = max_num_threads
+        super(self.__class__, self).__init__("mitie", language_name, max_num_threads)
         self.fe_file = fe_file
-        self.ensure_language_support(language_name)
-
-    def train(self, data):
-        self.training_data = data
-        self.intent_classifier = self.train_intent_classifier(data.intent_examples)
-
-        num_entity_examples = len([e for e in data.entity_examples if len(e["entities"]) > 0])
-        if num_entity_examples > 0:
-            self.entity_extractor = self.train_entity_extractor(data.entity_examples)
 
     @classmethod
     def find_entity(cls, ent, text):

@@ -15,23 +15,9 @@ class MITIESklearnTrainer(Trainer):
     SUPPORTED_LANGUAGES = {"en"}
 
     def __init__(self, fe_file, language_name, max_num_threads=1):
-        self.name = "mitie_sklearn"
-        self.training_data = None
-        self.intent_classifier = None
-        self.entity_extractor = None
-        self.training_data = None
+        super(self.__class__, self).__init__("mitie_sklearn", language_name, max_num_threads)
         self.fe_file = fe_file
         self.featurizer = MITIEFeaturizer(self.fe_file)
-        self.max_num_threads = max_num_threads
-        self.ensure_language_support(language_name)
-
-    def train(self, data, test_split_size=0.1):
-        self.training_data = data
-        self.train_intent_classifier(data.intent_examples, test_split_size)
-
-        num_entity_examples = len([e for e in data.entity_examples if len(e["entities"]) > 0])
-        if num_entity_examples > 0:
-            self.entity_extractor = self.train_entity_extractor(data.entity_examples)
 
     def start_and_end(self, text_tokens, entity_tokens):
         size = len(entity_tokens)

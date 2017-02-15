@@ -15,25 +15,11 @@ from rasa_nlu.utils.spacy import ensure_proper_language_model
 class SpacySklearnTrainer(Trainer):
     SUPPORTED_LANGUAGES = {"en", "de"}
 
-    def __init__(self, config, language_name, max_num_threads=1):
-        self.ensure_language_support(language_name)
-        self.name = "spacy_sklearn"
-        self.language_name = language_name
-        self.max_num_threads = max_num_threads
-        self.training_data = None
+    def __init__(self, language_name, max_num_threads=1):
+        super(self.__class__, self).__init__(self, "spacy_sklearn", language_name, max_num_threads)
         self.nlp = spacy.load(self.language_name, parser=False, entity=False)
         self.featurizer = SpacyFeaturizer(self.nlp)
-        self.intent_classifier = None
-        self.entity_extractor = None
         ensure_proper_language_model(self.nlp)
-
-    def train(self, data, test_split_size=0.1):
-        self.training_data = data
-        self.train_intent_classifier(data.intent_examples, test_split_size)
-
-        num_entity_examples = len([e for e in data.entity_examples if len(e["entities"]) > 0])
-        if num_entity_examples > 0:
-            self.train_entity_extractor(data.entity_examples)
 
     def train_entity_extractor(self, entity_examples):
         self.entity_extractor = SpacyEntityExtractor()
@@ -48,6 +34,7 @@ class SpacySklearnTrainer(Trainer):
         self.intent_classifier.train(X, y, test_split_size)
 
     def persist(self, path, persistor=None, create_unique_subfolder=True):
+        entity_extractor_file, entity_extractor_config_file = None, None
         timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
 
         if create_unique_subfolder:
