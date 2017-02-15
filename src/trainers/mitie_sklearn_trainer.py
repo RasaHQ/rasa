@@ -52,9 +52,7 @@ class MITIESklearnTrainer(Trainer):
                 sample.add_entity(xrange(start, end), ent["entity"])
 
             trainer.add(sample)
-
-        ner = trainer.train()
-        return ner
+        self.entity_extractor = trainer.train()
 
     def train_intent_classifier(self, intent_examples, test_split_size=0.1):
         self.intent_classifier = SklearnIntentClassifier(max_num_threads=self.max_num_threads)

@@ -42,9 +42,7 @@ class MITIETrainer(Trainer):
                 sample.add_entity(xrange(start, end), ent["entity"])
 
             trainer.add(sample)
-
-        ner = trainer.train()
-        return ner
+        self.entity_extractor = trainer.train()
 
     def train_intent_classifier(self, intent_examples):
         trainer = text_categorizer_trainer(self.fe_file)
@@ -52,9 +50,7 @@ class MITIETrainer(Trainer):
         for example in intent_examples:
             tokens = tokenize(example["text"])
             trainer.add_labeled_text(tokens, example["intent"])
-
-        intent_classifier = trainer.train()
-        return intent_classifier
+        self.intent_classifier = trainer.train()
 
     def persist(self, path, persistor=None, create_unique_subfolder=True):
         timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')

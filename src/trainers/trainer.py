@@ -15,10 +15,16 @@ class Trainer(object):
             raise NotImplementedError("Selected backend currently does not support language '{}' (only '{}')."
                                       .format(language_name, "', '".join(self.SUPPORTED_LANGUAGES)))
 
+    def train_entity_extractor(self, entity_examples):
+        pass
+
+    def train_intent_classifier(self, intent_examples, test_split_size=0.1):
+        pass
+
     def train(self, data, test_split_size=0.1):
         self.training_data = data
         self.train_intent_classifier(data.intent_examples, test_split_size)
 
         num_entity_examples = len([e for e in data.entity_examples if len(e["entities"]) > 0])
         if num_entity_examples > 0:
-            self.entity_extractor = self.train_entity_extractor(data.entity_examples)
+            self.train_entity_extractor(data.entity_examples)
