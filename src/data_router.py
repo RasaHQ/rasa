@@ -5,7 +5,29 @@ import json
 import glob
 import logging
 import warnings
+
+from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.train import do_train
+
+
+class LoadedModel(object):
+    def __init__(self, metadata, model_dir, interpreter=None, nlp=None):
+        self.metadata = metadata
+        self.model_dir = model_dir
+        self.interpreter = interpreter
+        self.nlp = nlp
+
+    def backend_name(self):
+        return self.metadata.get('backend')
+
+    def language_name(self):
+        return self.metadata.get('language_name')
+
+    def model_group(self):
+        """Groups models by backend and language name."""
+        if self.language_name() is not None and self.backend_name() is not None:
+            return self.language_name() + "@" + self.backend_name()
+        return None
 
 
 class DataRouter(object):
@@ -14,65 +36,80 @@ class DataRouter(object):
         self.logfile = config.write
         self.responses = set()
         self.train_proc = None
-        self.interpreter_store = None
-        self.nlp = None
-        self.featurizer = None
         self.model_dir = config.path
         self.token = config.token
         self.emulator = self.__create_emulator()
-        self.interpreter_store = self.__create_interpreter_store()
+        self.model_store = self.__create_model_store()
 
-    def __create_interpreter_store(self):
-        model_dict = self.config.server_model_dir
-        if model_dict is None:
-            return {"default": {
-                     "metadata": None,
-                     "interpreter": self.__create_interpreter({'backend': None}, None)
-                   }}
-        elif type(model_dict) is unicode:
-            model_dict = {"default": model_dict}
-        aliases = model_dict.keys()
-        interpreter_store = {
-            alias: {'metadata': self.__read_model_metadata(model_dict[alias])}
-            for alias in aliases}
-        backends = set([md['metadata']['backend'] for md in interpreter_store.values()])
-        languages = set([md['metadata']['language_name'] for md in interpreter_store.values()])
+    def __featurizer_for_backend(self, backend):
+        """Initialize featurizer for backends. If it can NOT be shared between models, `None` should be returned."""
 
-        assert len(languages) == 1, "models are not all in the same language, this is not supported"
-        assert len(backends) == 1, "models with different backends cannot be run by same server"
+        if 'spacy_sklearn' == backend:
+            from featurizers.spacy_featurizer import SpacyFeaturizer
+            return SpacyFeaturizer()
+        else:
+            return None
 
-        # for spacy can share large memory objects across models
-        if 'spacy_sklearn' in backends:
+    def __nlp_for_backend(self, backend, language):
+        """Initialize nlp for backends. If nlp can NOT be shared between models, `None` should be returned."""
+
+        if 'spacy_sklearn' == backend:
+            # spacy can share large memory objects across models
             import spacy
-            from rasa_nlu.featurizers.spacy_featurizer import SpacyFeaturizer
-            self.nlp = spacy.load(languages.pop(), parser=False, entity=False, matcher=False)
-            self.featurizer = SpacyFeaturizer()
+            return spacy.load(language, parser=False, entity=False, matcher=False)
+        else:
+            return None
 
-        for alias in aliases:
-            interpreter_store[alias]['interpreter'] = self.__create_interpreter(
-                interpreter_store[alias]['metadata'],
-                model_dict[alias])
+    def __create_model_store(self):
+        model_dict = self.config.server_model_dir
 
-        return interpreter_store
+        # Fallback for users that specified the model path as a string and hence only want a single default model.
+        if type(model_dict) is unicode or model_dict is None:
+            model_dict = {"default": model_dict}
+
+        # Reuse nlp and featurizers where possible to save memory
+        cache = {}
+
+        model_store = {}
+
+        for alias, path in model_dict.items():
+            model = LoadedModel(self.__read_model_metadata(model_dict[alias]), model_dict[alias])
+            model.interpreter = self.__create_interpreter(model.metadata, model.model_dir)
+            cache_key = model.model_group()
+            if cache_key in cache:
+                model.nlp = cache[cache_key]['nlp']
+                model.featurizer = cache[cache_key]['featurizer']
+            else:
+                model.nlp = self.__nlp_for_backend(model.backend_name(), model.language_name())
+                model.featurizer = self.__featurizer_for_backend(model.backend_name())
+                cache[cache_key] = {'nlp': model.nlp, 'featurizer': model.featurizer}
+
+            model_store[alias] = model
+        return model_store
+
+    def __default_model_metadata(self):
+        return {
+            "backend": None,
+            "language_name": None
+        }
 
     def __read_model_metadata(self, model_dir):
-        metadata = None
-
-        if model_dir is not None:
+        if model_dir is None:
+            return self.__default_model_metadata()
+        else:
             # download model from S3 if needed
             if not os.path.isdir(model_dir):
                 try:
                     from rasa_nlu.persistor import Persistor
                     p = Persistor(self.config.path, self.config.aws_region, self.config.bucket_name)
                     p.fetch_and_extract('{0}.tar.gz'.format(os.path.basename(model_dir)))
-                except:
-                    warnings.warn("using default interpreter, couldn't find model dir or fetch it from S3")
+                except Exception:
+                    warnings.warn("Using default interpreter, couldn't find model dir or fetch it from S3")
 
-            metadata = json.loads(open(os.path.join(model_dir, 'metadata.json'), 'rb').read().decode('utf-8'))
-        return metadata
+            with open(os.path.join(model_dir, 'metadata.json'), 'rb') as f:
+                return json.loads(f.read().decode('utf-8'))
 
     def __create_interpreter(self, metadata, model_dir):
-
         backend = metadata.get("backend")
         if backend is None:
             from interpreters.simple_interpreter import HelloGoodbyeInterpreter
@@ -110,12 +147,10 @@ class DataRouter(object):
 
     def parse(self, data):
         alias = data.get("model") or "default"
-        if alias not in self.interpreter_store:
+        if alias not in self.model_store:
             return {"error": "no model found with alias: {0}".format(alias)}
-        result = self.interpreter_store[alias]["interpreter"].parse(
-                   data['text'],
-                   nlp=self.nlp,
-                   featurizer=self.featurizer)
+        model = self.model_store[alias]
+        result = model.interpreter.parse(data['text'], model.nlp, model.featurizer)
         self.responses.add(json.dumps(result, sort_keys=True))
         return result
 
@@ -135,8 +170,8 @@ class DataRouter(object):
 
         models = glob.glob(os.path.join(self.model_dir, 'model*'))
         return json.dumps({
-          "training": training,
-          "available_models": models
+            "training": training,
+            "available_models": models
         })
 
     def auth(self, path):
