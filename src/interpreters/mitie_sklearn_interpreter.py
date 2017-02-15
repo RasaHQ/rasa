@@ -6,12 +6,12 @@ from rasa_nlu.tokenizers.mitie_tokenizer import MITIETokenizer
 
 
 class MITIESklearnInterpreter(Interpreter):
-    def __init__(self, intent_classifier=None, entity_extractor=None, feature_extractor=None, **kwargs):
-        if entity_extractor:
-            self.extractor = named_entity_extractor(entity_extractor)  # ,metadata["feature_extractor"])
-        with open(intent_classifier, 'rb') as f:
+    def __init__(self, intent_classifier_file=None, entity_extractor_file=None, feature_extractor_file=None, **kwargs):
+        if entity_extractor_file:
+            self.extractor = named_entity_extractor(entity_extractor_file)  # ,metadata["feature_extractor"])
+        with open(intent_classifier_file, 'rb') as f:
             self.classifier = cloudpickle.load(f)
-        self.featurizer = MITIEFeaturizer(feature_extractor)
+        self.featurizer = MITIEFeaturizer(feature_extractor_file)
         self.tokenizer = MITIETokenizer()
 
     def get_entities(self, tokens):
