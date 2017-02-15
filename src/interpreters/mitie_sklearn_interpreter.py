@@ -28,7 +28,7 @@ class MITIESklearnInterpreter(Interpreter):
         :param text: text to classify
         :return: tuple of most likely intent name and its probability"""
         if self.classifier:
-            X = self.featurizer.create_bow_vecs(text)
+            X = self.featurizer.create_bow_vecs([text])
             intent_ids, probabilities = self.classifier.predict(X)
             intents = self.classifier.transform_labels_num2str(intent_ids)
             intent, score = intents[0], probabilities[0]
