@@ -22,13 +22,13 @@ class MITIESklearnInterpreter(Interpreter):
             d[e[1]] = " ".join(tokens[i] for i in _range)
         return d
 
-    def get_intent(self, tokens):
+    def get_intent(self, text):
         """Returns the most likely intent and its probability for the input text.
 
         :param text: text to classify
         :return: tuple of most likely intent name and its probability"""
         if self.classifier:
-            X = self.featurizer.create_bow_vecs(tokens)
+            X = self.featurizer.create_bow_vecs(text)
             intent_ids, probabilities = self.classifier.predict(X)
             intents = self.classifier.transform_labels_num2str(intent_ids)
             intent, score = intents[0], probabilities[0]
