@@ -16,10 +16,10 @@ class Trainer(object):
                                       .format(language_name, "', '".join(self.SUPPORTED_LANGUAGES)))
 
     def train_entity_extractor(self, entity_examples):
-        pass
+        raise NotImplementedError()
 
     def train_intent_classifier(self, intent_examples, test_split_size=0.1):
-        pass
+        raise NotImplementedError()
 
     def train(self, data, test_split_size=0.1):
         self.training_data = data
