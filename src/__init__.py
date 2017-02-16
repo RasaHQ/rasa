@@ -19,6 +19,5 @@ class Interpreter(object):
     def replace_synonyms(entities, entity_synonyms):
         for i in range(len(entities)):
             entity_value = entities[i]["value"]
-            if (type(entity_value) == unicode and type(entity_synonyms) == unicode and
-                    entity_value.lower() in entity_synonyms):
-                entities[i]["value"] = entity_synonyms[entity_value]
+            if entity_value.lower() in entity_synonyms:
+                entities[i]["value"] = entity_synonyms[entity_value.lower()]
