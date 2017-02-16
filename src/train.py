@@ -34,7 +34,7 @@ def create_trainer(config):
         return MITIESklearnTrainer(config.mitie_file, config.language, config.num_threads)
     if backend == 'spacy_sklearn':
         from trainers.spacy_sklearn_trainer import SpacySklearnTrainer
-        return SpacySklearnTrainer(config, config.language, config.num_threads)
+        return SpacySklearnTrainer(config.language, config.num_threads)
     else:
         raise NotImplementedError("other backend trainers not implemented yet")
 

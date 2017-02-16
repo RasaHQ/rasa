@@ -44,7 +44,7 @@ class MITIETrainer(Trainer):
             trainer.add(sample)
         self.entity_extractor = trainer.train()
 
-    def train_intent_classifier(self, intent_examples):
+    def train_intent_classifier(self, intent_examples, test_split_size=0.1):
         trainer = text_categorizer_trainer(self.fe_file)
         trainer.num_threads = self.max_num_threads
         for example in intent_examples:

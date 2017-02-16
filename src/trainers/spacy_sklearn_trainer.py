@@ -16,7 +16,7 @@ class SpacySklearnTrainer(Trainer):
     SUPPORTED_LANGUAGES = {"en", "de"}
 
     def __init__(self, language_name, max_num_threads=1):
-        super(self.__class__, self).__init__(self, "spacy_sklearn", language_name, max_num_threads)
+        super(self.__class__, self).__init__("spacy_sklearn", language_name, max_num_threads)
         self.nlp = spacy.load(self.language_name, parser=False, entity=False)
         self.featurizer = SpacyFeaturizer(self.nlp)
         ensure_proper_language_model(self.nlp)
