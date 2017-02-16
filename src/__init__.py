@@ -10,9 +10,9 @@ class Interpreter(object):
         raise NotImplementedError()
 
     @staticmethod
-    def load_synonyms(entity_synonyms):
-        if entity_synonyms:
-            with codecs.open(entity_synonyms, encoding='utf-8') as infile:
+    def load_synonyms(entity_synonyms_file):
+        if entity_synonyms_file:
+            with codecs.open(entity_synonyms_file, encoding='utf-8') as infile:
                 return json.loads(infile.read())
 
     @staticmethod
