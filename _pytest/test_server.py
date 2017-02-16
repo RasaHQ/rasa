@@ -41,7 +41,7 @@ def test_root(client):
 def test_status(client):
     response = client.get("/status")
     rjs = response.json
-    assert response.status_code == 200 and ("training" in rjs and "available_models" in rjs)
+    assert response.status_code == 200 and ("trainings_under_this_process" in rjs and "available_models" in rjs)
 
 
 def test_get_parse(client):

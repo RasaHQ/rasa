@@ -13,5 +13,4 @@ pytest-xdist
 pytest-services
 pytest-flask
 requests
-progressbar
 scipy==0.18.1

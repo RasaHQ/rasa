@@ -10,7 +10,7 @@ from flask import jsonify
 from flask import request
 from gevent.wsgi import WSGIServer
 
-from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu.config import RasaNLUConfig, DEFAULT_CONFIG_LOCATION
 from rasa_nlu.data_router import DataRouter
 from rasa_nlu.utils import mitie
 from rasa_nlu.utils import spacy
@@ -119,9 +119,9 @@ def parse_get():
         return jsonify(error="Invalid parse parameter specified")
     else:
         data = current_app.data_router.extract(request_params)
-        result = current_app.data_router.parse(data["text"])
-        response = current_app.data_router.format(result)
-        return jsonify(response)
+        response = current_app.data_router.parse(data["text"])
+        formatted = current_app.data_router.format_response(response)
+        return jsonify(formatted)
 
 
 @app.route("/status", methods=['GET'])
@@ -145,12 +145,11 @@ def train():
 
 
 def setup_app(config):
-    print(config.view())
     logging.basicConfig(filename=config['log_file'], level=config['log_level'])
     logging.captureWarnings(True)
-    logging.debug(config.view())
+    logging.info(config.view())
 
-    logging.info("Creating a new data router")
+    logging.debug("Creating a new data router")
     emulator = __create_emulator(config)
     interpreter = __create_interpreter(config)
     app.data_router = DataRouter(config, interpreter, emulator)
@@ -167,9 +166,10 @@ if __name__ == '__main__':
     http_server.serve_forever()
 
 if __name__ == 'rasa_nlu.server':
-    # Running in WSGI container
-    config_file = "config_spacy.json"
-    rasa_config = RasaNLUConfig(config_file, env_vars=os.environ)
+    # Running in WSGI container, configuration will be loaded from the default location
+    # There is no common support for WSGI runners to pass arguments to the application, hence we need to fallback to
+    # a default location for the configuration where all the settings should be placed in.
+    rasa_config = RasaNLUConfig(env_vars=os.environ)
     _app = setup_app(rasa_config)
     logging.info("Finished setting up application")
     application = _app
