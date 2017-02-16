@@ -25,6 +25,5 @@ class Trainer(object):
         self.training_data = data
         self.train_intent_classifier(data.intent_examples, test_split_size)
 
-        num_entity_examples = len([e for e in data.entity_examples if len(e["entities"]) > 0])
-        if num_entity_examples > 0:
+        if self.training_data.num_entity_examples > 0:
             self.train_entity_extractor(data.entity_examples)
