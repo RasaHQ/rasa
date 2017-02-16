@@ -30,8 +30,8 @@ def recursively_find_files(resource_name):
 
 
 def add_entities_if_synonyms(synonyms_dict, entity_a, entity_b):
-    original = entity_a.lower() if type(entity_a) == unicode else entity_a
-    replacement = entity_b.lower() if type(entity_b) == unicode else entity_b
+    original = entity_a.lower() if type(entity_a) == unicode else unicode(entity_a)
+    replacement = entity_b.lower() if type(entity_b) == unicode else unicode(entity_b)
 
     if original != replacement:
         synonyms_dict[original] = replacement
