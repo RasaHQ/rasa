@@ -10,7 +10,9 @@ class MITIESklearnInterpreter(Interpreter):
         self.extractor = named_entity_extractor(metadata["entity_extractor"])  # ,metadata["feature_extractor"])
         self.classifier = text_categorizer(metadata["intent_classifier"])  # ,metadata["feature_extractor"])
         self.tokenizer = MITIETokenizer()
-        self.entity_synonyms = Interpreter.load_synonyms(entity_synonyms)
+        self.ent_synonyms = None
+        if entity_synonyms:
+            self.ent_synonyms = Interpreter.load_synonyms(entity_synonyms)
 
     def get_entities(self, tokens):
         d = {}
@@ -28,6 +30,7 @@ class MITIESklearnInterpreter(Interpreter):
         tokens = self.tokenizer.tokenize(text)
         intent = self.get_intent(tokens)
         entities = self.get_entities(tokens)
-        Interpreter.replace_synonyms(entities, self.entity_synonyms)
+        if self.ent_synonyms:
+            Interpreter.replace_synonyms(entities, self.ent_synonyms)
 
         return {'text': text, 'intent': intent, 'entities': entities}
