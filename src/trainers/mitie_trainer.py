@@ -15,7 +15,7 @@ class MITIETrainer(Trainer):
     def __init__(self, fe_file, language_name, nlp=None, max_num_threads=1):
         self.name = "mitie"
         self.training_data = None
-        self.nlp = None
+        self.nlp = nlp
         self.intent_classifier = None
         self.entity_extractor = None
         self.training_data = None

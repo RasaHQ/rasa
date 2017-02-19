@@ -45,7 +45,7 @@ class SpacySklearnTrainer(Trainer):
         sentences = [e["text"] for e in intent_examples]
 
         y = self.intent_classifier.transform_labels_str2num(labels)
-        X = self.featurizer.create_bow_vecs(sentences, nlp=self.nlp)
+        X = self.featurizer.create_bow_vecs(sentences, self.nlp)
         self.intent_classifier.train(X, y, test_split_size)
 
     def persist(self, path, persistor=None, create_unique_subfolder=True):

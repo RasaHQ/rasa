@@ -21,7 +21,6 @@ profile.*
 lastmile_ai/learn/plots/
 *npy
 *#
-*pkl
 config.json
 *log.json
 .coverage

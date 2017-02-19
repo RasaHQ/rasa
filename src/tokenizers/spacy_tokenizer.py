@@ -1,7 +1,7 @@
-import spacy
+from tokenizers import Tokenizer
 
 
-class SpacyTokenizer(object):
+class SpacyTokenizer(Tokenizer):
 
     def __init__(self):
         pass

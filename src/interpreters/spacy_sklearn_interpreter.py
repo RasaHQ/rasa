@@ -21,7 +21,7 @@ class SpacySklearnInterpreter(Interpreter):
             with open(intent_classifier, 'rb') as f:
                 self.classifier = cloudpickle.load(f)
         if entity_extractor:
-            self.extractor = SpacyEntityExtractor(self.nlp, entity_extractor)
+            self.extractor = SpacyEntityExtractor(nlp, entity_extractor)
 
     def get_intent(self, text, nlp):
         """Returns the most likely intent and its probability for the input text.
@@ -29,7 +29,11 @@ class SpacySklearnInterpreter(Interpreter):
         :param text: text to classify
         :return: tuple of most likely intent name and its probability"""
         if self.classifier:
+<<<<<<< HEAD
             X = self.featurizer.create_bow_vecs([text], nlp=nlp)
+=======
+            X = self.featurizer.create_bow_vecs([text], self.nlp)
+>>>>>>> a74a69fc9f0b5cfadc3177acd9e7989eac283135
             intent_ids, probabilities = self.classifier.predict(X)
             intents = self.classifier.transform_labels_num2str(intent_ids)
             intent, score = intents[0], probabilities[0]

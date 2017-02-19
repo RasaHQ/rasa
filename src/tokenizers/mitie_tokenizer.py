@@ -1,8 +1,11 @@
-from mitie import tokenize
 import re
 
+from mitie import tokenize
 
-class MITIETokenizer(object):
+from rasa_nlu.tokenizers import Tokenizer
+
+
+class MITIETokenizer(Tokenizer):
     def __init__(self):
         pass
 
@@ -16,6 +19,6 @@ class MITIETokenizer(object):
         tokens = [w.decode('utf-8') for w in tokenize(_text)]
         for tok in tokens:
             m = re.search(re.escape(tok), _text[offset:])
-            offset += m.start()
-            offsets.append(offset)
+            offsets.append(offset + m.start())
+            offset += m.end()
         return tokens, offsets

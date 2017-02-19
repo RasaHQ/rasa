@@ -3,19 +3,14 @@
 import pytest
 import requests
 import os
+
+from helpers import ResponseTest
 from rasa_nlu.server import RasaNLUServer
 from rasa_nlu.config import RasaNLUConfig
 from multiprocessing import Process
 import time
 import json
 import codecs
-
-
-class ResponseTest():
-    def __init__(self, endpoint, expected_response, payload=None):
-        self.endpoint = endpoint
-        self.expected_response = expected_response
-        self.payload = payload
 
 
 @pytest.fixture

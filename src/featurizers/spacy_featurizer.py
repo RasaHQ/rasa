@@ -5,7 +5,7 @@ class SpacyFeaturizer(object):
     def __init__(self):
         self.ndim = 300
 
-    def create_bow_vecs(self, sentences, nlp=None):
+    def create_bow_vecs(self, sentences, nlp):
         X = np.zeros((len(sentences), self.ndim))
         for idx, sentence in enumerate(sentences):
             doc = nlp(sentence)
