@@ -3,7 +3,7 @@ import os
 import tempfile
 
 from rasa_nlu.training_data import TrainingData
-from rasa_nlu.trainers.mitie_trainer import MITIETrainer
+from rasa_nlu.trainers import mitie_trainer_utils
 
 
 def test_luis_mitie():
@@ -60,7 +60,7 @@ def test_repeated_entities():
         example = td.entity_examples[0]
         entities = example["entities"]
         assert len(entities) == 1
-        start, end = MITIETrainer.find_entity(entities[0], example["text"])
+        start, end = mitie_trainer_utils.find_entity(entities[0], example["text"])
         assert start == 9
         assert end == 10
 
@@ -93,7 +93,7 @@ def test_multiword_entities():
         example = td.entity_examples[0]
         entities = example["entities"]
         assert len(entities) == 1
-        start, end = MITIETrainer.find_entity(entities[0], example["text"])
+        start, end = mitie_trainer_utils.find_entity(entities[0], example["text"])
         assert start == 4
         assert end == 7
 

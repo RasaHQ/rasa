@@ -6,9 +6,9 @@ import os
 
 from rasa_nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
 from rasa_nlu.featurizers.mitie_featurizer import MITIEFeaturizer
-from rasa_nlu.tokenizers.mitie_tokenizer import MITIETokenizer
 from rasa_nlu.trainers.trainer import Trainer
 from training_utils import write_training_metadata
+from rasa_nlu.trainers import mitie_trainer_utils
 
 
 class MITIESklearnTrainer(Trainer):
@@ -26,33 +26,10 @@ class MITIESklearnTrainer(Trainer):
         start, end = locs[0], locs[0] + len(entity_tokens)
         return start, end
 
-    @classmethod
-    def find_entity(cls, ent, text):
-        tk = MITIETokenizer()
-        tokens, offsets = tk.tokenize_with_offsets(text)
-        if ent["start"] not in offsets:
-            message = u"invalid entity {0} in example {1}:".format(ent, text) + \
-                u" entities must span whole tokens"
-            raise ValueError(message)
-        start = offsets.index(ent["start"])
-        _slice = text[ent["start"]:ent["end"]]
-        val_tokens = tokenize(_slice)
-        end = start + len(val_tokens)
-        return start, end
-
     def train_entity_extractor(self, entity_examples):
-        trainer = ner_trainer(self.fe_file)
-        trainer.num_threads = self.max_num_threads
-        for example in entity_examples:
-            text = example["text"]
-            tokens = tokenize(text)
-            sample = ner_training_instance(tokens)
-            for ent in example["entities"]:
-                start, end = self.find_entity(ent, text)
-                sample.add_entity(xrange(start, end), ent["entity"])
-
-            trainer.add(sample)
-        self.entity_extractor = trainer.train()
+        self.entity_extractor = mitie_trainer_utils.train_entity_extractor(entity_examples,
+                                                                           self.fe_file,
+                                                                           self.max_num_threads,)
 
     def train_intent_classifier(self, intent_examples, test_split_size=0.1):
         self.intent_classifier = SklearnIntentClassifier(max_num_threads=self.max_num_threads)
