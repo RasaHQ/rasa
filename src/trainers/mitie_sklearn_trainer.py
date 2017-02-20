@@ -1,14 +1,12 @@
-from mitie import *
 import cloudpickle
 import datetime
-import json
 import os
 
-from rasa_nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
 from rasa_nlu.featurizers.mitie_featurizer import MITIEFeaturizer
 from rasa_nlu.trainers.trainer import Trainer
 from training_utils import write_training_metadata
 from rasa_nlu.trainers import mitie_trainer_utils
+from rasa_nlu.trainers import sklearn_trainer_utils
 
 
 class MITIESklearnTrainer(Trainer):
@@ -32,12 +30,10 @@ class MITIESklearnTrainer(Trainer):
                                                                            self.max_num_threads,)
 
     def train_intent_classifier(self, intent_examples, test_split_size=0.1):
-        self.intent_classifier = SklearnIntentClassifier(max_num_threads=self.max_num_threads)
-        labels = [e["intent"] for e in intent_examples]
-        sentences = [e["text"] for e in intent_examples]
-        y = self.intent_classifier.transform_labels_str2num(labels)
-        X = self.featurizer.create_bow_vecs(sentences)
-        self.intent_classifier.train(X, y, test_split_size)
+        self.intent_classifier = sklearn_trainer_utils.train_intent_classifier(intent_examples,
+                                                                               self.featurizer,
+                                                                               self.max_num_threads,
+                                                                               test_split_size)
 
     def persist(self, path, persistor=None, create_unique_subfolder=True):
         timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
