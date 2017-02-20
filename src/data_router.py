@@ -13,7 +13,6 @@ from rasa_nlu.train import do_train
 
 class DataRouter(object):
     def __init__(self, config, interpreter, emulator):
-        self.ID = random.random()
         self.config = config
         self.interpreter = interpreter
         self.emulator = emulator
@@ -31,7 +30,7 @@ class DataRouter(object):
         logger.setLevel(logging.INFO)
         ch = logging.FileHandler(path)
         ch.setFormatter(logging.Formatter('%(message)s'))
-        logger.propagate = False
+        logger.propagate = False  # Prevents queries getting logged with parent logger which might log them to stdout
         logger.addHandler(ch)
         return logger
 
@@ -60,7 +59,6 @@ class DataRouter(object):
         logging.info("Starting model training")
         f, fname = tempfile.mkstemp(suffix="_training_data.json")
         f.write(data)
-        f.flush()
         f.close()
         _config = dict(self.config.items())
         _config["data"] = fname
