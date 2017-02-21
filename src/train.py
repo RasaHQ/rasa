@@ -29,9 +29,12 @@ def create_trainer(config):
     if backend == 'mitie':
         from trainers.mitie_trainer import MITIETrainer
         return MITIETrainer(config.mitie_file, config.language, config.num_threads)
+    if backend == 'mitie_sklearn':
+        from trainers.mitie_sklearn_trainer import MITIESklearnTrainer
+        return MITIESklearnTrainer(config.mitie_file, config.language, config.num_threads)
     if backend == 'spacy_sklearn':
         from trainers.spacy_sklearn_trainer import SpacySklearnTrainer
-        return SpacySklearnTrainer(config, config.language, config.num_threads)
+        return SpacySklearnTrainer(config.language, config.num_threads)
     else:
         raise NotImplementedError("other backend trainers not implemented yet")
 
