@@ -6,69 +6,28 @@ import json
 
 from rasa_nlu.trainers.trainer import Trainer
 from training_utils import write_training_metadata
-from rasa_nlu.tokenizers.mitie_tokenizer import MITIETokenizer
+from rasa_nlu.trainers import mitie_trainer_utils
 
 
 class MITIETrainer(Trainer):
     SUPPORTED_LANGUAGES = {"en"}
 
     def __init__(self, fe_file, language_name, max_num_threads=1):
-        self.name = "mitie"
-        self.training_data = None
-        self.intent_classifier = None
-        self.entity_extractor = None
-        self.training_data = None
-        self.max_num_threads = max_num_threads
+        super(self.__class__, self).__init__("mitie", language_name, max_num_threads)
         self.fe_file = fe_file
-        self.ensure_language_support(language_name)
-
-    def train(self, data):
-        self.training_data = data
-        self.intent_classifier = self.train_intent_classifier(data.intent_examples)
-
-        num_entity_examples = len([e for e in data.entity_examples if len(e["entities"]) > 0])
-        if num_entity_examples > 0:
-            self.entity_extractor = self.train_entity_extractor(data.entity_examples)
-
-    @classmethod
-    def find_entity(cls, ent, text):
-        tk = MITIETokenizer()
-        tokens, offsets = tk.tokenize_with_offsets(text)
-        if ent["start"] not in offsets:
-            message = u"invalid entity {0} in example {1}:".format(ent, text) + \
-                u" entities must span whole tokens"
-            raise ValueError(message)
-        start = offsets.index(ent["start"])
-        _slice = text[ent["start"]:ent["end"]]
-        val_tokens = tokenize(_slice)
-        end = start + len(val_tokens)
-        return start, end
 
     def train_entity_extractor(self, entity_examples):
-        trainer = ner_trainer(self.fe_file)
-        trainer.num_threads = self.max_num_threads
-        for example in entity_examples:
-            text = example["text"]
-            tokens = tokenize(text)
-            sample = ner_training_instance(tokens)
-            for ent in example["entities"]:
-                start, end = self.find_entity(ent, text)
-                sample.add_entity(xrange(start, end), ent["entity"])
+        self.entity_extractor = mitie_trainer_utils.train_entity_extractor(entity_examples,
+                                                                           self.fe_file,
+                                                                           self.max_num_threads)
 
-            trainer.add(sample)
-
-        ner = trainer.train()
-        return ner
-
-    def train_intent_classifier(self, intent_examples):
+    def train_intent_classifier(self, intent_examples, test_split_size=0.1):
         trainer = text_categorizer_trainer(self.fe_file)
         trainer.num_threads = self.max_num_threads
         for example in intent_examples:
             tokens = tokenize(example["text"])
             trainer.add_labeled_text(tokens, example["intent"])
-
-        intent_classifier = trainer.train()
-        return intent_classifier
+        self.intent_classifier = trainer.train()
 
     def persist(self, path, persistor=None, create_unique_subfolder=True):
         timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')

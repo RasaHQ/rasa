@@ -47,6 +47,10 @@ class TrainingData(object):
 
         self.validate()
 
+    @property
+    def num_entity_examples(self):
+        return len([e for e in self.entity_examples if len(e["entities"]) > 0])
+
     def resolve_data_files(self, resource_name):
         try:
             return util.recursively_find_files(resource_name)
