@@ -1,6 +1,7 @@
+import cloudpickle
 import datetime
-import os
 import json
+import os
 
 from rasa_nlu.featurizers.mitie_featurizer import MITIEFeaturizer
 from rasa_nlu.trainers.trainer import Trainer
@@ -64,7 +65,10 @@ class MITIESklearnTrainer(Trainer):
             with open(entity_synonyms_file, 'w') as f:
                 json.dump(self.training_data.entity_synonyms, f)
 
-        self.intent_classifier.save_to_disk(classifier_file, pure_model=True)
+        if self.intent_classifier:
+            with open(classifier_file, 'wb') as f:
+                cloudpickle.dump(self.intent_classifier, f)
+
         self.entity_extractor.save_to_disk(entity_extractor_file, pure_model=True)
 
         if persistor is not None:
