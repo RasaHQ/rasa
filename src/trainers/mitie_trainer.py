@@ -39,7 +39,7 @@ class MITIETrainer(Trainer):
             dir_name = path
 
         data_file = os.path.join(dir_name, "training_data.json")
-
+        entity_synonyms_file = os.path.join(dir_name, "index.json") if self.training_data.entity_synonyms else None
         classifier_file, entity_extractor_file = None, None
         if self.intent_classifier:
             classifier_file = os.path.join(dir_name, "intent_classifier.dat")
@@ -47,7 +47,7 @@ class MITIETrainer(Trainer):
             entity_extractor_file = os.path.join(dir_name, "entity_extractor.dat")
 
         write_training_metadata(dir_name, timestamp, data_file, self.name, 'en',
-                                classifier_file, entity_extractor_file, self.fe_file)
+                                classifier_file, entity_extractor_file, entity_synonyms_file, self.fe_file)
 
         with open(data_file, 'w') as f:
             f.write(self.training_data.as_json(indent=2))
@@ -56,6 +56,9 @@ class MITIETrainer(Trainer):
 
         if self.entity_extractor:
             self.entity_extractor.save_to_disk(entity_extractor_file, pure_model=True)
+        if self.training_data.entity_synonyms:
+            with open(entity_synonyms_file, 'w') as f:
+                json.dump(self.training_data.entity_synonyms, f)
 
         if persistor is not None:
             persistor.send_tar_to_s3(dir_name)
