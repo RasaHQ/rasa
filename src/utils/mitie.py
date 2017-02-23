@@ -1,1 +1,4 @@
 MITIE_BACKEND_NAME = "mitie"
+
+
+MITIE_SKLEARN_BACKEND_NAME = "mitie_sklearn"

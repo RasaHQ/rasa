@@ -27,3 +27,12 @@ def recursively_find_files(resource_name):
         raise ValueError("Could not locate the resource '{}'.".format(os.path.abspath(resource_name)))
     else:
         raise ValueError("Resource name must be an existing directory or file")
+
+
+def add_entities_if_synonyms(synonyms_dict, entity_a, entity_b):
+    if entity_b is not None:
+        original = entity_a.lower() if type(entity_a) == unicode else unicode(entity_a)
+        replacement = entity_b.lower() if type(entity_b) == unicode else unicode(entity_b)
+
+        if original != replacement:
+            synonyms_dict[original] = replacement

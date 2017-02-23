@@ -71,6 +71,10 @@ def __create_interpreter(config):
         logging.info("using mitie backend")
         from interpreters.mitie_interpreter import MITIEInterpreter
         return MITIEInterpreter(**metadata)
+    elif backend.lower() == mitie.MITIE_SKLEARN_BACKEND_NAME:
+        logging.info("using mitie_sklearn backend")
+        from interpreters.mitie_sklearn_interpreter import MITIESklearnInterpreter
+        return MITIESklearnInterpreter(**metadata)
     elif backend.lower() == spacy.SPACY_BACKEND_NAME:
         logging.info("using spacy + sklearn backend")
         from interpreters.spacy_sklearn_interpreter import SpacySklearnInterpreter
