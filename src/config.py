@@ -4,13 +4,17 @@ import os
 import logging
 
 
+# Describes where to search for the configuration file if the location is not set by the user
+DEFAULT_CONFIG_LOCATION = "config.json"
+
+
 class RasaNLUConfig(object):
 
     def __init__(self, filename=None, env_vars=None, cmdline_args=None):
 
         defaults = {
           "backend": "mitie",
-          "config": "config.json",
+          "config": DEFAULT_CONFIG_LOCATION,
           "data": None,
           "emulate": None,
           "language": "en",
@@ -25,9 +29,13 @@ class RasaNLUConfig(object):
           "write": os.path.join(os.getcwd(), "rasa_nlu_log.json")
         }
 
+        if filename is None and os.path.isfile(DEFAULT_CONFIG_LOCATION):
+            filename = DEFAULT_CONFIG_LOCATION
+
         self.override(defaults)
         if filename is not None:
-            file_config = json.loads(codecs.open(filename, encoding='utf-8').read())
+            with codecs.open(filename, encoding='utf-8') as f:
+                file_config = json.loads(f.read())
             self.override(file_config)
 
         if env_vars is not None:

@@ -34,3 +34,5 @@ rasa_nlu_logs.json
 tmp_training_data.json
 .DS_Store
 model_*
+tmp_config_file.json
+rasa_nlu_log-*

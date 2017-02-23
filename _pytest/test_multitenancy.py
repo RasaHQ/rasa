@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
+import tempfile
 
 import pytest
 import requests
 import os
 
 from helpers import ResponseTest
-from rasa_nlu.server import RasaNLUServer
+from rasa_nlu.server import setup_app
 from rasa_nlu.config import RasaNLUConfig
 from multiprocessing import Process
 import time
@@ -14,40 +15,32 @@ import codecs
 
 
 @pytest.fixture
-def http_server():
-    def url(port):
-        return "http://localhost:{0}".format(port)
+def app():
     if "TRAVIS_BUILD_DIR" in os.environ:
         root_dir = os.environ["TRAVIS_BUILD_DIR"]
     else:
         root_dir = os.getcwd()
         print("model at")
         print(os.path.join(root_dir, "models/model_1"))
-    # basic conf
+
+    _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
     _config = {
-        'write': os.path.join(os.getcwd(), "rasa_nlu_logs.json"),
-        'port': 5022,
+        'write': nlu_log_file,
+        'port': -1,  # unused in test app
         "backend": "mitie",
         "path": root_dir,
         "data": os.path.join(root_dir, "data/demo-restaurants.json"),
         "server_model_dir": {
-          "one": os.path.join(root_dir, "models/model_1"),
-          "two": os.path.join(root_dir, "models/model_2")
+            "one": os.path.join(root_dir, "models/model_1"),
+            "two": os.path.join(root_dir, "models/model_2")
         }
     }
     config = RasaNLUConfig(cmdline_args=_config)
-    # run server in background
-    server = RasaNLUServer(config)
-    p = Process(target=server.start)
-    p.daemon = True
-    p.start()
-    # TODO: implement better way to notify when server is up
-    time.sleep(2)
-    yield url(config.port)
-    p.terminate()
+    application = setup_app(config)
+    return application
 
 
-def test_get_parse(http_server):
+def test_get_parse(client):
     tests = [
         ResponseTest(
             u"/parse?q=food&model=one",
@@ -63,11 +56,11 @@ def test_get_parse(http_server):
         ),
     ]
     for test in tests:
-        req = requests.get(http_server + test.endpoint)
-        assert req.status_code == 200 and req.json() == test.expected_response
+        response = client.get(test.endpoint)
+        assert response.status_code == 200 and response.json == test.expected_response
 
 
-def test_post_parse(http_server):
+def test_post_parse(client):
     tests = [
         ResponseTest(
             u"/parse",
@@ -86,5 +79,5 @@ def test_post_parse(http_server):
         ),
     ]
     for test in tests:
-        req = requests.post(http_server + test.endpoint, json=test.payload)
-        assert req.status_code == 200 and req.json() == test.expected_response
+        response = client.post(test.endpoint, data=json.dumps(test.payload), content_type='application/json')
+        assert response.status_code == 200 and response.json == test.expected_response

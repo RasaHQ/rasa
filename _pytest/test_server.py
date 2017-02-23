@@ -2,59 +2,43 @@
 import tempfile
 
 import pytest
-import requests
-import os
-from rasa_nlu.server import RasaNLUServer
+
 from rasa_nlu.config import RasaNLUConfig
-from multiprocessing import Process
-import time
 import json
 import codecs
 
 from helpers import ResponseTest
+from rasa_nlu.server import setup_app
 
 
 @pytest.fixture
-def http_server(port_getter):
-    def url(port):
-        return "http://localhost:{0}".format(port)
-    # basic conf
+def app():
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
     _config = {
         'write': nlu_log_file,
-        'port': port_getter(),
+        'port': -1,  # unused in test app
         "backend": "mitie",
         "path": "./",
         "data": "./data/demo-restaurants.json",
         "emulate": "wit"
     }
     config = RasaNLUConfig(cmdline_args=_config)
-    # run server in background
-    server = RasaNLUServer(config)
-    p = Process(target=server.start)
-    p.daemon = True
-    p.start()
-    # TODO: implement better way to notify when server is up
-    time.sleep(2)
-    yield url(config['port'])
-    p.terminate()
-    os.remove(nlu_log_file)
+    application = setup_app(config)
+    return application
 
 
-def test_root(http_server):
-    req = requests.get(http_server)
-    ret = req.text
-
-    assert req.status_code == 200 and ret == "hello"
+def test_root(client):
+    response = client.get("/")
+    assert response.status_code == 200 and response.data == "hello"
 
 
-def test_status(http_server):
-    req = requests.get(http_server + "/status")
-    ret = req.json()
-    assert req.status_code == 200 and ("training" in ret and "available_models" in ret)
+def test_status(client):
+    response = client.get("/status")
+    rjs = response.json
+    assert response.status_code == 200 and ("trainings_under_this_process" in rjs and "available_models" in rjs)
 
 
-def test_get_parse(http_server):
+def test_get_parse(client):
     tests = [
         ResponseTest(
             u"/parse?q=hello",
@@ -66,30 +50,31 @@ def test_get_parse(http_server):
         ),
     ]
     for test in tests:
-        req = requests.get(http_server + test.endpoint)
-        assert req.status_code == 200 and req.json() == test.expected_response
+        response = client.get(test.endpoint)
+        assert response.status_code == 200 and response.json == test.expected_response
 
 
-def test_post_parse(http_server):
+def test_post_parse(client):
     tests = [
         ResponseTest(
-            u"/parse",
+            "/parse",
             [{u"entities": {}, u"confidence": 1.0, u"intent": u"greet", u"_text": u"hello"}],
             payload={u"q": u"hello"}
         ),
         ResponseTest(
-            u"/parse",
+            "/parse",
             [{u"entities": {}, u"confidence": 1.0, u"intent": u"greet", u"_text": u"hello ńöñàśçií"}],
             payload={u"q": u"hello ńöñàśçií"}
         ),
     ]
     for test in tests:
-        req = requests.post(http_server + test.endpoint, json=test.payload)
-        assert req.status_code == 200 and req.json() == test.expected_response
+        response = client.post(test.endpoint, data=json.dumps(test.payload), content_type='application/json')
+        assert response.status_code == 200 and response.json == test.expected_response
 
 
-def test_post_train(http_server):
-    train_data = json.loads(codecs.open('data/examples/luis/demo-restaurants.json',
-                                        encoding='utf-8').read())
-    req = requests.post(http_server + "/parse", json=train_data)
-    assert req.status_code == 200
+def test_post_train(client):
+    with codecs.open('data/examples/luis/demo-restaurants.json',
+                     encoding='utf-8') as train_file:
+        train_data = json.loads(train_file.read())
+    response = client.post("/parse", data=json.dumps(train_data), content_type='application/json')
+    assert response.status_code == 200

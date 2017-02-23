@@ -1,75 +1,33 @@
-import logging
-from mitie import *
-import os
 import datetime
 import json
 
+from mitie import *
+
+from rasa_nlu.trainers import mitie_trainer_utils
 from rasa_nlu.trainers.trainer import Trainer
+from rasa_nlu.utils.mitie import MITIE_BACKEND_NAME
 from training_utils import write_training_metadata
-from rasa_nlu.tokenizers.mitie_tokenizer import MITIETokenizer
 
 
 class MITIETrainer(Trainer):
     SUPPORTED_LANGUAGES = {"en"}
 
-    def __init__(self, fe_file, language_name, nlp=None, max_num_threads=1):
-        self.name = "mitie"
-        self.training_data = None
-        self.nlp = nlp
-        self.intent_classifier = None
-        self.entity_extractor = None
-        self.training_data = None
-        self.max_num_threads = max_num_threads
+    def __init__(self, fe_file, language_name, max_num_threads=1):
+        super(self.__class__, self).__init__(language_name, max_num_threads)
         self.fe_file = fe_file
-        self.ensure_language_support(language_name)
-
-    def train(self, data):
-        self.training_data = data
-        self.intent_classifier = self.train_intent_classifier(data.intent_examples)
-
-        num_entity_examples = len([e for e in data.entity_examples if len(e["entities"]) > 0])
-        if num_entity_examples > 0:
-            self.entity_extractor = self.train_entity_extractor(data.entity_examples)
-
-    @classmethod
-    def find_entity(cls, ent, text):
-        tk = MITIETokenizer()
-        tokens, offsets = tk.tokenize_with_offsets(text)
-        if ent["start"] not in offsets:
-            message = u"invalid entity {0} in example {1}:".format(ent, text) + \
-                u" entities must span whole tokens"
-            raise ValueError(message)
-        start = offsets.index(ent["start"])
-        _slice = text[ent["start"]:ent["end"]]
-        val_tokens = tokenize(_slice)
-        end = start + len(val_tokens)
-        return start, end
 
     def train_entity_extractor(self, entity_examples):
-        trainer = ner_trainer(self.fe_file)
-        trainer.num_threads = self.max_num_threads
-        for example in entity_examples:
-            text = example["text"]
-            tokens = tokenize(text)
-            sample = ner_training_instance(tokens)
-            for ent in example["entities"]:
-                start, end = self.find_entity(ent, text)
-                sample.add_entity(xrange(start, end), ent["entity"])
+        self.entity_extractor = mitie_trainer_utils.train_entity_extractor(entity_examples,
+                                                                           self.fe_file,
+                                                                           self.max_num_threads)
 
-            trainer.add(sample)
-
-        ner = trainer.train()
-        return ner
-
-    def train_intent_classifier(self, intent_examples):
+    def train_intent_classifier(self, intent_examples, test_split_size=0.1):
         trainer = text_categorizer_trainer(self.fe_file)
         trainer.num_threads = self.max_num_threads
         for example in intent_examples:
             tokens = tokenize(example["text"])
             trainer.add_labeled_text(tokens, example["intent"])
-
-        intent_classifier = trainer.train()
-        return intent_classifier
+        self.intent_classifier = trainer.train()
 
     def persist(self, path, persistor=None, create_unique_subfolder=True):
         timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
@@ -81,15 +39,15 @@ class MITIETrainer(Trainer):
             dir_name = path
 
         data_file = os.path.join(dir_name, "training_data.json")
-
+        entity_synonyms_file = os.path.join(dir_name, "index.json") if self.training_data.entity_synonyms else None
         classifier_file, entity_extractor_file = None, None
         if self.intent_classifier:
             classifier_file = os.path.join(dir_name, "intent_classifier.dat")
         if self.entity_extractor:
             entity_extractor_file = os.path.join(dir_name, "entity_extractor.dat")
 
-        write_training_metadata(dir_name, timestamp, data_file, self.name, 'en',
-                                classifier_file, entity_extractor_file, self.fe_file)
+        write_training_metadata(dir_name, timestamp, data_file, MITIE_BACKEND_NAME, 'en',
+                                classifier_file, entity_extractor_file, entity_synonyms_file, self.fe_file)
 
         with open(data_file, 'w') as f:
             f.write(self.training_data.as_json(indent=2))
@@ -98,6 +56,9 @@ class MITIETrainer(Trainer):
 
         if self.entity_extractor:
             self.entity_extractor.save_to_disk(entity_extractor_file, pure_model=True)
+        if self.training_data.entity_synonyms:
+            with open(entity_synonyms_file, 'w') as f:
+                json.dump(self.training_data.entity_synonyms, f)
 
         if persistor is not None:
             persistor.send_tar_to_s3(dir_name)

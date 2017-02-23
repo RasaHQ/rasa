@@ -1,13 +1,17 @@
-import urlparse
+import glob
+import json
+import logging
 import multiprocessing
 import os
-import json
-import glob
-import logging
+import tempfile
 import warnings
 
-from rasa_nlu.config import RasaNLUConfig
+from flask import json
+
+from config import RasaNLUConfig
 from rasa_nlu.train import do_train
+from rasa_nlu.utils import mitie
+from rasa_nlu.utils import spacy
 
 
 class LoadedModel(object):
@@ -36,13 +40,25 @@ class LoadedModel(object):
 class DataRouter(object):
     def __init__(self, config):
         self.config = config
-        self.logfile = config.write
-        self.responses = set()
-        self.train_proc = None
-        self.model_dir = config.path
-        self.token = config.token
+        # Ensures different log files for different processes in multi worker mode
+        self.logfile = config['write'].replace(".json", "-{}.json".format(os.getpid()))
+        self.responses = self._create_query_logger(self.logfile)
+        self.train_procs = []
+        self.model_dir = config['path']
+        self.token = config['token']
         self.emulator = self.__create_emulator()
         self.model_store = self.__create_model_store()
+
+    def _create_query_logger(self, path):
+        """Creates a logger that will persist incomming queries and their results."""
+
+        logger = logging.getLogger('query-logger')
+        logger.setLevel(logging.INFO)
+        ch = logging.FileHandler(path)
+        ch.setFormatter(logging.Formatter('%(message)s'))
+        logger.propagate = False  # Prevents queries getting logged with parent logger which might log them to stdout
+        logger.addHandler(ch)
+        return logger
 
     def __featurizer_for_model(self, model):
         """Initialize featurizer for backends. If it can NOT be shared between models, `None` should be returned."""
@@ -80,7 +96,6 @@ class DataRouter(object):
 
         for alias, path in model_dict.items():
             model = LoadedModel(self.__read_model_metadata(model_dict[alias]), model_dict[alias])
-            model.interpreter = self.__create_interpreter(model.metadata, model.model_dir)
             cache_key = model.model_group()
             if cache_key in cache:
                 model.nlp = cache[cache_key]['nlp']
@@ -89,7 +104,7 @@ class DataRouter(object):
                 model.nlp = self.__nlp_for_backend(model.backend_name(), model.language_name())
                 model.featurizer = self.__featurizer_for_model(model)
                 cache[cache_key] = {'nlp': model.nlp, 'featurizer': model.featurizer}
-
+            model.interpreter = self.__create_interpreter(model.nlp, model.metadata, model.model_dir)
             model_store[alias] = model
         return model_store
 
@@ -100,40 +115,48 @@ class DataRouter(object):
             "feature_extractor": None
         }
 
+    def __load_model_from_s3(self, model_dir):
+        try:
+            from rasa_nlu.persistor import Persistor
+            p = Persistor(self.config['path'], self.config['aws_region'], self.config['bucket_name'])
+            p.fetch_and_extract('{0}.tar.gz'.format(os.path.basename(model_dir)))
+        except Exception as e:
+            logging.warn("Using default interpreter, couldn't fetch model: {}".format(e.message))
+
     def __read_model_metadata(self, model_dir):
         if model_dir is None:
             return self.__default_model_metadata()
         else:
             # download model from S3 if needed
             if not os.path.isdir(model_dir):
-                try:
-                    from rasa_nlu.persistor import Persistor
-                    p = Persistor(self.config.path, self.config.aws_region, self.config.bucket_name)
-                    p.fetch_and_extract('{0}.tar.gz'.format(os.path.basename(model_dir)))
-                except Exception:
-                    warnings.warn("Using default interpreter, couldn't find model dir or fetch it from S3")
+                self.__load_model_from_s3(model_dir)
 
             with open(os.path.join(model_dir, 'metadata.json'), 'rb') as f:
                 return json.loads(f.read().decode('utf-8'))
 
-    def __create_interpreter(self, metadata, model_dir):
+    def __create_interpreter(self, nlp, metadata, model_dir):
         backend = metadata.get("backend")
         if backend is None:
             from interpreters.simple_interpreter import HelloGoodbyeInterpreter
             return HelloGoodbyeInterpreter()
-        elif backend.lower() == 'mitie':
+        elif backend.lower() == mitie.MITIE_BACKEND_NAME:
             logging.info("using mitie backend")
             from interpreters.mitie_interpreter import MITIEInterpreter
             return MITIEInterpreter(intent_classifier=metadata['intent_classifier'], entity_extractor=metadata['entity_extractor'])
-        elif backend.lower() == 'spacy_sklearn':
+        elif backend.lower() == mitie.MITIE_SKLEARN_BACKEND_NAME:
+            logging.info("using mitie_sklearn backend")
+            from interpreters.mitie_sklearn_interpreter import MITIESklearnInterpreter
+            return MITIESklearnInterpreter(**metadata)
+
+        elif backend.lower() == spacy.SPACY_BACKEND_NAME:
             logging.info("using spacy + sklearn backend")
             from interpreters.spacy_sklearn_interpreter import SpacySklearnInterpreter
-            return SpacySklearnInterpreter(model_dir, nlp=self.nlp, **metadata)
+            return SpacySklearnInterpreter(model_dir, nlp=nlp, **metadata)
         else:
             raise ValueError("unknown backend : {0}".format(backend))
 
     def __create_emulator(self):
-        mode = self.config.emulate
+        mode = self.config['emulate']
         if mode is None:
             from emulators import NoEmulator
             return NoEmulator()
@@ -157,53 +180,32 @@ class DataRouter(object):
         if alias not in self.model_store:
             return {"error": "no model found with alias: {0}".format(alias)}
         model = self.model_store[alias]
-        result = model.interpreter.parse(data['text'], model.nlp, model.featurizer)
-        self.responses.add(json.dumps(result, sort_keys=True))
-        return result
+        response = model.interpreter.parse(data['text'], model.nlp, model.featurizer)
+        self.responses.info(json.dumps(response, sort_keys=True))
+        return response
 
-    def format(self, data):
+    def format_response(self, data):
         return self.emulator.normalise_response_json(data)
 
-    def write_logs(self):
-        with open(self.logfile, 'w') as f:
-            responses = [json.loads(r) for r in self.responses]
-            f.write(json.dumps(responses, indent=2))
-
     def get_status(self):
-        if self.train_proc is not None:
-            training = self.train_proc.is_alive()
-        else:
-            training = False
-
+        # This will only count the trainings started from this process, if run in multi worker mode, there might
+        # be other trainings run in different processes we don't know about.
+        num_trainings = len(filter(lambda p: p.is_alive(), self.train_procs))
         models = glob.glob(os.path.join(self.model_dir, 'model*'))
-        return json.dumps({
-            "training": training,
+        return {
+            "trainings_under_this_process": num_trainings,
             "available_models": models
-        })
+        }
 
-    def auth(self, path):
-
-        if self.token is None:
-            return True
-        else:
-            parsed_path = urlparse.urlparse(path)
-            data = urlparse.parse_qs(parsed_path.query)
-            valid = ("token" in data and data["token"][0] == self.token)
-            return valid
-
-    def start_train_proc(self, data):
-        logging.info("starting train")
-        if self.train_proc is not None and self.train_proc.is_alive():
-            self.train_proc.terminate()
-            logging.info("training process {0} killed".format(self.train_proc))
-
-        fname = 'tmp_training_data.json'
-        with open(fname, 'w') as f:
-            f.write(data)
+    def start_train_process(self, data):
+        logging.info("Starting model training")
+        f, fname = tempfile.mkstemp(suffix="_training_data.json")
+        f.write(data)
+        f.close()
         _config = dict(self.config.items())
         _config["data"] = fname
         train_config = RasaNLUConfig(cmdline_args=_config)
-
-        self.train_proc = multiprocessing.Process(target=do_train, args=(train_config,))
-        self.train_proc.start()
-        logging.info("training process {0} started".format(self.train_proc))
+        process = multiprocessing.Process(target=do_train, args=(train_config,))
+        self.train_procs.append(process)
+        process.start()
+        logging.info("Training process {} started".format(process))

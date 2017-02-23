@@ -13,6 +13,7 @@ class TrainingData(object):
     def __init__(self, resource_name, backend, nlp=None):
         self.intent_examples = []
         self.entity_examples = []
+        self.entity_synonyms = {}
         self.resource_name = resource_name
         self.files = self.resolve_data_files(resource_name)
         self.fformat = self.guess_format(self.files)
@@ -44,6 +45,10 @@ class TrainingData(object):
             raise ValueError("unknown training file format : {0}".format(self.fformat))
 
         self.validate(nlp=nlp)
+
+    @property
+    def num_entity_examples(self):
+        return len([e for e in self.entity_examples if len(e["entities"]) > 0])
 
     def resolve_data_files(self, resource_name):
         try:
@@ -86,6 +91,9 @@ class TrainingData(object):
             entities = [e for e in entities if ("start" in e and "end" in e)]
             for e in entities:
                 e["value"] = e["value"][1:-1]
+                # create synonyms dictionary
+                text_value = text[e["start"]:e["end"]]
+                util.add_entities_if_synonyms(self.entity_synonyms, text_value, e["value"])
 
             self.intent_examples.append({"text": text, "intent": intent})
             self.entity_examples.append({"text": text, "intent": intent, "entities": entities})
@@ -116,23 +124,34 @@ class TrainingData(object):
         for filename in files:
             data = json.loads(codecs.open(filename, encoding='utf-8').read())
             # get only intents, skip the rest. The property name is the target class
-            if "userSays" not in data:
-                continue
+            if "userSays" in data:
+                intent = data.get("name")
+                for s in data["userSays"]:
+                    text = "".join(map(lambda chunk: chunk["text"], s.get("data")))
+                    # add entities to each token, if available
+                    entities = []
+                    for e in filter(lambda chunk: "alias" in chunk or "meta" in chunk, s.get("data")):
+                        start = text.find(e["text"])
+                        end = start + len(e["text"])
+                        val = text[start:end]
+                        entities.append(
+                            {
+                                "entity": e["alias"] if "alias" in e else e["meta"],
+                                "value": val,
+                                "start": start,
+                                "end": end
+                            }
+                        )
 
-            intent = data.get("name")
-            for s in data["userSays"]:
-                text = "".join(map(lambda chunk: chunk["text"], s.get("data")))
-                # add entities to each token, if available
-                entities = []
-                for e in filter(lambda chunk: "alias" in chunk or "meta" in chunk, s.get("data")):
-                    start = text.find(e["text"])
-                    end = start + len(e["text"])
-                    val = text[start:end]
-                    entities.append(
-                        {"entity": e["alias"] if "alias" in e else e["meta"], "value": val, "start": start, "end": end})
+                    self.intent_examples.append({"text": text, "intent": intent})
+                    self.entity_examples.append({"text": text, "intent": intent, "entities": entities})
 
-                self.intent_examples.append({"text": text, "intent": intent})
-                self.entity_examples.append({"text": text, "intent": intent, "entities": entities})
+            # create synonyms dictionary
+            if "name" in data and "entries" in data:
+                for entry in data["entries"]:
+                    if "value" in entry and "synonyms" in entry:
+                        for synonym in entry["synonyms"]:
+                            util.add_entities_if_synonyms(self.entity_synonyms, synonym, entry["value"])
 
     def load_data(self, filename):
         data = json.loads(open(filename, 'rb').read())
@@ -142,6 +161,11 @@ class TrainingData(object):
 
         self.intent_examples = intent + common
         self.entity_examples = entity + common
+
+        for example in self.entity_examples:
+            for entity in example["entities"]:
+                entity_val = example["text"][entity["start"]:entity["end"]]
+                util.add_entities_if_synonyms(self.entity_synonyms, entity_val, entity.get("value"))
 
     def validate(self, nlp=None):
         examples = sorted(self.intent_examples, key=lambda e: e["intent"])

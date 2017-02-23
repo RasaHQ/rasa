@@ -5,7 +5,7 @@ import rasa_nlu
 
 def write_training_metadata(output_folder, timestamp, data_file, backend_name,
                             language_name, intent_file, entity_file,
-                            feature_file=None):
+                            entity_synonyms=None, feature_file=None):
 
     intent_filename, entity_filename = None, None
     if intent_file:
@@ -19,6 +19,7 @@ def write_training_metadata(output_folder, timestamp, data_file, backend_name,
         "backend": backend_name,
         "intent_classifier": intent_filename,
         "entity_extractor": entity_filename,
+        "entity_synonyms": entity_synonyms,
         "feature_extractor": feature_file,
         "language_name": language_name,
         "rasa_nlu_version": rasa_nlu.__version__

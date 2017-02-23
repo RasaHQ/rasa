@@ -1,3 +1,6 @@
+SPACY_BACKEND_NAME = "spacy_sklearn"
+
+
 def ensure_proper_language_model(nlp):
     """Checks if the spacy language model is properly loaded. Raises an exception if the model is invalid."""
 
