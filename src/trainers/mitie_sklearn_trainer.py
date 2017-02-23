@@ -8,6 +8,7 @@ from rasa_nlu.trainers.trainer import Trainer
 from training_utils import write_training_metadata
 from rasa_nlu.trainers import mitie_trainer_utils
 from rasa_nlu.trainers import sklearn_trainer_utils
+from rasa_nlu.utils.mitie import MITIE_SKLEARN_BACKEND_NAME
 
 
 class MITIESklearnTrainer(Trainer):
