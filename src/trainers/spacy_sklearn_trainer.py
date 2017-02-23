@@ -22,7 +22,7 @@ class SpacySklearnTrainer(Trainer):
 
     def train_entity_extractor(self, entity_examples):
         self.entity_extractor = SpacyEntityExtractor()
-        self.entity_extractor = self.entity_extractor.train(self.nlp, entity_examples)
+        self.entity_extractor.train(self.nlp, entity_examples)
 
     def train_intent_classifier(self, intent_examples, test_split_size=0.1):
         self.intent_classifier = sklearn_trainer_utils.train_intent_classifier(intent_examples,
