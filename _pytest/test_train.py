@@ -37,7 +37,9 @@ def test_train_mitie_sklearn():
         "path": "./",
         "data": "./data/examples/rasa/demo-rasa.json"
     }
-    run_train(_config)
+    trained = run_train(_config)
+    assert trained.entity_extractor is not None
+    assert trained.intent_classifier is not None
 
 
 def test_train_mitie_noents():
