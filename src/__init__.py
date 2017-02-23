@@ -1,6 +1,7 @@
 from pkg_resources import get_distribution
 import codecs
 import json
+import os
 
 __version__ = get_distribution('rasa_nlu').version
 
@@ -11,7 +12,7 @@ class Interpreter(object):
 
     @staticmethod
     def load_synonyms(entity_synonyms_file):
-        if entity_synonyms_file:
+        if entity_synonyms_file and os.path.isfile(entity_synonyms_file):
             with codecs.open(entity_synonyms_file, encoding='utf-8') as infile:
                 return json.loads(infile.read())
 

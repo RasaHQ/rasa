@@ -166,7 +166,7 @@ class TrainingData(object):
         for example in self.entity_examples:
             for entity in example["entities"]:
                 entity_val = example["text"][entity["start"]:entity["end"]]
-                util.add_entities_if_synonyms(self.entity_synonyms, entity_val, entity["value"])
+                util.add_entities_if_synonyms(self.entity_synonyms, entity_val, entity.get("value"))
 
     def validate(self):
         examples = sorted(self.intent_examples, key=lambda e: e["intent"])
