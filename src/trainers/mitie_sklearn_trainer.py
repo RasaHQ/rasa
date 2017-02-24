@@ -46,16 +46,12 @@ class MITIESklearnTrainer(Trainer):
         else:
             dir_name = path
 
-    def persist(self, path, persistor=None):
-        tstamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
-        dirname = os.path.join(path, "model_" + tstamp)
-        os.mkdir(dirname)
-        data_file = os.path.join(dirname, "training_data.json")
-        classifier_file = os.path.join(dirname, "intent_classifier.dat")
-        entity_extractor_file = os.path.join(dirname, "entity_extractor.dat")
-        entity_synonyms_file = os.path.join(dirname, "index.json") if self.training_data.entity_synonyms else None
+        data_file = os.path.join(dir_name, "training_data.json")
+        classifier_file = os.path.join(dir_name, "intent_classifier.dat")
+        entity_extractor_file = os.path.join(dir_name, "entity_extractor.dat")
+        entity_synonyms_file = os.path.join(dir_name, "index.json") if self.training_data.entity_synonyms else None
 
-        write_training_metadata(dirname, tstamp, data_file, MITIE_SKLEARN_BACKEND_NAME, 'en',
+        write_training_metadata(dir_name, timestamp, data_file, MITIE_SKLEARN_BACKEND_NAME, 'en',
                                 classifier_file, entity_extractor_file, entity_synonyms_file,
                                 self.fe_file)
 
@@ -73,4 +69,4 @@ class MITIESklearnTrainer(Trainer):
         self.entity_extractor.save_to_disk(entity_extractor_file, pure_model=True)
 
         if persistor is not None:
-            persistor.send_tar_to_s3(dirname)
+            persistor.send_tar_to_s3(dir_name)
