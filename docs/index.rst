@@ -80,6 +80,7 @@ Read Next:
    troubleshoot
    roadmap
    contribute
+   changelog
    license
 
 

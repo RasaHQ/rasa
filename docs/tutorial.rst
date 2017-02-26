@@ -34,7 +34,7 @@ The second job is to label words like "Mexican" and "center" as ``cuisine`` and 
 In this tutorial we'll build a model which does exactly that.
 
 Preparing the Training Data
-------------------------------------
+---------------------------
 
 The best way to get training data is from *real users*, and the best way to do that is to `pretend to be the bot yourself <https://conversations.golastmile.com/put-on-your-robot-costume-and-be-the-minimum-viable-bot-yourself-3e48a5a59308#.d4tmdan68>`_. But to help get you started we have some data saved `here <https://github.com/golastmile/rasa_nlu/blob/master/data/examples/rasa/demo-rasa.json>`_
 
@@ -71,7 +71,7 @@ In your working directory, create a ``data`` folder, and copy the ``demo-rasa.js
 .. _visualizing-the-training-data:
 
 Visualizing the Training Data
-------------------------------------
+-----------------------------
 
 It's always a good idea to `look` at your data before, during, and after training a model. 
 There's a great tool for creating training data in rasa's format `here <https://github.com/golastmile/rasa-nlu-trainer>`_
@@ -87,7 +87,7 @@ It is **strongly** recommended that you view your training data in the GUI befor
 
 
 Training Your Model
-------------------------------------
+-------------------
 
 Now we're going to create a configuration file. Make sure first that you've set up a backend, see :ref:`section_backends` .
 Create a file called ``config.json`` in your working directory which looks like this
@@ -109,6 +109,10 @@ Now we can train a spacy model by running:
     $ python -m rasa_nlu.train -c config_spacy.json
 
 After a few minutes, rasa NLU will finish training, and you'll see a new dir called something like ``model_YYYYMMDD-HHMMSS`` with the timestamp when training finished. 
+
+
+Using Your Model
+----------------
 
 To run your trained model, pass the configuration value ``server_model_dir`` when running the server using
 
