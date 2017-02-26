@@ -1,4 +1,4 @@
-.. _section_http:
+.. _section_python:
 
 Using rasa NLU from python
 ====================================

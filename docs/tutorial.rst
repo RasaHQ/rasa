@@ -2,10 +2,10 @@
 
 .. _tutorial:
 
-Tutorial: building a restaurant search bot
+Tutorial: A simple restaurant search bot
 ==========================================
 
-Note: see :ref:`section_migration` for how to clone your existing wit/LUIS/api.ai app.
+.. note:: See :ref:`section_migration` for how to clone your existing wit/LUIS/api.ai app.
 
 As an example we'll use the domain of searching for restaurants. 
 We'll start with an extremely simple model of those conversations. You can build up from there.
@@ -85,6 +85,7 @@ For the demo data the output should look like this:
 
 It is **strongly** recommended that you view your training data in the GUI before training.
 
+.. _training_your_model:
 
 Training Your Model
 -------------------
@@ -114,14 +115,15 @@ After a few minutes, rasa NLU will finish training, and you'll see a new dir cal
 Using Your Model
 ----------------
 
-To run your trained model, pass the configuration value ``server_model_dir`` when running the server using
+To run your trained model, pass the configuration value ``server_model_dir`` when running the server:
 
 .. code-block:: console
 
     $ python -m rasa_nlu.server -c config_spacy.json --server_model_dir=./model_YYYYMMDD-HHMMSS
 
-you can then test our your new model by sending a request. Open a new tab/window on your terminal and run
+More information about starting the server can be found in :ref:`section_http`.
 
+You can then test our your new model by sending a request. Open a new tab/window on your terminal and run
 
 .. code-block:: console
 

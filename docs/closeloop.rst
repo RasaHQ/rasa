@@ -1,6 +1,6 @@
 .. _section_closeloop:
 
-Closing the loop: improving your models from feedback
+Improving your models from feedback
 ======================================================
 
 
