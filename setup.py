@@ -14,7 +14,7 @@ setup(
         'rasa_nlu.tokenizers'
     ],
     package_dir={'rasa_nlu': 'src'},
-    version='0.6-beta',
+    version='0.7.0a',
     install_requires=[],
     description="rasa NLU a natural language parser for bots",
     author='Alan Nichol',
