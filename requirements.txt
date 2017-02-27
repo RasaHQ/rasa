@@ -1,3 +1,6 @@
+sklearn
+gevent
+flask
 -e .
 git+https://github.com/mit-nlp/MITIE.git#egg=mitie
 spacy==1.2.0
@@ -8,6 +11,6 @@ boto3
 pytest-pep8
 pytest-xdist
 pytest-services
+pytest-flask
 requests
-progressbar
 scipy==0.18.1

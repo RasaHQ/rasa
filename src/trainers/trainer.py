@@ -1,8 +1,7 @@
 class Trainer(object):
     SUPPORTED_LANGUAGES = None
 
-    def __init__(self, name, language_name, max_num_threads=1):
-        self.name = name
+    def __init__(self, language_name, max_num_threads=1):
         self.intent_classifier = None
         self.entity_extractor = None
         self.language_name = language_name

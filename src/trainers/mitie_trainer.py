@@ -1,19 +1,19 @@
-import logging
-from mitie import *
-import os
 import datetime
 import json
 
-from rasa_nlu.trainers.trainer import Trainer
-from training_utils import write_training_metadata
+from mitie import *
+
 from rasa_nlu.trainers import mitie_trainer_utils
+from rasa_nlu.trainers.trainer import Trainer
+from rasa_nlu.utils.mitie import MITIE_BACKEND_NAME
+from training_utils import write_training_metadata
 
 
 class MITIETrainer(Trainer):
     SUPPORTED_LANGUAGES = {"en"}
 
     def __init__(self, fe_file, language_name, max_num_threads=1):
-        super(self.__class__, self).__init__("mitie", language_name, max_num_threads)
+        super(self.__class__, self).__init__(language_name, max_num_threads)
         self.fe_file = fe_file
 
     def train_entity_extractor(self, entity_examples):
@@ -46,7 +46,7 @@ class MITIETrainer(Trainer):
         if self.entity_extractor:
             entity_extractor_file = os.path.join(dir_name, "entity_extractor.dat")
 
-        write_training_metadata(dir_name, timestamp, data_file, self.name, 'en',
+        write_training_metadata(dir_name, timestamp, data_file, MITIE_BACKEND_NAME, 'en',
                                 classifier_file, entity_extractor_file, entity_synonyms_file, self.fe_file)
 
         with open(data_file, 'w') as f:

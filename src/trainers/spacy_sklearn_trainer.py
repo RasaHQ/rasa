@@ -8,14 +8,14 @@ from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa_nlu.trainers import sklearn_trainer_utils
 from rasa_nlu.trainers.trainer import Trainer
 from training_utils import write_training_metadata
-from rasa_nlu.utils.spacy import ensure_proper_language_model
+from rasa_nlu.utils.spacy import ensure_proper_language_model, SPACY_BACKEND_NAME
 
 
 class SpacySklearnTrainer(Trainer):
     SUPPORTED_LANGUAGES = {"en", "de"}
 
     def __init__(self, language_name, max_num_threads=1, should_fine_tune_spacy_ner=False):
-        super(self.__class__, self).__init__("spacy_sklearn", language_name, max_num_threads)
+        super(self.__class__, self).__init__(language_name, max_num_threads)
         self.should_fine_tune_spacy_ner = should_fine_tune_spacy_ner
         self.nlp = self._load_nlp_model(language_name, should_fine_tune_spacy_ner)
         self.featurizer = SpacyFeaturizer(self.nlp)
@@ -50,7 +50,7 @@ class SpacySklearnTrainer(Trainer):
 
         data_file = os.path.join(dir_name, "training_data.json")
         entity_synonyms_file = os.path.join(dir_name, "index.json") if self.training_data.entity_synonyms else None
-        classifier_file, ner_dir = None, None
+        classifier_file, ner_dir, entity_extractor_config_file, entity_extractor_file = None, None, None, None
         if self.intent_classifier:
             classifier_file = os.path.join(dir_name, "intent_classifier.pkl")
         if self.entity_extractor:
@@ -60,7 +60,7 @@ class SpacySklearnTrainer(Trainer):
             entity_extractor_config_file = os.path.join(ner_dir, "config.json")
             entity_extractor_file = os.path.join(ner_dir, "model")
 
-        write_training_metadata(dir_name, timestamp, data_file, self.name, self.language_name,
+        write_training_metadata(dir_name, timestamp, data_file, SPACY_BACKEND_NAME, self.language_name,
                                 classifier_file, ner_dir, entity_synonyms=entity_synonyms_file)
 
         with open(data_file, 'w') as f:

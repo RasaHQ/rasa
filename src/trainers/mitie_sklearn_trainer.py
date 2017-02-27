@@ -8,13 +8,14 @@ from rasa_nlu.trainers.trainer import Trainer
 from training_utils import write_training_metadata
 from rasa_nlu.trainers import mitie_trainer_utils
 from rasa_nlu.trainers import sklearn_trainer_utils
+from rasa_nlu.utils.mitie import MITIE_SKLEARN_BACKEND_NAME
 
 
 class MITIESklearnTrainer(Trainer):
     SUPPORTED_LANGUAGES = {"en"}
 
     def __init__(self, fe_file, language_name, max_num_threads=1):
-        super(self.__class__, self).__init__("mitie_sklearn", language_name, max_num_threads)
+        super(self.__class__, self).__init__(language_name, max_num_threads)
         self.fe_file = fe_file
         self.featurizer = MITIEFeaturizer(self.fe_file)
 
@@ -50,7 +51,7 @@ class MITIESklearnTrainer(Trainer):
         entity_extractor_file = os.path.join(dir_name, "entity_extractor.dat")
         entity_synonyms_file = os.path.join(dir_name, "index.json") if self.training_data.entity_synonyms else None
 
-        write_training_metadata(dir_name, timestamp, data_file, self.name, 'en',
+        write_training_metadata(dir_name, timestamp, data_file, MITIE_SKLEARN_BACKEND_NAME, 'en',
                                 classifier_file, entity_extractor_file, entity_synonyms_file,
                                 self.fe_file)
 
