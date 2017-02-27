@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 import tempfile
 
-import pytest
-import os
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.train import do_train
 from rasa_nlu.utils.mitie import MITIE_BACKEND_NAME
@@ -11,7 +9,7 @@ from rasa_nlu.utils.spacy import SPACY_BACKEND_NAME
 
 def run_train(_config):
     config = RasaNLUConfig(cmdline_args=_config)
-    do_train(config)
+    return do_train(config)
 
 
 def temp_log_file_location():
@@ -27,7 +25,9 @@ def test_train_mitie():
         "path": tempfile.mkdtemp(),
         "data": "./data/examples/rasa/demo-rasa.json"
     }
-    run_train(_config)
+    trained = run_train(_config)
+    assert trained.entity_extractor is not None
+    assert trained.intent_classifier is not None
 
 
 def test_train_mitie_sklearn():
@@ -39,7 +39,9 @@ def test_train_mitie_sklearn():
         "path": "./",
         "data": "./data/examples/rasa/demo-rasa.json"
     }
-    run_train(_config)
+    trained = run_train(_config)
+    assert trained.entity_extractor is not None
+    assert trained.intent_classifier is not None
 
 
 def test_train_mitie_noents():
@@ -51,7 +53,9 @@ def test_train_mitie_noents():
         "path": tempfile.mkdtemp(),
         "data": "./data/examples/rasa/demo-rasa-noents.json"
     }
-    run_train(_config)
+    trained = run_train(_config)
+    assert trained.entity_extractor is None
+    assert trained.intent_classifier is not None
 
 
 def test_train_mitie_multithread():
@@ -64,7 +68,9 @@ def test_train_mitie_multithread():
         "num_threads": 2,
         "data": "./data/examples/rasa/demo-rasa.json"
     }
-    run_train(_config)
+    trained = run_train(_config)
+    assert trained.entity_extractor is not None
+    assert trained.intent_classifier is not None
 
 
 def test_train_spacy_sklearn():
@@ -76,7 +82,9 @@ def test_train_spacy_sklearn():
         "path": tempfile.mkdtemp(),
         "data": "./data/examples/rasa/demo-rasa.json"
     }
-    run_train(_config)
+    trained = run_train(_config)
+    assert trained.entity_extractor is not None
+    assert trained.intent_classifier is not None
 
 
 def test_train_spacy_sklearn_noents():
@@ -88,7 +96,30 @@ def test_train_spacy_sklearn_noents():
         "path": tempfile.mkdtemp(),
         "data": "./data/examples/rasa/demo-rasa-noents.json"
     }
-    run_train(_config)
+    trained = run_train(_config)
+    assert trained.entity_extractor is None
+    assert trained.intent_classifier is not None
+
+
+def test_train_spacy_sklearn_finetune_ner():
+    # basic conf
+    _config = {
+        "write": temp_log_file_location(),
+        "port": 5022,
+        "fine_tune_spacy_ner": True,
+        "backend": "spacy_sklearn",
+        "path": tempfile.mkdtemp(),
+        "data": "./data/examples/rasa/demo-rasa.json"
+    }
+    trained = run_train(_config)
+    assert trained.entity_extractor is not None
+    assert trained.intent_classifier is not None
+
+    entities = trained.entity_extractor.extract_entities(trained.nlp, u"I am living in New York now.")
+    # Although the model is trained on restaurant entities, we can use the entities (`GPE`, `DATE`)
+    # from spacy since we are fine tuning. This should even be the case if the rasa-entity training data changes!
+    assert {u'start': 15, u'end': 23, u'value': u'New York', u'entity': u'GPE'} in entities
+    assert {u'start': 24, u'end': 27, u'value': u'now', u'entity': u'DATE'} in entities
 
 
 def test_train_spacy_sklearn_multithread():
@@ -101,4 +132,6 @@ def test_train_spacy_sklearn_multithread():
         "num_threads": 2,
         "data": "./data/examples/rasa/demo-rasa.json"
     }
-    run_train(_config)
+    trained = run_train(_config)
+    assert trained.entity_extractor is not None
+    assert trained.intent_classifier is not None

@@ -34,7 +34,7 @@ def create_trainer(config):
         return MITIESklearnTrainer(config.mitie_file, config.language, config.num_threads)
     if backend == 'spacy_sklearn':
         from trainers.spacy_sklearn_trainer import SpacySklearnTrainer
-        return SpacySklearnTrainer(config.language, config.num_threads)
+        return SpacySklearnTrainer(config.language, config.num_threads, config.fine_tune_spacy_ner)
     else:
         raise NotImplementedError("other backend trainers not implemented yet")
 
@@ -56,6 +56,8 @@ def init():
 
 
 def do_train(config):
+    """Loads the trainer and the data and runs the training of the specified model."""
+
     trainer = create_trainer(config)
 
     persistor = create_persistor(config)
@@ -63,6 +65,7 @@ def do_train(config):
     training_data = TrainingData(config.data, config.backend, nlp=trainer.nlp)
     trainer.train(training_data)
     trainer.persist(config.path, persistor)
+    return trainer
 
 
 if __name__ == '__main__':

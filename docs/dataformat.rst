@@ -1,7 +1,7 @@
 .. _section_dataformat:
 
-rasa NLU data format
-==================================
+Training Data Format
+====================
 
 In the rasa NLU data format, there are three lists of examples: ``common_examples``, ``intent_examples``, and ``entity_examples``.
 The ``common_examples`` are used to train both the entity and the intent models. 

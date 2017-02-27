@@ -1,11 +1,21 @@
-.. _section_http:
+.. _section_python:
 
 Using rasa NLU from python
 ====================================
 
 Training Time
 ------------------------------------
-For creating your models, follow the same instructions as non-python users.
+For creating your models, you can follow the same instructions as non-python users.
+Or, you can train directly in python with a script like the following: 
+
+.. code-block:: python
+
+    from rasa_nlu.training_data import TrainingData
+    from rasa_nlu.trainers.spacy_sklearn_trainer import SpacySklearnTrainer
+
+    training_data = TrainingData('data/dataset.json', 'spacy_sklearn', 'en')
+    trainer.train(training_data)
+    trainer.persist('models/')
 
 
 Prediction Time

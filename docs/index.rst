@@ -35,7 +35,7 @@ These points are laid out in more detail in a `blog post <https://medium.com/las
 
 
 The quickest quickstart in the west
-------------------------------------
+-----------------------------------
 
 
 .. code-block:: console
@@ -43,13 +43,15 @@ The quickest quickstart in the west
     $ python setup.py install
     $ python -m rasa_nlu.server -e wit &
     $ curl 'http://localhost:5000/parse?q=hello'
-    [{"_text":"hello","confidence":null,"entities":{},"intent":"greet"}]
+    [{"_text": "hello", "confidence": 1.0, "entities": {}, "intent": "greet"}]
 
 
 There you go! you just parsed some text. Next step, do the :ref:`section_tutorial`.
 
+.. note:: This demo uses a very limited ML model. To apply rasa NLU to your use case, you need to train your own model! Follow the tutorial to get to know how to apply rasa_nlu to your data.
+
 About 
----------------------------------------
+-----
 
 You can think of rasa NLU as a set of high level APIs for building your own language parser using existing NLP and ML libraries.
 The setup process is designed to be as simple as possible. If you're currently using wit, LUIS, or api.ai, you just:
@@ -63,25 +65,32 @@ If your project *is* written in Python you can simply import the relevant classe
 rasa is a set of tools for building more advanced bots, developed by `LASTMILE <https://golastmile.com>`_ . This is the natural language understanding module, and the first component to be open sourced. 
 
 
-Read Next:
+.. toctree::
+   :maxdepth: 1
+   :caption: Getting Started
+
+   backends
+   tutorial
 
 .. toctree::
    :maxdepth: 1
+   :caption: User Documentation
 
-   tutorial
-   backends
    config
    migrating
-   http
-   closeloop
    dataformat
+   http
    python
    multi
+   closeloop
    persist
    troubleshoot
-   roadmap
-   contribute
    license
 
+.. toctree::
+   :maxdepth: 1
+   :caption: Developer Documentation
 
-
+   roadmap
+   contribute
+   changelog

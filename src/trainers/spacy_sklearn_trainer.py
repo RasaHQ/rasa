@@ -14,15 +14,23 @@ from rasa_nlu.utils.spacy import ensure_proper_language_model, SPACY_BACKEND_NAM
 class SpacySklearnTrainer(Trainer):
     SUPPORTED_LANGUAGES = {"en", "de"}
 
-    def __init__(self, language_name, max_num_threads=1):
+    def __init__(self, language_name, max_num_threads=1, should_fine_tune_spacy_ner=False):
         super(self.__class__, self).__init__(language_name, max_num_threads)
-        self.nlp = spacy.load(self.language_name, parser=False, entity=False)
+        self.should_fine_tune_spacy_ner = should_fine_tune_spacy_ner
+        self.nlp = self._load_nlp_model(language_name, should_fine_tune_spacy_ner)
         self.featurizer = SpacyFeaturizer()
         ensure_proper_language_model(self.nlp)
 
     def train_entity_extractor(self, entity_examples):
         self.entity_extractor = SpacyEntityExtractor()
-        self.entity_extractor = self.entity_extractor.train(self.nlp, entity_examples)
+        self.entity_extractor.train(self.nlp, entity_examples, self.should_fine_tune_spacy_ner)
+
+    def _load_nlp_model(self, language_name, should_fine_tune_spacy_ner):
+        # If fine tuning is disabled, we do not need to load the spacy entity model
+        if should_fine_tune_spacy_ner:
+            return spacy.load(language_name, parser=False)
+        else:
+            return spacy.load(language_name, parser=False, entity=False)
 
     def train_intent_classifier(self, intent_examples, test_split_size=0.1):
         self.intent_classifier = sklearn_trainer_utils.train_intent_classifier(intent_examples,

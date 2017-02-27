@@ -22,6 +22,7 @@ class RasaNLUConfig(object):
           "log_level": logging.INFO,
           "mitie_file": "./data/total_word_feature_extractor.dat",
           "num_threads": 1,
+          "fine_tune_spacy_ner": False,
           "path": os.getcwd(),
           "port": 5000,
           "server_model_dir": None,
