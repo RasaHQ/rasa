@@ -17,6 +17,13 @@ install_requires = [
     "boto3",
 ]
 
+extras_requires = {
+    'test': tests_requires,
+    'http': ["flask", "gevent"],
+    'spacy': ["sklearn", "scipy", "numpy"],
+    'mitie': ["mitie", "numpy"],
+}
+
 setup(
     name='rasa_nlu',
     packages=[
@@ -34,7 +41,7 @@ setup(
     version=__version__,
     install_requires=install_requires,
     tests_require=tests_requires,
-    extras_require={'test': tests_requires},
+    extras_require=extras_requires,
     description="rasa NLU a natural language parser for bots",
     author='Alan Nichol',
     author_email='alan@golastmile.com',
