@@ -57,9 +57,9 @@ class DataRouter(object):
 
     def start_train_process(self, data):
         logging.info("Starting model training")
-        f, fname = tempfile.mkstemp(suffix="_training_data.json")
-        f.write(data)
-        f.close()
+        fd, fname = tempfile.mkstemp(suffix="_training_data.json")
+        os.write(fd, data)
+        os.close(fd)
         _config = dict(self.config.items())
         _config["data"] = fname
         train_config = RasaNLUConfig(cmdline_args=_config)
