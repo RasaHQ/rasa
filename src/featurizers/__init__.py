@@ -1,0 +1,2 @@
+class Featurizer(object):
+    pass

@@ -1,5 +1,8 @@
 from setuptools import setup
 
+__version__ = None   # Avoids IDE errors, but actual version is read from version.py
+exec(open('src/version.py').read())
+
 setup(
     name='rasa_nlu',
     packages=[
@@ -14,7 +17,7 @@ setup(
         'rasa_nlu.tokenizers'
     ],
     package_dir={'rasa_nlu': 'src'},
-    version='0.7.0a',
+    version=__version__,
     install_requires=[],
     description="rasa NLU a natural language parser for bots",
     author='Alan Nichol',

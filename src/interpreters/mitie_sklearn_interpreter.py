@@ -9,15 +9,18 @@ import codecs
 
 class MITIESklearnInterpreter(Interpreter):
     def __init__(self,
-                 intent_classifier_file=None,
-                 entity_extractor_file=None,
-                 feature_extractor_file=None,
+                 intent_classifier=None,
+                 entity_extractor=None,
+                 feature_extractor=None,
                  entity_synonyms=None, **kwargs):
-        if entity_extractor_file:
-            self.extractor = named_entity_extractor(entity_extractor_file)  # ,metadata["feature_extractor"])
-        with open(intent_classifier_file, 'rb') as f:
-            self.classifier = cloudpickle.load(f)
-        self.featurizer = MITIEFeaturizer(feature_extractor_file)
+        self.extractor = None
+        self.classifier = None
+        if entity_extractor:
+            self.extractor = named_entity_extractor(entity_extractor, feature_extractor)
+        if intent_classifier:
+            with open(intent_classifier, 'rb') as f:
+                self.classifier = cloudpickle.load(f)
+        self.featurizer = MITIEFeaturizer(feature_extractor)
         self.tokenizer = MITIETokenizer()
         self.ent_synonyms = None
         if entity_synonyms:
@@ -25,19 +28,20 @@ class MITIESklearnInterpreter(Interpreter):
 
     def get_entities(self, tokens):
         d = {}
-        entities = self.extractor.extract_entities(tokens)
-        for e in entities:
-            _range = e[0]
-            d[e[1]] = " ".join(tokens[i] for i in _range)
+        if self.extractor:
+            entities = self.extractor.extract_entities(tokens)
+            for e in entities:
+                _range = e[0]
+                d[e[1]] = " ".join(tokens[i] for i in _range)
         return d
 
-    def get_intent(self, text):
+    def get_intent(self, sentence_tokens):
         """Returns the most likely intent and its probability for the input text.
 
-        :param text: text to classify
+        :param sentence_tokens: text to classify
         :return: tuple of most likely intent name and its probability"""
         if self.classifier:
-            X = self.featurizer.create_bow_vecs([text])
+            X = self.featurizer.features_for_tokens(sentence_tokens).reshape(1, -1)
             intent_ids, probabilities = self.classifier.predict(X)
             intents = self.classifier.transform_labels_num2str(intent_ids)
             intent, score = intents[0], probabilities[0]
