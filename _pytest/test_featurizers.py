@@ -3,7 +3,7 @@ import os
 import numpy as np
 import pytest
 
-from tokenizers.mitie_tokenizer import MITIETokenizer
+from rasa_nlu.tokenizers.mitie_tokenizer import MITIETokenizer
 
 
 @pytest.mark.parametrize("sentence, language, expected", [

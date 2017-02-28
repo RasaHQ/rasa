@@ -1,4 +1,3 @@
-from featurizers.spacy_featurizer import SpacyFeaturizer
 from rasa_nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
 
 
