@@ -59,17 +59,18 @@ class SpacyEntityExtractor(object):
                 gold = GoldParse(doc, entities=entity_offsets)
                 ner.update(doc, gold)
 
-    def extract_entities(self, nlp, sentence):
-        doc = nlp.make_doc(sentence)
-        nlp.tagger(doc)
-        self.ner(doc)
+    def extract_entities(self, doc):
+        if self.ner is not None:
+            self.ner(doc)
 
-        entities = [
-            {
-                "entity": ent.label_,
-                "value": ent.text,
-                "start": ent.start_char,
-                "end": ent.end_char
-            }
-            for ent in doc.ents]
-        return entities
+            entities = [
+                {
+                    "entity": ent.label_,
+                    "value": ent.text,
+                    "start": ent.start_char,
+                    "end": ent.end_char
+                }
+                for ent in doc.ents]
+            return entities
+        else:
+            return []

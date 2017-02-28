@@ -2,8 +2,9 @@ from pkg_resources import get_distribution
 import codecs
 import json
 import os
+import version
 
-__version__ = get_distribution('rasa_nlu').version
+__version__ = version.__version__
 
 
 class Interpreter(object):

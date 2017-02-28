@@ -24,8 +24,7 @@ class MITIEInterpreter(Interpreter):
         if entity_synonyms:
             Interpreter.load_synonyms(entity_synonyms)
 
-    def get_entities(self, text):
-        tokens = self.tokenizer.tokenize(text)
+    def get_entities(self, text, tokens):
         ents = []
         if self.extractor:
             entities = self.extractor.extract_entities(tokens)
@@ -45,17 +44,17 @@ class MITIEInterpreter(Interpreter):
 
         return ents
 
-    def get_intent(self, text):
+    def get_intent(self, tokens):
         if self.classifier:
-            tokens = tokenize(text)
             label, score = self.classifier(tokens)
         else:
             label, score = "None", 0.0
         return label, score
 
     def parse(self, text):
-        intent, score = self.get_intent(text)
-        entities = self.get_entities(text)
+        tokens = self.tokenizer.tokenize(text)
+        intent, score = self.get_intent(tokens)
+        entities = self.get_entities(text, tokens)
         if self.ent_synonyms:
             Interpreter.replace_synonyms(entities, self.ent_synonyms)
 

@@ -1,19 +1,27 @@
 from mitie import *
+import numpy as np
+
+from rasa_nlu.featurizers import Featurizer
 
 
-class MITIEFeaturizer(object):
+class MITIEFeaturizer(Featurizer):
     def __init__(self, fe_file):
         self.feature_extractor = total_word_feature_extractor(fe_file)
         self.ndim = self.feature_extractor.num_dimensions
 
-    def create_bow_vecs(self, sentences):
-        import numpy as np
+    def features_for_tokens(self, tokens):
+        vec = np.zeros(self.ndim)
+        for token in tokens:
+            vec += self.feature_extractor.get_feature_vector(token)
+        if tokens:
+            return vec / len(tokens)
+        else:
+            return vec
+
+    def features_for_sentences(self, sentences):
         X = np.zeros((len(sentences), self.ndim))
 
-        for idx, sent in enumerate(sentences):
-            tokens = tokenize(sent)
-            vec = np.zeros(self.ndim)
-            for token in tokens:
-                vec += self.feature_extractor.get_feature_vector(token)
-            X[idx, :] = vec / len(tokens)
+        for idx, sentence in enumerate(sentences):
+            tokens = tokenize(sentence)
+            X[idx, :] = self.features_for_tokens(tokens)
         return X
