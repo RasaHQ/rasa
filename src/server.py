@@ -42,8 +42,8 @@ def create_argparser():
 def __create_interpreter(config):
     def load_model_from_s3(model_dir):
         try:
-            from rasa_nlu.persistor import Persistor
-            p = Persistor(config['path'], config['aws_region'], config['bucket_name'])
+            from rasa_nlu.persistor import get_persistor
+            p = get_persistor(config)
             p.fetch_and_extract('{0}.tar.gz'.format(os.path.basename(model_dir)))
         except Exception as e:
             logging.warn("Using default interpreter, couldn't fetch model: {}".format(e.message))

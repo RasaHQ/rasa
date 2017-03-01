@@ -69,4 +69,4 @@ class MITIESklearnTrainer(Trainer):
         self.entity_extractor.save_to_disk(entity_extractor_file, pure_model=True)
 
         if persistor is not None:
-            persistor.send_tar_to_s3(dir_name)
+            persistor.save_tar(dir_name)

@@ -61,4 +61,4 @@ class MITIETrainer(Trainer):
                 json.dump(self.training_data.entity_synonyms, f)
 
         if persistor is not None:
-            persistor.send_tar_to_s3(dir_name)
+            persistor.save_tar(dir_name)

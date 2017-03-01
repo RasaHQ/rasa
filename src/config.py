@@ -27,7 +27,8 @@ class RasaNLUConfig(object):
           "port": 5000,
           "server_model_dir": None,
           "token": None,
-          "write": os.path.join(os.getcwd(), "rasa_nlu_log.json")
+          "write": os.path.join(os.getcwd(), "rasa_nlu_log.json"),
+          "storage": "gcs" # gcs or aws
         }
 
         if filename is None and os.path.isfile(DEFAULT_CONFIG_LOCATION):
