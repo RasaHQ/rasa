@@ -18,8 +18,8 @@ class MITIETokenizer(object):
         for tok in tokens:
             m = re.search(re.escape(tok), text[offset:], re.UNICODE)
             if m is None:
-                message = u"Failed to calculate MITIE offset for token '{}' in message'{}' :".format(tok, text)
-                logging.error(message)
+                message = "Invalid MITIE offset. Token '{}' in message '{}'.".format(str(tok),
+                                                                                     str(text.encode('utf-8')))
                 raise ValueError(message)
             offsets.append(offset + m.start())
             offset += m.end()
