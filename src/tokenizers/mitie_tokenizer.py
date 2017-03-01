@@ -1,3 +1,4 @@
+import logging
 from mitie import tokenize
 import re
 
@@ -17,7 +18,8 @@ class MITIETokenizer(object):
         for tok in tokens:
             m = re.search(re.escape(tok), text[offset:], re.UNICODE)
             if m is None:
-                message = u"Failed to calculate MITIE offsets token '{}' in message'{}' :".format(tok, text)
+                message = u"Failed to calculate MITIE offset for token '{}' in message'{}' :".format(tok, text)
+                logging.error(message)
                 raise ValueError(message)
             offsets.append(offset + m.start())
             offset += m.end()
