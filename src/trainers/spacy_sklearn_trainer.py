@@ -78,3 +78,4 @@ class SpacySklearnTrainer(Trainer):
 
         if persistor is not None:
             persistor.save_tar(dir_name)
+        return dir_name
