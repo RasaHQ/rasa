@@ -15,14 +15,6 @@ def test_samples(backend_name):
     interpreter = utilities.interpreter_for(utilities.base_test_conf(backend_name))
     samples = [
         (
-            u"hey",
-            {
-                'intent': 'greet',
-                'entities': [],
-                'min_confidence': 0.3
-            }
-        ),
-        (
             u"good bye",
             {
                 'intent': 'goodbye',
