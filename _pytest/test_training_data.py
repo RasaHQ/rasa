@@ -13,9 +13,8 @@ def test_luis_mitie():
     # some more assertions
 
 
-def test_wit_spacy():
-    nlp = spacy.load('en')
-    td = TrainingData('data/examples/wit/demo-flights.json', 'spacy_sklearn', nlp=nlp)
+def test_wit_spacy(spacy_nlp_en):
+    td = TrainingData('data/examples/wit/demo-flights.json', 'spacy_sklearn', nlp=spacy_nlp_en)
     assert td.fformat == 'wit'
 
 

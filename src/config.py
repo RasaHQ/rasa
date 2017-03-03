@@ -5,6 +5,8 @@ import logging
 
 
 # Describes where to search for the configuration file if the location is not set by the user
+from rasa_nlu.utils.mitie import MITIE_BACKEND_NAME
+
 DEFAULT_CONFIG_LOCATION = "config.json"
 
 
@@ -84,6 +86,6 @@ class RasaNLUConfig(object):
         self.__dict__.update(new_dict)
 
     def validate(self):
-        if self.backend == "mitie":
+        if self.backend == MITIE_BACKEND_NAME:
             if not self.is_set("mitie_file"):
                 raise ValueError("backend set to 'mitie' but mitie_file not specified")

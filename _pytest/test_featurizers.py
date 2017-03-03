@@ -6,16 +6,13 @@ import pytest
 from rasa_nlu.tokenizers.mitie_tokenizer import MITIETokenizer
 
 
-@pytest.mark.parametrize("sentence, language, expected", [
-    (u"hey how are you today", "en", [-0.19649599, 0.32493639, -0.37408298, -0.10622784, 0.062756]),
-    (u"hey wie geht es dir", "de", [-0.0518572, -0.13645099, 0.34630662, 0.29546982, -0.0153512]),
+@pytest.mark.parametrize("sentence, expected", [
+    (u"hey how are you today", [-0.19649599, 0.32493639, -0.37408298, -0.10622784, 0.062756])
 ])
-def test_spacy_featurizer(sentence, language, expected):
-    import spacy
+def test_spacy_featurizer(spacy_nlp_en, sentence, expected):
     from rasa_nlu.featurizers.spacy_featurizer import SpacyFeaturizer
-    nlp = spacy.load(language, tagger=False, parser=False)
-    ftr = SpacyFeaturizer()
-    doc = nlp(sentence)
+    ftr = SpacyFeaturizer(spacy_nlp_en)
+    doc = spacy_nlp_en(sentence)
     vecs = ftr.features_for_doc(doc)
     assert np.allclose(doc.vector[:5], expected, atol=1e-5)
     assert np.allclose(vecs, doc.vector, atol=1e-5)

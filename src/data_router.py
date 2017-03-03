@@ -67,7 +67,7 @@ class DataRouter(object):
 
         if model.backend_name() == 'spacy_sklearn':
             from featurizers.spacy_featurizer import SpacyFeaturizer
-            return SpacyFeaturizer()
+            return SpacyFeaturizer(model.nlp)
         elif model.backend_name() == 'mitie':
             from rasa_nlu.featurizers.mitie_featurizer import MITIEFeaturizer
             return MITIEFeaturizer(model.featurizer_path())
@@ -97,7 +97,8 @@ class DataRouter(object):
         model_store = {}
 
         for alias, path in model_dict.items():
-            model = LoadedModel(self.__read_model_metadata(model_dict[alias]), model_dict[alias])
+            metadata = DataRouter.read_model_metadata(model_dict[alias], self.config)
+            model = LoadedModel(metadata, model_dict[alias])
             cache_key = model.model_group()
             if cache_key in cache:
                 model.nlp = cache[cache_key]['nlp']
@@ -110,28 +111,31 @@ class DataRouter(object):
             model_store[alias] = model
         return model_store
 
-    def __default_model_metadata(self):
+    @staticmethod
+    def default_model_metadata():
         return {
             "backend": None,
             "language_name": None,
             "feature_extractor": None
         }
 
-    def __load_model_from_s3(self, model_dir):
+    @staticmethod
+    def load_model_from_s3(model_dir, config):
         try:
             from rasa_nlu.persistor import Persistor
-            p = Persistor(self.config['path'], self.config['aws_region'], self.config['bucket_name'])
+            p = Persistor(config['path'], config['aws_region'], config['bucket_name'])
             p.fetch_and_extract('{0}.tar.gz'.format(os.path.basename(model_dir)))
         except Exception as e:
             logging.warn("Using default interpreter, couldn't fetch model: {}".format(e.message))
 
-    def __read_model_metadata(self, model_dir):
+    @staticmethod
+    def read_model_metadata(model_dir, config):
         if model_dir is None:
-            return self.__default_model_metadata()
+            return DataRouter.default_model_metadata()
         else:
             # download model from S3 if needed
             if not os.path.isdir(model_dir):
-                self.__load_model_from_s3(model_dir)
+                DataRouter.load_model_from_s3(model_dir, config)
 
             with open(os.path.join(model_dir, 'metadata.json'), 'rb') as f:
                 return json.loads(f.read().decode('utf-8'))
@@ -145,7 +149,8 @@ class DataRouter(object):
         elif backend.lower() == mitie.MITIE_BACKEND_NAME:
             logging.info("using mitie backend")
             from interpreters.mitie_interpreter import MITIEInterpreter
-            return MITIEInterpreter(intent_classifier=metadata['intent_classifier'], entity_extractor=metadata['entity_extractor'])
+            return MITIEInterpreter(intent_classifier=metadata['intent_classifier'],
+                                    entity_extractor=metadata['entity_extractor'])
         elif backend.lower() == mitie.MITIE_SKLEARN_BACKEND_NAME:
             logging.info("using mitie_sklearn backend")
             from interpreters.mitie_sklearn_interpreter import MITIESklearnInterpreter
@@ -154,7 +159,7 @@ class DataRouter(object):
         elif backend.lower() == spacy.SPACY_BACKEND_NAME:
             logging.info("using spacy + sklearn backend")
             from interpreters.spacy_sklearn_interpreter import SpacySklearnInterpreter
-            return SpacySklearnInterpreter(model_dir, nlp=nlp, **metadata)
+            return SpacySklearnInterpreter(nlp=nlp, **metadata)
         else:
             raise ValueError("unknown backend : {0}".format(backend))
 
@@ -183,7 +188,7 @@ class DataRouter(object):
         if alias not in self.model_store:
             return {"error": "no model found with alias: {0}".format(alias)}
         model = self.model_store[alias]
-        response = model.interpreter.parse(data['text'], nlp=model.nlp, featurizer=model.featurizer)
+        response = model.interpreter.parse(data['text'])
         self.responses.info(json.dumps(response, sort_keys=True))
         return response
 

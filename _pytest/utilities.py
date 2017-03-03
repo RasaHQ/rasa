@@ -15,9 +15,9 @@ def base_test_conf(backend):
     }
 
 
-def interpreter_for(config):
+def interpreter_for(nlp, config):
     (trained, path) = run_train(config)
-    interpreter = load_interpreter_for_model(config, path)
+    interpreter = load_interpreter_for_model(nlp, config, path)
     return interpreter
 
 
@@ -31,9 +31,9 @@ def run_train(_config):
     return trained, path
 
 
-def load_interpreter_for_model(config, persisted_path):
-    config['server_model_dir'] = persisted_path
-    return DataRouter.create_interpreter(None, config, persisted_path)
+def load_interpreter_for_model(nlp, config, persisted_path):
+    metadata = DataRouter.read_model_metadata(persisted_path, config)
+    return DataRouter.create_interpreter(nlp, metadata, persisted_path)
 
 
 class ResponseTest(object):

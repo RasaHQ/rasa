@@ -11,8 +11,8 @@ from rasa_nlu.utils.spacy import SPACY_BACKEND_NAME
     MITIE_SKLEARN_BACKEND_NAME,
     SPACY_BACKEND_NAME,
 ])
-def test_samples(backend_name):
-    interpreter = utilities.interpreter_for(utilities.base_test_conf(backend_name))
+def test_samples(backend_name, spacy_nlp_en):
+    interpreter = utilities.interpreter_for(spacy_nlp_en, utilities.base_test_conf(backend_name))
     available_intents = ["greet", "restaurant_search", "affirm", "goodbye"]
     samples = [
         (

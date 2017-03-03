@@ -23,12 +23,12 @@ def base_test_conf(backend):
     MITIE_SKLEARN_BACKEND_NAME,
     SPACY_BACKEND_NAME,
     ])
-def test_train_backend(backend_name):
+def test_train_backend(backend_name, spacy_nlp_en):
     _config = base_test_conf(backend_name)
     (trained, persisted_path) = utilities.run_train(_config)
     assert trained.entity_extractor is not None
     assert trained.intent_classifier is not None
-    loaded = utilities.load_interpreter_for_model(_config, persisted_path)
+    loaded = utilities.load_interpreter_for_model(spacy_nlp_en, _config, persisted_path)
     assert loaded.extractor is not None
     assert loaded.classifier is not None
 
@@ -38,13 +38,13 @@ def test_train_backend(backend_name):
     MITIE_SKLEARN_BACKEND_NAME,
     SPACY_BACKEND_NAME,
 ])
-def test_train_backend_noents(backend_name):
+def test_train_backend_noents(backend_name, spacy_nlp_en):
     _config = base_test_conf(backend_name)
     _config['data'] = "./data/examples/rasa/demo-rasa-noents.json"
     (trained, persisted_path) = utilities.run_train(_config)
     assert trained.entity_extractor is None
     assert trained.intent_classifier is not None
-    loaded = utilities.load_interpreter_for_model(_config, persisted_path)
+    loaded = utilities.load_interpreter_for_model(spacy_nlp_en, _config, persisted_path)
     assert loaded.extractor is None
     assert loaded.classifier is not None
 
@@ -53,14 +53,14 @@ def test_train_backend_noents(backend_name):
     MITIE_BACKEND_NAME,
     SPACY_BACKEND_NAME,
 ])
-def test_train_backend_multithread(backend_name):
+def test_train_backend_multithread(backend_name, spacy_nlp_en):
     # basic conf
     _config = base_test_conf(backend_name)
     _config['num_threads'] = 2
     (trained, persisted_path) = utilities.run_train(_config)
     assert trained.entity_extractor is not None
     assert trained.intent_classifier is not None
-    loaded = utilities.load_interpreter_for_model(_config, persisted_path)
+    loaded = utilities.load_interpreter_for_model(spacy_nlp_en, _config, persisted_path)
     assert loaded.extractor is not None
     assert loaded.classifier is not None
 

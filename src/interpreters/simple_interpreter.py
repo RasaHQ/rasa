@@ -7,7 +7,7 @@ class HelloGoodbyeInterpreter(Interpreter):
         self.his = ["hello", "hi", "hey"]
         self.byes = ["bye", "goodbye"]
 
-    def parse(self, text, **kwargs):
+    def parse(self, text):
         _text = text.lower()
 
         def is_present(x): return x in _text

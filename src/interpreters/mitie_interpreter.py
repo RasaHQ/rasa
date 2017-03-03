@@ -30,7 +30,7 @@ class MITIEInterpreter(Interpreter):
             label, score = "None", 0.0
         return label, score
 
-    def parse(self, text, **kwargs):
+    def parse(self, text):
         tokens = self.tokenizer.tokenize(text)
         intent, score = self.get_intent(tokens)
         entities = get_entities(text, tokens, self.extractor)

@@ -18,7 +18,7 @@ class SpacySklearnTrainer(Trainer):
         super(self.__class__, self).__init__(language_name, max_num_threads)
         self.should_fine_tune_spacy_ner = should_fine_tune_spacy_ner
         self.nlp = self._load_nlp_model(language_name, should_fine_tune_spacy_ner)
-        self.featurizer = SpacyFeaturizer()
+        self.featurizer = SpacyFeaturizer(self.nlp)
         ensure_proper_language_model(self.nlp)
 
     def train_entity_extractor(self, entity_examples):
@@ -36,8 +36,7 @@ class SpacySklearnTrainer(Trainer):
         self.intent_classifier = sklearn_trainer_utils.train_intent_classifier(intent_examples,
                                                                                self.featurizer,
                                                                                self.max_num_threads,
-                                                                               test_split_size,
-                                                                               self.nlp)
+                                                                               test_split_size)
 
     def persist(self, path, persistor=None, create_unique_subfolder=True):
         entity_extractor_file, entity_extractor_config_file = None, None
@@ -62,7 +61,7 @@ class SpacySklearnTrainer(Trainer):
             entity_extractor_file = os.path.join(ner_dir, "model")
 
         write_training_metadata(dir_name, timestamp, data_file, SPACY_BACKEND_NAME, self.language_name,
-                                classifier_file, ner_dir, entity_synonyms=entity_synonyms_file)
+                                classifier_file, ner_dir, entity_synonyms_file)
 
         with open(data_file, 'w') as f:
             f.write(self.training_data.as_json(indent=2))

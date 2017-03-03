@@ -1,10 +1,10 @@
 .. _section_python:
 
 Using rasa NLU from python
-====================================
+==========================
 
 Training Time
-------------------------------------
+-------------
 For creating your models, you can follow the same instructions as non-python users.
 Or, you can train directly in python with a script like the following: 
 
@@ -20,7 +20,7 @@ Or, you can train directly in python with a script like the following:
 
 
 Prediction Time
--------------------------
+---------------
 
 You can call rasa NLU directly from your python script. 
 You just have to instantiate either the SpacySklearnInterpreter or the MITIEInterpreter.
@@ -30,7 +30,8 @@ The ``metadata.json`` in your model dir contains the necessary info, so you can 
 
     from rasa_nlu.interpreters.spacy_sklearn_interpreter import SpacySklearnInterpreter
     metadata = json.loads(open('/path/to/metadata.json').read())
-    interpreter = SpacySklearnInterpreter(**metadata)
+    nlp = spacy.load("en", parser=False)
+    interpreter = SpacySklearnInterpreter(nlp=nlp, **metadata)
 
 You can then run:
 

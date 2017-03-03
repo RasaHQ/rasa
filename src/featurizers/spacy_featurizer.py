@@ -4,7 +4,8 @@ from rasa_nlu.featurizers import Featurizer
 
 
 class SpacyFeaturizer(Featurizer):
-    def __init__(self):
+    def __init__(self, nlp):
+        self.nlp = nlp
         self.ndim = 300
 
     def features_for_doc(self, doc):
@@ -17,9 +18,9 @@ class SpacyFeaturizer(Featurizer):
         else:
             return np.zeros(self.ndim)
 
-    def features_for_sentences(self, sentences, nlp):
+    def features_for_sentences(self, sentences):
         X = np.zeros((len(sentences), self.ndim))
         for idx, sentence in enumerate(sentences):
-            doc = nlp(sentence)
+            doc = self.nlp(sentence)
             X[idx, :] = self.features_for_doc(doc)
         return X

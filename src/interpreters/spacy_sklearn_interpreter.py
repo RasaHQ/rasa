@@ -21,7 +21,8 @@ class SpacySklearnInterpreter(Interpreter):
         self.extractor = None
         self.classifier = None
         self.ent_synonyms = None
-        self.featurizer = SpacyFeaturizer()
+        self.nlp = nlp
+        self.featurizer = SpacyFeaturizer(nlp)
         self.ent_synonyms = Interpreter.load_synonyms(entity_synonyms)
         ensure_proper_language_model(nlp)
 
@@ -51,9 +52,9 @@ class SpacySklearnInterpreter(Interpreter):
             return self.extractor.extract_entities(doc)
         return []
 
-    def parse(self, text, nlp=None, featurizer=None):
+    def parse(self, text):
         """Parse the input text, classify it and return an object containing its intent and entities."""
-        doc = nlp(text)
+        doc = self.nlp(text)
         intent, probability = self.get_intent(doc)
         entities = self.get_entities(doc)
         if self.ent_synonyms:
