@@ -1,9 +1,0 @@
-{
-    "intent_classifier": "intent_classifier.pkl", 
-    "entity_extractor": "ner", 
-    "trained_at": "20161230-123210", 
-    "training_data": "training_data.json", 
-    "language_name": "en", 
-    "feature_extractor": null, 
-    "backend": "spacy_sklearn"
-}

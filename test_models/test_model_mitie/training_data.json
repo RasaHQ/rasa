@@ -56,6 +56,18 @@
         ]
       }, 
       {
+        "text": "show me chines restaurants", 
+        "intent": "restaurant_search", 
+        "entities": [
+          {
+            "start": 8, 
+            "end": 14, 
+            "value": "chinese", 
+            "entity": "cuisine"
+          }
+        ]
+      }, 
+      {
         "text": "yes", 
         "intent": "affirm", 
         "entities": []

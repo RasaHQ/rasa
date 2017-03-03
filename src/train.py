@@ -1,10 +1,9 @@
 import argparse
-from rasa_nlu.training_data import TrainingData
-from rasa_nlu.config import RasaNLUConfig
-import json
-import warnings
-import os
 import logging
+import os
+
+from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu.training_data import TrainingData
 
 
 def create_argparser():

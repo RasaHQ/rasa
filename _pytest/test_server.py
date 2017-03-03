@@ -11,7 +11,7 @@ from utilities import ResponseTest
 from rasa_nlu.server import setup_app
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def app():
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
     _config = {
@@ -35,41 +35,41 @@ def test_root(client):
 def test_status(client):
     response = client.get("/status")
     rjs = response.json
-    assert response.status_code == 200 and ("trainings_under_this_process" in rjs and "available_models" in rjs)
+    assert response.status_code == 200 and \
+        ("trainings_under_this_process" in rjs and "available_models" in rjs)
 
 
-def test_get_parse(client):
-    tests = [
-        ResponseTest(
-            u"/parse?q=hello",
-            [{u"entities": {}, u"confidence": 1.0, u"intent": u"greet", u"_text": u"hello"}]
-        ),
-        ResponseTest(
-            u"/parse?q=hello ńöñàśçií",
-            [{u"entities": {}, u"confidence": 1.0, u"intent": u"greet", u"_text": u"hello ńöñàśçií"}]
-        ),
-    ]
-    for test in tests:
-        response = client.get(test.endpoint)
-        assert response.status_code == 200 and response.json == test.expected_response
+@pytest.mark.parametrize("response_test", [
+    ResponseTest(
+        u"/parse?q=hello",
+        [{u"entities": {}, u"confidence": 1.0, u"intent": u"greet", u"_text": u"hello"}]
+    ),
+    ResponseTest(
+        u"/parse?q=hello ńöñàśçií",
+        [{u"entities": {}, u"confidence": 1.0, u"intent": u"greet", u"_text": u"hello ńöñàśçií"}]
+    ),
+])
+def test_get_parse(client, response_test):
+    response = client.get(response_test.endpoint)
+    assert response.status_code == 200 and response.json == response_test.expected_response
 
 
-def test_post_parse(client):
-    tests = [
-        ResponseTest(
-            "/parse",
-            [{u"entities": {}, u"confidence": 1.0, u"intent": u"greet", u"_text": u"hello"}],
-            payload={u"q": u"hello"}
-        ),
-        ResponseTest(
-            "/parse",
-            [{u"entities": {}, u"confidence": 1.0, u"intent": u"greet", u"_text": u"hello ńöñàśçií"}],
-            payload={u"q": u"hello ńöñàśçií"}
-        ),
-    ]
-    for test in tests:
-        response = client.post(test.endpoint, data=json.dumps(test.payload), content_type='application/json')
-        assert response.status_code == 200 and response.json == test.expected_response
+@pytest.mark.parametrize("response_test", [
+    ResponseTest(
+        "/parse",
+        [{u"entities": {}, u"confidence": 1.0, u"intent": u"greet", u"_text": u"hello"}],
+        payload={u"q": u"hello"}
+    ),
+    ResponseTest(
+        "/parse",
+        [{u"entities": {}, u"confidence": 1.0, u"intent": u"greet", u"_text": u"hello ńöñàśçií"}],
+        payload={u"q": u"hello ńöñàśçií"}
+    ),
+])
+def test_post_parse(client, response_test):
+    response = client.post(response_test.endpoint,
+                           data=json.dumps(response_test.payload), content_type='application/json')
+    assert response.status_code == 200 and response.json == response_test.expected_response
 
 
 def test_post_train(client):
