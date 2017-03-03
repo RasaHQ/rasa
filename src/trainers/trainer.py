@@ -1,3 +1,6 @@
+import logging
+
+
 class Trainer(object):
     SUPPORTED_LANGUAGES = None
 
@@ -12,8 +15,9 @@ class Trainer(object):
 
     def ensure_language_support(self, language_name):
         if language_name not in self.SUPPORTED_LANGUAGES:
-            raise NotImplementedError("Selected backend currently does not support language '{}' (only '{}')."
-                                      .format(language_name, "', '".join(self.SUPPORTED_LANGUAGES)))
+            supported = "', '".join(self.SUPPORTED_LANGUAGES)
+            logging.warn("Selected backend currently does not officially support language " +
+                         "'{}' (only '{}'). Things might break!".format(language_name, supported))
 
     def train_entity_extractor(self, entity_examples):
         raise NotImplementedError()
