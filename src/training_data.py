@@ -26,7 +26,7 @@ class TrainingData(object):
             self.tokenizer = MITIETokenizer()
         elif backend in ['spacy_sklearn']:
             from rasa_nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
-            self.tokenizer = SpacyTokenizer()
+            self.tokenizer = SpacyTokenizer(nlp)
         else:
             from rasa_nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
             self.tokenizer = WhitespaceTokenizer()
@@ -34,7 +34,7 @@ class TrainingData(object):
                 "backend not recognised by TrainingData : defaulting to tokenizing by splitting on whitespace")
 
         if self.fformat == 'luis':
-            self.load_luis_data(self.files[0], nlp=nlp)
+            self.load_luis_data(self.files[0])
         elif self.fformat == 'wit':
             self.load_wit_data(self.files[0])
         elif self.fformat == 'api':
@@ -44,7 +44,7 @@ class TrainingData(object):
         else:
             raise ValueError("unknown training file format : {0}".format(self.fformat))
 
-        self.validate(nlp=nlp)
+        self.validate()
 
     @property
     def num_entity_examples(self):
@@ -53,7 +53,7 @@ class TrainingData(object):
     def resolve_data_files(self, resource_name):
         try:
             return util.recursively_find_files(resource_name)
-        except ValueError, e:
+        except ValueError as e:
             raise ValueError("Invalid training data file / folder specified. " + e.message)
 
     def as_json(self, **kwargs):
@@ -98,14 +98,14 @@ class TrainingData(object):
             self.intent_examples.append({"text": text, "intent": intent})
             self.entity_examples.append({"text": text, "intent": intent, "entities": entities})
 
-    def load_luis_data(self, filename, nlp=None):
+    def load_luis_data(self, filename):
         warnings.warn(
             """LUIS data may not always be correctly imported because entity locations are specified by tokens.
             If you use a tokenizer which behaves differently from LUIS's your entities might not be correct""")
         data = json.loads(codecs.open(filename, encoding='utf-8').read())
         for s in data["utterances"]:
             text = s.get("text")
-            tokens = [t for t in self.tokenizer.tokenize(text, nlp=nlp)]
+            tokens = [t for t in self.tokenizer.tokenize(text)]
             intent = s.get("intent")
             entities = []
             for e in s.get("entities") or []:
@@ -167,7 +167,7 @@ class TrainingData(object):
                 entity_val = example["text"][entity["start"]:entity["end"]]
                 util.add_entities_if_synonyms(self.entity_synonyms, entity_val, entity.get("value"))
 
-    def validate(self, nlp=None):
+    def validate(self):
         examples = sorted(self.intent_examples, key=lambda e: e["intent"])
         intentgroups = []
         for intent, group in groupby(examples, lambda e: e["intent"]):
@@ -186,9 +186,9 @@ class TrainingData(object):
 
         for example in self.entity_examples:
             text = example["text"]
-            text_tokens = self.tokenizer.tokenize(text, nlp=nlp)
+            text_tokens = self.tokenizer.tokenize(text)
             for ent in example["entities"]:
-                ent_tokens = self.tokenizer.tokenize(text[ent["start"]:ent["end"]], nlp=nlp)
+                ent_tokens = self.tokenizer.tokenize(text[ent["start"]:ent["end"]])
                 for token in ent_tokens:
                     if token not in text_tokens:
                         warnings.warn(

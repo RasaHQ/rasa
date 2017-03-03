@@ -34,3 +34,10 @@ def run_train(_config):
 def load_interpreter_for_model(config, persisted_path):
     config['server_model_dir'] = persisted_path
     return DataRouter.create_interpreter(None, config, persisted_path)
+
+
+class ResponseTest(object):
+    def __init__(self, endpoint, expected_response, payload=None):
+        self.endpoint = endpoint
+        self.expected_response = expected_response
+        self.payload = payload

@@ -7,7 +7,7 @@ from rasa_nlu.config import RasaNLUConfig
 import json
 import codecs
 
-from helpers import ResponseTest
+from utilities import ResponseTest
 from rasa_nlu.server import setup_app
 
 

@@ -1,17 +1,13 @@
 # -*- coding: utf-8 -*-
+import json
+import os
 import tempfile
 
 import pytest
-import requests
-import os
 
-from helpers import ResponseTest
-from rasa_nlu.server import setup_app
 from rasa_nlu.config import RasaNLUConfig
-from multiprocessing import Process
-import time
-import json
-import codecs
+from rasa_nlu.server import setup_app
+from utilities import ResponseTest
 
 
 @pytest.fixture

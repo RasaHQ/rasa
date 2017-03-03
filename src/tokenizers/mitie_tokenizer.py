@@ -10,7 +10,7 @@ class MITIETokenizer(Tokenizer):
     def __init__(self):
         pass
 
-    def tokenize(self, text, nlp=None):
+    def tokenize(self, text):
         return [w.decode('utf-8') for w in tokenize(text.encode('utf-8'))]
 
     def tokenize_with_offsets(self, text):

@@ -3,8 +3,8 @@ from tokenizers import Tokenizer
 
 class SpacyTokenizer(Tokenizer):
 
-    def __init__(self):
-        pass
+    def __init__(self, nlp):
+        self.nlp = nlp
 
-    def tokenize(self, text, nlp=None):
-        return [t.text for t in nlp(text)]
+    def tokenize(self, text):
+        return [t.text for t in self.nlp(text)]

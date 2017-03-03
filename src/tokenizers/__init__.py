@@ -1,3 +1,3 @@
 class Tokenizer(object):
-    def tokenize(self, text, nlp=None):
+    def tokenize(self, text):
         raise NotImplementedError
