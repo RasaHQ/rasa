@@ -1,43 +1,38 @@
-from mitie import named_entity_extractor
 import cloudpickle
+from mitie import named_entity_extractor
+
 from rasa_nlu import Interpreter
 from rasa_nlu.featurizers.mitie_featurizer import MITIEFeaturizer
+from rasa_nlu.interpreters.mitie_interpreter_utils import get_entities
 from rasa_nlu.tokenizers.mitie_tokenizer import MITIETokenizer
-import json
-import codecs
 
 
 class MITIESklearnInterpreter(Interpreter):
     def __init__(self,
-                 intent_classifier_file=None,
-                 entity_extractor_file=None,
-                 feature_extractor_file=None,
+                 intent_classifier=None,
+                 entity_extractor=None,
+                 feature_extractor=None,
                  entity_synonyms=None, **kwargs):
-        if entity_extractor_file:
-            self.extractor = named_entity_extractor(entity_extractor_file)  # ,metadata["feature_extractor"])
-        with open(intent_classifier_file, 'rb') as f:
-            self.classifier = cloudpickle.load(f)
-        self.featurizer = MITIEFeaturizer(feature_extractor_file)
+        self.extractor = None
+        self.classifier = None
+        if entity_extractor:
+            self.extractor = named_entity_extractor(entity_extractor, feature_extractor)
+        if intent_classifier:
+            with open(intent_classifier, 'rb') as f:
+                self.classifier = cloudpickle.load(f)
+        self.featurizer = MITIEFeaturizer(feature_extractor)
         self.tokenizer = MITIETokenizer()
         self.ent_synonyms = None
         if entity_synonyms:
             self.ent_synonyms = Interpreter.load_synonyms(entity_synonyms)
 
-    def get_entities(self, tokens):
-        d = {}
-        entities = self.extractor.extract_entities(tokens)
-        for e in entities:
-            _range = e[0]
-            d[e[1]] = " ".join(tokens[i] for i in _range)
-        return d
-
-    def get_intent(self, text):
+    def get_intent(self, sentence_tokens):
         """Returns the most likely intent and its probability for the input text.
 
-        :param text: text to classify
+        :param sentence_tokens: text to classify
         :return: tuple of most likely intent name and its probability"""
         if self.classifier:
-            X = self.featurizer.create_bow_vecs([text])
+            X = self.featurizer.features_for_tokens(sentence_tokens).reshape(1, -1)
             intent_ids, probabilities = self.classifier.predict(X)
             intents = self.classifier.transform_labels_num2str(intent_ids)
             intent, score = intents[0], probabilities[0]
@@ -49,7 +44,7 @@ class MITIESklearnInterpreter(Interpreter):
     def parse(self, text):
         tokens = self.tokenizer.tokenize(text)
         intent, probability = self.get_intent(tokens)
-        entities = self.get_entities(tokens)
+        entities = get_entities(text, tokens, self.extractor)
         if self.ent_synonyms:
             Interpreter.replace_synonyms(entities, self.ent_synonyms)
 

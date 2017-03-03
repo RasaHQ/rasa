@@ -13,9 +13,10 @@ Or, you can train directly in python with a script like the following:
     from rasa_nlu.training_data import TrainingData
     from rasa_nlu.trainers.spacy_sklearn_trainer import SpacySklearnTrainer
 
-    training_data = TrainingData('data/dataset.json', 'spacy_sklearn', 'en')
+    training_data = TrainingData('data/examples/rasa/demo-rasa.json', 'spacy_sklearn', 'en')
+    trainer = SpacySklearnTrainer('en')
     trainer.train(training_data)
-    trainer.persist('models/')
+    trainer.persist('./')
 
 
 Prediction Time

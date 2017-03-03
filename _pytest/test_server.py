@@ -76,5 +76,5 @@ def test_post_train(client):
     with codecs.open('data/examples/luis/demo-restaurants.json',
                      encoding='utf-8') as train_file:
         train_data = json.loads(train_file.read())
-    response = client.post("/parse", data=json.dumps(train_data), content_type='application/json')
+    response = client.post("/train", data=json.dumps(train_data), content_type='application/json')
     assert response.status_code == 200

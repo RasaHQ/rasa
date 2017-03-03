@@ -1,9 +1,8 @@
 from mitie import *
+
 from rasa_nlu import Interpreter
+from rasa_nlu.interpreters.mitie_interpreter_utils import get_entities
 from rasa_nlu.tokenizers.mitie_tokenizer import MITIETokenizer
-import re
-import json
-import codecs
 
 
 class MITIEInterpreter(Interpreter):
@@ -24,38 +23,17 @@ class MITIEInterpreter(Interpreter):
         if entity_synonyms:
             Interpreter.load_synonyms(entity_synonyms)
 
-    def get_entities(self, text):
-        tokens = self.tokenizer.tokenize(text)
-        ents = []
-        if self.extractor:
-            entities = self.extractor.extract_entities(tokens)
-            for e in entities:
-                _range = e[0]
-                _regex = u"\s*".join(re.escape(tokens[i]) for i in _range)
-                expr = re.compile(_regex)
-                m = expr.search(text)
-                start, end = m.start(), m.end()
-                entity_value = text[start:end]
-                ents.append({
-                    "entity": e[1],
-                    "value": entity_value,
-                    "start": start,
-                    "end": end
-                })
-
-        return ents
-
-    def get_intent(self, text):
+    def get_intent(self, tokens):
         if self.classifier:
-            tokens = tokenize(text)
             label, score = self.classifier(tokens)
         else:
             label, score = "None", 0.0
         return label, score
 
     def parse(self, text, **kwargs):
-        intent, score = self.get_intent(text)
-        entities = self.get_entities(text)
+        tokens = self.tokenizer.tokenize(text)
+        intent, score = self.get_intent(tokens)
+        entities = get_entities(text, tokens, self.extractor)
         if self.ent_synonyms:
             Interpreter.replace_synonyms(entities, self.ent_synonyms)
 

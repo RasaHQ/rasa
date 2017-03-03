@@ -47,8 +47,11 @@ class MITIESklearnTrainer(Trainer):
             dir_name = path
 
         data_file = os.path.join(dir_name, "training_data.json")
-        classifier_file = os.path.join(dir_name, "intent_classifier.dat")
-        entity_extractor_file = os.path.join(dir_name, "entity_extractor.dat")
+        classifier_file, entity_extractor_file = None, None
+        if self.intent_classifier:
+            classifier_file = os.path.join(dir_name, "intent_classifier.pkl")
+        if self.entity_extractor:
+            entity_extractor_file = os.path.join(dir_name, "entity_extractor.dat")
         entity_synonyms_file = os.path.join(dir_name, "index.json") if self.training_data.entity_synonyms else None
 
         write_training_metadata(dir_name, timestamp, data_file, MITIE_SKLEARN_BACKEND_NAME, 'en',
@@ -66,7 +69,9 @@ class MITIESklearnTrainer(Trainer):
             with open(classifier_file, 'wb') as f:
                 cloudpickle.dump(self.intent_classifier, f)
 
-        self.entity_extractor.save_to_disk(entity_extractor_file, pure_model=True)
+        if self.entity_extractor:
+            self.entity_extractor.save_to_disk(entity_extractor_file, pure_model=True)
 
         if persistor is not None:
             persistor.send_tar_to_s3(dir_name)
+        return dir_name

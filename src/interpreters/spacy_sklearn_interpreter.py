@@ -31,13 +31,13 @@ class SpacySklearnInterpreter(Interpreter):
         if entity_extractor:
             self.extractor = SpacyEntityExtractor(nlp, entity_extractor)
 
-    def get_intent(self, text, nlp):
+    def get_intent(self, doc):
         """Returns the most likely intent and its probability for the input text.
 
         :param text: text to classify
         :return: tuple of most likely intent name and its probability"""
         if self.classifier:
-            X = self.featurizer.create_bow_vecs([text], nlp=nlp)
+            X = self.featurizer.features_for_doc(doc).reshape(1, -1)
             intent_ids, probabilities = self.classifier.predict(X)
             intents = self.classifier.transform_labels_num2str(intent_ids)
             intent, score = intents[0], probabilities[0]
@@ -46,16 +46,16 @@ class SpacySklearnInterpreter(Interpreter):
 
         return intent, score
 
-    def get_entities(self, text, nlp):
+    def get_entities(self, doc):
         if self.extractor:
-            return self.extractor.extract_entities(nlp, text)
+            return self.extractor.extract_entities(doc)
         return []
 
     def parse(self, text, nlp=None, featurizer=None):
         """Parse the input text, classify it and return an object containing its intent and entities."""
-
-        intent, probability = self.get_intent(text, nlp)
-        entities = self.get_entities(text, nlp)
+        doc = nlp(text)
+        intent, probability = self.get_intent(doc)
+        entities = self.get_entities(doc)
         if self.ent_synonyms:
             Interpreter.replace_synonyms(entities, self.ent_synonyms)
 

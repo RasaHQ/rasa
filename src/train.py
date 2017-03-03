@@ -64,8 +64,8 @@ def do_train(config):
 
     training_data = TrainingData(config.data, config.backend, nlp=trainer.nlp)
     trainer.train(training_data)
-    trainer.persist(config.path, persistor)
-    return trainer
+    persited_path = trainer.persist(config.path, persistor)
+    return trainer, persited_path
 
 
 if __name__ == '__main__':

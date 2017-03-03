@@ -80,8 +80,8 @@ def hello():
 @requires_auth
 def train():
     data_string = request.get_data(as_text=True)
-    current_app.data_router.start_train_proc(data_string)
-    return jsonify(info="training started with pid {0}".format(current_app.data_router.train_proc.pid))
+    current_app.data_router.start_train_process(data_string)
+    return jsonify(info="training started. Current pids: {}".format(current_app.data_router.train_procs))
 
 
 def setup_app(config):

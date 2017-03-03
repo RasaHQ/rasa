@@ -79,3 +79,4 @@ class SpacySklearnTrainer(Trainer):
 
         if persistor is not None:
             persistor.send_tar_to_s3(dir_name)
+        return dir_name

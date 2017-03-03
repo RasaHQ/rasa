@@ -42,14 +42,15 @@ class DataRouter(object):
         self.config = config
         # Ensures different log files for different processes in multi worker mode
         self.logfile = config['write'].replace(".json", "-{}.json".format(os.getpid()))
-        self.responses = self._create_query_logger(self.logfile)
+        self.responses = DataRouter._create_query_logger(self.logfile)
         self.train_procs = []
         self.model_dir = config['path']
         self.token = config['token']
         self.emulator = self.__create_emulator()
         self.model_store = self.__create_model_store()
 
-    def _create_query_logger(self, path):
+    @staticmethod
+    def _create_query_logger(path):
         """Creates a logger that will persist incomming queries and their results."""
 
         logger = logging.getLogger('query-logger')
@@ -60,7 +61,8 @@ class DataRouter(object):
         logger.addHandler(ch)
         return logger
 
-    def __featurizer_for_model(self, model):
+    @staticmethod
+    def featurizer_for_model(model):
         """Initialize featurizer for backends. If it can NOT be shared between models, `None` should be returned."""
 
         if model.backend_name() == 'spacy_sklearn':
@@ -102,9 +104,9 @@ class DataRouter(object):
                 model.featurizer = cache[cache_key]['featurizer']
             else:
                 model.nlp = self.__nlp_for_backend(model.backend_name(), model.language_name())
-                model.featurizer = self.__featurizer_for_model(model)
+                model.featurizer = DataRouter.featurizer_for_model(model)
                 cache[cache_key] = {'nlp': model.nlp, 'featurizer': model.featurizer}
-            model.interpreter = self.__create_interpreter(model.nlp, model.metadata, model.model_dir)
+            model.interpreter = DataRouter.create_interpreter(model.nlp, model.metadata, model.model_dir)
             model_store[alias] = model
         return model_store
 
@@ -134,7 +136,8 @@ class DataRouter(object):
             with open(os.path.join(model_dir, 'metadata.json'), 'rb') as f:
                 return json.loads(f.read().decode('utf-8'))
 
-    def __create_interpreter(self, nlp, metadata, model_dir):
+    @staticmethod
+    def create_interpreter(nlp, metadata, model_dir):
         backend = metadata.get("backend")
         if backend is None:
             from interpreters.simple_interpreter import HelloGoodbyeInterpreter
@@ -180,7 +183,7 @@ class DataRouter(object):
         if alias not in self.model_store:
             return {"error": "no model found with alias: {0}".format(alias)}
         model = self.model_store[alias]
-        response = model.interpreter.parse(data['text'], model.nlp, model.featurizer)
+        response = model.interpreter.parse(data['text'], nlp=model.nlp, featurizer=model.featurizer)
         self.responses.info(json.dumps(response, sort_keys=True))
         return response
 
@@ -199,9 +202,9 @@ class DataRouter(object):
 
     def start_train_process(self, data):
         logging.info("Starting model training")
-        f, fname = tempfile.mkstemp(suffix="_training_data.json")
-        f.write(data)
-        f.close()
+        fd, fname = tempfile.mkstemp(suffix="_training_data.json")
+        os.write(fd, data)
+        os.close(fd)
         _config = dict(self.config.items())
         _config["data"] = fname
         train_config = RasaNLUConfig(cmdline_args=_config)

@@ -1,31 +1,43 @@
-from rasa_nlu.interpreters.simple_interpreter import HelloGoodbyeInterpreter
+import pytest
 
-interpreter = HelloGoodbyeInterpreter()
+import utilities
+from rasa_nlu.utils.mitie import MITIE_BACKEND_NAME
+from rasa_nlu.utils.mitie import MITIE_SKLEARN_BACKEND_NAME
+from rasa_nlu.utils.spacy import SPACY_BACKEND_NAME
 
 
-def test_samples():
+@pytest.mark.parametrize("backend_name", [
+    MITIE_BACKEND_NAME,
+    MITIE_SKLEARN_BACKEND_NAME,
+    SPACY_BACKEND_NAME,
+])
+def test_samples(backend_name):
+    interpreter = utilities.interpreter_for(utilities.base_test_conf(backend_name))
+    available_intents = ["greet", "restaurant_search", "affirm", "goodbye"]
     samples = [
         (
-            "Hey there",
+            u"good bye",
             {
-                'text': "Hey there",
-                'intent': 'greet',
-                'entities': [],
-                'confidence': 1.0
+                'intent': 'goodbye',
+                'entities': []
             }
         ),
         (
-            "good bye for now",
+            u"i am looking for an indian spot",
             {
-                'text': "good bye for now",
-                'intent': 'goodbye',
-                'entities': [],
-                'confidence': 1.0
+                'intent': 'restaurant_search',
+                'entities': [{"start": 20, "end": 26, "value": "indian", "entity": "cuisine"}]
             }
         )
     ]
 
-    for text, result in samples:
-        assert interpreter.parse(text) == result, "text : {0} \nresult : {1}, expected {2}".format(text,
-                                                                                                   interpreter.parse(
-                                                                                                       text), result)
+    for text, gold in samples:
+        result = interpreter.parse(text)
+        assert result['text'] == text, \
+            "Wrong text for sample '{}'".format(text)
+        assert result['intent'] in available_intents, \
+            "Wrong intent for sample '{}'".format(text)
+        assert result['confidence'] >= 0, \
+            "Low confidence for sample '{}'".format(text)
+        assert result['entities'] == gold['entities'], \
+            "Wrong entities for sample '{}'".format(text)

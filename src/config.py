@@ -87,5 +87,3 @@ class RasaNLUConfig(object):
         if self.backend == "mitie":
             if not self.is_set("mitie_file"):
                 raise ValueError("backend set to 'mitie' but mitie_file not specified")
-            if self.language != "en":
-                raise ValueError("backend set to 'mitie' but language not set to 'en'.")
