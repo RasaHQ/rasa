@@ -30,8 +30,7 @@ If there isn't, please create a new issue, describe your use case, and the commu
 
 ### What languages does it support?
 Short answer: English, German, and Spanish currently. 
-Longer answer: If you want to add a new language, the key things you need are a tokenizer and a set of word vectors. 
-Once you've found those, feel free to create an issue.
+Longer answer: If you want to add a new language, the key things you need are a tokenizer and a set of word vectors. More information can be found in the [language documentation](https://rasa-nlu.readthedocs.io/en/latest/languages.html).
 
 ## Use
 ### A. Install Locally
