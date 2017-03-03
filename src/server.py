@@ -41,6 +41,7 @@ def create_argparser():
 
 def __create_interpreter(config):
     def load_model_from_s3(model_dir):
+        logging.info("loading " + model_dir + " from " + config['storage'])
         try:
             from rasa_nlu.persistor import get_persistor
             p = get_persistor(config)
