@@ -80,7 +80,7 @@ There's a great tool for creating training data in rasa's format `here <https://
 
 For the demo data the output should look like this:
 
-.. image:: https://cloud.githubusercontent.com/assets/5114084/22427463/2e3a4c9e-e6fb-11e6-9a34-4c97c0438d99.png
+.. image:: _static/images/rasa_nlu_intent_gui.png
 
 
 It is **strongly** recommended that you view your training data in the GUI before training.
