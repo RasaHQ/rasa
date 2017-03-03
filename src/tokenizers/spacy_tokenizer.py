@@ -1,4 +1,4 @@
-from tokenizers import Tokenizer
+from rasa_nlu.tokenizers import Tokenizer
 
 
 class SpacyTokenizer(Tokenizer):
