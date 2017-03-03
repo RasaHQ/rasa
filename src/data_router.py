@@ -88,7 +88,7 @@ class DataRouter(object):
         model_dict = self.config.server_model_dir
 
         # Fallback for users that specified the model path as a string and hence only want a single default model.
-        if type(model_dict) is unicode or model_dict is None:
+        if type(model_dict) is unicode or type(model_dict) is str or model_dict is None:
             model_dict = {"default": model_dict}
 
         # Reuse nlp and featurizers where possible to save memory
