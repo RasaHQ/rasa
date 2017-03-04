@@ -8,23 +8,43 @@ from rasa_nlu.tokenizers.mitie_tokenizer import MITIETokenizer
 
 
 class MITIESklearnInterpreter(Interpreter):
+    @staticmethod
+    def load(meta):
+        """
+        :type meta: ModelMetadata
+        :rtype: MITIESklearnInterpreter
+        """
+        if meta.entity_extractor_path:
+            extractor = named_entity_extractor(
+                meta.entity_extractor_path, meta.feature_extractor_path)
+        else:
+            extractor = None
+        if meta.intent_classifier_path:
+            with open(meta.intent_classifier_path, 'rb') as f:
+                classifier = cloudpickle.load(f)
+        else:
+            classifier = None
+        if meta.entity_synonyms_path:
+            entity_synonyms = Interpreter.load_synonyms(meta.entity_synonyms_path)
+        else:
+            entity_synonyms = None
+        feature_extractor = MITIEFeaturizer(meta.feature_extractor_path)
+        return MITIESklearnInterpreter(
+            classifier,
+            extractor,
+            feature_extractor,
+            entity_synonyms)
+
     def __init__(self,
                  intent_classifier=None,
                  entity_extractor=None,
                  feature_extractor=None,
-                 entity_synonyms=None, **kwargs):
-        self.extractor = None
-        self.classifier = None
-        if entity_extractor:
-            self.extractor = named_entity_extractor(entity_extractor, feature_extractor)
-        if intent_classifier:
-            with open(intent_classifier, 'rb') as f:
-                self.classifier = cloudpickle.load(f)
-        self.featurizer = MITIEFeaturizer(feature_extractor)
+                 entity_synonyms=None):
+        self.extractor = entity_extractor
+        self.classifier = intent_classifier
+        self.featurizer = feature_extractor
         self.tokenizer = MITIETokenizer()
-        self.ent_synonyms = None
-        if entity_synonyms:
-            self.ent_synonyms = Interpreter.load_synonyms(entity_synonyms)
+        self.ent_synonyms = entity_synonyms
 
     def get_intent(self, sentence_tokens):
         """Returns the most likely intent and its probability for the input text.

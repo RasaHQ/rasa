@@ -16,9 +16,9 @@ defaults = {
   "mitie_file": "./data/total_word_feature_extractor.dat",
   "num_threads": 1,
   "fine_tune_spacy_ner": False,
-  "path": os.getcwd(),
+  "path": os.path.join(os.getcwd(), "models"),
   "port": 5000,
-  "server_model_dir": None,
+  "server_model_dirs": None,
   "token": None,
   "write": os.path.join(os.getcwd(), "rasa_nlu_log.json")
 }

@@ -6,7 +6,7 @@ import tempfile
 import pytest
 
 from rasa_nlu.config import RasaNLUConfig
-from rasa_nlu.server import setup_app
+from rasa_nlu.server import create_app
 from utilities import ResponseTest
 
 
@@ -16,24 +16,22 @@ def app():
         root_dir = os.environ["TRAVIS_BUILD_DIR"]
     else:
         root_dir = os.getcwd()
-        print("model at")
-        print(os.path.join(root_dir, "models/model_1"))
 
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
     _config = {
         'write': nlu_log_file,
         'port': -1,  # unused in test app
         "backend": "mitie",
-        "path": root_dir,
+        "path": os.path.join(root_dir, "test_models"),
         "data": os.path.join(root_dir, "data/demo-restaurants.json"),
-        "server_model_dir": {
-            "one": os.path.join(root_dir, "test_models/test_model_mitie"),
-            "two": os.path.join(root_dir, "test_models/test_model_mitie_sklearn"),
-            "three": os.path.join(root_dir, "test_models/test_model_spacy_sklearn")
+        "server_model_dirs": {
+            "one": "test_model_mitie",
+            "two": "test_model_mitie_sklearn",
+            "three": "test_model_spacy_sklearn",
         }
     }
     config = RasaNLUConfig(cmdline_args=_config)
-    application = setup_app(config)
+    application = create_app(config)
     return application
 
 
@@ -60,16 +58,16 @@ def test_get_parse(client, response_test):
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
         u"/parse?q=food",
-        {u"error": u"no model found with alias: default"}
+        {u"error": u"No model found with alias 'default'"}
     ),
     ResponseTest(
         u"/parse?q=food&model=umpalumpa",
-        {u"error": u"no model found with alias: umpalumpa"}
+        {u"error": u"No model found with alias 'umpalumpa'"}
     )
 ])
 def test_get_parse_invalid_model(client, response_test):
     response = client.get(response_test.endpoint)
-    assert response.status_code == 200
+    assert response.status_code == 404
     assert response.json == response_test.expected_response
 
 
@@ -100,17 +98,37 @@ def test_post_parse(client, response_test):
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
         u"/parse",
-        {u"error": u"no model found with alias: default"},
+        {u"error": u"No model found with alias 'default'"},
         payload={u"q": u"food"}
     ),
     ResponseTest(
         u"/parse",
-        {u"error": u"no model found with alias: umpalumpa"},
+        {u"error": u"No model found with alias 'umpalumpa'"},
         payload={u"q": u"food", u"model": u"umpalumpa"}
     ),
 ])
 def test_post_parse_invalid_model(client, response_test):
     response = client.post(response_test.endpoint,
                            data=json.dumps(response_test.payload), content_type='application/json')
-    assert response.status_code == 200
+    assert response.status_code == 404
     assert response.json == response_test.expected_response
+
+
+if __name__ == '__main__':
+    # Retrain different multitenancy models
+    def train(cfg_name, model_name):
+        from rasa_nlu.train import create_trainer
+        from rasa_nlu.train import create_persistor
+        from rasa_nlu.training_data import TrainingData
+
+        config = RasaNLUConfig(cfg_name)
+        trainer = create_trainer(config)
+        persistor = create_persistor(config)
+
+        training_data = TrainingData(config['data'], config['backend'], nlp=trainer.nlp)
+        trainer.train(training_data)
+        trainer.persist(os.path.join("test_models", model_name), persistor, create_unique_subfolder=False)
+
+    train("config_mitie.json", "test_model_mitie")
+    train("config_spacy.json", "test_model_spacy_sklearn")
+    train("config_mitie_sklearn.json", "test_model_mitie_sklearn")

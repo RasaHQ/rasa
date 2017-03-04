@@ -10,13 +10,10 @@ from flask import request
 from gevent.wsgi import WSGIServer
 
 from rasa_nlu.config import RasaNLUConfig
-from rasa_nlu.data_router import DataRouter
+from rasa_nlu.data_router import DataRouter, InvalidModelError
 
 
-app = Flask(__name__)
-
-
-def create_argparser():
+def create_arg_parser():
     parser = argparse.ArgumentParser(description='parse incoming text')
     parser.add_argument('-c', '--config',
                         help="config file, all the command line options can also be passed via a (json-formatted) " +
@@ -48,66 +45,59 @@ def requires_auth(f):
     return decorated
 
 
-@app.route("/parse", methods=['GET', 'POST'])
-@requires_auth
-def parse_get():
-    if request.method == 'GET':
-        request_params = request.args
-    else:
-        request_params = request.get_json(force=True)
-    if 'q' not in request_params:
-        return jsonify(error="Invalid parse parameter specified")
-    else:
-        data = current_app.data_router.extract(request_params)
-        response = current_app.data_router.parse(data)
-        formatted = current_app.data_router.format_response(response)
-        return jsonify(formatted)
+def create_app(config):
+    rasa_nlu_app = Flask(__name__)
 
+    @rasa_nlu_app.route("/parse", methods=['GET', 'POST'])
+    @requires_auth
+    def parse_get():
+        if request.method == 'GET':
+            request_params = request.args
+        else:
+            request_params = request.get_json(force=True)
+        if 'q' not in request_params:
+            return jsonify(error="Invalid parse parameter specified"), 404
+        else:
+            try:
+                data = current_app.data_router.extract(request_params)
+                response = current_app.data_router.parse(data)
+                return jsonify(response)
+            except InvalidModelError as e:
+                return jsonify({"error": e.message}), 404
 
-@app.route("/status", methods=['GET'])
-@requires_auth
-def status():
-    return jsonify(current_app.data_router.get_status())
+    @rasa_nlu_app.route("/status", methods=['GET'])
+    @requires_auth
+    def status():
+        return jsonify(current_app.data_router.get_status())
 
+    @rasa_nlu_app.route("/", methods=['GET'])
+    @requires_auth
+    def hello():
+        return "hello"
 
-@app.route("/", methods=['GET'])
-@requires_auth
-def hello():
-    return "hello"
+    @rasa_nlu_app.route("/train", methods=['POST'])
+    @requires_auth
+    def train():
+        data_string = request.get_data(as_text=True)
+        current_app.data_router.start_train_process(data_string)
+        return jsonify(info="training started. Current pids: {}".format(current_app.data_router.train_procs))
 
-
-@app.route("/train", methods=['POST'])
-@requires_auth
-def train():
-    data_string = request.get_data(as_text=True)
-    current_app.data_router.start_train_process(data_string)
-    return jsonify(info="training started. Current pids: {}".format(current_app.data_router.train_procs))
-
-
-def setup_app(config):
     logging.basicConfig(filename=config['log_file'], level=config['log_level'])
     logging.captureWarnings(True)
     logging.info(config.view())
 
     logging.debug("Creating a new data router")
-    app.data_router = DataRouter(config)
-    return app
+    rasa_nlu_app.data_router = DataRouter(config)
+    return rasa_nlu_app
 
 
 if __name__ == '__main__':
     # Running as standalone python application
-    parser = create_argparser()
-    cmdline_args = {key: val for key, val in vars(parser.parse_args()).items() if val is not None}
-    rasa_config = RasaNLUConfig(cmdline_args.get("config"), os.environ, cmdline_args)
-    http_server = WSGIServer(('0.0.0.0', rasa_config['port']), setup_app(rasa_config))
-    logging.info('Started http server on port %s' % rasa_config['port'])
-    http_server.serve_forever()
+    arg_parser = create_arg_parser()
+    cmdline_args = {key: val for key, val in vars(arg_parser.parse_args()).items() if val is not None}
+    rasa_nlu_config = RasaNLUConfig(cmdline_args.get("config"), os.environ, cmdline_args)
+    app = WSGIServer(('0.0.0.0', rasa_nlu_config['port']), create_app(rasa_nlu_config))
+    logging.info('Started http server on port %s' % rasa_nlu_config['port'])
+    app.serve_forever()
 
-if __name__ == 'rasa_nlu.server':
-    # Running in WSGI container, configuration will be loaded from the default location
-    # There is no common support for WSGI runners to pass arguments to the application, hence we need to fallback to
-    # a default location for the configuration where all the settings should be placed in.
-    rasa_config = RasaNLUConfig(env_vars=os.environ)
-    _app = setup_app(rasa_config)
-    logging.info("Finished setting up application")
-    application = _app
+

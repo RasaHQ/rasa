@@ -8,7 +8,7 @@ import json
 import codecs
 
 from utilities import ResponseTest
-from rasa_nlu.server import setup_app
+from rasa_nlu.server import create_app
 
 
 @pytest.fixture(scope="module")
@@ -16,14 +16,17 @@ def app():
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
     _config = {
         'write': nlu_log_file,
-        'port': -1,  # unused in test app
+        'port': -1,                 # unused in test app
         "backend": "mitie",
-        "path": "./",
+        "path": "./test_models",
+        "server_model_dirs": {
+            "default": "test_model_mitie"
+        },
         "data": "./data/demo-restaurants.json",
-        "emulate": "wit"
+        "emulate": "wit",
     }
     config = RasaNLUConfig(cmdline_args=_config)
-    application = setup_app(config)
+    application = create_app(config)
     return application
 
 
@@ -51,7 +54,9 @@ def test_status(client):
 ])
 def test_get_parse(client, response_test):
     response = client.get(response_test.endpoint)
-    assert response.status_code == 200 and response.json == response_test.expected_response
+    assert response.status_code == 200
+    assert len(response.json) == 1
+    assert all(prop in response.json[0] for prop in ['entities', 'intent', '_text', 'confidence'])
 
 
 @pytest.mark.parametrize("response_test", [
@@ -69,7 +74,9 @@ def test_get_parse(client, response_test):
 def test_post_parse(client, response_test):
     response = client.post(response_test.endpoint,
                            data=json.dumps(response_test.payload), content_type='application/json')
-    assert response.status_code == 200 and response.json == response_test.expected_response
+    assert response.status_code == 200
+    assert len(response.json) == 1
+    assert all(prop in response.json[0] for prop in ['entities', 'intent', '_text', 'confidence'])
 
 
 def test_post_train(client):
