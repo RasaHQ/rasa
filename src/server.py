@@ -99,5 +99,3 @@ if __name__ == '__main__':
     app = WSGIServer(('0.0.0.0', rasa_nlu_config['port']), create_app(rasa_nlu_config))
     logging.info('Started http server on port %s' % rasa_nlu_config['port'])
     app.serve_forever()
-
-

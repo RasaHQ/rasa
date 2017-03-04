@@ -17,11 +17,10 @@ logs/
 tmp/
 profile.*
 *.sqlite
-*dat
 lastmile_ai/learn/plots/
 *npy
 *#
-config.json
+/config.json
 *log.json
 .coverage
 .coveralls.yml
