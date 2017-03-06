@@ -31,6 +31,7 @@ The ``metadata.json`` in your model dir contains the necessary info, so you can 
     from rasa_nlu.interpreters.spacy_sklearn_interpreter import SpacySklearnInterpreter
     from rasa_nlu.model import Metadata
     import spacy
+
     metadata = Metadata.load("/path/to/model_dir")
     nlp = spacy.load("en", parser=False)
     interpreter = SpacySklearnInterpreter.load(metadata, nlp=nlp)
