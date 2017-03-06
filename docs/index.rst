@@ -85,6 +85,7 @@ rasa is a set of tools for building more advanced bots, developed by `LASTMILE <
    persist
    languages
    troubleshoot
+   migrations
    license
 
 .. toctree::
