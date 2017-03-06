@@ -3,7 +3,7 @@
 .. _tutorial:
 
 Tutorial: A simple restaurant search bot
-==========================================
+========================================
 
 .. note:: See :ref:`section_migration` for how to clone your existing wit/LUIS/api.ai app.
 

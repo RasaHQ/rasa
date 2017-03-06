@@ -157,6 +157,10 @@ class DataRouter(object):
                 cache[cache_key] = {'nlp': nlp, 'featurizer': featurizer}
             interpreter = DataRouter.create_interpreter(nlp, metadata)
             model_store[alias] = LoadedModel(metadata, model_path, interpreter, nlp, featurizer)
+        else:
+            meta = ModelMetadata({}, "")
+            interpreter = DataRouter.create_interpreter(None, meta)
+            model_store["default"] = LoadedModel(meta, "", interpreter)
         return model_store
 
     @staticmethod

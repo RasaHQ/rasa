@@ -1,7 +1,7 @@
 .. _section_persistence:
 
 Model Persistence
-==================================
+=================
 
 
 rasa NLU supports using `S3 <https://aws.amazon.com/s3/>`_ to save your models, using the ``boto3``
