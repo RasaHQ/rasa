@@ -20,6 +20,7 @@ Fixed
 
 [0.7.0] - 2017-02-28
 ^^^^^^^^^^^^^^^^^^^^
+This is a major version update. Please also have a look at the `Migration Guide <https://rasa-nlu.readthedocs.io/en/latest/migrations.html>`_.
 
 Added
 -----
@@ -30,6 +31,7 @@ Added
 - mitie_sklearn backend using mitie tokenization and sklearn classification
 - option to fine-tune spacy NER models
 - multithreading support of build in REST server (e.g. using gunicorn)
+- multitenancy implementation to allow loading multiple models which share the same backend
 
 Fixed
 -----
