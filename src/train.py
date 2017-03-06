@@ -1,10 +1,9 @@
 import argparse
-from rasa_nlu.training_data import TrainingData
-from rasa_nlu.config import RasaNLUConfig
-import json
-import warnings
-import os
 import logging
+import os
+
+from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu.training_data import TrainingData
 
 
 def create_argparser():
@@ -62,7 +61,7 @@ def do_train(config):
 
     persistor = create_persistor(config)
 
-    training_data = TrainingData(config.data, config.backend, config.language)
+    training_data = TrainingData(config.data, config.backend, nlp=trainer.nlp)
     trainer.train(training_data)
     persited_path = trainer.persist(config.path, persistor)
     return trainer, persited_path

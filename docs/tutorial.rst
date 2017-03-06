@@ -3,7 +3,7 @@
 .. _tutorial:
 
 Tutorial: A simple restaurant search bot
-==========================================
+========================================
 
 .. note:: See :ref:`section_migration` for how to clone your existing wit/LUIS/api.ai app.
 
@@ -80,7 +80,7 @@ There's a great tool for creating training data in rasa's format `here <https://
 
 For the demo data the output should look like this:
 
-.. image:: https://cloud.githubusercontent.com/assets/5114084/22427463/2e3a4c9e-e6fb-11e6-9a34-4c97c0438d99.png
+.. image:: _static/images/rasa_nlu_intent_gui.png
 
 
 It is **strongly** recommended that you view your training data in the GUI before training.
@@ -109,17 +109,18 @@ Now we can train a spacy model by running:
 
     $ python -m rasa_nlu.train -c config_spacy.json
 
-After a few minutes, rasa NLU will finish training, and you'll see a new dir called something like ``model_YYYYMMDD-HHMMSS`` with the timestamp when training finished. 
+After a few minutes, rasa NLU will finish training, and you'll see a new dir called something like
+``models/model_YYYYMMDD-HHMMSS`` with the timestamp when training finished.
 
 
 Using Your Model
 ----------------
 
-To run your trained model, pass the configuration value ``server_model_dir`` when running the server:
+To run your trained model, pass the configuration value ``server_model_dirs`` when running the server:
 
 .. code-block:: console
 
-    $ python -m rasa_nlu.server -c config_spacy.json --server_model_dir=./model_YYYYMMDD-HHMMSS
+    $ python -m rasa_nlu.server -c config_spacy.json --server_model_dirs=./models/model_YYYYMMDD-HHMMSS
 
 More information about starting the server can be found in :ref:`section_http`.
 

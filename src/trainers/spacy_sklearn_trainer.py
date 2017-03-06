@@ -44,7 +44,7 @@ class SpacySklearnTrainer(Trainer):
 
         if create_unique_subfolder:
             dir_name = os.path.join(path, "model_" + timestamp)
-            os.mkdir(dir_name)
+            os.makedirs(dir_name)
         else:
             dir_name = path
 
@@ -61,7 +61,7 @@ class SpacySklearnTrainer(Trainer):
             entity_extractor_file = os.path.join(ner_dir, "model")
 
         write_training_metadata(dir_name, timestamp, data_file, SPACY_BACKEND_NAME, self.language_name,
-                                classifier_file, ner_dir, entity_synonyms=entity_synonyms_file)
+                                classifier_file, ner_dir, entity_synonyms_file)
 
         with open(data_file, 'w') as f:
             f.write(self.training_data.as_json(indent=2))

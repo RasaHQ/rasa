@@ -17,12 +17,10 @@ logs/
 tmp/
 profile.*
 *.sqlite
-*dat
 lastmile_ai/learn/plots/
 *npy
 *#
-*pkl
-config.json
+/config.json
 *log.json
 .coverage
 .coveralls.yml
@@ -34,6 +32,7 @@ out/
 rasa_nlu_logs.json
 tmp_training_data.json
 .DS_Store
-model_*
+models/
+test_models/model_*
 tmp_config_file.json
 rasa_nlu_log-*

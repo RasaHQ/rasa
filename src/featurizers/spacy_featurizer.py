@@ -1,4 +1,3 @@
-import spacy
 import numpy as np
 
 from rasa_nlu.featurizers import Featurizer

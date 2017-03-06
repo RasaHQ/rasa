@@ -1,3 +1,5 @@
+from rasa_nlu import Interpreter
+import os
 import cloudpickle
 import spacy
 import json
@@ -10,26 +12,43 @@ from rasa_nlu.utils.spacy import ensure_proper_language_model
 
 
 class SpacySklearnInterpreter(Interpreter):
+    @staticmethod
+    def load(meta, nlp):
+        """
+        :type meta: ModelMetadata
+        :rtype: MITIEInterpreter
+        """
+        if meta.entity_extractor_path:
+            extractor = SpacyEntityExtractor(nlp, meta.entity_extractor_path)
+        else:
+            extractor = None
+        if meta.intent_classifier_path:
+            with open(meta.intent_classifier_path, 'rb') as f:
+                classifier = cloudpickle.load(f)
+        else:
+            classifier = None
+        if meta.entity_synonyms_path:
+            entity_synonyms = Interpreter.load_synonyms(meta.entity_synonyms_path)
+        else:
+            entity_synonyms = None
+        return SpacySklearnInterpreter(
+            classifier,
+            extractor,
+            entity_synonyms,
+            nlp)
+
     def __init__(self,
+                 intent_classifier=None,
                  entity_extractor=None,
                  entity_synonyms=None,
-                 intent_classifier=None,
-                 language_name='en',
-                 **kwargs):
-        self.extractor = None
-        self.classifier = None
-        self.ent_synonyms = None
-        self.nlp = spacy.load(language_name, parser=False, entity=False, matcher=False)
-        self.featurizer = SpacyFeaturizer(self.nlp)
+                 nlp=None):
+        self.extractor = entity_extractor
+        self.classifier = intent_classifier
+        self.ent_synonyms = entity_synonyms
+        self.nlp = nlp
+        self.featurizer = SpacyFeaturizer(nlp)
 
-        ensure_proper_language_model(self.nlp)
-
-        if intent_classifier:
-            with open(intent_classifier, 'rb') as f:
-                self.classifier = cloudpickle.load(f)
-        if entity_extractor:
-            self.extractor = SpacyEntityExtractor(self.nlp, entity_extractor)
-        self.ent_synonyms = Interpreter.load_synonyms(entity_synonyms)
+        ensure_proper_language_model(nlp)
 
     def get_intent(self, doc):
         """Returns the most likely intent and its probability for the input text.

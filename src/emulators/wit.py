@@ -1,11 +1,10 @@
-class WitEmulator(object):
-    def __init__(self):
-        self.name = "wit"
+from rasa_nlu.emulators import NoEmulator
 
-    def normalise_request_json(self, data):
-        _data = {}
-        _data["text"] = data["q"][0] if type(data["q"]) == list else data["q"]
-        return _data
+
+class WitEmulator(NoEmulator):
+    def __init__(self):
+        super(WitEmulator, self).__init__()
+        self.name = "wit"
 
     def normalise_response_json(self, data):
         entities = {}

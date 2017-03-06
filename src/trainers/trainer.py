@@ -10,6 +10,7 @@ class Trainer(object):
         self.language_name = language_name
         self.max_num_threads = max_num_threads
         self.training_data = None
+        self.nlp = None
         self.ensure_language_support(language_name)
 
     def ensure_language_support(self, language_name):

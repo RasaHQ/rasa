@@ -1,0 +1,11 @@
+{
+    "trained_at": "20170304-012243", 
+    "intent_classifier": "intent_classifier.pkl", 
+    "training_data": "training_data.json", 
+    "language_name": "en", 
+    "entity_synonyms": "index.json", 
+    "entity_extractor": "entity_extractor.dat", 
+    "rasa_nlu_version": "0.7.0a4", 
+    "feature_extractor": "../../data/total_word_feature_extractor.dat", 
+    "backend": "mitie_sklearn"
+}

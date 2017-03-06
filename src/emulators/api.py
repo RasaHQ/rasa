@@ -1,16 +1,13 @@
 import uuid
 from datetime import datetime
 
+from rasa_nlu.emulators import NoEmulator
 
-class ApiEmulator(object):
+
+class ApiEmulator(NoEmulator):
     def __init__(self):
+        super(ApiEmulator, self).__init__()
         self.name = 'api'
-
-    def normalise_request_json(self, data):
-        _data = {}
-        # for GET req data["q"] is a list. For POST req data["q"] should be a string
-        _data["text"] = data["q"][0] if type(data["q"]) == list else data["q"]
-        return _data
 
     def normalise_response_json(self, data):
         # populate entities dict

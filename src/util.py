@@ -1,6 +1,14 @@
 import os
 
 
+def create_dir_for_file(file_path):
+    try:
+        os.makedirs(os.path.dirname(file_path))
+    except OSError:
+        # be happy if someone already created the path
+        pass
+
+
 def recursively_find_files(resource_name):
     """resource_name can be a folder or a file. In both cases we will return a list of files"""
     if not resource_name:

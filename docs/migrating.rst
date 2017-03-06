@@ -1,7 +1,7 @@
 .. _section_migration:
 
 Migrating an existing app
-====================================
+=========================
 
 rasa NLU is designed to make migrating from wit/LUIS/api.ai as simple as possible. 
 The TLDR instructions for migrating are: 
@@ -11,29 +11,29 @@ The TLDR instructions for migrating are:
 
 
 Banana Peels
---------------------------
+------------
 
 Just some specific things to watch out for for each of the services you might want to migrate from
 
-wit
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+wit.ai
+^^^^^^
 
 Wit used to handle ``intents`` natively. 
 Now they are somewhat obfuscated. 
 To create an ``intent`` in wit you have to create and ``entity`` which spans the entire text.
 The file you want from your download is called ``expressions.json``
 
-LUIS
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+LUIS.ai
+^^^^^^^
 
 When you download your model, the entity locations are specified by the index of the tokens. 
 This is pretty fragile because not every tokenizer will behave the same as LUIS's, so your entities may be incorrectly labelled. 
 Run your training once and you'll get a copy of your training data in the ``model_XXXXX`` dir. 
 Do any fixes required and use that to train. 
-Use the visualizer (see :ref:`section_visualization`) to spot mistakes easily.
+Use the visualizer (see :ref:`visualizing-the-training-data`) to spot mistakes easily.
 
 api.ai
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^
 
 api app exports generate multiple files rather than just one. 
 Put them all in a directory (see ``data/examples/api`` in the repo)
@@ -42,7 +42,7 @@ and pass that path to the trainer.
 
 
 Emulation
---------------------------
+---------
 
 To make rasa NLU easy to try out with existing projects, the server can `emulate` wit, LUIS, or api.ai.
 In native mode, a request / response looks like this : 
@@ -51,12 +51,19 @@ In native mode, a request / response looks like this :
 
     $ curl -XPOST localhost:5000/parse -d '{"q":"I am looking for Chinese food"}' | python -mjson.tool
     {
-      "intent" : "restaurant_search",
+      "text": "I am looking for Chinese food", 
+      "intent": "restaurant_search", 
       "confidence": 0.4794813722432127,
-      "entities" : {
-        "cuisine": "Chinese"
-      }
+      "entities": [
+        {
+          "start": 17,
+          "end": 24, 
+          "value": "chinese", 
+          "entity": "cuisine"
+        }
+      ]
     }
+
 
 if we run in ``wit`` mode (e.g. ``python -m rasa_nlu.server -e wit``)
 

@@ -1,9 +1,12 @@
 import logging
-from mitie import tokenize
 import re
 
+from mitie import tokenize
 
-class MITIETokenizer(object):
+from rasa_nlu.tokenizers import Tokenizer
+
+
+class MITIETokenizer(Tokenizer):
     def __init__(self):
         pass
 

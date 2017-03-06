@@ -13,6 +13,7 @@ def train_intent_classifier(intent_examples, featurizer, max_num_threads, test_s
     :return: trained classifier
     :rtype: SklearnIntentClassifier
     """
+
     intent_classifier = SklearnIntentClassifier(max_num_threads=max_num_threads)
     labels = [e["intent"] for e in intent_examples]
     sentences = [e["text"] for e in intent_examples]
