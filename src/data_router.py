@@ -11,6 +11,7 @@ from config import RasaNLUConfig
 from rasa_nlu.train import do_train
 from rasa_nlu.utils import mitie
 from rasa_nlu.utils import spacy
+from rasa_nlu.util import create_dir_for_file
 
 
 class InvalidModelError(Exception):
@@ -91,6 +92,7 @@ class DataRouter(object):
 
         logger = logging.getLogger('query-logger')
         logger.setLevel(logging.INFO)
+        create_dir_for_file(path)
         ch = logging.FileHandler(path)
         ch.setFormatter(logging.Formatter('%(message)s'))
         logger.propagate = False  # Prevents queries getting logged with parent logger which might log them to stdout

@@ -22,14 +22,14 @@ class RasaNLUConfig(object):
           "language": "en",
           "log_file": None,
           "log_level": logging.INFO,
-          "mitie_file": "./data/total_word_feature_extractor.dat",
+          "mitie_file": os.path.join("data", "total_word_feature_extractor.dat"),
           "num_threads": 1,
           "fine_tune_spacy_ner": False,
           "path": os.path.join(os.getcwd(), "models"),
           "port": 5000,
           "server_model_dirs": None,
           "token": None,
-          "write": os.path.join(os.getcwd(), "rasa_nlu_log.json")
+          "write": os.path.join(os.getcwd(), "logs", "rasa_nlu_log.json")
         }
 
         if filename is None and os.path.isfile(DEFAULT_CONFIG_LOCATION):

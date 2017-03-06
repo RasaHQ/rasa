@@ -34,7 +34,7 @@ class MITIETrainer(Trainer):
 
         if create_unique_subfolder:
             dir_name = os.path.join(path, "model_" + timestamp)
-            os.mkdir(dir_name)
+            os.makedirs(dir_name)
         else:
             dir_name = path
 
