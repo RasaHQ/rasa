@@ -11,7 +11,7 @@ from rasa_nlu.tokenizers.mitie_tokenizer import MITIETokenizer
 
 class MITIESklearnInterpreter(Interpreter):
     @staticmethod
-    def load(meta, featurizer = None):
+    def load(meta, featurizer=None):
         """
         :type meta: ModelMetadata
         :rtype: MITIESklearnInterpreter
