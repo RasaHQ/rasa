@@ -18,7 +18,7 @@ def create_arg_parser():
     parser.add_argument('-c', '--config',
                         help="config file, all the command line options can also be passed via a (json-formatted) " +
                              "config file. NB command line args take precedence")
-    parser.add_argument('-d', '--server_model_dir',
+    parser.add_argument('-d', '--server_model_dirs',
                         help='directory containing model to for parser to use')
     parser.add_argument('-e', '--emulate', choices=['wit', 'luis', 'api'],
                         help='which service to emulate (default: None i.e. use simple built in format)')

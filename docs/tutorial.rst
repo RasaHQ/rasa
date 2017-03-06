@@ -109,17 +109,18 @@ Now we can train a spacy model by running:
 
     $ python -m rasa_nlu.train -c config_spacy.json
 
-After a few minutes, rasa NLU will finish training, and you'll see a new dir called something like ``model_YYYYMMDD-HHMMSS`` with the timestamp when training finished. 
+After a few minutes, rasa NLU will finish training, and you'll see a new dir called something like
+``models/model_YYYYMMDD-HHMMSS`` with the timestamp when training finished.
 
 
 Using Your Model
 ----------------
 
-To run your trained model, pass the configuration value ``server_model_dir`` when running the server:
+To run your trained model, pass the configuration value ``server_model_dirs`` when running the server:
 
 .. code-block:: console
 
-    $ python -m rasa_nlu.server -c config_spacy.json --server_model_dir=./model_YYYYMMDD-HHMMSS
+    $ python -m rasa_nlu.server -c config_spacy.json --server_model_dirs=./models/model_YYYYMMDD-HHMMSS
 
 More information about starting the server can be found in :ref:`section_http`.
 

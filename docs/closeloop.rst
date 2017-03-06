@@ -1,7 +1,7 @@
 .. _section_closeloop:
 
 Improving your models from feedback
-======================================================
+===================================
 
 
 
