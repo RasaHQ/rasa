@@ -10,7 +10,7 @@ from rasa_nlu.server import create_app
 from utilities import ResponseTest
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def app():
     if "TRAVIS_BUILD_DIR" in os.environ:
         root_dir = os.environ["TRAVIS_BUILD_DIR"]

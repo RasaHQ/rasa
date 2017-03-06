@@ -75,6 +75,8 @@ class LoadedModel(object):
 
 
 class DataRouter(object):
+    DEFAULT_MODEL_NAME = "default"
+
     def __init__(self, config):
         self.config = config
         # Ensures different log files for different processes in multi worker mode
@@ -134,7 +136,7 @@ class DataRouter(object):
     def __create_model_store(self):
         # Fallback for users that specified the model path as a string and hence only want a single default model.
         if type(self.config.server_model_dirs) is unicode or type(self.config.server_model_dirs) is str:
-            model_dict = {"default": self.config.server_model_dirs}
+            model_dict = {self.DEFAULT_MODEL_NAME: self.config.server_model_dirs}
         elif self.config.server_model_dirs is None:
             model_dict = self.__search_for_models()
         else:
@@ -157,10 +159,10 @@ class DataRouter(object):
                 cache[cache_key] = {'nlp': nlp, 'featurizer': featurizer}
             interpreter = DataRouter.create_interpreter(nlp, metadata)
             model_store[alias] = LoadedModel(metadata, model_path, interpreter, nlp, featurizer)
-        else:
+        if not model_store:
             meta = ModelMetadata({}, "")
             interpreter = DataRouter.create_interpreter(None, meta)
-            model_store["default"] = LoadedModel(meta, "", interpreter)
+            model_store[self.DEFAULT_MODEL_NAME] = LoadedModel(meta, "", interpreter)
         return model_store
 
     @staticmethod
@@ -239,7 +241,7 @@ class DataRouter(object):
         return self.emulator.normalise_request_json(data)
 
     def parse(self, data):
-        alias = data.get("model") or "default"
+        alias = data.get("model") or self.DEFAULT_MODEL_NAME
         if alias not in self.model_store:
             raise InvalidModelError("No model found with alias '{}'".format(alias))
         else:

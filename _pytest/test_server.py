@@ -18,10 +18,8 @@ def app():
         'write': nlu_log_file,
         'port': -1,                 # unused in test app
         "backend": "mitie",
-        "path": "./test_models",
-        "server_model_dirs": {
-            "default": "test_model_mitie"
-        },
+        "path": "./models",
+        "server_model_dirs": {},
         "data": "./data/demo-restaurants.json",
         "emulate": "wit",
     }
