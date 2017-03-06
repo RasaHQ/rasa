@@ -1,10 +1,10 @@
 import re
 
 
-def get_entities(text, tokens, extractor):
+def get_entities(text, tokens, extractor, featurizer):
     ents = []
     if extractor:
-        entities = extractor.extract_entities(tokens)
+        entities = extractor.extract_entities(tokens, featurizer.feature_extractor)
         for e in entities:
             _range = e[0]
             _regex = u"\s*".join(re.escape(tokens[i]) for i in _range)

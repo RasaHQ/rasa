@@ -13,7 +13,7 @@ from rasa_nlu.utils.spacy import ensure_proper_language_model
 
 class SpacySklearnInterpreter(Interpreter):
     @staticmethod
-    def load(meta, nlp):
+    def load(meta, nlp, featurizer):
         """
         :type meta: ModelMetadata
         :rtype: MITIEInterpreter
@@ -31,22 +31,27 @@ class SpacySklearnInterpreter(Interpreter):
             entity_synonyms = Interpreter.load_synonyms(meta.entity_synonyms_path)
         else:
             entity_synonyms = None
+
+        if featurizer is None:
+            featurizer = SpacyFeaturizer(nlp)
         return SpacySklearnInterpreter(
             classifier,
             extractor,
             entity_synonyms,
+            featurizer,
             nlp)
 
     def __init__(self,
                  intent_classifier=None,
                  entity_extractor=None,
                  entity_synonyms=None,
+                 featurizer=None,
                  nlp=None):
         self.extractor = entity_extractor
         self.classifier = intent_classifier
         self.ent_synonyms = entity_synonyms
         self.nlp = nlp
-        self.featurizer = SpacyFeaturizer(nlp)
+        self.featurizer = featurizer
 
         ensure_proper_language_model(nlp)
 

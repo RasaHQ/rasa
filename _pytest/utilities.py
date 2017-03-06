@@ -33,7 +33,7 @@ def run_train(_config):
 
 def load_interpreter_for_model(nlp, config, persisted_path):
     metadata = DataRouter.read_model_metadata(persisted_path, config)
-    return DataRouter.create_interpreter(nlp, metadata)
+    return DataRouter.create_interpreter(metadata, nlp)
 
 
 class ResponseTest(object):

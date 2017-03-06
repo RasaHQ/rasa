@@ -157,11 +157,11 @@ class DataRouter(object):
                 nlp = DataRouter.nlp_for_backend(metadata.backend_name(), metadata.language_name())
                 featurizer = DataRouter.featurizer_for_model(metadata, nlp)
                 cache[cache_key] = {'nlp': nlp, 'featurizer': featurizer}
-            interpreter = DataRouter.create_interpreter(nlp, metadata)
+            interpreter = DataRouter.create_interpreter(metadata, nlp, featurizer)
             model_store[alias] = LoadedModel(metadata, model_path, interpreter, nlp, featurizer)
         if not model_store:
             meta = ModelMetadata({}, "")
-            interpreter = DataRouter.create_interpreter(None, meta)
+            interpreter = DataRouter.create_interpreter(meta)
             model_store[self.DEFAULT_MODEL_NAME] = LoadedModel(meta, "", interpreter)
         return model_store
 
@@ -199,7 +199,7 @@ class DataRouter(object):
         return ModelMetadata(data, model_dir)
 
     @staticmethod
-    def create_interpreter(nlp, metadata):
+    def create_interpreter(metadata, nlp=None, featurizer=None):
         backend = metadata.backend_name()
         if backend is None:
             from interpreters.simple_interpreter import HelloGoodbyeInterpreter
@@ -207,16 +207,16 @@ class DataRouter(object):
         elif backend.lower() == mitie.MITIE_BACKEND_NAME:
             logging.info("using mitie backend")
             from interpreters.mitie_interpreter import MITIEInterpreter
-            return MITIEInterpreter.load(metadata)
+            return MITIEInterpreter.load(metadata, featurizer)
         elif backend.lower() == mitie.MITIE_SKLEARN_BACKEND_NAME:
             logging.info("using mitie_sklearn backend")
             from interpreters.mitie_sklearn_interpreter import MITIESklearnInterpreter
-            return MITIESklearnInterpreter.load(metadata)
+            return MITIESklearnInterpreter.load(metadata, featurizer)
 
         elif backend.lower() == spacy.SPACY_BACKEND_NAME:
             logging.info("using spacy + sklearn backend")
             from interpreters.spacy_sklearn_interpreter import SpacySklearnInterpreter
-            return SpacySklearnInterpreter.load(metadata, nlp)
+            return SpacySklearnInterpreter.load(metadata, nlp, featurizer)
         else:
             raise ValueError("unknown backend : {0}".format(backend))
 

@@ -1,3 +1,5 @@
+import os
+
 import cloudpickle
 from mitie import named_entity_extractor
 
@@ -9,16 +11,19 @@ from rasa_nlu.tokenizers.mitie_tokenizer import MITIETokenizer
 
 class MITIESklearnInterpreter(Interpreter):
     @staticmethod
-    def load(meta):
+    def load(meta, featurizer = None):
         """
         :type meta: ModelMetadata
         :rtype: MITIESklearnInterpreter
         """
         if meta.entity_extractor_path:
-            extractor = named_entity_extractor(
-                meta.entity_extractor_path, meta.feature_extractor_path)
+            extractor = named_entity_extractor(meta.entity_extractor_path)
         else:
             extractor = None
+
+        if featurizer is None:
+            featurizer = MITIEFeaturizer(meta.feature_extractor_path)
+
         if meta.intent_classifier_path:
             with open(meta.intent_classifier_path, 'rb') as f:
                 classifier = cloudpickle.load(f)
@@ -28,21 +33,21 @@ class MITIESklearnInterpreter(Interpreter):
             entity_synonyms = Interpreter.load_synonyms(meta.entity_synonyms_path)
         else:
             entity_synonyms = None
-        feature_extractor = MITIEFeaturizer(meta.feature_extractor_path)
+
         return MITIESklearnInterpreter(
             classifier,
             extractor,
-            feature_extractor,
+            featurizer,
             entity_synonyms)
 
     def __init__(self,
                  intent_classifier=None,
                  entity_extractor=None,
-                 feature_extractor=None,
+                 featurizer=None,
                  entity_synonyms=None):
         self.extractor = entity_extractor
         self.classifier = intent_classifier
-        self.featurizer = feature_extractor
+        self.featurizer = featurizer
         self.tokenizer = MITIETokenizer()
         self.ent_synonyms = entity_synonyms
 
@@ -64,7 +69,7 @@ class MITIESklearnInterpreter(Interpreter):
     def parse(self, text):
         tokens = self.tokenizer.tokenize(text)
         intent, probability = self.get_intent(tokens)
-        entities = get_entities(text, tokens, self.extractor)
+        entities = get_entities(text, tokens, self.extractor, self.featurizer)
         if self.ent_synonyms:
             Interpreter.replace_synonyms(entities, self.ent_synonyms)
 
