@@ -10,7 +10,7 @@ class MITIEInterpreter(Interpreter):
     @staticmethod
     def load(meta, featurizer=None):
         """
-        :type meta: ModelMetadata
+        :type meta: rasa_nlu.model.Metadata
         :rtype: MITIEInterpreter
         """
         if meta.entity_extractor_path:

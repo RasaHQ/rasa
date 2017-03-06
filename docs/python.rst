@@ -29,9 +29,11 @@ The ``metadata.json`` in your model dir contains the necessary info, so you can 
 .. code-block:: python
 
     from rasa_nlu.interpreters.spacy_sklearn_interpreter import SpacySklearnInterpreter
-    metadata = json.loads(open('/path/to/metadata.json').read())
+    from rasa_nlu.model import Metadata
+    import spacy
+    metadata = Metadata.load("/path/to/model_dir")
     nlp = spacy.load("en", parser=False)
-    interpreter = SpacySklearnInterpreter(nlp=nlp, **metadata)
+    interpreter = SpacySklearnInterpreter.load(metadata, nlp=nlp)
 
 You can then run:
 

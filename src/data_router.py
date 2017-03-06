@@ -7,71 +7,12 @@ import tempfile
 
 from flask import json
 
-from config import RasaNLUConfig
+from rasa_nlu.model import Model, Metadata, InvalidModelError
+from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.train import do_train
 from rasa_nlu.utils import mitie
 from rasa_nlu.utils import spacy
 from rasa_nlu.util import create_dir_for_file
-
-
-class InvalidModelError(Exception):
-    """Raised when a model failed to load.
-
-    Attributes:
-        message -- explanation of why the model is invalid
-    """
-
-    def __init__(self, message):
-        self.message = message
-
-
-class ModelMetadata(object):
-    def __init__(self, metadata, model_dir):
-        self.metadata = metadata
-        self.model_dir = model_dir
-
-    def __prepend_path(self, prop):
-        if self.metadata.get(prop) is not None:
-            return os.path.normpath(os.path.join(self.model_dir, self.metadata[prop]))
-        else:
-            return None
-
-    @property
-    def feature_extractor_path(self):
-        return self.__prepend_path("feature_extractor")
-
-    @property
-    def intent_classifier_path(self):
-        return self.__prepend_path("intent_classifier")
-
-    @property
-    def entity_extractor_path(self):
-        return self.__prepend_path("entity_extractor")
-
-    @property
-    def entity_synonyms_path(self):
-        return self.__prepend_path("entity_synonyms")
-
-    def language_name(self):
-        return self.metadata.get('language_name')
-
-    def backend_name(self):
-        return self.metadata.get('backend')
-
-    def model_group(self):
-        """Groups models by backend and language name."""
-        if self.language_name() is not None and self.backend_name() is not None:
-            return self.language_name() + "@" + self.backend_name()
-        return None
-
-
-class LoadedModel(object):
-    def __init__(self, metadata, model_dir, interpreter=None, nlp=None, featurizer=None):
-        self.metadata = metadata
-        self.model_dir = model_dir
-        self.interpreter = interpreter
-        self.featurizer = featurizer
-        self.nlp = nlp
 
 
 class DataRouter(object):
@@ -158,11 +99,11 @@ class DataRouter(object):
                 featurizer = DataRouter.featurizer_for_model(metadata, nlp)
                 cache[cache_key] = {'nlp': nlp, 'featurizer': featurizer}
             interpreter = DataRouter.create_interpreter(metadata, nlp, featurizer)
-            model_store[alias] = LoadedModel(metadata, model_path, interpreter, nlp, featurizer)
+            model_store[alias] = Model(metadata, model_path, interpreter, nlp, featurizer)
         if not model_store:
-            meta = ModelMetadata({}, "")
+            meta = Metadata({}, "")
             interpreter = DataRouter.create_interpreter(meta)
-            model_store[self.DEFAULT_MODEL_NAME] = LoadedModel(meta, "", interpreter)
+            model_store[self.DEFAULT_MODEL_NAME] = Model(meta, "", interpreter)
         return model_store
 
     @staticmethod
@@ -186,6 +127,7 @@ class DataRouter(object):
     def read_model_metadata(model_dir, config):
         if model_dir is None:
             data = DataRouter.default_model_metadata()
+            return Metadata(data, model_dir)
         else:
             if not os.path.isabs(model_dir):
                 model_dir = os.path.join(config['path'], model_dir)
@@ -194,9 +136,7 @@ class DataRouter(object):
             if not os.path.isdir(model_dir):
                 DataRouter.load_model_from_s3(model_dir, config)
 
-            with open(os.path.join(model_dir, 'metadata.json'), 'rb') as f:
-                data = json.loads(f.read().decode('utf-8'))
-        return ModelMetadata(data, model_dir)
+            return Metadata.load(model_dir)
 
     @staticmethod
     def create_interpreter(metadata, nlp=None, featurizer=None):

@@ -13,7 +13,7 @@ class MITIESklearnInterpreter(Interpreter):
     @staticmethod
     def load(meta, featurizer=None):
         """
-        :type meta: ModelMetadata
+        :type meta: rasa_nlu.model.Metadata
         :rtype: MITIESklearnInterpreter
         """
         if meta.entity_extractor_path:

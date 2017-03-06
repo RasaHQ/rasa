@@ -13,9 +13,11 @@ from rasa_nlu.utils.spacy import ensure_proper_language_model
 
 class SpacySklearnInterpreter(Interpreter):
     @staticmethod
-    def load(meta, nlp, featurizer):
+    def load(meta, nlp, featurizer=None):
         """
-        :type meta: ModelMetadata
+        :type meta: rasa_nlu.model.Metadata
+        :type nlp: spacy.language.Language
+        :type featurizer: None or rasa_nlu.featurizers.spacy_featurizer.SpacyFeaturizer
         :rtype: MITIEInterpreter
         """
         if meta.entity_extractor_path:
