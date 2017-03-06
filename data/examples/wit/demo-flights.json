@@ -69,7 +69,7 @@
           "entity" : "location",
           "value" : "\"london\"",
           "role" : "from",
-          "start" : 29,
+          "start" : 19,
           "end" : 25
         }
       ]
