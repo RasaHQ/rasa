@@ -11,7 +11,7 @@ def get_entities(text, tokens, extractor):
             _regex = u"\s*".join(tokens[i] for i in _range)
             expr = re.compile(_regex)
             m = expr.search(text[offset:])
-            start, end = m.start()+ offset, m.end() + offset
+            start, end = m.start() + offset, m.end() + offset
             entity_value = text[start:end]
             offset += m.end()
             ents.append({
