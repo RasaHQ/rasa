@@ -21,4 +21,4 @@ def get_entities(text, tokens, extractor):
                 "end": end
             })
 
-        return ents
+    return ents
