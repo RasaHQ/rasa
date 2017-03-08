@@ -1,6 +1,6 @@
 from mitie import *
 
-from extractors.mitie_entity_extractor import MITIEEntityExtractor
+from rasa_nlu.extractors.mitie_entity_extractor import MITIEEntityExtractor
 from rasa_nlu.featurizers.mitie_featurizer import MITIEFeaturizer
 
 from rasa_nlu import Interpreter

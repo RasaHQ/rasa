@@ -3,7 +3,7 @@ import logging
 import datetime
 import os
 
-from trainers.training_utils import write_training_metadata
+from rasa_nlu.trainers.training_utils import write_training_metadata
 
 
 class Component(object):
