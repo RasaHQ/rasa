@@ -87,7 +87,7 @@ class TrainingData(object):
             entity_synonyms_file = None
 
         return {
-            "training_data": os.path.basename(data_file),
+            "training_data": "training_data.json",
             "entity_synonyms": relative_normpath(entity_synonyms_file, dir_name),
         }
 
