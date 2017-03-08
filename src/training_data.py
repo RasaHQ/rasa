@@ -74,7 +74,7 @@ class TrainingData(object):
     @staticmethod
     def guess_format(files):
         for filename in files:
-            with codecs.open(filename, encoding='utf-8') as f:
+            with codecs.open(filename, encoding="utf-8-sig") as f:
                 file_data = json.loads(f.read())
             if "data" in file_data and type(file_data.get("data")) is list:
                 return WIT_FILE_FORMAT
@@ -100,7 +100,8 @@ class TrainingData(object):
             raise ValueError("unknown training file format : {0}".format(self.fformat))
 
     def load_wit_data(self, filename):
-        data = json.loads(codecs.open(filename, encoding='utf-8').read())
+        with codecs.open(filename, encoding="utf-8-sig") as f:
+            data = json.loads(f.read())
         for s in data["data"]:
             entities = s.get("entities")
             if entities is None:
@@ -123,7 +124,8 @@ class TrainingData(object):
         warnings.warn(
             """LUIS data may not always be correctly imported because entity locations are specified by tokens.
             If you use a tokenizer which behaves differently from LUIS's your entities might not be correct""")
-        data = json.loads(codecs.open(filename, encoding='utf-8').read())
+        with codecs.open(filename, encoding="utf-8-sig") as f:
+            data = json.loads(f.read())
         for s in data["utterances"]:
             text = s.get("text")
             tokens = [t for t in self.tokenizer.tokenize(text)]
@@ -143,7 +145,8 @@ class TrainingData(object):
 
     def load_api_data(self, files):
         for filename in files:
-            data = json.loads(codecs.open(filename, encoding='utf-8').read())
+            with codecs.open(filename, encoding="utf-8-sig") as f:
+                data = json.loads(f.read())
             # get only intents, skip the rest. The property name is the target class
             if "userSays" in data:
                 intent = data.get("name")
@@ -175,7 +178,8 @@ class TrainingData(object):
                             util.add_entities_if_synonyms(self.entity_synonyms, synonym, entry["value"])
 
     def load_rasa_data(self, filename):
-        data = json.loads(open(filename, 'rb').read())
+        with codecs.open(filename, encoding="utf-8-sig") as f:
+            data = json.loads(f.read())
         common = data['rasa_nlu_data'].get("common_examples", list())
         intent = data['rasa_nlu_data'].get("intent_examples", list())
         entity = data['rasa_nlu_data'].get("entity_examples", list())
