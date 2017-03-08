@@ -6,7 +6,7 @@ from rasa_nlu.featurizers import Featurizer
 class SpacyFeaturizer(Featurizer):
     def __init__(self, nlp):
         self.nlp = nlp
-        self.ndim = 300
+        self.ndim = nlp.vocab.vectors_length
 
     def features_for_doc(self, doc):
         vec = []

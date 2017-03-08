@@ -44,19 +44,25 @@ class SklearnIntentClassifier(object):
         labels = self.le.inverse_transform(y)
         return labels
 
-    def train(self, X, y, test_split_size=0.1):
-        """Train the intent classifier on a data set.
+    @staticmethod
+    def train(intent_examples, featurizer, max_num_threads, test_split_size=0.1):
+        """Train the intent classifier on a data set."""
+        intent_classifier = SklearnIntentClassifier(max_num_threads=max_num_threads)
+        labels = [e["intent"] for e in intent_examples]
+        sentences = [e["text"] for e in intent_examples]
 
-        :param test_split_size: defines the percentage of examples to reserve for testing
-        :param X: Train data set
-        :param y: Train labels (numeric)"""
+        if len(set(labels)) < 2:
+            raise Exception("Can not train an intent classifier. Need at least 2 different classes.")
+        y = intent_classifier.transform_labels_str2num(labels)
+        X = featurizer.features_for_sentences(sentences)
 
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_split_size, random_state=0)
-        self.clf.fit(X_train, y_train)
+        intent_classifier.clf.fit(X_train, y_train)
 
         # Test the trained model
         if test_split_size != 0.0:
-            logging.info("Score of intent model on test data: %s " % self.clf.score(X_test, y_test))
+            logging.info("Score of intent model on test data: %s " % intent_classifier.clf.score(X_test, y_test))
+        return intent_classifier
 
     def predict_prob(self, X):
         """Given a bow vector of an input text, predict the intent label. Returns probabilities for all labels.
@@ -84,3 +90,26 @@ class SklearnIntentClassifier(object):
         # retrieve the index of the intent with the highest probability
         max_values = pred_result[:, max_indicies].flatten()
         return max_indicies, max_values
+
+    @staticmethod
+    def load(path):
+        import cloudpickle
+        if path:
+            with open(path, 'rb') as f:
+                return cloudpickle.load(f)
+        else:
+            return None
+
+    def persist(self, dir_name):
+        """Persist this model into the passed directory. Returns the metadata necessary to load the model again."""
+
+        import os
+        import cloudpickle
+
+        classifier_file = os.path.join(dir_name, "intent_classifier.dat")
+        with open(classifier_file, 'wb') as f:
+            cloudpickle.dump(self, f)
+
+        return {
+            "intent_classifier": "intent_classifier.dat"
+        }

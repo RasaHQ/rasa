@@ -25,7 +25,7 @@ def test_mitie_featurizer():
     if not filename or not os.path.isfile(filename):
         filename = "data/total_word_feature_extractor.dat"
 
-    ftr = MITIEFeaturizer(filename)
+    ftr = MITIEFeaturizer.load(filename)
     sentence = "Hey how are you today"
     tokens = MITIETokenizer().tokenize(sentence)
     vecs = ftr.features_for_tokens(tokens)

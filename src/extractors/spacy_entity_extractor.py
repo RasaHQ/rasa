@@ -9,11 +9,16 @@ import warnings
 
 
 class SpacyEntityExtractor(object):
-    def __init__(self, nlp=None, extractor_file=None):
-        if extractor_file:
-            self.ner = EntityRecognizer.load(pathlib.Path(extractor_file), nlp.vocab)
+    @staticmethod
+    def load(path, nlp):
+        if path:
+            ner = EntityRecognizer.load(pathlib.Path(path), nlp.vocab)
+            return SpacyEntityExtractor(ner)
         else:
-            self.ner = None
+            return None
+
+    def __init__(self, ner=None):
+        self.ner = ner
 
     def convert_examples(self, entity_examples):
         def convert_entity(ent):
@@ -74,3 +79,23 @@ class SpacyEntityExtractor(object):
             return entities
         else:
             return []
+
+    def persist(self, dir_name):
+        """Persist this model into the passed directory. Returns the metadata necessary to load the model again."""
+
+        import os
+        import json
+
+        ner_dir = os.path.join(dir_name, 'ner')
+        if not os.path.exists(ner_dir):
+            os.mkdir(ner_dir)
+
+        entity_extractor_config_file = os.path.join(ner_dir, "config.json")
+        entity_extractor_file = os.path.join(ner_dir, "model")
+
+        with open(entity_extractor_config_file, 'w') as f:
+            json.dump(self.ner.cfg, f)
+        self.ner.model.dump(entity_extractor_file)
+        return {
+            "entity_extractor": "ner"
+        }

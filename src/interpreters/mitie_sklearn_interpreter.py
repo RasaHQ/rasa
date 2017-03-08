@@ -1,11 +1,8 @@
-import os
+from rasa_nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
 
-import cloudpickle
-from mitie import named_entity_extractor
-
+from rasa_nlu.extractors.mitie_entity_extractor import MITIEEntityExtractor
 from rasa_nlu import Interpreter
 from rasa_nlu.featurizers.mitie_featurizer import MITIEFeaturizer
-from rasa_nlu.interpreters.mitie_interpreter_utils import get_entities
 from rasa_nlu.tokenizers.mitie_tokenizer import MITIETokenizer
 
 
@@ -16,23 +13,14 @@ class MITIESklearnInterpreter(Interpreter):
         :type meta: rasa_nlu.model.Metadata
         :rtype: MITIESklearnInterpreter
         """
-        if meta.entity_extractor_path:
-            extractor = named_entity_extractor(meta.entity_extractor_path)
-        else:
-            extractor = None
+        extractor = MITIEEntityExtractor.load(meta.entity_extractor_path)
 
         if featurizer is None:
-            featurizer = MITIEFeaturizer(meta.feature_extractor_path)
+            featurizer = MITIEFeaturizer.load(meta.feature_extractor_path)
 
-        if meta.intent_classifier_path:
-            with open(meta.intent_classifier_path, 'rb') as f:
-                classifier = cloudpickle.load(f)
-        else:
-            classifier = None
-        if meta.entity_synonyms_path:
-            entity_synonyms = Interpreter.load_synonyms(meta.entity_synonyms_path)
-        else:
-            entity_synonyms = None
+        classifier = SklearnIntentClassifier.load(meta.intent_classifier_path)
+
+        entity_synonyms = Interpreter.load_synonyms(meta.entity_synonyms_path)
 
         return MITIESklearnInterpreter(
             classifier,
@@ -69,7 +57,7 @@ class MITIESklearnInterpreter(Interpreter):
     def parse(self, text):
         tokens = self.tokenizer.tokenize(text)
         intent, probability = self.get_intent(tokens)
-        entities = get_entities(text, tokens, self.extractor, self.featurizer)
+        entities = self.extractor.get_entities(text, tokens, self.featurizer)
         if self.ent_synonyms:
             Interpreter.replace_synonyms(entities, self.ent_synonyms)
 

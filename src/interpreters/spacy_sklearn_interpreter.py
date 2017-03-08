@@ -1,3 +1,5 @@
+from rasa_nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
+
 from rasa_nlu import Interpreter
 import os
 import cloudpickle
@@ -20,19 +22,11 @@ class SpacySklearnInterpreter(Interpreter):
         :type featurizer: None or rasa_nlu.featurizers.spacy_featurizer.SpacyFeaturizer
         :rtype: MITIEInterpreter
         """
-        if meta.entity_extractor_path:
-            extractor = SpacyEntityExtractor(nlp, meta.entity_extractor_path)
-        else:
-            extractor = None
-        if meta.intent_classifier_path:
-            with open(meta.intent_classifier_path, 'rb') as f:
-                classifier = cloudpickle.load(f)
-        else:
-            classifier = None
-        if meta.entity_synonyms_path:
-            entity_synonyms = Interpreter.load_synonyms(meta.entity_synonyms_path)
-        else:
-            entity_synonyms = None
+        extractor = SpacyEntityExtractor.load(meta.entity_extractor_path, nlp)
+
+        classifier = SklearnIntentClassifier.load(meta.intent_classifier_path)
+
+        entity_synonyms = Interpreter.load_synonyms(meta.entity_synonyms_path)
 
         if featurizer is None:
             featurizer = SpacyFeaturizer(nlp)

@@ -71,6 +71,26 @@ class TrainingData(object):
             }
         }, **kwargs)
 
+    def persist(self, dir_name):
+        import os
+        from rasa_nlu.trainers.training_utils import relative_normpath
+
+        data_file = os.path.join(dir_name, "training_data.json")
+        with open(data_file, 'w') as f:
+            f.write(self.as_json(indent=2))
+
+        if self.entity_synonyms:
+            entity_synonyms_file = os.path.join(dir_name, "index.json")
+            with open(entity_synonyms_file, 'w') as f:
+                json.dump(self.entity_synonyms, f)
+        else:
+            entity_synonyms_file = None
+
+        return {
+            "training_data": os.path.basename(data_file),
+            "entity_synonyms": relative_normpath(entity_synonyms_file, dir_name),
+        }
+
     @staticmethod
     def guess_format(files):
         for filename in files:

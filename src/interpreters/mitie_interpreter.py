@@ -1,8 +1,9 @@
 from mitie import *
+
+from extractors.mitie_entity_extractor import MITIEEntityExtractor
 from rasa_nlu.featurizers.mitie_featurizer import MITIEFeaturizer
 
 from rasa_nlu import Interpreter
-from rasa_nlu.interpreters.mitie_interpreter_utils import get_entities
 from rasa_nlu.tokenizers.mitie_tokenizer import MITIETokenizer
 
 
@@ -13,23 +14,14 @@ class MITIEInterpreter(Interpreter):
         :type meta: rasa_nlu.model.Metadata
         :rtype: MITIEInterpreter
         """
-        if meta.entity_extractor_path:
-            extractor = named_entity_extractor(meta.entity_extractor_path)
-        else:
-            extractor = None
+        extractor = MITIEEntityExtractor.load(meta.entity_extractor_path)
 
-        if meta.intent_classifier_path:
-            classifier = text_categorizer(meta.intent_classifier_path)
-        else:
-            classifier = None
+        classifier = text_categorizer(meta.intent_classifier_path)
 
         if featurizer is None:
-            featurizer = MITIEFeaturizer(meta.feature_extractor_path)
+            featurizer = MITIEFeaturizer.load(meta.feature_extractor_path)
 
-        if meta.entity_synonyms_path:
-            entity_synonyms = Interpreter.load_synonyms(meta.entity_synonyms_path)
-        else:
-            entity_synonyms = None
+        entity_synonyms = Interpreter.load_synonyms(meta.entity_synonyms_path)
 
         return MITIEInterpreter(
             classifier,
@@ -58,7 +50,7 @@ class MITIEInterpreter(Interpreter):
     def parse(self, text):
         tokens = self.tokenizer.tokenize(text)
         intent, score = self.get_intent(tokens)
-        entities = get_entities(text, tokens, self.extractor, self.featurizer)
+        entities = self.extractor.get_entities(text, tokens, self.featurizer)
         if self.ent_synonyms:
             Interpreter.replace_synonyms(entities, self.ent_synonyms)
 

@@ -5,9 +5,18 @@ from rasa_nlu.featurizers import Featurizer
 
 
 class MITIEFeaturizer(Featurizer):
-    def __init__(self, fe_file):
-        self.feature_extractor = total_word_feature_extractor(fe_file)
-        self.ndim = self.feature_extractor.num_dimensions
+    @staticmethod
+    def load(path):
+        if path:
+            extractor = total_word_feature_extractor(path)
+            ndim = extractor.num_dimensions
+            return MITIEFeaturizer(extractor, ndim)
+        else:
+            return None
+
+    def __init__(self, extractor, ndim):
+        self.feature_extractor = extractor
+        self.ndim = ndim
 
     def features_for_tokens(self, tokens):
         vec = np.zeros(self.ndim)

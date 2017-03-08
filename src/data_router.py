@@ -52,7 +52,7 @@ class DataRouter(object):
         elif model.backend_name() == mitie.MITIE_BACKEND_NAME or \
                 model.backend_name() == mitie.MITIE_SKLEARN_BACKEND_NAME:
             from rasa_nlu.featurizers.mitie_featurizer import MITIEFeaturizer
-            return MITIEFeaturizer(model.feature_extractor_path)
+            return MITIEFeaturizer.load(model.feature_extractor_path)
         else:
             return None
 
