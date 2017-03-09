@@ -116,11 +116,11 @@ After a few minutes, rasa NLU will finish training, and you'll see a new dir cal
 Using Your Model
 ----------------
 
-To run your trained model, pass the configuration value ``server_model_dirs`` when running the server:
+To run your trained model, pass the configuration value ``server_model_dir`` when running the server:
 
 .. code-block:: console
 
-    $ python -m rasa_nlu.server -c config_spacy.json --server_model_dirs=./models/model_YYYYMMDD-HHMMSS
+    $ python -m rasa_nlu.server -c config_spacy.json --server_model_dir=./models/model_YYYYMMDD-HHMMSS
 
 More information about starting the server can be found in :ref:`section_http`.
 
