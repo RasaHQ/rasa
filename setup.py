@@ -47,5 +47,5 @@ setup(
     author_email='alan@golastmile.com',
     url="https://rasa.ai",
     keywords=["NLP", "bots"],
-    download_url="https://github.com/golastmile/rasa_nlu/tarball/0.6-beta"
+    download_url="https://github.com/golastmile/rasa_nlu/archive/{}.tar.gz".format(__version__)
 )
