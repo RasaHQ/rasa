@@ -5,6 +5,7 @@ import multiprocessing
 import os
 import tempfile
 
+import datetime
 from flask import json
 
 from rasa_nlu.model import Model, Metadata, InvalidModelError
@@ -20,9 +21,7 @@ class DataRouter(object):
 
     def __init__(self, config):
         self.config = config
-        # Ensures different log files for different processes in multi worker mode
-        self.logfile = config['write'].replace(".json", "-{}.json".format(os.getpid()))
-        self.responses = DataRouter._create_query_logger(self.logfile)
+        self.responses = DataRouter._create_query_logger(config['response_log'])
         self.train_procs = []
         self.model_dir = config['path']
         self.token = config['token']
@@ -30,17 +29,29 @@ class DataRouter(object):
         self.model_store = self.__create_model_store()
 
     @staticmethod
-    def _create_query_logger(path):
+    def _create_query_logger(response_log_dir):
         """Creates a logger that will persist incomming queries and their results."""
 
-        logger = logging.getLogger('query-logger')
-        logger.setLevel(logging.INFO)
-        create_dir_for_file(path)
-        ch = logging.FileHandler(path)
-        ch.setFormatter(logging.Formatter('%(message)s'))
-        logger.propagate = False  # Prevents queries getting logged with parent logger which might log them to stdout
-        logger.addHandler(ch)
-        return logger
+        # Ensures different log files for different processes in multi worker mode
+        if response_log_dir:
+            # We need to generate a unique file name, even in multiprocess environments
+            timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+            log_file_name = "rasa_nlu_log-{}-{}.log".format(timestamp, os.getpid())
+            response_logfile = os.path.join(response_log_dir, log_file_name)
+            # Instantiate a standard python logger, which we are going to use to log requests
+            logger = logging.getLogger('query-logger')
+            logger.setLevel(logging.INFO)
+            create_dir_for_file(response_logfile)
+            ch = logging.FileHandler(response_logfile)
+            ch.setFormatter(logging.Formatter('%(message)s'))
+            logger.propagate = False  # Prevents queries getting logged with parent logger --> might log them to stdout
+            logger.addHandler(ch)
+            logging.info("Logging requests to '{}'.".format(response_logfile))
+            return logger
+        else:
+            # If the user didn't provide a logging directory, we wont log!
+            logging.info("Logging of requests is disabled. (No 'request_log' directory configured)")
+            return None
 
     @staticmethod
     def featurizer_for_model(model, nlp):
@@ -187,7 +198,8 @@ class DataRouter(object):
         else:
             model = self.model_store[alias]
             response = model.interpreter.parse(data['text'])
-            self.responses.info(json.dumps(response, sort_keys=True))
+            if self.responses:
+                self.responses.info(json.dumps(response, sort_keys=True))
             return self.format_response(response)
 
     def format_response(self, data):

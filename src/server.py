@@ -84,7 +84,7 @@ def create_app(config):
 
     logging.basicConfig(filename=config['log_file'], level=config['log_level'])
     logging.captureWarnings(True)
-    logging.info(config.view())
+    logging.info("Configuration: " + config.view())
 
     logging.debug("Creating a new data router")
     rasa_nlu_app.data_router = DataRouter(config)

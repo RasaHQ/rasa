@@ -50,7 +50,9 @@ Here is a list of all rasa NLU configuration options:
 |                                      |                         | a ``?token=<token>`` query param.                    |
 |                                      |                         | see :ref:`section_auth`                              |
 +--------------------------------------+-------------------------+------------------------------------------------------+
-| ``write: str``                       |                         | file where logs will be saved                        |
+| ``response_log: str or null``        |                         | directory where logs will be saved (containing       |
+|                                      |                         | queries and responses. if set to ``null`` logging    |
+|                                      |                         | will be disabled                                     |
 +--------------------------------------+-------------------------+------------------------------------------------------+
 | ``num_threads: int``                 |                         | number of threads used during training               |
 +--------------------------------------+-------------------------+------------------------------------------------------+
