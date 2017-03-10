@@ -18,7 +18,7 @@ Removed
 Fixed
 -----
 
-[0.7.0] - 2017-02-28
+[0.7.0] - 2017-03-10
 ^^^^^^^^^^^^^^^^^^^^
 This is a major version update. Please also have a look at the `Migration Guide <https://rasa-nlu.readthedocs.io/en/latest/migrations.html>`_.
 
