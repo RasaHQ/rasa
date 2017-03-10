@@ -36,7 +36,7 @@ class DataRouter(object):
         if response_log_dir:
             # We need to generate a unique file name, even in multiprocess environments
             timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
-            log_file_name = "rasa_nlu_log-{}-{}.json".format(timestamp, os.getpid())
+            log_file_name = "rasa_nlu_log-{}-{}.log".format(timestamp, os.getpid())
             response_logfile = os.path.join(response_log_dir, log_file_name)
             # Instantiate a standard python logger, which we are going to use to log requests
             logger = logging.getLogger('query-logger')

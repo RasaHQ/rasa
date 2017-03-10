@@ -18,6 +18,15 @@ Removed
 Fixed
 -----
 
+[0.7.1] - 2017-03-10
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- mitie tokenization value generation `#207 <https://github.com/golastmile/rasa_nlu/pull/207>`_, thanks @cristinacaputo
+- changed log file extension from ``.json`` to ``.log``, since the contained text is not proper json
+
+
 [0.7.0] - 2017-03-10
 ^^^^^^^^^^^^^^^^^^^^
 This is a major version update. Please also have a look at the `Migration Guide <https://rasa-nlu.readthedocs.io/en/latest/migrations.html>`_.
