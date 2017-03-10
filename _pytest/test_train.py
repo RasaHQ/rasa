@@ -3,8 +3,8 @@ import tempfile
 
 import pytest
 
-from rasa_nlu.utils.mitie import MITIE_BACKEND_NAME, MITIE_SKLEARN_BACKEND_NAME
-from rasa_nlu.utils.spacy import SPACY_BACKEND_NAME
+from rasa_nlu.utils.mitie_utils import MITIE_BACKEND_NAME, MITIE_SKLEARN_BACKEND_NAME
+from rasa_nlu.utils.spacy_utils import SPACY_BACKEND_NAME
 import utilities
 
 

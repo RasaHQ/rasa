@@ -3,7 +3,7 @@ import os
 import tempfile
 import spacy
 
-from rasa_nlu.extractors.mitie_entity_extractor import MITIEEntityExtractor
+from rasa_nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa_nlu.training_data import TrainingData
 
 
@@ -61,7 +61,7 @@ def test_repeated_entities():
         example = td.entity_examples[0]
         entities = example["entities"]
         assert len(entities) == 1
-        start, end = MITIEEntityExtractor.find_entity(entities[0], example["text"])
+        start, end = MitieEntityExtractor.find_entity(entities[0], example["text"])
         assert start == 9
         assert end == 10
 
@@ -94,7 +94,7 @@ def test_multiword_entities():
         example = td.entity_examples[0]
         entities = example["entities"]
         assert len(entities) == 1
-        start, end = MITIEEntityExtractor.find_entity(entities[0], example["text"])
+        start, end = MitieEntityExtractor.find_entity(entities[0], example["text"])
         assert start == 4
         assert end == 7
 

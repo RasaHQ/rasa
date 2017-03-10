@@ -1,23 +1,35 @@
 import logging
 import re
 
-from mitie import tokenize
-
 from rasa_nlu.tokenizers import Tokenizer
+from rasa_nlu.components import Component
 
 
-class MITIETokenizer(Tokenizer):
+class MitieTokenizer(Tokenizer, Component):
+    name = "tokenizer_mitie"
+
+    context_provides = ["tokens"]
+
     def __init__(self):
         pass
 
     def tokenize(self, text):
-        return [w.decode('utf-8') for w in tokenize(text.encode('utf-8'))]
+        import mitie
+
+        return [w.decode('utf-8') for w in mitie.tokenize(text.encode('utf-8'))]
+
+    def process(self, text):
+        return {
+            "tokens": self.tokenize(text)
+        }
 
     def tokenize_with_offsets(self, text):
+        import mitie
+
         _text = text.encode('utf-8')
         offsets = []
         offset = 0
-        tokens = [w.decode('utf-8') for w in tokenize(_text)]
+        tokens = [w.decode('utf-8') for w in mitie.tokenize(_text)]
         for tok in tokens:
             m = re.search(re.escape(tok), text[offset:], re.UNICODE)
             if m is None:

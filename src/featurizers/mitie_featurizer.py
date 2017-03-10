@@ -1,36 +1,46 @@
-from mitie import *
-import numpy as np
-
+from rasa_nlu.components import Component
 from rasa_nlu.featurizers import Featurizer
 
 
-class MITIEFeaturizer(Featurizer):
-    @staticmethod
-    def load(path):
-        if path:
-            extractor = total_word_feature_extractor(path)
-            ndim = extractor.num_dimensions
-            return MITIEFeaturizer(extractor, ndim)
-        else:
-            return None
+class MitieFeaturizer(Featurizer, Component):
+    name = "intent_featurizer_mitie"
 
-    def __init__(self, extractor, ndim):
-        self.feature_extractor = extractor
-        self.ndim = ndim
+    context_provides = ["intent_features"]
 
-    def features_for_tokens(self, tokens):
-        vec = np.zeros(self.ndim)
+    def ndim(self, feature_extractor):
+        return feature_extractor.num_dimensions
+
+    def train(self, training_data, mitie_feature_extractor):
+        sentences = [e["text"] for e in training_data.intent_examples]
+        features = self.features_for_sentences(sentences, mitie_feature_extractor)
+        return {
+            "intent_features": features
+        }
+
+    def process(self, tokens, mitie_feature_extractor):
+        features = self.features_for_tokens(tokens, mitie_feature_extractor)
+        return {
+            "intent_features": features
+        }
+
+    def features_for_tokens(self, tokens, feature_extractor):
+        import numpy as np
+
+        vec = np.zeros(self.ndim(feature_extractor))
         for token in tokens:
-            vec += self.feature_extractor.get_feature_vector(token)
+            vec += feature_extractor.get_feature_vector(token)
         if tokens:
             return vec / len(tokens)
         else:
             return vec
 
-    def features_for_sentences(self, sentences):
-        X = np.zeros((len(sentences), self.ndim))
+    def features_for_sentences(self, sentences, feature_extractor):
+        import mitie
+        import numpy as np
+
+        X = np.zeros((len(sentences), self.ndim(feature_extractor)))
 
         for idx, sentence in enumerate(sentences):
-            tokens = tokenize(sentence)
-            X[idx, :] = self.features_for_tokens(tokens)
+            tokens = mitie.tokenize(sentence)
+            X[idx, :] = self.features_for_tokens(tokens, feature_extractor)
         return X

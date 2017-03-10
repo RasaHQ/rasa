@@ -10,8 +10,8 @@ from flask import json
 from rasa_nlu.model import Model, Metadata, InvalidModelError
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.train import do_train
-from rasa_nlu.utils import mitie
-from rasa_nlu.utils import spacy
+from rasa_nlu.utils import mitie_utils
+from rasa_nlu.utils import spacy_utils
 from rasa_nlu.util import create_dir_for_file
 
 
@@ -46,11 +46,11 @@ class DataRouter(object):
     def featurizer_for_model(model, nlp):
         """Initialize featurizer for backends. If it can NOT be shared between models, `None` should be returned."""
 
-        if model.backend_name() == spacy.SPACY_BACKEND_NAME:
+        if model.backend_name() == spacy_utils.SPACY_BACKEND_NAME:
             from featurizers.spacy_featurizer import SpacyFeaturizer
             return SpacyFeaturizer(nlp)
-        elif model.backend_name() == mitie.MITIE_BACKEND_NAME or \
-                model.backend_name() == mitie.MITIE_SKLEARN_BACKEND_NAME:
+        elif model.backend_name() == mitie_utils.MITIE_BACKEND_NAME or \
+                model.backend_name() == mitie_utils.MITIE_SKLEARN_BACKEND_NAME:
             from rasa_nlu.featurizers.mitie_featurizer import MITIEFeaturizer
             return MITIEFeaturizer.load(model.feature_extractor_path)
         else:
@@ -60,7 +60,7 @@ class DataRouter(object):
     def nlp_for_backend(backend, language):
         """Initialize nlp for backends. If nlp can NOT be shared between models, `None` should be returned."""
 
-        if spacy.SPACY_BACKEND_NAME == backend:
+        if spacy_utils.SPACY_BACKEND_NAME == backend:
             # spacy can share large memory objects across models
             import spacy as sp
             return sp.load(language, parser=False, entity=False, matcher=False)
@@ -95,7 +95,7 @@ class DataRouter(object):
                 nlp = cache[cache_key]['nlp']
                 featurizer = cache[cache_key]['featurizer']
             else:
-                nlp = DataRouter.nlp_for_backend(metadata.backend_name(), metadata.language_name())
+                nlp = DataRouter.nlp_for_backend(metadata.backend_name(), metadata.language)
                 featurizer = DataRouter.featurizer_for_model(metadata, nlp)
                 cache[cache_key] = {'nlp': nlp, 'featurizer': featurizer}
             interpreter = DataRouter.create_interpreter(metadata, nlp, featurizer)
@@ -110,7 +110,7 @@ class DataRouter(object):
     def default_model_metadata():
         return {
             "backend": None,
-            "language_name": None,
+            "language": None,
             "feature_extractor": None
         }
 
@@ -144,16 +144,16 @@ class DataRouter(object):
         if backend is None:
             from interpreters.simple_interpreter import HelloGoodbyeInterpreter
             return HelloGoodbyeInterpreter()
-        elif backend.lower() == mitie.MITIE_BACKEND_NAME:
+        elif backend.lower() == mitie_utils.MITIE_BACKEND_NAME:
             logging.info("using mitie backend")
             from interpreters.mitie_interpreter import MITIEInterpreter
             return MITIEInterpreter.load(metadata, featurizer)
-        elif backend.lower() == mitie.MITIE_SKLEARN_BACKEND_NAME:
+        elif backend.lower() == mitie_utils.MITIE_SKLEARN_BACKEND_NAME:
             logging.info("using mitie_sklearn backend")
             from interpreters.mitie_sklearn_interpreter import MITIESklearnInterpreter
             return MITIESklearnInterpreter.load(metadata, featurizer)
 
-        elif backend.lower() == spacy.SPACY_BACKEND_NAME:
+        elif backend.lower() == spacy_utils.SPACY_BACKEND_NAME:
             logging.info("using spacy + sklearn backend")
             from interpreters.spacy_sklearn_interpreter import SpacySklearnInterpreter
             return SpacySklearnInterpreter.load(metadata, nlp, featurizer)

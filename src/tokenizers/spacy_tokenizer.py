@@ -1,10 +1,22 @@
 from rasa_nlu.tokenizers import Tokenizer
+from rasa_nlu.components import Component
 
 
-class SpacyTokenizer(Tokenizer):
+class SpacyTokenizer(Tokenizer, Component):
+    name = "tokenizer_spacy"
 
-    def __init__(self, nlp):
+    context_provides = ["tokens"]
+
+    def __init__(self, nlp=None):
         self.nlp = nlp
+
+    def pipeline_init(self, spacy_nlp):
+        self.nlp = spacy_nlp
+
+    def process(self, text):
+        return {
+            "tokens": self.tokenize(text)
+        }
 
     def tokenize(self, text):
         return [t.text for t in self.nlp(text)]

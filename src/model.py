@@ -55,14 +55,10 @@ class Metadata(object):
     def entity_synonyms_path(self):
         return self.__prepend_path("entity_synonyms")
 
-    def language_name(self):
-        return self.metadata.get('language_name')
+    @property
+    def language(self):
+        return self.metadata.get('language')
 
-    def backend_name(self):
-        return self.metadata.get('backend')
-
-    def model_group(self):
-        """Groups models by backend and language name."""
-        if self.language_name() is not None and self.backend_name() is not None:
-            return self.language_name() + "@" + self.backend_name()
-        return None
+    @property
+    def pipeline(self):
+        return self.metadata.get('pipeline')

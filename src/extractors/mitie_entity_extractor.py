@@ -1,17 +1,20 @@
+import os
 import re
 
-from mitie import ner_trainer, tokenize, ner_training_instance, named_entity_extractor
-from rasa_nlu.tokenizers.mitie_tokenizer import MITIETokenizer
+from rasa_nlu.components import Component
+from rasa_nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 
 
-class MITIEEntityExtractor(object):
+class MitieEntityExtractor(Component):
+    name = "ner_mitie"
+
     def __init__(self, ner=None):
         self.ner = ner
 
-    def get_entities(self, text, tokens, featurizer):
+    def extract_entities(self, text, tokens, feature_extractor):
         ents = []
         if self.ner:
-            entities = self.ner.extract_entities(tokens, featurizer.feature_extractor)
+            entities = self.ner.extract_entities(tokens, feature_extractor)
             for e in entities:
                 _range = e[0]
                 _regex = u"\s*".join(re.escape(tokens[i]) for i in _range)
@@ -30,7 +33,9 @@ class MITIEEntityExtractor(object):
 
     @staticmethod
     def find_entity(ent, text):
-        tk = MITIETokenizer()
+        import mitie
+        # TODO: inject tokenizer results here!!!!
+        tk = MitieTokenizer()
         tokens, offsets = tk.tokenize_with_offsets(text)
         if ent["start"] not in offsets:
             message = u"invalid entity {0} in example '{1}':".format(ent, text) + \
@@ -38,38 +43,44 @@ class MITIEEntityExtractor(object):
             raise ValueError(message)
         start = offsets.index(ent["start"])
         _slice = text[ent["start"]:ent["end"]]
-        val_tokens = tokenize(_slice)
+        val_tokens = mitie.tokenize(_slice)
         end = start + len(val_tokens)
         return start, end
 
-    @staticmethod
-    def train(entity_examples, fe_file, max_num_threads):
-        trainer = ner_trainer(fe_file)
-        trainer.num_threads = max_num_threads
-        for example in entity_examples:
+    def train(self, training_data, mitie_file, num_threads):
+        import mitie
+
+        trainer = mitie.ner_trainer(mitie_file)
+        trainer.num_threads = num_threads
+        for example in training_data.entity_examples:
             text = example["text"]
-            tokens = tokenize(text)
-            sample = ner_training_instance(tokens)
+            tokens = mitie.tokenize(text)
+            sample = mitie.ner_training_instance(tokens)
             for ent in example["entities"]:
-                start, end = MITIEEntityExtractor.find_entity(ent, text)
+                start, end = MitieEntityExtractor.find_entity(ent, text)
                 sample.add_entity(xrange(start, end), ent["entity"])
 
             trainer.add(sample)
-        ner = trainer.train()
-        return MITIEEntityExtractor(ner)
+        self.ner = trainer.train()
 
-    @staticmethod
-    def load(path):
-        if path:
-            extractor = named_entity_extractor(path)
-            return MITIEEntityExtractor(extractor)
+    def process(self, text, tokens, mitie_feature_extractor):
+        return {
+            "entities": self.extract_entities(text, tokens, mitie_feature_extractor)
+        }
+
+    @classmethod
+    def load(cls, model_dir):
+        import mitie
+
+        if model_dir:
+            entity_extractor_file = os.path.join(model_dir, "entity_extractor.dat")
+            extractor = mitie.named_entity_extractor(entity_extractor_file)
+            return MitieEntityExtractor(extractor)
         else:
             return None
 
-    def persist(self, dir_name):
-        import os
-
-        entity_extractor_file = os.path.join(dir_name, "entity_extractor.dat")
+    def persist(self, model_dir):
+        entity_extractor_file = os.path.join(model_dir, "entity_extractor.dat")
         self.ner.save_to_disk(entity_extractor_file, pure_model=True)
         return {
             "entity_extractor": "entity_extractor.dat"

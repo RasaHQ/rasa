@@ -1,9 +1,9 @@
 import pytest
 
 import utilities
-from rasa_nlu.utils.mitie import MITIE_BACKEND_NAME
-from rasa_nlu.utils.mitie import MITIE_SKLEARN_BACKEND_NAME
-from rasa_nlu.utils.spacy import SPACY_BACKEND_NAME
+from rasa_nlu.utils.mitie_utils import MITIE_BACKEND_NAME
+from rasa_nlu.utils.mitie_utils import MITIE_SKLEARN_BACKEND_NAME
+from rasa_nlu.utils.spacy_utils import SPACY_BACKEND_NAME
 
 
 @pytest.mark.parametrize("backend_name", [

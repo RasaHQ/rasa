@@ -2,13 +2,10 @@
 
 import codecs
 import json
+import os
 import re
 import warnings
 from itertools import groupby
-
-from rasa_nlu.utils import mitie
-
-from rasa_nlu.utils import spacy
 
 from rasa_nlu import util
 
@@ -26,31 +23,16 @@ class TrainingData(object):
     MIN_EXAMPLES_PER_INTENT = 2
     MIN_EXAMPLES_PER_ENTITY = 2
 
-    def __init__(self, resource_name, backend, nlp=None, file_format=None):
+    def __init__(self, resource_name, file_format=None):
         self.intent_examples = []
         self.entity_examples = []
         self.entity_synonyms = {}
         self.resource_name = resource_name
         self.files = TrainingData.resolve_data_files(resource_name)
         self.fformat = file_format if file_format is not None else TrainingData.guess_format(self.files)
-        self.tokenizer = None
 
-        self.init_tokenizer(backend, nlp)
         self.load_data()
         self.validate()
-
-    def init_tokenizer(self, backend, nlp):
-        if backend in [mitie.MITIE_BACKEND_NAME, mitie.MITIE_SKLEARN_BACKEND_NAME]:
-            from rasa_nlu.tokenizers.mitie_tokenizer import MITIETokenizer
-            self.tokenizer = MITIETokenizer()
-        elif backend in [spacy.SPACY_BACKEND_NAME]:
-            from rasa_nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
-            self.tokenizer = SpacyTokenizer(nlp)
-        else:
-            from rasa_nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-            self.tokenizer = WhitespaceTokenizer()
-            warnings.warn(
-                "backend not recognised by TrainingData : defaulting to tokenizing by splitting on whitespace")
 
     @property
     def num_entity_examples(self):
@@ -72,23 +54,12 @@ class TrainingData(object):
         }, **kwargs)
 
     def persist(self, dir_name):
-        import os
-        from rasa_nlu.trainers.training_utils import relative_normpath
-
         data_file = os.path.join(dir_name, "training_data.json")
         with open(data_file, 'w') as f:
             f.write(self.as_json(indent=2))
 
-        if self.entity_synonyms:
-            entity_synonyms_file = os.path.join(dir_name, "index.json")
-            with open(entity_synonyms_file, 'w') as f:
-                json.dump(self.entity_synonyms, f)
-        else:
-            entity_synonyms_file = None
-
         return {
-            "training_data": "training_data.json",
-            "entity_synonyms": relative_normpath(entity_synonyms_file, dir_name),
+            "training_data": "training_data.json"
         }
 
     @staticmethod
@@ -132,9 +103,6 @@ class TrainingData(object):
             entities = [e for e in entities if ("start" in e and "end" in e)]
             for e in entities:
                 e["value"] = e["value"][1:-1]
-                # create synonyms dictionary
-                text_value = text[e["start"]:e["end"]]
-                util.add_entities_if_synonyms(self.entity_synonyms, text_value, e["value"])
 
             self.intent_examples.append({"text": text, "intent": intent})
             self.entity_examples.append({"text": text, "intent": intent, "entities": entities})
@@ -143,23 +111,25 @@ class TrainingData(object):
         warnings.warn(
             """LUIS data may not always be correctly imported because entity locations are specified by tokens.
             If you use a tokenizer which behaves differently from LUIS's your entities might not be correct""")
-        data = json.loads(codecs.open(filename, encoding='utf-8').read())
-        for s in data["utterances"]:
-            text = s.get("text")
-            tokens = [t for t in self.tokenizer.tokenize(text)]
-            intent = s.get("intent")
-            entities = []
-            for e in s.get("entities") or []:
-                i, ii = e["startPos"], e["endPos"] + 1
-                _regex = u"\s*".join([re.escape(s) for s in tokens[i:ii]])
-                expr = re.compile(_regex)
-                m = expr.search(text)
-                start, end = m.start(), m.end()
-                val = text[start:end]
-                entities.append({"entity": e["entity"], "value": val, "start": start, "end": end})
+        # TODO: figgure out where to put data conversion (we need a tokenizer there...)
 
-            self.intent_examples.append({"text": text, "intent": intent})
-            self.entity_examples.append({"text": text, "intent": intent, "entities": entities})
+        # data = json.loads(codecs.open(filename, encoding='utf-8').read())
+        # for s in data["utterances"]:
+        #     text = s.get("text")
+        #     tokens = [t for t in self.tokenizer.tokenize(text)]
+        #     intent = s.get("intent")
+        #     entities = []
+        #     for e in s.get("entities") or []:
+        #         i, ii = e["startPos"], e["endPos"] + 1
+        #         _regex = u"\s*".join([re.escape(s) for s in tokens[i:ii]])
+        #         expr = re.compile(_regex)
+        #         m = expr.search(text)
+        #         start, end = m.start(), m.end()
+        #         val = text[start:end]
+        #         entities.append({"entity": e["entity"], "value": val, "start": start, "end": end})
+        #
+        #     self.intent_examples.append({"text": text, "intent": intent})
+        #     self.entity_examples.append({"text": text, "intent": intent, "entities": entities})
 
     def load_api_data(self, files):
         for filename in files:
@@ -192,7 +162,7 @@ class TrainingData(object):
                 for entry in data["entries"]:
                     if "value" in entry and "synonyms" in entry:
                         for synonym in entry["synonyms"]:
-                            util.add_entities_if_synonyms(self.entity_synonyms, synonym, entry["value"])
+                            self.entity_synonyms[synonym] = entry["value"]
 
     def load_rasa_data(self, filename):
         data = json.loads(open(filename, 'rb').read())
@@ -202,11 +172,6 @@ class TrainingData(object):
 
         self.intent_examples = intent + common
         self.entity_examples = entity + common
-
-        for example in self.entity_examples:
-            for entity in example["entities"]:
-                entity_val = example["text"][entity["start"]:entity["end"]]
-                util.add_entities_if_synonyms(self.entity_synonyms, entity_val, entity.get("value"))
 
     def sorted_entity_examples(self):
         return sorted([entity for ex in self.entity_examples for entity in ex["entities"]], key=lambda e: e["entity"])
@@ -229,13 +194,14 @@ class TrainingData(object):
                 template = u"Entity '{0}' has only {1} training examples! minimum is {2}, training may fail."
                 warnings.warn(template.format(entity, size, self.MIN_EXAMPLES_PER_ENTITY))
 
-        for example in self.entity_examples:
-            text = example["text"]
-            text_tokens = self.tokenizer.tokenize(text)
-            for ent in example["entities"]:
-                ent_tokens = self.tokenizer.tokenize(text[ent["start"]:ent["end"]])
-                for token in ent_tokens:
-                    if token not in text_tokens:
-                        warnings.warn(
-                            "Token '{0}' does not appear in tokenized sentence {1}.".format(token, text_tokens) +
-                            "Entities must span whole tokens.")
+        # TODO: figgure out if we want to do this somewhere else where we do have a tokenizer
+        # for example in self.entity_examples:
+        #     text = example["text"]
+        #     text_tokens = self.tokenizer.tokenize(text)
+        #     for ent in example["entities"]:
+        #         ent_tokens = self.tokenizer.tokenize(text[ent["start"]:ent["end"]])
+        #         for token in ent_tokens:
+        #             if token not in text_tokens:
+        #                 warnings.warn(
+        #                     "Token '{0}' does not appear in tokenized sentence {1}.".format(token, text_tokens) +
+        #                     "Entities must span whole tokens.")

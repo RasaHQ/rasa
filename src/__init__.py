@@ -1,31 +1,19 @@
-import warnings
-
-from pkg_resources import get_distribution
 import codecs
 import json
 import os
+import warnings
+
 import version
+from rasa_nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
+from rasa_nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
+from rasa_nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
+from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
+from rasa_nlu.featurizers.mitie_featurizer import MitieFeaturizer
+from rasa_nlu.featurizers.spacy_featurizer import SpacyFeaturizer
+from rasa_nlu.tokenizers.mitie_tokenizer import MitieTokenizer
+from rasa_nlu.utils.mitie_utils import MitieNLP
+from rasa_nlu.utils.spacy_utils import SpacyNLP
 
 __version__ = version.__version__
 
 
-class Interpreter(object):
-    def parse(self, text):
-        raise NotImplementedError()
-
-    @staticmethod
-    def load_synonyms(entity_synonyms_file):
-        if entity_synonyms_file:
-            if os.path.isfile(entity_synonyms_file):
-                with codecs.open(entity_synonyms_file, encoding='utf-8') as infile:
-                    return json.loads(infile.read())
-            else:
-                warnings.warn("Failed to load synonyms file from '{}'".format(entity_synonyms_file))
-        return None
-
-    @staticmethod
-    def replace_synonyms(entities, entity_synonyms):
-        for i in range(len(entities)):
-            entity_value = entities[i]["value"]
-            if entity_value.lower() in entity_synonyms:
-                entities[i]["value"] = entity_synonyms[entity_value.lower()]

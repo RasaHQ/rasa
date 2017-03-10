@@ -1,5 +1,5 @@
 import argparse
-import json
+
 from rasa_nlu.training_data import TrainingData
 
 

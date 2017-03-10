@@ -1,30 +1,26 @@
-import logging
+import os
 
-import numpy as np
-from sklearn.model_selection import GridSearchCV
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
-from sklearn.svm import SVC
+from rasa_nlu.components import Component
 
 
-class SklearnIntentClassifier(object):
+class SklearnIntentClassifier(Component):
     """Intent classifier using the sklearn framework"""
 
-    def __init__(self, uses_probabilities=True, max_num_threads=1):
+    name = "intent_sklearn"
+
+    def __init__(self, clf=None, le=None):
         """Construct a new intent classifier using the sklearn framework.
 
         :param uses_probabilities: defines if the model should be trained
                                            to be able to predict label probabilities
         :param max_num_threads: number of threads used during training time
         :type uses_probabilities: bool"""
-
-        self.le = LabelEncoder()
-        self.uses_probabilities = uses_probabilities
-        self.tuned_parameters = [{'C': [1, 2, 5, 10, 20, 100], 'kernel': ['linear']}]
-        self.score = 'f1'
-        self.clf = GridSearchCV(SVC(C=1, probability=uses_probabilities),
-                                self.tuned_parameters, n_jobs=max_num_threads,
-                                cv=2, scoring='%s_weighted' % self.score)
+        if le is not None:
+            self.le = le
+        else:
+            from sklearn.preprocessing import LabelEncoder
+            self.le = LabelEncoder()
+        self.clf = clf
 
     def transform_labels_str2num(self, labels):
         """Transforms a list of strings into numeric label representation.
@@ -44,31 +40,48 @@ class SklearnIntentClassifier(object):
         labels = self.le.inverse_transform(y)
         return labels
 
-    @staticmethod
-    def train(intent_examples, featurizer, max_num_threads, test_split_size=0.1):
+    def train(self, training_data, intent_features, num_threads):
         """Train the intent classifier on a data set."""
-        intent_classifier = SklearnIntentClassifier(max_num_threads=max_num_threads)
-        labels = [e["intent"] for e in intent_examples]
-        sentences = [e["text"] for e in intent_examples]
+
+        from sklearn.model_selection import GridSearchCV
+        from sklearn.svm import SVC
+
+        labels = [e["intent"] for e in training_data.intent_examples]
 
         if len(set(labels)) < 2:
             raise Exception("Can not train an intent classifier. Need at least 2 different classes.")
-        y = intent_classifier.transform_labels_str2num(labels)
-        X = featurizer.features_for_sentences(sentences)
+        y = self.transform_labels_str2num(labels)
+        X = intent_features
 
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_split_size, random_state=0)
-        intent_classifier.clf.fit(X_train, y_train)
+        tuned_parameters = [{'C': [1, 2, 5, 10, 20, 100], 'kernel': ['linear']}]
+        self.clf = GridSearchCV(SVC(C=1, probability=True),
+                                param_grid=tuned_parameters, n_jobs=num_threads,
+                                cv=2, scoring='f1_weighted')
 
-        # Test the trained model
-        if test_split_size != 0.0:
-            logging.info("Score of intent model on test data: %s " % intent_classifier.clf.score(X_test, y_test))
-        return intent_classifier
+        self.clf.fit(X, y)
+
+    def process(self, intent_features):
+        """Returns the most likely intent and its probability for the input text."""
+
+        X = intent_features.reshape(1, -1)
+        intent_ids, probabilities = self.predict(X)
+        intents = self.transform_labels_num2str(intent_ids)
+        intent, score = intents[0], probabilities[0]
+
+        return {
+            "intent": {
+                "name": intent,
+                "confidence": score,
+            }
+        }
 
     def predict_prob(self, X):
         """Given a bow vector of an input text, predict the intent label. Returns probabilities for all labels.
 
         :param X: bow of input text
         :return: vector of probabilities containing one entry for each label"""
+
+        import numpy as np
 
         if hasattr(self, 'uses_probabilities') and self.uses_probabilities:
             return self.clf.predict_proba(X)
@@ -85,28 +98,30 @@ class SklearnIntentClassifier(object):
         :param X: bow of input text
         :return: tuple of first, the most probable label and second, its probability"""
 
+        import numpy as np
+
         pred_result = self.predict_prob(X)
         max_indicies = np.argmax(pred_result, axis=1)
         # retrieve the index of the intent with the highest probability
         max_values = pred_result[:, max_indicies].flatten()
         return max_indicies, max_values
 
-    @staticmethod
-    def load(path):
+    @classmethod
+    def load(cls, model_dir):
         import cloudpickle
-        if path:
-            with open(path, 'rb') as f:
+        if model_dir:
+            classifier_file = os.path.join(model_dir, "intent_classifier.dat")
+            with open(classifier_file, 'rb') as f:
                 return cloudpickle.load(f)
         else:
             return None
 
-    def persist(self, dir_name):
+    def persist(self, model_dir):
         """Persist this model into the passed directory. Returns the metadata necessary to load the model again."""
 
-        import os
         import cloudpickle
 
-        classifier_file = os.path.join(dir_name, "intent_classifier.dat")
+        classifier_file = os.path.join(model_dir, "intent_classifier.dat")
         with open(classifier_file, 'wb') as f:
             cloudpickle.dump(self, f)
 

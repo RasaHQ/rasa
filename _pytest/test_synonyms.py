@@ -1,4 +1,5 @@
-from rasa_nlu import Interpreter
+from extractors.entity_synonyms import EntitySynonymMapper
+from rasa_nlu.pipeline import Interpreter
 
 
 def test_entity_synonyms():
@@ -19,7 +20,7 @@ def test_entity_synonyms():
         "end": 6
     }]
     ent_synonyms = {"chines": "chinese", "NYC": "New York City"}
-    Interpreter.replace_synonyms(entities, ent_synonyms)
+    EntitySynonymMapper(ent_synonyms)
     assert len(entities) == 3
     assert entities[0]["value"] == "chinese"
     assert entities[1]["value"] == "chinese"
