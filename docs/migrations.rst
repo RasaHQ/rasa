@@ -8,6 +8,9 @@ how you can migrate from one version to another.
 
 - The parameter and configuration value name of ``server_model_dir`` changed to ``server_model_dirs``.
 
+- The parameter and configuration value name of ``write`` changed to ``response_log``. It now configures the
+  *directory* where the logs should be written to (not a file!)
+
 - The model metadata format has changed. All paths are now relative with respect to the ``path`` specified in the
   configuration during training and loading. If you want to run models that are trained with a
   version prev to 0.7 you need to adapt the paths manually in ``metadata.json`` from
