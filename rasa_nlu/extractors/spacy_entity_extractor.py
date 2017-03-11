@@ -6,7 +6,10 @@ import random
 import pathlib
 import warnings
 
+from typing import Optional
+
 from rasa_nlu.components import Component
+from rasa_nlu.training_data import TrainingData
 
 
 class SpacyEntityExtractor(Component):
@@ -16,6 +19,9 @@ class SpacyEntityExtractor(Component):
         self.ner = ner
 
     def train(self, spacy_nlp, training_data, fine_tune_spacy_ner):
+        # type: (Language, TrainingData, Optional[bool]) -> None
+        from spacy.language import Language
+
         if training_data.num_entity_examples > 0:
             train_data = self._convert_examples(training_data.entity_examples)
             ent_types = [[ent["entity"] for ent in ex["entities"]] for ex in training_data.entity_examples]
@@ -27,11 +33,17 @@ class SpacyEntityExtractor(Component):
                 self.ner = self._train_from_scratch(spacy_nlp, entity_types, train_data)
 
     def process(self, spacy_doc):
+        # type: (Doc) -> dict
+        from spacy.tokens import Doc
+
         return {
             "entities": self.extract_entities(spacy_doc)
         }
 
     def extract_entities(self, doc):
+        # type: (Doc) -> [dict]
+        from spacy.tokens import Doc
+
         if self.ner is not None:
             self.ner(doc)
 
@@ -49,6 +61,8 @@ class SpacyEntityExtractor(Component):
 
     @classmethod
     def load(cls, model_dir, entity_extractor, spacy_nlp):
+        # type: (str, str, Language) -> SpacyEntityExtractor
+        from spacy.language import Language
         from spacy.pipeline import EntityRecognizer
 
         if model_dir and entity_extractor:
@@ -59,9 +73,10 @@ class SpacyEntityExtractor(Component):
             return SpacyEntityExtractor()
 
     def persist(self, model_dir):
+        # type: (str) -> dict
         """Persist this model into the passed directory. Returns the metadata necessary to load the model again."""
-
         import json
+
         if self.ner:
             ner_dir = os.path.join(model_dir, 'ner')
             if not os.path.exists(ner_dir):

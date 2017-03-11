@@ -4,6 +4,7 @@ import os
 import warnings
 
 from rasa_nlu.components import Component
+from rasa_nlu.training_data import TrainingData
 
 
 class EntitySynonymMapper(Component):
@@ -13,6 +14,8 @@ class EntitySynonymMapper(Component):
         self.synonyms = synonyms
 
     def train(self, training_data):
+        # type: (TrainingData) -> None
+
         for key, value in training_data.entity_synonyms.items():
             self.add_entities_if_synonyms(key, value)
 
@@ -22,6 +25,8 @@ class EntitySynonymMapper(Component):
                 self.add_entities_if_synonyms(entity_val, entity.get("value"))
 
     def process(self, entities):
+        # type: (dict) -> dict
+
         updated_entities = entities[:]
         self.replace_synonyms(updated_entities)
 
@@ -30,6 +35,8 @@ class EntitySynonymMapper(Component):
         }
 
     def persist(self, model_dir):
+        # type: (str) -> dict
+
         if self.synonyms:
             entity_synonyms_file = os.path.join(model_dir, "index.json")
             with open(entity_synonyms_file, 'w') as f:
@@ -40,6 +47,8 @@ class EntitySynonymMapper(Component):
 
     @classmethod
     def load(cls, model_dir, entity_synonyms):
+        # type: (str, str) -> EntitySynonymMapper
+
         if model_dir and entity_synonyms:
             entity_synonyms_file = os.path.join(model_dir, "index.json")
             if os.path.isfile(entity_synonyms_file):

@@ -1,8 +1,11 @@
 import os
 import re
 
+from typing import Optional
+
 from rasa_nlu.components import Component
 from rasa_nlu.tokenizers.mitie_tokenizer import MitieTokenizer
+from rasa_nlu.training_data import TrainingData
 
 
 class MitieEntityExtractor(Component):
@@ -51,6 +54,7 @@ class MitieEntityExtractor(Component):
         return start, end
 
     def train(self, training_data, mitie_file, num_threads):
+        # type: (TrainingData, str, Optional[int]) -> None
         from mitie import ner_training_instance, ner_trainer, tokenize
 
         trainer = ner_trainer(mitie_file)
@@ -71,12 +75,16 @@ class MitieEntityExtractor(Component):
             self.ner = trainer.train()
 
     def process(self, text, tokens, mitie_feature_extractor):
+        # type: (str, [str], mitie.total_word_feature_extractor) -> dict
+        import mitie
+
         return {
             "entities": self.extract_entities(text, tokens, mitie_feature_extractor)
         }
 
     @classmethod
     def load(cls, model_dir, entity_extractor):
+        # type: (str, str) -> MitieEntityExtractor
         from mitie import named_entity_extractor
 
         if model_dir and entity_extractor:
@@ -87,6 +95,8 @@ class MitieEntityExtractor(Component):
             return MitieEntityExtractor()
 
     def persist(self, model_dir):
+        # type: (str) -> dict
+
         if self.ner:
             entity_extractor_file = os.path.join(model_dir, "entity_extractor.dat")
             self.ner.save_to_disk(entity_extractor_file, pure_model=True)

@@ -1,4 +1,7 @@
+from typing import Optional
+
 from rasa_nlu.components import Component
+from rasa_nlu.model import Metadata
 
 SPACY_BACKEND_NAME = "spacy_sklearn"
 
@@ -16,9 +19,12 @@ class SpacyNLP(Component):
 
     @classmethod
     def cache_key(cls, model_metadata):
+        # type: (Metadata) -> str
+
         return cls.name + "-" + model_metadata.language
 
     def pipeline_init(self, language, fine_tune_spacy_ner):
+        # type: (str, Optional[bool]) -> dict
         import spacy
 
         # If fine tuning is disabled, we do not need to load the spacy entity model
@@ -31,15 +37,19 @@ class SpacyNLP(Component):
         return {"spacy_nlp": self.nlp}
 
     def process(self, text):
+        # type: (str) -> dict
+
         return {
             "spacy_doc": self.nlp(text)
         }
 
     @staticmethod
     def ensure_proper_language_model(nlp):
+        # type: (Optional[Language]) -> None
         """Checks if the spacy language model is properly loaded. Raises an exception if the model is invalid.
         :type nlp: Language or None
         """
+        from spacy.language import Language
 
         if nlp is None:
             raise Exception("Failed to load spacy language model. Loading the model returned 'None'.")

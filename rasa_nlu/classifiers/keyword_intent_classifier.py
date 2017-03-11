@@ -1,15 +1,17 @@
 from rasa_nlu.components import Component
 
 
-class SimpleIntentClassifier(Component):
+class KeywordIntentClassifier(Component):
 
-    name = "intent_simple"
+    name = "intent_keyword"
 
     his = ["hello", "hi", "hey"]
 
     byes = ["bye", "goodbye"]
 
     def process(self, text):
+        # type: (str) -> dict
+
         return {
             "intent": {
                 "name": self.parse(text),
@@ -18,6 +20,8 @@ class SimpleIntentClassifier(Component):
         }
 
     def parse(self, text):
+        # type: (str) -> str
+
         _text = text.lower()
 
         def is_present(x): return x in _text

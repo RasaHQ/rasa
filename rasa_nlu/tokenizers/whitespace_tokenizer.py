@@ -8,9 +8,13 @@ class WhitespaceTokenizer(Tokenizer, Component):
     context_provides = ["tokens"]
 
     def process(self, text):
+        # type: (str) -> dict
+
         return {
             "tokens": self.tokenize(text)
         }
 
     def tokenize(self, text):
+        # type: (str) -> [str]
+
         return text.split()

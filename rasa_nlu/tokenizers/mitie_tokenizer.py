@@ -14,16 +14,20 @@ class MitieTokenizer(Tokenizer, Component):
         pass
 
     def tokenize(self, text):
+        # type: (str) -> [str]
         from mitie import tokenize
 
         return [w.decode('utf-8') for w in tokenize(text.encode('utf-8'))]
 
     def process(self, text):
+        # type: (str) -> dict
+
         return {
             "tokens": self.tokenize(text)
         }
 
     def tokenize_with_offsets(self, text):
+        # type: (str) -> ([str], [int])
         from mitie import tokenize
 
         _text = text.encode('utf-8')

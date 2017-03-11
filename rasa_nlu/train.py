@@ -6,15 +6,17 @@ from rasa_nlu.pipeline import Trainer
 
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.training_data import TrainingData
+from typing import Optional
 
 
 def create_argparser():
     parser = argparse.ArgumentParser(description='train a custom language parser')
 
-    # TODO add args for training only entity extractor or only intent
     parser.add_argument('-b', '--backend', default=None, choices=['mitie', 'spacy_sklearn', 'keyword'],
                         help='backend to use to interpret text (default: built in keyword matcher).')
-    parser.add_argument('-p', '--path', default=None, help="path where model files will be saved")
+    parser.add_argument('-p', '--pipeline', default=None,
+                        help='pipeline to use for the message processing.')
+    parser.add_argument('-o', '--output', default=None, help="path where model files will be saved")
     parser.add_argument('-d', '--data', default=None, help="file containing training data")
     parser.add_argument('-c', '--config', required=True, help="config file")
     parser.add_argument('-l', '--language', default=None, choices=['de', 'en'], help="model and data language")
@@ -26,15 +28,24 @@ def create_argparser():
 
 
 def create_persistor(config):
+    # type: (RasaNLUConfig) -> Optional[Persistor]
+    """Create a remote peristor to store the model if the configuration requests it.
+
+    :type config: object
+    :rtype None or Persistor"""
+
     persistor = None
     if "bucket_name" in config:
         from rasa_nlu.persistor import Persistor
-        persistor = Persistor(config.path, config.aws_region, config.bucket_name)
+        persistor = Persistor(config['path'], config['aws_region'], config['bucket_name'])
 
     return persistor
 
 
 def init():
+    # type: () -> RasaNLUConfig
+    """Combines passed arguments to create rasa NLU config."""
+
     parser = create_argparser()
     args = parser.parse_args()
     config = RasaNLUConfig(args.config, os.environ, vars(args))
@@ -42,16 +53,15 @@ def init():
 
 
 def do_train(config):
+    # type: (RasaNLUConfig) -> (Trainer, str)
     """Loads the trainer and the data and runs the training of the specified model."""
 
     trainer = Trainer(config)
-
     persistor = create_persistor(config)
-
-    training_data = TrainingData(config.data)
+    training_data = TrainingData(config['data'])
     trainer.validate()
     trainer.train(training_data)
-    persisted_path = trainer.persist(config.path, persistor)
+    persisted_path = trainer.persist(config['path'], persistor)
     return trainer, persisted_path
 
 

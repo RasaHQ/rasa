@@ -6,8 +6,10 @@ import warnings
 from collections import Counter
 from string import punctuation
 import cloudpickle
+from typing import Optional
 
 from rasa_nlu.components import Component
+from rasa_nlu.training_data import TrainingData
 
 
 class NGramFeaturizer(Component):
@@ -26,6 +28,9 @@ class NGramFeaturizer(Component):
         self.all_ngrams = None
 
     def train(self, training_data, intent_features, spacy_nlp, max_ngrams):
+        # type: (TrainingData, [float], Language, Optional[int]) -> dict
+        from spacy.language import Language
+
         start = time.time()
         labels = [e['intent'] for e in training_data.intent_examples]
         sentences = [e['text'] for e in training_data.intent_examples]
@@ -36,7 +41,10 @@ class NGramFeaturizer(Component):
         return {"intent_features": stacked}
 
     def process(self, intent_features, text, spacy_nlp):
+        # type: ([float], str, Language) -> dict
         import numpy as np
+        from spacy.language import Language
+
         if self.all_ngrams:
             ngrams_to_use = self._ngrams_to_use(self.best_num_ngrams)
             if not ngrams_to_use:
@@ -50,6 +58,8 @@ class NGramFeaturizer(Component):
 
     @classmethod
     def load(cls, model_dir, ngram_featurizer):
+        # type: (str, str) -> NGramFeaturizer
+
         if model_dir and ngram_featurizer:
             classifier_file = os.path.join(model_dir, ngram_featurizer)
             with open(classifier_file, 'rb') as f:
@@ -58,6 +68,7 @@ class NGramFeaturizer(Component):
             return NGramFeaturizer()
 
     def persist(self, model_dir):
+        # type: (str) -> dict
         """Persist this model into the passed directory. Returns the metadata necessary to load the model again."""
 
         classifier_file = os.path.join(model_dir, "ngram_featurizer.pkl")

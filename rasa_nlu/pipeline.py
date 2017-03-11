@@ -7,7 +7,7 @@ import os
 
 import rasa_nlu.components
 from rasa_nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
-from rasa_nlu.classifiers.simple_intent_classifier import SimpleIntentClassifier
+from rasa_nlu.classifiers.simple_intent_classifier import KeywordIntentClassifier
 from rasa_nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
 from rasa_nlu.extractors.entity_synonyms import EntitySynonymMapper
 from rasa_nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
@@ -21,7 +21,7 @@ from rasa_nlu.utils.spacy_utils import SpacyNLP
 component_classes = [
     SpacyNLP, SpacyEntityExtractor, SklearnIntentClassifier, SpacyFeaturizer,
     MitieNLP, MitieEntityExtractor, MitieIntentClassifier, MitieFeaturizer, MitieTokenizer,
-    SimpleIntentClassifier, EntitySynonymMapper, NGramFeaturizer]
+    KeywordIntentClassifier, EntitySynonymMapper, NGramFeaturizer]
 
 
 registered_components = {component.name: component for component in component_classes}
@@ -50,6 +50,9 @@ registered_pipelines = {
         "ner_synonyms",
         "intent_featurizer_mitie",
         "intent_sklearn",
+    ],
+    "keyword": [
+        "intent_keyword",
     ]
 }
 

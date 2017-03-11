@@ -1,6 +1,8 @@
 from mitie import total_word_feature_extractor
-from rasa_nlu.components import Component
+from typing import Optional
 
+from rasa_nlu.components import Component
+from rasa_nlu.model import Metadata
 
 MITIE_BACKEND_NAME = "mitie"
 
@@ -18,9 +20,13 @@ class MitieNLP(Component):
 
     @classmethod
     def cache_key(cls, model_metadata):
+        # type: (Metadata) -> str
+
         return cls.name + "-" + str(model_metadata.metadata.get("mitie_feature_extractor_fingerprint"))
 
     def pipeline_init(self, mitie_file):
+        # type: (str) -> dict
+
         if self.extractor is None:
             self.extractor = total_word_feature_extractor(mitie_file)
         MitieNLP.ensure_proper_language_model(self.extractor)
@@ -28,10 +34,15 @@ class MitieNLP(Component):
 
     @staticmethod
     def ensure_proper_language_model(extractor):
+        # type: (Optional[mitie.total_word_feature_extractor]) -> None
+        import mitie
+
         if extractor is None:
             raise Exception("Failed to load MITIE feature extractor. Loading the model returned 'None'.")
 
     def persist(self, model_dir):
+        # type: (str) -> dict
+
         return {
             "mitie_feature_extractor_fingerprint": self.extractor.fingerprint
         }

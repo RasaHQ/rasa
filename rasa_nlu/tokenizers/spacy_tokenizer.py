@@ -11,12 +11,19 @@ class SpacyTokenizer(Tokenizer, Component):
         self.nlp = nlp
 
     def pipeline_init(self, spacy_nlp):
+        # type: (Language) -> None
+        from spacy.language import Language
+
         self.nlp = spacy_nlp
 
     def process(self, text):
+        # type: (str) -> dict
+
         return {
             "tokens": self.tokenize(text)
         }
 
     def tokenize(self, text):
+        # type: (str) -> [str]
+
         return [t.text for t in self.nlp(text)]

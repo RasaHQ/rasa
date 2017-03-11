@@ -1,14 +1,21 @@
 import inspect
 
+from typing import Optional
+from rasa_nlu.model import Metadata
+
 
 def get_component_class(component_name):
-    # resolve component name to class
+    # type: (str) -> Optional[object]
+    """Resolve component name to a registered components class."""
     from rasa_nlu.pipeline import registered_components
+
     return registered_components.get(component_name)
 
 
 def load_component_instance(component_name, context, config):
-    # load component from file
+    # type: (str, dict, dict) -> Optional[Component]
+    """Resolves a components name and calls it's load method to init it based on a previously persisted model."""
+
     component_clz = get_component_class(component_name)
     if component_clz is not None:
         load_args = fill_args(component_clz.load_args(), context, config)
@@ -18,7 +25,9 @@ def load_component_instance(component_name, context, config):
 
 
 def init_component(component, context, config):
-    # init component with context
+    # type: (Component, dict, dict) -> None
+    """Initializes a component using the attributes from the context and configuration."""
+
     args = fill_args(component.pipeline_init_args(), context, config)
     updates = component.pipeline_init(*args)
     if updates:
@@ -26,6 +35,9 @@ def init_component(component, context, config):
 
 
 def fill_args(arguments, context, config):
+    # type: ([str], dict, dict) -> [object]
+    """Given a list of arguments, tries to look up these argument names in the config / context to fill the arguments"""
+
     filled = []
     for arg in arguments:
         if arg in context:
@@ -49,24 +61,39 @@ class MissingArgumentError(Exception):
 
 
 class Component(object):
+
+    # Name of the component to be used when integrating it in a pipeline. E.g. `[ComponentA, ComponentB]`
+    # will be a proper pipeline definition where `ComponentA` is the name of the first component of the pipeline.
     name = ""
 
-    context_provides = []
+    # Defines what attributes the pipeline component will provide when called
+    # (mostly used to check if the pipeline is valid)
+    context_provides = []   # type: [str]
+
+    @classmethod
+    def load(cls, *args):
+        # type: (...) -> 'cls'
+        return cls()
 
     def pipeline_init(self, *args):
+        # type: (...) -> Optional[dict]
         pass
 
     def train(self, *args):
+        # type: (...) -> Optional[dict]
         pass
 
     def process(self, *args):
+        # type: (...) -> Optional[dict]
         pass
 
     def persist(self, model_dir):
+        # type: (str) -> Optional[dict]
         pass
 
     @classmethod
     def cache_key(cls, model_metadata):
+        # type: (Metadata) -> Optional[str]
         """This key is used to cache components.
 
         If a model is unique to a model it should return None. Otherwise, an instantiation of the
@@ -77,21 +104,21 @@ class Component(object):
         """
         return None
 
-    @classmethod
-    def load(cls, *args):
-        return cls()
-
     def pipeline_init_args(self):
+        # type: () -> [str]
         return filter(lambda arg: arg not in ["self"], inspect.getargspec(self.pipeline_init).args)
 
     def train_args(self):
+        # type: () -> [str]
         return filter(lambda arg: arg not in ["self"], inspect.getargspec(self.train).args)
 
     def process_args(self):
+        # type: () -> [str]
         return filter(lambda arg: arg not in ["self"], inspect.getargspec(self.process).args)
 
     @classmethod
     def load_args(cls):
+        # type: () -> [str]
         return filter(lambda arg: arg not in ["cls"], inspect.getargspec(cls.load).args)
 
     def __eq__(self, other):

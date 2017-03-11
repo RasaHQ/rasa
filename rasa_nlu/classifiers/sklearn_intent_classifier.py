@@ -1,6 +1,7 @@
 import os
 
 from rasa_nlu.components import Component
+from rasa_nlu.training_data import TrainingData
 
 
 class SklearnIntentClassifier(Component):
@@ -41,6 +42,7 @@ class SklearnIntentClassifier(Component):
         return labels
 
     def train(self, training_data, intent_features, num_threads):
+        # type: (TrainingData, [float], int) -> None
         """Train the intent classifier on a data set."""
 
         from sklearn.model_selection import GridSearchCV
@@ -61,6 +63,7 @@ class SklearnIntentClassifier(Component):
         self.clf.fit(X, y)
 
     def process(self, intent_features):
+        # type: ([float]) -> dict
         """Returns the most likely intent and its probability for the input text."""
 
         X = intent_features.reshape(1, -1)
@@ -108,7 +111,9 @@ class SklearnIntentClassifier(Component):
 
     @classmethod
     def load(cls, model_dir, intent_classifier):
+        # type: (str, str) -> SklearnIntentClassifier
         import cloudpickle
+
         if model_dir and intent_classifier:
             classifier_file = os.path.join(model_dir, intent_classifier)
             with open(classifier_file, 'rb') as f:
@@ -117,6 +122,7 @@ class SklearnIntentClassifier(Component):
             return SklearnIntentClassifier()
 
     def persist(self, model_dir):
+        # type: (str) -> dict
         """Persist this model into the passed directory. Returns the metadata necessary to load the model again."""
 
         import cloudpickle
