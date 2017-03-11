@@ -14,9 +14,9 @@ class SpacyNLP(Component):
         """
         self.nlp = nlp
 
-    def cache_key(self):
-        if self.nlp:
-            return self.nlp.lang
+    @classmethod
+    def cache_key(cls, model_metadata):
+        return cls.name + "-" + model_metadata.language
 
     def pipeline_init(self, language, fine_tune_spacy_ner):
         import spacy

@@ -8,28 +8,28 @@ from rasa_nlu.training_data import TrainingData
 
 
 def test_luis_mitie():
-    td = TrainingData('data/examples/luis/demo-restaurants.json', 'mitie')
+    td = TrainingData('data/examples/luis/demo-restaurants.json')
     assert td.fformat == 'luis'
     # some more assertions
 
 
 def test_wit_spacy(spacy_nlp_en):
-    td = TrainingData('data/examples/wit/demo-flights.json', 'spacy_sklearn', nlp=spacy_nlp_en)
+    td = TrainingData('data/examples/wit/demo-flights.json')
     assert td.fformat == 'wit'
 
 
 def test_rasa_whitespace():
-    td = TrainingData('data/examples/rasa/demo-rasa.json', '', 'en')
+    td = TrainingData('data/examples/rasa/demo-rasa.json')
     assert td.fformat == 'rasa_nlu'
 
 
 def test_api_mitie():
-    td = TrainingData('data/examples/api/', 'mitie', 'en')
+    td = TrainingData('data/examples/api/')
     assert td.fformat == 'api'
 
 
 def test_api_mitie_sklearn():
-    td = TrainingData('data/examples/api/', 'mitie_sklearn', 'en')
+    td = TrainingData('data/examples/api/')
     assert td.fformat == 'api'
 
 
@@ -56,7 +56,7 @@ def test_repeated_entities():
     with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
         f.write(data.encode("utf-8"))
         f.flush()
-        td = TrainingData(f.name, 'mitie', 'en')
+        td = TrainingData(f.name)
         assert len(td.entity_examples) == 1
         example = td.entity_examples[0]
         entities = example["entities"]
@@ -89,7 +89,7 @@ def test_multiword_entities():
     with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
         f.write(data.encode("utf-8"))
         f.flush()
-        td = TrainingData(f.name, 'mitie', 'en')
+        td = TrainingData(f.name)
         assert len(td.entity_examples) == 1
         example = td.entity_examples[0]
         entities = example["entities"]
@@ -120,7 +120,7 @@ def test_nonascii_entities():
     with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
         f.write(data.encode("utf-8"))
         f.flush()
-        td = TrainingData(f.name, 'mitie', 'en')
+        td = TrainingData(f.name)
         assert len(td.entity_examples) == 1
         example = td.entity_examples[0]
         entities = example["entities"]
@@ -167,6 +167,6 @@ def test_entities_synonyms():
     with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
         f.write(data.encode("utf-8"))
         f.flush()
-        td = TrainingData(f.name, 'mitie', 'en')
+        td = TrainingData(f.name)
         assert len(td.entity_synonyms) == 1
         assert td.entity_synonyms["new york city"] == "nyc"

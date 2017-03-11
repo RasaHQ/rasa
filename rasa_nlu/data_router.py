@@ -1,3 +1,4 @@
+from rasa_nlu.pipeline import Interpreter
 import glob
 import json
 import logging
@@ -6,14 +7,51 @@ import os
 import tempfile
 
 import datetime
+
+import rasa_nlu.components
 from flask import json
+
 
 from rasa_nlu.model import Model, Metadata, InvalidModelError
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.train import do_train
-from rasa_nlu.utils import mitie_utils
-from rasa_nlu.utils import spacy_utils
 from rasa_nlu.util import create_dir_for_file
+
+
+class InterpreterBuilder(object):
+    def __init__(self, use_cache=True):
+        self.use_cache = use_cache
+        # Reuse nlp and featurizers where possible to save memory
+        self.component_cache = {}
+
+    def __get_component(self, component_name, meta, context, model_config):
+        component_class = rasa_nlu.components.get_component_class(component_name)
+        cache_key = component_class.cache_key(meta)
+        if cache_key is not None and self.use_cache and cache_key in self.component_cache:
+            component = self.component_cache[cache_key]
+        else:
+            component = rasa_nlu.components.load_component_instance(component_name, context, model_config)
+            if cache_key is not None and self.use_cache:
+                self.component_cache[cache_key] = component
+        return component
+
+    def create_interpreter(self, meta, config):
+        context = {"model_dir": meta.model_dir}
+
+        model_config = dict(config.items())
+        model_config.update(meta.metadata)
+
+        pipeline = []
+
+        for component_name in meta.pipeline:
+            try:
+                component = self.__get_component(component_name, meta, context, model_config)
+                rasa_nlu.components.init_component(component, context, model_config)
+                pipeline.append(component)
+            except rasa_nlu.components.MissingArgumentError as e:
+                raise Exception("Failed to initialize component '{}'. {}".format(component_name, e.message))
+
+        return Interpreter(pipeline, context, model_config)
 
 
 class DataRouter(object):
@@ -26,6 +64,7 @@ class DataRouter(object):
         self.model_dir = config['path']
         self.token = config['token']
         self.emulator = self.__create_emulator()
+        self.interpreter_builder = InterpreterBuilder()
         self.model_store = self.__create_model_store()
 
     @staticmethod
@@ -53,31 +92,6 @@ class DataRouter(object):
             logging.info("Logging of requests is disabled. (No 'request_log' directory configured)")
             return None
 
-    @staticmethod
-    def featurizer_for_model(model, nlp):
-        """Initialize featurizer for backends. If it can NOT be shared between models, `None` should be returned."""
-
-        if model.backend_name() == spacy_utils.SPACY_BACKEND_NAME:
-            from featurizers.spacy_featurizer import SpacyFeaturizer
-            return SpacyFeaturizer(nlp)
-        elif model.backend_name() == mitie_utils.MITIE_BACKEND_NAME or \
-                model.backend_name() == mitie_utils.MITIE_SKLEARN_BACKEND_NAME:
-            from rasa_nlu.featurizers.mitie_featurizer import MITIEFeaturizer
-            return MITIEFeaturizer.load(model.feature_extractor_path)
-        else:
-            return None
-
-    @staticmethod
-    def nlp_for_backend(backend, language):
-        """Initialize nlp for backends. If nlp can NOT be shared between models, `None` should be returned."""
-
-        if spacy_utils.SPACY_BACKEND_NAME == backend:
-            # spacy can share large memory objects across models
-            import spacy as sp
-            return sp.load(language, parser=False, entity=False, matcher=False)
-        else:
-            return None
-
     def __search_for_models(self):
         models = {}
         for metadata_path in glob.glob(os.path.join(self.config.path, '*/metadata.json')):
@@ -94,35 +108,22 @@ class DataRouter(object):
         else:
             model_dict = self.config.server_model_dirs
 
-        # Reuse nlp and featurizers where possible to save memory
-        cache = {}
-
         model_store = {}
 
         for alias, model_path in model_dict.items():
             metadata = DataRouter.read_model_metadata(model_path, self.config)
-            cache_key = metadata.model_group()
-            if cache_key in cache:
-                nlp = cache[cache_key]['nlp']
-                featurizer = cache[cache_key]['featurizer']
-            else:
-                nlp = DataRouter.nlp_for_backend(metadata.backend_name(), metadata.language)
-                featurizer = DataRouter.featurizer_for_model(metadata, nlp)
-                cache[cache_key] = {'nlp': nlp, 'featurizer': featurizer}
-            interpreter = DataRouter.create_interpreter(metadata, nlp, featurizer)
-            model_store[alias] = Model(metadata, model_path, interpreter, nlp, featurizer)
+            interpreter = self.interpreter_builder.create_interpreter(metadata, self.config)
+            model_store[alias] = Model(metadata, model_path, interpreter)
         if not model_store:
-            meta = Metadata({}, "")
-            interpreter = DataRouter.create_interpreter(meta)
+            meta = Metadata({"pipeline": ["intent_simple"]}, "")
+            interpreter = self.interpreter_builder.create_interpreter(meta, self.config)
             model_store[self.DEFAULT_MODEL_NAME] = Model(meta, "", interpreter)
         return model_store
 
     @staticmethod
     def default_model_metadata():
         return {
-            "backend": None,
             "language": None,
-            "feature_extractor": None
         }
 
     @staticmethod
@@ -148,28 +149,6 @@ class DataRouter(object):
                 DataRouter.load_model_from_s3(model_dir, config)
 
             return Metadata.load(model_dir)
-
-    @staticmethod
-    def create_interpreter(metadata, nlp=None, featurizer=None):
-        backend = metadata.backend_name()
-        if backend is None:
-            from interpreters.simple_interpreter import HelloGoodbyeInterpreter
-            return HelloGoodbyeInterpreter()
-        elif backend.lower() == mitie_utils.MITIE_BACKEND_NAME:
-            logging.info("using mitie backend")
-            from interpreters.mitie_interpreter import MITIEInterpreter
-            return MITIEInterpreter.load(metadata, featurizer)
-        elif backend.lower() == mitie_utils.MITIE_SKLEARN_BACKEND_NAME:
-            logging.info("using mitie_sklearn backend")
-            from interpreters.mitie_sklearn_interpreter import MITIESklearnInterpreter
-            return MITIESklearnInterpreter.load(metadata, featurizer)
-
-        elif backend.lower() == spacy_utils.SPACY_BACKEND_NAME:
-            logging.info("using spacy + sklearn backend")
-            from interpreters.spacy_sklearn_interpreter import SpacySklearnInterpreter
-            return SpacySklearnInterpreter.load(metadata, nlp, featurizer)
-        else:
-            raise ValueError("unknown backend : {0}".format(backend))
 
     def __create_emulator(self):
         mode = self.config['emulate']

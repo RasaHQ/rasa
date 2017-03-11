@@ -48,34 +48,34 @@ class SpacyEntityExtractor(Component):
             return []
 
     @classmethod
-    def load(cls, model_dir, spacy_nlp):
+    def load(cls, model_dir, entity_extractor, spacy_nlp):
         from spacy.pipeline import EntityRecognizer
 
-        if model_dir:
-            ner_dir = os.path.join(model_dir, 'ner')
+        if model_dir and entity_extractor:
+            ner_dir = os.path.join(model_dir, entity_extractor)
             ner = EntityRecognizer.load(pathlib.Path(ner_dir), spacy_nlp.vocab)
             return SpacyEntityExtractor(ner)
         else:
-            return None
+            return SpacyEntityExtractor()
 
     def persist(self, model_dir):
         """Persist this model into the passed directory. Returns the metadata necessary to load the model again."""
 
         import json
+        if self.ner:
+            ner_dir = os.path.join(model_dir, 'ner')
+            if not os.path.exists(ner_dir):
+                os.mkdir(ner_dir)
 
-        ner_dir = os.path.join(model_dir, 'ner')
-        if not os.path.exists(ner_dir):
-            os.mkdir(ner_dir)
+            entity_extractor_config_file = os.path.join(ner_dir, "config.json")
+            entity_extractor_file = os.path.join(ner_dir, "model")
 
-        entity_extractor_config_file = os.path.join(ner_dir, "config.json")
-        entity_extractor_file = os.path.join(ner_dir, "model")
-
-        with open(entity_extractor_config_file, 'w') as f:
-            json.dump(self.ner.cfg, f)
-        self.ner.model.dump(entity_extractor_file)
-        return {
-            "entity_extractor": "ner"
-        }
+            with open(entity_extractor_config_file, 'w') as f:
+                json.dump(self.ner.cfg, f)
+            self.ner.model.dump(entity_extractor_file)
+            return {"entity_extractor": "ner"}
+        else:
+            return {"entity_extractor": None}
 
     def _convert_examples(self, entity_examples):
         def convert_entity(ent):

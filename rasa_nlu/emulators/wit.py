@@ -20,8 +20,8 @@ class WitEmulator(NoEmulator):
         return [
             {
                 "_text": data["text"],
-                "confidence": data["confidence"],
-                "intent": data["intent"],
+                "confidence": data["intent"]['confidence'],
+                "intent": data["intent"]['name'],
                 "entities": entities
             }
         ]

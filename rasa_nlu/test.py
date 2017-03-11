@@ -2,6 +2,7 @@ from rasa_nlu.data_router import DataRouter
 from rasa_nlu.pipeline import Interpreter
 from train import init
 
+
 if __name__ == '__main__':
     config = init()
     # persisted_path = "model_20170309-105707"

@@ -5,6 +5,10 @@ import logging
 
 
 # Describes where to search for the configuration file if the location is not set by the user
+import warnings
+
+from rasa_nlu import pipeline
+
 DEFAULT_CONFIG_LOCATION = "config.json"
 
 
@@ -14,6 +18,7 @@ class RasaNLUConfig(object):
 
         defaults = {
           "config": DEFAULT_CONFIG_LOCATION,
+          "backend": None,
           "data": None,
           "emulate": None,
           "language": "en",
@@ -26,6 +31,8 @@ class RasaNLUConfig(object):
           "port": 5000,
           "server_model_dirs": None,
           "token": None,
+          "max_number_of_ngrams": 7,
+          "pipeline": [],
           "response_log": os.path.join(os.getcwd(), "logs")
         }
 
@@ -45,6 +52,12 @@ class RasaNLUConfig(object):
         if cmdline_args is not None:
             cmdline_config = {k: v for k, v in cmdline_args.items() if v is not None}
             self.override(cmdline_config)
+
+        if self.__dict__['backend'] and not self.__dict__['pipeline']:
+            if self.__dict__['backend'] in pipeline.registered_pipelines:
+                self.__dict__['pipeline'] = pipeline.registered_pipelines[self.__dict__['backend']]
+            else:
+                warnings.warn("No pipeline specified and unknown backend '{}' passed.".format(self.__dict__['backend']))
 
         for key, value in self.items():
             setattr(self, key, value)

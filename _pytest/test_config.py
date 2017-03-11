@@ -6,7 +6,7 @@ import os
 import logging
 
 defaults = {
-  "backend": "mitie",
+  "backend": None,
   "config": "config.json",
   "data": None,
   "emulate": None,
@@ -16,10 +16,12 @@ defaults = {
   "mitie_file": os.path.join("data", "total_word_feature_extractor.dat"),
   "num_threads": 1,
   "fine_tune_spacy_ner": False,
+  "max_number_of_ngrams": 7,
   "path": os.path.join(os.getcwd(), "models"),
   "port": 5000,
   "server_model_dirs": None,
   "token": None,
+  "pipeline": [],
   "response_log": os.path.join(os.getcwd(), "logs")
 }
 

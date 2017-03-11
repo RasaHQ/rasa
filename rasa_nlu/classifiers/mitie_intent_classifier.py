@@ -10,12 +10,12 @@ class MitieIntentClassifier(Component):
         self.clf = clf
 
     def train(self, training_data, mitie_file, num_threads):
-        import mitie
+        from mitie import tokenize, text_categorizer_trainer
 
-        trainer = mitie.text_categorizer_trainer(mitie_file)
+        trainer = text_categorizer_trainer(mitie_file)
         trainer.num_threads = num_threads
         for example in training_data.intent_examples:
-            tokens = mitie.tokenize(example["text"])
+            tokens = tokenize(example["text"])
             trainer.add_labeled_text(tokens, example["intent"])
         self.clf = trainer.train()
 
@@ -29,21 +29,21 @@ class MitieIntentClassifier(Component):
         }
 
     @classmethod
-    def load(cls, model_dir):
-        import mitie
+    def load(cls, model_dir, intent_classifier):
+        from mitie import text_categorizer
 
-        if model_dir:
-            classifier_file = os.path.join(model_dir, "intent_classifier.dat")
-            classifier = mitie.text_categorizer(classifier_file)
+        if model_dir and intent_classifier:
+            classifier_file = os.path.join(model_dir, intent_classifier)
+            classifier = text_categorizer(classifier_file)
             return MitieIntentClassifier(classifier)
         else:
-            return None
+            return MitieIntentClassifier()
 
     def persist(self, model_dir):
         import os
-
-        classifier_file = os.path.join(model_dir, "intent_classifier.dat")
-        self.clf.save_to_disk(classifier_file, pure_model=True)
-        return {
-            "intent_classifier": "intent_classifier.dat"
-        }
+        if self.clf:
+            classifier_file = os.path.join(model_dir, "intent_classifier.dat")
+            self.clf.save_to_disk(classifier_file, pure_model=True)
+            return {"intent_classifier": "intent_classifier.dat"}
+        else:
+            return {"intent_classifier": None}

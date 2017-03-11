@@ -1,4 +1,6 @@
+from mitie import total_word_feature_extractor
 from rasa_nlu.components import Component
+
 
 MITIE_BACKEND_NAME = "mitie"
 
@@ -14,15 +16,13 @@ class MitieNLP(Component):
     def __init__(self, extractor=None):
         self.extractor = extractor
 
-    def cache_key(self):
-        if self.extractor:
-            return self.extractor.fingerprint
+    @classmethod
+    def cache_key(cls, model_metadata):
+        return cls.name + "-" + str(model_metadata.metadata.get("mitie_feature_extractor_fingerprint"))
 
     def pipeline_init(self, mitie_file):
-        import mitie
-
         if self.extractor is None:
-            self.extractor = mitie.total_word_feature_extractor(mitie_file)
+            self.extractor = total_word_feature_extractor(mitie_file)
         MitieNLP.ensure_proper_language_model(self.extractor)
         return {"mitie_feature_extractor": self.extractor}
 

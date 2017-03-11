@@ -11,7 +11,7 @@ class MitieEntityExtractor(Component):
     def __init__(self, ner=None):
         self.ner = ner
 
-    def get_entities(self, text, tokens, feature_extractor):
+    def extract_entities(self, text, tokens, feature_extractor):
         ents = []
         offset = 0
         if self.ner:
@@ -35,7 +35,8 @@ class MitieEntityExtractor(Component):
 
     @staticmethod
     def find_entity(ent, text):
-        import mitie
+        from mitie import tokenize
+
         # TODO: inject tokenizer results here!!!!
         tk = MitieTokenizer()
         tokens, offsets = tk.tokenize_with_offsets(text)
@@ -45,25 +46,29 @@ class MitieEntityExtractor(Component):
             raise ValueError(message)
         start = offsets.index(ent["start"])
         _slice = text[ent["start"]:ent["end"]]
-        val_tokens = mitie.tokenize(_slice)
+        val_tokens = tokenize(_slice)
         end = start + len(val_tokens)
         return start, end
 
     def train(self, training_data, mitie_file, num_threads):
-        import mitie
+        from mitie import ner_training_instance, ner_trainer, tokenize
 
-        trainer = mitie.ner_trainer(mitie_file)
+        trainer = ner_trainer(mitie_file)
         trainer.num_threads = num_threads
+        found_one_entity = False
         for example in training_data.entity_examples:
             text = example["text"]
-            tokens = mitie.tokenize(text)
-            sample = mitie.ner_training_instance(tokens)
+            tokens = tokenize(text)
+            sample = ner_training_instance(tokens)
             for ent in example["entities"]:
                 start, end = MitieEntityExtractor.find_entity(ent, text)
                 sample.add_entity(xrange(start, end), ent["entity"])
+                found_one_entity = True
 
             trainer.add(sample)
-        self.ner = trainer.train()
+        # Mitie will fail to train if there is not a single entity tagged
+        if found_one_entity:
+            self.ner = trainer.train()
 
     def process(self, text, tokens, mitie_feature_extractor):
         return {
@@ -71,19 +76,20 @@ class MitieEntityExtractor(Component):
         }
 
     @classmethod
-    def load(cls, model_dir):
-        import mitie
+    def load(cls, model_dir, entity_extractor):
+        from mitie import named_entity_extractor
 
-        if model_dir:
-            entity_extractor_file = os.path.join(model_dir, "entity_extractor.dat")
-            extractor = mitie.named_entity_extractor(entity_extractor_file)
+        if model_dir and entity_extractor:
+            entity_extractor_file = os.path.join(model_dir, entity_extractor)
+            extractor = named_entity_extractor(entity_extractor_file)
             return MitieEntityExtractor(extractor)
         else:
-            return None
+            return MitieEntityExtractor()
 
     def persist(self, model_dir):
-        entity_extractor_file = os.path.join(model_dir, "entity_extractor.dat")
-        self.ner.save_to_disk(entity_extractor_file, pure_model=True)
-        return {
-            "entity_extractor": "entity_extractor.dat"
-        }
+        if self.ner:
+            entity_extractor_file = os.path.join(model_dir, "entity_extractor.dat")
+            self.ner.save_to_disk(entity_extractor_file, pure_model=True)
+            return {"entity_extractor": "entity_extractor.dat"}
+        else:
+            return {"entity_extractor": None}

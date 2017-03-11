@@ -7,7 +7,6 @@ from rasa_nlu.components import Component
 
 
 class EntitySynonymMapper(Component):
-
     name = "ner_synonyms"
 
     def __init__(self, synonyms={}):
@@ -35,21 +34,21 @@ class EntitySynonymMapper(Component):
             entity_synonyms_file = os.path.join(model_dir, "index.json")
             with open(entity_synonyms_file, 'w') as f:
                 json.dump(self.synonyms, f)
-            return {
-                "entity_synonyms": "index.json"
-            }
+            return {"entity_synonyms": "index.json"}
+        else:
+            return {"entity_synonyms": None}
 
     @classmethod
-    def load(cls, model_dir):
-        entity_synonyms_file = os.path.join(model_dir, "index.json")
-        if entity_synonyms_file:
+    def load(cls, model_dir, entity_synonyms):
+        if model_dir and entity_synonyms:
+            entity_synonyms_file = os.path.join(model_dir, "index.json")
             if os.path.isfile(entity_synonyms_file):
                 with codecs.open(entity_synonyms_file, encoding='utf-8') as f:
                     synonyms = json.loads(f.read())
                 return EntitySynonymMapper(synonyms)
             else:
                 warnings.warn("Failed to load synonyms file from '{}'".format(entity_synonyms_file))
-        return None
+        return EntitySynonymMapper()
 
     def replace_synonyms(self, entities):
         for i in range(len(entities)):

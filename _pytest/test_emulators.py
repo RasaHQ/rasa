@@ -10,8 +10,7 @@ def test_luis_response():
     em = LUISEmulator()
     data = {
         "text": "I want italian food",
-        "intent": "inform",
-        "confidence": 0.4794813722432127,
+        "intent": {"name": "inform", "confidence": 0.4794813722432127},
         "entities": [{"entity": "cuisine", "value": "italian"}]
     }
     norm = em.normalise_response_json(data)
@@ -45,8 +44,7 @@ def test_wit_response():
     em = WitEmulator()
     data = {
         "text": "I want italian food",
-        "intent": "inform",
-        "confidence": 0.4794813722432127,
+        "intent": {"name": "inform", "confidence": 0.4794813722432127},
         "entities": [{"entity": "cuisine", "value": "italian", "start": 7, "end": 14}]}
     norm = em.normalise_response_json(data)
     assert norm == [{

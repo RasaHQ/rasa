@@ -11,7 +11,10 @@ class SimpleIntentClassifier(Component):
 
     def process(self, text):
         return {
-            "intent": self.parse(text)
+            "intent": {
+                "name": self.parse(text),
+                "confidence": 1.0,
+            }
         }
 
     def parse(self, text):

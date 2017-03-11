@@ -35,12 +35,12 @@ class MitieFeaturizer(Featurizer, Component):
             return vec
 
     def features_for_sentences(self, sentences, feature_extractor):
-        import mitie
+        from mitie import tokenize
         import numpy as np
 
         X = np.zeros((len(sentences), self.ndim(feature_extractor)))
 
         for idx, sentence in enumerate(sentences):
-            tokens = mitie.tokenize(sentence)
+            tokens = tokenize(sentence)
             X[idx, :] = self.features_for_tokens(tokens, feature_extractor)
         return X

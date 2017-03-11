@@ -41,50 +41,10 @@ def init():
     return config
 
 
-# def init_tokenizer(self, backend, nlp):
-#     if backend in [mitie.MITIE_BACKEND_NAME, mitie.MITIE_SKLEARN_BACKEND_NAME]:
-#         from rasa_nlu.tokenizers.mitie_tokenizer import MITIETokenizer
-#         self.tokenizer = MITIETokenizer()
-#     elif backend in [spacy.SPACY_BACKEND_NAME]:
-#         from rasa_nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
-#         self.tokenizer = SpacyTokenizer(nlp)
-#     else:
-#         from rasa_nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-#         self.tokenizer = WhitespaceTokenizer()
-#         warnings.warn(
-#             "backend not recognised by TrainingData : defaulting to tokenizing by splitting on whitespace")
-
-
 def do_train(config):
     """Loads the trainer and the data and runs the training of the specified model."""
-    spacy_pipeline = [
-        "init_spacy",
-        "ner_spacy",
-        "ner_synonyms",
-        "intent_featurizer_spacy",
-        "intent_sklearn",
-    ]
 
-    mitie_pipeline = [
-        "init_mitie",
-        "tokenizer_mitie",
-        "ner_mitie",
-        "ner_synonyms",
-        "intent_featurizer_mitie",
-        "intent_mitie",
-    ]
-
-    mitie_sklearn_pipeline = [
-        "init_mitie",
-        "tokenizer_mitie",
-        "ner_mitie",
-        "ner_synonyms",
-        "intent_featurizer_mitie",
-        "intent_sklearn",
-    ]
-
-    # trainer = create_trainer(config)
-    trainer = Trainer(config, mitie_sklearn_pipeline)
+    trainer = Trainer(config)
 
     persistor = create_persistor(config)
 

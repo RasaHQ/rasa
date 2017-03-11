@@ -1,6 +1,8 @@
 import json
 import os
 
+from rasa_nlu import pipeline
+
 
 class InvalidModelError(Exception):
     """Raised when a model failed to load.
@@ -14,12 +16,10 @@ class InvalidModelError(Exception):
 
 
 class Model(object):
-    def __init__(self, metadata, model_dir, interpreter=None, nlp=None, featurizer=None):
+    def __init__(self, metadata, model_dir, interpreter=None):
         self.metadata = metadata
         self.model_dir = model_dir
         self.interpreter = interpreter
-        self.featurizer = featurizer
-        self.nlp = nlp
 
 
 class Metadata(object):
@@ -61,4 +61,9 @@ class Metadata(object):
 
     @property
     def pipeline(self):
-        return self.metadata.get('pipeline')
+        if 'pipeline' in self.metadata:
+            return self.metadata.get('pipeline')
+        elif 'backend' in self.metadata:
+            return pipeline.registered_pipelines.get(self.metadata.get('backend'))
+        else:
+            return []

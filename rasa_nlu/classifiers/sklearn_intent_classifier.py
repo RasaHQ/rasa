@@ -107,24 +107,24 @@ class SklearnIntentClassifier(Component):
         return max_indicies, max_values
 
     @classmethod
-    def load(cls, model_dir):
+    def load(cls, model_dir, intent_classifier):
         import cloudpickle
-        if model_dir:
-            classifier_file = os.path.join(model_dir, "intent_classifier.dat")
+        if model_dir and intent_classifier:
+            classifier_file = os.path.join(model_dir, intent_classifier)
             with open(classifier_file, 'rb') as f:
                 return cloudpickle.load(f)
         else:
-            return None
+            return SklearnIntentClassifier()
 
     def persist(self, model_dir):
         """Persist this model into the passed directory. Returns the metadata necessary to load the model again."""
 
         import cloudpickle
 
-        classifier_file = os.path.join(model_dir, "intent_classifier.dat")
+        classifier_file = os.path.join(model_dir, "intent_classifier.pkl")
         with open(classifier_file, 'wb') as f:
             cloudpickle.dump(self, f)
 
         return {
-            "intent_classifier": "intent_classifier.dat"
+            "intent_classifier": "intent_classifier.pkl"
         }

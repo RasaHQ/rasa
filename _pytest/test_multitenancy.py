@@ -6,6 +6,7 @@ import tempfile
 import pytest
 
 from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu.pipeline import Trainer
 from rasa_nlu.server import create_app
 from utilities import ResponseTest
 
@@ -52,7 +53,7 @@ def app():
 def test_get_parse(client, response_test):
     response = client.get(response_test.endpoint)
     assert response.status_code == 200
-    assert all(prop in response.json for prop in ['entities', 'intent', 'text', 'confidence'])
+    assert all(prop in response.json for prop in ['entities', 'intent', 'text'])
 
 
 @pytest.mark.parametrize("response_test", [
@@ -92,7 +93,7 @@ def test_post_parse(client, response_test):
     response = client.post(response_test.endpoint,
                            data=json.dumps(response_test.payload), content_type='application/json')
     assert response.status_code == 200
-    assert all(prop in response.json for prop in ['entities', 'intent', 'text', 'confidence'])
+    assert all(prop in response.json for prop in ['entities', 'intent', 'text'])
 
 
 @pytest.mark.parametrize("response_test", [
@@ -117,17 +118,18 @@ def test_post_parse_invalid_model(client, response_test):
 if __name__ == '__main__':
     # Retrain different multitenancy models
     def train(cfg_name, model_name):
-        from rasa_nlu.train import create_trainer
         from rasa_nlu.train import create_persistor
         from rasa_nlu.training_data import TrainingData
 
         config = RasaNLUConfig(cfg_name)
-        trainer = create_trainer(config)
-        persistor = create_persistor(config)
+        trainer = Trainer(config)
+        training_data = TrainingData(config['data'])
 
-        training_data = TrainingData(config['data'], config['backend'], nlp=trainer.nlp)
+        trainer.validate()
         trainer.train(training_data)
+        persistor = create_persistor(config)
         trainer.persist(os.path.join("test_models", model_name), persistor, create_unique_subfolder=False)
+
 
     train("config_mitie.json", "test_model_mitie")
     train("config_spacy.json", "test_model_spacy_sklearn")

@@ -1,9 +1,11 @@
+from rasa_nlu.featurizers.ngram_featurizer import NGramFeaturizer
+from rasa_nlu.utils.mitie_utils import MitieNLP
 import datetime
 import json
 import logging
 import os
 
-import rasa_nlu
+import rasa_nlu.components
 from rasa_nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
 from rasa_nlu.classifiers.simple_intent_classifier import SimpleIntentClassifier
 from rasa_nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
@@ -13,26 +15,54 @@ from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa_nlu.featurizers.mitie_featurizer import MitieFeaturizer
 from rasa_nlu.featurizers.spacy_featurizer import SpacyFeaturizer
 from rasa_nlu.tokenizers.mitie_tokenizer import MitieTokenizer
-from rasa_nlu.utils.mitie_utils import MitieNLP
+
 from rasa_nlu.utils.spacy_utils import SpacyNLP
 
 component_classes = [
     SpacyNLP, SpacyEntityExtractor, SklearnIntentClassifier, SpacyFeaturizer,
     MitieNLP, MitieEntityExtractor, MitieIntentClassifier, MitieFeaturizer, MitieTokenizer,
-    SimpleIntentClassifier, EntitySynonymMapper]
+    SimpleIntentClassifier, EntitySynonymMapper, NGramFeaturizer]
 
 
 registered_components = {component.name: component for component in component_classes}
 
 
+registered_pipelines = {
+    "spacy_sklearn": [
+        "init_spacy",
+        "ner_spacy",
+        "ner_synonyms",
+        "intent_featurizer_spacy",
+        "intent_sklearn",
+    ],
+    "mitie": [
+        "init_mitie",
+        "tokenizer_mitie",
+        "ner_mitie",
+        "ner_synonyms",
+        "intent_featurizer_mitie",
+        "intent_mitie",
+    ],
+    "mitie_sklearn": [
+        "init_mitie",
+        "tokenizer_mitie",
+        "ner_mitie",
+        "ner_synonyms",
+        "intent_featurizer_mitie",
+        "intent_sklearn",
+    ]
+}
+
+
 class Trainer(object):
     SUPPORTED_LANGUAGES = ["de", "en"]
 
-    def __init__(self, config, pipeline):
+    def __init__(self, config):
         self.config = config
         self.training_data = None
         self.pipeline = []
-        for cp in pipeline:
+
+        for cp in config.pipeline:
             if cp in registered_components:
                 self.pipeline.append(registered_components[cp]())
             else:
@@ -45,24 +75,12 @@ class Trainer(object):
 
         for component in self.pipeline:
             try:
-                Trainer.fill_args(component.train_args(), context, self.config)
+                rasa_nlu.components.fill_args(component.train_args(), context, self.config)
                 updates = component.context_provides
                 for u in updates:
                     context[u] = None
-            except Exception as e:
-                raise Exception("Missing arguments for component '{}'. {}".format(component.name, e.message))
-
-    @staticmethod
-    def fill_args(arguments, context, config):
-        filled = []
-        for arg in arguments:
-            if arg in context:
-                filled.append(context[arg])
-            elif arg in config:
-                filled.append(config[arg])
-            else:
-                raise Exception("Couldn't fill argument '{}' :(".format(arg))
-        return filled
+            except rasa_nlu.components.MissingArgumentError as e:
+                raise Exception("Failed to validate at component '{}'. {}".format(component.name, e.message))
 
     def train(self, data):
         self.training_data = data
@@ -72,13 +90,13 @@ class Trainer(object):
         }
 
         for component in self.pipeline:
-            args = Trainer.fill_args(component.pipeline_init_args(), context, self.config)
+            args = rasa_nlu.components.fill_args(component.pipeline_init_args(), context, self.config)
             updates = component.pipeline_init(*args)
             if updates:
                 context.update(updates)
 
         for component in self.pipeline:
-            args = Trainer.fill_args(component.train_args(), context, self.config)
+            args = rasa_nlu.components.fill_args(component.train_args(), context, self.config)
             updates = component.train(*args)
             if updates:
                 context.update(updates)
@@ -96,12 +114,9 @@ class Trainer(object):
         metadata.update(self.training_data.persist(dir_name))
 
         for component in self.pipeline:
-            try:
-                update = component.persist(dir_name)
-                if update:
-                    metadata.update(update)
-            except Exception as e:
-                raise Exception("Failed to persist component '{}'. {}".format(component.name, e.message))
+            update = component.persist(dir_name)
+            if update:
+                metadata.update(update)
 
         Trainer.write_training_metadata(dir_name, timestamp, self.pipeline,
                                         self.config["language"], metadata)
@@ -128,7 +143,7 @@ class Trainer(object):
 
 
 class Interpreter(object):
-    output_attributes = ["intent", "entities", "text"]
+    output_attributes = {"intent": None, "entities": [], "text": ""}
 
     @staticmethod
     def load(meta, rasa_config):
@@ -136,7 +151,7 @@ class Interpreter(object):
         :type meta: rasa_nlu.model.Metadata
         """
         context = {
-            "model_dir": meta.model_dir
+            "model_dir": meta.model_dir,
         }
 
         config = dict(rasa_config.items())
@@ -146,26 +161,19 @@ class Interpreter(object):
 
         for component_name in meta.pipeline:
             try:
-                # load component from file
-                component_clz = registered_components.get(component_name)
-                load_args = Trainer.fill_args(component_clz.load_args(), context, config)
-                component = component_clz.load(*load_args)
-
-                # init component with context
-                args = Trainer.fill_args(component.pipeline_init_args(), context, config)
-                updates = component.pipeline_init(*args)
-                if updates:
-                    context.update(updates)
+                component = rasa_nlu.components.load_component_instance(component_name, context, config)
+                rasa_nlu.components.init_component(component, context, config)
                 pipeline.append(component)
-            except Exception as e:
+            except rasa_nlu.components.MissingArgumentError as e:
                 raise Exception("Failed to initialize component '{}'. {}".format(component_name, e.message))
 
-        return Interpreter(pipeline, context, config)
+        return Interpreter(pipeline, context, config, meta)
 
-    def __init__(self, pipeline, context, config):
+    def __init__(self, pipeline, context, config, meta=None):
         self.pipeline = pipeline
         self.context = context
         self.config = config
+        self.meta = meta
 
     def parse(self, text):
         """Parse the input text, classify it and return an object containing its intent and entities."""
@@ -178,11 +186,13 @@ class Interpreter(object):
 
         for component in self.pipeline:
             try:
-                args = Trainer.fill_args(component.process_args(), current_context, self.config)
+                args = rasa_nlu.components.fill_args(component.process_args(), current_context, self.config)
                 updates = component.process(*args)
                 if updates:
                     current_context.update(updates)
-            except Exception as e:
+            except rasa_nlu.components.MissingArgumentError as e:
                 raise Exception("Failed to parse at component '{}'. {}".format(component.name, e.message))
 
-        return {key: current_context[key] for key in self.output_attributes if key in current_context}
+        result = self.output_attributes.copy()
+        result.update({key: current_context[key] for key in self.output_attributes if key in current_context})
+        return result

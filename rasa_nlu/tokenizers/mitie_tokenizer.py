@@ -14,9 +14,9 @@ class MitieTokenizer(Tokenizer, Component):
         pass
 
     def tokenize(self, text):
-        import mitie
+        from mitie import tokenize
 
-        return [w.decode('utf-8') for w in mitie.tokenize(text.encode('utf-8'))]
+        return [w.decode('utf-8') for w in tokenize(text.encode('utf-8'))]
 
     def process(self, text):
         return {
@@ -24,12 +24,12 @@ class MitieTokenizer(Tokenizer, Component):
         }
 
     def tokenize_with_offsets(self, text):
-        import mitie
+        from mitie import tokenize
 
         _text = text.encode('utf-8')
         offsets = []
         offset = 0
-        tokens = [w.decode('utf-8') for w in mitie.tokenize(_text)]
+        tokens = [w.decode('utf-8') for w in tokenize(_text)]
         for tok in tokens:
             m = re.search(re.escape(tok), text[offset:], re.UNICODE)
             if m is None:

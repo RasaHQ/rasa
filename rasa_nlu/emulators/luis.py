@@ -10,8 +10,8 @@ class LUISEmulator(NoEmulator):
         return {
             "query": data["text"],
             "topScoringIntent": {
-                "intent": data["intent"],
-                "score": data["confidence"]
+                "intent": data["intent"]["name"],
+                "score": data["intent"]["confidence"]
             },
             "entities": [
                 {
