@@ -7,7 +7,7 @@ import os
 
 import rasa_nlu.components
 from rasa_nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
-from rasa_nlu.classifiers.simple_intent_classifier import KeywordIntentClassifier
+from rasa_nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
 from rasa_nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
 from rasa_nlu.extractors.entity_synonyms import EntitySynonymMapper
 from rasa_nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
