@@ -15,6 +15,7 @@ install_requires = [
     "pathlib",
     "cloudpickle",
     "boto3",
+    "typing",
 ]
 
 extras_requires = {

@@ -10,3 +10,4 @@ pytest-xdist
 pytest-services
 pytest-flask
 scipy==0.18.1
+typing
