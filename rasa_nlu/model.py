@@ -1,8 +1,6 @@
 import json
 import os
 
-from rasa_nlu import pipeline
-
 
 class InvalidModelError(Exception):
     """Raised when a model failed to load.
@@ -64,6 +62,7 @@ class Metadata(object):
         if 'pipeline' in self.metadata:
             return self.metadata.get('pipeline')
         elif 'backend' in self.metadata:
+            from rasa_nlu import pipeline
             return pipeline.registered_pipelines.get(self.metadata.get('backend'))
         else:
             return []
