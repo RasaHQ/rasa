@@ -1,8 +1,12 @@
+import logging
 import pytest
 import spacy
 from mitie import total_word_feature_extractor
 
 from rasa_nlu.data_router import InterpreterBuilder
+
+
+logging.basicConfig(level="DEBUG")
 
 
 @pytest.fixture(scope="session")

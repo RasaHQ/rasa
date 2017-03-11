@@ -115,7 +115,7 @@ class DataRouter(object):
             interpreter = self.interpreter_builder.create_interpreter(metadata, self.config)
             model_store[alias] = Model(metadata, model_path, interpreter)
         if not model_store:
-            meta = Metadata({"pipeline": ["intent_simple"]}, "")
+            meta = Metadata({"pipeline": ["intent_keyword"]}, "")
             interpreter = self.interpreter_builder.create_interpreter(meta, self.config)
             model_store[self.DEFAULT_MODEL_NAME] = Model(meta, "", interpreter)
         return model_store

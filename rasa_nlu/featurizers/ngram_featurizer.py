@@ -259,7 +259,7 @@ class NGramFeaturizer(Component):
                 logging.debug("Evaluating usage of {} ngrams. Score: {}".format(n, score))
             n_top = triers[np.argmax(scores)]
             logging.debug("Score without ngrams: {}".format(no_ngrams_score))
-            logging.info("Best score with {} ngrams: {}".format(n_top,np.max(scores)))
+            logging.info("Best score with {} ngrams: {}".format(n_top, np.max(scores)))
             return n_top
         else:
             warnings.warn("Can't cross-validate ngram featurizer. There aren't enough examples per intent (at least 3)")
