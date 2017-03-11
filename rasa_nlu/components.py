@@ -57,6 +57,7 @@ class MissingArgumentError(Exception):
     """
 
     def __init__(self, message):
+        # type: (str) -> None
         self.message = message
 
 
@@ -97,11 +98,7 @@ class Component(object):
         """This key is used to cache components.
 
         If a model is unique to a model it should return None. Otherwise, an instantiation of the
-        component will be reused for all models where the metadata creates the same key.
-
-        :type model_metadata: rasa_nlu.model.Metadata
-        :rtype: None or str
-        """
+        component will be reused for all models where the metadata creates the same key."""
         return None
 
     def pipeline_init_args(self):

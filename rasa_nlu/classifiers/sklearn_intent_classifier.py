@@ -10,12 +10,8 @@ class SklearnIntentClassifier(Component):
     name = "intent_sklearn"
 
     def __init__(self, clf=None, le=None):
-        """Construct a new intent classifier using the sklearn framework.
+        """Construct a new intent classifier using the sklearn framework."""
 
-        :param uses_probabilities: defines if the model should be trained
-                                           to be able to predict label probabilities
-        :param max_num_threads: number of threads used during training time
-        :type uses_probabilities: bool"""
         if le is not None:
             self.le = le
         else:
@@ -24,27 +20,26 @@ class SklearnIntentClassifier(Component):
         self.clf = clf
 
     def transform_labels_str2num(self, labels):
+        # type: ([str]) -> [int]
         """Transforms a list of strings into numeric label representation.
 
-        :param labels: List of labels to convert to numeric representation
-        :type labels: list of str"""
+        :param labels: List of labels to convert to numeric representation"""
 
-        y = self.le.fit_transform(labels)
-        return y
+        return self.le.fit_transform(labels)
 
     def transform_labels_num2str(self, y):
+        # type: ([int]) -> [str]
         """Transforms a list of strings into numeric label representation.
 
-        :param labels: List of labels to convert to numeric representation
-        :type labels: list of str"""
+        :param labels: List of labels to convert to numeric representation"""
 
-        labels = self.le.inverse_transform(y)
-        return labels
+        return self.le.inverse_transform(y)
 
     def train(self, training_data, intent_features, num_threads):
         # type: (TrainingData, [float], int) -> None
-        """Train the intent classifier on a data set."""
+        """Train the intent classifier on a data set.
 
+        :param num_threads: number of threads used during training time"""
         from sklearn.model_selection import GridSearchCV
         from sklearn.svm import SVC
 
@@ -79,6 +74,7 @@ class SklearnIntentClassifier(Component):
         }
 
     def predict_prob(self, X):
+        # type: (np.ndarray) -> np.ndarray
         """Given a bow vector of an input text, predict the intent label. Returns probabilities for all labels.
 
         :param X: bow of input text
