@@ -33,7 +33,6 @@ setup(
         'rasa_nlu.emulators',
         'rasa_nlu.extractors',
         'rasa_nlu.featurizers',
-        'rasa_nlu.interpreters',
         'rasa_nlu.tokenizers',
     ],
     version=__version__,
