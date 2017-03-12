@@ -33,7 +33,8 @@ class RasaNLUConfig(object):
           "token": None,
           "max_number_of_ngrams": 7,
           "pipeline": [],
-          "response_log": os.path.join(os.getcwd(), "logs")
+          "response_log": os.path.join(os.getcwd(), "logs"),
+          "luis_data_tokenizer": None,
         }
 
         if filename is None and os.path.isfile(DEFAULT_CONFIG_LOCATION):

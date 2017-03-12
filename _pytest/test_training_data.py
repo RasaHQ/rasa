@@ -1,36 +1,50 @@
 # -*- coding: utf-8 -*-
-import os
 import tempfile
-import spacy
 
+import pytest
+
+from rasa_nlu.converters import load_data
 from rasa_nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
-from rasa_nlu.training_data import TrainingData
 
 
-def test_luis_mitie():
-    td = TrainingData('data/examples/luis/demo-restaurants.json')
-    assert td.fformat == 'luis'
-    # some more assertions
+def test_luis_data_spacy():
+    td = load_data('data/examples/luis/demo-restaurants.json', "en", "tokenizer_spacy")
+    assert td.entity_examples != []
+    assert td.intent_examples != []
+    assert td.entity_synonyms == {}
 
 
-def test_wit_spacy(spacy_nlp_en):
-    td = TrainingData('data/examples/wit/demo-flights.json')
-    assert td.fformat == 'wit'
+def test_luis_data_mitie():
+    td = load_data('data/examples/luis/demo-restaurants.json', "en", "tokenizer_mitie")
+    assert td.entity_examples != []
+    assert td.intent_examples != []
+    assert td.entity_synonyms == {}
 
 
-def test_rasa_whitespace():
-    td = TrainingData('data/examples/rasa/demo-rasa.json')
-    assert td.fformat == 'rasa_nlu'
+def test_luis_data_without_tokenizer():
+    with pytest.raises(ValueError):
+        load_data('data/examples/luis/demo-restaurants.json', "en")
 
 
-def test_api_mitie():
-    td = TrainingData('data/examples/api/')
-    assert td.fformat == 'api'
+def test_wit_data():
+    td = load_data('data/examples/wit/demo-flights.json', "en")
+    assert td.entity_examples != []
+    assert td.intent_examples != []
+    assert td.entity_synonyms == {}
 
 
-def test_api_mitie_sklearn():
-    td = TrainingData('data/examples/api/')
-    assert td.fformat == 'api'
+def test_rasa_data():
+    td = load_data('data/examples/rasa/demo-rasa.json', "en")
+    assert td.entity_examples != []
+    assert td.intent_examples != []
+    assert td.entity_synonyms == {}
+
+
+def test_api_data():
+    td = load_data('data/examples/api/', "en")
+    assert td.entity_examples != []
+    assert td.intent_examples != []
+    assert td.entity_synonyms != {}
 
 
 def test_repeated_entities():
@@ -56,7 +70,7 @@ def test_repeated_entities():
     with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
         f.write(data.encode("utf-8"))
         f.flush()
-        td = TrainingData(f.name)
+        td = load_data(f.name, "en")
         assert len(td.entity_examples) == 1
         example = td.entity_examples[0]
         entities = example["entities"]
@@ -89,7 +103,7 @@ def test_multiword_entities():
     with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
         f.write(data.encode("utf-8"))
         f.flush()
-        td = TrainingData(f.name)
+        td = load_data(f.name, "en")
         assert len(td.entity_examples) == 1
         example = td.entity_examples[0]
         entities = example["entities"]
@@ -120,7 +134,7 @@ def test_nonascii_entities():
     with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
         f.write(data.encode("utf-8"))
         f.flush()
-        td = TrainingData(f.name)
+        td = load_data(f.name, "en", luis_data_tokenizer="tokenizer_mitie")
         assert len(td.entity_examples) == 1
         example = td.entity_examples[0]
         entities = example["entities"]
@@ -132,41 +146,40 @@ def test_nonascii_entities():
         assert entity["entity"] == "description"
 
 
-def test_entities_synonyms():
-    data = u"""
-{
-  "rasa_nlu_data": {
-    "common_examples" : [
-      {
-        "text": "show me flights to New York City",
-        "intent": "unk",
-        "entities": [
-          {
-            "entity": "destination",
-            "start": 19,
-            "end": 32,
-            "value": "NYC"
-          }
-        ]
-      },
-      {
-        "text": "show me flights to NYC",
-        "intent": "unk",
-        "entities": [
-          {
-            "entity": "destination",
-            "start": 19,
-            "end": 22,
-            "value": "NYC"
-          }
-        ]
-      }
-    ]
-  }
-}"""
-    with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
-        f.write(data.encode("utf-8"))
-        f.flush()
-        td = TrainingData(f.name)
-        assert len(td.entity_synonyms) == 1
-        assert td.entity_synonyms["new york city"] == "nyc"
+# def test_entities_synonyms():
+#     data = u"""
+# {
+#   "rasa_nlu_data": {
+#     "common_examples" : [
+#       {
+#         "text": "show me flights to New York City",
+#         "intent": "unk",
+#         "entities": [
+#           {
+#             "entity": "destination",
+#             "start": 19,
+#             "end": 32,
+#             "value": "NYC"
+#           }
+#         ]
+#       },
+#       {
+#         "text": "show me flights to NYC",
+#         "intent": "unk",
+#         "entities": [
+#           {
+#             "entity": "destination",
+#             "start": 19,
+#             "end": 22,
+#             "value": "NYC"
+#           }
+#         ]
+#       }
+#     ]
+#   }
+# }"""
+#     with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
+#         f.write(data.encode("utf-8"))
+#         f.flush()
+#         td = load_data(f.name, "en")
+#         assert td.entity_synonyms["new york city"] == "nyc"

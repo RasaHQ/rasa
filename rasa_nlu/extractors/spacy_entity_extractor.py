@@ -9,10 +9,11 @@ import warnings
 from typing import Optional
 
 from rasa_nlu.components import Component
+from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.training_data import TrainingData
 
 
-class SpacyEntityExtractor(Component):
+class SpacyEntityExtractor(Component, EntityExtractor):
     name = "ner_spacy"
 
     def __init__(self, ner=None):

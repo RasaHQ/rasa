@@ -88,15 +88,15 @@ class Trainer(object):
     def train(self, data):
         self.training_data = data
 
-        context = {
-            "training_data": data,
-        }
+        context = {}
 
         for component in self.pipeline:
             args = rasa_nlu.components.fill_args(component.pipeline_init_args(), context, self.config)
             updates = component.pipeline_init(*args)
             if updates:
                 context.update(updates)
+
+        context["training_data"] = data
 
         for component in self.pipeline:
             args = rasa_nlu.components.fill_args(component.train_args(), context, self.config)

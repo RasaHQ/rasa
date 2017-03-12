@@ -2,6 +2,7 @@ import argparse
 import logging
 import os
 
+from rasa_nlu.converters import load_data
 from rasa_nlu.pipeline import Trainer
 
 from rasa_nlu.config import RasaNLUConfig
@@ -58,7 +59,7 @@ def do_train(config):
 
     trainer = Trainer(config)
     persistor = create_persistor(config)
-    training_data = TrainingData(config['data'])
+    training_data = load_data(config['data'], config['language'], luis_data_tokenizer=config['luis_data_tokenizer'])
     trainer.validate()
     trainer.train(training_data)
     persisted_path = trainer.persist(config['path'], persistor)

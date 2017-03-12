@@ -4,11 +4,12 @@ import re
 from typing import Optional
 
 from rasa_nlu.components import Component
+from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa_nlu.training_data import TrainingData
 
 
-class MitieEntityExtractor(Component):
+class MitieEntityExtractor(Component, EntityExtractor):
     name = "ner_mitie"
 
     def __init__(self, ner=None):
@@ -44,7 +45,7 @@ class MitieEntityExtractor(Component):
         tk = MitieTokenizer()
         tokens, offsets = tk.tokenize_with_offsets(text)
         if ent["start"] not in offsets:
-            message = u"invalid entity {0} in example '{1}':".format(ent, text) + \
+            message = u"Invalid entity {0} in example '{1}':".format(ent, text) + \
                       u" entities must span whole tokens"
             raise ValueError(message)
         start = offsets.index(ent["start"])

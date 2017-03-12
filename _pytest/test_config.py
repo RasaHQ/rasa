@@ -22,7 +22,8 @@ defaults = {
   "server_model_dirs": None,
   "token": None,
   "pipeline": [],
-  "response_log": os.path.join(os.getcwd(), "logs")
+  "response_log": os.path.join(os.getcwd(), "logs"),
+  "luis_data_tokenizer": None,
 }
 
 
