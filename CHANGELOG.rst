@@ -18,6 +18,13 @@ Removed
 Fixed
 -----
 
+[0.7.2] - 2017-03-13
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- python documentation about calling rasa NLU from python
+
 [0.7.1] - 2017-03-10
 ^^^^^^^^^^^^^^^^^^^^
 
