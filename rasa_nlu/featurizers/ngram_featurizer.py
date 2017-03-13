@@ -42,8 +42,8 @@ class NGramFeaturizer(Component):
 
     def process(self, intent_features, text, spacy_nlp):
         # type: ([float], str, Language) -> dict
-        import numpy as np
         from spacy.language import Language
+        import numpy as np
 
         if self.all_ngrams:
             ngrams_to_use = self._ngrams_to_use(self.best_num_ngrams)
@@ -88,15 +88,16 @@ class NGramFeaturizer(Component):
             return self.all_ngrams
 
     def _get_best_ngrams(self, sentences, labels, spacy_nlp):
-        # returns an ordered list of the best character ngrams
-        # for an intent classification problem
+        """Returns an ordered list of the best character ngrams for an intent classification problem"""
+
         oov_strings = self._remove_in_vocab_words(sentences, spacy_nlp)
         ngrams = self._generate_all_ngrams(oov_strings)
         return self._sort_applicable_ngrams(ngrams, sentences, labels, spacy_nlp)
 
     def _remove_in_vocab_words(self, sentences, spacy_nlp):
-        # automatically removes words with digits in them,
-        # that may be a hyperlink or that _are_ in vocabulary for the nlp
+        """Automatically removes words with digits in them, that may be a
+        hyperlink or that _are_ in vocabulary for the nlp"""
+
         new_sents = []
         for sentence in sentences:
             new_sents.append(self._remove_in_vocab_words_of_sentence(sentence, spacy_nlp))
