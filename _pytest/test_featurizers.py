@@ -23,7 +23,7 @@ def test_mitie_featurizer(mitie_feature_extractor):
 
     filename = os.environ.get('MITIE_FILE')
     if not filename or not os.path.isfile(filename):
-        filename = "data/total_word_feature_extractor.dat"
+        filename = os.path.join("data", "total_word_feature_extractor.dat")
 
     ftr = MitieFeaturizer.load(filename)
     sentence = "Hey how are you today"
