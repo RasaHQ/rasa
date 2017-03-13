@@ -61,14 +61,13 @@ class MissingArgumentError(Exception):
 
 
 class Component(object):
-
     # Name of the component to be used when integrating it in a pipeline. E.g. `[ComponentA, ComponentB]`
     # will be a proper pipeline definition where `ComponentA` is the name of the first component of the pipeline.
     name = ""
 
     # Defines what attributes the pipeline component will provide when called
     # (mostly used to check if the pipeline is valid)
-    context_provides = []   # type: [str]
+    context_provides = []  # type: [str]
 
     @classmethod
     def load(cls, *args):
@@ -99,7 +98,7 @@ class Component(object):
         If a model is unique to a model it should return None. Otherwise, an instantiation of the
         component will be reused for all models where the metadata creates the same key."""
         from rasa_nlu.model import Metadata
-        
+
         return None
 
     def pipeline_init_args(self):
