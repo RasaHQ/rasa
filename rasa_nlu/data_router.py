@@ -151,16 +151,16 @@ class DataRouter(object):
     def __create_emulator(self):
         mode = self.config['emulate']
         if mode is None:
-            from emulators import NoEmulator
+            from rasa_nlu.emulators import NoEmulator
             return NoEmulator()
         elif mode.lower() == 'wit':
-            from emulators.wit import WitEmulator
+            from rasa_nlu.emulators.wit import WitEmulator
             return WitEmulator()
         elif mode.lower() == 'luis':
-            from emulators.luis import LUISEmulator
+            from rasa_nlu.emulators.luis import LUISEmulator
             return LUISEmulator()
         elif mode.lower() == 'api':
-            from emulators.api import ApiEmulator
+            from rasa_nlu.emulators.api import ApiEmulator
             return ApiEmulator()
         else:
             raise ValueError("unknown mode : {0}".format(mode))
