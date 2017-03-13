@@ -3,7 +3,10 @@ import json
 import re
 import warnings
 
+from typing import Optional
+
 from rasa_nlu import util
+from rasa_nlu.tokenizers import Tokenizer
 from rasa_nlu.training_data import TrainingData
 
 # Different supported file formats and their identifier
@@ -15,6 +18,9 @@ UNK_FILE_FORMAT = "unk"
 
 
 def load_api_data(files):
+    # type: ([str]) -> TrainingData
+    """Loads training data stored in the API.ai data format."""
+
     intent_examples = []
     entity_examples = []
     entity_synonyms = {}
@@ -54,6 +60,9 @@ def load_api_data(files):
 
 
 def load_luis_data(filename, tokenizer):
+    # type: (str, Optional[Tokenizer]) -> TrainingData
+    """Loads training data stored in the LUIS.ai data format."""
+
     warnings.warn(
         """LUIS data may not always be correctly imported because entity locations are specified by tokens.
         If you use a tokenizer which behaves differently from LUIS's your entities might not be correct""")
@@ -86,6 +95,9 @@ def load_luis_data(filename, tokenizer):
 
 
 def load_wit_data(filename):
+    # type: (str) -> TrainingData
+    """Loads training data stored in the WIT.ai data format."""
+
     intent_examples = []
     entity_examples = []
 
@@ -109,6 +121,9 @@ def load_wit_data(filename):
 
 
 def load_rasa_data(filename):
+    # type: (str) -> TrainingData
+    """Loads training data stored in the rasa NLU data format."""
+
     with codecs.open(filename, encoding="utf-8-sig") as f:
         data = json.loads(f.read())
     common = data['rasa_nlu_data'].get("common_examples", list())
@@ -121,6 +136,9 @@ def load_rasa_data(filename):
 
 
 def guess_format(files):
+    # type: ([str]) -> str
+    """Given a set of files, tries to guess which data format is used."""
+
     for filename in files:
         with codecs.open(filename, encoding="utf-8-sig") as f:
             file_data = json.loads(f.read())
@@ -137,6 +155,9 @@ def guess_format(files):
 
 
 def resolve_data_files(resource_name):
+    # type: (str) -> [str]
+    """Lists all data files of the resource name (might be a file or directory)."""
+
     try:
         return util.recursively_find_files(resource_name)
     except ValueError as e:
@@ -144,6 +165,9 @@ def resolve_data_files(resource_name):
 
 
 def load_data(resource_name, language, luis_data_tokenizer=None, fformat=None):
+    # type: (str, str, Optional[Tokenizer], Optional[str]) -> TrainingData
+    """Loads training data from disk. If no format is provided, the format will be guessed based on the files."""
+
     files = resolve_data_files(resource_name)
 
     if not fformat:

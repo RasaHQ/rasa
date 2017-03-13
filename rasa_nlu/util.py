@@ -1,7 +1,12 @@
 import os
 
+from typing import Optional
+
 
 def relative_normpath(file, path):
+    # type: (Optional[str], str) -> Optional[str]
+    """Return the path of file relative to `path`."""
+
     if file is not None:
         return os.path.normpath(os.path.relpath(file, path))
     else:
@@ -9,6 +14,9 @@ def relative_normpath(file, path):
 
 
 def create_dir_for_file(file_path):
+    # type: (str) -> None
+    """Creates any missing parent directories of this files path."""
+
     try:
         os.makedirs(os.path.dirname(file_path))
     except OSError:
@@ -17,7 +25,11 @@ def create_dir_for_file(file_path):
 
 
 def recursively_find_files(resource_name):
-    """resource_name can be a folder or a file. In both cases we will return a list of files"""
+    # type: (str) -> [str]
+    """Traverse directory hirachry to find files.
+
+    `resource_name` can be a folder or a file. In both cases we will return a list of files."""
+
     if not resource_name:
         raise ValueError("Resource name '{}' must be an existing directory or file.".format(resource_name))
     elif os.path.isfile(resource_name):

@@ -22,6 +22,7 @@ def create_argparser():
 
 
 def download_mitie_fe_file(fe_file):
+    # type: (str) -> None
     """Download the mitie feature extractor needed to run & train mitie classifiers.
 
     See https://github.com/mit-nlp/MITIE#initial-setup """

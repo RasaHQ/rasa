@@ -8,6 +8,8 @@ from typing import Optional
 import rasa_nlu.components
 from rasa_nlu.components import Component
 from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu.persistor import Persistor
+from rasa_nlu.training_data import TrainingData
 
 
 class InvalidModelError(Exception):
@@ -22,13 +24,20 @@ class InvalidModelError(Exception):
 
 
 class Metadata(object):
+    """Captures all necessary information about a model to load it and prepare it for usage."""
+
     @staticmethod
     def load(model_dir):
+        # type: (str) -> 'Metadata'
+        """Loads the metadata from a models directory."""
+
         with open(os.path.join(model_dir, 'metadata.json'), 'rb') as f:
             data = json.loads(f.read().decode('utf-8'))
         return Metadata(data, model_dir)
 
     def __init__(self, metadata, model_dir):
+        # type: (dict, Optional[str]) -> None
+
         self.metadata = metadata
         self.model_dir = model_dir
 
@@ -39,56 +48,66 @@ class Metadata(object):
             return None
 
     @property
-    def feature_extractor_path(self):
-        return self.__prepend_path("feature_extractor")
-
-    @property
-    def intent_classifier_path(self):
-        return self.__prepend_path("intent_classifier")
-
-    @property
-    def entity_extractor_path(self):
-        return self.__prepend_path("entity_extractor")
-
-    @property
-    def entity_synonyms_path(self):
-        return self.__prepend_path("entity_synonyms")
-
-    @property
     def language(self):
+        # type: () -> Optional[str]
+        """Language of the underlying model"""
+
         return self.metadata.get('language')
 
     @property
     def pipeline(self):
+        # type: () -> [str]
+        """Names of the processing pipeline elements."""
+
         if 'pipeline' in self.metadata:
-            return self.metadata.get('pipeline')
+            return self.metadata['pipeline']
         elif 'model_template' in self.metadata:
             from rasa_nlu import registry
             return registry.registered_model_templates.get(self.metadata.get('model_template'))
         else:
             return []
 
+    def persist(self, model_dir):
+        # type: (str) -> None
+        """Persists the metadata of a model to a given directory."""
+
+        metadata = self.metadata.copy()
+
+        metadata.update({
+            "trained_at": datetime.datetime.now().strftime('%Y%m%d-%H%M%S'),
+            "rasa_nlu_version": rasa_nlu.__version__,
+        })
+
+        with open(os.path.join(model_dir, 'metadata.json'), 'w') as f:
+            f.write(json.dumps(metadata, indent=4))
+
 
 class Trainer(object):
+    """Given a pipeline specification and configuration this trainer will load the data and train all components."""
+
+    # Officially supported languages (others might be used, but might fail)
     SUPPORTED_LANGUAGES = ["de", "en"]
 
     def __init__(self, config):
-        from rasa_nlu.registry import registered_components
+        from rasa_nlu.registry import get_component_class
 
         self.config = config
         self.training_data = None
         self.pipeline = []
 
-        for cp in config.pipeline:
-            if cp in registered_components:
-                self.pipeline.append(registered_components[cp]())
+        # Transform the passed names of the pipeline components into classes
+        for component_name in config.pipeline:
+            component_class = get_component_class(component_name)
+            if component_class is not None:
+                self.pipeline.append(component_class())
             else:
                 raise Exception("Unregistered component '{}'. Failed to start trainer.".format(cp))
 
     def validate(self):
-        context = {
-            "training_data": None,
-        }
+        # type: () -> None
+        """Validates a pipeline before it is run. Ensures, that all arguments are present to train the pipeline."""
+
+        context = {"training_data": None}
 
         for component in self.pipeline:
             try:
@@ -100,6 +119,9 @@ class Trainer(object):
                 raise Exception("Failed to validate at component '{}'. {}".format(component.name, e.message))
 
     def train(self, data):
+        # type: (TrainingData) -> None
+        """Trains the underlying pipeline by using the provided training data."""
+
         self.training_data = data
 
         context = {}
@@ -119,8 +141,14 @@ class Trainer(object):
                 context.update(updates)
 
     def persist(self, path, persistor=None, create_unique_subfolder=True):
+        # type: (str, Optional[Persistor], bool) -> str
+        """Persist all components of the pipeline to the passed path. Returns the directory of the persited model."""
+
         timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
-        metadata = {}
+        metadata = {
+            "language": self.config["language"],
+            "pipeline": [component.name for component in self.pipeline],
+        }
 
         if create_unique_subfolder:
             dir_name = os.path.join(path, "model_" + timestamp)
@@ -135,40 +163,27 @@ class Trainer(object):
             if update:
                 metadata.update(update)
 
-        Trainer.write_training_metadata(dir_name, timestamp, self.pipeline,
-                                        self.config["language"], metadata)
+        Metadata(metadata, dir_name).persist(dir_name)
 
         if persistor is not None:
             persistor.send_tar_to_s3(dir_name)
         logging.info("Successfully saved model into '{}'".format(dir_name))
         return dir_name
 
-    @staticmethod
-    def write_training_metadata(output_folder, timestamp, pipeline,
-                                language, additional_metadata):
-        metadata = additional_metadata.copy()
-
-        metadata.update({
-            "trained_at": timestamp,
-            "language": language,
-            "rasa_nlu_version": rasa_nlu.__version__,
-            "pipeline": [component.name for component in pipeline]
-        })
-
-        with open(os.path.join(output_folder, 'metadata.json'), 'w') as f:
-            f.write(json.dumps(metadata, indent=4))
-
 
 class Interpreter(object):
+    """Use a trained pipeline of components to parse text messages"""
+
+    # Defines all attributes (and their default values) that will be returned by `parse`
     output_attributes = {"intent": None, "entities": [], "text": ""}
 
     @staticmethod
     def load(meta, rasa_config):
         # type: (Metadata, RasaNLUConfig) -> Interpreter
+        """Load a stored model and its components defined by the provided metadata."""
+        from rasa_nlu.registry import load_component_by_name
 
-        context = {
-            "model_dir": meta.model_dir,
-        }
+        context = {"model_dir": meta.model_dir}
 
         config = dict(rasa_config.items())
         config.update(meta.metadata)
@@ -177,7 +192,7 @@ class Interpreter(object):
 
         for component_name in meta.pipeline:
             try:
-                component = rasa_nlu.components.load_component_instance(component_name, context, config)
+                component = load_component_by_name(component_name, context, config)
                 pipeline.append(component)
             except rasa_nlu.components.MissingArgumentError as e:
                 raise Exception("Failed to create/load component '{}'. {}".format(component_name, e.message))
@@ -195,6 +210,7 @@ class Interpreter(object):
 
     def init_components(self):
         # type: () -> None
+        """Initializes all components of the processing pipeline. Should be done BEFORE parse is called."""
 
         for component in self.pipeline:
             try:
@@ -203,8 +219,11 @@ class Interpreter(object):
                 raise Exception("Failed to initialize component '{}'. {}".format(component.name, e.message))
 
     def parse(self, text):
-        # type: (str) -> dict
+        # type: (basestring) -> dict
         """Parse the input text, classify it and return an object containing its intent and entities."""
+
+        if type(text) is str:
+            text = unicode(text, "utf-8")
 
         current_context = self.context.copy()
 

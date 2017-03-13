@@ -1,21 +1,13 @@
 import inspect
 
 from typing import Optional
+from typing import Type
 
 
-def get_component_class(component_name):
-    # type: (str) -> Optional[object]
-    """Resolve component name to a registered components class."""
-    from rasa_nlu.registry import registered_components
+def load_component(component_clz, context, config):
+    # type: (Type[Component], dict, dict) -> Optional[Component]
+    """Calls a components load method to init it based on a previously persisted model."""
 
-    return registered_components.get(component_name)
-
-
-def load_component_instance(component_name, context, config):
-    # type: (str, dict, dict) -> Optional[Component]
-    """Resolves a components name and calls it's load method to init it based on a previously persisted model."""
-
-    component_clz = get_component_class(component_name)
     if component_clz is not None:
         load_args = fill_args(component_clz.load_args(), context, config)
         return component_clz.load(*load_args)

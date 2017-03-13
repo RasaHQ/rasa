@@ -29,10 +29,7 @@ def create_argparser():
 
 def create_persistor(config):
     # type: (RasaNLUConfig) -> Optional[Persistor]
-    """Create a remote peristor to store the model if the configuration requests it.
-
-    :type config: object
-    :rtype None or Persistor"""
+    """Create a remote peristor to store the model if the configuration requests it."""
 
     persistor = None
     if "bucket_name" in config:

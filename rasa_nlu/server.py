@@ -35,6 +35,8 @@ def create_arg_parser():
 
 
 def requires_auth(f):
+    """Wraps a request handler with token authentication."""
+
     @wraps(f)
     def decorated(*args, **kwargs):
         token = request.args.get('token', '')

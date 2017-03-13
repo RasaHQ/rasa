@@ -1,3 +1,9 @@
+"""This is a somewhat delicate package. It contains all registered components and preconfigured templates.
+
+Hence, it imports all of the components. To avoid cycles, no component should import this in module scope."""
+from typing import Optional
+from typing import Type
+
 from rasa_nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
 from rasa_nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
 from rasa_nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
@@ -11,15 +17,17 @@ from rasa_nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa_nlu.utils.mitie_utils import MitieNLP
 from rasa_nlu.utils.spacy_utils import SpacyNLP
 
+# Classes of all known components. If a new component should be added, its class needs to be listed here.
 component_classes = [
     SpacyNLP, SpacyEntityExtractor, SklearnIntentClassifier, SpacyFeaturizer,
     MitieNLP, MitieEntityExtractor, MitieIntentClassifier, MitieFeaturizer, MitieTokenizer,
     KeywordIntentClassifier, EntitySynonymMapper, NGramFeaturizer]
 
-
+# Mapping from a components name to its class to allow name based lookup.
 registered_components = {component.name: component for component in component_classes}
 
-
+# To simplify usage, there are a couple of model templates, that already add necessary components in the right order.
+# They also implement the preexisting `backends`.
 registered_model_templates = {
     "spacy_sklearn": [
         "init_spacy",
@@ -48,3 +56,21 @@ registered_model_templates = {
         "intent_keyword",
     ]
 }
+
+
+def get_component_class(component_name):
+    # type: (str) -> Optional[Type[Component]]
+    """Resolve component name to a registered components class."""
+    from rasa_nlu.components import Component
+
+    return registered_components.get(component_name)
+
+
+def load_component_by_name(component_name, context, config):
+    # type: (str, dict, dict) -> Optional[Component]
+    """Resolves a components name and calls it's load method to init it based on a previously persisted model."""
+    from rasa_nlu.components import load_component
+    from rasa_nlu.components import Component
+
+    component_clz = get_component_class(component_name)
+    return load_component(component_clz, context, config)

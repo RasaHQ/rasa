@@ -9,6 +9,7 @@ import tempfile
 from flask import json
 
 import rasa_nlu.components
+from rasa_nlu import registry
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.model import Metadata, InvalidModelError, Interpreter
 from rasa_nlu.train import do_train
@@ -22,12 +23,12 @@ class InterpreterBuilder(object):
         self.component_cache = {}
 
     def __get_component(self, component_name, meta, context, model_config):
-        component_class = rasa_nlu.components.get_component_class(component_name)
+        component_class = registry.get_component_class(component_name)
         cache_key = component_class.cache_key(meta)
         if cache_key is not None and self.use_cache and cache_key in self.component_cache:
             component = self.component_cache[cache_key]
         else:
-            component = rasa_nlu.components.load_component_instance(component_name, context, model_config)
+            component = registry.load_component_by_name(component_name, context, model_config)
             if cache_key is not None and self.use_cache:
                 self.component_cache[cache_key] = component
         return component

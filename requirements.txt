@@ -2,6 +2,7 @@
 sklearn
 gevent
 flask
+boto3
 git+https://github.com/mit-nlp/MITIE.git#egg=mitie
 spacy==1.2.0
 scikit-learn

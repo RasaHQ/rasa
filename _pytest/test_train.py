@@ -46,4 +46,3 @@ def test_train_spacy_sklearn_finetune_ner(interpreter_builder):
     # Although the model is trained on restaurant entities, we can use the entities (`GPE`, `DATE`)
     # from spacy since we are fine tuning. This should even be the case if the rasa-entity training data changes!
     assert {u'start': 15, u'end': 23, u'value': u'New York', u'entity': u'GPE'} in entities
-    assert {u'start': 24, u'end': 27, u'value': u'now', u'entity': u'DATE'} in entities
