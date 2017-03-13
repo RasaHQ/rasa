@@ -1,5 +1,5 @@
 from rasa_nlu.data_router import DataRouter
-from rasa_nlu.pipeline import Interpreter
+from rasa_nlu.model import Interpreter
 from train import init
 
 

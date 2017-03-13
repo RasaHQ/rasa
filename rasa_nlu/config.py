@@ -1,14 +1,11 @@
 import codecs
 import json
-import os
 import logging
+import os
+import warnings
 
 
 # Describes where to search for the configuration file if the location is not set by the user
-import warnings
-
-from rasa_nlu import pipeline
-
 DEFAULT_CONFIG_LOCATION = "config.json"
 
 
@@ -18,7 +15,7 @@ class RasaNLUConfig(object):
 
         defaults = {
           "config": DEFAULT_CONFIG_LOCATION,
-          "backend": None,
+          "model_template": None,
           "data": None,
           "emulate": None,
           "language": "en",
@@ -54,11 +51,13 @@ class RasaNLUConfig(object):
             cmdline_config = {k: v for k, v in cmdline_args.items() if v is not None}
             self.override(cmdline_config)
 
-        if self.__dict__['backend'] and not self.__dict__['pipeline']:
-            if self.__dict__['backend'] in pipeline.registered_pipelines:
-                self.__dict__['pipeline'] = pipeline.registered_pipelines[self.__dict__['backend']]
+        if self.__dict__['model_template'] and not self.__dict__['pipeline']:
+            from rasa_nlu import registry
+            if self.__dict__['model_template'] in registry.registered_model_templates:
+                self.__dict__['pipeline'] = registry.registered_model_templates[self.__dict__['model_template']]
             else:
-                warnings.warn("No pipeline specified and unknown backend '{}' passed.".format(self.__dict__['backend']))
+                warnings.warn("No model specified and unknown model_template " +
+                              "'{}' passed.".format(self.__dict__['model_template']))
 
         for key, value in self.items():
             setattr(self, key, value)

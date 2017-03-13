@@ -1,5 +1,6 @@
 import argparse
 
+from rasa_nlu.converters import load_data
 from rasa_nlu.training_data import TrainingData
 
 
@@ -7,7 +8,7 @@ def create_argparser():
     parser = argparse.ArgumentParser(description='train a custom language parser')
     parser.add_argument('-d', '--data_file',
                         help='file or dir containing training data')
-    parser.add_argument('-b', '--backend', default='default', choices=['mitie', 'spacy_sklearn', 'default'],
+    parser.add_argument('-b', '--backend', default='tokenize_mitie', choices=['tokenize_mitie', 'tokenize_spacy'],
                         help='backend to use to tokenize text')
     parser.add_argument('-l', '--language', default=None, choices=['de', 'en'], help="model and data language")
     parser.add_argument('-o', '--out_file',
@@ -22,5 +23,5 @@ def write_file(td, out_file):
 if __name__ == "__main__":
     parser = create_argparser()
     args = parser.parse_args()
-    td = TrainingData(args.data_file, args.backend, args.language)
+    td = load_data(args.data_file, args.language, args.backend)
     write_file(td, args.out_file)

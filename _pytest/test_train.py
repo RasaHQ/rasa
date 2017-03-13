@@ -3,21 +3,20 @@
 import pytest
 
 import utilities
-from rasa_nlu.pipeline import registered_pipelines, Interpreter
-from rasa_nlu.utils.spacy_utils import SPACY_BACKEND_NAME
+from rasa_nlu import registry
 
 
-@pytest.mark.parametrize("pipeline_name", registered_pipelines.keys())
-def test_train_backend(pipeline_name, interpreter_builder):
-    _config = utilities.base_test_conf(pipeline_name)
+@pytest.mark.parametrize("template_name", registry.registered_model_templates.keys())
+def test_train_model(template_name, interpreter_builder):
+    _config = utilities.base_test_conf(template_name)
     (trained, persisted_path) = utilities.run_train(_config)
     assert trained.pipeline
     loaded = utilities.load_interpreter_for_model(_config, persisted_path, interpreter_builder)
     assert loaded.pipeline
 
 
-@pytest.mark.parametrize("pipeline_name", registered_pipelines.keys())
-def test_train_backend_noents(pipeline_name, interpreter_builder):
+@pytest.mark.parametrize("pipeline_name", registry.registered_model_templates.keys())
+def test_train_model_noents(pipeline_name, interpreter_builder):
     _config = utilities.base_test_conf(pipeline_name)
     _config['data'] = "./data/examples/rasa/demo-rasa-noents.json"
     (trained, persisted_path) = utilities.run_train(_config)
@@ -26,9 +25,9 @@ def test_train_backend_noents(pipeline_name, interpreter_builder):
     assert loaded.pipeline
 
 
-@pytest.mark.parametrize("pipeline_name", registered_pipelines.keys())
-def test_train_backend_multithread(pipeline_name, interpreter_builder):
-    _config = utilities.base_test_conf(pipeline_name)
+@pytest.mark.parametrize("template_name", registry.registered_model_templates.keys())
+def test_train_model_multithread(template_name, interpreter_builder):
+    _config = utilities.base_test_conf(template_name)
     _config['num_threads'] = 2
     (trained, persisted_path) = utilities.run_train(_config)
     assert trained.pipeline
@@ -37,7 +36,7 @@ def test_train_backend_multithread(pipeline_name, interpreter_builder):
 
 
 def test_train_spacy_sklearn_finetune_ner(interpreter_builder):
-    _config = utilities.base_test_conf(SPACY_BACKEND_NAME)
+    _config = utilities.base_test_conf("spacy_sklearn")
     _config['fine_tune_spacy_ner'] = True
     (trained, persisted_path) = utilities.run_train(_config)
     assert trained.pipeline

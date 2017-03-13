@@ -6,7 +6,7 @@ import tempfile
 import pytest
 
 from rasa_nlu.config import RasaNLUConfig
-from rasa_nlu.pipeline import Trainer
+from rasa_nlu.model import Trainer
 from rasa_nlu.server import create_app
 from utilities import ResponseTest
 

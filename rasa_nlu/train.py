@@ -3,18 +3,17 @@ import logging
 import os
 
 from rasa_nlu.converters import load_data
-from rasa_nlu.pipeline import Trainer
+from rasa_nlu.model import Trainer
 
 from rasa_nlu.config import RasaNLUConfig
-from rasa_nlu.training_data import TrainingData
 from typing import Optional
 
 
 def create_argparser():
     parser = argparse.ArgumentParser(description='train a custom language parser')
 
-    parser.add_argument('-b', '--backend', default=None, choices=['mitie', 'spacy_sklearn', 'keyword'],
-                        help='backend to use to interpret text (default: built in keyword matcher).')
+    parser.add_argument('-b', '--model_template', default=None, choices=['mitie', 'spacy_sklearn', 'keyword'],
+                        help='model template to use to interpret text (default: built in keyword matcher).')
     parser.add_argument('-p', '--pipeline', default=None,
                         help='pipeline to use for the message processing.')
     parser.add_argument('-o', '--output', default=None, help="path where model files will be saved")

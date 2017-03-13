@@ -1,4 +1,4 @@
-from rasa_nlu.pipeline import Interpreter
+import datetime
 import glob
 import json
 import logging
@@ -6,14 +6,11 @@ import multiprocessing
 import os
 import tempfile
 
-import datetime
-
-import rasa_nlu.components
 from flask import json
 
-
-from rasa_nlu.model import Model, Metadata, InvalidModelError
+import rasa_nlu.components
 from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu.model import Metadata, InvalidModelError, Interpreter
 from rasa_nlu.train import do_train
 from rasa_nlu.util import create_dir_for_file
 
@@ -113,11 +110,11 @@ class DataRouter(object):
         for alias, model_path in model_dict.items():
             metadata = DataRouter.read_model_metadata(model_path, self.config)
             interpreter = self.interpreter_builder.create_interpreter(metadata, self.config)
-            model_store[alias] = Model(metadata, model_path, interpreter)
+            model_store[alias] = interpreter
         if not model_store:
             meta = Metadata({"pipeline": ["intent_keyword"]}, "")
             interpreter = self.interpreter_builder.create_interpreter(meta, self.config)
-            model_store[self.DEFAULT_MODEL_NAME] = Model(meta, "", interpreter)
+            model_store[self.DEFAULT_MODEL_NAME] = interpreter
         return model_store
 
     @staticmethod
@@ -176,7 +173,7 @@ class DataRouter(object):
             raise InvalidModelError("No model found with alias '{}'".format(alias))
         else:
             model = self.model_store[alias]
-            response = model.interpreter.parse(data['text'])
+            response = model.parse(data['text'])
             if self.responses:
                 self.responses.info(json.dumps(response, sort_keys=True))
             return self.format_response(response)

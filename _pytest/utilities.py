@@ -1,6 +1,6 @@
 import tempfile
 
-from rasa_nlu import pipeline
+from rasa_nlu import registry
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.data_router import DataRouter
 from rasa_nlu.train import do_train
@@ -10,7 +10,7 @@ def base_test_conf(pipeline_name):
     return RasaNLUConfig(cmdline_args={
         'response_log': temp_log_file_dir(),
         'port': 5022,
-        "pipeline": pipeline.registered_pipelines[pipeline_name],
+        "pipeline": registry.registered_model_templates[pipeline_name],
         "path": tempfile.mkdtemp(),
         "data": "./data/examples/rasa/demo-rasa.json"
     })

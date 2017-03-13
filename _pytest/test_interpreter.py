@@ -1,10 +1,10 @@
 import pytest
 
 import utilities
-from rasa_nlu.pipeline import registered_pipelines
+from rasa_nlu import registry
 
 
-@pytest.mark.parametrize("pipeline_name", registered_pipelines.keys())
+@pytest.mark.parametrize("pipeline_name", registry.registered_model_templates.keys())
 def test_samples(pipeline_name, interpreter_builder):
     interpreter = utilities.interpreter_for(interpreter_builder, utilities.base_test_conf(pipeline_name))
     available_intents = ["greet", "restaurant_search", "affirm", "goodbye", "None"]

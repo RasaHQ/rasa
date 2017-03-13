@@ -4,10 +4,6 @@ from typing import Optional
 from rasa_nlu.components import Component
 from rasa_nlu.model import Metadata
 
-MITIE_BACKEND_NAME = "mitie"
-
-MITIE_SKLEARN_BACKEND_NAME = "mitie_sklearn"
-
 
 class MitieNLP(Component):
 

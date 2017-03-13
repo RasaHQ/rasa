@@ -41,7 +41,6 @@ class MitieEntityExtractor(Component, EntityExtractor):
     def find_entity(ent, text):
         from mitie import tokenize
 
-        # TODO: inject tokenizer results here!!!!
         tk = MitieTokenizer()
         tokens, offsets = tk.tokenize_with_offsets(text)
         if ent["start"] not in offsets:

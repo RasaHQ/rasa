@@ -1,13 +1,12 @@
 import inspect
 
 from typing import Optional
-from rasa_nlu.model import Metadata
 
 
 def get_component_class(component_name):
     # type: (str) -> Optional[object]
     """Resolve component name to a registered components class."""
-    from rasa_nlu.pipeline import registered_components
+    from rasa_nlu.registry import registered_components
 
     return registered_components.get(component_name)
 
@@ -99,6 +98,8 @@ class Component(object):
 
         If a model is unique to a model it should return None. Otherwise, an instantiation of the
         component will be reused for all models where the metadata creates the same key."""
+        from rasa_nlu.model import Metadata
+        
         return None
 
     def pipeline_init_args(self):

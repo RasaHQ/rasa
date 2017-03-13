@@ -6,7 +6,7 @@ import os
 import logging
 
 defaults = {
-  "backend": None,
+  "model_template": None,
   "config": "config.json",
   "data": None,
   "emulate": None,

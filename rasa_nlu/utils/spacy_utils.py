@@ -3,8 +3,6 @@ from typing import Optional
 from rasa_nlu.components import Component
 from rasa_nlu.model import Metadata
 
-SPACY_BACKEND_NAME = "spacy_sklearn"
-
 
 class SpacyNLP(Component):
     name = "init_spacy"
