@@ -1,5 +1,5 @@
 {
-  "backend": "mitie",
+  "model_template": "mitie",
   "mitie_file": "./data/total_word_feature_extractor.dat",
   "path" : "./models",
   "data" : "./data/examples/rasa/demo-rasa.json"

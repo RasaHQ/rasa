@@ -29,7 +29,7 @@ def test_luis_data_without_tokenizer():
 def test_wit_data():
     td = load_data('data/examples/wit/demo-flights.json', "en")
     assert td.entity_examples != []
-    assert td.intent_examples != []
+    assert td.intent_examples == []
     assert td.entity_synonyms == {}
 
 

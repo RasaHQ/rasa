@@ -1,5 +1,5 @@
 {
-  "backend": "spacy_sklearn",
+  "model_template": "spacy_sklearn",
   "path" : "./models",
   "data" : "./data/examples/rasa/demo-rasa.json"
 }

@@ -2,7 +2,6 @@ import argparse
 import codecs
 
 from rasa_nlu.converters import load_data
-from rasa_nlu.training_data import TrainingData
 
 
 def create_argparser():

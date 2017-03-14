@@ -82,14 +82,7 @@ class SklearnIntentClassifier(Component):
 
         import numpy as np
 
-        if hasattr(self, 'uses_probabilities') and self.uses_probabilities:
-            return self.clf.predict_proba(X)
-        else:
-            y_pred_indices = self.clf.predict(X)
-            # convert representation to one-hot. all labels are zero, only the predicted label gets assigned prob=1
-            y_pred = np.zeros((np.size(X, 0), len(self.le.classes_)))
-            y_pred[np.arange(y_pred.shape[0]), y_pred_indices] = 1
-            return y_pred
+        return self.clf.predict_proba(X)
 
     def predict(self, X):
         """Given a bow vector of an input text, predict most probable label. Returns only the most likely label.

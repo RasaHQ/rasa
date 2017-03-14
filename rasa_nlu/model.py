@@ -119,7 +119,7 @@ class Trainer(object):
                 raise Exception("Failed to validate at component '{}'. {}".format(component.name, e.message))
 
     def train(self, data):
-        # type: (TrainingData) -> None
+        # type: (TrainingData) -> Interpreter
         """Trains the underlying pipeline by using the provided training data."""
 
         self.training_data = data
@@ -132,6 +132,8 @@ class Trainer(object):
             if updates:
                 context.update(updates)
 
+        init_context = context.copy()
+
         context["training_data"] = data
 
         for component in self.pipeline:
@@ -139,6 +141,8 @@ class Trainer(object):
             updates = component.train(*args)
             if updates:
                 context.update(updates)
+
+        return Interpreter(self.pipeline, context=init_context, config=self.config)
 
     def persist(self, path, persistor=None, create_unique_subfolder=True):
         # type: (str, Optional[Persistor], bool) -> str
@@ -193,9 +197,13 @@ class Interpreter(object):
         for component_name in meta.pipeline:
             try:
                 component = load_component_by_name(component_name, context, config)
-                pipeline.append(component)
             except rasa_nlu.components.MissingArgumentError as e:
                 raise Exception("Failed to create/load component '{}'. {}".format(component_name, e.message))
+            try:
+                rasa_nlu.components.init_component(component, context, config)
+                pipeline.append(component)
+            except rasa_nlu.components.MissingArgumentError as e:
+                raise Exception("Failed to initialize component '{}'. {}".format(component.name, e.message))
 
         return Interpreter(pipeline, context, config, meta)
 
@@ -206,17 +214,6 @@ class Interpreter(object):
         self.context = context
         self.config = config
         self.meta = meta
-        self.init_components()
-
-    def init_components(self):
-        # type: () -> None
-        """Initializes all components of the processing pipeline. Should be done BEFORE parse is called."""
-
-        for component in self.pipeline:
-            try:
-                rasa_nlu.components.init_component(component, self.context, self.config)
-            except rasa_nlu.components.MissingArgumentError as e:
-                raise Exception("Failed to initialize component '{}'. {}".format(component.name, e.message))
 
     def parse(self, text):
         # type: (basestring) -> dict
