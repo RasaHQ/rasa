@@ -119,11 +119,11 @@ if __name__ == '__main__':
     # Retrain different multitenancy models
     def train(cfg_name, model_name):
         from rasa_nlu.train import create_persistor
-        from rasa_nlu.training_data import TrainingData
+        from rasa_nlu.converters import load_data
 
         config = RasaNLUConfig(cfg_name)
         trainer = Trainer(config)
-        training_data = TrainingData(config['data'])
+        training_data = load_data(config['data'], config['language'])
 
         trainer.validate()
         trainer.train(training_data)

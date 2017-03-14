@@ -13,12 +13,21 @@ class TrainingData(object):
     MIN_EXAMPLES_PER_INTENT = 2
     MIN_EXAMPLES_PER_ENTITY = 2
 
-    def __init__(self, intent_examples=[], entity_examples=[], entity_synonyms={}):
-        self.intent_examples = intent_examples
-        self.entity_examples = entity_examples
+    def __init__(self, intent_examples_only=[], entity_examples_only=[], common_examples=[], entity_synonyms={}):
+        self.intent_examples_only = intent_examples_only
+        self.entity_examples_only = entity_examples_only
+        self.common_examples = common_examples
         self.entity_synonyms = entity_synonyms
 
         self.validate()
+
+    @property
+    def intent_examples(self):
+        return self.intent_examples_only + self.common_examples
+
+    @property
+    def entity_examples(self):
+        return self.entity_examples_only + self.common_examples
 
     @property
     def num_entity_examples(self):
@@ -33,8 +42,9 @@ class TrainingData(object):
 
         return json.dumps({
             "rasa_nlu_data": {
-                "intent_examples": self.intent_examples,
-                "entity_examples": self.entity_examples
+                "common_examples": self.common_examples,
+                "intent_examples": self.intent_examples_only,
+                "entity_examples": self.entity_examples_only,
             }
         }, **kwargs)
 

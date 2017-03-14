@@ -23,6 +23,7 @@ def load_api_data(files):
 
     intent_examples = []
     entity_examples = []
+    common_examples = []
     entity_synonyms = {}
     for filename in files:
         with codecs.open(filename, encoding="utf-8-sig") as f:
@@ -47,8 +48,12 @@ def load_api_data(files):
                         }
                     )
 
-                intent_examples.append({"text": text, "intent": intent})
-                entity_examples.append({"text": text, "intent": intent, "entities": entities})
+                if intent and entities:
+                    common_examples.append({"text": text, "intent": intent, "entities": entities})
+                elif intent:
+                    intent_examples.append({"text": text, "intent": intent})
+                elif entities:
+                    entity_examples.append({"text": text, "intent": intent, "entities": entities})
 
         # create synonyms dictionary
         if "name" in data and "entries" in data:
@@ -56,7 +61,7 @@ def load_api_data(files):
                 if "value" in entry and "synonyms" in entry:
                     for synonym in entry["synonyms"]:
                         entity_synonyms[synonym] = entry["value"]
-    return TrainingData(intent_examples, entity_examples, entity_synonyms)
+    return TrainingData(intent_examples, entity_examples, common_examples, entity_synonyms)
 
 
 def load_luis_data(filename, tokenizer):
@@ -72,6 +77,7 @@ def load_luis_data(filename, tokenizer):
 
     intent_examples = []
     entity_examples = []
+    common_examples = []
 
     with codecs.open(filename, encoding="utf-8-sig") as f:
         data = json.loads(f.read())
@@ -89,9 +95,13 @@ def load_luis_data(filename, tokenizer):
             val = text[start:end]
             entities.append({"entity": e["entity"], "value": val, "start": start, "end": end})
 
-        intent_examples.append({"text": text, "intent": intent})
-        entity_examples.append({"text": text, "intent": intent, "entities": entities})
-    return TrainingData(intent_examples, entity_examples)
+        if intent and entities:
+            common_examples.append({"text": text, "intent": intent, "entities": entities})
+        elif intent:
+            intent_examples.append({"text": text, "intent": intent})
+        elif entities:
+            entity_examples.append({"text": text, "intent": intent, "entities": entities})
+    return TrainingData(intent_examples, entity_examples, common_examples)
 
 
 def load_wit_data(filename):
@@ -100,6 +110,7 @@ def load_wit_data(filename):
 
     intent_examples = []
     entity_examples = []
+    common_examples = []
 
     with codecs.open(filename, encoding="utf-8-sig") as f:
         data = json.loads(f.read())
@@ -109,15 +120,19 @@ def load_wit_data(filename):
             continue
         text = s.get("text")
         intents = [e["value"] for e in entities if e["entity"] == 'intent']
-        intent = intents[0] if intents else 'None'
+        intent = intents[0] if intents else None
 
         entities = [e for e in entities if ("start" in e and "end" in e)]
         for e in entities:
             e["value"] = e["value"][1:-1]
 
-        intent_examples.append({"text": text, "intent": intent})
-        entity_examples.append({"text": text, "intent": intent, "entities": entities})
-    return TrainingData(intent_examples, entity_examples)
+        if intent and entities:
+            common_examples.append({"text": text, "intent": intent, "entities": entities})
+        elif intent:
+            intent_examples.append({"text": text, "intent": intent})
+        elif entities:
+            entity_examples.append({"text": text, "intent": intent, "entities": entities})
+    return TrainingData(intent_examples, entity_examples, common_examples)
 
 
 def load_rasa_data(filename):
@@ -130,9 +145,7 @@ def load_rasa_data(filename):
     intent = data['rasa_nlu_data'].get("intent_examples", list())
     entity = data['rasa_nlu_data'].get("entity_examples", list())
 
-    intent_examples = intent + common
-    entity_examples = entity + common
-    return TrainingData(intent_examples, entity_examples)
+    return TrainingData(intent, entity, common)
 
 
 def guess_format(files):

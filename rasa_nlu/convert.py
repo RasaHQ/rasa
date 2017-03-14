@@ -1,4 +1,5 @@
 import argparse
+import codecs
 
 from rasa_nlu.converters import load_data
 from rasa_nlu.training_data import TrainingData
@@ -17,7 +18,7 @@ def create_argparser():
 
 
 def write_file(td, out_file):
-    with open(out_file, 'wb') as f:
+    with codecs.open(out_file, "w") as f:
         f.write(td.as_json(indent=2))
 
 if __name__ == "__main__":
