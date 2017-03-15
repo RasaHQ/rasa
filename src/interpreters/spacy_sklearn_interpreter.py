@@ -21,7 +21,8 @@ class SpacySklearnInterpreter(Interpreter):
         :rtype: MITIEInterpreter
         """
         if meta.entity_extractor_path:
-            extractor = SpacyEntityExtractor(nlp, meta.entity_extractor_path)
+            extractor = SpacyEntityExtractor(nlp, meta.entity_extractor_path,
+                                             meta.metadata.get("should_fine_tune_spacy_ner"))
         else:
             extractor = None
         if meta.intent_classifier_path:
@@ -79,7 +80,7 @@ class SpacySklearnInterpreter(Interpreter):
 
     def parse(self, text):
         """Parse the input text, classify it and return an object containing its intent and entities."""
-        doc = self.nlp(text)
+        doc = self.nlp(text, entity=False)
         intent, probability = self.get_intent(doc)
         entities = self.get_entities(doc)
         if self.ent_synonyms:

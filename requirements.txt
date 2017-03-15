@@ -3,7 +3,8 @@ sklearn
 gevent
 flask
 git+https://github.com/mit-nlp/MITIE.git#egg=mitie
-spacy==1.2.0
+spacy==1.6.0
+thinc==6.5.0
 scikit-learn
 pytest-pep8
 pytest-xdist

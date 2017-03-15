@@ -12,7 +12,7 @@ def __relative_normpath(file, path):
 
 def write_training_metadata(output_folder, timestamp, data_file, backend_name,
                             language_name, intent_file, entity_file,
-                            entity_synonyms_file=None, feature_file=None):
+                            entity_synonyms_file=None, feature_file=None, should_fine_tune_spacy_ner=False):
 
     metadata = {
         "trained_at": timestamp,
@@ -23,7 +23,8 @@ def write_training_metadata(output_folder, timestamp, data_file, backend_name,
         "entity_synonyms": __relative_normpath(entity_synonyms_file, output_folder),
         "feature_extractor": __relative_normpath(feature_file, output_folder),
         "language_name": language_name,
-        "rasa_nlu_version": rasa_nlu.__version__
+        "rasa_nlu_version": rasa_nlu.__version__,
+        "should_fine_tune_spacy_ner": should_fine_tune_spacy_ner,
     }
 
     with open(os.path.join(output_folder, 'metadata.json'), 'w') as f:
