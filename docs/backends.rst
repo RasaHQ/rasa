@@ -58,14 +58,14 @@ steps are
 
 otherwise if you know what you're doing, you can also just ``pip install -U scikit-learn``
 
-Option 3 : spaCy + sklearn + MITIE
+Option 3 : sklearn + MITIE
 ----------------------------------
 There is a third backend that combines the advantages of the two previous ones:
 
-1. the fast and good intent classification from spaCy + sklearn and
+1. the fast and good intent classification from sklearn and
 2. the good entitiy recognition and feature vector creation from MITIE
 
 Especially, if you have a larger number of intents (more than 10), training intent classifiers with MITIE can take very
 long.
 
-To use this backend you need to follow the instructions for installing both, spacy + sklearn and MITIE.
+To use this backend you need to follow the instructions for installing both, sklearn and MITIE.
