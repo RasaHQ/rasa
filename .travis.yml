@@ -4,7 +4,6 @@ cache:
   directories:
   - $HOME/.cache/pip
   - $HOME/data
-  - $HOME/miniconda/envs/test-environment/lib/python$TRAVIS_PYTHON_VERSION/site-packages
 python:
   # We don't actually use the Travis Python, but this keeps it organized.
   - "2.7"
