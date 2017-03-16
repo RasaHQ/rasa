@@ -1,6 +1,8 @@
 language: python
 sudo: required
-cache: pip
+cache:
+  - pip
+  - data/
 python:
   # We don't actually use the Travis Python, but this keeps it organized.
   - "2.7"
@@ -28,7 +30,9 @@ install:
   - python setup.py install
   - python -m spacy.en.download all > jnk
   - python -m spacy.de.download all > jnk
-  - wget -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
+  - if [[ ! -f data/total_word_feature_extractor.dat ]]; then
+      wget -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat;
+    fi
 script: py.test --pep8 --boxed -n0
 deploy:
   provider: pypi
