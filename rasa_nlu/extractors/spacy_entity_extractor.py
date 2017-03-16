@@ -16,6 +16,12 @@ from rasa_nlu.training_data import TrainingData
 class SpacyEntityExtractor(Component, EntityExtractor):
     name = "ner_spacy"
 
+    context_provides = {
+        "process": ["entities"],
+    }
+
+    output_provides = ["entities"]
+
     def __init__(self, ner=None, fine_tune_spacy_ner=False):
         self.ner = ner
         self.fine_tune_spacy_ner = fine_tune_spacy_ner

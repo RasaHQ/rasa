@@ -8,7 +8,9 @@ from rasa_nlu.components import Component
 class MitieTokenizer(Tokenizer, Component):
     name = "tokenizer_mitie"
 
-    context_provides = ["tokens"]
+    context_provides = {
+        "process": ["tokens"],
+    }
 
     def __init__(self):
         pass

@@ -8,7 +8,13 @@ from rasa_nlu.training_data import TrainingData
 
 class MitieIntentClassifier(Component):
 
-    name = "intent_mitie"
+    name = "intent_classifier_mitie"
+
+    context_provides = {
+        "process": ["intent"],
+    }
+
+    output_provides = ["intent"]
 
     def __init__(self, clf=None):
         self.clf = clf

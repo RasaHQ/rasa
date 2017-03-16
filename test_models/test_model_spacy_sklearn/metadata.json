@@ -5,13 +5,13 @@
         "ner_spacy", 
         "ner_synonyms", 
         "intent_featurizer_spacy", 
-        "intent_sklearn"
+        "intent_classifier_sklearn"
     ], 
     "intent_classifier": "intent_classifier.pkl", 
     "entity_extractor": "ner", 
     "language": "en", 
-    "trained_at": "20170316-112434", 
+    "trained_at": "20170316-140552", 
     "training_data": "training_data.json", 
     "rasa_nlu_version": "0.8.0a1", 
-    "should_fine_tune_spacy_ner": false
+    "fine_tune_spacy_ner": false
 }

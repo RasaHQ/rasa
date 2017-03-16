@@ -7,7 +7,13 @@ from rasa_nlu.training_data import TrainingData
 class SklearnIntentClassifier(Component):
     """Intent classifier using the sklearn framework"""
 
-    name = "intent_sklearn"
+    name = "intent_classifier_sklearn"
+
+    context_provides = {
+        "process": ["intent"],
+    }
+
+    output_provides = ["intent"]
 
     def __init__(self, clf=None, le=None):
         """Construct a new intent classifier using the sklearn framework."""

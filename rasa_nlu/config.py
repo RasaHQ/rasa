@@ -9,35 +9,36 @@ import warnings
 DEFAULT_CONFIG_LOCATION = "config.json"
 
 
+DEFAULT_CONFIG = {
+    "config": DEFAULT_CONFIG_LOCATION,
+    "model_template": None,
+    "data": None,
+    "emulate": None,
+    "language": "en",
+    "log_file": None,
+    "log_level": logging.INFO,
+    "mitie_file": os.path.join("data", "total_word_feature_extractor.dat"),
+    "num_threads": 1,
+    "fine_tune_spacy_ner": False,
+    "path": os.path.join(os.getcwd(), "models"),
+    "port": 5000,
+    "server_model_dirs": None,
+    "token": None,
+    "max_number_of_ngrams": 7,
+    "pipeline": [],
+    "response_log": os.path.join(os.getcwd(), "logs"),
+    "luis_data_tokenizer": None,
+}
+
+
 class RasaNLUConfig(object):
 
     def __init__(self, filename=None, env_vars=None, cmdline_args=None):
 
-        defaults = {
-          "config": DEFAULT_CONFIG_LOCATION,
-          "model_template": None,
-          "data": None,
-          "emulate": None,
-          "language": "en",
-          "log_file": None,
-          "log_level": logging.INFO,
-          "mitie_file": os.path.join("data", "total_word_feature_extractor.dat"),
-          "num_threads": 1,
-          "fine_tune_spacy_ner": False,
-          "path": os.path.join(os.getcwd(), "models"),
-          "port": 5000,
-          "server_model_dirs": None,
-          "token": None,
-          "max_number_of_ngrams": 7,
-          "pipeline": [],
-          "response_log": os.path.join(os.getcwd(), "logs"),
-          "luis_data_tokenizer": None,
-        }
-
         if filename is None and os.path.isfile(DEFAULT_CONFIG_LOCATION):
             filename = DEFAULT_CONFIG_LOCATION
 
-        self.override(defaults)
+        self.override(DEFAULT_CONFIG)
         if filename is not None:
             with codecs.open(filename, encoding='utf-8') as f:
                 file_config = json.loads(f.read())

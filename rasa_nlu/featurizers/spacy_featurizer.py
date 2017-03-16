@@ -6,7 +6,10 @@ from rasa_nlu.training_data import TrainingData
 class SpacyFeaturizer(Featurizer, Component):
     name = "intent_featurizer_spacy"
 
-    context_provides = ["intent_features"]
+    context_provides = {
+        "train": ["intent_features"],
+        "process": ["intent_features"],
+    }
 
     def ndim(self, nlp):
         # type: (Language) -> int

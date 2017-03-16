@@ -16,7 +16,7 @@ def spacy_nlp_en():
 
 @pytest.fixture(scope="session")
 def mitie_feature_extractor():
-    mitie_file = "data/total_word_feature_Extractor.dat"
+    mitie_file = "data/total_word_feature_extractor.dat"
     return total_word_feature_extractor(mitie_file)
 
 

@@ -5,7 +5,9 @@ from rasa_nlu.components import Component
 class WhitespaceTokenizer(Tokenizer, Component):
     name = "tokenizer_whitespace"
 
-    context_provides = ["tokens"]
+    context_provides = {
+        "process": ["tokens"],
+    }
 
     def process(self, text):
         # type: (str) -> dict

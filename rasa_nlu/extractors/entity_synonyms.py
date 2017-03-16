@@ -10,6 +10,12 @@ from rasa_nlu.training_data import TrainingData
 class EntitySynonymMapper(Component):
     name = "ner_synonyms"
 
+    context_provides = {
+        "process": ["entities"],
+    }
+
+    output_provides = ["entities"]
+
     def __init__(self, synonyms={}):
         self.synonyms = synonyms
 

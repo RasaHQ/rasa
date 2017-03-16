@@ -12,6 +12,12 @@ from rasa_nlu.training_data import TrainingData
 class MitieEntityExtractor(Component, EntityExtractor):
     name = "ner_mitie"
 
+    context_provides = {
+        "process": ["entities"],
+    }
+
+    output_provides = ["entities"]
+
     def __init__(self, ner=None):
         self.ner = ner
 

@@ -57,9 +57,20 @@ class Component(object):
     # will be a proper pipeline definition where `ComponentA` is the name of the first component of the pipeline.
     name = ""
 
-    # Defines what attributes the pipeline component will provide when called
+    # Defines what attributes the pipeline component will provide when called. The different keys indicate the
+    # different functions (`pipeline_init`, `train`, `process`) that are able to update the pipelines context.
     # (mostly used to check if the pipeline is valid)
-    context_provides = []  # type: [str]
+    context_provides = {
+        "pipeline_init": [],
+        "train": [],
+        "process": [],
+    }
+
+    # Defines which of the attributes the component provides should be added to the final output json at the end of the
+    # pipeline. Every attribute in `output_provides` should be part of the above `context_provides['process']`. As it
+    # wouldn't make much sense to keep an attribute in the output that is not generated. Every other attribute provided
+    # in the context during the process step will be removed from the output json.
+    output_provides = []
 
     @classmethod
     def load(cls, *args):

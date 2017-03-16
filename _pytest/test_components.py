@@ -1,7 +1,8 @@
 import pytest
 
+from rasa_nlu import config
 from rasa_nlu import registry
-from rasa_nlu.components import Component
+from rasa_nlu.components import Component, fill_args
 
 
 @pytest.mark.parametrize("component_class", registry.component_classes)
@@ -19,7 +20,51 @@ def test_no_components_with_same_name(component_class):
 
 
 @pytest.mark.parametrize("model_template", registry.registered_model_templates)
-def test_no_components_with_same_name(model_template):
+def test_all_components_in_mode_templates_exist(model_template):
     components = registry.registered_model_templates[model_template]
     for component in components:
         assert component in registry.registered_components, "Model template contains unknown component."
+
+
+@pytest.mark.parametrize("component_class", registry.component_classes)
+def test_all_arguments_can_be_satisfied_during_init(component_class):
+    # All available context arguments that will ever be generated during init
+    component = component_class()
+    context_arguments = {}
+    for clz in registry.component_classes:
+        for ctx_arg in clz.context_provides.get("pipeline_init", []):
+            context_arguments[ctx_arg] = None
+
+    filled_args = fill_args(component.pipeline_init_args(), context_arguments, config.DEFAULT_CONFIG)
+    assert len(filled_args) == len(component.pipeline_init_args())
+
+
+@pytest.mark.parametrize("component_class", registry.component_classes)
+def test_all_arguments_can_be_satisfied_during_train(component_class):
+    # All available context arguments that will ever be generated during train
+    # it might still happen, that in a certain pipeline configuration arguments can not be satisfied!
+    component = component_class()
+    context_arguments = {"training_data": None}
+    for clz in registry.component_classes:
+        for ctx_arg in clz.context_provides.get("pipeline_init", []):
+            context_arguments[ctx_arg] = None
+        for ctx_arg in clz.context_provides.get("train", []):
+            context_arguments[ctx_arg] = None
+
+    filled_args = fill_args(component.train_args(), context_arguments, config.DEFAULT_CONFIG)
+    assert len(filled_args) == len(component.train_args())
+
+
+@pytest.mark.parametrize("component_class", registry.component_classes)
+def test_all_arguments_can_be_satisfied_during_parse(component_class):
+    # All available context arguments that will ever be generated during parse
+    component = component_class()
+    context_arguments = {"text": None}
+    for clz in registry.component_classes:
+        for ctx_arg in clz.context_provides.get("pipeline_init", []):
+            context_arguments[ctx_arg] = None
+        for ctx_arg in clz.context_provides.get("process", []):
+            context_arguments[ctx_arg] = None
+
+    filled_args = fill_args(component.process_args(), context_arguments, config.DEFAULT_CONFIG)
+    assert len(filled_args) == len(component.process_args())

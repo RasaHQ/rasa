@@ -6,7 +6,10 @@ from rasa_nlu.training_data import TrainingData
 class MitieFeaturizer(Featurizer, Component):
     name = "intent_featurizer_mitie"
 
-    context_provides = ["intent_features"]
+    context_provides = {
+        "train": ["intent_features"],
+        "process": ["intent_features"],
+    }
 
     def ndim(self, feature_extractor):
         # type: (mitie.total_word_feature_extractor) -> int

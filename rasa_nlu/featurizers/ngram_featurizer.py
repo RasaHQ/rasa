@@ -15,7 +15,10 @@ from rasa_nlu.training_data import TrainingData
 class NGramFeaturizer(Component):
     name = "intent_featurizer_ngrams"
 
-    context_provides = ["intent_features"]
+    context_provides = {
+        "train": ["intent_features"],
+        "process": ["intent_features"],
+    }
 
     n_gram_min_length = 3
 
@@ -27,7 +30,7 @@ class NGramFeaturizer(Component):
         self.best_num_ngrams = None
         self.all_ngrams = None
 
-    def train(self, training_data, intent_features, spacy_nlp, max_ngrams):
+    def train(self, training_data, intent_features, spacy_nlp, max_number_of_ngrams):
         # type: (TrainingData, [float], Language, Optional[int]) -> dict
         from spacy.language import Language
 
@@ -35,7 +38,8 @@ class NGramFeaturizer(Component):
         labels = [e['intent'] for e in training_data.intent_examples]
         sentences = [e['text'] for e in training_data.intent_examples]
         self.all_ngrams = self._get_best_ngrams(sentences, labels, spacy_nlp)
-        self.best_num_ngrams = self._cross_validation(sentences, labels, intent_features, spacy_nlp, max_ngrams)
+        self.best_num_ngrams = self._cross_validation(
+            sentences, labels, intent_features, spacy_nlp, max_number_of_ngrams)
         logging.debug("Ngram collection took {} seconds".format(time.time() - start))
         stacked = self._create_bow_vecs(intent_features, sentences, spacy_nlp)
         return {"intent_features": stacked}

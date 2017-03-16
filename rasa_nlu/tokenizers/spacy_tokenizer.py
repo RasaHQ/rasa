@@ -5,7 +5,9 @@ from rasa_nlu.components import Component
 class SpacyTokenizer(Tokenizer, Component):
     name = "tokenizer_spacy"
 
-    context_provides = ["tokens"]
+    context_provides = {
+        "process": ["tokens"],
+    }
 
     def __init__(self, nlp=None):
         self.nlp = nlp

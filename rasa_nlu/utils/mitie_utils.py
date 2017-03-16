@@ -9,7 +9,9 @@ class MitieNLP(Component):
 
     name = "init_mitie"
 
-    context_provides = ["mitie_feature_extractor"]
+    context_provides = {
+        "pipeline_init": ["mitie_feature_extractor"],
+    }
 
     def __init__(self, extractor=None):
         self.extractor = extractor

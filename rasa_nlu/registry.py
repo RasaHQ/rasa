@@ -34,7 +34,7 @@ registered_model_templates = {
         "ner_spacy",
         "ner_synonyms",
         "intent_featurizer_spacy",
-        "intent_sklearn",
+        "intent_classifier_sklearn",
     ],
     "mitie": [
         "init_mitie",
@@ -42,7 +42,7 @@ registered_model_templates = {
         "ner_mitie",
         "ner_synonyms",
         "intent_featurizer_mitie",
-        "intent_mitie",
+        "intent_classifier_mitie",
     ],
     "mitie_sklearn": [
         "init_mitie",
@@ -50,10 +50,10 @@ registered_model_templates = {
         "ner_mitie",
         "ner_synonyms",
         "intent_featurizer_mitie",
-        "intent_sklearn",
+        "intent_classifier_sklearn",
     ],
     "keyword": [
-        "intent_keyword",
+        "intent_classifier_keyword",
     ]
 }
 

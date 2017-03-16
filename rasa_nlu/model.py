@@ -107,12 +107,39 @@ class Trainer(object):
         # type: () -> None
         """Validates a pipeline before it is run. Ensures, that all arguments are present to train the pipeline."""
 
-        context = {"training_data": None}
+        # Validate the init phase
+        context = {}
+
+        for component in self.pipeline:
+            try:
+                rasa_nlu.components.fill_args(component.pipeline_init_args(), context, self.config)
+                updates = component.context_provides.get("pipeline_init", [])
+                for u in updates:
+                    context[u] = None
+            except rasa_nlu.components.MissingArgumentError as e:
+                raise Exception("Failed to validate at component '{}'. {}".format(component.name, e.message))
+
+        after_init_context = context.copy()
+
+        context["training_data"] = None     # Prepare context for testing the training phase
 
         for component in self.pipeline:
             try:
                 rasa_nlu.components.fill_args(component.train_args(), context, self.config)
-                updates = component.context_provides
+                updates = component.context_provides.get("train", [])
+                for u in updates:
+                    context[u] = None
+            except rasa_nlu.components.MissingArgumentError as e:
+                raise Exception("Failed to validate at component '{}'. {}".format(component.name, e.message))
+
+        # Reset context to test processing phase and prepare for training phase
+        context = after_init_context
+        context["text"] = None
+
+        for component in self.pipeline:
+            try:
+                rasa_nlu.components.fill_args(component.process_args(), context, self.config)
+                updates = component.context_provides.get("process", [])
                 for u in updates:
                     context[u] = None
             except rasa_nlu.components.MissingArgumentError as e:
@@ -179,7 +206,7 @@ class Interpreter(object):
     """Use a trained pipeline of components to parse text messages"""
 
     # Defines all attributes (and their default values) that will be returned by `parse`
-    output_attributes = {"intent": None, "entities": [], "text": ""}
+    default_output_attributes = {"intent": None, "entities": [], "text": ""}
 
     @staticmethod
     def load(meta, rasa_config):
@@ -214,6 +241,7 @@ class Interpreter(object):
         self.context = context
         self.config = config
         self.meta = meta
+        self.output_attributes = [output for component in pipeline for output in component.output_provides]
 
     def parse(self, text):
         # type: (basestring) -> dict
@@ -237,7 +265,8 @@ class Interpreter(object):
             except rasa_nlu.components.MissingArgumentError as e:
                 raise Exception("Failed to parse at component '{}'. {}".format(component.name, e.message))
 
-        result = self.output_attributes.copy()
-        # Ensure all keys of `output_attributes` are present and no other keys are returned
-        result.update({key: current_context[key] for key in self.output_attributes if key in current_context})
+        result = self.default_output_attributes.copy()
+        all_attributes = self.default_output_attributes.keys() + self.output_attributes
+        # Ensure only keys of `all_attributes` are present and no other keys are returned
+        result.update({key: current_context[key] for key in all_attributes if key in current_context})
         return result

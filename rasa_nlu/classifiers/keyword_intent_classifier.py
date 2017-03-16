@@ -3,7 +3,13 @@ from rasa_nlu.components import Component
 
 class KeywordIntentClassifier(Component):
 
-    name = "intent_keyword"
+    name = "intent_classifier_keyword"
+
+    context_provides = {
+        "process": ["intent"],
+    }
+
+    output_provides = ["intent"]
 
     his = ["hello", "hi", "hey"]
 

@@ -7,12 +7,15 @@ from rasa_nlu.model import Metadata
 class SpacyNLP(Component):
     name = "init_spacy"
 
-    context_provides = ["spacy_nlp"]
+    context_provides = {
+        "pipeline_init": ["spacy_nlp"],
+        "process": ["spacy_doc"],
+    }
 
     def __init__(self, nlp=None):
-        """
-        :type nlp: spacy.language.Language or None
-        """
+        # type: (Optional[Language]) -> None
+        from spacy.language import Language
+
         self.nlp = nlp
 
     @classmethod
@@ -44,9 +47,7 @@ class SpacyNLP(Component):
     @staticmethod
     def ensure_proper_language_model(nlp):
         # type: (Optional[Language]) -> None
-        """Checks if the spacy language model is properly loaded. Raises an exception if the model is invalid.
-        :type nlp: Language or None
-        """
+        """Checks if the spacy language model is properly loaded. Raises an exception if the model is invalid."""
         from spacy.language import Language
 
         if nlp is None:
