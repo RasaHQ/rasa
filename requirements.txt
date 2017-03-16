@@ -1,13 +1,12 @@
 -e .
-sklearn
-gevent
-flask
+gevent==1.2.1
+flask==0.12
 git+https://github.com/mit-nlp/MITIE.git#egg=mitie
 spacy==1.6.0
-thinc==6.5.0
-scikit-learn
-pytest-pep8
-pytest-xdist
-pytest-services
-pytest-flask
-scipy==0.18.1
+scikit-learn==0.18.1
+pytest-pep8==1.0.6
+pytest-xdist==1.15.0
+pytest-services==1.1.14
+pytest-flask==0.10.0
+scipy==0.19.0
+pytest==3.0.7
