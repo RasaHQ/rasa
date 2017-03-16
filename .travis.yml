@@ -1,6 +1,7 @@
 language: python
 sudo: required
 cache:
+  directories:
   - $HOME/.cache/pip
   - $HOME/data
   - $HOME/miniconda/envs/test-environment/lib/python$TRAVIS_PYTHON_VERSION/site-packages
