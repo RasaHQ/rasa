@@ -9,10 +9,10 @@
         "intent_sklearn"
     ], 
     "intent_classifier": "intent_classifier.pkl", 
-    "mitie_feature_extractor_fingerprint": 10023965992282753551, 
-    "language": "en", 
-    "trained_at": "20170311-143316", 
-    "training_data": "training_data.json", 
     "entity_extractor": "entity_extractor.dat", 
+    "language": "en", 
+    "trained_at": "20170316-112450", 
+    "training_data": "training_data.json", 
+    "mitie_feature_extractor_fingerprint": 10023965992282753551, 
     "rasa_nlu_version": "0.8.0a1"
 }

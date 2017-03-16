@@ -10,7 +10,8 @@
     "intent_classifier": "intent_classifier.pkl", 
     "entity_extractor": "ner", 
     "language": "en", 
-    "trained_at": "20170311-143302", 
+    "trained_at": "20170316-112434", 
     "training_data": "training_data.json", 
-    "rasa_nlu_version": "0.8.0a1"
+    "rasa_nlu_version": "0.8.0a1", 
+    "should_fine_tune_spacy_ner": false
 }

@@ -6,14 +6,16 @@ Using rasa NLU from python
 Training Time
 -------------
 For creating your models, you can follow the same instructions as non-python users.
-Or, you can train directly in python with a script like the following: 
+Or, you can train directly in python with a script like the following (using spacy):
 
 .. code-block:: python
 
+    import spacy
     from rasa_nlu.training_data import TrainingData
     from rasa_nlu.trainers.spacy_sklearn_trainer import SpacySklearnTrainer
 
-    training_data = TrainingData('data/examples/rasa/demo-rasa.json', 'spacy_sklearn', 'en')
+    nlp = spacy.load("en")
+    training_data = TrainingData('data/examples/rasa/demo-rasa.json', 'spacy_sklearn', nlp)
     trainer = SpacySklearnTrainer('en')
     trainer.train(training_data)
     trainer.persist('./')
@@ -33,13 +35,13 @@ The ``metadata.json`` in your model dir contains the necessary info, so you can 
     import spacy
 
     metadata = Metadata.load("/path/to/model_dir")
-    nlp = spacy.load("en", parser=False)
+    nlp = spacy.load("en")
     interpreter = SpacySklearnInterpreter.load(metadata, nlp=nlp)
 
 You can then run:
 
 .. code-block:: python
 
-    interpreter.parse("The text I want to unterstand")
+    interpreter.parse(u"The text I want to understand")
 
 which returns the same ``dict`` as the HTTP api would (without emulation).

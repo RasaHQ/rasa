@@ -38,7 +38,7 @@ class SpacyNLP(Component):
         # type: (str) -> dict
 
         return {
-            "spacy_doc": self.nlp(text)
+            "spacy_doc": self.nlp(text, entity=False)  # need to set entity=false, otherwise it interferes with our NER
         }
 
     @staticmethod

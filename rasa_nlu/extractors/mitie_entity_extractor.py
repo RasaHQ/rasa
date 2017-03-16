@@ -22,7 +22,7 @@ class MitieEntityExtractor(Component, EntityExtractor):
             entities = self.ner.extract_entities(tokens, feature_extractor)
             for e in entities:
                 _range = e[0]
-                _regex = u"\s*".join(tokens[i] for i in _range)
+                _regex = u"\s*".join(re.escape(tokens[i]) for i in _range)
                 expr = re.compile(_regex)
                 m = expr.search(text[offset:])
                 start, end = m.start() + offset, m.end() + offset

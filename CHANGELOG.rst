@@ -18,6 +18,21 @@ Removed
 Fixed
 -----
 
+[0.7.3] - 2017-03-15
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed regression in mitie entity extraction on special characters
+- fixed spacy fine tuning and entity recognition on passed language instance
+
+[0.7.2] - 2017-03-13
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- python documentation about calling rasa NLU from python
+
 [0.7.1] - 2017-03-10
 ^^^^^^^^^^^^^^^^^^^^
 

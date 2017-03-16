@@ -16,37 +16,47 @@ from rasa_nlu.training_data import TrainingData
 class SpacyEntityExtractor(Component, EntityExtractor):
     name = "ner_spacy"
 
-    def __init__(self, ner=None):
+    def __init__(self, ner=None, fine_tune_spacy_ner=False):
         self.ner = ner
+        self.fine_tune_spacy_ner = fine_tune_spacy_ner
 
     def train(self, spacy_nlp, training_data, fine_tune_spacy_ner):
         # type: (Language, TrainingData, Optional[bool]) -> None
         from spacy.language import Language
-
+        self.fine_tune_spacy_ner = fine_tune_spacy_ner
         if training_data.num_entity_examples > 0:
             train_data = self._convert_examples(training_data.entity_examples)
             ent_types = [[ent["entity"] for ent in ex["entities"]] for ex in training_data.entity_examples]
             entity_types = list(set(sum(ent_types, [])))
 
-            if fine_tune_spacy_ner:
-                self.ner = self._fine_tune(spacy_nlp, entity_types, train_data)
-            else:
-                self.ner = self._train_from_scratch(spacy_nlp, entity_types, train_data)
+            self.ner = self._train_from_scratch(spacy_nlp, entity_types, train_data)
 
-    def process(self, spacy_doc):
+    def process(self, spacy_doc, spacy_nlp):
         # type: (Doc) -> dict
         from spacy.tokens import Doc
 
         return {
-            "entities": self.extract_entities(spacy_doc)
+            "entities": self.extract_entities(spacy_doc, spacy_nlp)
         }
 
-    def extract_entities(self, doc):
+    def extract_entities(self, doc, nlp):
         # type: (Doc) -> [dict]
         from spacy.tokens import Doc
 
         if self.ner is not None:
             self.ner(doc)
+
+            # REMOVE THIS, as soon as we are able again to fine tune spacy models instead of combining them
+            if nlp.entity is not None and self.fine_tune_spacy_ner:
+                sp_doc = nlp(doc.text)
+                spacy_ents = sp_doc.ents
+                for spacy_ent in spacy_ents:
+                    for e in doc.ents:
+                        if e.start_char <= spacy_ent.start_char < e.end_char or \
+                              e.start_char <= spacy_ent.end_char < e.end_char:
+                            break
+                    else:
+                        doc.ents += (spacy_ent,)
 
             entities = [
                 {
@@ -61,7 +71,7 @@ class SpacyEntityExtractor(Component, EntityExtractor):
             return []
 
     @classmethod
-    def load(cls, model_dir, entity_extractor, spacy_nlp):
+    def load(cls, model_dir, entity_extractor, fine_tune_spacy_ner, spacy_nlp):
         # type: (str, str, Language) -> SpacyEntityExtractor
         from spacy.language import Language
         from spacy.pipeline import EntityRecognizer
@@ -69,7 +79,7 @@ class SpacyEntityExtractor(Component, EntityExtractor):
         if model_dir and entity_extractor:
             ner_dir = os.path.join(model_dir, entity_extractor)
             ner = EntityRecognizer.load(pathlib.Path(ner_dir), spacy_nlp.vocab)
-            return SpacyEntityExtractor(ner)
+            return SpacyEntityExtractor(ner, fine_tune_spacy_ner)
         else:
             return SpacyEntityExtractor()
 
@@ -89,7 +99,10 @@ class SpacyEntityExtractor(Component, EntityExtractor):
             with open(entity_extractor_config_file, 'w') as f:
                 json.dump(self.ner.cfg, f)
             self.ner.model.dump(entity_extractor_file)
-            return {"entity_extractor": "ner"}
+            return {
+                "entity_extractor": "ner",
+                "fine_tune_spacy_ner": self.fine_tune_spacy_ner,
+            }
         else:
             return {"entity_extractor": None}
 
@@ -109,6 +122,8 @@ class SpacyEntityExtractor(Component, EntityExtractor):
         self._update_ner_model(ner, nlp, train_data)
         return ner
 
+    # TODO: this is not used at the moment as there is an issue in the latest spacy version. Currently there is no way
+    # TODO: to directly fine tune the entity model as that will result in a malloc error during parse time
     def _fine_tune(self, nlp, entity_types, train_data):
         if nlp.entity:
             ner = nlp.entity
