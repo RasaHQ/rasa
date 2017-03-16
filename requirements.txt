@@ -5,6 +5,7 @@ flask
 git+https://github.com/mit-nlp/MITIE.git#egg=mitie
 spacy==1.2.0
 scikit-learn
+pytest==3.0.6
 pytest-pep8
 pytest-xdist
 pytest-services
