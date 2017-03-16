@@ -9,11 +9,14 @@ import warnings
 
 
 class SpacyEntityExtractor(object):
-    def __init__(self, nlp=None, extractor_file=None):
+    def __init__(self, nlp=None, extractor_file=None, should_fine_tune_spacy_ner=False):
+        self.nlp = nlp
         if extractor_file:
             self.ner = EntityRecognizer.load(pathlib.Path(extractor_file), nlp.vocab)
         else:
             self.ner = None
+
+        self.should_fine_tune_spacy_ner = should_fine_tune_spacy_ner
 
     def convert_examples(self, entity_examples):
         def convert_entity(ent):
@@ -29,16 +32,16 @@ class SpacyEntityExtractor(object):
         ent_types = [[ent["entity"] for ent in ex["entities"]] for ex in entity_examples]
         entity_types = list(set(sum(ent_types, [])))
 
-        if should_fine_tune_spacy_ner:
-            self.ner = self._fine_tune(nlp, entity_types, train_data)
-        else:
-            self.ner = self._train_from_scratch(nlp, entity_types, train_data)
+        self.should_fine_tune_spacy_ner = should_fine_tune_spacy_ner
+        self.ner = self._train_from_scratch(nlp, entity_types, train_data)
 
     def _train_from_scratch(self, nlp, entity_types, train_data):
         ner = EntityRecognizer(nlp.vocab, entity_types=entity_types)
         self._update_ner_model(ner, nlp, train_data)
         return ner
 
+    # TODO: this is not used at the moment as there is an issue in the latest spacy version. Currently there is no way
+    # TODO: to directly fine tune the entity model as that will result in a malloc error during parse time
     def _fine_tune(self, nlp, entity_types, train_data):
         if nlp.entity:
             ner = nlp.entity
@@ -62,6 +65,17 @@ class SpacyEntityExtractor(object):
     def extract_entities(self, doc):
         if self.ner is not None:
             self.ner(doc)
+
+            if self.nlp.entity is not None and self.should_fine_tune_spacy_ner:
+                sp_doc = self.nlp(doc.text)
+                spacy_ents = sp_doc.ents
+                for spacy_ent in spacy_ents:
+                    for e in doc.ents:
+                        if e.start_char <= spacy_ent.start_char < e.end_char or \
+                              e.start_char <= spacy_ent.end_char < e.end_char:
+                            break
+                    else:
+                        doc.ents += (spacy_ent,)
 
             entities = [
                 {
