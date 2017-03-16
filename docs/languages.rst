@@ -26,7 +26,7 @@ MITIE
 ^^^^^
 
 1. Get a ~clean language corpus (a wikipedia dump works) as a set of text files
-2. Build and run `MITIE wordrep tool <https://github.com/mit-nlp/MITIE>`_ on your corpus. This can takes several hours/days depending on your dataset and your workstation. You'll need something like 128GB of RAM for wordrep to run - yes that's alot: try to extend your swap.
+2. Build and run `MITIE wordrep tool <https://github.com/mit-nlp/MITIE>`_ on your corpus. This can take several hours/days depending on your dataset and your workstation. You'll need something like 128GB of RAM for wordrep to run - yes that's alot: try to extend your swap.
 3. Set the path of your new ``total_word_feature_extractor.dat`` as value of the *mitie_file* parameter in ``config_mitie.json``
 
 spacy-sklearn
