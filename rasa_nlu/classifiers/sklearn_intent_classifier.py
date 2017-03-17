@@ -40,7 +40,7 @@ class SklearnIntentClassifier(Component):
         # type: ([int]) -> [str]
         """Transforms a list of strings into numeric label representation.
 
-        :param labels: List of labels to convert to numeric representation"""
+        :param y: List of labels to convert to numeric representation"""
 
         return self.le.inverse_transform(y)
 

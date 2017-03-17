@@ -16,8 +16,8 @@ class EntitySynonymMapper(Component):
 
     output_provides = ["entities"]
 
-    def __init__(self, synonyms={}):
-        self.synonyms = synonyms
+    def __init__(self, synonyms=None):
+        self.synonyms = synonyms if synonyms else {}
 
     def train(self, training_data):
         # type: (TrainingData) -> None

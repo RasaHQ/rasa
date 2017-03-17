@@ -1,4 +1,3 @@
-import logging
 import re
 
 from rasa_nlu.tokenizers import Tokenizer

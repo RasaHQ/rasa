@@ -13,11 +13,11 @@ class TrainingData(object):
     MIN_EXAMPLES_PER_INTENT = 2
     MIN_EXAMPLES_PER_ENTITY = 2
 
-    def __init__(self, intent_examples_only=[], entity_examples_only=[], common_examples=[], entity_synonyms={}):
-        self.intent_examples_only = intent_examples_only
-        self.entity_examples_only = entity_examples_only
-        self.common_examples = common_examples
-        self.entity_synonyms = entity_synonyms
+    def __init__(self, intent_examples_only=None, entity_examples_only=None, common_examples=None, entity_synonyms=None):
+        self.intent_examples_only = intent_examples_only if intent_examples_only else []
+        self.entity_examples_only = entity_examples_only if entity_examples_only else []
+        self.common_examples = common_examples if common_examples else []
+        self.entity_synonyms = entity_synonyms if entity_synonyms else {}
 
         self.validate()
 

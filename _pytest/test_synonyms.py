@@ -1,5 +1,4 @@
 from rasa_nlu.extractors.entity_synonyms import EntitySynonymMapper
-from rasa_nlu.model import Interpreter
 
 
 def test_entity_synonyms():

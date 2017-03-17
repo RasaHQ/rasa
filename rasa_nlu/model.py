@@ -101,7 +101,7 @@ class Trainer(object):
             if component_class is not None:
                 self.pipeline.append(component_class())
             else:
-                raise Exception("Unregistered component '{}'. Failed to start trainer.".format(cp))
+                raise Exception("Unregistered component '{}'. Failed to start trainer.".format(component_name))
 
     def validate(self):
         # type: () -> None

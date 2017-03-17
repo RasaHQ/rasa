@@ -3,12 +3,12 @@ import os
 from typing import Optional
 
 
-def relative_normpath(file, path):
+def relative_normpath(f, path):
     # type: (Optional[str], str) -> Optional[str]
     """Return the path of file relative to `path`."""
 
-    if file is not None:
-        return os.path.normpath(os.path.relpath(file, path))
+    if f is not None:
+        return os.path.normpath(os.path.relpath(f, path))
     else:
         return None
 
