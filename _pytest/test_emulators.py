@@ -20,6 +20,7 @@ def test_luis_response():
             "intent": "inform",
             "score": 0.4794813722432127
         },
+        "intents": [{"intent": "inform", "score": 0.4794813722432127}],
         "entities": [
             {
                 "entity": e["value"],

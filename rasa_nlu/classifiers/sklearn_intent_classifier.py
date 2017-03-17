@@ -3,6 +3,9 @@ import os
 from rasa_nlu.components import Component
 from rasa_nlu.training_data import TrainingData
 
+# How many intents are at max put into the output intent ranking, everything else will be cut off
+INTENT_RANKING_LENGTH = 10
+
 
 class SklearnIntentClassifier(Component):
     """Intent classifier using the sklearn framework"""
@@ -10,7 +13,7 @@ class SklearnIntentClassifier(Component):
     name = "intent_classifier_sklearn"
 
     context_provides = {
-        "process": ["intent"],
+        "process": ["intent", "intent_ranking"],
     }
 
     output_provides = ["intent"]
@@ -70,14 +73,19 @@ class SklearnIntentClassifier(Component):
         X = intent_features.reshape(1, -1)
         intent_ids, probabilities = self.predict(X)
         intents = self.transform_labels_num2str(intent_ids)
-        intent, score = intents[0], probabilities[0]
-
-        return {
-            "intent": {
-                "name": intent,
-                "confidence": score,
+        # `predict` returns a matrix as it is supposed to work for multiple examples as well, hence we need to flatten
+        intents, probabilities = intents.flatten(), probabilities.flatten()
+        if intents.size > 0 and probabilities.size > 0:
+            ranking = zip(list(intents), list(probabilities))[:INTENT_RANKING_LENGTH]
+            return {
+                "intent": {
+                    "name": intents[0],
+                    "confidence": probabilities[0],
+                },
+                "intent_ranking": [{"name": intent, "confidence": score} for intent, score in ranking]
             }
-        }
+        else:
+            return {"intent": None, "intent_ranking": []}
 
     def predict_prob(self, X):
         # type: (np.ndarray) -> np.ndarray
@@ -99,10 +107,9 @@ class SklearnIntentClassifier(Component):
         import numpy as np
 
         pred_result = self.predict_prob(X)
-        max_indicies = np.argmax(pred_result, axis=1)
-        # retrieve the index of the intent with the highest probability
-        max_values = pred_result[:, max_indicies].flatten()
-        return max_indicies, max_values
+        # sort the probabilities retrieving the indices of the elements in sorted order
+        sorted_indices = np.flip(np.argsort(pred_result, axis=1), axis=1)
+        return sorted_indices, pred_result[:, sorted_indices]
 
     @classmethod
     def load(cls, model_dir, intent_classifier):
