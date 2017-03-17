@@ -1,8 +1,11 @@
-rasa NLU version (Don't know? https://goo.gl/g9QQg2):
+**rasa NLU version:** `$version` [Don't know? https://goo.gl/g9QQg2)]
 
+**Backend:** `MITIE/SpaCy_sklearn/etc`
 
-Used backend (`mitie`, `spacy_sklearn`, ...) & plattform (windows, osx, ...):
+**Operating System:** `$OS`
 
+**Observed behaviour/issue:**
 
-Issue:
+**Steps to reproduce:**
 
+**Expected behaviour:**
