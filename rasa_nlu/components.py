@@ -98,7 +98,7 @@ class Component(object):
         # type: (Metadata) -> Optional[str]
         """This key is used to cache components.
 
-        If a model is unique to a model it should return None. Otherwise, an instantiation of the
+        If a component is unique to a model it should return None. Otherwise, an instantiation of the
         component will be reused for all models where the metadata creates the same key."""
         from rasa_nlu.model import Metadata
 

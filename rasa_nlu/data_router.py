@@ -13,7 +13,7 @@ from rasa_nlu import registry
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.model import Metadata, InvalidModelError, Interpreter
 from rasa_nlu.train import do_train
-from rasa_nlu.util import create_dir_for_file
+from rasa_nlu import utils
 
 
 class InterpreterBuilder(object):
@@ -78,7 +78,7 @@ class DataRouter(object):
             # Instantiate a standard python logger, which we are going to use to log requests
             logger = logging.getLogger('query-logger')
             logger.setLevel(logging.INFO)
-            create_dir_for_file(response_logfile)
+            utils.create_dir_for_file(response_logfile)
             ch = logging.FileHandler(response_logfile)
             ch.setFormatter(logging.Formatter('%(message)s'))
             logger.propagate = False  # Prevents queries getting logged with parent logger --> might log them to stdout

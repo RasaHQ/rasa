@@ -41,7 +41,6 @@ registered_model_templates = {
         "tokenizer_mitie",
         "ner_mitie",
         "ner_synonyms",
-        "intent_featurizer_mitie",
         "intent_classifier_mitie",
     ],
     "mitie_sklearn": [

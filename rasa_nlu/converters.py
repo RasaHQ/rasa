@@ -5,7 +5,7 @@ import warnings
 
 from typing import Optional
 
-from rasa_nlu import util
+from rasa_nlu import utils
 from rasa_nlu.tokenizers import Tokenizer
 from rasa_nlu.training_data import TrainingData
 
@@ -172,7 +172,7 @@ def resolve_data_files(resource_name):
     """Lists all data files of the resource name (might be a file or directory)."""
 
     try:
-        return util.recursively_find_files(resource_name)
+        return utils.recursively_find_files(resource_name)
     except ValueError as e:
         raise ValueError("Invalid training data file / folder specified. " + e.message)
 

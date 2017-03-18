@@ -51,6 +51,7 @@ class SklearnIntentClassifier(Component):
         :param num_threads: number of threads used during training time"""
         from sklearn.model_selection import GridSearchCV
         from sklearn.svm import SVC
+        import numpy as np
 
         labels = [e["intent"] for e in training_data.intent_examples]
 
@@ -60,9 +61,10 @@ class SklearnIntentClassifier(Component):
         X = intent_features
 
         tuned_parameters = [{'C': [1, 2, 5, 10, 20, 100], 'kernel': ['linear']}]
+        cv_splits = min(5, np.min(np.bincount(y)))
         self.clf = GridSearchCV(SVC(C=1, probability=True),
                                 param_grid=tuned_parameters, n_jobs=num_threads,
-                                cv=2, scoring='f1_weighted')
+                                cv=cv_splits, scoring='f1_weighted')
 
         self.clf.fit(X, y)
 
