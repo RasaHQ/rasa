@@ -26,6 +26,8 @@ class NGramFeaturizer(Component):
 
     n_gram_min_occurrences = 5
 
+    min_intent_examples_for_ngram_classification = 10
+
     def __init__(self):
         self.best_num_ngrams = None
         self.all_ngrams = None
@@ -61,11 +63,11 @@ class NGramFeaturizer(Component):
             return {"intent_features": intent_features}
 
     @classmethod
-    def load(cls, model_dir, ngram_featurizer):
+    def load(cls, model_dir, featurizer_file):
         # type: (str, str) -> NGramFeaturizer
 
-        if model_dir and ngram_featurizer:
-            classifier_file = os.path.join(model_dir, ngram_featurizer)
+        if model_dir and featurizer_file:
+            classifier_file = os.path.join(model_dir, featurizer_file)
             with open(classifier_file, 'rb') as f:
                 return cloudpickle.load(f)
         else:
@@ -104,7 +106,7 @@ class NGramFeaturizer(Component):
 
         new_sents = []
         for sentence in sentences:
-            new_sents.append(self._remove_in_vocab_words_of_sentence(sentence, spacy_nlp))
+            new_sents.append(self._remove_in_vocab_words_from_sentence(sentence, spacy_nlp))
         return new_sents
 
     def _remove_hyperlinks(self, sentence):
@@ -113,7 +115,7 @@ class NGramFeaturizer(Component):
     def _remove_punctuation(self, sentence):
         return ''.join([letter for letter in sentence if letter not in punctuation])
 
-    def _remove_in_vocab_words_of_sentence(self, sentence, spacy_nlp):
+    def _remove_in_vocab_words_from_sentence(self, sentence, spacy_nlp):
         """Automatically removes words with digits in them, hyperlink and in-vocab-words."""
 
         cleaned_sentence = self._remove_hyperlinks(self._remove_punctuation(sentence))
@@ -139,7 +141,7 @@ class NGramFeaturizer(Component):
             usable_labels = []
             for label in np.unique(labels):
                 lab_sents = np.array(sentences)[np.array(labels) == label]
-                if len(lab_sents) < 10:
+                if len(lab_sents) < min_intent_examples_for_ngram_classification:
                     continue
                 usable_labels.append(label)
 
@@ -175,7 +177,7 @@ class NGramFeaturizer(Component):
 
         import numpy as np
 
-        cleaned_sentence = self._remove_in_vocab_words_of_sentence(sentence, spacy_nlp)
+        cleaned_sentence = self._remove_in_vocab_words_from_sentence(sentence, spacy_nlp)
         presence_vector = np.zeros(len(ngrams))
         idx_array = [idx for idx in xrange(len(ngrams)) if ngrams[idx] in cleaned_sentence]
         presence_vector[idx_array] = 1
@@ -197,7 +199,7 @@ class NGramFeaturizer(Component):
 
             # generate all possible n length ngrams
             for text in list_of_strings:
-                text = text.replace(',', ' ')
+                text = text.replace(punctuation, ' ')
                 for word in text.lower().split(' '):
                     cands = [word[i:i + n] for i in xrange(len(word) - n)]
                     for cand in cands:
@@ -253,16 +255,16 @@ class NGramFeaturizer(Component):
         cv_splits = min(10, np.min(np.bincount(y)))
         if cv_splits >= 3:
             logging.debug("Started ngram cross-validation to find best number of ngrams to use...")
-            triers = map(int, np.floor(np.linspace(1, max_ngrams, 8)))
+            num_ngrams = np.unique(map(int, np.floor(np.linspace(1, max_ngrams, 8))))
             no_ngrams_X = self._create_bow_vecs(intent_features, sentences, spacy_nlp, max_ngrams=0)
             no_ngrams_score = np.mean(cross_val_score(clf2, no_ngrams_X, y, cv=cv_splits))
             scores = []
-            for n in triers:
+            for n in num_ngrams:
                 X = self._create_bow_vecs(intent_features, sentences, spacy_nlp, max_ngrams=n)
                 score = np.mean(cross_val_score(clf2, X, y, cv=cv_splits))
                 scores.append(score)
                 logging.debug("Evaluating usage of {} ngrams. Score: {}".format(n, score))
-            n_top = triers[np.argmax(scores)]
+            n_top = num_ngrams[np.argmax(scores)]
             logging.debug("Score without ngrams: {}".format(no_ngrams_score))
             logging.info("Best score with {} ngrams: {}".format(n_top, np.max(scores)))
             return n_top
