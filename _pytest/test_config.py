@@ -20,7 +20,7 @@ defaults = {
   "port": 5000,
   "server_model_dirs": None,
   "token": None,
-  "pipeline": None,
+  "pipeline": [],
   "response_log": os.path.join(os.getcwd(), "logs"),
   "luis_data_tokenizer": None,
 }
