@@ -3,7 +3,7 @@ sudo: required
 cache:
   directories:
   - $HOME/.cache/pip
-  - $HOME/data
+  - $HOME/build/golastmile/rasa_nlu/data
 python:
   # We don't actually use the Travis Python, but this keeps it organized.
   - "2.7"
