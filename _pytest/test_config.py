@@ -6,7 +6,6 @@ import os
 import logging
 
 defaults = {
-  "model_template": None,
   "config": "config.json",
   "data": None,
   "emulate": None,
@@ -21,7 +20,7 @@ defaults = {
   "port": 5000,
   "server_model_dirs": None,
   "token": None,
-  "pipeline": [],
+  "pipeline": None,
   "response_log": os.path.join(os.getcwd(), "logs"),
   "luis_data_tokenizer": None,
 }

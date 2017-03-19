@@ -6,18 +6,18 @@ import utilities
 from rasa_nlu import registry
 
 
-@pytest.mark.parametrize("template_name", registry.registered_model_templates.keys())
-def test_train_model(template_name, interpreter_builder):
-    _config = utilities.base_test_conf(template_name)
+@pytest.mark.parametrize("pipeline_template", registry.registered_pipeline_templates.keys())
+def test_train_model(pipeline_template, interpreter_builder):
+    _config = utilities.base_test_conf(pipeline_template)
     (trained, persisted_path) = utilities.run_train(_config)
     assert trained.pipeline
     loaded = utilities.load_interpreter_for_model(_config, persisted_path, interpreter_builder)
     assert loaded.pipeline
 
 
-@pytest.mark.parametrize("pipeline_name", registry.registered_model_templates.keys())
-def test_train_model_noents(pipeline_name, interpreter_builder):
-    _config = utilities.base_test_conf(pipeline_name)
+@pytest.mark.parametrize("pipeline_template", registry.registered_pipeline_templates.keys())
+def test_train_model_noents(pipeline_template, interpreter_builder):
+    _config = utilities.base_test_conf(pipeline_template)
     _config['data'] = "./data/examples/rasa/demo-rasa-noents.json"
     (trained, persisted_path) = utilities.run_train(_config)
     assert trained.pipeline
@@ -25,9 +25,9 @@ def test_train_model_noents(pipeline_name, interpreter_builder):
     assert loaded.pipeline
 
 
-@pytest.mark.parametrize("template_name", registry.registered_model_templates.keys())
-def test_train_model_multithread(template_name, interpreter_builder):
-    _config = utilities.base_test_conf(template_name)
+@pytest.mark.parametrize("pipeline_template", registry.registered_pipeline_templates.keys())
+def test_train_model_multithread(pipeline_template, interpreter_builder):
+    _config = utilities.base_test_conf(pipeline_template)
     _config['num_threads'] = 2
     (trained, persisted_path) = utilities.run_train(_config)
     assert trained.pipeline

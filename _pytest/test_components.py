@@ -19,9 +19,9 @@ def test_no_components_with_same_name(component_class):
         "There is more than one component named {}".format(component_class.name)
 
 
-@pytest.mark.parametrize("model_template", registry.registered_model_templates)
-def test_all_components_in_mode_templates_exist(model_template):
-    components = registry.registered_model_templates[model_template]
+@pytest.mark.parametrize("pipeline_template", registry.registered_pipeline_templates)
+def test_all_components_in_mode_templates_exist(pipeline_template):
+    components = registry.registered_pipeline_templates[pipeline_template]
     for component in components:
         assert component in registry.registered_components, "Model template contains unknown component."
 

@@ -61,9 +61,9 @@ class Metadata(object):
 
         if 'pipeline' in self.metadata:
             return self.metadata['pipeline']
-        elif 'model_template' in self.metadata:
+        elif 'backend' in self.metadata:   # This is for backwards compatibility of models trained before 0.8
             from rasa_nlu import registry
-            return registry.registered_model_templates.get(self.metadata.get('model_template'))
+            return registry.registered_pipeline_templates.get(self.metadata.get('backend'))
         else:
             return []
 
