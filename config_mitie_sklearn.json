@@ -1,5 +1,5 @@
 {
-  "model_template": "mitie_sklearn",
+  "pipeline": "mitie_sklearn",
   "mitie_file": "./data/total_word_feature_extractor.dat",
   "path" : "./models",
   "data" : "./data/examples/rasa/demo-rasa.json"

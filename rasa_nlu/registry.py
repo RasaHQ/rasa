@@ -28,7 +28,7 @@ registered_components = {component.name: component for component in component_cl
 
 # To simplify usage, there are a couple of model templates, that already add necessary components in the right order.
 # They also implement the preexisting `backends`.
-registered_model_templates = {
+registered_pipeline_templates = {
     "spacy_sklearn": [
         "init_spacy",
         "ner_spacy",

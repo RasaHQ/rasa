@@ -11,7 +11,6 @@ DEFAULT_CONFIG_LOCATION = "config.json"
 
 DEFAULT_CONFIG = {
     "config": DEFAULT_CONFIG_LOCATION,
-    "model_template": None,
     "data": None,
     "emulate": None,
     "language": "en",
@@ -52,13 +51,13 @@ class RasaNLUConfig(object):
             cmdline_config = {k: v for k, v in cmdline_args.items() if v is not None}
             self.override(cmdline_config)
 
-        if self.__dict__['model_template'] and not self.__dict__['pipeline']:
+        if type(self.__dict__['pipeline']) is str:
             from rasa_nlu import registry
-            if self.__dict__['model_template'] in registry.registered_model_templates:
-                self.__dict__['pipeline'] = registry.registered_model_templates[self.__dict__['model_template']]
+            if self.__dict__['pipeline'] in registry.registered_pipeline_templates:
+                self.__dict__['pipeline'] = registry.registered_pipeline_templates[self.__dict__['pipeline']]
             else:
-                warnings.warn("No model specified and unknown model_template " +
-                              "'{}' passed.".format(self.__dict__['model_template']))
+                warnings.warn("No pipeline specified and unknown pipeline template " +
+                              "'{}' passed.".format(self.__dict__['pipeline']))
 
         for key, value in self.items():
             setattr(self, key, value)
