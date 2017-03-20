@@ -109,9 +109,13 @@ class DataRouter(object):
         model_store = {}
 
         for alias, model_path in model_dict.items():
-            metadata = DataRouter.read_model_metadata(model_path, self.config)
-            interpreter = self.interpreter_builder.create_interpreter(metadata, self.config)
-            model_store[alias] = interpreter
+            try:
+                logging.info("Loading model '{}'...".format(model_path))
+                metadata = DataRouter.read_model_metadata(model_path, self.config)
+                interpreter = self.interpreter_builder.create_interpreter(metadata, self.config)
+                model_store[alias] = interpreter
+            except Exception as e:
+                logging.error("Failed to load model '{}'. Error: {}".format(model_path, e))
         if not model_store:
             meta = Metadata({"pipeline": ["intent_classifier_keyword"]}, "")
             interpreter = self.interpreter_builder.create_interpreter(meta, self.config)
