@@ -13,7 +13,7 @@ You can run a simple http server that handles requests using your models with (s
 
 .. code-block:: bash
 
-    $ python -m rasa_nlu.server -c config_spacy.json --server_model_dirs=./models/model_YYYYMMDD-HHMMSS
+    $ python -m rasa_nlu.server -c config_spacy.json --server_model_dirs=./model_YYYYMMDD-HHMMSS
 
 If your server needs to handle more than one request at a time, you can use any WSGI server to run the rasa NLU server. Using gunicorn this looks like this:
 

@@ -23,8 +23,6 @@ install:
   - conda update -q conda
   # Useful for debugging any issues with conda
   - conda info -a
-  # Install sphinx requirements to test doctests
-  - conda install sphinx
   # Replace dep1 dep2 ... with your dependencies
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION scipy numpy scikit-learn
   - source activate test-environment
@@ -36,9 +34,7 @@ install:
       wget -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat;
     fi
   - pip list   # for debugging
-script:
-  - py.test --pep8 --boxed -n0
-  - cd docs && sphinx-build -E -n -b doctest . out
+script: py.test --pep8 --boxed -n0
 deploy:
   provider: pypi
   user: "amn41"

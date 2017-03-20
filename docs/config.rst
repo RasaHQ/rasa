@@ -34,7 +34,8 @@ pipeline
     ``["init_spacy", "ner_spacy", "ner_synonyms"]``
 
 :Description:
-    The pipeline used for training. Can either be a template (passing a string) or a list of components (array).
+    The pipeline used for training. Can either be a template (passing a string) or a list of components (array). For all
+    available templates, see :ref:`section_pipeline`.
 
 language
 ~~~~~~~~

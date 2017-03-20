@@ -10,11 +10,12 @@ how you can migrate from one version to another.
 
 - There have been changes to the model metadata format. You can either retrain your models or change the stored
   metadata.json:
-      * rename ``language_name`` to ``language``
-      * rename ``backend`` to ``pipeline``
-      * for mitie models you need to replace ``feature_extractor`` with ``mitie_feature_extractor_fingerprint``.
-        That fingerprint depends on the language you are using, for ``en`` it
-        is ``"mitie_feature_extractor_fingerprint": 10023965992282753551``.
+
+    - rename ``language_name`` to ``language``
+    - rename ``backend`` to ``pipeline``
+    - for mitie models you need to replace ``feature_extractor`` with ``mitie_feature_extractor_fingerprint``.
+      That fingerprint depends on the language you are using, for ``en`` it
+      is ``"mitie_feature_extractor_fingerprint": 10023965992282753551``.
 
 0.6.x to 0.7.x
 --------------

@@ -3,7 +3,8 @@
 Installation
 ============
 
-rasa NLU itself doesn't have any external requirements, but to do something useful with it you need to install & configure a backend. 
+rasa NLU itself doesn't have any external requirements, but to do something useful with it you need to
+install & configure a backend. Which backend you want to use is up to you.
 
 Setting up rasa NLU
 ~~~~~~~~~~~~~~~~~~~

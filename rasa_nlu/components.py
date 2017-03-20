@@ -53,6 +53,19 @@ class MissingArgumentError(Exception):
 
 
 class Component(object):
+    """A component is a message processing unit in a pipeline.
+
+    Components are collected sequentially in a pipeline. Each component is called one after another. This holds for
+     initialization, training, persisting and loading the components. If a component comes first in a pipeline, its
+     methods will be called first.
+
+    E.g. to process an incoming message, the `process` method of each component will be called. During the processing
+     (as well as the training, persisting and initialization) components can pass information to other components.
+     The information is passed to other components by providing attributes to the so called pipeline context. The
+     pipeline context contains all the information of the previous components a component can use to do its own
+     processing. For example, a featurizer component can provide features that are used by another component down
+     the pipeline to do intent classification."""
+
     # Name of the component to be used when integrating it in a pipeline. E.g. `[ComponentA, ComponentB]`
     # will be a proper pipeline definition where `ComponentA` is the name of the first component of the pipeline.
     name = ""
@@ -75,22 +88,45 @@ class Component(object):
     @classmethod
     def load(cls, *args):
         # type: (...) -> 'cls'
+        """Load this component from file.
+
+        After a component got trained, it will be persisted by calling `persist`. When the pipeline gets loaded again,
+         this component needs to be able to restore itself. Components can rely on any context attributes that are
+         created by `pipeline_init` calls to components previous to this one."""
         return cls()
 
     def pipeline_init(self, *args):
         # type: (...) -> Optional[dict]
+        """Initialize this component for a new pipeline
+
+        This function will be called before the training is started and before the first message is processed using
+        the interpreter. The component gets the opportunity to add information to the context that is passed through
+        the pipeline during training and message parsing. Most components do not need to implement this method.
+        It's mostly used to initialize framework environments like MITIE and spacy
+        (e.g. loading word vectors for the pipeline)."""
         pass
 
     def train(self, *args):
         # type: (...) -> Optional[dict]
+        """Train this component.
+
+        This is the components chance to train itself provided with the training data. The component can rely on
+        any context attribute to be present, that gets created by a call to `pipeline_init` of ANY component and
+        on any context attributes created by a call to `train` of components previous to this one."""
         pass
 
     def process(self, *args):
         # type: (...) -> Optional[dict]
+        """Process an incomming message.
+
+       This is the components chance to process an incommng message. The component can rely on
+       any context attribute to be present, that gets created by a call to `pipeline_init` of ANY component and
+       on any context attributes created by a call to `process` of components previous to this one."""
         pass
 
     def persist(self, model_dir):
         # type: (str) -> Optional[dict]
+        """Persist this component to disk for future loading."""
         pass
 
     @classmethod

@@ -32,6 +32,8 @@ Run your training once and you'll get a copy of your training data in the ``mode
 Do any fixes required and use that to train. 
 Use the visualizer (see :ref:`visualizing-the-training-data`) to spot mistakes easily.
 
+To specify the tokenizer you are using you need to define the ``luis_data_tokenizer`` configuration variable.
+
 api.ai
 ^^^^^^
 
