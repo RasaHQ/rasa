@@ -28,8 +28,8 @@ install:
   - source activate test-environment
   - pip install -r requirements.txt
   - python setup.py install
-  - pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-1.2.0/en_core_web_sm-1.2.0.tar.gz --no-cache-dir
-  - pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_md-1.0.0/de_core_news_md-1.0.0.tar.gz --no-cache-dir
+  - pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-1.2.0/en_core_web_sm-1.2.0.tar.gz --no-cache-dir > jnk
+  - pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_md-1.0.0/de_core_news_md-1.0.0.tar.gz --no-cache-dir > jnk
   - if [[ ! -f data/total_word_feature_extractor.dat ]]; then
       wget -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat;
     fi
