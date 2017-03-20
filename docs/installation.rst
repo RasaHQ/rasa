@@ -38,17 +38,22 @@ The `MITIE <https://github.com/mit-nlp/MITIE>`_ backend is all-inclusive, in the
 and then download the `MITIE models <https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2>`_ . 
 The file you need is ``total_word_feature_extractor.dat``. Save this somewhere and in your ``config.json`` add ``'mitie_file' : '/path/to/total_word_feature_extractor.dat'``.
 
+.. note::
+    Training MITIE can be quite slow on datasets with more than a few intents. You can try
+        - to use the sklearn + MITIE backend instead (which uses sklearn for the training) or
+        - you can install `our mitie fork <https://github.com/amn41/mitie>`_ which should reduce the training time as well.
+
 Option 2 : spaCy + sklearn
 --------------------------
 
 You can also run using these two in combination. 
 
-installing spacy just requires:
+installing spacy just requires (for more information visit the `spacy docu <https://spacy.io/docs/usage/>`_):
 
 .. code-block:: bash
 
     pip install -U spacy
-    python -m spacy.en.download all
+    python -m spacy download en
 
 If you haven't used ``numpy/scipy`` before, it is highly recommended that you use conda.
 steps are
@@ -59,7 +64,7 @@ steps are
 otherwise if you know what you're doing, you can also just ``pip install -U scikit-learn``
 
 Option 3 : sklearn + MITIE
-----------------------------------
+--------------------------
 There is a third backend that combines the advantages of the two previous ones:
 
 1. the fast and good intent classification from sklearn and

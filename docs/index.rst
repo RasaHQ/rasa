@@ -73,7 +73,7 @@ rasa is a set of tools for building more advanced bots, developed by `LASTMILE <
    :maxdepth: 1
    :caption: Getting Started
 
-   backends
+   installation
    tutorial
 
 .. toctree::

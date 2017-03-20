@@ -38,7 +38,7 @@ install:
   - pip list   # for debugging
 script:
   - py.test --pep8 --boxed -n0
-  - cd docs && make doctest
+  - cd docs && sphinx-build -E -n -b doctest . out
 deploy:
   provider: pypi
   user: "amn41"

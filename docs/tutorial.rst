@@ -109,7 +109,8 @@ Now we can train a spacy model by running:
 
     $ python -m rasa_nlu.train -c config_spacy.json
 
-After a few minutes, rasa NLU will finish training, and you'll see a new dir called something like
+If you want to know more about the parameters, there is an overview of the :ref:`section_configuration`. After a few minutes,
+rasa NLU will finish training, and you'll see a new dir called something like
 ``models/model_YYYYMMDD-HHMMSS`` with the timestamp when training finished.
 
 
