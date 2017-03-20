@@ -12,8 +12,6 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sphinx_rtd_theme
-
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
@@ -29,6 +27,7 @@ import sphinx_rtd_theme
 # ones.
 extensions = [
     'sphinx.ext.mathjax',
+    'sphinx.ext.doctest',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -113,7 +112,6 @@ todo_include_todos = False
 
 html_theme = "sphinx_rtd_theme"
 
-html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
@@ -288,3 +286,12 @@ texinfo_documents = [
 
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
+
+import os
+doctest_path = [os.path.abspath('..')]
+
+# Make sure we are using the project root as the working directory instead of /docs
+doctest_global_setup = r'''
+import os
+os.chdir(os.path.abspath('..'))
+'''

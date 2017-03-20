@@ -30,3 +30,5 @@ tmp_training_data.json
 .DS_Store
 models/
 test_models/model_*
+
+rasa_nlu/tmbo_test.py

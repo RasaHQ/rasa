@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import warnings
+import six
 
 
 # Describes where to search for the configuration file if the location is not set by the user
@@ -51,7 +52,7 @@ class RasaNLUConfig(object):
             cmdline_config = {k: v for k, v in cmdline_args.items() if v is not None}
             self.override(cmdline_config)
 
-        if type(self.__dict__['pipeline']) is str:
+        if isinstance(self.__dict__['pipeline'], six.string_types):
             from rasa_nlu import registry
             if self.__dict__['pipeline'] in registry.registered_pipeline_templates:
                 self.__dict__['pipeline'] = registry.registered_pipeline_templates[self.__dict__['pipeline']]

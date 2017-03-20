@@ -16,7 +16,7 @@ class SklearnIntentClassifier(Component):
         "process": ["intent", "intent_ranking"],
     }
 
-    output_provides = ["intent"]
+    output_provides = ["intent", "intent_ranking"]
 
     def __init__(self, clf=None, le=None):
         """Construct a new intent classifier using the sklearn framework."""
