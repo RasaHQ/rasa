@@ -11,12 +11,35 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 Added
 -----
+- ngram character featurizer (allows better handling of out-of-vocab words)
+- replaced pre-wired backends with more flexible pipeline definitions
+- return top 10 intents with sklearn classifier `#199 <https://github.com/golastmile/rasa_nlu/pull/199>`_
+
 Changed
 -------
+- unified tokenizers, classifiers and feature extractors to implement common component interface
+- ``src`` directory renamed to ``rasa_nlu``
+- when loading data in a foreign format (api.ai, luis, wit) the data gets properly split into intent & entity examples
+- Configuration:
+    - added ``max_number_of_ngrams``
+    - added ``pipeline``
+    - added ``luis_data_tokenizer``
+    - removed ``backend``
+- parser output format changed
+    from ``{"intent": "greeting", "confidence": 0.9, "entities": []}``
+
+    to ``{"intent": {"name": "greeting", "confidence": 0.9}, "entities": []}``
+- camel cased MITIE classes (e.g. ``MITIETokenizer`` → ``MitieTokenizer``)
+- model metadata changed, see migration guide
+
 Removed
 -------
+
 Fixed
 -----
+- properly parse ``str`` additionally to ``unicode`` `#210 <https://github.com/golastmile/rasa_nlu/issues/210>`_
+- support entity only training `#181 <https://github.com/golastmile/rasa_nlu/issues/181>`_
+- resolved conflicts between metadata and configuration values `#219 <https://github.com/golastmile/rasa_nlu/issues/219>`_
 
 [0.7.3] - 2017-03-15
 ^^^^^^^^^^^^^^^^^^^^

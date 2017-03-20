@@ -2,6 +2,10 @@
 Language Understanding with rasa NLU
 ====================================
 
+.. attention::
+    This is the documentation for the `latest master <https://github.com/golastmile/rasa_nlu>`_. Make sure you select
+    the appropriate version of the documentation for your local installation!
+
 
 rasa NLU is an open source tool for intent classification and entity extraction. For example, taking a sentence like 
 
