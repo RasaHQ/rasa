@@ -198,7 +198,7 @@ class Trainer(object):
 
         if persistor is not None:
             persistor.send_tar_to_s3(dir_name)
-        logging.info("Successfully saved model into '{}'".format(dir_name))
+        logging.info("Successfully saved model into '{}'".format(os.path.abspath(dir_name)))
         return dir_name
 
 
