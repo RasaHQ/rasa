@@ -28,8 +28,8 @@ install:
   - source activate test-environment
   - pip install -r requirements.txt
   - python setup.py install
-  - python -m spacy.en.download all > jnk
-  - python -m spacy.de.download all > jnk
+  - python -m spacy download en > jnk
+  - python -m spacy download de > jnk
   - if [[ ! -f data/total_word_feature_extractor.dat ]]; then
       wget -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat;
     fi
