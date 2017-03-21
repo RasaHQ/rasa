@@ -22,9 +22,9 @@ Or, you can train directly in python with a script like the following (using spa
 Prediction Time
 ---------------
 
-You can call rasa NLU directly from your python script. 
-You just have to instantiate either the SpacySklearnInterpreter or the MITIEInterpreter.
-The ``metadata.json`` in your model dir contains the necessary info, so you can just do
+You can call rasa NLU directly from your python script. To do so, you need to load the metadata of
+your model and instantiate an interpreter. The ``metadata.json`` in your model dir contains the
+necessary info to recover your model:
 
 .. testcode::
 
@@ -33,7 +33,7 @@ The ``metadata.json`` in your model dir contains the necessary info, so you can 
     metadata = Metadata.load(model_directory)   # where model_directory points to the folder the model is persisted in
     interpreter = Interpreter.load(metadata, RasaNLUConfig("config_spacy.json"))
 
-You can then run:
+You can then use the loaded interpreter to parse text:
 
 .. testcode::
 
