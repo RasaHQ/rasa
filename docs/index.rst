@@ -3,7 +3,7 @@ Language Understanding with rasa NLU
 ====================================
 
 .. attention::
-    This is the documentation for the `latest master <https://github.com/golastmile/rasa_nlu>`_. Make sure you select
+    This is the documentation for version |release| of rasa NLU. Make sure you select
     the appropriate version of the documentation for your local installation!
 
 
