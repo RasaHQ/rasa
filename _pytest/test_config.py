@@ -3,25 +3,13 @@ import tempfile
 from rasa_nlu.config import RasaNLUConfig
 import json
 import os
-import logging
 
-defaults = {
-  "backend": "mitie",
-  "config": "config.json",
-  "data": None,
-  "emulate": None,
-  "language": "en",
-  "log_file": None,
-  "log_level": logging.INFO,
-  "mitie_file": os.path.join("data", "total_word_feature_extractor.dat"),
-  "num_threads": 1,
-  "fine_tune_spacy_ner": False,
-  "path": os.path.join(os.getcwd(), "models"),
-  "port": 5000,
-  "server_model_dirs": None,
-  "token": None,
-  "response_log": os.path.join(os.getcwd(), "logs")
-}
+
+with open("config_defaults.json", "r") as f:
+    defaults = json.load(f)
+    # Special treatment for these two, as they are absolute directories
+    defaults["path"] = os.path.join(os.getcwd(), defaults["path"])
+    defaults["response_log"] = os.path.join(os.getcwd(), defaults["response_log"])
 
 
 def test_default_config():

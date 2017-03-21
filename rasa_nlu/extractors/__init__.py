@@ -1,0 +1,2 @@
+class EntityExtractor(object):
+    pass

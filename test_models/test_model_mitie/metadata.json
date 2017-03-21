@@ -1,11 +1,18 @@
 {
-    "trained_at": "20170304-012220", 
-    "intent_classifier": "intent_classifier.dat", 
-    "training_data": "training_data.json", 
-    "language_name": "en", 
     "entity_synonyms": "index.json", 
+    "pipeline": [
+        "init_mitie", 
+        "tokenizer_mitie", 
+        "ner_mitie", 
+        "ner_synonyms", 
+        "intent_featurizer_mitie", 
+        "intent_classifier_mitie"
+    ], 
+    "intent_classifier": "intent_classifier.dat", 
     "entity_extractor": "entity_extractor.dat", 
-    "rasa_nlu_version": "0.7.0a4", 
-    "feature_extractor": "../../data/total_word_feature_extractor.dat", 
-    "backend": "mitie"
+    "language": "en", 
+    "trained_at": "20170316-140543", 
+    "training_data": "training_data.json", 
+    "mitie_feature_extractor_fingerprint": 10023965992282753551, 
+    "rasa_nlu_version": "0.8.0a1"
 }

@@ -35,3 +35,9 @@ After that, you can compile and view the documentation using:
     python -m SimpleHTTPServer 8000 .
 
 The documentation will be running on http://localhost:8000/.
+
+Code snippets that are part of the documentation can be tested using
+
+.. code-block:: bash
+
+    make doctest

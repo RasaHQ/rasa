@@ -19,8 +19,8 @@ def test_spacy(spacy_nlp_en):
 
 
 def test_mitie():
-    from rasa_nlu.tokenizers.mitie_tokenizer import MITIETokenizer
-    tk = MITIETokenizer()
+    from rasa_nlu.tokenizers.mitie_tokenizer import MitieTokenizer
+    tk = MitieTokenizer()
 
     assert tk.tokenize(u"Hi. My name is rasa") == [u'Hi', u'My', u'name', u'is', u'rasa']
     assert tk.tokenize(u"ὦ ἄνδρες ᾿Αθηναῖοι") == [u'ὦ', u'ἄνδρες', u'᾿Αθηναῖοι']

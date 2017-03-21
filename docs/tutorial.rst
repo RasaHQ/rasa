@@ -109,7 +109,8 @@ Now we can train a spacy model by running:
 
     $ python -m rasa_nlu.train -c config_spacy.json
 
-After a few minutes, rasa NLU will finish training, and you'll see a new dir called something like
+If you want to know more about the parameters, there is an overview of the :ref:`section_configuration`. After a few minutes,
+rasa NLU will finish training, and you'll see a new dir called something like
 ``models/model_YYYYMMDD-HHMMSS`` with the timestamp when training finished.
 
 
@@ -135,21 +136,34 @@ which should return
 .. code-block:: json
 
     {
-      "intent" : "restaurant_search",
-      "confidence": 0.6127775465094253,
-      "entities" : [
-        {
-          "start": 8,
-          "end": 15,
-          "value": "chinese",
-          "entity": "cuisine"
-        }
-      ]
+        "text": "I am looking for Chinese food",
+        "entities": [
+            {
+              "start": 8,
+              "end": 15,
+              "value": "chinese",
+              "entity": "cuisine"
+            }
+        ],
+        "intent": {
+            "confidence": 0.6485910906220309,
+            "name": "restaurant_search"
+        },
+        "intent_ranking": [
+            {
+                "confidence": 0.6485910906220309,
+                "name": "restaurant_search"
+            },
+            {
+                "confidence": 0.14161531595656784,
+                "name": "affirm"
+            }
+        ]
     }
 
 If you are using the ``spacy_sklearn`` backend and the entities aren't found, don't panic!
 This tutorial is just a toy example, with far too little training data to expect good performance.
-rasa NLU will also print a ``confidence`` value.
+rasa NLU will also print a ``confidence`` value for the intent classification.
 You can use this to do some error handling in your bot (maybe asking the user again if the confidence is low)
 and it's also helpful for prioritising which intents need more training data.
 
@@ -160,17 +174,29 @@ With very little data, rasa NLU can in certain cases already generalise concepts
 
     $ curl -XPOST localhost:5000/parse -d '{"q":"I want some italian"}' | python -mjson.tool
     {
-      "entities": [
-        {
-          "end": 19,
-          "entity": "cuisine",
-          "start": 12,
-          "value": "italian"
-        }
-      ],
-      "intent": "restaurant_search",
-      "text": "I want some italian"
-      "confidence": 0.4794813722432127
+        "text": "I want some italian",
+        "entities": [
+            {
+              "end": 19,
+              "entity": "cuisine",
+              "start": 12,
+              "value": "italian"
+            }
+        ],
+        "intent": {
+            "confidence": 0.5192305466357352,
+            "name": "restaurant_search"
+        },
+        "intent_ranking": [
+            {
+                "confidence": 0.5192305466357352,
+                "name": "restaurant_search"
+            },
+            {
+                "confidence": 0.2066287604378098,
+                "name": "affirm"
+            }
+        ]
     }
 
 even though there's nothing quite like this sentence in the examples used to train the model. 

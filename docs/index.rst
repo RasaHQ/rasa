@@ -2,6 +2,10 @@
 Language Understanding with rasa NLU
 ====================================
 
+.. attention::
+    This is the documentation for version |release| of rasa NLU. Make sure you select
+    the appropriate version of the documentation for your local installation!
+
 
 rasa NLU is an open source tool for intent classification and entity extraction. For example, taking a sentence like 
 
@@ -69,7 +73,7 @@ rasa is a set of tools for building more advanced bots, developed by `LASTMILE <
    :maxdepth: 1
    :caption: Getting Started
 
-   backends
+   installation
    tutorial
 
 .. toctree::
@@ -84,6 +88,7 @@ rasa is a set of tools for building more advanced bots, developed by `LASTMILE <
    closeloop
    persist
    languages
+   pipeline
    faq
    migrations
    license

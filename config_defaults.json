@@ -1,0 +1,19 @@
+{
+  "pipeline": [],
+  "language": "en",
+  "num_threads": 1,
+  "path": "models",
+  "response_log": "logs",
+  "config": "config.json",
+  "log_level": "INFO",
+  "port": 5000,
+  "data": null,
+  "emulate": null,
+  "log_file": null,
+  "mitie_file": "data/total_word_feature_extractor.dat",
+  "fine_tune_spacy_ner": false,
+  "server_model_dirs": null,
+  "token": null,
+  "max_number_of_ngrams": 7,
+  "luis_data_tokenizer": null
+}
