@@ -167,6 +167,12 @@ rasa NLU will also print a ``confidence`` value for the intent classification.
 You can use this to do some error handling in your bot (maybe asking the user again if the confidence is low)
 and it's also helpful for prioritising which intents need more training data.
 
+.. note::
+    The output may contain other or less attributes, depending on the pipeline you are using. For
+    example, the ``mitie`` pipeline doesn't include the ``"intent_ranking"`` whereas the ``spacy_sklearn``
+    pipeline does.
+
+
 With very little data, rasa NLU can in certain cases already generalise concepts, for example:
 
 
