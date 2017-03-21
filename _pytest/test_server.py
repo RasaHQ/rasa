@@ -21,6 +21,7 @@ def app():
         "path": "./models",
         "server_model_dirs": {},
         "data": "./data/demo-restaurants.json",
+        "luis_data_tokenizer": "tokenizer_mitie",
         "emulate": "wit",
     }
     config = RasaNLUConfig(cmdline_args=_config)

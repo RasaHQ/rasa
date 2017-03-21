@@ -1,5 +1,5 @@
 {
-  "backend": "spacy_sklearn",
+  "pipeline": "spacy_sklearn",
   "path" : "./models",
   "data" : "./data/examples/rasa/demo-rasa.json"
 }

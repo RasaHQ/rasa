@@ -13,7 +13,7 @@ You can run a simple http server that handles requests using your models with (s
 
 .. code-block:: bash
 
-    $ python -m rasa_nlu.server -c config_spacy.json --server_model_dirs=./models/model_YYYYMMDD-HHMMSS
+    $ python -m rasa_nlu.server -c config_spacy.json --server_model_dirs=./model_YYYYMMDD-HHMMSS
 
 If your server needs to handle more than one request at a time, you can use any WSGI server to run the rasa NLU server. Using gunicorn this looks like this:
 
@@ -99,8 +99,12 @@ Depending on your choice of backend, rasa NLU can use quite a lot of memory.
 So if you are serving multiple models in production, you want to serve these
 from the same process & avoid duplicating the memory load.
 
-If you're using a spaCy backend and your models are in the same language, you can
-do this by replacing the ``server_model_dirs`` config variable with a json object.
+.. note::
+    Although this saves the backend from loading the same backend twice, it still needs to load one set of
+    word vectors (which make up most of the memor consumption) per language and backend.
+
+You can use the multi-tenancy mode by replacing the ``server_model_dirs`` config
+variable with a json object describing the different models.
 
 For example, if you have a restaurant bot and a hotel bot, your configuration might look like this:
 

@@ -1,7 +1,7 @@
 from setuptools import setup
 
 __version__ = None   # Avoids IDE errors, but actual version is read from version.py
-exec(open('src/version.py').read())
+exec(open('rasa_nlu/version.py').read())
 
 tests_requires = [
     "pytest-pep8",
@@ -15,6 +15,7 @@ install_requires = [
     "pathlib",
     "cloudpickle",
     "boto3",
+    "typing",
 ]
 
 extras_requires = {
@@ -33,11 +34,8 @@ setup(
         'rasa_nlu.emulators',
         'rasa_nlu.extractors',
         'rasa_nlu.featurizers',
-        'rasa_nlu.interpreters',
-        'rasa_nlu.trainers',
         'rasa_nlu.tokenizers',
     ],
-    package_dir={'rasa_nlu': 'src'},
     version=__version__,
     install_requires=install_requires,
     tests_require=tests_requires,

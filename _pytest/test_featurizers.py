@@ -3,7 +3,7 @@ import os
 import numpy as np
 import pytest
 
-from rasa_nlu.tokenizers.mitie_tokenizer import MITIETokenizer
+from rasa_nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 
 
 @pytest.mark.parametrize("sentence, expected", [
@@ -11,22 +11,22 @@ from rasa_nlu.tokenizers.mitie_tokenizer import MITIETokenizer
 ])
 def test_spacy_featurizer(spacy_nlp_en, sentence, expected):
     from rasa_nlu.featurizers.spacy_featurizer import SpacyFeaturizer
-    ftr = SpacyFeaturizer(spacy_nlp_en)
+    ftr = SpacyFeaturizer()
     doc = spacy_nlp_en(sentence)
-    vecs = ftr.features_for_doc(doc)
+    vecs = ftr.features_for_doc(doc, spacy_nlp_en)
     assert np.allclose(doc.vector[:5], expected, atol=1e-5)
     assert np.allclose(vecs, doc.vector, atol=1e-5)
 
 
-def test_mitie_featurizer():
-    from rasa_nlu.featurizers.mitie_featurizer import MITIEFeaturizer
+def test_mitie_featurizer(mitie_feature_extractor):
+    from rasa_nlu.featurizers.mitie_featurizer import MitieFeaturizer
 
     filename = os.environ.get('MITIE_FILE')
     if not filename or not os.path.isfile(filename):
-        filename = "data/total_word_feature_extractor.dat"
+        filename = os.path.join("data", "total_word_feature_extractor.dat")
 
-    ftr = MITIEFeaturizer(filename)
+    ftr = MitieFeaturizer.load(filename)
     sentence = "Hey how are you today"
-    tokens = MITIETokenizer().tokenize(sentence)
-    vecs = ftr.features_for_tokens(tokens)
+    tokens = MitieTokenizer().tokenize(sentence)
+    vecs = ftr.features_for_tokens(tokens, mitie_feature_extractor)
     assert np.allclose(vecs[:5], np.array([0., -4.4551446, 0.26073121, -1.46632245, -1.84205751]), atol=1e-5)

@@ -1,19 +1,13 @@
 import pytest
 
 import utilities
-from rasa_nlu.utils.mitie import MITIE_BACKEND_NAME
-from rasa_nlu.utils.mitie import MITIE_SKLEARN_BACKEND_NAME
-from rasa_nlu.utils.spacy import SPACY_BACKEND_NAME
+from rasa_nlu import registry
 
 
-@pytest.mark.parametrize("backend_name", [
-    MITIE_BACKEND_NAME,
-    MITIE_SKLEARN_BACKEND_NAME,
-    SPACY_BACKEND_NAME,
-])
-def test_samples(backend_name, spacy_nlp_en):
-    interpreter = utilities.interpreter_for(spacy_nlp_en, utilities.base_test_conf(backend_name))
-    available_intents = ["greet", "restaurant_search", "affirm", "goodbye"]
+@pytest.mark.parametrize("pipeline_template", registry.registered_pipeline_templates.keys())
+def test_samples(pipeline_template, interpreter_builder):
+    interpreter = utilities.interpreter_for(interpreter_builder, utilities.base_test_conf(pipeline_template))
+    available_intents = ["greet", "restaurant_search", "affirm", "goodbye", "None"]
     samples = [
         (
             u"good bye",
@@ -35,9 +29,9 @@ def test_samples(backend_name, spacy_nlp_en):
         result = interpreter.parse(text)
         assert result['text'] == text, \
             "Wrong text for sample '{}'".format(text)
-        assert result['intent'] in available_intents, \
+        assert result['intent']['name'] in available_intents, \
             "Wrong intent for sample '{}'".format(text)
-        assert result['confidence'] >= 0, \
+        assert result['intent']['confidence'] >= 0, \
             "Low confidence for sample '{}'".format(text)
 
         # This ensures the model doesn't detect entities that are not present

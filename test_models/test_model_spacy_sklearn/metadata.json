@@ -1,11 +1,17 @@
 {
-    "trained_at": "20170304-012229", 
-    "intent_classifier": "intent_classifier.pkl", 
-    "training_data": "training_data.json", 
-    "language_name": "en", 
     "entity_synonyms": "index.json", 
+    "pipeline": [
+        "init_spacy", 
+        "ner_spacy", 
+        "ner_synonyms", 
+        "intent_featurizer_spacy", 
+        "intent_classifier_sklearn"
+    ], 
+    "intent_classifier": "intent_classifier.pkl", 
     "entity_extractor": "ner", 
-    "rasa_nlu_version": "0.7.0a4", 
-    "feature_extractor": null, 
-    "backend": "spacy_sklearn"
+    "language": "en", 
+    "trained_at": "20170316-140552", 
+    "training_data": "training_data.json", 
+    "rasa_nlu_version": "0.8.0a1", 
+    "fine_tune_spacy_ner": false
 }
