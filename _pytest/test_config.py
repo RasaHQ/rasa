@@ -5,7 +5,9 @@ import json
 import os
 
 
-with open("config_defaults.json", "r") as f:
+CONFIG_DEFAULTS_PATH = "config_defaults.json"
+
+with open(CONFIG_DEFAULTS_PATH, "r") as f:
     defaults = json.load(f)
     # Special treatment for these two, as they are absolute directories
     defaults["path"] = os.path.join(os.getcwd(), defaults["path"])
@@ -13,7 +15,7 @@ with open("config_defaults.json", "r") as f:
 
 
 def test_default_config():
-    final_config = RasaNLUConfig()
+    final_config = RasaNLUConfig(CONFIG_DEFAULTS_PATH)
     assert dict(final_config.items()) == defaults
 
 
