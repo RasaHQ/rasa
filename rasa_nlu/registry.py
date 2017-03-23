@@ -7,6 +7,7 @@ from typing import Type
 from rasa_nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
 from rasa_nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
 from rasa_nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
+from rasa_nlu.extractors.duckling_extractor import DucklingExtractor
 from rasa_nlu.extractors.entity_synonyms import EntitySynonymMapper
 from rasa_nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
@@ -21,7 +22,7 @@ from rasa_nlu.utils.spacy_utils import SpacyNLP
 component_classes = [
     SpacyNLP, SpacyEntityExtractor, SklearnIntentClassifier, SpacyFeaturizer,
     MitieNLP, MitieEntityExtractor, MitieIntentClassifier, MitieFeaturizer, MitieTokenizer,
-    KeywordIntentClassifier, EntitySynonymMapper, NGramFeaturizer]
+    KeywordIntentClassifier, EntitySynonymMapper, NGramFeaturizer, DucklingExtractor]
 
 # Mapping from a components name to its class to allow name based lookup.
 registered_components = {component.name: component for component in component_classes}
@@ -33,6 +34,7 @@ registered_pipeline_templates = {
         "init_spacy",
         "ner_spacy",
         "ner_synonyms",
+        "ner_duckling",
         "intent_featurizer_spacy",
         "intent_classifier_sklearn",
     ],

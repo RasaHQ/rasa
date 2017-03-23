@@ -15,5 +15,6 @@
   "server_model_dirs": null,
   "token": null,
   "max_number_of_ngrams": 7,
-  "luis_data_tokenizer": null
+  "luis_data_tokenizer": null,
+  "duckling_processing_mode": "append"
 }

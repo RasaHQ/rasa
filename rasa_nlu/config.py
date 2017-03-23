@@ -27,6 +27,7 @@ DEFAULT_CONFIG = {
     "pipeline": [],
     "response_log": os.path.join(os.getcwd(), "logs"),
     "luis_data_tokenizer": None,
+    "duckling_processing_mode": "append",
 }
 
 
