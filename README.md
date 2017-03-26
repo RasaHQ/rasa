@@ -62,6 +62,8 @@ curl 'http://localhost:5000/parse?q=hello'
 ### C. (Experimental) Deploying to Docker Cloud
 [![Deploy to Docker Cloud](https://files.cloud.docker.com/images/deploy-to-dockercloud.svg)](https://cloud.docker.com/stack/deploy/)
 
+### D. Deploying to Heroku
+[![Deploy to Heroku](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/golastmile/rasa_nlu)
 
 ## License
 Copyright 2016 LastMile Technologies Ltd
