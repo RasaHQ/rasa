@@ -54,6 +54,8 @@ docker build -t rasa_nlu .
 docker run -p 5000:5000 rasa_nlu start
 ```
 
+Caveat for Docker for Windows users: please share your C: in docker settings, and add ```-v C:\path\to\rasa_nlu:/app``` to your docker run commands for download and training to work correctly.
+
 #### 3. Test it!
 ```
 curl 'http://localhost:5000/parse?q=hello'
