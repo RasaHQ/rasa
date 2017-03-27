@@ -18,6 +18,14 @@ Removed
 Fixed
 -----
 
+[0.7.4] - 2017-03-27
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed failed loading of example data after renaming attributes, i.e. "KeyError: 'entities'"
+
+
 [0.7.3] - 2017-03-15
 ^^^^^^^^^^^^^^^^^^^^
 
