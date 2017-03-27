@@ -83,9 +83,9 @@ Longer answer: If you want to add a new language, the key things you need are a 
 We are very happy to receive and merge your contributions. There is some more information about the style of the code and docs in the [documentation](http://rasa-nlu.readthedocs.io/en/stable/contribute.html).
 
 In general the process is rather simple:
-- create an issue describing the feature you want to work on (or have a look at issues with the label [help wanted](https://github.com/golastmile/rasa_nlu/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22))
-- write your code, tests and documentation
-- create a pull request describing your changes
+1. create an issue describing the feature you want to work on (or have a look at issues with the label [help wanted](https://github.com/golastmile/rasa_nlu/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22))
+2. write your code, tests and documentation
+3. create a pull request describing your changes
 
 You pull request will be reviewed by a maintainer, who might get back to you about any necessary changes or questions.
 
