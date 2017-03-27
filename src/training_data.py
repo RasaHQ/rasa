@@ -184,8 +184,8 @@ class TrainingData(object):
         intent = data['rasa_nlu_data'].get("intent_examples", list())
         entity = data['rasa_nlu_data'].get("entity_examples", list())
 
-        self.intent_examples = intent + common
-        self.entity_examples = entity + common
+        self.intent_examples = filter(lambda e: "intent" in e, intent + common)
+        self.entity_examples = filter(lambda e: "entities" in e, entity + common)
 
         for example in self.entity_examples:
             for entity in example["entities"]:
