@@ -7,6 +7,10 @@ cache:
 python:
   # We don't actually use the Travis Python, but this keeps it organized.
   - "2.7"
+  - "3.3"
+  - "3.4"
+  - "3.5"
+  - "3.6"
 install:
   - sudo apt-get update
   # We do this conditionally because it saves us some downloading if the

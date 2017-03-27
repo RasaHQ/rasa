@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import unicode_literals
+from builtins import object
 import json
 import os
 import warnings
 from itertools import groupby
+import io
 
 
 class TrainingData(object):
@@ -54,10 +57,10 @@ class TrainingData(object):
 
     def persist(self, dir_name):
         # type: (str) -> dict
-        """Persists this training data to disk and returnes necessary information to load it again."""
+        """Persists this training data to disk and returns necessary information to load it again."""
 
         data_file = os.path.join(dir_name, "training_data.json")
-        with open(data_file, 'w') as f:
+        with io.open(data_file, 'w') as f:
             f.write(self.as_json(indent=2))
 
         return {

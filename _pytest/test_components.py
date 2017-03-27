@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 import pytest
 
 from rasa_nlu import config
@@ -14,7 +15,7 @@ def test_component_init_without_args(component_class):
 
 @pytest.mark.parametrize("component_class", registry.component_classes)
 def test_no_components_with_same_name(component_class):
-    names = map(lambda cls: cls.name, registry.component_classes)
+    names = [cls.name for cls in registry.component_classes]
     assert names.count(component_class.name) == 1, \
         "There is more than one component named {}".format(component_class.name)
 

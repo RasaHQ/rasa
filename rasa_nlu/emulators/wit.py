@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 from rasa_nlu.emulators import NoEmulator
 
 

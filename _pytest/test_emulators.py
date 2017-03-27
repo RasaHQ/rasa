@@ -1,3 +1,6 @@
+from __future__ import unicode_literals
+
+
 def test_luis_request():
     from rasa_nlu.emulators.luis import LUISEmulator
     em = LUISEmulator()

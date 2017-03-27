@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+from builtins import str
 from mitie import total_word_feature_extractor
 from typing import Optional
 

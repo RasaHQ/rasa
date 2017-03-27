@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 from typing import Optional
 
 from rasa_nlu.components import Component

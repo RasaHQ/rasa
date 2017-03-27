@@ -1,4 +1,6 @@
-import codecs
+from __future__ import unicode_literals
+from builtins import object
+import io
 import json
 import os
 import warnings
@@ -39,7 +41,7 @@ class RasaNLUConfig(object):
 
         self.override(DEFAULT_CONFIG)
         if filename is not None:
-            with codecs.open(filename, encoding='utf-8') as f:
+            with io.open(filename, encoding='utf-8') as f:
                 file_config = json.loads(f.read())
             self.override(file_config)
 
@@ -48,7 +50,7 @@ class RasaNLUConfig(object):
             self.override(env_config)
 
         if cmdline_args is not None:
-            cmdline_config = {k: v for k, v in cmdline_args.items() if v is not None}
+            cmdline_config = {k: v for k, v in list(cmdline_args.items()) if v is not None}
             self.override(cmdline_config)
 
         if isinstance(self.__dict__['pipeline'], six.string_types):
@@ -59,7 +61,7 @@ class RasaNLUConfig(object):
                 warnings.warn("No pipeline specified and unknown pipeline template " +
                               "'{}' passed.".format(self.__dict__['pipeline']))
 
-        for key, value in self.items():
+        for key, value in list(self.items()):
             setattr(self, key, value)
 
     def __getitem__(self, key):
@@ -78,13 +80,13 @@ class RasaNLUConfig(object):
         return len(self.__dict__)
 
     def items(self):
-        return self.__dict__.items()
+        return list(self.__dict__.items())
 
     def view(self):
         return json.dumps(self.__dict__, indent=4)
 
     def format_env_vars(self, env_vars):
-        keys = [key for key in env_vars.keys() if "RASA" in key]
+        keys = [key for key in list(env_vars.keys()) if "RASA" in key]
         return {key.split('RASA_')[1].lower(): env_vars[key] for key in keys}
 
     def is_set(self, key):
