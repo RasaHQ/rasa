@@ -1,6 +1,6 @@
 from __future__ import unicode_literals, print_function
 
-from builtins import range
+from builtins import range, str
 import os
 import random
 import io
@@ -105,7 +105,7 @@ class SpacyEntityExtractor(Component, EntityExtractor):
             entity_extractor_file = os.path.join(ner_dir, "model")
 
             with io.open(entity_extractor_config_file, 'w') as f:
-                json.dump(self.ner.cfg, f)
+                f.write(str(json.dumps(self.ner.cfg)))
             self.ner.model.dump(entity_extractor_file)
             return {
                 "entity_extractor": "ner",
