@@ -49,7 +49,7 @@ class EntitySynonymMapper(Component):
         if self.synonyms:
             entity_synonyms_file = os.path.join(model_dir, "index.json")
             with io.open(entity_synonyms_file, 'w') as f:
-                json.dump(self.synonyms, f)
+                f.write(str(json.dumps(self.synonyms)))
             return {"entity_synonyms": "index.json"}
         else:
             return {"entity_synonyms": None}

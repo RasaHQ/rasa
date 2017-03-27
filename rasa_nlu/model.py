@@ -83,7 +83,7 @@ class Metadata(object):
         })
 
         with io.open(os.path.join(model_dir, 'metadata.json'), 'w') as f:
-            f.write(json.dumps(metadata, indent=4))
+            f.write(str(json.dumps(metadata, indent=4)))
 
 
 class Trainer(object):
