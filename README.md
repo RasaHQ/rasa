@@ -13,7 +13,7 @@ Extended developer documentation:
 
 If you are new to rasa NLU and want to create a bot, you should start with the [**tutorial**](http://rasa-nlu.readthedocs.io/en/stable/tutorial.html).
 
-Contents
+**Contents:**
 - [Setup](#setup) 
 - [FAQ](#faq)
 - [How to contribute](#how-to-contribute)
