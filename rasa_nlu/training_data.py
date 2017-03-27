@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import unicode_literals
-from builtins import object
+from builtins import object, str
 import json
 import os
 import warnings
@@ -47,13 +47,13 @@ class TrainingData(object):
         # type: (dict) -> str
         """Represent this set of training examples as json adding the passed meta information."""
 
-        return json.dumps({
+        return str(json.dumps({
             "rasa_nlu_data": {
                 "common_examples": self.common_examples,
                 "intent_examples": self.intent_examples_only,
                 "entity_examples": self.entity_examples_only,
             }
-        }, **kwargs)
+        }, **kwargs))
 
     def persist(self, dir_name):
         # type: (str) -> dict
