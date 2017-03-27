@@ -3,11 +3,11 @@
 [![Build Status](https://travis-ci.org/golastmile/rasa_nlu.svg?branch=master)](https://travis-ci.org/golastmile/rasa_nlu)
 [![Coverage Status](https://coveralls.io/repos/github/golastmile/rasa_nlu/badge.svg?branch=master)](https://coveralls.io/github/golastmile/rasa_nlu?branch=master)
 [![PyPI version](https://badge.fury.io/py/rasa_nlu.svg)](https://badge.fury.io/py/rasa_nlu)
-[![Documentation Status](https://readthedocs.org/projects/rasa-nlu/badge/)](https://rasa-nlu.readthedocs.io/en/latest/)
+[![Documentation Status](https://readthedocs.org/projects/rasa-nlu/badge/)](https://rasa-nlu.readthedocs.io/en/stable/)
 
 rasa NLU (Natural Language Understanding) is a tool for intent classification and entity extraction. You can think of rasa NLU as a set of high level APIs for building your own language parser using existing NLP and ML libraries. Find out more on the [homepage of the project](https://rasa.ai/), where you can also sign up for the mailing list.
 
-Extended developer documentation: 
+**Extended documentation:**
 - [latest](https://rasa-nlu.readthedocs.io/en/latest/)&nbsp; (if you install from **github**) or 
 - [stable](https://rasa-nlu.readthedocs.io/en/stable/) (if you install from **pypi**)
 
