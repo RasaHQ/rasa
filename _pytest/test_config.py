@@ -1,5 +1,8 @@
 import tempfile
 
+import pytest
+import rasa_nlu
+
 from rasa_nlu.config import RasaNLUConfig
 import json
 import os
@@ -26,6 +29,17 @@ def test_blank_config():
         f.flush()
         final_config = RasaNLUConfig(f.name, env_vars, cmdline_args)
         assert dict(final_config.items()) == defaults
+
+
+def test_invalid_config_json():
+    file_config = """{"pipeline": [mitie]}"""   # invalid json
+    cmdline_args = {}
+    env_vars = {}
+    with tempfile.NamedTemporaryFile(suffix="_tmp_config_file.json") as f:
+        f.write(file_config)
+        f.flush()
+        with pytest.raises(rasa_nlu.config.InvalidConfigError):
+            RasaNLUConfig(f.name, env_vars, cmdline_args)
 
 
 def test_file_config_unchanged():

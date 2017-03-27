@@ -30,6 +30,14 @@ DEFAULT_CONFIG = {
 }
 
 
+class InvalidConfigError(ValueError):
+    """Raised if an invalid configuration is encountered."""
+
+    def __init__(self, message):
+        # type: (str) -> None
+        super(InvalidConfigError, self).__init__(message)
+
+
 class RasaNLUConfig(object):
 
     def __init__(self, filename=None, env_vars=None, cmdline_args=None):
@@ -39,8 +47,11 @@ class RasaNLUConfig(object):
 
         self.override(DEFAULT_CONFIG)
         if filename is not None:
-            with codecs.open(filename, encoding='utf-8') as f:
-                file_config = json.loads(f.read())
+            try:
+                with codecs.open(filename, encoding='utf-8') as f:
+                    file_config = json.loads(f.read())
+            except ValueError as e:
+                raise InvalidConfigError("Failed to read configuration file '{}'. Error: {}".format(filename, e))
             self.override(file_config)
 
         if env_vars is not None:
