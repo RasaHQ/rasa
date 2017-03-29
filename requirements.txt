@@ -3,7 +3,7 @@ gevent==1.2.1
 flask==0.12
 boto3==1.4.4
 git+https://github.com/mit-nlp/MITIE.git#egg=mitie
-spacy==1.6.0
+spacy==1.7.2
 scikit-learn==0.18.1
 pytest-pep8==1.0.6
 pytest-xdist==1.15.0

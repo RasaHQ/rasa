@@ -6,7 +6,7 @@
   "keywords": ["python" ],
   "addons": [],
   "scripts": {
-    "postdeploy": "echo '{}' > config.json;mkdir logs;python -m spacy.en.download all"
+    "postdeploy": "echo '{}' > config.json;mkdir logs;python -m spacy download en"
   },
   "buildpacks": [
     {
@@ -18,8 +18,8 @@
       "generator": "secret",
       "description": "token for validating requests"
     },
-    "RASA_BACKEND": {
-      "description": "which backend to use",
+    "RASA_PIPELINE": {
+      "description": "which pipeline to use",
       "value": "spacy_sklearn"
     },
     "RASA_PATH": {
