@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
-from builtins import object, str
+from builtins import object, str, filter
 import json
 import os
 import warnings
@@ -33,11 +33,13 @@ class TrainingData(object):
 
     @property
     def intent_examples(self):
-        return filter(lambda e: "intent" in e, self.intent_examples_only + self.common_examples)
+        return list(filter(lambda e: "intent" in e,
+                           self.intent_examples_only + self.common_examples))
 
     @property
     def entity_examples(self):
-        return filter(lambda e: "entities" in e, self.entity_examples_only + self.common_examples)
+        return list(filter(lambda e: "entities" in e,
+                           self.entity_examples_only + self.common_examples))
 
     @property
     def num_entity_examples(self):
