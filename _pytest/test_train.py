@@ -41,8 +41,8 @@ def test_train_spacy_sklearn_finetune_ner(interpreter_builder):
     (trained, persisted_path) = utilities.run_train(_config)
     assert trained.pipeline
     loaded = utilities.load_interpreter_for_model(_config, persisted_path, interpreter_builder)
-    result = loaded.parse(u"I am living in New York now.")
+    result = loaded.parse(u"I am living in New York City now.")
     entities = result['entities']
     # Although the model is trained on restaurant entities, we can use the entities (`GPE`, `DATE`)
     # from spacy since we are fine tuning. This should even be the case if the rasa-entity training data changes!
-    assert {u'start': 15, u'end': 23, u'value': u'New York', u'entity': u'GPE'} in entities
+    assert {u'start': 15, u'end': 28, u'value': u'New York City', u'entity': u'GPE'} in entities

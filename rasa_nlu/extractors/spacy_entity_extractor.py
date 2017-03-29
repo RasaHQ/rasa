@@ -149,5 +149,6 @@ class SpacyEntityExtractor(Component, EntityExtractor):
             random.shuffle(train_data)
             for raw_text, entity_offsets in train_data:
                 doc = nlp.make_doc(raw_text)
+                nlp.tagger(doc)
                 gold = GoldParse(doc, entities=entity_offsets)
                 ner.update(doc, gold)

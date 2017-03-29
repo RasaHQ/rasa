@@ -40,7 +40,7 @@ def fill_args(arguments, context, config):
     return filled
 
 
-class MissingArgumentError(Exception):
+class MissingArgumentError(ValueError):
     """Raised when a function is called and not all parameters can be filled from the context / config.
 
     Attributes:
@@ -49,7 +49,7 @@ class MissingArgumentError(Exception):
 
     def __init__(self, message):
         # type: (str) -> None
-        self.message = message
+        super(MissingArgumentError, self).__init__(message)
 
 
 class Component(object):

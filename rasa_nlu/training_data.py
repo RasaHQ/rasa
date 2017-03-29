@@ -27,11 +27,11 @@ class TrainingData(object):
 
     @property
     def intent_examples(self):
-        return self.intent_examples_only + self.common_examples
+        return filter(lambda e: "intent" in e, self.intent_examples_only + self.common_examples)
 
     @property
     def entity_examples(self):
-        return self.entity_examples_only + self.common_examples
+        return filter(lambda e: "entities" in e, self.entity_examples_only + self.common_examples)
 
     @property
     def num_entity_examples(self):
