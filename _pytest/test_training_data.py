@@ -41,7 +41,7 @@ def test_rasa_data():
     td = load_data('data/examples/rasa/demo-rasa.json', "en")
     assert td.entity_examples != []
     assert td.intent_examples != []
-    assert len(td.sorted_entity_examples()) >= len(filter(lambda e: e["entities"], td.entity_examples))
+    assert len(td.sorted_entity_examples()) >= len([e for e in td.entity_examples if e["entities"]])
     assert len(td.sorted_intent_examples()) == len(td.intent_examples)
     assert td.entity_synonyms == {}
 

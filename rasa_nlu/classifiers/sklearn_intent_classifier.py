@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
+from builtins import str
 from builtins import zip
 import os
 import io
@@ -67,7 +68,7 @@ class SklearnIntentClassifier(Component):
         y = self.transform_labels_str2num(labels)
         X = intent_features
 
-        tuned_parameters = [{'C': [1, 2, 5, 10, 20, 100], 'kernel': [str('linear')]}]
+        tuned_parameters = [{'C': [1, 2, 5, 10, 20, 100], 'kernel': ['linear']}]
         cv_splits = min(5, np.min(np.bincount(y)))
         self.clf = GridSearchCV(SVC(C=1, probability=True),
                                 param_grid=tuned_parameters, n_jobs=num_threads,
