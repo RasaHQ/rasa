@@ -19,13 +19,13 @@ DEFAULT_CONFIG = {
     "mitie_file": os.path.join("data", "total_word_feature_extractor.dat"),
     "num_threads": 1,
     "fine_tune_spacy_ner": False,
-    "path": os.path.join(os.getcwd(), "models"),
+    "path": "models",
     "port": 5000,
     "server_model_dirs": None,
     "token": None,
     "max_number_of_ngrams": 7,
     "pipeline": [],
-    "response_log": os.path.join(os.getcwd(), "logs"),
+    "response_log": "logs",
     "luis_data_tokenizer": None,
 }
 
@@ -101,5 +101,13 @@ class RasaNLUConfig(object):
     def is_set(self, key):
         return key in self.__dict__ and self[key] is not None
 
-    def override(self, new_dict):
-        self.__dict__.update(new_dict)
+    def make_paths_absolute(self, config, keys):
+        abs_path_config = dict(config)
+        for key in keys:
+            if key in abs_path_config and not os.path.isabs(abs_path_config[key]):
+                abs_path_config[key] = os.path.join(os.getcwd(), abs_path_config[key])
+        return abs_path_config
+
+    def override(self, config):
+        abs_path_config = self.make_paths_absolute(config, ["path", "response_log"])
+        self.__dict__.update(abs_path_config)
