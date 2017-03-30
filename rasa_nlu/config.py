@@ -75,7 +75,7 @@ class RasaNLUConfig(object):
                 warnings.warn("No pipeline specified and unknown pipeline template " +
                               "'{}' passed.".format(self.__dict__['pipeline']))
 
-        for key, value in list(self.items()):
+        for key, value in self.items():
             setattr(self, key, value)
 
     def __getitem__(self, key):
@@ -100,7 +100,7 @@ class RasaNLUConfig(object):
         return json.dumps(self.__dict__, indent=4)
 
     def format_env_vars(self, env_vars):
-        keys = [key for key in list(env_vars.keys()) if "RASA" in key]
+        keys = [key for key in env_vars.keys() if "RASA" in key]
         return {key.split('RASA_')[1].lower(): env_vars[key] for key in keys}
 
     def is_set(self, key):

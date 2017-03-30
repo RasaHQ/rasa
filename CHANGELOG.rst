@@ -33,6 +33,7 @@ Changed
 - camel cased MITIE classes (e.g. ``MITIETokenizer`` → ``MitieTokenizer``)
 - model metadata changed, see migration guide
 - updated to spacy 1.7 (breaks existing spacy models!)
+- introduced compatibility with both Python 2 and 3
 
 Removed
 -------

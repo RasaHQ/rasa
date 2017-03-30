@@ -22,6 +22,7 @@ Keep in mind that:
 - division generates floating point numbers. Use ``//`` for truncated division
 - some built-ins, e.g. ``map`` and ``filter`` return iterators in Python 3. If you want to make use of them import the Python 3 version of them from ``builtins``. Otherwise use list comprehensions, which work uniformly across versions
 - use ``io.open`` instead of the builtin ``open`` when working with files
+- The following imports from ``__future__`` are mandatory in every python file: ``unicode_literals``, ``print_function``, ``division``, and ``absolute_import``
 
 
 Code of conduct

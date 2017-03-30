@@ -2,7 +2,6 @@ from __future__ import division
 from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import absolute_import
-from past.utils import old_div
 from rasa_nlu.components import Component
 from rasa_nlu.featurizers import Featurizer
 from rasa_nlu.training_data import TrainingData
@@ -50,7 +49,7 @@ class MitieFeaturizer(Featurizer, Component):
         for token in tokens:
             vec += feature_extractor.get_feature_vector(token)
         if tokens:
-            return old_div(vec, len(tokens))
+            return vec / len(tokens)
         else:
             return vec
 
