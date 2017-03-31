@@ -1,3 +1,8 @@
+from __future__ import unicode_literals
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from builtins import object
 import datetime
 import glob
 import json
@@ -36,7 +41,7 @@ class InterpreterBuilder(object):
     def create_interpreter(self, meta, config):
         context = {"model_dir": meta.model_dir}
 
-        model_config = dict(config.items())
+        model_config = dict(list(config.items()))
         model_config.update(meta.metadata)
 
         pipeline = []
@@ -99,7 +104,7 @@ class DataRouter(object):
 
     def __create_model_store(self):
         # Fallback for users that specified the model path as a string and hence only want a single default model.
-        if type(self.config.server_model_dirs) is unicode or type(self.config.server_model_dirs) is str:
+        if type(self.config.server_model_dirs) is str or type(self.config.server_model_dirs) is str:
             model_dict = {self.DEFAULT_MODEL_NAME: self.config.server_model_dirs}
         elif self.config.server_model_dirs is None:
             model_dict = self.__search_for_models()
@@ -108,7 +113,7 @@ class DataRouter(object):
 
         model_store = {}
 
-        for alias, model_path in model_dict.items():
+        for alias, model_path in list(model_dict.items()):
             try:
                 logging.info("Loading model '{}'...".format(model_path))
                 metadata = DataRouter.read_model_metadata(model_path, self.config)
@@ -189,7 +194,7 @@ class DataRouter(object):
     def get_status(self):
         # This will only count the trainings started from this process, if run in multi worker mode, there might
         # be other trainings run in different processes we don't know about.
-        num_trainings = len(filter(lambda p: p.is_alive(), self.train_procs))
+        num_trainings = len([p for p in self.train_procs if p.is_alive()])
         models = glob.glob(os.path.join(self.model_dir, 'model*'))
         return {
             "trainings_under_this_process": num_trainings,
@@ -198,11 +203,11 @@ class DataRouter(object):
 
     def start_train_process(self, data):
         logging.info("Starting model training")
-        fd, fname = tempfile.mkstemp(suffix="_training_data.json")
-        os.write(fd, data)
-        os.close(fd)
-        _config = dict(self.config.items())
-        _config["data"] = fname
+        f = tempfile.NamedTemporaryFile("w+", suffix="_training_data.json", delete=False)
+        f.write(data)
+        f.close()
+        _config = dict(list(self.config.items()))
+        _config["data"] = f.name
         train_config = RasaNLUConfig(cmdline_args=_config)
         process = multiprocessing.Process(target=do_train, args=(train_config,))
         self.train_procs.append(process)

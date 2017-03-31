@@ -1,6 +1,12 @@
+from __future__ import unicode_literals
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from builtins import object
 import os
 import shutil
 import tarfile
+import io
 
 import boto3
 import botocore
@@ -36,7 +42,7 @@ class Persistor(object):
         # type: (str) -> None
         """Downloads a model that has previously been persisted to s3."""
 
-        with open(filename, 'wb') as f:
+        with io.open(filename, 'wb') as f:
             self.bucket.download_fileobj(filename, f)
         with tarfile.open(filename, "r:gz") as tar:
             tar.extractall(self.data_dir)

@@ -1,4 +1,11 @@
+from __future__ import unicode_literals
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from builtins import zip
 import os
+import io
+from future.utils import PY3
 
 from rasa_nlu.components import Component
 from rasa_nlu.training_data import TrainingData
@@ -60,8 +67,10 @@ class SklearnIntentClassifier(Component):
         y = self.transform_labels_str2num(labels)
         X = intent_features
 
-        tuned_parameters = [{'C': [1, 2, 5, 10, 20, 100], 'kernel': ['linear']}]
+        # dirty str fix because sklearn is expecting str not instance of basestr...
+        tuned_parameters = [{'C': [1, 2, 5, 10, 20, 100], 'kernel': [str('linear')]}]
         cv_splits = max(2, min(5, np.min(np.bincount(y))))
+
         self.clf = GridSearchCV(SVC(C=1, probability=True),
                                 param_grid=tuned_parameters, n_jobs=num_threads,
                                 cv=cv_splits, scoring='f1_weighted')
@@ -78,7 +87,7 @@ class SklearnIntentClassifier(Component):
         # `predict` returns a matrix as it is supposed to work for multiple examples as well, hence we need to flatten
         intents, probabilities = intents.flatten(), probabilities.flatten()
         if intents.size > 0 and probabilities.size > 0:
-            ranking = zip(list(intents), list(probabilities))[:INTENT_RANKING_LENGTH]
+            ranking = list(zip(list(intents), list(probabilities)))[:INTENT_RANKING_LENGTH]
             return {
                 "intent": {
                     "name": intents[0],
@@ -120,8 +129,11 @@ class SklearnIntentClassifier(Component):
 
         if model_dir and intent_classifier:
             classifier_file = os.path.join(model_dir, intent_classifier)
-            with open(classifier_file, 'rb') as f:
-                return cloudpickle.load(f)
+            with io.open(classifier_file, 'rb') as f:
+                if PY3:
+                    return cloudpickle.load(f, encoding="latin-1")
+                else:
+                    return cloudpickle.load(f)
         else:
             return SklearnIntentClassifier()
 
@@ -132,7 +144,7 @@ class SklearnIntentClassifier(Component):
         import cloudpickle
 
         classifier_file = os.path.join(model_dir, "intent_classifier.pkl")
-        with open(classifier_file, 'wb') as f:
+        with io.open(classifier_file, 'wb') as f:
             cloudpickle.dump(self, f)
 
         return {

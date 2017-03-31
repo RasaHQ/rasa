@@ -1,12 +1,18 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import unicode_literals
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 import pytest
 
 import utilities
+from utilities import slowtest
 from rasa_nlu import registry
 
 
-@pytest.mark.parametrize("pipeline_template", registry.registered_pipeline_templates.keys())
+@slowtest
+@pytest.mark.parametrize("pipeline_template", list(registry.registered_pipeline_templates.keys()))
 def test_train_model(pipeline_template, interpreter_builder):
     _config = utilities.base_test_conf(pipeline_template)
     (trained, persisted_path) = utilities.run_train(_config)
@@ -15,7 +21,8 @@ def test_train_model(pipeline_template, interpreter_builder):
     assert loaded.pipeline
 
 
-@pytest.mark.parametrize("pipeline_template", registry.registered_pipeline_templates.keys())
+@slowtest
+@pytest.mark.parametrize("pipeline_template", list(registry.registered_pipeline_templates.keys()))
 def test_train_model_noents(pipeline_template, interpreter_builder):
     _config = utilities.base_test_conf(pipeline_template)
     _config['data'] = "./data/examples/rasa/demo-rasa-noents.json"
@@ -25,7 +32,8 @@ def test_train_model_noents(pipeline_template, interpreter_builder):
     assert loaded.pipeline
 
 
-@pytest.mark.parametrize("pipeline_template", registry.registered_pipeline_templates.keys())
+@slowtest
+@pytest.mark.parametrize("pipeline_template", list(registry.registered_pipeline_templates.keys()))
 def test_train_model_multithread(pipeline_template, interpreter_builder):
     _config = utilities.base_test_conf(pipeline_template)
     _config['num_threads'] = 2
@@ -35,6 +43,7 @@ def test_train_model_multithread(pipeline_template, interpreter_builder):
     assert loaded.pipeline
 
 
+@slowtest
 def test_train_spacy_sklearn_finetune_ner(interpreter_builder):
     _config = utilities.base_test_conf("spacy_sklearn")
     _config['fine_tune_spacy_ner'] = True

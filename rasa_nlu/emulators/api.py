@@ -1,3 +1,8 @@
+from __future__ import unicode_literals
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from builtins import str
 import uuid
 from datetime import datetime
 
@@ -11,12 +16,12 @@ class ApiEmulator(NoEmulator):
 
     def normalise_response_json(self, data):
         # populate entities dict
-        entities = {entity_type: [] for entity_type in set(map(lambda x: x["entity"], data["entities"]))}
+        entities = {entity_type: [] for entity_type in set([x["entity"] for x in data["entities"]])}
         for entity in data["entities"]:
             entities[entity["entity"]].append(entity["value"])
 
         return {
-            "id": unicode(uuid.uuid1()),
+            "id": str(uuid.uuid1()),
             "timestamp": datetime.now().isoformat("T"),
             "result": {
                 "source": "agent",
@@ -26,7 +31,7 @@ class ApiEmulator(NoEmulator):
                 "parameters": entities,
                 "contexts": [],
                 "metadata": {
-                    "intentId": unicode(uuid.uuid1()),
+                    "intentId": str(uuid.uuid1()),
                     "webhookUsed": "false",
                     "intentName": data["intent"]
                 },
@@ -37,5 +42,5 @@ class ApiEmulator(NoEmulator):
                 "code": 200,
                 "errorType": "success"
             },
-            "sessionId": unicode(uuid.uuid1())
+            "sessionId": str(uuid.uuid1())
         }

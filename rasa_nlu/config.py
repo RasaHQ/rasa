@@ -1,4 +1,9 @@
-import codecs
+from __future__ import unicode_literals
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from builtins import object
+import io
 import json
 import os
 import warnings
@@ -48,7 +53,7 @@ class RasaNLUConfig(object):
         self.override(DEFAULT_CONFIG)
         if filename is not None:
             try:
-                with codecs.open(filename, encoding='utf-8') as f:
+                with io.open(filename, encoding='utf-8') as f:
                     file_config = json.loads(f.read())
             except ValueError as e:
                 raise InvalidConfigError("Failed to read configuration file '{}'. Error: {}".format(filename, e))
@@ -59,7 +64,7 @@ class RasaNLUConfig(object):
             self.override(env_config)
 
         if cmdline_args is not None:
-            cmdline_config = {k: v for k, v in cmdline_args.items() if v is not None}
+            cmdline_config = {k: v for k, v in list(cmdline_args.items()) if v is not None}
             self.override(cmdline_config)
 
         if isinstance(self.__dict__['pipeline'], six.string_types):
@@ -89,7 +94,7 @@ class RasaNLUConfig(object):
         return len(self.__dict__)
 
     def items(self):
-        return self.__dict__.items()
+        return list(self.__dict__.items())
 
     def view(self):
         return json.dumps(self.__dict__, indent=4)

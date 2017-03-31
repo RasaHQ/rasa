@@ -1,4 +1,8 @@
-import codecs
+from __future__ import unicode_literals
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+import io
 import json
 import re
 import warnings
@@ -26,16 +30,16 @@ def load_api_data(files):
     common_examples = []
     entity_synonyms = {}
     for filename in files:
-        with codecs.open(filename, encoding="utf-8-sig") as f:
+        with io.open(filename, encoding="utf-8-sig") as f:
             data = json.loads(f.read())
         # get only intents, skip the rest. The property name is the target class
         if "userSays" in data:
             intent = data.get("name")
             for s in data["userSays"]:
-                text = "".join(map(lambda chunk: chunk["text"], s.get("data")))
+                text = "".join([chunk["text"] for chunk in s.get("data")])
                 # add entities to each token, if available
                 entities = []
-                for e in filter(lambda chunk: "alias" in chunk or "meta" in chunk, s.get("data")):
+                for e in [chunk for chunk in s.get("data") if "alias" in chunk or "meta" in chunk]:
                     start = text.find(e["text"])
                     end = start + len(e["text"])
                     val = text[start:end]
@@ -79,7 +83,7 @@ def load_luis_data(filename, tokenizer):
     entity_examples = []
     common_examples = []
 
-    with codecs.open(filename, encoding="utf-8-sig") as f:
+    with io.open(filename, encoding="utf-8-sig") as f:
         data = json.loads(f.read())
     for s in data["utterances"]:
         text = s.get("text")
@@ -112,7 +116,7 @@ def load_wit_data(filename):
     entity_examples = []
     common_examples = []
 
-    with codecs.open(filename, encoding="utf-8-sig") as f:
+    with io.open(filename, encoding="utf-8-sig") as f:
         data = json.loads(f.read())
     for s in data["data"]:
         entities = s.get("entities")
@@ -139,7 +143,7 @@ def load_rasa_data(filename):
     # type: (str) -> TrainingData
     """Loads training data stored in the rasa NLU data format."""
 
-    with codecs.open(filename, encoding="utf-8-sig") as f:
+    with io.open(filename, encoding="utf-8-sig") as f:
         data = json.loads(f.read())
     common = data['rasa_nlu_data'].get("common_examples", list())
     intent = data['rasa_nlu_data'].get("intent_examples", list())
@@ -153,7 +157,7 @@ def guess_format(files):
     """Given a set of files, tries to guess which data format is used."""
 
     for filename in files:
-        with codecs.open(filename, encoding="utf-8-sig") as f:
+        with io.open(filename, encoding="utf-8-sig") as f:
             file_data = json.loads(f.read())
         if "data" in file_data and type(file_data.get("data")) is list:
             return WIT_FILE_FORMAT

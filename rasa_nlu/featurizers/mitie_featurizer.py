@@ -1,3 +1,7 @@
+from __future__ import division
+from __future__ import unicode_literals
+from __future__ import print_function
+from __future__ import absolute_import
 from rasa_nlu.components import Component
 from rasa_nlu.featurizers import Featurizer
 from rasa_nlu.training_data import TrainingData

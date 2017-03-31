@@ -1,12 +1,20 @@
+from __future__ import unicode_literals
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from builtins import map
+from builtins import range
 import logging
 import os
 import re
 import time
 import warnings
+import io
 from collections import Counter
 from string import punctuation
 import cloudpickle
 from typing import Optional
+from future.utils import PY3
 
 from rasa_nlu.components import Component
 from rasa_nlu.training_data import TrainingData
@@ -68,8 +76,11 @@ class NGramFeaturizer(Component):
 
         if model_dir and featurizer_file:
             classifier_file = os.path.join(model_dir, featurizer_file)
-            with open(classifier_file, 'rb') as f:
-                return cloudpickle.load(f)
+            with io.open(classifier_file, 'rb') as f:
+                if PY3:
+                    return cloudpickle.load(f, encoding="latin-1")
+                else:
+                    return cloudpickle.load(f)
         else:
             return NGramFeaturizer()
 
@@ -78,7 +89,7 @@ class NGramFeaturizer(Component):
         """Persist this model into the passed directory. Returns the metadata necessary to load the model again."""
 
         classifier_file = os.path.join(model_dir, "ngram_featurizer.pkl")
-        with open(classifier_file, 'wb') as f:
+        with io.open(classifier_file, 'wb') as f:
             cloudpickle.dump(self, f)
 
         return {
@@ -179,7 +190,7 @@ class NGramFeaturizer(Component):
 
         cleaned_sentence = self._remove_in_vocab_words_from_sentence(sentence, spacy_nlp)
         presence_vector = np.zeros(len(ngrams))
-        idx_array = [idx for idx in xrange(len(ngrams)) if ngrams[idx] in cleaned_sentence]
+        idx_array = [idx for idx in range(len(ngrams)) if ngrams[idx] in cleaned_sentence]
         presence_vector[idx_array] = 1
         return presence_vector
 
@@ -192,7 +203,7 @@ class NGramFeaturizer(Component):
         features = {}
         counters = {}
 
-        for n in xrange(self.n_gram_min_length, self.n_gram_max_length):
+        for n in range(self.n_gram_min_length, self.n_gram_max_length):
             candidates = []
             features[n] = []
             counters[n] = Counter()
@@ -201,7 +212,7 @@ class NGramFeaturizer(Component):
             for text in list_of_strings:
                 text = text.replace(punctuation, ' ')
                 for word in text.lower().split(' '):
-                    cands = [word[i:i + n] for i in xrange(len(word) - n)]
+                    cands = [word[i:i + n] for i in range(len(word) - n)]
                     for cand in cands:
                         counters[n][cand] += 1
                         if cand not in candidates:
@@ -219,7 +230,7 @@ class NGramFeaturizer(Component):
                         if counters[n - 1][end] == counters[n][can] and end in features[n - 1]:
                             features[n - 1].remove(end)
 
-        return [item for sublist in features.values() for item in sublist]
+        return [item for sublist in list(features.values()) for item in sublist]
 
     def _create_bow_vecs(self, intent_features, sentences, spacy_nlp, max_ngrams=None):
         """Given a set of sentences, returns a feature vector for each sentence.
@@ -255,7 +266,7 @@ class NGramFeaturizer(Component):
         cv_splits = min(10, np.min(np.bincount(y)))
         if cv_splits >= 3:
             logging.debug("Started ngram cross-validation to find best number of ngrams to use...")
-            num_ngrams = np.unique(map(int, np.floor(np.linspace(1, max_ngrams, 8))))
+            num_ngrams = np.unique(list(map(int, np.floor(np.linspace(1, max_ngrams, 8)))))
             no_ngrams_X = self._create_bow_vecs(intent_features, sentences, spacy_nlp, max_ngrams=0)
             no_ngrams_score = np.mean(cross_val_score(clf2, no_ngrams_X, y, cv=cv_splits))
             scores = []

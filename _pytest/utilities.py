@@ -1,9 +1,17 @@
+from __future__ import unicode_literals
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from builtins import object
 import tempfile
+import pytest
 
 from rasa_nlu import registry
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.data_router import DataRouter
 from rasa_nlu.train import do_train
+
+slowtest = pytest.mark.slowtest
 
 
 def base_test_conf(pipeline_template):

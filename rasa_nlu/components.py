@@ -1,3 +1,8 @@
+from __future__ import unicode_literals
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from builtins import object
 import inspect
 
 from typing import Optional
@@ -142,20 +147,20 @@ class Component(object):
 
     def pipeline_init_args(self):
         # type: () -> [str]
-        return filter(lambda arg: arg not in ["self"], inspect.getargspec(self.pipeline_init).args)
+        return [arg for arg in inspect.getargspec(self.pipeline_init).args if arg not in ["self"]]
 
     def train_args(self):
         # type: () -> [str]
-        return filter(lambda arg: arg not in ["self"], inspect.getargspec(self.train).args)
+        return [arg for arg in inspect.getargspec(self.train).args if arg not in ["self"]]
 
     def process_args(self):
         # type: () -> [str]
-        return filter(lambda arg: arg not in ["self"], inspect.getargspec(self.process).args)
+        return [arg for arg in inspect.getargspec(self.process).args if arg not in ["self"]]
 
     @classmethod
     def load_args(cls):
         # type: () -> [str]
-        return filter(lambda arg: arg not in ["cls"], inspect.getargspec(cls.load).args)
+        return [arg for arg in inspect.getargspec(cls.load).args if arg not in ["cls"]]
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__

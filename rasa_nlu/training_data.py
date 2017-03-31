@@ -1,9 +1,15 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import unicode_literals
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from builtins import object, str, filter
 import json
 import os
 import warnings
 from itertools import groupby
+import io
 
 
 class TrainingData(object):
@@ -27,11 +33,13 @@ class TrainingData(object):
 
     @property
     def intent_examples(self):
-        return filter(lambda e: "intent" in e, self.intent_examples_only + self.common_examples)
+        return list(filter(lambda e: "intent" in e,
+                           self.intent_examples_only + self.common_examples))
 
     @property
     def entity_examples(self):
-        return filter(lambda e: "entities" in e, self.entity_examples_only + self.common_examples)
+        return list(filter(lambda e: "entities" in e,
+                           self.entity_examples_only + self.common_examples))
 
     @property
     def num_entity_examples(self):
@@ -44,20 +52,20 @@ class TrainingData(object):
         # type: (dict) -> str
         """Represent this set of training examples as json adding the passed meta information."""
 
-        return json.dumps({
+        return str(json.dumps({
             "rasa_nlu_data": {
                 "common_examples": self.common_examples,
                 "intent_examples": self.intent_examples_only,
                 "entity_examples": self.entity_examples_only,
             }
-        }, **kwargs)
+        }, **kwargs))
 
     def persist(self, dir_name):
         # type: (str) -> dict
-        """Persists this training data to disk and returnes necessary information to load it again."""
+        """Persists this training data to disk and returns necessary information to load it again."""
 
         data_file = os.path.join(dir_name, "training_data.json")
-        with open(data_file, 'w') as f:
+        with io.open(data_file, 'w') as f:
             f.write(self.as_json(indent=2))
 
         return {

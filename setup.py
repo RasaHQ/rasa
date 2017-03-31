@@ -36,6 +36,12 @@ setup(
         'rasa_nlu.featurizers',
         'rasa_nlu.tokenizers',
     ],
+    classifiers=[
+        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3.4",
+        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6"
+    ],
     version=__version__,
     install_requires=install_requires,
     tests_require=tests_requires,
