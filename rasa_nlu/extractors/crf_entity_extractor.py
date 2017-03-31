@@ -74,7 +74,7 @@ class CRFEntityExtractor(Component, EntityExtractor):
             dataset = [self._from_json_to_crf(q) for q in test_data]
             self._test_model(dataset)
 
-    def process(self):
+    # def process(self):
         #needs work
 
     def _convert_examples(self, entity_examples):
@@ -86,7 +86,7 @@ class CRFEntityExtractor(Component, EntityExtractor):
 
         return [convert_example(ex) for ex in entity_examples]
 
-    def extract_entities(self, doc, nlp):
+    # def extract_entities(self, doc, nlp):
         #needs work
 
     @classmethod
