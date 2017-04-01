@@ -17,7 +17,7 @@ If you are new to rasa NLU and want to create a bot, you should start with the [
 - [Setup](#setup) 
 - [FAQ](#faq)
 - [How to contribute](#how-to-contribute)
-- [Lincense](#license)
+- [License](#license)
 
 
 ## Setup
