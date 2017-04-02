@@ -21,7 +21,7 @@ If your server needs to handle more than one request at a time, you can use any 
 
     $ gunicorn -w 4 --threads 12 -k gevent -b 127.0.0.1:5000 rasa_nlu.server
 
-This will start a server with four processes and 12 threads. Since there is no standart way to pass commandline arguments to the server, all your configuration
+This will start a server with four processes and 12 threads. Since there is no standard way to pass command line arguments to the server, all your configuration
 options need to be placed in your configuration file (including the ``server_model_dirs``!). You can set the location of the configuration file using environment
 variables, otherwise the default configuration from ``config.json`` will be loaded.
 
