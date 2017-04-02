@@ -32,6 +32,10 @@ DEFAULT_CONFIG = {
     "pipeline": [],
     "response_log": "logs",
     "luis_data_tokenizer": None,
+    "BILOU_flag": True,
+    "crf_features": [['low', 'title', 'upper', 'pos', 'pos2'],
+                     ['bias', 'low', 'word3', 'word2', 'upper', 'title', 'digit', 'pos', 'pos2'],
+                     ['low', 'title', 'upper', 'pos', 'pos2']]
 }
 
 

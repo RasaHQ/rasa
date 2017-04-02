@@ -35,10 +35,8 @@ class CRFEntityExtractor(Component, EntityExtractor):
                      'bias': lambda doc: u'bias', 'upper': lambda doc: unicode(doc[0].isupper()),
                      'digit': lambda doc: unicode(doc[0].isdigit())}
 
-    def __init__(self, ent_tagger=None, nlp=spacy.load('en'), crf_features=None, BILOU_flag=True):
-
+    def __init__(self, ent_tagger=None, crf_features=None, BILOU_flag=True):
         self.ent_tagger = ent_tagger
-        self.nlp = nlp
 
         # BILOU_flag determines whether to use BILOU tagging or not. More rigorous however requires more examples per entity
         # rule of thumb: use only if more than 100 egs. per entity
@@ -52,26 +50,28 @@ class CRFEntityExtractor(Component, EntityExtractor):
                                  ['low', 'title', 'upper', 'pos', 'pos2']]
         else:
             self.crf_features = crf_features
-        self.config = {'crf_features': self.crf_features, 'BILOU_flag': BILOU_flag}
+       
 
-    def train(self, training_data):
-        # type: training_data -> None
+    def train(self, training_data, spacy_nlp, BILOU_flag, crf_features):
+        # type: (TrainingData) -> None
+        self.BILOU_flag = BILOU_flag
+        self.crf_features = crf_features
         if training_data.num_entity_examples > 0:
             train_data = self._convert_examples(training_data.entity_examples)
             ent_types = [[ent["entity"] for ent in ex["entities"]] for ex in training_data.entity_examples]
             entity_types = list(set(sum(ent_types, [])))
 
             # convert the dataset into features
-            dataset = [self._from_json_to_crf(q) for q in train_data]
+            dataset = [self._from_json_to_crf(q, spacy_nlp) for q in train_data]
             # train the model
             self._train_model(dataset)
 
-    def test(self, testing_data):
+    def test(self, testing_data, spacy_nlp):
         if testing_data.num_entity_examples > 0:
             test_data = self._convert_examples(testing_data.entity_examples)
             ent_types = [[ent["entity"] for ent in ex["entities"]] for ex in testing_data.entity_examples]
             entity_types = list(set(sum(ent_types, [])))
-            dataset = [self._from_json_to_crf(q) for q in test_data]
+            dataset = [self._from_json_to_crf(q, spacy_nlp) for q in test_data]
             self._test_model(dataset)
 
     # def process(self):
@@ -96,7 +96,7 @@ class CRFEntityExtractor(Component, EntityExtractor):
         if model_dir and model_name:
             ent_tagger = pycrfsuite.Tagger()
             ent_tagger.open(os.path.join(model_dir, 'ner', model_name))
-            config = json.load(open(os.path.join(model_dir, 'ner', 'crf_config.json'),'r'))
+            config = json.load(open(os.path.join(model_dir, 'ner', 'crf_config.json'), 'r'))
 
             return CRFEntityExtractor(ent_tagger=ent_tagger, crf_features=config['crf_features'], BILOU_flag=config['BILOU_flag'])
         else:
@@ -114,10 +114,11 @@ class CRFEntityExtractor(Component, EntityExtractor):
 
             entity_extractor_config_file = os.path.join(ner_dir, "crf_config.json")
             entity_extractor_file = os.path.join(ner_dir, "model.crfsuite")
+            config = {'crf_features': self.crf_features, 'BILOU_flag': self.BILOU_flag}
             with open(entity_extractor_config_file, 'w') as f:
-                json.dump(self.config, f)
+                json.dump(config, f)
 
-            shutil.copyfileobj(self.f, open(entity_extractor_file,'w'))
+            shutil.copyfileobj(self.f, open(entity_extractor_file, 'w'))
             return {
                 "entity_extractor": "ner",
             }
@@ -155,20 +156,20 @@ class CRFEntityExtractor(Component, EntityExtractor):
             labels.append(word[2])
         return labels
 
-    def _from_json_to_crf(self, json_eg):
-            #takes the json examples and switches them to a format which crfsuite likes
-            doc = self.nlp(json_eg[0])
+    def _from_json_to_crf(self, json_eg, spacy_nlp):
+            # takes the json examples and switches them to a format which crfsuite likes
+            doc = spacy_nlp(json_eg[0])
             entity_offsets = json_eg[1]
             gold = GoldParse(doc, entities=entity_offsets)
-            ents = map(lambda l: l[5], gold.orig_annot)
-            if self.BILOU_flag == False:
+            ents = [l[5] for l in gold.orig_annot]
+            if not self.BILOU_flag:
                 def ent_clean(entity):
                     if entity.startswith('B-') or entity.startswith('I-') or entity.startswith('U-') or entity.startswith('L-'):
                         return entity[2:]
                     else:
                         return entity
             else:
-                ent_clean = lambda l: l
+                def ent_clean(entity): return entity
 
             crf_format = [(doc[i].text, doc[i].tag_, ent_clean(ents[i])) for i in xrange(len(doc))]
             return crf_format
@@ -193,7 +194,6 @@ class CRFEntityExtractor(Component, EntityExtractor):
             'feature.possible_transitions': True
             })
         self.f = NamedTemporaryFile()
-        a = time.time()
         trainer.train(self.f.name)
         self.ent_tagger.open(self.f.name)
 
@@ -203,11 +203,6 @@ class CRFEntityExtractor(Component, EntityExtractor):
         y_test = [self._sentence_to_labels(sent) for sent in df_test]
         y_pred = [self.ent_tagger.tag(xseq) for xseq in X_test]
         print(bio_classification_report(y_test, y_pred))
-        
-        from collections import Counter
-        info = self.ent_tagger.info()
-
-
 
 
 def bio_classification_report(y_true, y_pred):
@@ -217,25 +212,23 @@ def bio_classification_report(y_true, y_pred):
     """
     Classification report for a list of BIO-encoded sequences.
     It computes token-level metrics and discards "O" labels.
-    
     Note that it requires scikit-learn 0.15+ (or a version from github master)
     to calculate averages properly!
     """
     from sklearn.preprocessing import LabelBinarizer
     from itertools import chain
-    from sklearn.metrics import classification_report, confusion_matrix
+    from sklearn.metrics import classification_report
     lb = LabelBinarizer()
     y_true_combined = lb.fit_transform(list(chain.from_iterable(y_true)))
     y_pred_combined = lb.transform(list(chain.from_iterable(y_pred)))
-        
+
     tagset = set(lb.classes_) - {'O'}
     tagset = sorted(tagset, key=lambda tag: tag.split('-', 1)[::-1])
     class_indices = {cls: idx for idx, cls in enumerate(lb.classes_)}
-    
+
     return classification_report(
         y_true_combined,
         y_pred_combined,
         labels=[class_indices[cls] for cls in tagset],
         target_names=tagset,
     )
-
