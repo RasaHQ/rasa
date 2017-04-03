@@ -213,7 +213,7 @@ class Interpreter(object):
     """Use a trained pipeline of components to parse text messages"""
 
     # Defines all attributes (and their default values) that will be returned by `parse`
-    default_output_attributes = {"intent": None, "entities": [], "text": ""}
+    default_output_attributes = {"intent": {"name": None, "confidence": 0.0}, "entities": [], "text": ""}
 
     @staticmethod
     def load(meta, rasa_config):

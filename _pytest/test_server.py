@@ -54,6 +54,10 @@ def test_status(client):
         u"/parse?q=hello ńöñàśçií",
         [{u"entities": {}, u"confidence": 1.0, u"intent": u"greet", u"_text": u"hello ńöñàśçií"}]
     ),
+    ResponseTest(
+        u"/parse?q=",
+        [{u"entities": {}, u"confidence": 0.0, u"intent": None, u"_text": u""}]
+    ),
 ])
 def test_get_parse(client, response_test):
     response = client.get(response_test.endpoint)
