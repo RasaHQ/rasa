@@ -18,6 +18,7 @@ import numpy as np
 from tempfile import NamedTemporaryFile
 import time
 import shutil
+import io
 
 
 class CRFEntityExtractor(Component, EntityExtractor):
@@ -65,6 +66,9 @@ class CRFEntityExtractor(Component, EntityExtractor):
             dataset = [self._from_json_to_crf(q, spacy_nlp) for q in train_data]
             # train the model
             self._train_model(dataset)
+            print(len(training_data.entity_examples))
+            print(training_data.entity_examples[21]['entities'])
+            print(self.extract_entities((training_data.entity_examples[21]), spacy_nlp))
 
     def test(self, testing_data, spacy_nlp):
         if testing_data.num_entity_examples > 0:
@@ -86,9 +90,16 @@ class CRFEntityExtractor(Component, EntityExtractor):
 
         return [convert_example(ex) for ex in entity_examples]
 
-    # def extract_entities(self, doc, nlp):
-        #needs work
-
+    def extract_entities(self, sentences, nlp):
+        print(sentences)
+        # print(sentence[])
+        print(self._convert_examples([sentences]))
+        # exit()
+        features = [self._from_json_to_crf(q, nlp) for q in self._convert_examples([sentences])]
+        print(features)
+        print(self.ent_tagger.tag(features[0]))
+        print(GoldParse(self._convert_examples([sentences])[0], entities=self.ent_tagger.tag(features[0])))
+        exit()
     @classmethod
     def load(cls, model_dir, model_name):
         # type: (str, str) -> CRFEntityExtractor
@@ -96,7 +107,7 @@ class CRFEntityExtractor(Component, EntityExtractor):
         if model_dir and model_name:
             ent_tagger = pycrfsuite.Tagger()
             ent_tagger.open(os.path.join(model_dir, 'ner', model_name))
-            config = json.load(open(os.path.join(model_dir, 'ner', 'crf_config.json'), 'r'))
+            config = json.load(io.open(os.path.join(model_dir, 'ner', 'crf_config.json'), 'r'))
 
             return CRFEntityExtractor(ent_tagger=ent_tagger, crf_features=config['crf_features'], BILOU_flag=config['BILOU_flag'])
         else:
@@ -115,10 +126,10 @@ class CRFEntityExtractor(Component, EntityExtractor):
             entity_extractor_config_file = os.path.join(ner_dir, "crf_config.json")
             entity_extractor_file = os.path.join(ner_dir, "model.crfsuite")
             config = {'crf_features': self.crf_features, 'BILOU_flag': self.BILOU_flag}
-            with open(entity_extractor_config_file, 'w') as f:
+            with io.open(entity_extractor_config_file, 'w') as f:
                 json.dump(config, f)
 
-            shutil.copyfileobj(self.f, open(entity_extractor_file, 'w'))
+            shutil.copyfileobj(self.f, io.open(entity_extractor_file, 'w'))
             return {
                 "entity_extractor": "ner",
             }
