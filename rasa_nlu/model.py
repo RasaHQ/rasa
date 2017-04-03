@@ -110,9 +110,15 @@ class Trainer(object):
             else:
                 raise Exception("Unregistered component '{}'. Failed to start trainer.".format(component_name))
 
-    def validate(self):
+    def validate(self, allow_empty_pipeline=False):
         # type: () -> None
         """Validates a pipeline before it is run. Ensures, that all arguments are present to train the pipeline."""
+
+        # Ensure the pipeline is not empty
+        if not allow_empty_pipeline and len(self.pipeline) == 0:
+            raise Exception("Can not train an empty pipeline. " +
+                            "Make sure to specify a proper pipeline in the configuration using the `pipeline` key." +
+                            "The `backend` configuration key is NOT supported anymore.")
 
         # Validate the init phase
         context = {}
