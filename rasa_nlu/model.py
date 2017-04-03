@@ -254,6 +254,12 @@ class Interpreter(object):
         # type: (basestring) -> dict
         """Parse the input text, classify it and return an object containing its intent and entities."""
 
+        if not text:
+            # Not all components are able to handle empty strings. So we need to prevent that...
+            # This default return will not contain all output attributes of all components,
+            # but in the end, no one should pass an empty string in the first place.
+            return self.default_output_attributes.copy()
+
         current_context = self.context.copy()
 
         current_context.update({
