@@ -43,6 +43,12 @@ def test_train_model_multithread(pipeline_template, interpreter_builder):
     assert loaded.pipeline
 
 
+def test_train_model_empty_pipeline():
+    _config = utilities.base_test_conf(pipeline_template=None)   # Should return an empty pipeline
+    with pytest.raises(ValueError):
+        utilities.run_train(_config)
+
+
 @slowtest
 def test_train_spacy_sklearn_finetune_ner(interpreter_builder):
     _config = utilities.base_test_conf("spacy_sklearn")

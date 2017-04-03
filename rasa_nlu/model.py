@@ -116,9 +116,9 @@ class Trainer(object):
 
         # Ensure the pipeline is not empty
         if not allow_empty_pipeline and len(self.pipeline) == 0:
-            raise Exception("Can not train an empty pipeline. " +
-                            "Make sure to specify a proper pipeline in the configuration using the `pipeline` key." +
-                            "The `backend` configuration key is NOT supported anymore.")
+            raise ValueError("Can not train an empty pipeline. " +
+                             "Make sure to specify a proper pipeline in the configuration using the `pipeline` key." +
+                             "The `backend` configuration key is NOT supported anymore.")
 
         # Validate the init phase
         context = {}
