@@ -24,14 +24,14 @@ from rasa_nlu.train import do_train
 class DataRouter(object):
     DEFAULT_MODEL_NAME = "default"
 
-    def __init__(self, config):
+    def __init__(self, config, component_builder):
         self.config = config
         self.responses = DataRouter._create_query_logger(config['response_log'])
         self.train_procs = []
         self.model_dir = config['path']
         self.token = config['token']
         self.emulator = self.__create_emulator()
-        self.component_builder = ComponentBuilder(use_cache=True)
+        self.component_builder = component_builder if component_builder else ComponentBuilder(use_cache=True)
         self.model_store = self.__create_model_store()
 
     @staticmethod

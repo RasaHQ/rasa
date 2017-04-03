@@ -26,7 +26,7 @@ def base_test_conf(pipeline_template):
 
 
 def interpreter_for(component_builder, config):
-    (trained, path) = run_train(config)
+    (trained, path) = run_train(config, component_builder)
     interpreter = load_interpreter_for_model(config, path, component_builder)
     return interpreter
 
@@ -35,8 +35,8 @@ def temp_log_file_dir():
     return tempfile.mkdtemp(suffix="_rasa_nlu_logs")
 
 
-def run_train(config):
-    (trained, path) = do_train(config)
+def run_train(config, builder):
+    (trained, path) = do_train(config, builder)
     return trained, path
 
 

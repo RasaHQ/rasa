@@ -16,7 +16,7 @@ from utilities import ResponseTest
 
 
 @pytest.fixture(scope="session")
-def app():
+def app(component_builder):
     if "TRAVIS_BUILD_DIR" in os.environ:
         root_dir = os.environ["TRAVIS_BUILD_DIR"]
     else:
@@ -36,7 +36,7 @@ def app():
         }
     }
     config = RasaNLUConfig(cmdline_args=_config)
-    application = create_app(config)
+    application = create_app(config, component_builder)
     return application
 
 
