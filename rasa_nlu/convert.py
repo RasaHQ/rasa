@@ -1,5 +1,9 @@
+from __future__ import unicode_literals
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 import argparse
-import codecs
+import io
 
 from rasa_nlu.converters import load_data
 
@@ -17,7 +21,7 @@ def create_argparser():
 
 
 def write_file(td, out_file):
-    with codecs.open(out_file, "w") as f:
+    with io.open(out_file, "w") as f:
         f.write(td.as_json(indent=2))
 
 if __name__ == "__main__":

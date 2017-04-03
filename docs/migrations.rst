@@ -6,6 +6,8 @@ how you can migrate from one version to another.
 0.7.x to master
 ---------------
 
+- Due to the update of spacy to 1.7 (and them breaking backwards compatibility), spacy models need to be retrained.
+
 - The parameter and configuration value name of ``backend`` changed to ``pipeline``.
 
 - There have been changes to the model metadata format. You can either retrain your models or change the stored

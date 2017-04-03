@@ -1,3 +1,8 @@
+from __future__ import unicode_literals
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from builtins import str
 from mitie import total_word_feature_extractor
 from typing import Optional
 
@@ -24,9 +29,10 @@ class MitieNLP(Component):
 
     def pipeline_init(self, mitie_file):
         # type: (str) -> dict
+        import mitie
 
         if self.extractor is None:
-            self.extractor = total_word_feature_extractor(mitie_file)
+            self.extractor = mitie.total_word_feature_extractor(mitie_file)
         MitieNLP.ensure_proper_language_model(self.extractor)
         return {"mitie_feature_extractor": self.extractor}
 

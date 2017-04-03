@@ -1,7 +1,11 @@
 from __future__ import unicode_literals, print_function
+from __future__ import division
+from __future__ import absolute_import
 
+from builtins import range, str
 import os
 import random
+import io
 
 import pathlib
 import warnings
@@ -102,8 +106,8 @@ class SpacyEntityExtractor(Component, EntityExtractor):
             entity_extractor_config_file = os.path.join(ner_dir, "config.json")
             entity_extractor_file = os.path.join(ner_dir, "model")
 
-            with open(entity_extractor_config_file, 'w') as f:
-                json.dump(self.ner.cfg, f)
+            with io.open(entity_extractor_config_file, 'w') as f:
+                f.write(str(json.dumps(self.ner.cfg)))
             self.ner.model.dump(entity_extractor_file)
             return {
                 "entity_extractor": "ner",
@@ -149,5 +153,6 @@ class SpacyEntityExtractor(Component, EntityExtractor):
             random.shuffle(train_data)
             for raw_text, entity_offsets in train_data:
                 doc = nlp.make_doc(raw_text)
+                nlp.tagger(doc)
                 gold = GoldParse(doc, entities=entity_offsets)
                 ner.update(doc, gold)

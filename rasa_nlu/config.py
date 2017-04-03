@@ -1,4 +1,9 @@
-import codecs
+from __future__ import unicode_literals
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from builtins import object
+import io
 import json
 import os
 import warnings
@@ -19,16 +24,24 @@ DEFAULT_CONFIG = {
     "mitie_file": os.path.join("data", "total_word_feature_extractor.dat"),
     "num_threads": 1,
     "fine_tune_spacy_ner": False,
-    "path": os.path.join(os.getcwd(), "models"),
+    "path": "models",
     "port": 5000,
     "server_model_dirs": None,
     "token": None,
     "max_number_of_ngrams": 7,
     "pipeline": [],
-    "response_log": os.path.join(os.getcwd(), "logs"),
+    "response_log": "logs",
     "luis_data_tokenizer": None,
     "duckling_processing_mode": "append",
 }
+
+
+class InvalidConfigError(ValueError):
+    """Raised if an invalid configuration is encountered."""
+
+    def __init__(self, message):
+        # type: (str) -> None
+        super(InvalidConfigError, self).__init__(message)
 
 
 class RasaNLUConfig(object):
@@ -40,8 +53,11 @@ class RasaNLUConfig(object):
 
         self.override(DEFAULT_CONFIG)
         if filename is not None:
-            with codecs.open(filename, encoding='utf-8') as f:
-                file_config = json.loads(f.read())
+            try:
+                with io.open(filename, encoding='utf-8') as f:
+                    file_config = json.loads(f.read())
+            except ValueError as e:
+                raise InvalidConfigError("Failed to read configuration file '{}'. Error: {}".format(filename, e))
             self.override(file_config)
 
         if env_vars is not None:
@@ -49,7 +65,7 @@ class RasaNLUConfig(object):
             self.override(env_config)
 
         if cmdline_args is not None:
-            cmdline_config = {k: v for k, v in cmdline_args.items() if v is not None}
+            cmdline_config = {k: v for k, v in list(cmdline_args.items()) if v is not None}
             self.override(cmdline_config)
 
         if isinstance(self.__dict__['pipeline'], six.string_types):
@@ -79,7 +95,7 @@ class RasaNLUConfig(object):
         return len(self.__dict__)
 
     def items(self):
-        return self.__dict__.items()
+        return list(self.__dict__.items())
 
     def view(self):
         return json.dumps(self.__dict__, indent=4)
@@ -91,5 +107,13 @@ class RasaNLUConfig(object):
     def is_set(self, key):
         return key in self.__dict__ and self[key] is not None
 
-    def override(self, new_dict):
-        self.__dict__.update(new_dict)
+    def make_paths_absolute(self, config, keys):
+        abs_path_config = dict(config)
+        for key in keys:
+            if key in abs_path_config and not os.path.isabs(abs_path_config[key]):
+                abs_path_config[key] = os.path.join(os.getcwd(), abs_path_config[key])
+        return abs_path_config
+
+    def override(self, config):
+        abs_path_config = self.make_paths_absolute(config, ["path", "response_log"])
+        self.__dict__.update(abs_path_config)

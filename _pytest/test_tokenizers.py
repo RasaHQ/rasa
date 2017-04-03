@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
 
 
+from __future__ import unicode_literals
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+
+
 def test_whitespace():
     from rasa_nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
     tk = WhitespaceTokenizer()
@@ -25,5 +31,6 @@ def test_mitie():
     assert tk.tokenize(u"Hi. My name is rasa") == [u'Hi', u'My', u'name', u'is', u'rasa']
     assert tk.tokenize(u"ὦ ἄνδρες ᾿Αθηναῖοι") == [u'ὦ', u'ἄνδρες', u'᾿Αθηναῖοι']
     assert tk.tokenize_with_offsets(u"Forecast for lunch") == ([u'Forecast', u'for', u'lunch'], [0, 9, 13])
-    assert tk.tokenize_with_offsets(u"hey ńöñàśçií how're you?") == ([u'hey', u'ńöñàśçií', u'how', u'\'re', 'you', '?'],
-                                                                            [0, 4, 13, 16, 20, 23])
+    assert tk.tokenize_with_offsets(u"hey ńöñàśçií how're you?") == (
+        [u'hey', u'ńöñàśçií', u'how', u'\'re', 'you', '?'],
+        [0, 4, 13, 16, 20, 23])

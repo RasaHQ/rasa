@@ -1,3 +1,7 @@
+from __future__ import unicode_literals
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 import os
 
 from typing import Optional
@@ -40,7 +44,7 @@ def recursively_find_files(resource_name):
         nodes_to_visit = [resource_name]
         while len(nodes_to_visit) > 0:
             # skip hidden files
-            nodes_to_visit = filter(lambda f: not f.split("/")[-1].startswith('.'), nodes_to_visit)
+            nodes_to_visit = [f for f in nodes_to_visit if not f.split("/")[-1].startswith('.')]
 
             current_node = nodes_to_visit[0]
             # if current node is a folder, schedule its children for a visit. Else add them to the resources.

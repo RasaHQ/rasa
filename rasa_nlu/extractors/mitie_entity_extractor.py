@@ -1,3 +1,8 @@
+from __future__ import unicode_literals
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from builtins import range
 import os
 import re
 
@@ -72,7 +77,7 @@ class MitieEntityExtractor(Component, EntityExtractor):
             sample = ner_training_instance(tokens)
             for ent in example["entities"]:
                 start, end = MitieEntityExtractor.find_entity(ent, text)
-                sample.add_entity(xrange(start, end), ent["entity"])
+                sample.add_entity(list(range(start, end)), ent["entity"])
                 found_one_entity = True
 
             trainer.add(sample)

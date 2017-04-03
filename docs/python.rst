@@ -2,6 +2,8 @@
 
 Using rasa NLU from python
 ==========================
+Apart from running rasa NLU as a HTTP server you can use it directly in your python program.
+Rasa NLU supports both Python 2 and 3.
 
 Training Time
 -------------

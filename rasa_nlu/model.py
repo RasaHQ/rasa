@@ -1,7 +1,14 @@
+from __future__ import unicode_literals
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from builtins import str
+from builtins import object
 import datetime
 import json
 import logging
 import os
+import io
 
 from typing import Optional
 
@@ -31,8 +38,8 @@ class Metadata(object):
         # type: (str) -> 'Metadata'
         """Loads the metadata from a models directory."""
 
-        with open(os.path.join(model_dir, 'metadata.json'), 'rb') as f:
-            data = json.loads(f.read().decode('utf-8'))
+        with io.open(os.path.join(model_dir, 'metadata.json'), encoding="utf-8") as f:
+            data = json.loads(f.read())
         return Metadata(data, model_dir)
 
     def __init__(self, metadata, model_dir):
@@ -78,8 +85,8 @@ class Metadata(object):
             "rasa_nlu_version": rasa_nlu.__version__,
         })
 
-        with open(os.path.join(model_dir, 'metadata.json'), 'w') as f:
-            f.write(json.dumps(metadata, indent=4))
+        with io.open(os.path.join(model_dir, 'metadata.json'), 'w') as f:
+            f.write(str(json.dumps(metadata, indent=4)))
 
 
 class Trainer(object):
@@ -216,7 +223,7 @@ class Interpreter(object):
 
         context = {"model_dir": meta.model_dir}
 
-        config = dict(rasa_config.items())
+        config = dict(list(rasa_config.items()))
         config.update(meta.metadata)
 
         pipeline = []
@@ -247,9 +254,6 @@ class Interpreter(object):
         # type: (basestring) -> dict
         """Parse the input text, classify it and return an object containing its intent and entities."""
 
-        if type(text) is str:
-            text = unicode(text, "utf-8")
-
         current_context = self.context.copy()
 
         current_context.update({
@@ -266,7 +270,7 @@ class Interpreter(object):
                 raise Exception("Failed to parse at component '{}'. {}".format(component.name, e.message))
 
         result = self.default_output_attributes.copy()
-        all_attributes = self.default_output_attributes.keys() + self.output_attributes
+        all_attributes = list(self.default_output_attributes.keys()) + self.output_attributes
         # Ensure only keys of `all_attributes` are present and no other keys are returned
         result.update({key: current_context[key] for key in all_attributes if key in current_context})
         return result
