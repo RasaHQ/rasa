@@ -120,6 +120,15 @@ mitie_file
 :Description:
     File containing ``total_word_feature_extractor.dat`` (see :ref:`section_backends`)
 
+spacy_model_name
+~~~~~~~~~~~~~~~~
+
+:Type: ``str``
+:Examples: ``"en_core_web_sm"``
+:Description:
+    If the spacy model to be used has a name that is different from the language tag (which is e.g. ``"en"``),
+    the model name can be specified using this configuration variable. The name will be passed to ``spacy.load(name)``.
+
 fine_tune_spacy_ner
 ~~~~~~~~~~~~~~~~~~~
 
