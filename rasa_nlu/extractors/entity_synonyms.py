@@ -9,6 +9,8 @@ import json
 import os
 import warnings
 
+from typing import Text
+
 from rasa_nlu.components import Component
 from rasa_nlu.training_data import TrainingData
 
@@ -47,7 +49,7 @@ class EntitySynonymMapper(Component):
         }
 
     def persist(self, model_dir):
-        # type: (str) -> dict
+        # type: (Text) -> dict
 
         if self.synonyms:
             entity_synonyms_file = os.path.join(model_dir, "index.json")
@@ -59,7 +61,7 @@ class EntitySynonymMapper(Component):
 
     @classmethod
     def load(cls, model_dir, entity_synonyms):
-        # type: (str, str) -> EntitySynonymMapper
+        # type: (Text, Text) -> EntitySynonymMapper
 
         if model_dir and entity_synonyms:
             entity_synonyms_file = os.path.join(model_dir, "index.json")

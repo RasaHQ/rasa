@@ -15,6 +15,7 @@ from string import punctuation
 import cloudpickle
 from typing import Optional
 from future.utils import PY3
+from typing import Text
 
 from rasa_nlu.components import Component
 from rasa_nlu.training_data import TrainingData
@@ -55,7 +56,7 @@ class NGramFeaturizer(Component):
         return {"intent_features": stacked}
 
     def process(self, intent_features, text, spacy_nlp):
-        # type: ([float], str, Language) -> dict
+        # type: ([float], Text, Language) -> dict
         from spacy.language import Language
         import numpy as np
 
@@ -72,7 +73,7 @@ class NGramFeaturizer(Component):
 
     @classmethod
     def load(cls, model_dir, featurizer_file):
-        # type: (str, str) -> NGramFeaturizer
+        # type: (Text, Text) -> NGramFeaturizer
 
         if model_dir and featurizer_file:
             classifier_file = os.path.join(model_dir, featurizer_file)
@@ -85,7 +86,7 @@ class NGramFeaturizer(Component):
             return NGramFeaturizer()
 
     def persist(self, model_dir):
-        # type: (str) -> dict
+        # type: (Text) -> dict
         """Persist this model into the passed directory. Returns the metadata necessary to load the model again."""
 
         classifier_file = os.path.join(model_dir, "ngram_featurizer.pkl")

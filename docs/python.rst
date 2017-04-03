@@ -16,7 +16,7 @@ Or, you can train directly in python with a script like the following (using spa
     from rasa_nlu.config import RasaNLUConfig
     from rasa_nlu.model import Trainer
 
-    training_data = load_data('data/examples/rasa/demo-rasa.json', 'en')
+    training_data = load_data('data/examples/rasa/demo-rasa.json')
     trainer = Trainer(RasaNLUConfig("config_spacy.json"))
     trainer.train(training_data)
     model_directory = trainer.persist('./models/')  # Returns the directory the model is stored in
@@ -42,3 +42,25 @@ You can then use the loaded interpreter to parse text:
     interpreter.parse(u"The text I want to understand")
 
 which returns the same ``dict`` as the HTTP api would (without emulation).
+
+If multiple models are created, it is reasonable to share components between the different models. E.g.
+the ``'init_spacy'`` component, which is used by every pipeline that wants to have access to the spacy word vectors,
+can be cached to avoid storing the large word vectors more than once in main memory. To use the caching,
+a ``ComponentBuilder`` should be passed when loading and training models, e.g.:
+
+.. testcode::
+
+    from rasa_nlu.model import Metadata, Interpreter
+    from rasa_nlu.components import ComponentBuilder
+    config = RasaNLUConfig("config_spacy.json")
+
+    # For simplicity we will load the same model twice, usually you would want to use the metadata of
+    # different models
+    builder = ComponentBuilder(use_cache=True)      # will cache components between pipelines (where possible)
+    metadata_model = Metadata.load(model_directory)
+
+    interpreter = Interpreter.load(metadata_model, config, builder)
+    # the clone will share resources with the first model, as long as the same builder is passed!
+    interpreter_clone = Interpreter.load(metadata_model, config, builder)
+
+

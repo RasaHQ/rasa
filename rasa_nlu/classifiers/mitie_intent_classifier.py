@@ -5,6 +5,7 @@ from __future__ import absolute_import
 import os
 
 from typing import Optional
+from typing import Text
 
 from rasa_nlu.components import Component
 from rasa_nlu.training_data import TrainingData
@@ -24,7 +25,7 @@ class MitieIntentClassifier(Component):
         self.clf = clf
 
     def train(self, training_data, mitie_file, num_threads):
-        # type: (TrainingData, str, Optional[int]) -> None
+        # type: (TrainingData, Text, Optional[int]) -> None
         from mitie import tokenize, text_categorizer_trainer
 
         trainer = text_categorizer_trainer(mitie_file)
@@ -35,7 +36,7 @@ class MitieIntentClassifier(Component):
         self.clf = trainer.train()
 
     def process(self, tokens, mitie_feature_extractor):
-        # type: ([str], mitie.total_word_feature_extractor) -> object
+        # type: ([Text], mitie.total_word_feature_extractor) -> dict
         import mitie
 
         intent, score = self.clf(tokens, mitie_feature_extractor)
@@ -48,7 +49,7 @@ class MitieIntentClassifier(Component):
 
     @classmethod
     def load(cls, model_dir, intent_classifier):
-        # type: (str, str) -> MitieIntentClassifier
+        # type: (Text, Text) -> MitieIntentClassifier
         from mitie import text_categorizer
 
         if model_dir and intent_classifier:
@@ -59,7 +60,7 @@ class MitieIntentClassifier(Component):
             return MitieIntentClassifier()
 
     def persist(self, model_dir):
-        # type: (str) -> object
+        # type: (Text) -> dict
         import os
 
         if self.clf:

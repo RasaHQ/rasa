@@ -7,6 +7,7 @@ import os
 import re
 
 from typing import Optional
+from typing import Text
 
 from rasa_nlu.components import Component
 from rasa_nlu.extractors import EntityExtractor
@@ -65,7 +66,7 @@ class MitieEntityExtractor(Component, EntityExtractor):
         return start, end
 
     def train(self, training_data, mitie_file, num_threads):
-        # type: (TrainingData, str, Optional[int]) -> None
+        # type: (TrainingData, Text, Optional[int]) -> None
         from mitie import ner_training_instance, ner_trainer, tokenize
 
         trainer = ner_trainer(mitie_file)
@@ -86,7 +87,7 @@ class MitieEntityExtractor(Component, EntityExtractor):
             self.ner = trainer.train()
 
     def process(self, text, tokens, mitie_feature_extractor):
-        # type: (str, [str], mitie.total_word_feature_extractor) -> dict
+        # type: (Text, [Text], mitie.total_word_feature_extractor) -> dict
         import mitie
 
         return {
@@ -95,7 +96,7 @@ class MitieEntityExtractor(Component, EntityExtractor):
 
     @classmethod
     def load(cls, model_dir, entity_extractor):
-        # type: (str, str) -> MitieEntityExtractor
+        # type: (Text, Text) -> MitieEntityExtractor
         from mitie import named_entity_extractor
 
         if model_dir and entity_extractor:
@@ -106,7 +107,7 @@ class MitieEntityExtractor(Component, EntityExtractor):
             return MitieEntityExtractor()
 
     def persist(self, model_dir):
-        # type: (str) -> dict
+        # type: (Text) -> dict
 
         if self.ner:
             entity_extractor_file = os.path.join(model_dir, "entity_extractor.dat")

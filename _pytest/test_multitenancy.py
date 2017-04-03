@@ -127,7 +127,7 @@ if __name__ == '__main__':
 
         config = RasaNLUConfig(cfg_name)
         trainer = Trainer(config)
-        training_data = load_data(config['data'], config['language'])
+        training_data = load_data(config['data'])
 
         trainer.validate()
         trainer.train(training_data)

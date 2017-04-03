@@ -11,6 +11,7 @@ import pathlib
 import warnings
 
 from typing import Optional
+from typing import Text
 
 from rasa_nlu.components import Component
 from rasa_nlu.extractors import EntityExtractor
@@ -26,14 +27,17 @@ class SpacyEntityExtractor(Component, EntityExtractor):
 
     output_provides = ["entities"]
 
-    def __init__(self, ner=None, fine_tune_spacy_ner=False):
+    def __init__(self, fine_tune_spacy_ner, ner=None):
         self.ner = ner
         self.fine_tune_spacy_ner = fine_tune_spacy_ner
 
-    def train(self, spacy_nlp, training_data, fine_tune_spacy_ner):
+    @classmethod
+    def create(cls, fine_tune_spacy_ner):
+        return SpacyEntityExtractor(fine_tune_spacy_ner)
+
+    def train(self, spacy_nlp, training_data):
         # type: (Language, TrainingData, Optional[bool]) -> None
         from spacy.language import Language
-        self.fine_tune_spacy_ner = fine_tune_spacy_ner
         if training_data.num_entity_examples > 0:
             train_data = self._convert_examples(training_data.entity_examples)
             ent_types = [[ent["entity"] for ent in ex["entities"]] for ex in training_data.entity_examples]
@@ -82,19 +86,19 @@ class SpacyEntityExtractor(Component, EntityExtractor):
 
     @classmethod
     def load(cls, model_dir, entity_extractor, fine_tune_spacy_ner, spacy_nlp):
-        # type: (str, str, Language) -> SpacyEntityExtractor
+        # type: (Text, Text, Language) -> SpacyEntityExtractor
         from spacy.language import Language
         from spacy.pipeline import EntityRecognizer
 
         if model_dir and entity_extractor:
             ner_dir = os.path.join(model_dir, entity_extractor)
             ner = EntityRecognizer.load(pathlib.Path(ner_dir), spacy_nlp.vocab)
-            return SpacyEntityExtractor(ner, fine_tune_spacy_ner)
+            return SpacyEntityExtractor(fine_tune_spacy_ner, ner)
         else:
-            return SpacyEntityExtractor()
+            return SpacyEntityExtractor(fine_tune_spacy_ner)
 
     def persist(self, model_dir):
-        # type: (str) -> dict
+        # type: (Text) -> dict
         """Persist this model into the passed directory. Returns the metadata necessary to load the model again."""
         import json
 

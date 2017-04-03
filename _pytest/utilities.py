@@ -9,6 +9,7 @@ import pytest
 from rasa_nlu import registry
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.data_router import DataRouter
+from rasa_nlu.model import Interpreter
 from rasa_nlu.train import do_train
 
 slowtest = pytest.mark.slowtest
@@ -24,9 +25,9 @@ def base_test_conf(pipeline_template):
     })
 
 
-def interpreter_for(interpreter_builder, config):
+def interpreter_for(component_builder, config):
     (trained, path) = run_train(config)
-    interpreter = load_interpreter_for_model(config, path, interpreter_builder)
+    interpreter = load_interpreter_for_model(config, path, component_builder)
     return interpreter
 
 
@@ -39,9 +40,9 @@ def run_train(config):
     return trained, path
 
 
-def load_interpreter_for_model(config, persisted_path, interpreter_builder):
+def load_interpreter_for_model(config, persisted_path, component_builder):
     metadata = DataRouter.read_model_metadata(persisted_path, config)
-    return interpreter_builder.create_interpreter(metadata, config)
+    return Interpreter.load(metadata, config, component_builder)
 
 
 class ResponseTest(object):

@@ -11,9 +11,9 @@
   "emulate": null,
   "log_file": null,
   "mitie_file": "data/total_word_feature_extractor.dat",
+  "spacy_model_name": null,
   "fine_tune_spacy_ner": false,
   "server_model_dirs": null,
   "token": null,
-  "max_number_of_ngrams": 7,
-  "luis_data_tokenizer": null
+  "max_number_of_ngrams": 7
 }

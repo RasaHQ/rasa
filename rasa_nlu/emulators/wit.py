@@ -7,10 +7,15 @@ from rasa_nlu.emulators import NoEmulator
 
 class WitEmulator(NoEmulator):
     def __init__(self):
+        # type: () -> None
+
         super(WitEmulator, self).__init__()
         self.name = "wit"
 
     def normalise_response_json(self, data):
+        # type: (dict) -> [dict]
+        """Transform data to wit.ai format."""
+
         entities = {}
         for entity in data["entities"]:
             entities[entity["entity"]] = {

@@ -284,3 +284,21 @@ Currently you need to rely on the components that are shipped with rasa NLU, but
 create your own components in your code. Nevertheless, we are looking forward to your contribution of a new component
 (e.g. a component to do sentiment analysis). A glimpse into the code of ``rasa_nlu.components.Component`` will reveal
 which functions need to be implemented to create a new component.
+
+Component Lifecycle
+-------------------
+Every component can implement several methods from the ``Component`` base class; in a pipeline these different methods
+will be called in a specific order. Lets assume, we added the following pipeline to our config:
+``"pipeline": ["Component A", "Component B", "Last Component"]``.
+The image shows the call order during the training of this pipeline :
+
+.. image:: _static/images/component_lifecycle.png
+
+Before the first component is created using the ``create`` function, a so called ``context`` is created (which is
+nothing more than a python dict). This context is used to pass information between the components. For example,
+one component can calculate feature vectors for the training data, store that within the context and another
+component can retrieve these feature vectors from the context and do intent classification.
+
+Initially the context is filled with all configuration values, the arrows in the image show the call order
+and also visualize the path of the passed context. After all components are trained and persisted, the
+final context dictionary is used to persist the models metadata.

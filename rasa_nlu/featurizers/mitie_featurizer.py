@@ -2,6 +2,9 @@ from __future__ import division
 from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import absolute_import
+
+from typing import Text
+
 from rasa_nlu.components import Component
 from rasa_nlu.featurizers import Featurizer
 from rasa_nlu.training_data import TrainingData
@@ -32,7 +35,7 @@ class MitieFeaturizer(Featurizer, Component):
         }
 
     def process(self, tokens, mitie_feature_extractor):
-        # type: ([str], mitie.total_word_feature_extractor) -> dict
+        # type: ([Text], mitie.total_word_feature_extractor) -> dict
         import mitie
 
         features = self.features_for_tokens(tokens, mitie_feature_extractor)
@@ -41,7 +44,7 @@ class MitieFeaturizer(Featurizer, Component):
         }
 
     def features_for_tokens(self, tokens, feature_extractor):
-        # type: ([str], mitie.total_word_feature_extractor) -> np.ndarray
+        # type: ([Text], mitie.total_word_feature_extractor) -> np.ndarray
         import numpy as np
         import mitie
 
@@ -54,7 +57,7 @@ class MitieFeaturizer(Featurizer, Component):
             return vec
 
     def features_for_sentences(self, sentences, feature_extractor):
-        # type: ([str], mitie.total_word_feature_extractor) -> np.ndarray
+        # type: ([Text], mitie.total_word_feature_extractor) -> np.ndarray
         import mitie
         import numpy as np
 
