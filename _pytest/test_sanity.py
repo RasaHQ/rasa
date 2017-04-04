@@ -26,7 +26,7 @@ def import_submodules(package):
 
 @pytest.mark.parametrize("banned_package", ["spacy", "mitie", "numpy", "sklearn"])
 def test_no_global_imports_of_banned_package(banned_package):
-    """This test ensures that neither spacy nor mitie are imported module wise in any of our code files.
+    """This test ensures that neither of the banned packages are imported module wise in any of our code files.
 
     If one of the dependencies is needed, they should be imported within a function."""
     import inspect
