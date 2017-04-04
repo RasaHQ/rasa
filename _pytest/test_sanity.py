@@ -63,4 +63,4 @@ def test_no_global_imports_of_banned_package(banned_package):
 
     assert not find_modules_importing(banned_package), \
         "No module should import {} globally. Found in {}".format(
-            banned_package, ", ".join(find_modules_importing("spacy")))
+            banned_package, ", ".join(find_modules_importing(banned_package)))
