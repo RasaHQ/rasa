@@ -1,3 +1,10 @@
+from __future__ import unicode_literals
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+
+from typing import Text
+
 from rasa_nlu.components import Component
 
 
@@ -5,6 +12,8 @@ DUCKLING_PROCESSING_MODES = ["replace", "append"]
 
 
 class DucklingExtractor(Component):
+    """Adds entity normalization by analyzing found entities and transforming them into regular formats."""
+
     name = "ner_duckling"
 
     context_provides = {
@@ -18,11 +27,12 @@ class DucklingExtractor(Component):
 
     @classmethod
     def cache_key(cls, model_metadata):
-        # type: (Metadata) -> str
+        # type: (Metadata) -> Text
 
         return cls.name + "-" + model_metadata.language
 
     def pipeline_init(self, language, duckling_processing_mode):
+        # type: (Text, Text) -> None
         from duckling import DucklingWrapper
 
         if duckling_processing_mode not in DUCKLING_PROCESSING_MODES:
@@ -31,22 +41,29 @@ class DucklingExtractor(Component):
 
         # If fine tuning is disabled, we do not need to load the spacy entity model
         if self.duckling is None:
-            self.duckling = DucklingWrapper(language=language + "$core")  # languages in duckling are eg "de$core"
+            try:
+                self.duckling = DucklingWrapper(language=language)  # languages in duckling are eg "de$core"
+            except ValueError as e:
+                raise Exception("Duckling error. {}".format(e.message))
 
     def process(self, text, entities, duckling_processing_mode):
+        # type: (Text, [dict], Text) -> dict
+
         if self.duckling is not None:
             parsed = self.duckling.parse(text)
             for duckling_match in parsed:
                 for entity in entities:
                     if entity["start"] == duckling_match["start"] and entity["end"] == duckling_match["end"]:
-                        entity["normalised"] = duckling_match["value"]["value"]
+                        entity["value"] = duckling_match["value"]["value"]
+                        entity["duckling"] = duckling_match["dim"]
                         break
                 else:
                     if duckling_processing_mode == "append":
                         # Duckling will retrieve multiple entities, even if they overlap..
-                        # So as a compromise we'll only use the 'largest' ones in terms of sentence coverage
+                        # hence the append mode might add some noise to the found entities
                         entities.append({
                             "entity": duckling_match["dim"],
+                            "duckling": duckling_match["dim"],
                             "value": duckling_match["value"]["value"],
                             "start": duckling_match["start"],
                             "end": duckling_match["end"],
