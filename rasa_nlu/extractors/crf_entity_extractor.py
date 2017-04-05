@@ -19,6 +19,7 @@ from tempfile import NamedTemporaryFile
 import time
 import shutil
 import io
+import logging
 
 
 class CRFEntityExtractor(Component, EntityExtractor):
@@ -51,7 +52,6 @@ class CRFEntityExtractor(Component, EntityExtractor):
                                  ['low', 'title', 'upper', 'pos', 'pos2']]
         else:
             self.crf_features = crf_features
-       
 
     def train(self, training_data, spacy_nlp, BILOU_flag, crf_features):
         # type: (TrainingData) -> None
@@ -66,9 +66,6 @@ class CRFEntityExtractor(Component, EntityExtractor):
             dataset = [self._from_json_to_crf(q, spacy_nlp) for q in train_data]
             # train the model
             self._train_model(dataset)
-            print(len(training_data.entity_examples))
-            print(training_data.entity_examples[21]['entities'])
-            print(self.extract_entities((training_data.entity_examples[21]), spacy_nlp))
 
     def test(self, testing_data, spacy_nlp):
         if testing_data.num_entity_examples > 0:
@@ -78,8 +75,11 @@ class CRFEntityExtractor(Component, EntityExtractor):
             dataset = [self._from_json_to_crf(q, spacy_nlp) for q in test_data]
             self._test_model(dataset)
 
-    # def process(self):
-        #needs work
+    def process(self, text, spacy_nlp):
+        # type (unicode sentence) -> dict
+        return {
+            'entities': self.extract_entities(sentence, spacy_nlp)
+        }
 
     def _convert_examples(self, entity_examples):
         def convert_entity(ent):
@@ -90,16 +90,69 @@ class CRFEntityExtractor(Component, EntityExtractor):
 
         return [convert_example(ex) for ex in entity_examples]
 
-    def extract_entities(self, sentences, nlp):
-        print(sentences)
-        # print(sentence[])
-        print(self._convert_examples([sentences]))
-        # exit()
-        features = [self._from_json_to_crf(q, nlp) for q in self._convert_examples([sentences])]
-        print(features)
-        print(self.ent_tagger.tag(features[0]))
-        print(GoldParse(self._convert_examples([sentences])[0], entities=self.ent_tagger.tag(features[0])))
-        exit()
+    def extract_entities(self, sentence, spacy_nlp):
+        # take a sentence and return entities in json format
+        # type (unicode sentence, spacy nlp) -> dict
+        feature = self._from_text_to_crf(sentence, spacy_nlp)
+        ents = self.ent_tagger.tag(feature)
+        out_json = []
+        return self._from_crf_to_json(spacy_nlp(sentence), ents)
+
+    def _from_crf_to_json(self, sentence_doc, entities):
+        # type (SpaCy Doc, array -> json)
+        json_ents = []
+        if len(sentence_doc) != len(entities):
+            raise Exception('Inconsistency in amount of tokens between pycrfsuite and spacy')
+        if self.BILOU_flag:
+            # using the BILOU tagging scheme
+            start_char = 0
+            for word_idx in xrange(len(sentence_doc)):
+                entity = entities[word_idx]
+                word = sentence_doc[word_idx]
+                if entity.startswith('U-'):
+                    ent = {'start': start_char, 'end': start_char + len(word),
+                           'value': word.text, 'entity': entity[2:]}
+                    json_ents.append(ent)
+                elif entity.startswith('B-'):
+                    # start of a multi-word entity, need to represent whole extent
+                    ent_word_idx = word_idx + 1
+                    finished = False
+                    end_char = start_char + len(word)
+                    while not finished:
+                        if entities[ent_word_idx][2:] != entity[2:]:
+                            # words are not tagged the same entity class
+                            logging.warn("Inconsistent BILOU tagging found, B- tag, L- tag pair encloses multiple entity classes.i.e. ['B-a','I-b','L-a'] instead of ['B-a','I-a','L-a'].\nAssuming B- class is correct.")
+                        if entities[ent_word_idx].startswith('L-'):
+                            # end of the entity
+                            end_char += len(sentence_doc[ent_word_idx]) + 1
+                            finished = True
+                        elif entities[ent_word_idx].startswith('I-'):
+                            # middle part of the entity
+                            end_char += len(sentence_doc[ent_word_idx]) + 1
+                            ent_word_idx += 1
+                        else:
+                            # entity not closed by an L- tag
+                            finished = True
+                            ent_word_idx -= 1
+                            logging.warn("Inconsistent BILOU tagging found, B- tag not closed by L- tag, i.e ['B-a','I-a','O'] instead of ['B-a','L-a','O'].\nAssuming last tag is L-")
+                    ent = {'start': start_char, 'end': end_char,
+                           'value': sentence_doc[word_idx:ent_word_idx + 1].text,
+                           'entity': entity[2:]}
+                    json_ents.append(ent)
+                start_char += 1 + len(word)
+        elif not self.BILOU_flag:
+            # not using BILOU tagging scheme, multi-word entities are split.
+            start_char = 0
+            for word_idx in xrange(len(sentence_doc)):
+                entity = entities[word_idx]
+                word = sentence_doc[word_idx]
+                if entity != 'O':
+                    ent = {'start': start_char, 'end': start_char + len(word),
+                           'value': word.text, 'entity': entity}
+                    json_ents.append(ent)
+                start_char += len(word) + 1
+        return json_ents
+
     @classmethod
     def load(cls, model_dir, model_name):
         # type: (str, str) -> CRFEntityExtractor
@@ -141,7 +194,7 @@ class CRFEntityExtractor(Component, EntityExtractor):
         # convert a word into discrete features in self.crf_features, including word before and word after
         sentence_features = []
         for word_idx in xrange(len(sentence)):
-            # word before(-1), current word(0), next word(+1)  
+            # word before(-1), current word(0), next word(+1)
             prefixes = [u'-1:', u'0:', u'+1:']
             word_features = []
             for i in xrange(3):
@@ -184,6 +237,12 @@ class CRFEntityExtractor(Component, EntityExtractor):
 
             crf_format = [(doc[i].text, doc[i].tag_, ent_clean(ents[i])) for i in xrange(len(doc))]
             return crf_format
+
+    def _from_text_to_crf(self, sentence, spacy_nlp):
+        # takes a sentence and switches it to crfsuite format
+        doc = spacy_nlp(sentence)
+        crf_format = [(doc[i].text, doc[i].tag_, 'N/A') for i in xrange(len(doc))]
+        return crf_format
 
     def _train_model(self, df_train):
         # train the crf tagger based on the training data
