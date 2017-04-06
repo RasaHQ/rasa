@@ -114,6 +114,16 @@ class RasaNLUConfig(object):
                 abs_path_config[key] = os.path.join(os.getcwd(), abs_path_config[key])
         return abs_path_config
 
+    # noinspection PyCompatibility
+    def make_unicode(self, config):
+        if six.PY2:
+            # Sometimes (depending on the source of the config value) an argument will be str instead of unicode
+            # to unify that and ease further usage of the config, we convert everything to unicode
+            for k, v in config.items():
+                if type(v) is str:
+                    config[k] = unicode(v, "utf-8")
+        return config
+
     def override(self, config):
-        abs_path_config = self.make_paths_absolute(config, ["path", "response_log"])
+        abs_path_config = self.make_unicode(self.make_paths_absolute(config, ["path", "response_log"]))
         self.__dict__.update(abs_path_config)
