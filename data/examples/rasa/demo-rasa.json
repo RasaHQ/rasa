@@ -1,6 +1,6 @@
 {
   "rasa_nlu_data": {
-    "entity_examples": [
+    "common_examples": [
       {
         "text": "hey", 
         "intent": "greet", 
@@ -54,7 +54,19 @@
             "entity": "cuisine"
           }
         ]
-      }, 
+      },
+      {
+        "text": "show me chines restaurants", 
+        "intent": "restaurant_search", 
+        "entities": [
+          {
+            "start": 8, 
+            "end": 14, 
+            "value": "chinese", 
+            "entity": "cuisine"
+          }
+        ]
+      },
       {
         "text": "yes", 
         "intent": "affirm", 
@@ -179,9 +191,7 @@
         "text": "great", 
         "intent": "affirm", 
         "entities": []
-      }
-    ], 
-    "intent_examples": [
+      },
       {
         "text": "hey", 
         "intent": "greet"

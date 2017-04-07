@@ -6,7 +6,7 @@
   "keywords": ["python" ],
   "addons": [],
   "scripts": {
-    "postdeploy": "echo '{}' > config.json;mkdir logs;python -m spacy.en.download all"
+    "postdeploy": "echo '{}' > config.json;mkdir logs;python -m spacy download en"
   },
   "buildpacks": [
     {
@@ -18,8 +18,8 @@
       "generator": "secret",
       "description": "token for validating requests"
     },
-    "RASA_BACKEND": {
-      "description": "which backend to use",
+    "RASA_PIPELINE": {
+      "description": "which pipeline to use",
       "value": "spacy_sklearn"
     },
     "RASA_PATH": {
@@ -34,7 +34,7 @@
       "description": "file containing mitie feature extractor",
       "value": "${RASA_PATH}/total_word_feature_extractor.dat"
     },
-    "RASA_SERVER_MODEL_DIR": {
+    "RASA_SERVER_MODEL_DIRS": {
       "description": "dir containing model which should be used to process requests",
       "required": false
     },

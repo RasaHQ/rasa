@@ -6,20 +6,22 @@
     {
       "value": "mexican",
       "synonyms": [
-        "mexican",
+        "mexico",
         "mexican"
       ]
     },
     {
       "value": "chinese",
       "synonyms": [
-        "chinese"
+        "chinese",
+        "china"
       ]
     },
     {
       "value": "indian",
       "synonyms": [
-        "indian"
+        "indian",
+        "india"
       ]
     }
   ],

@@ -1,8 +1,14 @@
+from __future__ import unicode_literals
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+
+
 def test_luis_request():
     from rasa_nlu.emulators.luis import LUISEmulator
     em = LUISEmulator()
     norm = em.normalise_request_json({"q": ["arb text"]})
-    assert norm == {"text": "arb text"}
+    assert norm == {"text": "arb text", "model": "default"}
 
 
 def test_luis_response():
@@ -10,8 +16,7 @@ def test_luis_response():
     em = LUISEmulator()
     data = {
         "text": "I want italian food",
-        "intent": "inform",
-        "confidence": 0.4794813722432127,
+        "intent": {"name": "inform", "confidence": 0.4794813722432127},
         "entities": [{"entity": "cuisine", "value": "italian"}]
     }
     norm = em.normalise_response_json(data)
@@ -21,6 +26,7 @@ def test_luis_response():
             "intent": "inform",
             "score": 0.4794813722432127
         },
+        "intents": [{"intent": "inform", "score": 0.4794813722432127}],
         "entities": [
             {
                 "entity": e["value"],
@@ -37,7 +43,7 @@ def test_wit_request():
     from rasa_nlu.emulators.wit import WitEmulator
     em = WitEmulator()
     norm = em.normalise_request_json({"q": ["arb text"]})
-    assert norm == {"text": "arb text"}
+    assert norm == {"text": "arb text", "model": "default"}
 
 
 def test_wit_response():
@@ -45,8 +51,7 @@ def test_wit_response():
     em = WitEmulator()
     data = {
         "text": "I want italian food",
-        "intent": "inform",
-        "confidence": 0.4794813722432127,
+        "intent": {"name": "inform", "confidence": 0.4794813722432127},
         "entities": [{"entity": "cuisine", "value": "italian", "start": 7, "end": 14}]}
     norm = em.normalise_response_json(data)
     assert norm == [{
@@ -69,7 +74,10 @@ def test_dummy_request():
     from rasa_nlu.emulators import NoEmulator
     em = NoEmulator()
     norm = em.normalise_request_json({"q": ["arb text"]})
-    assert norm == {"text": "arb text"}
+    assert norm == {"text": "arb text", "model": "default"}
+
+    norm = em.normalise_request_json({"q": ["arb text"], "model": "specific"})
+    assert norm == {"text": "arb text", "model": "specific"}
 
 
 def test_dummy_response():

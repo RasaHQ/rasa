@@ -49,6 +49,30 @@
           "end" : 61
         }
       ]
+    },
+    {
+      "text" : "i want to fly to berlin",
+      "entities" : [
+        {
+          "entity" : "location",
+          "value" : "\"berlin\"",
+          "role" : "from",
+          "start" : 17,
+          "end" : 23
+        }
+      ]
+    },
+    {
+      "text" : "i want to fly from london",
+      "entities" : [
+        {
+          "entity" : "location",
+          "value" : "\"london\"",
+          "role" : "from",
+          "start" : 19,
+          "end" : 25
+        }
+      ]
     }
   ]
 }

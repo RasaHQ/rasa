@@ -1,34 +1,36 @@
-import numpy as np
+from __future__ import unicode_literals
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 import os
 
+import numpy as np
+import pytest
 
-def test_spacy():
-
-    def test_sentence(sentence, language, _ref):
-        import spacy
-        from rasa_nlu.featurizers.spacy_featurizer import SpacyFeaturizer
-        nlp = spacy.load(language, tagger=False, parser=False)
-        doc = nlp(sentence)
-        ftr = SpacyFeaturizer(nlp)
-        vecs = ftr.create_bow_vecs([sentence])
-        assert np.allclose(doc.vector[:5], _ref, atol=1e-5)
-        assert np.allclose(vecs[0], doc.vector, atol=1e-5)
-
-    test_sentence(u"hey how are you today",
-                  'en',
-                  _ref=np.array([-0.19649599, 0.32493639, -0.37408298, -0.10622784, 0.062756]))
-
-    test_sentence(u"hey wie geht es dir",
-                  'de',
-                  _ref=np.array([-0.0518572, -0.13645099, 0.34630662, 0.29546982, -0.0153512]))
+from rasa_nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 
 
-def test_mitie():
-    from rasa_nlu.featurizers.mitie_featurizer import MITIEFeaturizer
+@pytest.mark.parametrize("sentence, expected", [
+    (u"hey how are you today", [-0.19649599, 0.32493639, -0.37408298, -0.10622784, 0.062756])
+])
+def test_spacy_featurizer(spacy_nlp_en, sentence, expected):
+    from rasa_nlu.featurizers.spacy_featurizer import SpacyFeaturizer
+    ftr = SpacyFeaturizer()
+    doc = spacy_nlp_en(sentence)
+    vecs = ftr.features_for_doc(doc, spacy_nlp_en)
+    assert np.allclose(doc.vector[:5], expected, atol=1e-5)
+    assert np.allclose(vecs, doc.vector, atol=1e-5)
+
+
+def test_mitie_featurizer(mitie_feature_extractor):
+    from rasa_nlu.featurizers.mitie_featurizer import MitieFeaturizer
 
     filename = os.environ.get('MITIE_FILE')
-    if (filename and os.path.isfile(filename)):
-        ftr = MITIEFeaturizer(os.environ.get('MITIE_FILE'))
-        sentence = "Hey how are you today"
-        vecs = ftr.create_bow_vecs([sentence])
-        assert np.allclose(vecs[0][:5], np.array([0., -4.4551446, 0.26073121, -1.46632245, -1.84205751]), atol=1e-5)
+    if not filename or not os.path.isfile(filename):
+        filename = os.path.join("data", "total_word_feature_extractor.dat")
+
+    ftr = MitieFeaturizer.load(filename)
+    sentence = "Hey how are you today"
+    tokens = MitieTokenizer().tokenize(sentence)
+    vecs = ftr.features_for_tokens(tokens, mitie_feature_extractor)
+    assert np.allclose(vecs[:5], np.array([0., -4.4551446, 0.26073121, -1.46632245, -1.84205751]), atol=1e-5)
