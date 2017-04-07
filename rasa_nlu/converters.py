@@ -148,8 +148,16 @@ def load_rasa_data(filename):
     common = data['rasa_nlu_data'].get("common_examples", list())
     intent = data['rasa_nlu_data'].get("intent_examples", list())
     entity = data['rasa_nlu_data'].get("entity_examples", list())
+    synonyms = data['rasa_nlu_data'].get("entity_synonyms", list())
 
-    return TrainingData(intent, entity, common)
+    # build entity_synonyms dictionary
+    entity_synonyms = {}
+    for s in synonyms:
+        if "value" in s and "synonyms" in s:
+            for synonym in s["synonyms"]:
+                entity_synonyms[synonym] = s["value"]
+
+    return TrainingData(intent, entity, common, entity_synonyms)
 
 
 def guess_format(files):

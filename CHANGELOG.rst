@@ -15,6 +15,7 @@ Added
 - replaced pre-wired backends with more flexible pipeline definitions
 - return top 10 intents with sklearn classifier `#199 <https://github.com/golastmile/rasa_nlu/pull/199>`_
 - python type annotations for nearly all public functions
+- added alternative method of defining entity synonyms
 
 Changed
 -------

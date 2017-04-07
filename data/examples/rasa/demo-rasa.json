@@ -1,5 +1,11 @@
 {
   "rasa_nlu_data": {
+    "entity_synonyms": [
+      {
+        "value": "chinese",
+        "synonyms": ["Chinese", "Chines", "chines"]
+      }
+    ],
     "common_examples": [
       {
         "text": "hey", 
