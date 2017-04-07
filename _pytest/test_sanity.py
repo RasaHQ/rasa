@@ -1,15 +1,20 @@
+from __future__ import unicode_literals
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+
 import importlib
 import pkgutil
+from collections import defaultdict
 
 import pytest
 from six import PY2
 
 
-def import_submodules(package):
+def import_submodules(package_name):
     """ Import all submodules of a module, recursively, including subpackages."""
 
-    if isinstance(package, str):
-        package = importlib.import_module(package)
+    package = importlib.import_module(package_name)
     results = []
     for loader, name, is_pkg in pkgutil.walk_packages(package.__path__):
         full_name = package.__name__ + '.' + name
@@ -34,21 +39,18 @@ def test_no_global_imports_of_banned_package(banned_package):
     # To track imports accross modules, we will replace the default import function
     try:
         import __builtin__
-        savimp = __builtin__.__import__
+        original_import_function = __builtin__.__import__
     except ImportError:
         import builtins
-        savimp = builtins.__import__
+        original_import_function = builtins.__import__
 
-    tracked_imports = dict()
+    tracked_imports = defaultdict(list)
 
     def import_tracking(name, *x, **xs):
         caller = inspect.currentframe().f_back
         caller_name = caller.f_globals.get('__name__')
-        if name in tracked_imports:
-            tracked_imports[name].append(caller_name)
-        else:
-            tracked_imports[name] = [caller_name]
-        return savimp(name, *x, **xs)
+        tracked_imports[name].append(caller_name)
+        return original_import_function(name, *x, **xs)
 
     if PY2:
         __builtin__.__import__ = import_tracking
