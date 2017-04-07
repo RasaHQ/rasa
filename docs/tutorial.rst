@@ -163,7 +163,11 @@ which should return
 
 If you are using the ``spacy_sklearn`` backend and the entities aren't found, don't panic!
 This tutorial is just a toy example, with far too little training data to expect good performance.
-rasa NLU will also print a ``confidence`` value for the intent classification.
+
+rasa NLU will also print a ``confidence`` value for the intent classification. For models using spacy
+intent classification this will be a probability. For MITIE models this is just a score, which **might be
+greater than 1**.
+
 You can use this to do some error handling in your bot (maybe asking the user again if the confidence is low)
 and it's also helpful for prioritising which intents need more training data.
 
