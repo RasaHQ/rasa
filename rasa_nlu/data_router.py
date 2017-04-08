@@ -13,6 +13,7 @@ import tempfile
 
 from builtins import object
 from flask import json
+from typing import Text
 
 from rasa_nlu import utils
 from rasa_nlu.components import ComponentBuilder
@@ -68,7 +69,7 @@ class DataRouter(object):
 
     def __create_model_store(self):
         # Fallback for users that specified the model path as a string and hence only want a single default model.
-        if type(self.config.server_model_dirs) is str or type(self.config.server_model_dirs) is str:
+        if type(self.config.server_model_dirs) is Text:
             model_dict = {self.DEFAULT_MODEL_NAME: self.config.server_model_dirs}
         elif self.config.server_model_dirs is None:
             model_dict = self.__search_for_models()

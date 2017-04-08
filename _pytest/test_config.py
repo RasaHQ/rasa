@@ -8,6 +8,9 @@ import json
 import os
 import io
 
+import six
+from typing import Text
+
 import rasa_nlu
 from conftest import CONFIG_DEFAULTS_PATH
 from rasa_nlu.config import RasaNLUConfig
@@ -44,6 +47,17 @@ def test_invalid_config_json():
         f.flush()
         with pytest.raises(rasa_nlu.config.InvalidConfigError):
             RasaNLUConfig(f.name, env_vars, cmdline_args)
+
+
+def test_automatically_converts_to_unicode():
+    env_args = {"RASA_some_test_key_u": str("some test value"), str("RASA_some_test_key_str"): str("some test value")}
+    cmd_args = {"some_other_test_key_str": str("some test value"), str("some_other_test_key_u"): str("some test value")}
+    final_config = RasaNLUConfig(CONFIG_DEFAULTS_PATH, env_args, cmd_args)
+
+    assert type(final_config["some_test_key_u"]) is Text
+    assert type(final_config["some_test_key_str"]) is Text
+    assert type(final_config["some_other_test_key_str"]) is Text
+    assert type(final_config["some_other_test_key_u"]) is Text
 
 
 def test_file_config_unchanged():
