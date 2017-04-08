@@ -1,12 +1,12 @@
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import pytest
 
-from rasa_nlu import config
 from rasa_nlu import registry
-from rasa_nlu.components import Component, fill_args
+from rasa_nlu.components import fill_args
 
 
 @pytest.mark.parametrize("component_class", registry.component_classes)
@@ -32,7 +32,7 @@ def test_all_arguments_can_be_satisfied_during_init(component_class, default_con
         for ctx_arg in clz.context_provides.get("pipeline_init", []):
             context_arguments[ctx_arg] = None
 
-    filled_args = fill_args(component.pipeline_init_args(), context_arguments, config.DEFAULT_CONFIG)
+    filled_args = fill_args(component.pipeline_init_args(), context_arguments, default_config.as_dict())
     assert len(filled_args) == len(component.pipeline_init_args())
 
 
@@ -48,7 +48,7 @@ def test_all_arguments_can_be_satisfied_during_train(component_class, default_co
         for ctx_arg in clz.context_provides.get("train", []):
             context_arguments[ctx_arg] = None
 
-    filled_args = fill_args(component.train_args(), context_arguments, config.DEFAULT_CONFIG)
+    filled_args = fill_args(component.train_args(), context_arguments, default_config.as_dict())
     assert len(filled_args) == len(component.train_args())
 
 
@@ -63,5 +63,5 @@ def test_all_arguments_can_be_satisfied_during_parse(component_class, default_co
         for ctx_arg in clz.context_provides.get("process", []):
             context_arguments[ctx_arg] = None
 
-    filled_args = fill_args(component.process_args(), context_arguments, config.DEFAULT_CONFIG)
+    filled_args = fill_args(component.process_args(), context_arguments, default_config.as_dict)
     assert len(filled_args) == len(component.process_args())
