@@ -300,5 +300,5 @@ one component can calculate feature vectors for the training data, store that wi
 component can retrieve these feature vectors from the context and do intent classification.
 
 Initially the context is filled with all configuration values, the arrows in the image show the call order
-and also visualize the path of the passed context. After all components are trained and persisted, the
+and visualize the path of the passed context. After all components are trained and persisted, the
 final context dictionary is used to persist the models metadata.

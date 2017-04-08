@@ -126,7 +126,7 @@ spacy_model_name
 :Type: ``str``
 :Examples: ``"en_core_web_sm"``
 :Description:
-    If the spacy model to be used has a name that is different from the language tag (which is e.g. ``"en"``),
+    If the spacy model to be used has a name that is different from the language tag (``"en"``, ``"de"``, etc.),
     the model name can be specified using this configuration variable. The name will be passed to ``spacy.load(name)``.
 
 fine_tune_spacy_ner
