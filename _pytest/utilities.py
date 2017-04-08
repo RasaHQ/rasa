@@ -35,8 +35,8 @@ def temp_log_file_dir():
     return tempfile.mkdtemp(suffix="_rasa_nlu_logs")
 
 
-def run_train(config, builder):
-    (trained, path) = do_train(config, builder)
+def run_train(config, component_builder):
+    (trained, path) = do_train(config, component_builder)
     return trained, path
 
 

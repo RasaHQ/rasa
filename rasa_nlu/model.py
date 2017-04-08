@@ -96,20 +96,20 @@ class Trainer(object):
     # Officially supported languages (others might be used, but might fail)
     SUPPORTED_LANGUAGES = ["de", "en"]
 
-    def __init__(self, config, builder=None):
+    def __init__(self, config, component_builder=None):
         # type: (RasaNLUConfig, Optional[rasa_nlu.components.ComponentBuilder]) -> None
 
         self.config = config
         self.training_data = None
         self.pipeline = []
-        if builder is None:
+        if component_builder is None:
             # If no builder is passed, every interpreter creation will result in a new builder.
             # hence, no components are reused.
-            builder = rasa_nlu.components.ComponentBuilder()
+            component_builder = rasa_nlu.components.ComponentBuilder()
 
         # Transform the passed names of the pipeline components into classes
         for component_name in config.pipeline:
-            component = builder.create_component(component_name, config)
+            component = component_builder.create_component(component_name, config)
             self.pipeline.append(component)
 
     def validate(self):
@@ -218,14 +218,14 @@ class Interpreter(object):
     default_output_attributes = {"intent": None, "entities": [], "text": ""}
 
     @staticmethod
-    def load(meta, config, builder=None):
+    def load(meta, config, component_builder=None):
         # type: (Metadata, RasaNLUConfig, Optional[rasa_nlu.components.ComponentBuilder]) -> Interpreter
         """Load a stored model and its components defined by the provided metadata."""
         context = {"model_dir": meta.model_dir}
-        if builder is None:
+        if component_builder is None:
             # If no builder is passed, every interpreter creation will result in a new builder.
             # hence, no components are reused.
-            builder = rasa_nlu.components.ComponentBuilder()
+            component_builder = rasa_nlu.components.ComponentBuilder()
 
         model_config = config.as_dict()
         model_config.update(meta.metadata)
@@ -233,7 +233,7 @@ class Interpreter(object):
         pipeline = []
 
         for component_name in meta.pipeline:
-            component = builder.load_component(component_name, context, model_config, meta)
+            component = component_builder.load_component(component_name, context, model_config, meta)
             try:
                 args = rasa_nlu.components.fill_args(component.pipeline_init_args(), context, model_config)
                 updates = component.pipeline_init(*args)

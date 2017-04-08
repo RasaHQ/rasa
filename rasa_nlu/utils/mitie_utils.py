@@ -36,7 +36,10 @@ class MitieNLP(Component):
         # type: (Metadata) -> Optional[Text]
 
         mitie_file = model_metadata.metadata.get("mitie_file", None)
-        return cls.name + "-" + str(os.path.abspath(mitie_file)) if mitie_file else None
+        if mitie_file is not None:
+            return cls.name + "-" + str(os.path.abspath(mitie_file))
+        else:
+            return None
 
     def pipeline_init(self, mitie_file):
         # type: (Text) -> dict

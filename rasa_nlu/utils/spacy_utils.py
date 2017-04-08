@@ -29,7 +29,10 @@ class SpacyNLP(Component):
 
     @classmethod
     def create(cls, language, spacy_model_name):
+        # type: (Language, Text) -> SpacyNLP
         import spacy
+        from spacy.language import Language
+
         if spacy_model_name is None:
             spacy_model_name = language
         logging.info("Trying to load spacy model with name '{}'".format(spacy_model_name))
@@ -44,7 +47,7 @@ class SpacyNLP(Component):
         # type: (Metadata) -> Text
         spacy_model_name = model_metadata.metadata.get("spacy_model_name")
         if spacy_model_name is None:
-            # Fallback, use the language name, e.g. "en" as the model name if no explicit name is defined
+            # Fallback, use the language name, e.g. "en", as the model name if no explicit name is defined
             spacy_model_name = model_metadata.language
         return cls.name + "-" + spacy_model_name
 

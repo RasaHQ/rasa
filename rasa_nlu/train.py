@@ -54,11 +54,11 @@ def init():
     return config
 
 
-def do_train(config, builder=None):
+def do_train(config, component_builder=None):
     # type: (RasaNLUConfig, Optional[ComponentBuilder]) -> (Trainer, Text)
     """Loads the trainer and the data and runs the training of the specified model."""
 
-    trainer = Trainer(config, builder)
+    trainer = Trainer(config, component_builder)
     persistor = create_persistor(config)
     training_data = load_data(config['data'])
     trainer.validate()
