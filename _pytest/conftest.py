@@ -22,12 +22,12 @@ def component_builder():
 
 @pytest.fixture(scope="session")
 def spacy_nlp(component_builder, default_config):
-    return component_builder.create_component("init_spacy", default_config).nlp
+    return component_builder.create_component("nlp_spacy", default_config).nlp
 
 
 @pytest.fixture(scope="session")
 def mitie_feature_extractor(component_builder, default_config):
-    return component_builder.create_component("init_mitie", default_config).extractor
+    return component_builder.create_component("nlp_mitie", default_config).extractor
 
 
 @pytest.fixture(scope="session")

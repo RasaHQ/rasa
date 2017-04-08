@@ -31,7 +31,7 @@ pipeline
 :Type: ``str`` or ``[str]``
 :Examples:
     ``"mitie"`` or
-    ``["init_spacy", "ner_spacy", "ner_synonyms"]``
+    ``["nlp_spacy", "ner_spacy", "ner_synonyms"]``
 
 :Description:
     The pipeline used for training. Can either be a template (passing a string) or a list of components (array). For all

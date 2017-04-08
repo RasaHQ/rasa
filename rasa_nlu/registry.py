@@ -34,21 +34,21 @@ registered_components = {component.name: component for component in component_cl
 # They also implement the preexisting `backends`.
 registered_pipeline_templates = {
     "spacy_sklearn": [
-        "init_spacy",
+        "nlp_spacy",
         "ner_spacy",
         "ner_synonyms",
         "intent_featurizer_spacy",
         "intent_classifier_sklearn",
     ],
     "mitie": [
-        "init_mitie",
+        "nlp_mitie",
         "tokenizer_mitie",
         "ner_mitie",
         "ner_synonyms",
         "intent_classifier_mitie",
     ],
     "mitie_sklearn": [
-        "init_mitie",
+        "nlp_mitie",
         "tokenizer_mitie",
         "ner_mitie",
         "ner_synonyms",

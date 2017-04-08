@@ -37,17 +37,17 @@ Here is a list of the existing templates:
 +---------------+----------------------------------------------------------------------------------------------------------------------------+
 | template name | corresponding pipeline                                                                                                     |
 +===============+============================================================================================================================+
-| spacy_sklearn | ``["init_spacy", "ner_spacy", "ner_synonyms", "intent_featurizer_spacy", "intent_classifier_sklearn"]``                    |
+| spacy_sklearn | ``["nlp_spacy", "ner_spacy", "ner_synonyms", "intent_featurizer_spacy", "intent_classifier_sklearn"]``                    |
 +---------------+----------------------------------------------------------------------------------------------------------------------------+
-| mitie         | ``["init_mitie", "tokenizer_mitie", "ner_mitie", "ner_synonyms", "intent_classifier_mitie"]``                              |
+| mitie         | ``["nlp_mitie", "tokenizer_mitie", "ner_mitie", "ner_synonyms", "intent_classifier_mitie"]``                              |
 +---------------+----------------------------------------------------------------------------------------------------------------------------+
-| mitie_sklearn | ``["init_mitie", "tokenizer_mitie", "ner_mitie", "ner_synonyms", "intent_featurizer_mitie", "intent_classifier_sklearn"]`` |
+| mitie_sklearn | ``["nlp_mitie", "tokenizer_mitie", "ner_mitie", "ner_synonyms", "intent_featurizer_mitie", "intent_classifier_sklearn"]`` |
 +---------------+----------------------------------------------------------------------------------------------------------------------------+
 | keyword       | ``["intent_classifier_keyword"]``                                                                                          |
 +---------------+----------------------------------------------------------------------------------------------------------------------------+
 
 Creating your own pipelines is possible by directly passing the names of the components to rasa NLU in the ``pipeline``
-configuration variable, e.g. ``"pipeline": ["init_spacy", "ner_spacy", "ner_synonyms"]``. This creates a pipeline
+configuration variable, e.g. ``"pipeline": ["nlp_spacy", "ner_spacy", "ner_synonyms"]``. This creates a pipeline
 that only does entity recognition, but no intent classification. Hence, the output will not contain any useful intents.
 
 Build-in Components
@@ -58,8 +58,8 @@ a look at the corresponding source code for the component. ``Output`` describes,
 output result of processing a message. If no output is present, the component is most likely a preprocessor for another
 component.
 
-init_mitie
-~~~~~~~~~~
+nlp_mitie
+~~~~~~~~~
 
 :Short: MITIE initializer
 :Outputs: nothing
@@ -67,8 +67,8 @@ init_mitie
     Initializes mitie structures. Every mitie component relies on this, hence this should be put at the beginning
     of every pipeline that uses any mitie components.
 
-init_spacy
-~~~~~~~~~~
+nlp_spacy
+~~~~~~~~~
 
 :Short: spacy language initializer
 :Outputs: nothing

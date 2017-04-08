@@ -44,7 +44,7 @@ You can then use the loaded interpreter to parse text:
 which returns the same ``dict`` as the HTTP api would (without emulation).
 
 If multiple models are created, it is reasonable to share components between the different models. E.g.
-the ``'init_spacy'`` component, which is used by every pipeline that wants to have access to the spacy word vectors,
+the ``'nlp_spacy'`` component, which is used by every pipeline that wants to have access to the spacy word vectors,
 can be cached to avoid storing the large word vectors more than once in main memory. To use the caching,
 a ``ComponentBuilder`` should be passed when loading and training models, e.g.:
 

@@ -14,7 +14,7 @@ from rasa_nlu.model import Metadata
 
 
 class MitieNLP(Component):
-    name = "init_mitie"
+    name = "nlp_mitie"
 
     context_provides = {
         "pipeline_init": ["mitie_feature_extractor"],

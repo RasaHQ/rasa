@@ -12,7 +12,7 @@ from rasa_nlu.model import Metadata
 
 
 class SpacyNLP(Component):
-    name = "init_spacy"
+    name = "nlp_spacy"
 
     context_provides = {
         "pipeline_init": ["spacy_nlp"],
