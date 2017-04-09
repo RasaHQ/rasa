@@ -15,5 +15,10 @@
   "server_model_dirs": null,
   "token": null,
   "max_number_of_ngrams": 7,
-  "luis_data_tokenizer": null
+  "luis_data_tokenizer": null,
+  "entity_crf_BILOU_flag": true,
+  "entity_crf_features": [
+    ["low", "title", "upper", "pos", "pos2"],
+    ["bias", "low", "word3", "word2", "upper", "title", "digit", "pos", "pos2"],
+    ["low", "title", "upper", "pos", "pos2"]]
 }

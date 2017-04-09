@@ -278,7 +278,7 @@ ner_synonyms
     is using a multi class linear SV; with a sparse linear kernel (see `mitie trainer code <https://github.com/mit-nlp/MITIE/blob/master/mitielib/src/text_categorizer_trainer.cpp#L222>`_).
 
 ner_crf
-~~~~~~~~~
+~~~~~~~
 
 :Short: conditional random field entity extraction
 :Outputs: ``entities``
