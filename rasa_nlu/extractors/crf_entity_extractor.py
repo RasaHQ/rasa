@@ -29,7 +29,7 @@ class CRFEntityExtractor(Component, EntityExtractor):
                      'bias': lambda doc: 'bias', 'upper': lambda doc: str(doc[0].isupper()),
                      'digit': lambda doc: str(doc[0].isdigit())}
 
-    def __init__(self, ent_tagger=None, entity_crf_features=None, entitiy_crf_BILOU_flag=True):
+    def __init__(self, ent_tagger=None, entity_crf_features=None, entity_crf_BILOU_flag=True):
         # type: (pycrfsuite.Tagger, [[Text]], bool) -> None
         import pycrfsuite
 
@@ -38,7 +38,7 @@ class CRFEntityExtractor(Component, EntityExtractor):
         # BILOU_flag determines whether to use BILOU tagging or not.
         # More rigorous however requires more examples per entity
         # rule of thumb: use only if more than 100 egs. per entity
-        self.BILOU_flag = entitiy_crf_BILOU_flag
+        self.BILOU_flag = entity_crf_BILOU_flag
 
         if not entity_crf_features:
             # crf_features is [before, word, after] array with before, word, after holding keys about which
@@ -50,11 +50,11 @@ class CRFEntityExtractor(Component, EntityExtractor):
         else:
             self.crf_features = entity_crf_features
 
-    def train(self, training_data, spacy_nlp, entitiy_crf_BILOU_flag, entity_crf_features):
+    def train(self, training_data, spacy_nlp, entity_crf_BILOU_flag, entity_crf_features):
         # type: (TrainingData, Language, bool, [[Text]]) -> None
         from spacy.language import Language
 
-        self.BILOU_flag = entitiy_crf_BILOU_flag
+        self.BILOU_flag = entity_crf_BILOU_flag
         self.crf_features = entity_crf_features
         if training_data.num_entity_examples > 0:
             train_data = self._convert_examples(training_data.entity_examples)
