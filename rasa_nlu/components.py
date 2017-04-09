@@ -223,6 +223,9 @@ class ComponentBuilder(object):
             component, cache_key = self.__get_cached_component(component_name, meta)
             if component is None:
                 component = registry.load_component_by_name(component_name, context, model_config)
+                if component is None:
+                    raise Exception(
+                        "Failed to load component '{}'. Unknown component name.".format(component_name))
                 self.__add_to_cache(component, cache_key)
             return component
         except MissingArgumentError as e:
@@ -239,6 +242,9 @@ class ComponentBuilder(object):
             component, cache_key = self.__get_cached_component(component_name, Metadata(config.as_dict(), None))
             if component is None:
                 component = registry.create_component_by_name(component_name, config.as_dict())
+                if component is None:
+                    raise Exception(
+                        "Failed to create component '{}'. Unknown component name.".format(component_name))
                 self.__add_to_cache(component, cache_key)
             return component
         except MissingArgumentError as e:
