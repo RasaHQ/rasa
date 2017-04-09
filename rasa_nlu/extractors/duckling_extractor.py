@@ -3,10 +3,10 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+from typing import Optional
 from typing import Text
 
 from rasa_nlu.components import Component
-
 
 DUCKLING_PROCESSING_MODES = ["replace", "append"]
 
@@ -23,6 +23,9 @@ class DucklingExtractor(Component):
     output_provides = ["entities"]
 
     def __init__(self, duckling=None):
+        # type: (Optional[DucklingWrapper]) -> None
+        from duckling import DucklingWrapper
+
         self.duckling = duckling
 
     @classmethod
@@ -39,7 +42,6 @@ class DucklingExtractor(Component):
             raise ValueError("Invalid duckling processing mode. Got '{}'. Allowed: {}".format(
                 duckling_processing_mode, ", ".join(DUCKLING_PROCESSING_MODES)))
 
-        # If fine tuning is disabled, we do not need to load the spacy entity model
         if self.duckling is None:
             try:
                 self.duckling = DucklingWrapper(language=language)  # languages in duckling are eg "de$core"
