@@ -31,11 +31,11 @@ class CRFEntityExtractor(Component, EntityExtractor):
 
     output_provides = ["entities"]
 
-    function_dict = {'low': lambda doc: doc[0].lower(), 'title': lambda doc: unicode(doc[0].istitle()),
+    function_dict = {'low': lambda doc: doc[0].lower(), 'title': lambda doc: str(doc[0].istitle()),
                      'word3': lambda doc: doc[0][-3:], 'word2': lambda doc: doc[0][-2:],
                      'pos': lambda doc: doc[1], 'pos2': lambda doc: doc[1][:2],
-                     'bias': lambda doc: u'bias', 'upper': lambda doc: unicode(doc[0].isupper()),
-                     'digit': lambda doc: unicode(doc[0].isdigit())}
+                     'bias': lambda doc: 'bias', 'upper': lambda doc: str(doc[0].isupper()),
+                     'digit': lambda doc: str(doc[0].isdigit())}
 
     def __init__(self, ent_tagger=None, crf_features=None, BILOU_flag=True):
         self.ent_tagger = ent_tagger
@@ -106,7 +106,7 @@ class CRFEntityExtractor(Component, EntityExtractor):
         if self.BILOU_flag:
             # using the BILOU tagging scheme
             start_char = 0
-            for word_idx in xrange(len(sentence_doc)):
+            for word_idx in range(len(sentence_doc)):
                 entity = entities[word_idx]
                 word = sentence_doc[word_idx]
                 if entity.startswith('U-'):
@@ -143,7 +143,7 @@ class CRFEntityExtractor(Component, EntityExtractor):
         elif not self.BILOU_flag:
             # not using BILOU tagging scheme, multi-word entities are split.
             start_char = 0
-            for word_idx in xrange(len(sentence_doc)):
+            for word_idx in range(len(sentence_doc)):
                 entity = entities[word_idx]
                 word = sentence_doc[word_idx]
                 if entity != 'O':
@@ -193,11 +193,11 @@ class CRFEntityExtractor(Component, EntityExtractor):
     def _sentence_to_features(self, sentence):
         # convert a word into discrete features in self.crf_features, including word before and word after
         sentence_features = []
-        for word_idx in xrange(len(sentence)):
+        for word_idx in range(len(sentence)):
             # word before(-1), current word(0), next word(+1)
-            prefixes = [u'-1:', u'0:', u'+1:']
+            prefixes = ['-1', '0', '+1']
             word_features = []
-            for i in xrange(3):
+            for i in range(3):
                 if word_idx == len(sentence) - 1 and i == 2:
                     word_features.append('EOS')
                     # End Of Sentence
@@ -210,7 +210,8 @@ class CRFEntityExtractor(Component, EntityExtractor):
                     features = self.crf_features[i]
                     for feature in features:
                         # append each feature to a feature vector
-                        word_features.append(prefix + feature + ':' + self.function_dict[feature](word))
+                        # word_features.append(prefix + feature + ':' + self.function_dict[feature](word))
+                        word_features.append(':'.join((prefix, feature, self.function_dict[feature](word))))
             sentence_features.append(word_features)
         return sentence_features
 
@@ -235,13 +236,13 @@ class CRFEntityExtractor(Component, EntityExtractor):
             else:
                 def ent_clean(entity): return entity
 
-            crf_format = [(doc[i].text, doc[i].tag_, ent_clean(ents[i])) for i in xrange(len(doc))]
+            crf_format = [(doc[i].text, doc[i].tag_, ent_clean(ents[i])) for i in range(len(doc))]
             return crf_format
 
     def _from_text_to_crf(self, sentence, spacy_nlp):
         # takes a sentence and switches it to crfsuite format
         doc = spacy_nlp(sentence)
-        crf_format = [(doc[i].text, doc[i].tag_, 'N/A') for i in xrange(len(doc))]
+        crf_format = [(doc[i].text, doc[i].tag_, 'N/A') for i in range(len(doc))]
         return crf_format
 
     def _train_model(self, df_train):
