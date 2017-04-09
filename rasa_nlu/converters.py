@@ -124,9 +124,9 @@ def load_wit_data(filename):
             continue
         text = s.get("text")
         intents = [e["value"] for e in entities if e["entity"] == 'intent']
-        intent = intents[0] if intents else None
+        intent = intents[0][1:-1] if intents else None
 
-        entities = [e for e in entities if ("start" in e and "end" in e)]
+        entities = [e for e in entities if ("start" in e and "end" in e and e["entity"] != 'intent')]
         for e in entities:
             e["value"] = e["value"][1:-1]
 
