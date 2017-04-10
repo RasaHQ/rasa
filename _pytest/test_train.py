@@ -43,10 +43,10 @@ def test_train_model_multithread(pipeline_template, component_builder):
     assert loaded.pipeline
 
 
-def test_train_model_empty_pipeline():
+def test_train_model_empty_pipeline(component_builder):
     _config = utilities.base_test_conf(pipeline_template=None)   # Should return an empty pipeline
     with pytest.raises(ValueError):
-        utilities.run_train(_config)
+        utilities.run_train(_config, component_builder)
 
 
 @slowtest
