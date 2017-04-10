@@ -25,6 +25,14 @@ To find out which rasa version you are running, you can execute
 
 If you are using a virtual environment to run your python code, make sure you are using the correct python to execute the above code.
 
+Why am I getting an ``UndefinedMetricWarning``?
+-----------------------------------------------
+The complete warning is: ``UndefinedMetricWarning: F-score is ill-defined and being set to 0.0 in labels with no predicted samples.``
+The warning is a result of a lack of training data. During the training the dataset will be splitted multiple times, if there are to few training samples for any of the intents, the splitting might result in splits that do not contain any examples for this intent. 
+
+Hence, the solution is to add more training samples. As this is only a warning, training will still succeed, but the resulting models predictions might be weak on the intents where you are lacking training data.  
+
+
 I have an issue, can you help me?
 ---------------------------------
 We'd love to help you. If you are unsure if your issue is related to your setup, you should state your problem in the `gitter chat <https://gitter.im/golastmile/rasa_nlu>`_.
