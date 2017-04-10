@@ -219,7 +219,7 @@ class Interpreter(object):
     """Use a trained pipeline of components to parse text messages"""
 
     # Defines all attributes (and their default values) that will be returned by `parse`
-    default_output_attributes = {"intent": None, "entities": [], "text": ""}
+    default_output_attributes = {"intent": {"name": "", "confidence": 0.0}, "entities": [], "text": ""}
 
     @staticmethod
     def load(meta, rasa_config):
@@ -259,6 +259,12 @@ class Interpreter(object):
     def parse(self, text):
         # type: (basestring) -> dict
         """Parse the input text, classify it and return an object containing its intent and entities."""
+
+        if not text:
+            # Not all components are able to handle empty strings. So we need to prevent that...
+            # This default return will not contain all output attributes of all components,
+            # but in the end, no one should pass an empty string in the first place.
+            return self.default_output_attributes.copy()
 
         current_context = self.context.copy()
 
