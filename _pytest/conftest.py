@@ -5,7 +5,6 @@ from __future__ import absolute_import
 import logging
 import pytest
 import spacy
-from mitie import total_word_feature_extractor
 
 from rasa_nlu.data_router import InterpreterBuilder
 
@@ -20,6 +19,7 @@ def spacy_nlp_en():
 
 @pytest.fixture(scope="session")
 def mitie_feature_extractor():
+    from mitie import total_word_feature_extractor
     mitie_file = "data/total_word_feature_extractor.dat"
     return total_word_feature_extractor(mitie_file)
 
