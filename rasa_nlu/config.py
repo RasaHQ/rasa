@@ -32,6 +32,7 @@ DEFAULT_CONFIG = {
     "pipeline": [],
     "response_log": "logs",
     "luis_data_tokenizer": None,
+    "duckling_processing_mode": "append",
 }
 
 
