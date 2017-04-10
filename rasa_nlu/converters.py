@@ -124,9 +124,9 @@ def load_wit_data(filename):
             continue
         text = s.get("text")
         intents = [e["value"] for e in entities if e["entity"] == 'intent']
-        intent = intents[0] if intents else None
+        intent = intents[0][1:-1] if intents else None
 
-        entities = [e for e in entities if ("start" in e and "end" in e)]
+        entities = [e for e in entities if ("start" in e and "end" in e and e["entity"] != 'intent')]
         for e in entities:
             e["value"] = e["value"][1:-1]
 
@@ -139,12 +139,77 @@ def load_wit_data(filename):
     return TrainingData(intent_examples, entity_examples, common_examples)
 
 
+def rasa_nlu_data_schema():
+    training_example_schema = {
+        "type": "object",
+        "properties": {
+            "text": {"type": "string"},
+            "intent": {"type": "string"},
+            "entities": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "start": {"type": "number"},
+                        "end": {"type": "number"},
+                        "value": {"type": "string"},
+                        "entity": {"type": "string"}
+                    },
+                    "required": ["start", "end", "entity"]
+                }
+            }
+        },
+        "required": ["text"]
+    }
+
+    return {
+        "type": "object",
+        "properties": {
+            "rasa_nlu_data": {
+                "type": "object",
+                "properties": {
+                    "common_examples": {
+                        "type": "array",
+                        "items": training_example_schema
+                    },
+                    "intent_examples": {
+                        "type": "array",
+                        "items": training_example_schema
+                    },
+                    "entity_examples": {
+                        "type": "array",
+                        "items": training_example_schema
+                    }
+                }
+            }
+        },
+        "additionalProperties": False
+    }
+
+
+def validate_rasa_nlu_data(data):
+    # type: (dict) -> None
+    """Validate rasa training data format to ensure proper training. Raises exception on failure."""
+    from jsonschema import validate
+    from jsonschema import ValidationError
+
+    try:
+        validate(data, rasa_nlu_data_schema())
+    except ValidationError as e:
+        e.message += \
+            ". Failed to validate training data, make sure your data is valid. " + \
+            "For more information about the format visit " + \
+            "https://rasa-nlu.readthedocs.io/en/latest/dataformat.html"
+        raise e
+
+
 def load_rasa_data(filename):
     # type: (str) -> TrainingData
     """Loads training data stored in the rasa NLU data format."""
 
     with io.open(filename, encoding="utf-8-sig") as f:
         data = json.loads(f.read())
+    validate_rasa_nlu_data(data)
     common = data['rasa_nlu_data'].get("common_examples", list())
     intent = data['rasa_nlu_data'].get("intent_examples", list())
     entity = data['rasa_nlu_data'].get("entity_examples", list())

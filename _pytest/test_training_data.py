@@ -3,12 +3,37 @@ from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
+
+import json
 import tempfile
 
+import io
 import pytest
+from jsonschema import ValidationError
 
-from rasa_nlu.converters import load_data
+from rasa_nlu.converters import load_data, validate_rasa_nlu_data
 from rasa_nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
+
+
+def test_example_training_data_is_valid():
+    with io.open('data/examples/rasa/demo-rasa.json', encoding="utf-8-sig") as f:
+        data = json.loads(f.read())
+    validate_rasa_nlu_data(data)
+
+
+@pytest.mark.parametrize("invalid_data", [
+    {"wrong_top_level": []},
+    ["this is not a toplevel dict"],
+    {"rasa_nlu_data": {"common_examples": [{"intent": "some example without text"}]}},
+    {"rasa_nlu_data": {
+        "common_examples": [{
+            "text": "mytext", "entities": [{"start": "INVALID", "end": 0, "entity": "x"}]
+        }]
+    }},
+])
+def test_validation_is_throwing_exceptions(invalid_data):
+    with pytest.raises(ValidationError):
+        validate_rasa_nlu_data(invalid_data)
 
 
 def test_luis_data_spacy():
@@ -66,7 +91,7 @@ def test_repeated_entities():
             "entity": "description",
             "start": 35,
             "end": 36,
-            "value": 3
+            "value": "3"
           }
         ]
       }
@@ -150,7 +175,6 @@ def test_nonascii_entities():
         assert entity["start"] == 19
         assert entity["end"] == 27
         assert entity["entity"] == "description"
-
 
 # def test_entities_synonyms():
 #     data = u"""
