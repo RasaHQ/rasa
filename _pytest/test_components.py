@@ -80,5 +80,5 @@ def test_all_arguments_can_be_satisfied_during_parse(component_class, default_co
         for ctx_arg in clz.context_provides.get("process", []):
             context_arguments[ctx_arg] = None
 
-    filled_args = fill_args(component.process_args(), context_arguments, default_config.as_dict)
+    filled_args = fill_args(component.process_args(), context_arguments, default_config.as_dict())
     assert len(filled_args) == len(component.process_args())
