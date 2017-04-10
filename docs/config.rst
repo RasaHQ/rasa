@@ -132,7 +132,7 @@ server_model_dirs
 ~~~~~~~~~~~~~~~~~
 
 :Type: ``str``
-:Examples: ``models/``
+:Examples: ``"models/"``
 :Description:
     Directory containing the model to be used by server or an object describing multiple models.
     see :ref:`HTTP server config<section_http_config>`
@@ -153,6 +153,17 @@ max_number_of_ngrams
 :Description:
     Maximum number of ngrams to use when augmenting feature vectors with character ngrams
     (``intent_featurizer_ngrams`` component only)
+
+duckling_processing_mode
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Type: ``string``
+:Examples: ``"append"``
+:Description:
+    Defines whether the duckling component will ``"append"`` (hence, modify already found entities and add all entities
+    found by the duckling processor) or ``"replace"`` (which will only replace already found entities by other components.
+    Additional entities found by the duckling component will be ignored).
+
 
 luis_data_tokenizer
 ~~~~~~~~~~~~~~~~~~~
