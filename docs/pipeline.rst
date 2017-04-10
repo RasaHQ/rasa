@@ -278,6 +278,33 @@ ner_synonyms
     is using a multi class linear SV; with a sparse linear kernel (see `mitie trainer code <https://github.com/mit-nlp/MITIE/blob/master/mitielib/src/text_categorizer_trainer.cpp#L222>`_).
 
 
+ner_duckling
+~~~~~~~~~~~~
+
+:Short: Adds duckling support to the pipeline to unify entity types (e.g. to retrieve common date / number formats)
+:Outputs: modifies / appends existing output
+:Output-Example:
+
+    .. code-block:: json
+
+        {
+            "duckling": "time",
+            "end": 53,
+            "entity": "time",
+            "start": 48,
+            "value": "2017-04-10T00:00:00.000+02:00"
+        }
+
+:Description:
+    Duckling allows to recognize dates, numbers and other structured entities (for a reference of all available
+    entities see `the duckling documentation <https://duckling.wit.ai/#getting-started>`_). The component has two modes
+    either ``append`` (adds all entities found by the duckling processing to the output) and ``replace`` (analyse only
+    previously found entities and normalize their format). The mode can be configured using the
+    ``duckling_processing_mode`` configuration variable. Additionally to modifying the value replacing it with the
+    normalized representation, the component also adds the ``duckling`` attribute to the output representing the kind
+    of the found entity.
+
+
 Creating new Components
 -----------------------
 Currently you need to rely on the components that are shipped with rasa NLU, but we plan to add the possibility to

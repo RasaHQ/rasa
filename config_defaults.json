@@ -15,5 +15,6 @@
   "fine_tune_spacy_ner": false,
   "server_model_dirs": null,
   "token": null,
-  "max_number_of_ngrams": 7
+  "max_number_of_ngrams": 7,
+  "duckling_processing_mode": "append"
 }

@@ -32,6 +32,7 @@ DEFAULT_CONFIG = {
     "max_number_of_ngrams": 7,
     "pipeline": [],
     "response_log": "logs",
+    "duckling_processing_mode": "append",
 }
 
 

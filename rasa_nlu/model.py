@@ -112,9 +112,15 @@ class Trainer(object):
             component = component_builder.create_component(component_name, config)
             self.pipeline.append(component)
 
-    def validate(self):
+    def validate(self, allow_empty_pipeline=False):
         # type: () -> None
         """Validates a pipeline before it is run. Ensures, that all arguments are present to train the pipeline."""
+
+        # Ensure the pipeline is not empty
+        if not allow_empty_pipeline and len(self.pipeline) == 0:
+            raise ValueError("Can not train an empty pipeline. " +
+                             "Make sure to specify a proper pipeline in the configuration using the `pipeline` key." +
+                             "The `backend` configuration key is NOT supported anymore.")
 
         # Validate the init phase
         context = {}
@@ -215,7 +221,7 @@ class Interpreter(object):
     """Use a trained pipeline of components to parse text messages"""
 
     # Defines all attributes (and their default values) that will be returned by `parse`
-    default_output_attributes = {"intent": None, "entities": [], "text": ""}
+    default_output_attributes = {"intent": {"name": "", "confidence": 0.0}, "entities": [], "text": ""}
 
     @staticmethod
     def load(meta, config, component_builder=None):
@@ -257,6 +263,12 @@ class Interpreter(object):
     def parse(self, text):
         # type: (basestring) -> dict
         """Parse the input text, classify it and return an object containing its intent and entities."""
+
+        if not text:
+            # Not all components are able to handle empty strings. So we need to prevent that...
+            # This default return will not contain all output attributes of all components,
+            # but in the end, no one should pass an empty string in the first place.
+            return self.default_output_attributes.copy()
 
         current_context = self.context.copy()
 

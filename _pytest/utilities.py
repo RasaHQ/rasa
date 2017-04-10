@@ -19,7 +19,7 @@ def base_test_conf(pipeline_template):
     return RasaNLUConfig(cmdline_args={
         'response_log': temp_log_file_dir(),
         'port': 5022,
-        "pipeline": registry.registered_pipeline_templates[pipeline_template],
+        "pipeline": registry.registered_pipeline_templates.get(pipeline_template, []),
         "path": tempfile.mkdtemp(),
         "data": "./data/examples/rasa/demo-rasa.json"
     })

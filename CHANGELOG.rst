@@ -16,6 +16,7 @@ Added
 - return top 10 intents with sklearn classifier `#199 <https://github.com/golastmile/rasa_nlu/pull/199>`_
 - python type annotations for nearly all public functions
 - support for arbitrary spacy model names
+- duckling components to provide normalized output for structured entities
 
 Changed
 -------
