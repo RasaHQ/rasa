@@ -29,7 +29,7 @@ def import_submodules(package_name):
     return results
 
 
-@pytest.mark.parametrize("banned_package", ["spacy", "mitie", "numpy", "sklearn"])
+@pytest.mark.parametrize("banned_package", ["spacy", "mitie", "numpy", "sklearn", "duckling"])
 def test_no_global_imports_of_banned_package(banned_package):
     """This test ensures that neither of the banned packages are imported module wise in any of our code files.
 
@@ -38,9 +38,11 @@ def test_no_global_imports_of_banned_package(banned_package):
 
     # To track imports accross modules, we will replace the default import function
     try:
+        # noinspection PyCompatibility
         import __builtin__
         original_import_function = __builtin__.__import__
     except ImportError:
+        # noinspection PyCompatibility
         import builtins
         original_import_function = builtins.__import__
 
