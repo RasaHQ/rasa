@@ -10,6 +10,9 @@ import io
 import pathlib
 import warnings
 
+from typing import Any
+from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Text
 
@@ -46,7 +49,7 @@ class SpacyEntityExtractor(Component, EntityExtractor):
             self.ner = self._train_from_scratch(spacy_nlp, entity_types, train_data)
 
     def process(self, spacy_doc, spacy_nlp):
-        # type: (Doc) -> dict
+        # type: (Doc) -> Dict[Text, Any]
         from spacy.tokens import Doc
 
         return {
@@ -54,7 +57,7 @@ class SpacyEntityExtractor(Component, EntityExtractor):
         }
 
     def extract_entities(self, doc, nlp):
-        # type: (Doc) -> [dict]
+        # type: (Doc) -> List[Dict[Text, Any]]
         from spacy.tokens import Doc
 
         if self.ner is not None:
@@ -98,7 +101,7 @@ class SpacyEntityExtractor(Component, EntityExtractor):
             return SpacyEntityExtractor(fine_tune_spacy_ner)
 
     def persist(self, model_dir):
-        # type: (Text) -> dict
+        # type: (Text) -> Dict[Text, Any]
         """Persist this model into the passed directory. Returns the metadata necessary to load the model again."""
         import json
 

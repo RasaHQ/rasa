@@ -7,6 +7,9 @@ import logging
 from builtins import object
 import inspect
 
+from typing import Any
+from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Text
 from typing import Type
@@ -15,7 +18,7 @@ from rasa_nlu.config import RasaNLUConfig
 
 
 def load_component(component_clz, context, config):
-    # type: (Type[Component], dict, dict) -> Optional[Component]
+    # type: (Type[Component], Dict[Text, Any], Dict[Text, Any]) -> Optional[Component]
     """Calls a components load method to init it based on a previously persisted model."""
 
     if component_clz is not None:
@@ -26,7 +29,7 @@ def load_component(component_clz, context, config):
 
 
 def create_component(component_clz, config):
-    # type: (Type[Component], dict) -> Optional[Component]
+    # type: (Type[Component], Dict[Text, Any]) -> Optional[Component]
     """Calls a components load method to init it based on a previously persisted model."""
 
     if component_clz is not None:
@@ -37,7 +40,7 @@ def create_component(component_clz, config):
 
 
 def fill_args(arguments, context, config):
-    # type: ([Text], dict, dict) -> [object]
+    # type: ([Text], Dict[Text, Any], Dict[Text, Any]) -> List[Any]
     """Given a list of arguments, tries to look up these argument names in the config / context to fill the arguments"""
 
     filled = []
@@ -115,7 +118,7 @@ class Component(object):
         return cls(*args)
 
     def pipeline_init(self, *args):
-        # type: (...) -> Optional[dict]
+        # type: (...) -> Optional[Dict[Text, Any]]
         """Initialize this component for a new pipeline
 
         This function will be called before the training is started and before the first message is processed using
@@ -126,7 +129,7 @@ class Component(object):
         pass
 
     def train(self, *args):
-        # type: (...) -> Optional[dict]
+        # type: (...) -> Optional[Dict[Text, Any]]
         """Train this component.
 
         This is the components chance to train itself provided with the training data. The component can rely on
@@ -135,7 +138,7 @@ class Component(object):
         pass
 
     def process(self, *args):
-        # type: (...) -> Optional[dict]
+        # type: (...) -> Optional[Dict[Text, Any]]
         """Process an incomming message.
 
        This is the components chance to process an incommng message. The component can rely on
@@ -144,40 +147,41 @@ class Component(object):
         pass
 
     def persist(self, model_dir):
-        # type: (str) -> Optional[dict]
+        # type: (str) -> Optional[Dict[Text, Any]]
         """Persist this component to disk for future loading."""
         pass
 
     @classmethod
     def cache_key(cls, model_metadata):
-        # type: (Metadata) -> Optional[str]
+        # type: (Metadata) -> Optional[Dict[Text, Any]]
         """This key is used to cache components.
 
         If a component is unique to a model it should return None. Otherwise, an instantiation of the
         component will be reused for all models where the metadata creates the same key."""
+        from rasa_nlu.model import Metadata
 
         return None
 
     def pipeline_init_args(self):
-        # type: () -> [Text]
+        # type: () -> List[Text]
         return [arg for arg in inspect.getargspec(self.pipeline_init).args if arg not in ["self"]]
 
     @classmethod
     def create_args(cls):
-        # type: () -> [Text]
+        # type: () -> List[Text]
         return [arg for arg in inspect.getargspec(cls.create).args if arg not in ["cls"]]
 
     def train_args(self):
-        # type: () -> [Text]
+        # type: () -> List[Text]
         return [arg for arg in inspect.getargspec(self.train).args if arg not in ["self"]]
 
     def process_args(self):
-        # type: () -> [Text]
+        # type: () -> List[Text]
         return [arg for arg in inspect.getargspec(self.process).args if arg not in ["self"]]
 
     @classmethod
     def load_args(cls):
-        # type: () -> [Text]
+        # type: () -> List[Text]
         return [arg for arg in inspect.getargspec(cls.load).args if arg not in ["cls"]]
 
     def __eq__(self, other):
@@ -215,9 +219,10 @@ class ComponentBuilder(object):
             logging.info("Added '{}' to component cache. Key '{}'.".format(component.name, cache_key))
 
     def load_component(self, component_name, context, model_config, meta):
-        # type: (Text, dict, dict, Metadata) -> Component
+        # type: (Text, Dict[Text, Any], Dict[Text, Any], Metadata) -> Component
         """Tries to retrieve a component from the cache, calls `load` to create a new component."""
         from rasa_nlu import registry
+        from rasa_nlu.model import Metadata
 
         try:
             component, cache_key = self.__get_cached_component(component_name, meta)

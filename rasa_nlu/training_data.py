@@ -13,7 +13,14 @@ import warnings
 from itertools import groupby
 import io
 
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
 from typing import Text
+
+TrainingExample = Dict[Text, Any]
+TrainingExamples = List[TrainingExample]
 
 
 class TrainingData(object):
@@ -24,10 +31,11 @@ class TrainingData(object):
     MIN_EXAMPLES_PER_ENTITY = 2
 
     def __init__(self,
-                 intent_examples_only=None,
-                 entity_examples_only=None,
-                 common_examples=None,
-                 entity_synonyms=None):
+                 intent_examples_only=None,  # type: Optional[TrainingExamples]
+                 entity_examples_only=None,  # type: Optional[TrainingExamples]
+                 common_examples=None,  # type: Optional[TrainingExamples]
+                 entity_synonyms=None  # type: Optional[TrainingExamples]
+                 ):
         self.intent_examples_only = intent_examples_only if intent_examples_only else []
         self.entity_examples_only = entity_examples_only if entity_examples_only else []
         self.common_examples = common_examples if common_examples else []
@@ -60,7 +68,7 @@ class TrainingData(object):
         return len(self.intent_examples)
 
     def as_json(self, **kwargs):
-        # type: (dict) -> str
+        # type: (TrainingExample) -> str
         """Represent this set of training examples as json adding the passed meta information."""
 
         return str(json.dumps({
@@ -72,7 +80,7 @@ class TrainingData(object):
         }, **kwargs))
 
     def persist(self, dir_name):
-        # type: (Text) -> dict
+        # type: (Text) -> Dict[Text, Any]
         """Persists this training data to disk and returns necessary information to load it again."""
 
         data_file = os.path.join(dir_name, "training_data.json")
@@ -84,13 +92,13 @@ class TrainingData(object):
         }
 
     def sorted_entity_examples(self):
-        # type: () -> [dict]
+        # type: () -> List[TrainingExample]
         """Sorts the entity examples by the annotated entity."""
 
         return sorted([entity for ex in self.entity_examples for entity in ex["entities"]], key=lambda e: e["entity"])
 
     def sorted_intent_examples(self):
-        # type: () -> [dict]
+        # type: () -> List[TrainingExample]
         """Sorts the intent examples by the name of the intent."""
 
         return sorted(self.intent_examples, key=lambda e: e["intent"])

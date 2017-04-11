@@ -3,6 +3,9 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+from typing import Any
+from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Text
 
@@ -31,6 +34,7 @@ class DucklingExtractor(Component):
     @classmethod
     def cache_key(cls, model_metadata):
         # type: (Metadata) -> Text
+        from rasa_nlu.model import Metadata
 
         return cls.name + "-" + model_metadata.language
 
@@ -49,7 +53,7 @@ class DucklingExtractor(Component):
                 raise Exception("Duckling error. {}".format(e.message))
 
     def process(self, text, entities, duckling_processing_mode):
-        # type: (Text, [dict], Text) -> dict
+        # type: (Text, List[Dict[Text, Any]], Text) -> Dict[Text, Any]
 
         if self.duckling is not None:
             parsed = self.duckling.parse(text)

@@ -4,6 +4,9 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
+
+from typing import Any
+from typing import Dict
 from typing import Optional
 from typing import Text
 
@@ -52,19 +55,19 @@ class SpacyNLP(Component):
         return cls.name + "-" + spacy_model_name
 
     def pipeline_init(self):
-        # type: () -> dict
+        # type: () -> Dict[Text, Any]
 
         return {"spacy_nlp": self.nlp}
 
     def process(self, text):
-        # type: (Text) -> dict
+        # type: (Text) -> Dict[Text, Any]
 
         return {
             "spacy_doc": self.nlp(text, entity=False)  # need to set entity=false, otherwise it interferes with our NER
         }
 
     def persist(self, model_dir):
-        # type: (Text) -> dict
+        # type: (Text) -> Dict[Text, Any]
         return {
             "spacy_model_name": self.spacy_model_name,
             "language": self.language

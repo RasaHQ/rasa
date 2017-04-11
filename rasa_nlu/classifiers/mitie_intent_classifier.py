@@ -4,6 +4,9 @@ from __future__ import division
 from __future__ import absolute_import
 import os
 
+from typing import Any
+from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Text
 
@@ -36,7 +39,7 @@ class MitieIntentClassifier(Component):
         self.clf = trainer.train()
 
     def process(self, tokens, mitie_feature_extractor):
-        # type: ([Text], mitie.total_word_feature_extractor) -> dict
+        # type: (List[Text], mitie.total_word_feature_extractor) -> Dict[Text, Any]
         import mitie
 
         intent, score = self.clf(tokens, mitie_feature_extractor)
@@ -60,7 +63,7 @@ class MitieIntentClassifier(Component):
             return MitieIntentClassifier()
 
     def persist(self, model_dir):
-        # type: (Text) -> dict
+        # type: (Text) -> Dict[Text, Any]
         import os
 
         if self.clf:

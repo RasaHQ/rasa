@@ -3,6 +3,9 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+from typing import Any
+from typing import Dict
+from typing import List
 from typing import Text
 
 from rasa_nlu.tokenizers import Tokenizer
@@ -17,13 +20,13 @@ class WhitespaceTokenizer(Tokenizer, Component):
     }
 
     def process(self, text):
-        # type: (Text) -> dict
+        # type: (Text) -> Dict[Text, Any]
 
         return {
             "tokens": self.tokenize(text)
         }
 
     def tokenize(self, text):
-        # type: (Text) -> [Text]
+        # type: (Text) -> List[Text]
 
         return text.split()

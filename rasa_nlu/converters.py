@@ -7,6 +7,9 @@ import json
 import re
 import warnings
 
+from typing import Any
+from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Text
 
@@ -23,7 +26,7 @@ UNK_FILE_FORMAT = "unk"
 
 
 def load_api_data(files):
-    # type: ([Text]) -> TrainingData
+    # type: (List[Text]) -> TrainingData
     """Loads training data stored in the API.ai data format."""
 
     intent_examples = []
@@ -177,7 +180,7 @@ def rasa_nlu_data_schema():
 
 
 def validate_rasa_nlu_data(data):
-    # type: (dict) -> None
+    # type: (Dict[Text, Any]) -> None
     """Validate rasa training data format to ensure proper training. Raises exception on failure."""
     from jsonschema import validate
     from jsonschema import ValidationError
@@ -207,7 +210,7 @@ def load_rasa_data(filename):
 
 
 def guess_format(files):
-    # type: ([Text]) -> Text
+    # type: (List[Text]) -> Text
     """Given a set of files, tries to guess which data format is used."""
 
     for filename in files:
@@ -226,7 +229,7 @@ def guess_format(files):
 
 
 def resolve_data_files(resource_name):
-    # type: (Text) -> [Text]
+    # type: (Text) -> List[Text]
     """Lists all data files of the resource name (might be a file or directory)."""
 
     try:

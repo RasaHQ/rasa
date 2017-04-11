@@ -10,6 +10,9 @@ import logging
 import os
 import io
 
+from typing import Any
+from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Text
 
@@ -44,7 +47,7 @@ class Metadata(object):
         return Metadata(data, model_dir)
 
     def __init__(self, metadata, model_dir):
-        # type: (dict, Optional[Text]) -> None
+        # type: (Dict[Text, Any], Optional[Text]) -> None
 
         self.metadata = metadata
         self.model_dir = model_dir
@@ -64,7 +67,7 @@ class Metadata(object):
 
     @property
     def pipeline(self):
-        # type: () -> [Text]
+        # type: () -> List[Text]
         """Names of the processing pipeline elements."""
 
         if 'pipeline' in self.metadata:
@@ -252,7 +255,7 @@ class Interpreter(object):
         return Interpreter(pipeline, context, model_config)
 
     def __init__(self, pipeline, context, config, meta=None):
-        # type: ([Component], dict, dict, Optional[Metadata]) -> None
+        # type: (List[Component], Dict[Text, Any], Dict[Text, Any], Optional[Metadata]) -> None
 
         self.pipeline = pipeline
         self.context = context
@@ -261,7 +264,7 @@ class Interpreter(object):
         self.output_attributes = [output for component in pipeline for output in component.output_provides]
 
     def parse(self, text):
-        # type: (basestring) -> dict
+        # type: (Text) -> Dict[Text, Any]
         """Parse the input text, classify it and return an object containing its intent and entities."""
 
         if not text:

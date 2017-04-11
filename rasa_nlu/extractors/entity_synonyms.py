@@ -9,6 +9,10 @@ import json
 import os
 import warnings
 
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
 from typing import Text
 
 from rasa_nlu.components import Component
@@ -25,6 +29,7 @@ class EntitySynonymMapper(Component):
     output_provides = ["entities"]
 
     def __init__(self, synonyms=None):
+        # type: (Optional[Dict[Text, Text]]) -> None
         self.synonyms = synonyms if synonyms else {}
 
     def train(self, training_data):
@@ -39,7 +44,7 @@ class EntitySynonymMapper(Component):
                 self.add_entities_if_synonyms(entity_val, entity.get("value"))
 
     def process(self, entities):
-        # type: (dict) -> dict
+        # type: (List[Dict[Text, Any]]) -> Dict[Text, Any]
 
         updated_entities = entities[:]
         self.replace_synonyms(updated_entities)
@@ -49,7 +54,7 @@ class EntitySynonymMapper(Component):
         }
 
     def persist(self, model_dir):
-        # type: (Text) -> dict
+        # type: (Text) -> Dict[Text, Any]
 
         if self.synonyms:
             entity_synonyms_file = os.path.join(model_dir, "index.json")

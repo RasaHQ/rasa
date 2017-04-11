@@ -3,6 +3,9 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 from builtins import object
+from typing import Any
+from typing import Dict
+from typing import Text
 
 
 class NoEmulator(object):
@@ -12,7 +15,7 @@ class NoEmulator(object):
         self.name = None
 
     def normalise_request_json(self, data):
-        # type: (dict) -> dict
+        # type: (Dict[Text, Any]) -> Dict[Text, Any]
 
         _data = {}
         _data["text"] = data["q"][0] if type(data["q"]) == list else data["q"]
@@ -25,7 +28,7 @@ class NoEmulator(object):
         return _data
 
     def normalise_response_json(self, data):
-        # type: (dict) -> object
+        # type: (Dict[Text, Any]) -> Any
         """Transform data to target format."""
 
         return data

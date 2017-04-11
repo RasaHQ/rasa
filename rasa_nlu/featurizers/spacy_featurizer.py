@@ -3,6 +3,9 @@ from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import absolute_import
 
+from typing import Any
+from typing import Dict
+from typing import List
 from typing import Text
 
 from rasa_nlu.featurizers import Featurizer
@@ -25,7 +28,7 @@ class SpacyFeaturizer(Featurizer, Component):
         return nlp.vocab.vectors_length
 
     def train(self, spacy_nlp, training_data):
-        # type: (Language, TrainingData) -> dict
+        # type: (Language, TrainingData) -> Dict[Text, Any]
         from spacy.language import Language
 
         sentences = [e["text"] for e in training_data.intent_examples]
@@ -35,7 +38,7 @@ class SpacyFeaturizer(Featurizer, Component):
         }
 
     def process(self, spacy_doc, spacy_nlp):
-        # type: (Doc, Language) -> dict
+        # type: (Doc, Language) -> Dict[Text, Any]
         from spacy.language import Language
         from spacy.tokens import Doc
 
@@ -60,7 +63,7 @@ class SpacyFeaturizer(Featurizer, Component):
             return np.zeros(self.ndim(nlp))
 
     def features_for_sentences(self, sentences, nlp):
-        # type: ([Text], Language) -> np.ndarray
+        # type: (List[Text], Language) -> np.ndarray
         import numpy as np
         from spacy.language import Language
 

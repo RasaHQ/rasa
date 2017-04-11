@@ -7,6 +7,7 @@ import logging
 import os
 
 from typing import Text
+from typing import Tuple
 
 from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.converters import load_data
@@ -55,7 +56,7 @@ def init():
 
 
 def do_train(config, component_builder=None):
-    # type: (RasaNLUConfig, Optional[ComponentBuilder]) -> (Trainer, Text)
+    # type: (RasaNLUConfig, Optional[ComponentBuilder]) -> Tuple[Trainer, Text]
     """Loads the trainer and the data and runs the training of the specified model."""
 
     trainer = Trainer(config, component_builder)

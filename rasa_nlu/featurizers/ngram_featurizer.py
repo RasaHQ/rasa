@@ -12,7 +12,9 @@ import warnings
 import io
 from collections import Counter
 from string import punctuation
-import cloudpickle
+from typing import Any
+from typing import Dict
+from typing import List
 from typing import Optional
 from future.utils import PY3
 from typing import Text
@@ -42,7 +44,7 @@ class NGramFeaturizer(Component):
         self.all_ngrams = None
 
     def train(self, training_data, intent_features, spacy_nlp, max_number_of_ngrams):
-        # type: (TrainingData, [float], Language, Optional[int]) -> dict
+        # type: (TrainingData, List[float], Language, Optional[int]) -> Dict[Text, Any]
         from spacy.language import Language
 
         start = time.time()
@@ -56,7 +58,7 @@ class NGramFeaturizer(Component):
         return {"intent_features": stacked}
 
     def process(self, intent_features, text, spacy_nlp):
-        # type: ([float], Text, Language) -> dict
+        # type: (List[float], Text, Language) -> Dict[Text, Any]
         from spacy.language import Language
         import numpy as np
 
@@ -74,6 +76,7 @@ class NGramFeaturizer(Component):
     @classmethod
     def load(cls, model_dir, featurizer_file):
         # type: (Text, Text) -> NGramFeaturizer
+        import cloudpickle
 
         if model_dir and featurizer_file:
             classifier_file = os.path.join(model_dir, featurizer_file)
@@ -86,8 +89,9 @@ class NGramFeaturizer(Component):
             return NGramFeaturizer()
 
     def persist(self, model_dir):
-        # type: (Text) -> dict
+        # type: (Text) -> Dict[Text, Any]
         """Persist this model into the passed directory. Returns the metadata necessary to load the model again."""
+        import cloudpickle
 
         classifier_file = os.path.join(model_dir, "ngram_featurizer.pkl")
         with io.open(classifier_file, 'wb') as f:
@@ -153,7 +157,7 @@ class NGramFeaturizer(Component):
             usable_labels = []
             for label in np.unique(labels):
                 lab_sents = np.array(sentences)[np.array(labels) == label]
-                if len(lab_sents) < min_intent_examples_for_ngram_classification:
+                if len(lab_sents) < self.min_intent_examples_for_ngram_classification:
                     continue
                 usable_labels.append(label)
 

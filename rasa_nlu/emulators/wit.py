@@ -2,6 +2,12 @@ from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
+
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Text
+
 from rasa_nlu.emulators import NoEmulator
 
 
@@ -13,7 +19,7 @@ class WitEmulator(NoEmulator):
         self.name = "wit"
 
     def normalise_response_json(self, data):
-        # type: (dict) -> [dict]
+        # type: (Dict[Text, Any]) -> List[Dict[Text, Any]]
         """Transform data to wit.ai format."""
 
         entities = {}

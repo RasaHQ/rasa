@@ -5,7 +5,11 @@ from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
+
+from typing import Any
+from typing import Dict
 from typing import Optional
+from typing import Text
 from typing import Type
 
 from rasa_nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
@@ -71,7 +75,7 @@ def get_component_class(component_name):
 
 
 def load_component_by_name(component_name, context, config):
-    # type: (Text, dict, dict) -> Optional[Component]
+    # type: (Text, Dict[Text, Any], Dict[Text, Any]) -> Optional[Component]
     """Resolves a components name and calls it's load method to init it based on a previously persisted model."""
     from rasa_nlu.components import load_component
     from rasa_nlu.components import Component
@@ -81,7 +85,7 @@ def load_component_by_name(component_name, context, config):
 
 
 def create_component_by_name(component_name, config):
-    # type: (Text, dict, dict) -> Optional[Component]
+    # type: (Text, Dict[Text, Any], Dict[Text, Any]) -> Optional[Component]
     """Resolves a components name and calls it's load method to init it based on a previously persisted model."""
     from rasa_nlu.components import create_component
     from rasa_nlu.components import Component

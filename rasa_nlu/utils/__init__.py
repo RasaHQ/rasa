@@ -4,6 +4,7 @@ from __future__ import division
 from __future__ import absolute_import
 import os
 
+from typing import List
 from typing import Optional
 from typing import Text
 
@@ -30,7 +31,7 @@ def create_dir_for_file(file_path):
 
 
 def recursively_find_files(resource_name):
-    # type: (Text) -> [Text]
+    # type: (Text) -> List[Text]
     """Traverse directory hirachry to find files.
 
     `resource_name` can be a folder or a file. In both cases we will return a list of files."""

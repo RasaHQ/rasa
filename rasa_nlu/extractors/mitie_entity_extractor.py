@@ -6,6 +6,9 @@ from builtins import range
 import os
 import re
 
+from typing import Any
+from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Text
 
@@ -87,7 +90,7 @@ class MitieEntityExtractor(Component, EntityExtractor):
             self.ner = trainer.train()
 
     def process(self, text, tokens, mitie_feature_extractor):
-        # type: (Text, [Text], mitie.total_word_feature_extractor) -> dict
+        # type: (Text, List[Text], mitie.total_word_feature_extractor) -> Dict[Text, Any]
         import mitie
 
         return {
@@ -107,7 +110,7 @@ class MitieEntityExtractor(Component, EntityExtractor):
             return MitieEntityExtractor()
 
     def persist(self, model_dir):
-        # type: (Text) -> dict
+        # type: (Text) -> Dict[Text, Any]
 
         if self.ner:
             entity_extractor_file = os.path.join(model_dir, "entity_extractor.dat")

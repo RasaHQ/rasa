@@ -6,6 +6,8 @@ from __future__ import unicode_literals
 import os
 
 from builtins import str
+from typing import Any
+from typing import Dict
 from typing import Optional
 from typing import Text
 
@@ -42,7 +44,7 @@ class MitieNLP(Component):
             return None
 
     def pipeline_init(self, mitie_file):
-        # type: (Text) -> dict
+        # type: (Text) -> Dict[Text, Any]
         return {"mitie_feature_extractor": self.extractor}
 
     @staticmethod
@@ -59,7 +61,7 @@ class MitieNLP(Component):
         return cls.create(mitie_file)
 
     def persist(self, model_dir):
-        # type: (Text) -> dict
+        # type: (Text) -> Dict[Text, Any]
 
         return {
             "mitie_feature_extractor_fingerprint": self.extractor.fingerprint,
