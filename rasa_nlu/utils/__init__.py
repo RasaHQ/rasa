@@ -41,7 +41,7 @@ def recursively_find_files(resource_name):
     elif os.path.isfile(resource_name):
         return [resource_name]
     elif os.path.isdir(resource_name):
-        resources = []
+        resources = []  # type: List[Text]
         # walk the fs tree and return a list of files
         nodes_to_visit = [resource_name]
         while len(nodes_to_visit) > 0:

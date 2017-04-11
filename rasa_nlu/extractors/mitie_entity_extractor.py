@@ -2,6 +2,8 @@ from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
+
+import typing
 from builtins import range
 import os
 import re
@@ -16,6 +18,10 @@ from rasa_nlu.components import Component
 from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa_nlu.training_data import TrainingData
+
+
+if typing.TYPE_CHECKING:
+    import mitie
 
 
 class MitieEntityExtractor(Component, EntityExtractor):
@@ -54,7 +60,7 @@ class MitieEntityExtractor(Component, EntityExtractor):
 
     @staticmethod
     def find_entity(ent, text):
-        from mitie import tokenize
+        import mitie
 
         tk = MitieTokenizer()
         tokens, offsets = tk.tokenize_with_offsets(text)
@@ -64,21 +70,21 @@ class MitieEntityExtractor(Component, EntityExtractor):
             raise ValueError(message)
         start = offsets.index(ent["start"])
         _slice = text[ent["start"]:ent["end"]]
-        val_tokens = tokenize(_slice)
+        val_tokens = mitie.tokenize(_slice)
         end = start + len(val_tokens)
         return start, end
 
     def train(self, training_data, mitie_file, num_threads):
         # type: (TrainingData, Text, Optional[int]) -> None
-        from mitie import ner_training_instance, ner_trainer, tokenize
+        import mitie
 
-        trainer = ner_trainer(mitie_file)
+        trainer = mitie.ner_trainer(mitie_file)
         trainer.num_threads = num_threads
         found_one_entity = False
         for example in training_data.entity_examples:
             text = example["text"]
-            tokens = tokenize(text)
-            sample = ner_training_instance(tokens)
+            tokens = mitie.tokenize(text)
+            sample = mitie.ner_training_instance(tokens)
             for ent in example["entities"]:
                 start, end = MitieEntityExtractor.find_entity(ent, text)
                 sample.add_entity(list(range(start, end)), ent["entity"])
@@ -91,7 +97,6 @@ class MitieEntityExtractor(Component, EntityExtractor):
 
     def process(self, text, tokens, mitie_feature_extractor):
         # type: (Text, List[Text], mitie.total_word_feature_extractor) -> Dict[Text, Any]
-        import mitie
 
         return {
             "entities": self.extract_entities(text, tokens, mitie_feature_extractor)
@@ -100,11 +105,11 @@ class MitieEntityExtractor(Component, EntityExtractor):
     @classmethod
     def load(cls, model_dir, entity_extractor):
         # type: (Text, Text) -> MitieEntityExtractor
-        from mitie import named_entity_extractor
+        import mitie
 
         if model_dir and entity_extractor:
             entity_extractor_file = os.path.join(model_dir, entity_extractor)
-            extractor = named_entity_extractor(entity_extractor_file)
+            extractor = mitie.named_entity_extractor(entity_extractor_file)
             return MitieEntityExtractor(extractor)
         else:
             return MitieEntityExtractor()

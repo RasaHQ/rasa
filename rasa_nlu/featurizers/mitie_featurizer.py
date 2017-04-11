@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import absolute_import
 
+import typing
 from typing import Any
 from typing import Dict
 from typing import List
@@ -11,6 +12,10 @@ from typing import Text
 from rasa_nlu.components import Component
 from rasa_nlu.featurizers import Featurizer
 from rasa_nlu.training_data import TrainingData
+
+if typing.TYPE_CHECKING:
+    import mitie
+    import numpy as np
 
 
 class MitieFeaturizer(Featurizer, Component):
@@ -23,13 +28,11 @@ class MitieFeaturizer(Featurizer, Component):
 
     def ndim(self, feature_extractor):
         # type: (mitie.total_word_feature_extractor) -> int
-        import mitie
 
         return feature_extractor.num_dimensions
 
     def train(self, training_data, mitie_feature_extractor):
         # type: (TrainingData, mitie.total_word_feature_extractor) -> Dict[Text, Any]
-        import mitie
 
         sentences = [e["text"] for e in training_data.intent_examples]
         features = self.features_for_sentences(sentences, mitie_feature_extractor)
@@ -39,7 +42,6 @@ class MitieFeaturizer(Featurizer, Component):
 
     def process(self, tokens, mitie_feature_extractor):
         # type: (List[Text], mitie.total_word_feature_extractor) -> Dict[Text, Any]
-        import mitie
 
         features = self.features_for_tokens(tokens, mitie_feature_extractor)
         return {
@@ -49,7 +51,6 @@ class MitieFeaturizer(Featurizer, Component):
     def features_for_tokens(self, tokens, feature_extractor):
         # type: (List[Text], mitie.total_word_feature_extractor) -> np.ndarray
         import numpy as np
-        import mitie
 
         vec = np.zeros(self.ndim(feature_extractor))
         for token in tokens:

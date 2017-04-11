@@ -1,8 +1,9 @@
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
+import typing
 from typing import Any
 from typing import Dict
 from typing import List
@@ -10,6 +11,12 @@ from typing import Optional
 from typing import Text
 
 from rasa_nlu.components import Component
+from rasa_nlu.model import Metadata
+
+
+if typing.TYPE_CHECKING:
+    from duckling import DucklingWrapper
+
 
 DUCKLING_PROCESSING_MODES = ["replace", "append"]
 
@@ -25,26 +32,29 @@ class DucklingExtractor(Component):
 
     output_provides = ["entities"]
 
-    def __init__(self, duckling=None):
-        # type: (Optional[DucklingWrapper]) -> None
-        from duckling import DucklingWrapper
+    def __init__(self, duckling_processing_mode, duckling=None):
+        # type: (Text, Optional[DucklingWrapper]) -> None
 
+        self.duckling_processing_mode = duckling_processing_mode
         self.duckling = duckling
+
+    @classmethod
+    def create(cls, duckling_processing_mode):
+        if duckling_processing_mode not in DUCKLING_PROCESSING_MODES:
+            raise ValueError("Invalid duckling processing mode. Got '{}'. Allowed: {}".format(
+                duckling_processing_mode, ", ".join(DUCKLING_PROCESSING_MODES)))
+
+        return DucklingExtractor(duckling_processing_mode)
 
     @classmethod
     def cache_key(cls, model_metadata):
         # type: (Metadata) -> Text
-        from rasa_nlu.model import Metadata
 
         return cls.name + "-" + model_metadata.language
 
-    def pipeline_init(self, language, duckling_processing_mode):
+    def pipeline_init(self, language):
         # type: (Text, Text) -> None
         from duckling import DucklingWrapper
-
-        if duckling_processing_mode not in DUCKLING_PROCESSING_MODES:
-            raise ValueError("Invalid duckling processing mode. Got '{}'. Allowed: {}".format(
-                duckling_processing_mode, ", ".join(DUCKLING_PROCESSING_MODES)))
 
         if self.duckling is None:
             try:
@@ -52,7 +62,7 @@ class DucklingExtractor(Component):
             except ValueError as e:
                 raise Exception("Duckling error. {}".format(e.message))
 
-    def process(self, text, entities, duckling_processing_mode):
+    def process(self, text, entities):
         # type: (Text, List[Dict[Text, Any]], Text) -> Dict[Text, Any]
 
         if self.duckling is not None:
@@ -64,7 +74,7 @@ class DucklingExtractor(Component):
                         entity["duckling"] = duckling_match["dim"]
                         break
                 else:
-                    if duckling_processing_mode == "append":
+                    if self.duckling_processing_mode == "append":
                         # Duckling will retrieve multiple entities, even if they overlap..
                         # hence the append mode might add some noise to the found entities
                         entities.append({
@@ -78,3 +88,9 @@ class DucklingExtractor(Component):
         return {
             "entities": entities
         }
+
+    @classmethod
+    def load(cls, duckling_processing_mode):
+        # type: (Text) -> DucklingExtractor
+
+        return cls.create(duckling_processing_mode)

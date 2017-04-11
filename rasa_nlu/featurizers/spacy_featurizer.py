@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import absolute_import
 
+import typing
 from typing import Any
 from typing import Dict
 from typing import List
@@ -13,6 +14,12 @@ from rasa_nlu.components import Component
 from rasa_nlu.training_data import TrainingData
 
 
+if typing.TYPE_CHECKING:
+    from spacy.language import Language
+    from spacy.tokens import Doc
+    import numpy as np
+
+
 class SpacyFeaturizer(Featurizer, Component):
     name = "intent_featurizer_spacy"
 
@@ -21,15 +28,13 @@ class SpacyFeaturizer(Featurizer, Component):
         "process": ["intent_features"],
     }
 
-    def ndim(self, nlp):
+    def ndim(self, spacy_nlp):
         # type: (Language) -> int
-        from spacy.language import Language
 
-        return nlp.vocab.vectors_length
+        return spacy_nlp.vocab.vectors_length
 
     def train(self, spacy_nlp, training_data):
         # type: (Language, TrainingData) -> Dict[Text, Any]
-        from spacy.language import Language
 
         sentences = [e["text"] for e in training_data.intent_examples]
         features = self.features_for_sentences(sentences, spacy_nlp)
@@ -39,8 +44,6 @@ class SpacyFeaturizer(Featurizer, Component):
 
     def process(self, spacy_doc, spacy_nlp):
         # type: (Doc, Language) -> Dict[Text, Any]
-        from spacy.language import Language
-        from spacy.tokens import Doc
 
         features = self.features_for_doc(spacy_doc, spacy_nlp)
         return {
@@ -50,8 +53,6 @@ class SpacyFeaturizer(Featurizer, Component):
     def features_for_doc(self, doc, nlp):
         # type: (Doc, Language) -> np.ndarray
         import numpy as np
-        from spacy.language import Language
-        from spacy.tokens import Doc
 
         vec = []
         for token in doc:
@@ -65,7 +66,6 @@ class SpacyFeaturizer(Featurizer, Component):
     def features_for_sentences(self, sentences, nlp):
         # type: (List[Text], Language) -> np.ndarray
         import numpy as np
-        from spacy.language import Language
 
         X = np.zeros((len(sentences), self.ndim(nlp)))
         for idx, sentence in enumerate(sentences):

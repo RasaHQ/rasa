@@ -6,6 +6,7 @@ import argparse
 import logging
 import os
 
+import typing
 from typing import Text
 from typing import Tuple
 
@@ -15,6 +16,10 @@ from rasa_nlu.model import Trainer
 
 from rasa_nlu.config import RasaNLUConfig
 from typing import Optional
+
+
+if typing.TYPE_CHECKING:
+    from rasa_nlu.persistor import Persistor
 
 
 def create_argparser():

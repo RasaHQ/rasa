@@ -5,6 +5,7 @@ from __future__ import absolute_import
 from builtins import object
 from typing import Any
 from typing import Dict
+from typing import Optional
 from typing import Text
 
 
@@ -12,7 +13,7 @@ class NoEmulator(object):
     def __init__(self):
         # type: () -> None
 
-        self.name = None
+        self.name = None    # type: Optional[Text]
 
     def normalise_request_json(self, data):
         # type: (Dict[Text, Any]) -> Dict[Text, Any]

@@ -31,7 +31,7 @@ class Persistor(object):
         """Uploads a model persisted in the `target_dir` to s3."""
 
         if not os.path.isdir(target_dir):
-            raise ValueError('target_dir %r not found.' % target_dir)
+            raise ValueError("Target directory '{}' not found.".format(target_dir))
 
         base_name = os.path.basename(target_dir)
         base_dir = os.path.dirname(target_dir)

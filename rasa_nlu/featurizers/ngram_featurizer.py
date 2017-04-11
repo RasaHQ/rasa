@@ -2,6 +2,8 @@ from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
+
+import typing
 from builtins import map
 from builtins import range
 import logging
@@ -21,6 +23,11 @@ from typing import Text
 
 from rasa_nlu.components import Component
 from rasa_nlu.training_data import TrainingData
+
+
+if typing.TYPE_CHECKING:
+    from spacy.language import Language
+    import numpy as np
 
 
 class NGramFeaturizer(Component):
@@ -45,7 +52,6 @@ class NGramFeaturizer(Component):
 
     def train(self, training_data, intent_features, spacy_nlp, max_number_of_ngrams):
         # type: (TrainingData, List[float], Language, Optional[int]) -> Dict[Text, Any]
-        from spacy.language import Language
 
         start = time.time()
         labels = [e['intent'] for e in training_data.intent_examples]
@@ -59,7 +65,6 @@ class NGramFeaturizer(Component):
 
     def process(self, intent_features, text, spacy_nlp):
         # type: (List[float], Text, Language) -> Dict[Text, Any]
-        from spacy.language import Language
         import numpy as np
 
         if self.all_ngrams:

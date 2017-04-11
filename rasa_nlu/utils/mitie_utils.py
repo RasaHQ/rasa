@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import os
 
+import typing
 from builtins import str
 from typing import Any
 from typing import Dict
@@ -13,6 +14,10 @@ from typing import Text
 
 from rasa_nlu.components import Component
 from rasa_nlu.model import Metadata
+
+
+if typing.TYPE_CHECKING:
+    import mitie
 
 
 class MitieNLP(Component):
@@ -45,12 +50,12 @@ class MitieNLP(Component):
 
     def pipeline_init(self, mitie_file):
         # type: (Text) -> Dict[Text, Any]
+
         return {"mitie_feature_extractor": self.extractor}
 
     @staticmethod
     def ensure_proper_language_model(extractor):
         # type: (Optional[mitie.total_word_feature_extractor]) -> None
-        import mitie
 
         if extractor is None:
             raise Exception("Failed to load MITIE feature extractor. Loading the model returned 'None'.")
@@ -58,6 +63,7 @@ class MitieNLP(Component):
     @classmethod
     def load(cls, mitie_file):
         # type: (Text, Text) -> MitieNLP
+
         return cls.create(mitie_file)
 
     def persist(self, model_dir):

@@ -2,6 +2,8 @@ from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
+
+import typing
 from builtins import zip
 import os
 import io
@@ -18,6 +20,10 @@ from rasa_nlu.training_data import TrainingData
 # How many intents are at max put into the output intent ranking, everything else will be cut off
 INTENT_RANKING_LENGTH = 10
 
+if typing.TYPE_CHECKING:
+    import sklearn
+    import numpy as np
+
 
 class SklearnIntentClassifier(Component):
     """Intent classifier using the sklearn framework"""
@@ -31,10 +37,9 @@ class SklearnIntentClassifier(Component):
     output_provides = ["intent", "intent_ranking"]
 
     def __init__(self, clf=None, le=None):
-        # type: (GridSearchCV, LabelEncoder) -> None
+        # type: (sklearn.model_selection.GridSearchCV, sklearn.preprocessing.LabelEncoder) -> None
         """Construct a new intent classifier using the sklearn framework."""
         from sklearn.preprocessing import LabelEncoder
-        from sklearn.model_selection import GridSearchCV
 
         if le is not None:
             self.le = le
@@ -47,7 +52,6 @@ class SklearnIntentClassifier(Component):
         """Transforms a list of strings into numeric label representation.
 
         :param labels: List of labels to convert to numeric representation"""
-        import numpy as np
 
         return self.le.fit_transform(labels)
 
@@ -56,7 +60,6 @@ class SklearnIntentClassifier(Component):
         """Transforms a list of strings into numeric label representation.
 
         :param y: List of labels to convert to numeric representation"""
-        import numpy as np
 
         return self.le.inverse_transform(y)
 
@@ -89,7 +92,6 @@ class SklearnIntentClassifier(Component):
     def process(self, intent_features):
         # type: (np.ndarray) -> Dict[Text, Any]
         """Returns the most likely intent and its probability for the input text."""
-        import numpy as np
 
         X = intent_features.reshape(1, -1)
         intent_ids, probabilities = self.predict(X)
@@ -114,8 +116,6 @@ class SklearnIntentClassifier(Component):
 
         :param X: bow of input text
         :return: vector of probabilities containing one entry for each label"""
-
-        import numpy as np
 
         return self.clf.predict_proba(X)
 

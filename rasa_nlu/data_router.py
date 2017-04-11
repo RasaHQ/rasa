@@ -12,7 +12,6 @@ import os
 import tempfile
 
 from builtins import object
-from flask import json
 from typing import Text
 
 from rasa_nlu import utils

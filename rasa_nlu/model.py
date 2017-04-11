@@ -130,7 +130,7 @@ class Trainer(object):
 
         for component in self.pipeline:
             try:
-                rasa_nlu.components.fill_args(component.pipeline_init_args(), context, self.config)
+                rasa_nlu.components.fill_args(component.pipeline_init_args(), context, self.config.as_dict())
                 updates = component.context_provides.get("pipeline_init", [])
                 for u in updates:
                     context[u] = None
@@ -143,7 +143,7 @@ class Trainer(object):
 
         for component in self.pipeline:
             try:
-                rasa_nlu.components.fill_args(component.train_args(), context, self.config)
+                rasa_nlu.components.fill_args(component.train_args(), context, self.config.as_dict())
                 updates = component.context_provides.get("train", [])
                 for u in updates:
                     context[u] = None
@@ -156,7 +156,7 @@ class Trainer(object):
 
         for component in self.pipeline:
             try:
-                rasa_nlu.components.fill_args(component.process_args(), context, self.config)
+                rasa_nlu.components.fill_args(component.process_args(), context, self.config.as_dict())
                 updates = component.context_provides.get("process", [])
                 for u in updates:
                     context[u] = None
@@ -172,7 +172,7 @@ class Trainer(object):
         context = {}
 
         for component in self.pipeline:
-            args = rasa_nlu.components.fill_args(component.pipeline_init_args(), context, self.config)
+            args = rasa_nlu.components.fill_args(component.pipeline_init_args(), context, self.config.as_dict())
             updates = component.pipeline_init(*args)
             if updates:
                 context.update(updates)
@@ -182,12 +182,12 @@ class Trainer(object):
         context["training_data"] = data
 
         for component in self.pipeline:
-            args = rasa_nlu.components.fill_args(component.train_args(), context, self.config)
+            args = rasa_nlu.components.fill_args(component.train_args(), context, self.config.as_dict())
             updates = component.train(*args)
             if updates:
                 context.update(updates)
 
-        return Interpreter(self.pipeline, context=init_context, config=self.config)
+        return Interpreter(self.pipeline, context=init_context, config=self.config.as_dict())
 
     def persist(self, path, persistor=None, create_unique_subfolder=True):
         # type: (Text, Optional[Persistor], bool) -> Text

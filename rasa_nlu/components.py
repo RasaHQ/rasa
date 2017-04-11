@@ -12,6 +12,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Text
+from typing import Tuple
 from typing import Type
 
 from rasa_nlu.config import RasaNLUConfig
@@ -40,7 +41,7 @@ def create_component(component_clz, config):
 
 
 def fill_args(arguments, context, config):
-    # type: ([Text], Dict[Text, Any], Dict[Text, Any]) -> List[Any]
+    # type: (List[Text], Dict[Text, Any], Dict[Text, Any]) -> List[Any]
     """Given a list of arguments, tries to look up these argument names in the config / context to fill the arguments"""
 
     filled = []
@@ -101,7 +102,7 @@ class Component(object):
 
     @classmethod
     def load(cls, *args):
-        # type: (...) -> 'cls'
+        # type: (*Any) -> Component
         """Load this component from file.
 
         After a component got trained, it will be persisted by calling `persist`. When the pipeline gets loaded again,
@@ -111,14 +112,14 @@ class Component(object):
 
     @classmethod
     def create(cls, *args):
-        # type: (...) -> 'cls'
+        # type: (*Any) -> Component
         """Creates this component (e.g. before a training is started).
 
         Method can access all configuration parameters."""
         return cls(*args)
 
     def pipeline_init(self, *args):
-        # type: (...) -> Optional[Dict[Text, Any]]
+        # type: (*Any) -> Optional[Dict[Text, Any]]
         """Initialize this component for a new pipeline
 
         This function will be called before the training is started and before the first message is processed using
@@ -129,7 +130,7 @@ class Component(object):
         pass
 
     def train(self, *args):
-        # type: (...) -> Optional[Dict[Text, Any]]
+        # type: (*Any) -> Optional[Dict[Text, Any]]
         """Train this component.
 
         This is the components chance to train itself provided with the training data. The component can rely on
@@ -138,7 +139,7 @@ class Component(object):
         pass
 
     def process(self, *args):
-        # type: (...) -> Optional[Dict[Text, Any]]
+        # type: (*Any) -> Optional[Dict[Text, Any]]
         """Process an incomming message.
 
        This is the components chance to process an incommng message. The component can rely on
@@ -147,13 +148,13 @@ class Component(object):
         pass
 
     def persist(self, model_dir):
-        # type: (str) -> Optional[Dict[Text, Any]]
+        # type: (Text) -> Optional[Dict[Text, Any]]
         """Persist this component to disk for future loading."""
         pass
 
     @classmethod
     def cache_key(cls, model_metadata):
-        # type: (Metadata) -> Optional[Dict[Text, Any]]
+        # type: (Metadata) -> Optional[Text]
         """This key is used to cache components.
 
         If a component is unique to a model it should return None. Otherwise, an instantiation of the
@@ -198,7 +199,7 @@ class ComponentBuilder(object):
         self.component_cache = {}
 
     def __get_cached_component(self, component_name, metadata):
-        # type: (Text, Metadata) -> (Optional[Component], Text)
+        # type: (Text, Metadata) -> Tuple[Optional[Component], Optional[Text]]
         """Load a component from the cache, if it exists. Returns the component, if found, and the cache key."""
         from rasa_nlu import registry
         from rasa_nlu.model import Metadata

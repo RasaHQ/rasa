@@ -9,6 +9,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Text
+from typing import Tuple
 
 from rasa_nlu.tokenizers import Tokenizer
 from rasa_nlu.components import Component
@@ -38,7 +39,7 @@ class MitieTokenizer(Tokenizer, Component):
         }
 
     def tokenize_with_offsets(self, text):
-        # type: (Text) -> (List[Text], List[int])
+        # type: (Text) -> Tuple[List[Text], List[int]]
         from mitie import tokenize
 
         _text = text.encode('utf-8')

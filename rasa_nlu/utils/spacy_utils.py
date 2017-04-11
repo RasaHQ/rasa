@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import logging
 
+import typing
 from typing import Any
 from typing import Dict
 from typing import Optional
@@ -12,6 +13,10 @@ from typing import Text
 
 from rasa_nlu.components import Component
 from rasa_nlu.model import Metadata
+
+
+if typing.TYPE_CHECKING:
+    from spacy.language import Language
 
 
 class SpacyNLP(Component):
@@ -24,7 +29,6 @@ class SpacyNLP(Component):
 
     def __init__(self, nlp, language, spacy_model_name):
         # type: (Language, Text, Text) -> None
-        from spacy.language import Language
 
         self.nlp = nlp
         self.language = language
@@ -32,22 +36,21 @@ class SpacyNLP(Component):
 
     @classmethod
     def create(cls, language, spacy_model_name):
-        # type: (Language, Text) -> SpacyNLP
+        # type: (Text, Text) -> SpacyNLP
         import spacy
-        from spacy.language import Language
 
         if spacy_model_name is None:
             spacy_model_name = language
         logging.info("Trying to load spacy model with name '{}'".format(spacy_model_name))
         nlp = spacy.load(spacy_model_name, parser=False)
         spacy_model_name = spacy_model_name
-        language = language
         cls.ensure_proper_language_model(nlp)
         return SpacyNLP(nlp, language, spacy_model_name)
 
     @classmethod
     def cache_key(cls, model_metadata):
         # type: (Metadata) -> Text
+
         spacy_model_name = model_metadata.metadata.get("spacy_model_name")
         if spacy_model_name is None:
             # Fallback, use the language name, e.g. "en", as the model name if no explicit name is defined
@@ -68,6 +71,7 @@ class SpacyNLP(Component):
 
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]
+
         return {
             "spacy_model_name": self.spacy_model_name,
             "language": self.language
@@ -76,13 +80,13 @@ class SpacyNLP(Component):
     @classmethod
     def load(cls, language, spacy_model_name):
         # type: (Text, Text) -> SpacyNLP
+
         return cls.create(language, spacy_model_name)
 
     @staticmethod
     def ensure_proper_language_model(nlp):
         # type: (Optional[Language]) -> None
         """Checks if the spacy language model is properly loaded. Raises an exception if the model is invalid."""
-        from spacy.language import Language
 
         if nlp is None:
             raise Exception("Failed to load spacy language model. Loading the model returned 'None'.")
