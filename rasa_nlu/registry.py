@@ -48,7 +48,6 @@ registered_pipeline_templates = {
         "nlp_spacy",
         "ner_spacy",
         "ner_synonyms",
-        "ner_duckling",
         "intent_featurizer_spacy",
         "intent_classifier_sklearn",
     ],
