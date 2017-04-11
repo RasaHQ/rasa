@@ -1,7 +1,7 @@
 {
     "entity_synonyms": "index.json", 
     "pipeline": [
-        "init_mitie", 
+        "nlp_mitie",
         "tokenizer_mitie", 
         "ner_mitie", 
         "ner_synonyms", 

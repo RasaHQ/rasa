@@ -3,6 +3,8 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 from builtins import map
+from typing import Text
+
 from rasa_nlu.components import Component
 
 
@@ -21,7 +23,7 @@ class KeywordIntentClassifier(Component):
     byes = ["bye", "goodbye"]
 
     def process(self, text):
-        # type: (str) -> dict
+        # type: (Text) -> dict
 
         return {
             "intent": {
@@ -31,7 +33,7 @@ class KeywordIntentClassifier(Component):
         }
 
     def parse(self, text):
-        # type: (str) -> str
+        # type: (Text) -> Text
 
         _text = text.lower()
 

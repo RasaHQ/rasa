@@ -31,7 +31,7 @@ pipeline
 :Type: ``str`` or ``[str]``
 :Examples:
     ``"mitie"`` or
-    ``["init_spacy", "ner_spacy", "ner_synonyms"]``
+    ``["nlp_spacy", "ner_spacy", "ner_synonyms"]``
 
 :Description:
     The pipeline used for training. Can either be a template (passing a string) or a list of components (array). For all
@@ -119,6 +119,15 @@ mitie_file
 :Examples: ``"data/total_word_feature_extractor.dat"``
 :Description:
     File containing ``total_word_feature_extractor.dat`` (see :ref:`section_backends`)
+
+spacy_model_name
+~~~~~~~~~~~~~~~~
+
+:Type: ``str``
+:Examples: ``"en_core_web_sm"``
+:Description:
+    If the spacy model to be used has a name that is different from the language tag (``"en"``, ``"de"``, etc.),
+    the model name can be specified using this configuration variable. The name will be passed to ``spacy.load(name)``.
 
 fine_tune_spacy_ner
 ~~~~~~~~~~~~~~~~~~~

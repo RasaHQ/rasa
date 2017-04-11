@@ -13,6 +13,8 @@ import warnings
 from itertools import groupby
 import io
 
+from typing import Text
+
 
 class TrainingData(object):
     """Holds loaded intent and entity training data."""
@@ -70,7 +72,7 @@ class TrainingData(object):
         }, **kwargs))
 
     def persist(self, dir_name):
-        # type: (str) -> dict
+        # type: (Text) -> dict
         """Persists this training data to disk and returns necessary information to load it again."""
 
         data_file = os.path.join(dir_name, "training_data.json")

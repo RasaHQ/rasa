@@ -2,6 +2,9 @@ from __future__ import division
 from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import absolute_import
+
+from typing import Text
+
 from rasa_nlu.featurizers import Featurizer
 from rasa_nlu.components import Component
 from rasa_nlu.training_data import TrainingData
@@ -57,7 +60,7 @@ class SpacyFeaturizer(Featurizer, Component):
             return np.zeros(self.ndim(nlp))
 
     def features_for_sentences(self, sentences, nlp):
-        # type: ([str], Language) -> np.ndarray
+        # type: ([Text], Language) -> np.ndarray
         import numpy as np
         from spacy.language import Language
 

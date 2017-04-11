@@ -11,6 +11,7 @@ import os
 import io
 
 from typing import Optional
+from typing import Text
 
 import rasa_nlu.components
 from rasa_nlu.components import Component
@@ -35,7 +36,7 @@ class Metadata(object):
 
     @staticmethod
     def load(model_dir):
-        # type: (str) -> 'Metadata'
+        # type: (Text) -> 'Metadata'
         """Loads the metadata from a models directory."""
 
         with io.open(os.path.join(model_dir, 'metadata.json'), encoding="utf-8") as f:
@@ -43,7 +44,7 @@ class Metadata(object):
         return Metadata(data, model_dir)
 
     def __init__(self, metadata, model_dir):
-        # type: (dict, Optional[str]) -> None
+        # type: (dict, Optional[Text]) -> None
 
         self.metadata = metadata
         self.model_dir = model_dir
@@ -56,14 +57,14 @@ class Metadata(object):
 
     @property
     def language(self):
-        # type: () -> Optional[str]
+        # type: () -> Optional[Text]
         """Language of the underlying model"""
 
         return self.metadata.get('language')
 
     @property
     def pipeline(self):
-        # type: () -> [str]
+        # type: () -> [Text]
         """Names of the processing pipeline elements."""
 
         if 'pipeline' in self.metadata:
@@ -75,7 +76,7 @@ class Metadata(object):
             return []
 
     def persist(self, model_dir):
-        # type: (str) -> None
+        # type: (Text) -> None
         """Persists the metadata of a model to a given directory."""
 
         metadata = self.metadata.copy()
@@ -95,20 +96,21 @@ class Trainer(object):
     # Officially supported languages (others might be used, but might fail)
     SUPPORTED_LANGUAGES = ["de", "en"]
 
-    def __init__(self, config):
-        from rasa_nlu.registry import get_component_class
+    def __init__(self, config, component_builder=None):
+        # type: (RasaNLUConfig, Optional[rasa_nlu.components.ComponentBuilder]) -> None
 
         self.config = config
         self.training_data = None
         self.pipeline = []
+        if component_builder is None:
+            # If no builder is passed, every interpreter creation will result in a new builder.
+            # hence, no components are reused.
+            component_builder = rasa_nlu.components.ComponentBuilder()
 
         # Transform the passed names of the pipeline components into classes
         for component_name in config.pipeline:
-            component_class = get_component_class(component_name)
-            if component_class is not None:
-                self.pipeline.append(component_class())
-            else:
-                raise Exception("Unregistered component '{}'. Failed to start trainer.".format(component_name))
+            component = component_builder.create_component(component_name, config)
+            self.pipeline.append(component)
 
     def validate(self, allow_empty_pipeline=False):
         # type: () -> None
@@ -185,7 +187,7 @@ class Trainer(object):
         return Interpreter(self.pipeline, context=init_context, config=self.config)
 
     def persist(self, path, persistor=None, create_unique_subfolder=True):
-        # type: (str, Optional[Persistor], bool) -> str
+        # type: (Text, Optional[Persistor], bool) -> Text
         """Persist all components of the pipeline to the passed path. Returns the directory of the persited model."""
 
         timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
@@ -222,30 +224,32 @@ class Interpreter(object):
     default_output_attributes = {"intent": {"name": "", "confidence": 0.0}, "entities": [], "text": ""}
 
     @staticmethod
-    def load(meta, rasa_config):
-        # type: (Metadata, RasaNLUConfig) -> Interpreter
+    def load(meta, config, component_builder=None):
+        # type: (Metadata, RasaNLUConfig, Optional[rasa_nlu.components.ComponentBuilder]) -> Interpreter
         """Load a stored model and its components defined by the provided metadata."""
-        from rasa_nlu.registry import load_component_by_name
-
         context = {"model_dir": meta.model_dir}
+        if component_builder is None:
+            # If no builder is passed, every interpreter creation will result in a new builder.
+            # hence, no components are reused.
+            component_builder = rasa_nlu.components.ComponentBuilder()
 
-        config = dict(list(rasa_config.items()))
-        config.update(meta.metadata)
+        model_config = config.as_dict()
+        model_config.update(meta.metadata)
 
         pipeline = []
 
         for component_name in meta.pipeline:
+            component = component_builder.load_component(component_name, context, model_config, meta)
             try:
-                component = load_component_by_name(component_name, context, config)
-            except rasa_nlu.components.MissingArgumentError as e:
-                raise Exception("Failed to create/load component '{}'. {}".format(component_name, e.message))
-            try:
-                rasa_nlu.components.init_component(component, context, config)
+                args = rasa_nlu.components.fill_args(component.pipeline_init_args(), context, model_config)
+                updates = component.pipeline_init(*args)
+                if updates:
+                    context.update(updates)
                 pipeline.append(component)
             except rasa_nlu.components.MissingArgumentError as e:
                 raise Exception("Failed to initialize component '{}'. {}".format(component.name, e.message))
 
-        return Interpreter(pipeline, context, config, meta)
+        return Interpreter(pipeline, context, model_config)
 
     def __init__(self, pipeline, context, config, meta=None):
         # type: ([Component], dict, dict, Optional[Metadata]) -> None

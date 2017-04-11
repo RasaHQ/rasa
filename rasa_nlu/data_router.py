@@ -1,8 +1,8 @@
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
 from __future__ import absolute_import
-from builtins import object
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import datetime
 import glob
 import json
@@ -11,64 +11,28 @@ import multiprocessing
 import os
 import tempfile
 
+from builtins import object
 from flask import json
 from typing import Text
 
-import rasa_nlu.components
-from rasa_nlu import registry
+from rasa_nlu import utils
+from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.model import Metadata, InvalidModelError, Interpreter
 from rasa_nlu.train import do_train
-from rasa_nlu import utils
-
-
-class InterpreterBuilder(object):
-    def __init__(self, use_cache=True):
-        self.use_cache = use_cache
-        # Reuse nlp and featurizers where possible to save memory
-        self.component_cache = {}
-
-    def __get_component(self, component_name, meta, context, model_config):
-        component_class = registry.get_component_class(component_name)
-        cache_key = component_class.cache_key(meta)
-        if cache_key is not None and self.use_cache and cache_key in self.component_cache:
-            component = self.component_cache[cache_key]
-        else:
-            component = registry.load_component_by_name(component_name, context, model_config)
-            if cache_key is not None and self.use_cache:
-                self.component_cache[cache_key] = component
-        return component
-
-    def create_interpreter(self, meta, config):
-        context = {"model_dir": meta.model_dir}
-
-        model_config = dict(list(config.items()))
-        model_config.update(meta.metadata)
-
-        pipeline = []
-
-        for component_name in meta.pipeline:
-            try:
-                component = self.__get_component(component_name, meta, context, model_config)
-                rasa_nlu.components.init_component(component, context, model_config)
-                pipeline.append(component)
-            except rasa_nlu.components.MissingArgumentError as e:
-                raise Exception("Failed to initialize component '{}'. {}".format(component_name, e.message))
-
-        return Interpreter(pipeline, context, model_config)
 
 
 class DataRouter(object):
     DEFAULT_MODEL_NAME = "default"
 
-    def __init__(self, config):
+    def __init__(self, config, component_builder):
         self.config = config
         self.responses = DataRouter._create_query_logger(config['response_log'])
         self.train_procs = []
         self.model_dir = config['path']
         self.token = config['token']
         self.emulator = self.__create_emulator()
-        self.interpreter_builder = InterpreterBuilder()
+        self.component_builder = component_builder if component_builder else ComponentBuilder(use_cache=True)
         self.model_store = self.__create_model_store()
 
     @staticmethod
@@ -118,13 +82,13 @@ class DataRouter(object):
             try:
                 logging.info("Loading model '{}'...".format(model_path))
                 metadata = DataRouter.read_model_metadata(model_path, self.config)
-                interpreter = self.interpreter_builder.create_interpreter(metadata, self.config)
+                interpreter = Interpreter.load(metadata, self.config, self.component_builder)
                 model_store[alias] = interpreter
             except Exception as e:
-                logging.error("Failed to load model '{}'. Error: {}".format(model_path, e))
+                logging.exception("Failed to load model '{}'. Error: {}".format(model_path, e))
         if not model_store:
             meta = Metadata({"pipeline": ["intent_classifier_keyword"]}, "")
-            interpreter = self.interpreter_builder.create_interpreter(meta, self.config)
+            interpreter = Interpreter.load(meta, self.config, self.component_builder)
             model_store[self.DEFAULT_MODEL_NAME] = interpreter
         return model_store
 
@@ -207,10 +171,10 @@ class DataRouter(object):
         f = tempfile.NamedTemporaryFile("w+", suffix="_training_data.json", delete=False)
         f.write(data)
         f.close()
-        _config = dict(list(self.config.items()))
+        _config = self.config.as_dict()
         _config["data"] = f.name
         train_config = RasaNLUConfig(cmdline_args=_config)
-        process = multiprocessing.Process(target=do_train, args=(train_config,))
+        process = multiprocessing.Process(target=do_train, args=(train_config, self.component_builder))
         self.train_procs.append(process)
         process.start()
         logging.info("Training process {} started".format(process))

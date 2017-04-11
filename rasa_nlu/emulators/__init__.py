@@ -7,9 +7,13 @@ from builtins import object
 
 class NoEmulator(object):
     def __init__(self):
+        # type: () -> None
+
         self.name = None
 
     def normalise_request_json(self, data):
+        # type: (dict) -> dict
+
         _data = {}
         _data["text"] = data["q"][0] if type(data["q"]) == list else data["q"]
         if not data.get("model"):
@@ -21,4 +25,7 @@ class NoEmulator(object):
         return _data
 
     def normalise_response_json(self, data):
+        # type: (dict) -> object
+        """Transform data to target format."""
+
         return data

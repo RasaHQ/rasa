@@ -22,6 +22,7 @@ DEFAULT_CONFIG = {
     "log_file": None,
     "log_level": 'INFO',
     "mitie_file": os.path.join("data", "total_word_feature_extractor.dat"),
+    "spacy_model_name": None,
     "num_threads": 1,
     "fine_tune_spacy_ner": False,
     "path": "models",
@@ -31,7 +32,6 @@ DEFAULT_CONFIG = {
     "max_number_of_ngrams": 7,
     "pipeline": [],
     "response_log": "logs",
-    "luis_data_tokenizer": None,
     "duckling_processing_mode": "append",
 }
 
@@ -96,6 +96,9 @@ class RasaNLUConfig(object):
 
     def items(self):
         return list(self.__dict__.items())
+
+    def as_dict(self):
+        return dict(list(self.items()))
 
     def view(self):
         return json.dumps(self.__dict__, indent=4)

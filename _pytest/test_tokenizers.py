@@ -14,11 +14,12 @@ def test_whitespace():
     assert tk.tokenize(u"hello ńöñàśçií") == [u'hello', u'ńöñàśçií']
 
 
-def test_spacy(spacy_nlp_en):
+def test_spacy(spacy_nlp):
+
     def tokenize_sentence(sentence, expected_result):
         from rasa_nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
-        tk = SpacyTokenizer(spacy_nlp_en)
-        assert tk.tokenize(sentence) == expected_result
+        tk = SpacyTokenizer()
+        assert tk.tokenize(sentence, spacy_nlp) == expected_result
 
     tokenize_sentence(u"Hi. My name is rasa", [u'Hi', u'.', u'My', u'name', u'is', u'rasa'])
     tokenize_sentence(u"hello ńöñàśçií", [u'hello', u'ńöñàśçií'])

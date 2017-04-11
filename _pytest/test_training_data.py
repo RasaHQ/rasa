@@ -36,34 +36,22 @@ def test_validation_is_throwing_exceptions(invalid_data):
         validate_rasa_nlu_data(invalid_data)
 
 
-def test_luis_data_spacy():
-    td = load_data('data/examples/luis/demo-restaurants.json', "en", "tokenizer_spacy")
+def test_luis_data():
+    td = load_data('data/examples/luis/demo-restaurants.json')
     assert td.entity_examples != []
     assert td.intent_examples != []
     assert td.entity_synonyms == {}
-
-
-def test_luis_data_mitie():
-    td = load_data('data/examples/luis/demo-restaurants.json', "en", "tokenizer_mitie")
-    assert td.entity_examples != []
-    assert td.intent_examples != []
-    assert td.entity_synonyms == {}
-
-
-def test_luis_data_without_tokenizer():
-    with pytest.raises(ValueError):
-        load_data('data/examples/luis/demo-restaurants.json', "en")
 
 
 def test_wit_data():
-    td = load_data('data/examples/wit/demo-flights.json', "en")
+    td = load_data('data/examples/wit/demo-flights.json')
     assert td.entity_examples != []
     assert td.intent_examples == []
     assert td.entity_synonyms == {}
 
 
 def test_rasa_data():
-    td = load_data('data/examples/rasa/demo-rasa.json', "en")
+    td = load_data('data/examples/rasa/demo-rasa.json')
     assert td.entity_examples != []
     assert td.intent_examples != []
     assert len(td.sorted_entity_examples()) >= len([e for e in td.entity_examples if e["entities"]])
@@ -72,7 +60,7 @@ def test_rasa_data():
 
 
 def test_api_data():
-    td = load_data('data/examples/api/', "en")
+    td = load_data('data/examples/api/')
     assert td.entity_examples != []
     assert td.intent_examples != []
     assert td.entity_synonyms != {}
@@ -101,7 +89,7 @@ def test_repeated_entities():
     with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
         f.write(data.encode("utf-8"))
         f.flush()
-        td = load_data(f.name, "en")
+        td = load_data(f.name)
         assert len(td.entity_examples) == 1
         example = td.entity_examples[0]
         entities = example["entities"]
@@ -134,7 +122,7 @@ def test_multiword_entities():
     with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
         f.write(data.encode("utf-8"))
         f.flush()
-        td = load_data(f.name, "en")
+        td = load_data(f.name)
         assert len(td.entity_examples) == 1
         example = td.entity_examples[0]
         entities = example["entities"]
@@ -155,8 +143,8 @@ def test_nonascii_entities():
       "entities": [
         {
           "entity": "description",
-          "startPos": 5,
-          "endPos": 8
+          "startPos": 19,
+          "endPos": 26
         }
       ]
     }
@@ -165,7 +153,7 @@ def test_nonascii_entities():
     with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
         f.write(data.encode("utf-8"))
         f.flush()
-        td = load_data(f.name, "en", luis_data_tokenizer="tokenizer_mitie")
+        td = load_data(f.name)
         assert len(td.entity_examples) == 1
         example = td.entity_examples[0]
         entities = example["entities"]

@@ -35,21 +35,21 @@ registered_components = {component.name: component for component in component_cl
 # They also implement the preexisting `backends`.
 registered_pipeline_templates = {
     "spacy_sklearn": [
-        "init_spacy",
+        "nlp_spacy",
         "ner_spacy",
         "ner_synonyms",
         "intent_featurizer_spacy",
         "intent_classifier_sklearn",
     ],
     "mitie": [
-        "init_mitie",
+        "nlp_mitie",
         "tokenizer_mitie",
         "ner_mitie",
         "ner_synonyms",
         "intent_classifier_mitie",
     ],
     "mitie_sklearn": [
-        "init_mitie",
+        "nlp_mitie",
         "tokenizer_mitie",
         "ner_mitie",
         "ner_synonyms",
@@ -63,7 +63,7 @@ registered_pipeline_templates = {
 
 
 def get_component_class(component_name):
-    # type: (str) -> Optional[Type[Component]]
+    # type: (Text) -> Optional[Type[Component]]
     """Resolve component name to a registered components class."""
     from rasa_nlu.components import Component
 
@@ -71,10 +71,20 @@ def get_component_class(component_name):
 
 
 def load_component_by_name(component_name, context, config):
-    # type: (str, dict, dict) -> Optional[Component]
+    # type: (Text, dict, dict) -> Optional[Component]
     """Resolves a components name and calls it's load method to init it based on a previously persisted model."""
     from rasa_nlu.components import load_component
     from rasa_nlu.components import Component
 
     component_clz = get_component_class(component_name)
     return load_component(component_clz, context, config)
+
+
+def create_component_by_name(component_name, config):
+    # type: (Text, dict, dict) -> Optional[Component]
+    """Resolves a components name and calls it's load method to init it based on a previously persisted model."""
+    from rasa_nlu.components import create_component
+    from rasa_nlu.components import Component
+
+    component_clz = get_component_class(component_name)
+    return create_component(component_clz, config)

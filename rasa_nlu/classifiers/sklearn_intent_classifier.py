@@ -6,6 +6,7 @@ from builtins import zip
 import os
 import io
 from future.utils import PY3
+from typing import Text
 
 from rasa_nlu.components import Component
 from rasa_nlu.training_data import TrainingData
@@ -36,7 +37,7 @@ class SklearnIntentClassifier(Component):
         self.clf = clf
 
     def transform_labels_str2num(self, labels):
-        # type: ([str]) -> [int]
+        # type: ([Text]) -> [int]
         """Transforms a list of strings into numeric label representation.
 
         :param labels: List of labels to convert to numeric representation"""
@@ -44,7 +45,7 @@ class SklearnIntentClassifier(Component):
         return self.le.fit_transform(labels)
 
     def transform_labels_num2str(self, y):
-        # type: ([int]) -> [str]
+        # type: ([int]) -> [Text]
         """Transforms a list of strings into numeric label representation.
 
         :param y: List of labels to convert to numeric representation"""
@@ -124,7 +125,7 @@ class SklearnIntentClassifier(Component):
 
     @classmethod
     def load(cls, model_dir, intent_classifier):
-        # type: (str, str) -> SklearnIntentClassifier
+        # type: (Text, Text) -> SklearnIntentClassifier
         import cloudpickle
 
         if model_dir and intent_classifier:
@@ -138,7 +139,7 @@ class SklearnIntentClassifier(Component):
             return SklearnIntentClassifier()
 
     def persist(self, model_dir):
-        # type: (str) -> dict
+        # type: (Text) -> dict
         """Persist this model into the passed directory. Returns the metadata necessary to load the model again."""
 
         import cloudpickle

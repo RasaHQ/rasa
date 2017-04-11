@@ -7,6 +7,8 @@ from rasa_nlu.emulators import NoEmulator
 
 class LUISEmulator(NoEmulator):
     def __init__(self):
+        # type: () -> None
+
         super(LUISEmulator, self).__init__()
         self.name = 'luis'
 
@@ -26,6 +28,9 @@ class LUISEmulator(NoEmulator):
             return [self._top_intent(data)]
 
     def normalise_response_json(self, data):
+        # type: (dict) -> dict
+        """Transform data to luis.ai format."""
+
         top_intent = self._top_intent(data)
         ranking = self._ranking(data)
         return {

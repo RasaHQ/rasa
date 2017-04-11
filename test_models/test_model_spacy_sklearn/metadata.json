@@ -1,7 +1,7 @@
 {
     "entity_synonyms": "index.json", 
     "pipeline": [
-        "init_spacy", 
+        "nlp_spacy",
         "ner_spacy", 
         "ner_synonyms", 
         "intent_featurizer_spacy", 
