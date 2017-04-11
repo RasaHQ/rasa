@@ -17,6 +17,7 @@ from rasa_nlu.training_data import TrainingData
 if typing.TYPE_CHECKING:
     import mitie
 
+
 class MitieIntentClassifier(Component):
 
     name = "intent_classifier_mitie"
