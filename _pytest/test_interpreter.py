@@ -16,14 +16,14 @@ def test_samples(pipeline_template, component_builder):
     available_intents = ["greet", "restaurant_search", "affirm", "goodbye", "None"]
     samples = [
         (
-            u"good bye",
+            "good bye",
             {
                 'intent': 'goodbye',
                 'entities': []
             }
         ),
         (
-            u"i am looking for an indian spot",
+            "i am looking for an indian spot",
             {
                 'intent': 'restaurant_search',
                 'entities': [{"start": 20, "end": 26, "value": "indian", "entity": "cuisine"}]

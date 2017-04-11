@@ -11,7 +11,7 @@ from rasa_nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 
 
 @pytest.mark.parametrize("sentence, expected", [
-    (u"hey how are you today", [-0.19649599, 0.32493639, -0.37408298, -0.10622784, 0.062756])
+    ("hey how are you today", [-0.19649599, 0.32493639, -0.37408298, -0.10622784, 0.062756])
 ])
 def test_spacy_featurizer(sentence, expected, spacy_nlp):
     from rasa_nlu.featurizers.spacy_featurizer import SpacyFeaturizer

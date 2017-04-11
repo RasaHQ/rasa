@@ -42,16 +42,16 @@ def app(component_builder):
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-        u"/parse?q=food&model=one",
-        {u"entities": [], u"intent": u"affirm", u"text": u"food"}
+        "/parse?q=food&model=one",
+        {"entities": [], "intent": "affirm", "text": "food"}
     ),
     ResponseTest(
-        u"/parse?q=food&model=two",
-        {u"entities": [], u"intent": u"restaurant_search", u"text": u"food"}
+        "/parse?q=food&model=two",
+        {"entities": [], "intent": "restaurant_search", "text": "food"}
     ),
     ResponseTest(
-        u"/parse?q=food&model=three",
-        {u"entities": [], u"intent": u"restaurant_search", u"text": u"food"}
+        "/parse?q=food&model=three",
+        {"entities": [], "intent": "restaurant_search", "text": "food"}
     ),
 ])
 def test_get_parse(client, response_test):
@@ -62,12 +62,12 @@ def test_get_parse(client, response_test):
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-        u"/parse?q=food",
-        {u"error": u"No model found with alias 'default'"}
+        "/parse?q=food",
+        {"error": "No model found with alias 'default'"}
     ),
     ResponseTest(
-        u"/parse?q=food&model=umpalumpa",
-        {u"error": u"No model found with alias 'umpalumpa'"}
+        "/parse?q=food&model=umpalumpa",
+        {"error": "No model found with alias 'umpalumpa'"}
     )
 ])
 def test_get_parse_invalid_model(client, response_test):
@@ -78,19 +78,19 @@ def test_get_parse_invalid_model(client, response_test):
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-        u"/parse",
-        {u"entities": [], u"intent": u"affirm", u"text": u"food"},
-        payload={u"q": u"food", u"model": "one"}
+        "/parse",
+        {"entities": [], "intent": "affirm", "text": "food"},
+        payload={"q": "food", "model": "one"}
     ),
     ResponseTest(
-        u"/parse",
-        {u"entities": [], u"intent": u"restaurant_search", u"text": u"food"},
-        payload={u"q": u"food", u"model": "two"}
+        "/parse",
+        {"entities": [], "intent": "restaurant_search", "text": "food"},
+        payload={"q": "food", "model": "two"}
     ),
     ResponseTest(
-        u"/parse",
-        {u"entities": [], u"intent": u"restaurant_search", u"text": u"food"},
-        payload={u"q": u"food", u"model": "three"}
+        "/parse",
+        {"entities": [], "intent": "restaurant_search", "text": "food"},
+        payload={"q": "food", "model": "three"}
     ),
 ])
 def test_post_parse(client, response_test):
@@ -102,14 +102,14 @@ def test_post_parse(client, response_test):
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-        u"/parse",
-        {u"error": u"No model found with alias 'default'"},
-        payload={u"q": u"food"}
+        "/parse",
+        {"error": "No model found with alias 'default'"},
+        payload={"q": "food"}
     ),
     ResponseTest(
-        u"/parse",
-        {u"error": u"No model found with alias 'umpalumpa'"},
-        payload={u"q": u"food", u"model": u"umpalumpa"}
+        "/parse",
+        {"error": "No model found with alias 'umpalumpa'"},
+        payload={"q": "food", "model": "umpalumpa"}
     ),
 ])
 def test_post_parse_invalid_model(client, response_test):

@@ -239,7 +239,7 @@ def resolve_data_files(resource_name):
 
 
 def load_data(resource_name, fformat=None):
-    # type: (Text, Text, Optional[Text]) -> TrainingData
+    # type: (Text, Optional[Text]) -> TrainingData
     """Loads training data from disk. If no format is provided, the format will be guessed based on the files."""
 
     files = resolve_data_files(resource_name)

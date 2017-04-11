@@ -37,7 +37,7 @@ class MitieEntityExtractor(Component, EntityExtractor):
             entities = self.ner.extract_entities(tokens, feature_extractor)
             for e in entities:
                 _range = e[0]
-                _regex = u"\s*".join(re.escape(tokens[i]) for i in _range)
+                _regex = "\s*".join(re.escape(tokens[i]) for i in _range)
                 expr = re.compile(_regex)
                 m = expr.search(text[offset:])
                 start, end = m.start() + offset, m.end() + offset
@@ -59,8 +59,8 @@ class MitieEntityExtractor(Component, EntityExtractor):
         tk = MitieTokenizer()
         tokens, offsets = tk.tokenize_with_offsets(text)
         if ent["start"] not in offsets:
-            message = u"Invalid entity {0} in example '{1}':".format(ent, text) + \
-                      u" entities must span whole tokens"
+            message = "Invalid entity {0} in example '{1}':".format(ent, text) + \
+                      " entities must span whole tokens"
             raise ValueError(message)
         start = offsets.index(ent["start"])
         _slice = text[ent["start"]:ent["end"]]

@@ -75,7 +75,7 @@ class SpacyNLP(Component):
 
     @classmethod
     def load(cls, language, spacy_model_name):
-        # type: (Text) -> SpacyNLP
+        # type: (Text, Text) -> SpacyNLP
         return cls.create(language, spacy_model_name)
 
     @staticmethod

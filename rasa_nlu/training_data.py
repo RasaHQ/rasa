@@ -68,7 +68,7 @@ class TrainingData(object):
         return len(self.intent_examples)
 
     def as_json(self, **kwargs):
-        # type: (TrainingExample) -> str
+        # type: (**Any) -> str
         """Represent this set of training examples as json adding the passed meta information."""
 
         return str(json.dumps({
@@ -114,7 +114,7 @@ class TrainingData(object):
             size = len(list(group))
             different_intents.append(intent)
             if size < self.MIN_EXAMPLES_PER_INTENT:
-                template = u"Intent '{0}' has only {1} training examples! minimum is {2}, training may fail."
+                template = "Intent '{0}' has only {1} training examples! minimum is {2}, training may fail."
                 warnings.warn(template.format(intent, size, self.MIN_EXAMPLES_PER_INTENT))
 
         sorted_entity_examples = self.sorted_entity_examples()
@@ -123,7 +123,7 @@ class TrainingData(object):
             size = len(list(group))
             different_entities.append(entity)
             if size < self.MIN_EXAMPLES_PER_ENTITY:
-                template = u"Entity '{0}' has only {1} training examples! minimum is {2}, training may fail."
+                template = "Entity '{0}' has only {1} training examples! minimum is {2}, training may fail."
                 warnings.warn(template.format(entity, size, self.MIN_EXAMPLES_PER_ENTITY))
 
         logging.info("Training data stats: \n" +

@@ -49,23 +49,25 @@ class SpacyEntityExtractor(Component, EntityExtractor):
             self.ner = self._train_from_scratch(spacy_nlp, entity_types, train_data)
 
     def process(self, spacy_doc, spacy_nlp):
-        # type: (Doc) -> Dict[Text, Any]
+        # type: (Doc, Language) -> Dict[Text, Any]
         from spacy.tokens import Doc
+        from spacy.language import Language
 
         return {
             "entities": self.extract_entities(spacy_doc, spacy_nlp)
         }
 
-    def extract_entities(self, doc, nlp):
-        # type: (Doc) -> List[Dict[Text, Any]]
+    def extract_entities(self, doc, spacy_nlp):
+        # type: (Doc, Language) -> List[Dict[Text, Any]]
         from spacy.tokens import Doc
+        from spacy.language import Language
 
         if self.ner is not None:
             self.ner(doc)
 
             # REMOVE THIS, as soon as we are able again to fine tune spacy models instead of combining them
-            if nlp.entity is not None and self.fine_tune_spacy_ner:
-                sp_doc = nlp(doc.text)
+            if spacy_nlp.entity is not None and self.fine_tune_spacy_ner:
+                sp_doc = spacy_nlp(doc.text)
                 spacy_ents = sp_doc.ents
                 for spacy_ent in spacy_ents:
                     for e in doc.ents:
@@ -89,7 +91,7 @@ class SpacyEntityExtractor(Component, EntityExtractor):
 
     @classmethod
     def load(cls, model_dir, entity_extractor, fine_tune_spacy_ner, spacy_nlp):
-        # type: (Text, Text, Language) -> SpacyEntityExtractor
+        # type: (Text, Text, bool, Language) -> SpacyEntityExtractor
         from spacy.language import Language
         from spacy.pipeline import EntityRecognizer
 

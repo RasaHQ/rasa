@@ -20,7 +20,8 @@ class SpacyTokenizer(Tokenizer, Component):
     }
 
     def process(self, text, spacy_nlp):
-        # type: (Text) -> Dict[Text, Any]
+        # type: (Text, Language) -> Dict[Text, Any]
+        from spacy.language import Language
 
         return {
             "tokens": self.tokenize(text, spacy_nlp)

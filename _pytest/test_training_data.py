@@ -67,7 +67,7 @@ def test_api_data():
 
 
 def test_repeated_entities():
-    data = u"""
+    data = """
 {
   "rasa_nlu_data": {
     "common_examples" : [
@@ -100,7 +100,7 @@ def test_repeated_entities():
 
 
 def test_multiword_entities():
-    data = u"""
+    data = """
 {
   "rasa_nlu_data": {
     "common_examples" : [
@@ -133,7 +133,7 @@ def test_multiword_entities():
 
 
 def test_nonascii_entities():
-    data = u"""
+    data = """
 {
   "luis_schema_version": "1.0",
   "utterances" : [
@@ -159,7 +159,7 @@ def test_nonascii_entities():
         entities = example["entities"]
         assert len(entities) == 1
         entity = entities[0]
-        assert entity["value"] == u"ßäæ ?€ö)"
+        assert entity["value"] == "ßäæ ?€ö)"
         assert entity["start"] == 19
         assert entity["end"] == 27
         assert entity["entity"] == "description"

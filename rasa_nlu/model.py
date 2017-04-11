@@ -116,7 +116,7 @@ class Trainer(object):
             self.pipeline.append(component)
 
     def validate(self, allow_empty_pipeline=False):
-        # type: () -> None
+        # type: (bool) -> None
         """Validates a pipeline before it is run. Ensures, that all arguments are present to train the pipeline."""
 
         # Ensure the pipeline is not empty
