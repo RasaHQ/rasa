@@ -13,7 +13,7 @@
     "mitie_file": "./data/total_word_feature_extractor.dat", 
     "trained_at": "20170411-192045", 
     "training_data": "training_data.json", 
-    "intent_classifier_spacy": "intent_classifier.pkl", 
+    "intent_classifier_sklearn": "intent_classifier.pkl",
     "entity_extractor_mitie": "entity_extractor.dat", 
     "rasa_nlu_version": "0.8.0a7"
 }

@@ -7,7 +7,7 @@
         "intent_featurizer_spacy", 
         "intent_classifier_sklearn"
     ], 
-    "intent_classifier_spacy": "intent_classifier.pkl", 
+    "intent_classifier_sklearn": "intent_classifier.pkl",
     "language": "en", 
     "fine_tune_spacy_ner": false, 
     "trained_at": "20170411-192031", 
