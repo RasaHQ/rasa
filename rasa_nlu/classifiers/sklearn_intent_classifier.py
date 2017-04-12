@@ -134,12 +134,12 @@ class SklearnIntentClassifier(Component):
         return sorted_indices, pred_result[:, sorted_indices]
 
     @classmethod
-    def load(cls, model_dir, intent_classifier):
+    def load(cls, model_dir, intent_classifier_sklearn):
         # type: (Text, Text) -> SklearnIntentClassifier
         import cloudpickle
 
-        if model_dir and intent_classifier:
-            classifier_file = os.path.join(model_dir, intent_classifier)
+        if model_dir and intent_classifier_sklearn:
+            classifier_file = os.path.join(model_dir, intent_classifier_sklearn)
             with io.open(classifier_file, 'rb') as f:
                 if PY3:
                     return cloudpickle.load(f, encoding="latin-1")
@@ -159,5 +159,5 @@ class SklearnIntentClassifier(Component):
             cloudpickle.dump(self, f)
 
         return {
-            "intent_classifier": "intent_classifier.pkl"
+            "intent_classifier_sklearn": "intent_classifier.pkl"
         }

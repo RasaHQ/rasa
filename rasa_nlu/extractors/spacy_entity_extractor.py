@@ -94,12 +94,12 @@ class SpacyEntityExtractor(Component, EntityExtractor):
             return []
 
     @classmethod
-    def load(cls, model_dir, entity_extractor, fine_tune_spacy_ner, spacy_nlp):
+    def load(cls, model_dir, entity_extractor_spacy, fine_tune_spacy_ner, spacy_nlp):
         # type: (Text, Text, bool, Language) -> SpacyEntityExtractor
         from spacy.pipeline import EntityRecognizer
 
-        if model_dir and entity_extractor:
-            ner_dir = os.path.join(model_dir, entity_extractor)
+        if model_dir and entity_extractor_spacy:
+            ner_dir = os.path.join(model_dir, entity_extractor_spacy)
             ner = EntityRecognizer.load(pathlib.Path(ner_dir), spacy_nlp.vocab)
             return SpacyEntityExtractor(fine_tune_spacy_ner, ner)
         else:
@@ -121,11 +121,11 @@ class SpacyEntityExtractor(Component, EntityExtractor):
                 f.write(str(json.dumps(self.ner.cfg)))
             self.ner.model.dump(entity_extractor_file)
             return {
-                "entity_extractor": "ner",
+                "entity_extractor_spacy": "ner",
                 "fine_tune_spacy_ner": self.fine_tune_spacy_ner,
             }
         else:
-            return {"entity_extractor": None}
+            return {"entity_extractor_spacy": None}
 
     def _convert_examples(self, entity_examples):
         def convert_entity(ent):

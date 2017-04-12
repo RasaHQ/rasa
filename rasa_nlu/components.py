@@ -205,6 +205,9 @@ class ComponentBuilder(object):
         from rasa_nlu.model import Metadata
 
         component_class = registry.get_component_class(component_name)
+        if component_class is None:
+            raise Exception("Failed to find component class for '{}'. Unknown component name.".format(component_name))
+
         cache_key = component_class.cache_key(metadata)
         if cache_key is not None and self.use_cache and cache_key in self.component_cache:
             return self.component_cache[cache_key], cache_key

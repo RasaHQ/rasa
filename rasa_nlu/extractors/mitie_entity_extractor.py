@@ -103,12 +103,12 @@ class MitieEntityExtractor(Component, EntityExtractor):
         }
 
     @classmethod
-    def load(cls, model_dir, entity_extractor):
+    def load(cls, model_dir, entity_extractor_mitie):
         # type: (Text, Text) -> MitieEntityExtractor
         import mitie
 
-        if model_dir and entity_extractor:
-            entity_extractor_file = os.path.join(model_dir, entity_extractor)
+        if model_dir and entity_extractor_mitie:
+            entity_extractor_file = os.path.join(model_dir, entity_extractor_mitie)
             extractor = mitie.named_entity_extractor(entity_extractor_file)
             return MitieEntityExtractor(extractor)
         else:
@@ -120,6 +120,6 @@ class MitieEntityExtractor(Component, EntityExtractor):
         if self.ner:
             entity_extractor_file = os.path.join(model_dir, "entity_extractor.dat")
             self.ner.save_to_disk(entity_extractor_file, pure_model=True)
-            return {"entity_extractor": "entity_extractor.dat"}
+            return {"entity_extractor_mitie": "entity_extractor.dat"}
         else:
-            return {"entity_extractor": None}
+            return {"entity_extractor_mitie": None}

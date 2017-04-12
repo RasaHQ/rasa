@@ -54,12 +54,12 @@ class MitieIntentClassifier(Component):
         }
 
     @classmethod
-    def load(cls, model_dir, intent_classifier):
+    def load(cls, model_dir, intent_classifier_mitie):
         # type: (Text, Text) -> MitieIntentClassifier
         import mitie
 
-        if model_dir and intent_classifier:
-            classifier_file = os.path.join(model_dir, intent_classifier)
+        if model_dir and intent_classifier_mitie:
+            classifier_file = os.path.join(model_dir, intent_classifier_mitie)
             classifier = mitie.text_categorizer(classifier_file)
             return MitieIntentClassifier(classifier)
         else:
@@ -72,6 +72,6 @@ class MitieIntentClassifier(Component):
         if self.clf:
             classifier_file = os.path.join(model_dir, "intent_classifier.dat")
             self.clf.save_to_disk(classifier_file, pure_model=True)
-            return {"intent_classifier": "intent_classifier.dat"}
+            return {"intent_classifier_mitie": "intent_classifier.dat"}
         else:
-            return {"intent_classifier": None}
+            return {"intent_classifier_mitie": None}

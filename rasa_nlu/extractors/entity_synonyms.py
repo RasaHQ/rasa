@@ -57,10 +57,10 @@ class EntitySynonymMapper(Component):
         # type: (Text) -> Dict[Text, Any]
 
         if self.synonyms:
-            entity_synonyms_file = os.path.join(model_dir, "index.json")
+            entity_synonyms_file = os.path.join(model_dir, "entity_synonyms.json")
             with io.open(entity_synonyms_file, 'w') as f:
                 f.write(str(json.dumps(self.synonyms)))
-            return {"entity_synonyms": "index.json"}
+            return {"entity_synonyms": "entity_synonyms.json"}
         else:
             return {"entity_synonyms": None}
 
@@ -69,7 +69,7 @@ class EntitySynonymMapper(Component):
         # type: (Text, Text) -> EntitySynonymMapper
 
         if model_dir and entity_synonyms:
-            entity_synonyms_file = os.path.join(model_dir, "index.json")
+            entity_synonyms_file = os.path.join(model_dir, entity_synonyms)
             if os.path.isfile(entity_synonyms_file):
                 with io.open(entity_synonyms_file, encoding='utf-8') as f:
                     synonyms = json.loads(f.read())
