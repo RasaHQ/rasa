@@ -16,7 +16,7 @@
   "server_model_dirs": null,
   "token": null,
   "max_number_of_ngrams": 7,
-  "duckling_processing_mode": "append"
+  "duckling_processing_mode": "append",
   "luis_data_tokenizer": null,
   "entity_crf_BILOU_flag": true,
   "entity_crf_features": [
