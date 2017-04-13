@@ -1,29 +1,35 @@
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import logging
+
 import pytest
-import spacy
-from mitie import total_word_feature_extractor
 
-from rasa_nlu.data_router import InterpreterBuilder
-
+from rasa_nlu.components import ComponentBuilder
+from rasa_nlu.config import RasaNLUConfig
 
 logging.basicConfig(level="DEBUG")
 
-
-@pytest.fixture(scope="session")
-def spacy_nlp_en():
-    return spacy.load("en", parser=False)
+CONFIG_DEFAULTS_PATH = "config_defaults.json"
 
 
 @pytest.fixture(scope="session")
-def mitie_feature_extractor():
-    mitie_file = "data/total_word_feature_extractor.dat"
-    return total_word_feature_extractor(mitie_file)
+def component_builder():
+    return ComponentBuilder()
 
 
 @pytest.fixture(scope="session")
-def interpreter_builder():
-    return InterpreterBuilder(use_cache=True)
+def spacy_nlp(component_builder, default_config):
+    return component_builder.create_component("nlp_spacy", default_config).nlp
+
+
+@pytest.fixture(scope="session")
+def mitie_feature_extractor(component_builder, default_config):
+    return component_builder.create_component("nlp_mitie", default_config).extractor
+
+
+@pytest.fixture(scope="session")
+def default_config():
+    return RasaNLUConfig(CONFIG_DEFAULTS_PATH)

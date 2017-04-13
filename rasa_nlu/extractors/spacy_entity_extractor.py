@@ -2,6 +2,9 @@ from __future__ import unicode_literals, print_function
 from __future__ import division
 from __future__ import absolute_import
 
+import json
+
+import typing
 from builtins import range, str
 import os
 import random
@@ -10,11 +13,20 @@ import io
 import pathlib
 import warnings
 
+from typing import Any
+from typing import Dict
+from typing import List
 from typing import Optional
+from typing import Text
 
 from rasa_nlu.components import Component
 from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.training_data import TrainingData
+
+
+if typing.TYPE_CHECKING:
+    from spacy.language import Language
+    from spacy.tokens import Doc
 
 
 class SpacyEntityExtractor(Component, EntityExtractor):
@@ -26,14 +38,17 @@ class SpacyEntityExtractor(Component, EntityExtractor):
 
     output_provides = ["entities"]
 
-    def __init__(self, ner=None, fine_tune_spacy_ner=False):
+    def __init__(self, fine_tune_spacy_ner, ner=None):
         self.ner = ner
         self.fine_tune_spacy_ner = fine_tune_spacy_ner
 
-    def train(self, spacy_nlp, training_data, fine_tune_spacy_ner):
-        # type: (Language, TrainingData, Optional[bool]) -> None
-        from spacy.language import Language
-        self.fine_tune_spacy_ner = fine_tune_spacy_ner
+    @classmethod
+    def create(cls, fine_tune_spacy_ner):
+        return SpacyEntityExtractor(fine_tune_spacy_ner)
+
+    def train(self, spacy_nlp, training_data):
+        # type: (Language, TrainingData) -> None
+
         if training_data.num_entity_examples > 0:
             train_data = self._convert_examples(training_data.entity_examples)
             ent_types = [[ent["entity"] for ent in ex["entities"]] for ex in training_data.entity_examples]
@@ -42,23 +57,21 @@ class SpacyEntityExtractor(Component, EntityExtractor):
             self.ner = self._train_from_scratch(spacy_nlp, entity_types, train_data)
 
     def process(self, spacy_doc, spacy_nlp):
-        # type: (Doc) -> dict
-        from spacy.tokens import Doc
+        # type: (Doc, Language) -> Dict[Text, Any]
 
         return {
             "entities": self.extract_entities(spacy_doc, spacy_nlp)
         }
 
-    def extract_entities(self, doc, nlp):
-        # type: (Doc) -> [dict]
-        from spacy.tokens import Doc
+    def extract_entities(self, doc, spacy_nlp):
+        # type: (Doc, Language) -> List[Dict[Text, Any]]
 
         if self.ner is not None:
             self.ner(doc)
 
             # REMOVE THIS, as soon as we are able again to fine tune spacy models instead of combining them
-            if nlp.entity is not None and self.fine_tune_spacy_ner:
-                sp_doc = nlp(doc.text)
+            if spacy_nlp.entity is not None and self.fine_tune_spacy_ner:
+                sp_doc = spacy_nlp(doc.text)
                 spacy_ents = sp_doc.ents
                 for spacy_ent in spacy_ents:
                     for e in doc.ents:
@@ -81,22 +94,20 @@ class SpacyEntityExtractor(Component, EntityExtractor):
             return []
 
     @classmethod
-    def load(cls, model_dir, entity_extractor, fine_tune_spacy_ner, spacy_nlp):
-        # type: (str, str, Language) -> SpacyEntityExtractor
-        from spacy.language import Language
+    def load(cls, model_dir, entity_extractor_spacy, fine_tune_spacy_ner, spacy_nlp):
+        # type: (Text, Text, bool, Language) -> SpacyEntityExtractor
         from spacy.pipeline import EntityRecognizer
 
-        if model_dir and entity_extractor:
-            ner_dir = os.path.join(model_dir, entity_extractor)
+        if model_dir and entity_extractor_spacy:
+            ner_dir = os.path.join(model_dir, entity_extractor_spacy)
             ner = EntityRecognizer.load(pathlib.Path(ner_dir), spacy_nlp.vocab)
-            return SpacyEntityExtractor(ner, fine_tune_spacy_ner)
+            return SpacyEntityExtractor(fine_tune_spacy_ner, ner)
         else:
-            return SpacyEntityExtractor()
+            return SpacyEntityExtractor(fine_tune_spacy_ner)
 
     def persist(self, model_dir):
-        # type: (str) -> dict
+        # type: (Text) -> Dict[Text, Any]
         """Persist this model into the passed directory. Returns the metadata necessary to load the model again."""
-        import json
 
         if self.ner:
             ner_dir = os.path.join(model_dir, 'ner')
@@ -110,11 +121,11 @@ class SpacyEntityExtractor(Component, EntityExtractor):
                 f.write(str(json.dumps(self.ner.cfg)))
             self.ner.model.dump(entity_extractor_file)
             return {
-                "entity_extractor": "ner",
+                "entity_extractor_spacy": "ner",
                 "fine_tune_spacy_ner": self.fine_tune_spacy_ner,
             }
         else:
-            return {"entity_extractor": None}
+            return {"entity_extractor_spacy": None}
 
     def _convert_examples(self, entity_examples):
         def convert_entity(ent):

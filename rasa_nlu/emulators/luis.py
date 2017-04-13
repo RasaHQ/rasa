@@ -2,11 +2,18 @@ from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
+
+from typing import Any
+from typing import Dict
+from typing import Text
+
 from rasa_nlu.emulators import NoEmulator
 
 
 class LUISEmulator(NoEmulator):
     def __init__(self):
+        # type: () -> None
+
         super(LUISEmulator, self).__init__()
         self.name = 'luis'
 
@@ -26,6 +33,9 @@ class LUISEmulator(NoEmulator):
             return [self._top_intent(data)]
 
     def normalise_response_json(self, data):
+        # type: (Dict[Text, Any]) -> Dict[Text, Any]
+        """Transform data to luis.ai format."""
+
         top_intent = self._top_intent(data)
         ranking = self._ranking(data)
         return {

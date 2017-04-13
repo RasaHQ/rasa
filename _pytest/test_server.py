@@ -47,12 +47,16 @@ def test_status(client):
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-        u"/parse?q=hello",
-        [{u"entities": {}, u"confidence": 1.0, u"intent": u"greet", u"_text": u"hello"}]
+        "/parse?q=hello",
+        [{"entities": {}, "confidence": 1.0, "intent": "greet", "_text": "hello"}]
     ),
     ResponseTest(
-        u"/parse?q=hello ńöñàśçií",
-        [{u"entities": {}, u"confidence": 1.0, u"intent": u"greet", u"_text": u"hello ńöñàśçií"}]
+        "/parse?q=hello ńöñàśçií",
+        [{"entities": {}, "confidence": 1.0, "intent": "greet", "_text": "hello ńöñàśçií"}]
+    ),
+    ResponseTest(
+        "/parse?q=",
+        [{"entities": {}, "confidence": 0.0, "intent": None, "_text": ""}]
     ),
 ])
 def test_get_parse(client, response_test):
@@ -65,13 +69,13 @@ def test_get_parse(client, response_test):
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
         "/parse",
-        [{u"entities": {}, u"confidence": 1.0, u"intent": u"greet", u"_text": u"hello"}],
-        payload={u"q": u"hello"}
+        [{"entities": {}, "confidence": 1.0, "intent": "greet", "_text": "hello"}],
+        payload={"q": "hello"}
     ),
     ResponseTest(
         "/parse",
-        [{u"entities": {}, u"confidence": 1.0, u"intent": u"greet", u"_text": u"hello ńöñàśçií"}],
-        payload={u"q": u"hello ńöñàśçií"}
+        [{"entities": {}, "confidence": 1.0, "intent": "greet", "_text": "hello ńöñàśçií"}],
+        payload={"q": "hello ńöñàśçií"}
     ),
 ])
 def test_post_parse(client, response_test):

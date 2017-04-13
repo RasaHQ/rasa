@@ -12,10 +12,9 @@ import six
 from typing import Text
 
 import rasa_nlu
+from conftest import CONFIG_DEFAULTS_PATH
 from rasa_nlu.config import RasaNLUConfig
 
-
-CONFIG_DEFAULTS_PATH = "config_defaults.json"
 
 with io.open(CONFIG_DEFAULTS_PATH, "r") as f:
     defaults = json.load(f)
@@ -24,9 +23,8 @@ with io.open(CONFIG_DEFAULTS_PATH, "r") as f:
     defaults["response_log"] = os.path.join(os.getcwd(), defaults["response_log"])
 
 
-def test_default_config():
-    final_config = RasaNLUConfig(CONFIG_DEFAULTS_PATH)
-    assert dict(list(final_config.items())) == defaults
+def test_default_config(default_config):
+    assert default_config.as_dict() == defaults
 
 
 def test_blank_config():
@@ -37,7 +35,7 @@ def test_blank_config():
         f.write(json.dumps(file_config))
         f.flush()
         final_config = RasaNLUConfig(f.name, env_vars, cmdline_args)
-        assert dict(list(final_config.items())) == defaults
+        assert final_config.as_dict() == defaults
 
 
 def test_invalid_config_json():

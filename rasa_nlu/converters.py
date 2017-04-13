@@ -7,7 +7,11 @@ import json
 import re
 import warnings
 
+from typing import Any
+from typing import Dict
+from typing import List
 from typing import Optional
+from typing import Text
 
 from rasa_nlu import utils
 from rasa_nlu.tokenizers import Tokenizer
@@ -22,7 +26,7 @@ UNK_FILE_FORMAT = "unk"
 
 
 def load_api_data(files):
-    # type: ([str]) -> TrainingData
+    # type: (List[Text]) -> TrainingData
     """Loads training data stored in the API.ai data format."""
 
     intent_examples = []
@@ -68,16 +72,9 @@ def load_api_data(files):
     return TrainingData(intent_examples, entity_examples, common_examples, entity_synonyms)
 
 
-def load_luis_data(filename, tokenizer):
-    # type: (str, Optional[Tokenizer]) -> TrainingData
+def load_luis_data(filename):
+    # type: (Text) -> TrainingData
     """Loads training data stored in the LUIS.ai data format."""
-
-    warnings.warn(
-        """LUIS data may not always be correctly imported because entity locations are specified by tokens.
-        If you use a tokenizer which behaves differently from LUIS's your entities might not be correct""")
-    if not tokenizer:
-        raise ValueError("Can not load luis data without a specified tokenizer " +
-                         "(e.g. using the configuration value `luis_data_tokenizer`)")
 
     intent_examples = []
     entity_examples = []
@@ -87,15 +84,10 @@ def load_luis_data(filename, tokenizer):
         data = json.loads(f.read())
     for s in data["utterances"]:
         text = s.get("text")
-        tokens = [t for t in tokenizer.tokenize(text)]
         intent = s.get("intent")
         entities = []
         for e in s.get("entities") or []:
-            i, ii = e["startPos"], e["endPos"] + 1
-            _regex = u"\s*".join([re.escape(s) for s in tokens[i:ii]])
-            expr = re.compile(_regex)
-            m = expr.search(text)
-            start, end = m.start(), m.end()
+            start, end = e["startPos"], e["endPos"] + 1
             val = text[start:end]
             entities.append({"entity": e["entity"], "value": val, "start": start, "end": end})
 
@@ -109,7 +101,7 @@ def load_luis_data(filename, tokenizer):
 
 
 def load_wit_data(filename):
-    # type: (str) -> TrainingData
+    # type: (Text) -> TrainingData
     """Loads training data stored in the WIT.ai data format."""
 
     intent_examples = []
@@ -124,11 +116,11 @@ def load_wit_data(filename):
             continue
         text = s.get("text")
         intents = [e["value"] for e in entities if e["entity"] == 'intent']
-        intent = intents[0] if intents else None
+        intent = intents[0].strip("\"") if intents else None
 
-        entities = [e for e in entities if ("start" in e and "end" in e)]
+        entities = [e for e in entities if ("start" in e and "end" in e and e["entity"] != 'intent')]
         for e in entities:
-            e["value"] = e["value"][1:-1]
+            e["value"] = e["value"].strip("\"")    # for some reason wit adds additional quotes around entity values
 
         if intent and entities:
             common_examples.append({"text": text, "intent": intent, "entities": entities})
@@ -188,7 +180,7 @@ def rasa_nlu_data_schema():
 
 
 def validate_rasa_nlu_data(data):
-    # type: (dict) -> None
+    # type: (Dict[Text, Any]) -> None
     """Validate rasa training data format to ensure proper training. Raises exception on failure."""
     from jsonschema import validate
     from jsonschema import ValidationError
@@ -204,7 +196,7 @@ def validate_rasa_nlu_data(data):
 
 
 def load_rasa_data(filename):
-    # type: (str) -> TrainingData
+    # type: (Text) -> TrainingData
     """Loads training data stored in the rasa NLU data format."""
 
     with io.open(filename, encoding="utf-8-sig") as f:
@@ -218,7 +210,7 @@ def load_rasa_data(filename):
 
 
 def guess_format(files):
-    # type: ([str]) -> str
+    # type: (List[Text]) -> Text
     """Given a set of files, tries to guess which data format is used."""
 
     for filename in files:
@@ -237,7 +229,7 @@ def guess_format(files):
 
 
 def resolve_data_files(resource_name):
-    # type: (str) -> [str]
+    # type: (Text) -> List[Text]
     """Lists all data files of the resource name (might be a file or directory)."""
 
     try:
@@ -246,8 +238,8 @@ def resolve_data_files(resource_name):
         raise ValueError("Invalid training data file / folder specified. " + e.message)
 
 
-def load_data(resource_name, language, luis_data_tokenizer=None, fformat=None):
-    # type: (str, str, Optional[Tokenizer], Optional[str]) -> TrainingData
+def load_data(resource_name, fformat=None):
+    # type: (Text, Optional[Text]) -> TrainingData
     """Loads training data from disk. If no format is provided, the format will be guessed based on the files."""
 
     files = resolve_data_files(resource_name)
@@ -256,9 +248,7 @@ def load_data(resource_name, language, luis_data_tokenizer=None, fformat=None):
         fformat = guess_format(files)
 
     if fformat == LUIS_FILE_FORMAT:
-        from rasa_nlu.tokenizers import tokenizer_from_name
-        tokenizer = tokenizer_from_name(luis_data_tokenizer, language)
-        return load_luis_data(files[0], tokenizer)
+        return load_luis_data(files[0])
     elif fformat == WIT_FILE_FORMAT:
         return load_wit_data(files[0])
     elif fformat == API_FILE_FORMAT:

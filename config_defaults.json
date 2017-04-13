@@ -11,10 +11,12 @@
   "emulate": null,
   "log_file": null,
   "mitie_file": "data/total_word_feature_extractor.dat",
+  "spacy_model_name": null,
   "fine_tune_spacy_ner": false,
   "server_model_dirs": null,
   "token": null,
   "max_number_of_ngrams": 7,
+  "duckling_processing_mode": "append"
   "luis_data_tokenizer": null,
   "entity_crf_BILOU_flag": true,
   "entity_crf_features": [

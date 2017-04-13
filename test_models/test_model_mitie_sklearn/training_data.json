@@ -1,7 +1,6 @@
 {
   "rasa_nlu_data": {
-    "common_examples": [], 
-    "entity_examples": [
+    "common_examples": [
       {
         "text": "hey", 
         "intent": "greet", 
@@ -192,9 +191,7 @@
         "text": "great", 
         "intent": "affirm", 
         "entities": []
-      }
-    ], 
-    "intent_examples": [
+      }, 
       {
         "text": "hey", 
         "intent": "greet"
@@ -295,6 +292,8 @@
         "text": "great", 
         "intent": "affirm"
       }
-    ]
+    ], 
+    "entity_examples": [], 
+    "intent_examples": []
   }
 }

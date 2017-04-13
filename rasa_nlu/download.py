@@ -8,6 +8,8 @@ import os
 import warnings
 import io
 
+from typing import Text
+
 from rasa_nlu.config import RasaNLUConfig
 from tqdm import tqdm
 import requests
@@ -27,7 +29,7 @@ def create_argparser():
 
 
 def download_mitie_fe_file(fe_file):
-    # type: (str) -> None
+    # type: (Text) -> None
     """Download the mitie feature extractor needed to run & train mitie classifiers.
 
     See https://github.com/mit-nlp/MITIE#initial-setup """
@@ -44,6 +46,7 @@ def download_mitie_fe_file(fe_file):
 
 
 def download(config, pkg="mitie"):
+    # type: (RasaNLUConfig, Text) -> None
     if pkg == "mitie":
         download_mitie_fe_file(config.mitie_file)
     else:

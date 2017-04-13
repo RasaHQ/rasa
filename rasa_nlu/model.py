@@ -10,7 +10,11 @@ import logging
 import os
 import io
 
+from typing import Any
+from typing import Dict
+from typing import List
 from typing import Optional
+from typing import Text
 
 import rasa_nlu.components
 from rasa_nlu.components import Component
@@ -35,7 +39,7 @@ class Metadata(object):
 
     @staticmethod
     def load(model_dir):
-        # type: (str) -> 'Metadata'
+        # type: (Text) -> 'Metadata'
         """Loads the metadata from a models directory."""
 
         with io.open(os.path.join(model_dir, 'metadata.json'), encoding="utf-8") as f:
@@ -43,7 +47,7 @@ class Metadata(object):
         return Metadata(data, model_dir)
 
     def __init__(self, metadata, model_dir):
-        # type: (dict, Optional[str]) -> None
+        # type: (Dict[Text, Any], Optional[Text]) -> None
 
         self.metadata = metadata
         self.model_dir = model_dir
@@ -56,14 +60,14 @@ class Metadata(object):
 
     @property
     def language(self):
-        # type: () -> Optional[str]
+        # type: () -> Optional[Text]
         """Language of the underlying model"""
 
         return self.metadata.get('language')
 
     @property
     def pipeline(self):
-        # type: () -> [str]
+        # type: () -> List[Text]
         """Names of the processing pipeline elements."""
 
         if 'pipeline' in self.metadata:
@@ -75,7 +79,7 @@ class Metadata(object):
             return []
 
     def persist(self, model_dir):
-        # type: (str) -> None
+        # type: (Text) -> None
         """Persists the metadata of a model to a given directory."""
 
         metadata = self.metadata.copy()
@@ -95,31 +99,38 @@ class Trainer(object):
     # Officially supported languages (others might be used, but might fail)
     SUPPORTED_LANGUAGES = ["de", "en"]
 
-    def __init__(self, config):
-        from rasa_nlu.registry import get_component_class
+    def __init__(self, config, component_builder=None):
+        # type: (RasaNLUConfig, Optional[rasa_nlu.components.ComponentBuilder]) -> None
 
         self.config = config
         self.training_data = None
         self.pipeline = []
+        if component_builder is None:
+            # If no builder is passed, every interpreter creation will result in a new builder.
+            # hence, no components are reused.
+            component_builder = rasa_nlu.components.ComponentBuilder()
 
         # Transform the passed names of the pipeline components into classes
         for component_name in config.pipeline:
-            component_class = get_component_class(component_name)
-            if component_class is not None:
-                self.pipeline.append(component_class())
-            else:
-                raise Exception("Unregistered component '{}'. Failed to start trainer.".format(component_name))
+            component = component_builder.create_component(component_name, config)
+            self.pipeline.append(component)
 
-    def validate(self):
-        # type: () -> None
+    def validate(self, allow_empty_pipeline=False):
+        # type: (bool) -> None
         """Validates a pipeline before it is run. Ensures, that all arguments are present to train the pipeline."""
+
+        # Ensure the pipeline is not empty
+        if not allow_empty_pipeline and len(self.pipeline) == 0:
+            raise ValueError("Can not train an empty pipeline. " +
+                             "Make sure to specify a proper pipeline in the configuration using the `pipeline` key." +
+                             "The `backend` configuration key is NOT supported anymore.")
 
         # Validate the init phase
         context = {}
 
         for component in self.pipeline:
             try:
-                rasa_nlu.components.fill_args(component.pipeline_init_args(), context, self.config)
+                rasa_nlu.components.fill_args(component.pipeline_init_args(), context, self.config.as_dict())
                 updates = component.context_provides.get("pipeline_init", [])
                 for u in updates:
                     context[u] = None
@@ -132,7 +143,7 @@ class Trainer(object):
 
         for component in self.pipeline:
             try:
-                rasa_nlu.components.fill_args(component.train_args(), context, self.config)
+                rasa_nlu.components.fill_args(component.train_args(), context, self.config.as_dict())
                 updates = component.context_provides.get("train", [])
                 for u in updates:
                     context[u] = None
@@ -145,7 +156,7 @@ class Trainer(object):
 
         for component in self.pipeline:
             try:
-                rasa_nlu.components.fill_args(component.process_args(), context, self.config)
+                rasa_nlu.components.fill_args(component.process_args(), context, self.config.as_dict())
                 updates = component.context_provides.get("process", [])
                 for u in updates:
                     context[u] = None
@@ -161,7 +172,7 @@ class Trainer(object):
         context = {}
 
         for component in self.pipeline:
-            args = rasa_nlu.components.fill_args(component.pipeline_init_args(), context, self.config)
+            args = rasa_nlu.components.fill_args(component.pipeline_init_args(), context, self.config.as_dict())
             updates = component.pipeline_init(*args)
             if updates:
                 context.update(updates)
@@ -171,15 +182,15 @@ class Trainer(object):
         context["training_data"] = data
 
         for component in self.pipeline:
-            args = rasa_nlu.components.fill_args(component.train_args(), context, self.config)
+            args = rasa_nlu.components.fill_args(component.train_args(), context, self.config.as_dict())
             updates = component.train(*args)
             if updates:
                 context.update(updates)
 
-        return Interpreter(self.pipeline, context=init_context, config=self.config)
+        return Interpreter(self.pipeline, context=init_context, config=self.config.as_dict())
 
     def persist(self, path, persistor=None, create_unique_subfolder=True):
-        # type: (str, Optional[Persistor], bool) -> str
+        # type: (Text, Optional[Persistor], bool) -> Text
         """Persist all components of the pipeline to the passed path. Returns the directory of the persited model."""
 
         timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
@@ -213,36 +224,38 @@ class Interpreter(object):
     """Use a trained pipeline of components to parse text messages"""
 
     # Defines all attributes (and their default values) that will be returned by `parse`
-    default_output_attributes = {"intent": None, "entities": [], "text": ""}
+    default_output_attributes = {"intent": {"name": "", "confidence": 0.0}, "entities": [], "text": ""}
 
     @staticmethod
-    def load(meta, rasa_config):
-        # type: (Metadata, RasaNLUConfig) -> Interpreter
+    def load(meta, config, component_builder=None):
+        # type: (Metadata, RasaNLUConfig, Optional[rasa_nlu.components.ComponentBuilder]) -> Interpreter
         """Load a stored model and its components defined by the provided metadata."""
-        from rasa_nlu.registry import load_component_by_name
-
         context = {"model_dir": meta.model_dir}
+        if component_builder is None:
+            # If no builder is passed, every interpreter creation will result in a new builder.
+            # hence, no components are reused.
+            component_builder = rasa_nlu.components.ComponentBuilder()
 
-        config = dict(list(rasa_config.items()))
-        config.update(meta.metadata)
+        model_config = config.as_dict()
+        model_config.update(meta.metadata)
 
         pipeline = []
 
         for component_name in meta.pipeline:
+            component = component_builder.load_component(component_name, context, model_config, meta)
             try:
-                component = load_component_by_name(component_name, context, config)
-            except rasa_nlu.components.MissingArgumentError as e:
-                raise Exception("Failed to create/load component '{}'. {}".format(component_name, e.message))
-            try:
-                rasa_nlu.components.init_component(component, context, config)
+                args = rasa_nlu.components.fill_args(component.pipeline_init_args(), context, model_config)
+                updates = component.pipeline_init(*args)
+                if updates:
+                    context.update(updates)
                 pipeline.append(component)
             except rasa_nlu.components.MissingArgumentError as e:
                 raise Exception("Failed to initialize component '{}'. {}".format(component.name, e.message))
 
-        return Interpreter(pipeline, context, config, meta)
+        return Interpreter(pipeline, context, model_config)
 
     def __init__(self, pipeline, context, config, meta=None):
-        # type: ([Component], dict, dict, Optional[Metadata]) -> None
+        # type: (List[Component], Dict[Text, Any], Dict[Text, Any], Optional[Metadata]) -> None
 
         self.pipeline = pipeline
         self.context = context
@@ -251,8 +264,14 @@ class Interpreter(object):
         self.output_attributes = [output for component in pipeline for output in component.output_provides]
 
     def parse(self, text):
-        # type: (basestring) -> dict
+        # type: (Text) -> Dict[Text, Any]
         """Parse the input text, classify it and return an object containing its intent and entities."""
+
+        if not text:
+            # Not all components are able to handle empty strings. So we need to prevent that...
+            # This default return will not contain all output attributes of all components,
+            # but in the end, no one should pass an empty string in the first place.
+            return self.default_output_attributes.copy()
 
         current_context = self.context.copy()
 

@@ -15,6 +15,8 @@ Added
 - replaced pre-wired backends with more flexible pipeline definitions
 - return top 10 intents with sklearn classifier `#199 <https://github.com/golastmile/rasa_nlu/pull/199>`_
 - python type annotations for nearly all public functions
+- support for arbitrary spacy model names
+- duckling components to provide normalized output for structured entities
 - Conditional random field entity extraction (Markov model for entity tagging, better named entity recognition with low and medium data and similarly well at big data level)
 
 Changed
@@ -44,7 +46,7 @@ Fixed
 - properly parse ``str`` additionally to ``unicode`` `#210 <https://github.com/golastmile/rasa_nlu/issues/210>`_
 - support entity only training `#181 <https://github.com/golastmile/rasa_nlu/issues/181>`_
 - resolved conflicts between metadata and configuration values `#219 <https://github.com/golastmile/rasa_nlu/issues/219>`_
-
+- removed tokenization when reading Luis.ai data (they changed their format) `#241 <https://github.com/golastmile/rasa_nlu/issues/241>`_
 [0.7.3] - 2017-03-15
 ^^^^^^^^^^^^^^^^^^^^
 

@@ -6,11 +6,20 @@ import argparse
 import logging
 import os
 
+import typing
+from typing import Text
+from typing import Tuple
+
+from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.converters import load_data
 from rasa_nlu.model import Trainer
 
 from rasa_nlu.config import RasaNLUConfig
 from typing import Optional
+
+
+if typing.TYPE_CHECKING:
+    from rasa_nlu.persistor import Persistor
 
 
 def create_argparser():
@@ -51,13 +60,13 @@ def init():
     return config
 
 
-def do_train(config):
-    # type: (RasaNLUConfig) -> (Trainer, str)
+def do_train(config, component_builder=None):
+    # type: (RasaNLUConfig, Optional[ComponentBuilder]) -> Tuple[Trainer, Text]
     """Loads the trainer and the data and runs the training of the specified model."""
 
-    trainer = Trainer(config)
+    trainer = Trainer(config, component_builder)
     persistor = create_persistor(config)
-    training_data = load_data(config['data'], config['language'], luis_data_tokenizer=config['luis_data_tokenizer'])
+    training_data = load_data(config['data'])
     trainer.validate()
     trainer.train(training_data)
     persisted_path = trainer.persist(config['path'], persistor)

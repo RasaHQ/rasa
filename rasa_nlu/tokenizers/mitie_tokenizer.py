@@ -5,6 +5,12 @@ from __future__ import absolute_import
 from builtins import str
 import re
 
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Text
+from typing import Tuple
+
 from rasa_nlu.tokenizers import Tokenizer
 from rasa_nlu.components import Component
 
@@ -20,20 +26,20 @@ class MitieTokenizer(Tokenizer, Component):
         pass
 
     def tokenize(self, text):
-        # type: (str) -> [str]
+        # type: (Text) -> List[Text]
         from mitie import tokenize
 
         return [w.decode('utf-8') for w in tokenize(text.encode('utf-8'))]
 
     def process(self, text):
-        # type: (str) -> dict
+        # type: (Text) -> Dict[Text, Any]
 
         return {
             "tokens": self.tokenize(text)
         }
 
     def tokenize_with_offsets(self, text):
-        # type: (str) -> ([str], [int])
+        # type: (Text) -> Tuple[List[Text], List[int]]
         from mitie import tokenize
 
         _text = text.encode('utf-8')

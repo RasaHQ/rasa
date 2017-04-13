@@ -51,7 +51,7 @@ def requires_auth(f):
     return decorated
 
 
-def create_app(config):
+def create_app(config, component_builder=None):
     rasa_nlu_app = Flask(__name__)
 
     @rasa_nlu_app.route("/parse", methods=['GET', 'POST'])
@@ -93,7 +93,7 @@ def create_app(config):
     logging.info("Configuration: " + config.view())
 
     logging.debug("Creating a new data router")
-    rasa_nlu_app.data_router = DataRouter(config)
+    rasa_nlu_app.data_router = DataRouter(config, component_builder)
     return rasa_nlu_app
 
 

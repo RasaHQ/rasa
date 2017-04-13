@@ -37,17 +37,17 @@ Here is a list of the existing templates:
 +---------------+----------------------------------------------------------------------------------------------------------------------------+
 | template name | corresponding pipeline                                                                                                     |
 +===============+============================================================================================================================+
-| spacy_sklearn | ``["init_spacy", "ner_spacy", "ner_synonyms", "intent_featurizer_spacy", "intent_classifier_sklearn"]``                    |
+| spacy_sklearn | ``["nlp_spacy", "ner_spacy", "ner_synonyms", "intent_featurizer_spacy", "intent_classifier_sklearn"]``                    |
 +---------------+----------------------------------------------------------------------------------------------------------------------------+
-| mitie         | ``["init_mitie", "tokenizer_mitie", "ner_mitie", "ner_synonyms", "intent_classifier_mitie"]``                              |
+| mitie         | ``["nlp_mitie", "tokenizer_mitie", "ner_mitie", "ner_synonyms", "intent_classifier_mitie"]``                              |
 +---------------+----------------------------------------------------------------------------------------------------------------------------+
-| mitie_sklearn | ``["init_mitie", "tokenizer_mitie", "ner_mitie", "ner_synonyms", "intent_featurizer_mitie", "intent_classifier_sklearn"]`` |
+| mitie_sklearn | ``["nlp_mitie", "tokenizer_mitie", "ner_mitie", "ner_synonyms", "intent_featurizer_mitie", "intent_classifier_sklearn"]`` |
 +---------------+----------------------------------------------------------------------------------------------------------------------------+
 | keyword       | ``["intent_classifier_keyword"]``                                                                                          |
 +---------------+----------------------------------------------------------------------------------------------------------------------------+
 
 Creating your own pipelines is possible by directly passing the names of the components to rasa NLU in the ``pipeline``
-configuration variable, e.g. ``"pipeline": ["init_spacy", "ner_spacy", "ner_synonyms"]``. This creates a pipeline
+configuration variable, e.g. ``"pipeline": ["nlp_spacy", "ner_spacy", "ner_synonyms"]``. This creates a pipeline
 that only does entity recognition, but no intent classification. Hence, the output will not contain any useful intents.
 
 Build-in Components
@@ -58,8 +58,8 @@ a look at the corresponding source code for the component. ``Output`` describes,
 output result of processing a message. If no output is present, the component is most likely a preprocessor for another
 component.
 
-init_mitie
-~~~~~~~~~~
+nlp_mitie
+~~~~~~~~~
 
 :Short: MITIE initializer
 :Outputs: nothing
@@ -67,8 +67,8 @@ init_mitie
     Initializes mitie structures. Every mitie component relies on this, hence this should be put at the beginning
     of every pipeline that uses any mitie components.
 
-init_spacy
-~~~~~~~~~~
+nlp_spacy
+~~~~~~~~~
 
 :Short: spacy language initializer
 :Outputs: nothing
@@ -293,9 +293,54 @@ ner_crf
 :Description:
     This component implements conditional random fields to do named entity recognition. CRFs can be thought of as an undirected Markov chain where the time steps are words and the states are entity classes. Features of the words (capitalisation, POS tagging, etc.) give probabilities to certain entity classes, as are transitions between neighbouring entity tags: the most likely set of tags is then calculated and returned.
 
+ner_duckling
+~~~~~~~~~~~~
+
+:Short: Adds duckling support to the pipeline to unify entity types (e.g. to retrieve common date / number formats)
+:Outputs: modifies / appends existing output
+:Output-Example:
+
+    .. code-block:: json
+
+        {
+            "duckling": "time",
+            "end": 53,
+            "entity": "time",
+            "start": 48,
+            "value": "2017-04-10T00:00:00.000+02:00"
+        }
+
+:Description:
+    Duckling allows to recognize dates, numbers and other structured entities (for a reference of all available
+    entities see `the duckling documentation <https://duckling.wit.ai/#getting-started>`_). The component has two modes
+    either ``append`` (adds all entities found by the duckling processing to the output) and ``replace`` (analyse only
+    previously found entities and normalize their format). The mode can be configured using the
+    ``duckling_processing_mode`` configuration variable. Additionally to modifying the value replacing it with the
+    normalized representation, the component also adds the ``duckling`` attribute to the output representing the kind
+    of the found entity.
+
+
 Creating new Components
 -----------------------
 Currently you need to rely on the components that are shipped with rasa NLU, but we plan to add the possibility to
 create your own components in your code. Nevertheless, we are looking forward to your contribution of a new component
 (e.g. a component to do sentiment analysis). A glimpse into the code of ``rasa_nlu.components.Component`` will reveal
 which functions need to be implemented to create a new component.
+
+Component Lifecycle
+-------------------
+Every component can implement several methods from the ``Component`` base class; in a pipeline these different methods
+will be called in a specific order. Lets assume, we added the following pipeline to our config:
+``"pipeline": ["Component A", "Component B", "Last Component"]``.
+The image shows the call order during the training of this pipeline :
+
+.. image:: _static/images/component_lifecycle.png
+
+Before the first component is created using the ``create`` function, a so called ``context`` is created (which is
+nothing more than a python dict). This context is used to pass information between the components. For example,
+one component can calculate feature vectors for the training data, store that within the context and another
+component can retrieve these feature vectors from the context and do intent classification.
+
+Initially the context is filled with all configuration values, the arrows in the image show the call order
+and visualize the path of the passed context. After all components are trained and persisted, the
+final context dictionary is used to persist the models metadata.

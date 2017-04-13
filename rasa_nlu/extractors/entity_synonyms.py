@@ -9,6 +9,12 @@ import json
 import os
 import warnings
 
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Text
+
 from rasa_nlu.components import Component
 from rasa_nlu.training_data import TrainingData
 
@@ -23,6 +29,7 @@ class EntitySynonymMapper(Component):
     output_provides = ["entities"]
 
     def __init__(self, synonyms=None):
+        # type: (Optional[Dict[Text, Text]]) -> None
         self.synonyms = synonyms if synonyms else {}
 
     def train(self, training_data):
@@ -37,7 +44,7 @@ class EntitySynonymMapper(Component):
                 self.add_entities_if_synonyms(entity_val, entity.get("value"))
 
     def process(self, entities):
-        # type: (dict) -> dict
+        # type: (List[Dict[Text, Any]]) -> Dict[Text, Any]
 
         updated_entities = entities[:]
         self.replace_synonyms(updated_entities)
@@ -47,22 +54,22 @@ class EntitySynonymMapper(Component):
         }
 
     def persist(self, model_dir):
-        # type: (str) -> dict
+        # type: (Text) -> Dict[Text, Any]
 
         if self.synonyms:
-            entity_synonyms_file = os.path.join(model_dir, "index.json")
+            entity_synonyms_file = os.path.join(model_dir, "entity_synonyms.json")
             with io.open(entity_synonyms_file, 'w') as f:
                 f.write(str(json.dumps(self.synonyms)))
-            return {"entity_synonyms": "index.json"}
+            return {"entity_synonyms": "entity_synonyms.json"}
         else:
             return {"entity_synonyms": None}
 
     @classmethod
     def load(cls, model_dir, entity_synonyms):
-        # type: (str, str) -> EntitySynonymMapper
+        # type: (Text, Text) -> EntitySynonymMapper
 
         if model_dir and entity_synonyms:
-            entity_synonyms_file = os.path.join(model_dir, "index.json")
+            entity_synonyms_file = os.path.join(model_dir, entity_synonyms)
             if os.path.isfile(entity_synonyms_file):
                 with io.open(entity_synonyms_file, encoding='utf-8') as f:
                     synonyms = json.loads(f.read())

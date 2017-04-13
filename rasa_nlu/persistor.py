@@ -10,6 +10,7 @@ import io
 
 import boto3
 import botocore
+from typing import Text
 
 
 class Persistor(object):
@@ -26,11 +27,11 @@ class Persistor(object):
         self.bucket = self.s3.Bucket(bucket_name)
 
     def send_tar_to_s3(self, target_dir):
-        # type: (str) -> None
+        # type: (Text) -> None
         """Uploads a model persisted in the `target_dir` to s3."""
 
         if not os.path.isdir(target_dir):
-            raise ValueError('target_dir %r not found.' % target_dir)
+            raise ValueError("Target directory '{}' not found.".format(target_dir))
 
         base_name = os.path.basename(target_dir)
         base_dir = os.path.dirname(target_dir)
@@ -39,7 +40,7 @@ class Persistor(object):
         self.s3.Object(self.bucket_name, filekey).put(Body=open(tarname, 'rb'))
 
     def fetch_and_extract(self, filename):
-        # type: (str) -> None
+        # type: (Text) -> None
         """Downloads a model that has previously been persisted to s3."""
 
         with io.open(filename, 'wb') as f:
