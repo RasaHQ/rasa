@@ -277,6 +277,21 @@ ner_synonyms
     This classifier uses MITIE to perform intent classification. The underlying classifier
     is using a multi class linear SV; with a sparse linear kernel (see `mitie trainer code <https://github.com/mit-nlp/MITIE/blob/master/mitielib/src/text_categorizer_trainer.cpp#L222>`_).
 
+ner_crf
+~~~~~~~
+
+:Short: conditional random field entity extraction
+:Outputs: ``entities``
+:Output-Example:
+
+    .. code-block:: json
+
+        {
+            "entities": [{"value": "New York City", "start": 20, "end": 33, "entity": "city"}]
+        }
+
+:Description:
+    This component implements conditional random fields to do named entity recognition. CRFs can be thought of as an undirected Markov chain where the time steps are words and the states are entity classes. Features of the words (capitalisation, POS tagging, etc.) give probabilities to certain entity classes, as are transitions between neighbouring entity tags: the most likely set of tags is then calculated and returned.
 
 ner_duckling
 ~~~~~~~~~~~~

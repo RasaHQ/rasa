@@ -186,3 +186,24 @@ luis_data_tokenizer
 
 If you want to persist your trained models to S3, there are additional configuration options,
 see :ref:`section_persistence`
+
+entity_crf_features
+~~~~~~~~~~~~~~~~~~~
+
+:Type: ``[[str]]``
+:Examples: ``[["low", "title"], ["bias", "word3"], ["upper", "pos", "pos2"]]``
+:Description:
+    The features are a ``[before, word, after]`` array with before, word, after holding keys about which
+    features to use for each word, for example, ``"title"`` in array before will have the feature
+    "is the preceding word in title case?".
+    Available features are:
+    ``low``, ``title``, ``word3``, ``word2``, ``pos``, ``pos2``, ``bias``, ``upper`` and ``digit``
+
+entitiy_crf_BILOU_flag
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Type: ``bool``
+:Examples: ``true``
+:Description:
+     The flag determines whether to use BILOU tagging or not. BILOU tagging is more rigorous however
+     requires more examples per entity. Rule of thumb: use only if more than 100 examples per entity.

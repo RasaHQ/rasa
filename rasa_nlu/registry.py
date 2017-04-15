@@ -21,6 +21,7 @@ from rasa_nlu.extractors.duckling_extractor import DucklingExtractor
 from rasa_nlu.extractors.entity_synonyms import EntitySynonymMapper
 from rasa_nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
+from rasa_nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa_nlu.featurizers.mitie_featurizer import MitieFeaturizer
 from rasa_nlu.featurizers.ngram_featurizer import NGramFeaturizer
 from rasa_nlu.featurizers.spacy_featurizer import SpacyFeaturizer
@@ -35,7 +36,7 @@ if typing.TYPE_CHECKING:
 component_classes = [
     SpacyNLP, SpacyEntityExtractor, SklearnIntentClassifier, SpacyFeaturizer,
     MitieNLP, MitieEntityExtractor, MitieIntentClassifier, MitieFeaturizer, MitieTokenizer,
-    KeywordIntentClassifier, EntitySynonymMapper, NGramFeaturizer, DucklingExtractor]   # type: List[Type[Component]]
+    KeywordIntentClassifier, EntitySynonymMapper, NGramFeaturizer, DucklingExtractor, CRFEntityExtractor]
 
 # Mapping from a components name to its class to allow name based lookup.
 registered_components = {

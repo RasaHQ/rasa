@@ -33,6 +33,12 @@ DEFAULT_CONFIG = {
     "pipeline": [],
     "response_log": "logs",
     "duckling_processing_mode": "append",
+    "luis_data_tokenizer": None,
+    "entity_crf_BILOU_flag": True,
+    "entity_crf_features": [
+        ["low", "title", "upper", "pos", "pos2"],
+        ["bias", "low", "word3", "word2", "upper", "title", "digit", "pos", "pos2"],
+        ["low", "title", "upper", "pos", "pos2"]]
 }
 
 
