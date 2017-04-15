@@ -5,7 +5,7 @@ Frequently Asked Questions
 
 Does it run with python 3?
 --------------------------
-No, at the moment it does not. If you want to speed up the process we would be very happy to receive your contributions.
+Yes it does, rasa NLU supports python 2.7 as well as python 3.5 and 3.6. If there are any issues with a specific python version, feel free to create an issue or directly provide a fix.
 
 Which languages are supported?
 ------------------------------
