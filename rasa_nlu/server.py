@@ -1,3 +1,7 @@
+from __future__ import unicode_literals
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 import argparse
 import logging
 import os
@@ -47,7 +51,7 @@ def requires_auth(f):
     return decorated
 
 
-def create_app(config):
+def create_app(config, component_builder=None):
     rasa_nlu_app = Flask(__name__)
 
     @rasa_nlu_app.route("/parse", methods=['GET', 'POST'])
@@ -89,14 +93,14 @@ def create_app(config):
     logging.info("Configuration: " + config.view())
 
     logging.debug("Creating a new data router")
-    rasa_nlu_app.data_router = DataRouter(config)
+    rasa_nlu_app.data_router = DataRouter(config, component_builder)
     return rasa_nlu_app
 
 
 if __name__ == '__main__':
     # Running as standalone python application
     arg_parser = create_arg_parser()
-    cmdline_args = {key: val for key, val in vars(arg_parser.parse_args()).items() if val is not None}
+    cmdline_args = {key: val for key, val in list(vars(arg_parser.parse_args()).items()) if val is not None}
     rasa_nlu_config = RasaNLUConfig(cmdline_args.get("config"), os.environ, cmdline_args)
     app = WSGIServer(('0.0.0.0', rasa_nlu_config['port']), create_app(rasa_nlu_config))
     logging.info('Started http server on port %s' % rasa_nlu_config['port'])

@@ -17,7 +17,7 @@ If you are new to rasa NLU and want to create a bot, you should start with the [
 - [Setup](#setup) 
 - [FAQ](#faq)
 - [How to contribute](#how-to-contribute)
-- [Lincense](#license)
+- [License](#license)
 
 
 ## Setup
@@ -51,6 +51,8 @@ docker build -t rasa_nlu .
 ```
 docker run -p 5000:5000 rasa_nlu start
 ```
+
+Caveat for Docker for Windows users: please share your C: in docker settings, and add ```-v C:\path\to\rasa_nlu:/app``` to your docker run commands for download and training to work correctly.
 
 #### 3. Test it!
 ```
@@ -90,16 +92,4 @@ In general the process is rather simple:
 You pull request will be reviewed by a maintainer, who might get back to you about any necessary changes or questions.
 
 ## License
-Copyright 2016 LastMile Technologies Ltd
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this project except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Licensed under the Apache License, Version 2.0. Copyright 2016 LastMile Technologies Ltd. [Copy of the license](LICENSE.txt).

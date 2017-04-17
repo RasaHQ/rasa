@@ -7,6 +7,8 @@ cache:
 python:
   # We don't actually use the Travis Python, but this keeps it organized.
   - "2.7"
+  - "3.5"
+  - "3.6"
 install:
   - sudo apt-get update
   # We do this conditionally because it saves us some downloading if the
@@ -24,7 +26,7 @@ install:
   # Useful for debugging any issues with conda
   - conda info -a
   # Replace dep1 dep2 ... with your dependencies
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION scipy numpy scikit-learn
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION scipy=0.19.0 numpy=1.12.1 scikit-learn=0.18.1
   - source activate test-environment
   - pip install -r requirements.txt
   - python setup.py install

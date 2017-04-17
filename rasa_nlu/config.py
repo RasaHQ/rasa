@@ -1,4 +1,9 @@
-import codecs
+from __future__ import unicode_literals
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from builtins import object
+import io
 import json
 import os
 import warnings
@@ -17,6 +22,7 @@ DEFAULT_CONFIG = {
     "log_file": None,
     "log_level": 'INFO',
     "mitie_file": os.path.join("data", "total_word_feature_extractor.dat"),
+    "spacy_model_name": None,
     "num_threads": 1,
     "fine_tune_spacy_ner": False,
     "path": "models",
@@ -26,7 +32,13 @@ DEFAULT_CONFIG = {
     "max_number_of_ngrams": 7,
     "pipeline": [],
     "response_log": "logs",
+    "duckling_processing_mode": "append",
     "luis_data_tokenizer": None,
+    "entity_crf_BILOU_flag": True,
+    "entity_crf_features": [
+        ["low", "title", "upper", "pos", "pos2"],
+        ["bias", "low", "word3", "word2", "upper", "title", "digit", "pos", "pos2"],
+        ["low", "title", "upper", "pos", "pos2"]]
 }
 
 
@@ -48,7 +60,7 @@ class RasaNLUConfig(object):
         self.override(DEFAULT_CONFIG)
         if filename is not None:
             try:
-                with codecs.open(filename, encoding='utf-8') as f:
+                with io.open(filename, encoding='utf-8') as f:
                     file_config = json.loads(f.read())
             except ValueError as e:
                 raise InvalidConfigError("Failed to read configuration file '{}'. Error: {}".format(filename, e))
@@ -59,7 +71,7 @@ class RasaNLUConfig(object):
             self.override(env_config)
 
         if cmdline_args is not None:
-            cmdline_config = {k: v for k, v in cmdline_args.items() if v is not None}
+            cmdline_config = {k: v for k, v in list(cmdline_args.items()) if v is not None}
             self.override(cmdline_config)
 
         if isinstance(self.__dict__['pipeline'], six.string_types):
@@ -89,7 +101,10 @@ class RasaNLUConfig(object):
         return len(self.__dict__)
 
     def items(self):
-        return self.__dict__.items()
+        return list(self.__dict__.items())
+
+    def as_dict(self):
+        return dict(list(self.items()))
 
     def view(self):
         return json.dumps(self.__dict__, indent=4)
@@ -108,6 +123,16 @@ class RasaNLUConfig(object):
                 abs_path_config[key] = os.path.join(os.getcwd(), abs_path_config[key])
         return abs_path_config
 
+    # noinspection PyCompatibility
+    def make_unicode(self, config):
+        if six.PY2:
+            # Sometimes (depending on the source of the config value) an argument will be str instead of unicode
+            # to unify that and ease further usage of the config, we convert everything to unicode
+            for k, v in config.items():
+                if type(v) is str:
+                    config[k] = unicode(v, "utf-8")
+        return config
+
     def override(self, config):
-        abs_path_config = self.make_paths_absolute(config, ["path", "response_log"])
+        abs_path_config = self.make_unicode(self.make_paths_absolute(config, ["path", "response_log"]))
         self.__dict__.update(abs_path_config)

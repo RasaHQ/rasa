@@ -1,7 +1,19 @@
-import codecs
+from __future__ import unicode_literals
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+from builtins import str
+from builtins import range
+import io
 import json
 import os
 import warnings
+
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Text
 
 from rasa_nlu.components import Component
 from rasa_nlu.training_data import TrainingData
@@ -17,12 +29,13 @@ class EntitySynonymMapper(Component):
     output_provides = ["entities"]
 
     def __init__(self, synonyms=None):
+        # type: (Optional[Dict[Text, Text]]) -> None
         self.synonyms = synonyms if synonyms else {}
 
     def train(self, training_data):
         # type: (TrainingData) -> None
 
-        for key, value in training_data.entity_synonyms.items():
+        for key, value in list(training_data.entity_synonyms.items()):
             self.add_entities_if_synonyms(key, value)
 
         for example in training_data.entity_examples:
@@ -31,7 +44,7 @@ class EntitySynonymMapper(Component):
                 self.add_entities_if_synonyms(entity_val, entity.get("value"))
 
     def process(self, entities):
-        # type: (dict) -> dict
+        # type: (List[Dict[Text, Any]]) -> Dict[Text, Any]
 
         updated_entities = entities[:]
         self.replace_synonyms(updated_entities)
@@ -41,24 +54,24 @@ class EntitySynonymMapper(Component):
         }
 
     def persist(self, model_dir):
-        # type: (str) -> dict
+        # type: (Text) -> Dict[Text, Any]
 
         if self.synonyms:
-            entity_synonyms_file = os.path.join(model_dir, "index.json")
-            with open(entity_synonyms_file, 'w') as f:
-                json.dump(self.synonyms, f)
-            return {"entity_synonyms": "index.json"}
+            entity_synonyms_file = os.path.join(model_dir, "entity_synonyms.json")
+            with io.open(entity_synonyms_file, 'w') as f:
+                f.write(str(json.dumps(self.synonyms)))
+            return {"entity_synonyms": "entity_synonyms.json"}
         else:
             return {"entity_synonyms": None}
 
     @classmethod
     def load(cls, model_dir, entity_synonyms):
-        # type: (str, str) -> EntitySynonymMapper
+        # type: (Text, Text) -> EntitySynonymMapper
 
         if model_dir and entity_synonyms:
-            entity_synonyms_file = os.path.join(model_dir, "index.json")
+            entity_synonyms_file = os.path.join(model_dir, entity_synonyms)
             if os.path.isfile(entity_synonyms_file):
-                with codecs.open(entity_synonyms_file, encoding='utf-8') as f:
+                with io.open(entity_synonyms_file, encoding='utf-8') as f:
                     synonyms = json.loads(f.read())
                 return EntitySynonymMapper(synonyms)
             else:
@@ -73,8 +86,8 @@ class EntitySynonymMapper(Component):
 
     def add_entities_if_synonyms(self, entity_a, entity_b):
         if entity_b is not None:
-            original = entity_a.lower() if type(entity_a) == unicode else unicode(entity_a)
-            replacement = entity_b.lower() if type(entity_b) == unicode else unicode(entity_b)
+            original = entity_a.lower() if type(entity_a) == str else str(entity_a)
+            replacement = entity_b.lower() if type(entity_b) == str else str(entity_b)
 
             if original != replacement:
                 self.synonyms[original] = replacement
