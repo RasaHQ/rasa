@@ -1,7 +1,7 @@
 from setuptools import setup
 
 __version__ = None   # Avoids IDE errors, but actual version is read from version.py
-exec(open('src/version.py').read())
+exec(open('rasa_nlu/version.py').read())
 
 tests_requires = [
     "pytest-pep8",
@@ -15,6 +15,7 @@ install_requires = [
     "pathlib",
     "cloudpickle",
     "boto3",
+    "typing",
 ]
 
 extras_requires = {
@@ -33,11 +34,14 @@ setup(
         'rasa_nlu.emulators',
         'rasa_nlu.extractors',
         'rasa_nlu.featurizers',
-        'rasa_nlu.interpreters',
-        'rasa_nlu.trainers',
         'rasa_nlu.tokenizers',
     ],
-    package_dir={'rasa_nlu': 'src'},
+    classifiers=[
+        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3.4",
+        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6"
+    ],
     version=__version__,
     install_requires=install_requires,
     tests_require=tests_requires,
@@ -47,5 +51,5 @@ setup(
     author_email='alan@golastmile.com',
     url="https://rasa.ai",
     keywords=["NLP", "bots"],
-    download_url="https://github.com/golastmile/rasa_nlu/tarball/0.6-beta"
+    download_url="https://github.com/golastmile/rasa_nlu/archive/{}.tar.gz".format(__version__)
 )

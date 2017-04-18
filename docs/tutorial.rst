@@ -3,7 +3,7 @@
 .. _tutorial:
 
 Tutorial: A simple restaurant search bot
-==========================================
+========================================
 
 .. note:: See :ref:`section_migration` for how to clone your existing wit/LUIS/api.ai app.
 
@@ -80,7 +80,7 @@ There's a great tool for creating training data in rasa's format `here <https://
 
 For the demo data the output should look like this:
 
-.. image:: https://cloud.githubusercontent.com/assets/5114084/22427463/2e3a4c9e-e6fb-11e6-9a34-4c97c0438d99.png
+.. image:: _static/images/rasa_nlu_intent_gui.png
 
 
 It is **strongly** recommended that you view your training data in the GUI before training.
@@ -109,19 +109,21 @@ Now we can train a spacy model by running:
 
     $ python -m rasa_nlu.train -c config_spacy.json
 
-After a few minutes, rasa NLU will finish training, and you'll see a new dir called something like ``model_YYYYMMDD-HHMMSS`` with the timestamp when training finished. 
+If you want to know more about the parameters, there is an overview of the :ref:`section_configuration`. After a few minutes,
+rasa NLU will finish training, and you'll see a new dir called something like
+``models/model_YYYYMMDD-HHMMSS`` with the timestamp when training finished.
 
 
 Using Your Model
 ----------------
 
-To run your trained model, pass the configuration value ``server_model_dir`` when running the server:
+To run your trained model, pass the configuration value ``server_model_dirs`` when running the server:
 
 .. code-block:: console
 
-    $ python -m rasa_nlu.server -c config_spacy.json --server_model_dir=./model_YYYYMMDD-HHMMSS
+    $ python -m rasa_nlu.server -c config_spacy.json --server_model_dirs=./model_YYYYMMDD-HHMMSS
 
-More information about starting the server can be found in :ref:`section_http`.
+The passed model path is relative to the ``path`` configured in the configuration. More information about starting the server can be found in :ref:`section_http`.
 
 You can then test our your new model by sending a request. Open a new tab/window on your terminal and run
 
@@ -134,23 +136,46 @@ which should return
 .. code-block:: json
 
     {
-      "intent" : "restaurant_search",
-      "confidence": 0.6127775465094253,
-      "entities" : [
-        {
-          "start": 8,
-          "end": 15,
-          "value": "chinese",
-          "entity": "cuisine"
-        }
-      ]
+        "text": "I am looking for Chinese food",
+        "entities": [
+            {
+              "start": 8,
+              "end": 15,
+              "value": "chinese",
+              "entity": "cuisine"
+            }
+        ],
+        "intent": {
+            "confidence": 0.6485910906220309,
+            "name": "restaurant_search"
+        },
+        "intent_ranking": [
+            {
+                "confidence": 0.6485910906220309,
+                "name": "restaurant_search"
+            },
+            {
+                "confidence": 0.14161531595656784,
+                "name": "affirm"
+            }
+        ]
     }
 
 If you are using the ``spacy_sklearn`` backend and the entities aren't found, don't panic!
 This tutorial is just a toy example, with far too little training data to expect good performance.
-rasa NLU will also print a ``confidence`` value.
+
+rasa NLU will also print a ``confidence`` value for the intent classification. For models using spacy
+intent classification this will be a probability. For MITIE models this is just a score, which **might be
+greater than 1**.
+
 You can use this to do some error handling in your bot (maybe asking the user again if the confidence is low)
 and it's also helpful for prioritising which intents need more training data.
+
+.. note::
+    The output may contain other or less attributes, depending on the pipeline you are using. For
+    example, the ``mitie`` pipeline doesn't include the ``"intent_ranking"`` whereas the ``spacy_sklearn``
+    pipeline does.
+
 
 With very little data, rasa NLU can in certain cases already generalise concepts, for example:
 
@@ -159,17 +184,29 @@ With very little data, rasa NLU can in certain cases already generalise concepts
 
     $ curl -XPOST localhost:5000/parse -d '{"q":"I want some italian"}' | python -mjson.tool
     {
-      "entities": [
-        {
-          "end": 19,
-          "entity": "cuisine",
-          "start": 12,
-          "value": "italian"
-        }
-      ],
-      "intent": "restaurant_search",
-      "text": "I want some italian"
-      "confidence": 0.4794813722432127
+        "text": "I want some italian",
+        "entities": [
+            {
+              "end": 19,
+              "entity": "cuisine",
+              "start": 12,
+              "value": "italian"
+            }
+        ],
+        "intent": {
+            "confidence": 0.5192305466357352,
+            "name": "restaurant_search"
+        },
+        "intent_ranking": [
+            {
+                "confidence": 0.5192305466357352,
+                "name": "restaurant_search"
+            },
+            {
+                "confidence": 0.2066287604378098,
+                "name": "affirm"
+            }
+        ]
     }
 
 even though there's nothing quite like this sentence in the examples used to train the model. 

@@ -1,31 +1,47 @@
-from rasa_nlu.interpreters.simple_interpreter import HelloGoodbyeInterpreter
+from __future__ import unicode_literals
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+import pytest
 
-interpreter = HelloGoodbyeInterpreter()
+import utilities
+from utilities import slowtest
+from rasa_nlu import registry
 
 
-def test_samples():
+@slowtest
+@pytest.mark.parametrize("pipeline_template", list(registry.registered_pipeline_templates.keys()))
+def test_samples(pipeline_template, component_builder):
+    interpreter = utilities.interpreter_for(component_builder, utilities.base_test_conf(pipeline_template))
+    available_intents = ["greet", "restaurant_search", "affirm", "goodbye", "None"]
     samples = [
         (
-            "Hey there",
+            "good bye",
             {
-                'text': "Hey there",
-                'intent': 'greet',
-                'entities': [],
-                'confidence': 1.0
+                'intent': 'goodbye',
+                'entities': []
             }
         ),
         (
-            "good bye for now",
+            "i am looking for an indian spot",
             {
-                'text': "good bye for now",
-                'intent': 'goodbye',
-                'entities': [],
-                'confidence': 1.0
+                'intent': 'restaurant_search',
+                'entities': [{"start": 20, "end": 26, "value": "indian", "entity": "cuisine"}]
             }
         )
     ]
 
-    for text, result in samples:
-        assert interpreter.parse(text) == result, "text : {0} \nresult : {1}, expected {2}".format(text,
-                                                                                                   interpreter.parse(
-                                                                                                       text), result)
+    for text, gold in samples:
+        result = interpreter.parse(text)
+        assert result['text'] == text, \
+            "Wrong text for sample '{}'".format(text)
+        assert result['intent']['name'] in available_intents, \
+            "Wrong intent for sample '{}'".format(text)
+        assert result['intent']['confidence'] >= 0, \
+            "Low confidence for sample '{}'".format(text)
+
+        # This ensures the model doesn't detect entities that are not present
+        # Models on our test data set are not stable enough to require the entities to be found
+        for entity in result['entities']:
+            assert entity in gold['entities'], \
+                "Wrong entities for sample '{}'".format(text)

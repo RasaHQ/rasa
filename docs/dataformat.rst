@@ -28,3 +28,44 @@ Entities can span multiple words, and in fact the ``value`` field doesn't have t
         }
       ]
     }
+
+Entity Synonyms
+---------------
+If you define entities as having the same value they will be treated as synonyms. Here is an example of that:
+
+.. code-block:: json
+
+    [
+      {
+        "text": "in the center of NYC",
+        "intent": "search",
+        "entities": [
+          {
+            "start": 17,
+            "end": 20,
+            "value": "New York City",
+            "entity": "city"
+          }
+        ]
+      },
+      {
+        "text": "in the centre of New York City",
+        "intent": "search",
+        "entities": [
+          {
+            "start": 17,
+            "end": 30,
+            "value": "New York City",
+            "entity": "city"
+          }
+        ]
+      }
+    ]
+
+as you can see, the entity ``city`` has the value ``New York City`` in both examples, even though the text in the first
+example states ``NYC``. By defining the value attribute to be different from the value found in the text between start
+and end index of the entity, you can define a synonym. Whenever the same text will be found, the value will use the
+synonym instead of the actual text in the message.
+
+To use the synonyms defined in your training data, you need to make sure the pipeline contains the ``ner_synonyms``
+component (see :ref:`section_pipeline`).

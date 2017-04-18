@@ -1,86 +1,94 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 import tempfile
 
 import pytest
 
 from rasa_nlu.config import RasaNLUConfig
 import json
-import codecs
+import io
 
-from rasa_nlu.server import setup_app
-
-
-class ResponseTest(object):
-    def __init__(self, endpoint, expected_response, payload=None):
-        self.endpoint = endpoint
-        self.expected_response = expected_response
-        self.payload = payload
+from utilities import ResponseTest
+from rasa_nlu.server import create_app
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def app():
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
     _config = {
         'write': nlu_log_file,
-        'port': -1,  # unused in test app
+        'port': -1,                 # unused in test app
         "backend": "mitie",
-        "path": "./",
+        "path": "./models",
+        "server_model_dirs": {},
         "data": "./data/demo-restaurants.json",
-        "emulate": "wit"
+        "luis_data_tokenizer": "tokenizer_mitie",
+        "emulate": "wit",
     }
     config = RasaNLUConfig(cmdline_args=_config)
-    application = setup_app(config)
+    application = create_app(config)
     return application
 
 
 def test_root(client):
     response = client.get("/")
-    assert response.status_code == 200 and response.data == "hello"
+    assert response.status_code == 200 and response.data == b"hello"
 
 
 def test_status(client):
     response = client.get("/status")
     rjs = response.json
-    assert response.status_code == 200 and ("trainings_under_this_process" in rjs and "available_models" in rjs)
+    assert response.status_code == 200 and \
+        ("trainings_under_this_process" in rjs and "available_models" in rjs)
 
 
-def test_get_parse(client):
-    tests = [
-        ResponseTest(
-            u"/parse?q=hello",
-            [{u"entities": {}, u"confidence": 1.0, u"intent": u"greet", u"_text": u"hello"}]
-        ),
-        ResponseTest(
-            u"/parse?q=hello ńöñàśçií",
-            [{u"entities": {}, u"confidence": 1.0, u"intent": u"greet", u"_text": u"hello ńöñàśçií"}]
-        ),
-    ]
-    for test in tests:
-        response = client.get(test.endpoint)
-        assert response.status_code == 200 and response.json == test.expected_response
+@pytest.mark.parametrize("response_test", [
+    ResponseTest(
+        "/parse?q=hello",
+        [{"entities": {}, "confidence": 1.0, "intent": "greet", "_text": "hello"}]
+    ),
+    ResponseTest(
+        "/parse?q=hello ńöñàśçií",
+        [{"entities": {}, "confidence": 1.0, "intent": "greet", "_text": "hello ńöñàśçií"}]
+    ),
+    ResponseTest(
+        "/parse?q=",
+        [{"entities": {}, "confidence": 0.0, "intent": None, "_text": ""}]
+    ),
+])
+def test_get_parse(client, response_test):
+    response = client.get(response_test.endpoint)
+    assert response.status_code == 200
+    assert len(response.json) == 1
+    assert all(prop in response.json[0] for prop in ['entities', 'intent', '_text', 'confidence'])
 
 
-def test_post_parse(client):
-    tests = [
-        ResponseTest(
-            "/parse",
-            [{u"entities": {}, u"confidence": 1.0, u"intent": u"greet", u"_text": u"hello"}],
-            payload={u"q": u"hello"}
-        ),
-        ResponseTest(
-            "/parse",
-            [{u"entities": {}, u"confidence": 1.0, u"intent": u"greet", u"_text": u"hello ńöñàśçií"}],
-            payload={u"q": u"hello ńöñàśçií"}
-        ),
-    ]
-    for test in tests:
-        response = client.post(test.endpoint, data=json.dumps(test.payload), content_type='application/json')
-        assert response.status_code == 200 and response.json == test.expected_response
+@pytest.mark.parametrize("response_test", [
+    ResponseTest(
+        "/parse",
+        [{"entities": {}, "confidence": 1.0, "intent": "greet", "_text": "hello"}],
+        payload={"q": "hello"}
+    ),
+    ResponseTest(
+        "/parse",
+        [{"entities": {}, "confidence": 1.0, "intent": "greet", "_text": "hello ńöñàśçií"}],
+        payload={"q": "hello ńöñàśçií"}
+    ),
+])
+def test_post_parse(client, response_test):
+    response = client.post(response_test.endpoint,
+                           data=json.dumps(response_test.payload), content_type='application/json')
+    assert response.status_code == 200
+    assert len(response.json) == 1
+    assert all(prop in response.json[0] for prop in ['entities', 'intent', '_text', 'confidence'])
 
 
 def test_post_train(client):
-    with codecs.open('data/examples/luis/demo-restaurants.json',
-                     encoding='utf-8') as train_file:
+    with io.open('data/examples/luis/demo-restaurants.json',
+                 encoding='utf-8') as train_file:
         train_data = json.loads(train_file.read())
     response = client.post("/train", data=json.dumps(train_data), content_type='application/json')
     assert response.status_code == 200
