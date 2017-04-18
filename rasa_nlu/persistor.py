@@ -11,9 +11,11 @@ import io
 import boto3
 import botocore
 from typing import Text
+from rasa_nlu.config import RasaNLUConfig
 
 
 def get_persistor(config):
+    # type: (RasaNLUConfig) -> Persistor
     """Returns an instance of the requested persistor. Currently, `aws` and `gcs` are supported"""
     p = None
     if 'storage' not in config:
@@ -26,10 +28,26 @@ def get_persistor(config):
     return p
 
 
-class AWSPersistor(object):
+class Persistor(object):
+    """Store models in cloud and fetch them when needed"""
+
+    def save_tar(self, target_dir):
+        # type: (Text) -> None
+        """Uploads a model persisted in the `target_dir` to cloud storage."""
+        raise NotImplementedError("")
+
+    def fetch_and_extract(self, filename):
+        # type: (Text) -> None
+        """Downloads a model that has previously been persisted to cloud storage."""
+        raise NotImplementedError("")
+
+
+class AWSPersistor(Persistor):
     """Store models on S3 and fetch them when needed instead of storing them on the local disk."""
 
     def __init__(self, data_dir, aws_region, bucket_name):
+        # type: (Text, Text, Text) -> None
+        Persistor.__init__(self)
         self.data_dir = data_dir
         self.s3 = boto3.resource('s3', region_name=aws_region)
         self.bucket_name = bucket_name
@@ -62,9 +80,10 @@ class AWSPersistor(object):
             tar.extractall(self.data_dir)
 
 
-class GCSPersistor(object):
+class GCSPersistor(Persistor):
     """Store models on Google Cloud Storage and fetch them when needed instead of storing them on the local disk."""
     def __init__(self, data_dir, bucket_name):
+        Persistor.__init__(self)
         from google.cloud import storage
         from google.cloud import exceptions
         self.data_dir = data_dir
@@ -79,6 +98,8 @@ class GCSPersistor(object):
         self.bucket = self.storage_client.bucket(bucket_name)
 
     def save_tar(self, target_dir):
+        # type: (Text) -> None
+        """Uploads a model persisted in the `target_dir` to GCS."""
         if not os.path.isdir(target_dir):
             raise ValueError('target_dir %r not found.' % target_dir)
 
