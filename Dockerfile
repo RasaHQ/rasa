@@ -11,9 +11,6 @@ VOLUME ["${RASA_NLU_HOME}", "${RASA_NLU_PYTHON_PACKAGES}"]
 # - git-core: Checkout git repos
 RUN apt-get update -qq && apt-get install -y --no-install-recommends \
   build-essential \
-  libssl-dev \
-  libffi-dev \
-  python-dev \
   git-core && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
