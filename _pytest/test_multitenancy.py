@@ -132,7 +132,7 @@ if __name__ == '__main__':
         trainer.validate()
         trainer.train(training_data)
         persistor = create_persistor(config)
-        trainer.persist(os.path.join("test_models", model_name), persistor, create_unique_subfolder=False)
+        trainer.persist("test_models", persistor, model_name=model_name)
 
     train("config_mitie.json", "test_model_mitie")
     train("config_spacy.json", "test_model_spacy_sklearn")

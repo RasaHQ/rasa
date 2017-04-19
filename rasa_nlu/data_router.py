@@ -66,6 +66,10 @@ class DataRouter(object):
             models[model_name] = model_name
         return models
 
+    def __interpreter_for_model(self, model_path):
+        metadata = DataRouter.read_model_metadata(model_path, self.config)
+        return Interpreter.load(metadata, self.config, self.component_builder)
+
     def __create_model_store(self):
         # Fallback for users that specified the model path as a string and hence only want a single default model.
         if type(self.config.server_model_dirs) is Text:
@@ -80,9 +84,7 @@ class DataRouter(object):
         for alias, model_path in list(model_dict.items()):
             try:
                 logging.info("Loading model '{}'...".format(model_path))
-                metadata = DataRouter.read_model_metadata(model_path, self.config)
-                interpreter = Interpreter.load(metadata, self.config, self.component_builder)
-                model_store[alias] = interpreter
+                model_store[alias] = self.__interpreter_for_model(model_path)
             except Exception as e:
                 logging.exception("Failed to load model '{}'. Error: {}".format(model_path, e))
         if not model_store:
@@ -147,13 +149,16 @@ class DataRouter(object):
     def parse(self, data):
         alias = data.get("model") or self.DEFAULT_MODEL_NAME
         if alias not in self.model_store:
-            raise InvalidModelError("No model found with alias '{}'".format(alias))
-        else:
-            model = self.model_store[alias]
-            response = model.parse(data['text'])
-            if self.responses:
-                self.responses.info(json.dumps(response, sort_keys=True))
-            return self.format_response(response)
+            try:
+                self.model_store[alias] = self.__interpreter_for_model(model_path=alias)
+            except:
+                raise InvalidModelError("No model found with alias '{}'".format(alias))
+
+        model = self.model_store[alias]
+        response = model.parse(data['text'])
+        if self.responses:
+            self.responses.info(json.dumps(response, sort_keys=True))
+        return self.format_response(response)
 
     def format_response(self, data):
         return self.emulator.normalise_response_json(data)
