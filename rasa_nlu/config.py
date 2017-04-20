@@ -46,7 +46,7 @@ class InvalidConfigError(ValueError):
     """Raised if an invalid configuration is encountered."""
 
     def __init__(self, message):
-        # type: (str) -> None
+        # type: (Text) -> None
         super(InvalidConfigError, self).__init__(message)
 
 
@@ -79,8 +79,10 @@ class RasaNLUConfig(object):
             if self.__dict__['pipeline'] in registry.registered_pipeline_templates:
                 self.__dict__['pipeline'] = registry.registered_pipeline_templates[self.__dict__['pipeline']]
             else:
-                warnings.warn("No pipeline specified and unknown pipeline template " +
-                              "'{}' passed.".format(self.__dict__['pipeline']))
+                raise InvalidConfigError("No pipeline specified and unknown pipeline template " +
+                                         "'{}' passed. Known pipeline templates: {}".format(
+                                             self.__dict__['pipeline'],
+                                             ", ".join(registry.registered_pipeline_templates.keys())))
 
         for key, value in self.items():
             setattr(self, key, value)
