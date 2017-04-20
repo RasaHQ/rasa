@@ -50,7 +50,7 @@ Creating your own pipelines is possible by directly passing the names of the com
 configuration variable, e.g. ``"pipeline": ["nlp_spacy", "ner_spacy", "ner_synonyms"]``. This creates a pipeline
 that only does entity recognition, but no intent classification. Hence, the output will not contain any useful intents.
 
-Build-in Components
+Built-in Components
 -------------------
 
 Short explanation of every components and it's attributes. If you are looking for more details, you should have
@@ -259,23 +259,6 @@ ner_synonyms
 
     this component will allow you to map the entities ``New York City`` and ``NYC`` to ``nyc``. The entitiy
     extraction will return ``nyc`` even though the message contains ``NYC``.
-
-ner_synonyms
-~~~~~~~~~~~~
-
-:Short: MITIE intent classifier (using a `text categorizer <https://github.com/mit-nlp/MITIE/blob/master/examples/python/text_categorizer_pure_model.py>`_)
-:Outputs: ``intent``
-:Output-Example:
-
-    .. code-block:: json
-
-        {
-            "intent": {"name": "greet", "confidence": 0.98343}
-        }
-
-:Description:
-    This classifier uses MITIE to perform intent classification. The underlying classifier
-    is using a multi class linear SV; with a sparse linear kernel (see `mitie trainer code <https://github.com/mit-nlp/MITIE/blob/master/mitielib/src/text_categorizer_trainer.cpp#L222>`_).
 
 ner_crf
 ~~~~~~~
