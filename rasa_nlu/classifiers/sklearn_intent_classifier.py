@@ -130,7 +130,7 @@ class SklearnIntentClassifier(Component):
 
         pred_result = self.predict_prob(X)
         # sort the probabilities retrieving the indices of the elements in sorted order
-        sorted_indices = np.flip(np.argsort(pred_result, axis=1), axis=1)
+        sorted_indices = np.fliplr(np.argsort(pred_result, axis=1))
         return sorted_indices, pred_result[:, sorted_indices]
 
     @classmethod
