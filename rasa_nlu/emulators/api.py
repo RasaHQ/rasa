@@ -31,7 +31,7 @@ class ApiEmulator(NoEmulator):
 
         return {
             "id": str(uuid.uuid1()),
-            "timestamp": datetime.now().isoformat("T"),
+            "timestamp": datetime.now().isoformat(),
             "result": {
                 "source": "agent",
                 "resolvedQuery": data["text"],
