@@ -70,6 +70,56 @@ def test_wit_response():
     }]
 
 
+def test_api_request():
+    from rasa_nlu.emulators.api import ApiEmulator
+    em = ApiEmulator()
+    norm = em.normalise_request_json({"q": ["arb text"]})
+    assert norm == {"text": "arb text", "model": "default"}
+
+
+def test_api_response():
+    from rasa_nlu.emulators.api import ApiEmulator
+    em = ApiEmulator()
+    data = {
+        "text": "I want italian food",
+        "intent": {"name": "inform", "confidence": 0.4794813722432127},
+        "entities": [{"entity": "cuisine", "value": "italian", "start": 7, "end": 14}]
+    }
+    norm = em.normalise_response_json(data)
+
+    assert norm == {
+        "id": norm["id"],
+        "result": {
+            "action": None,
+            "actionIncomplete": None,
+            "contexts": [],
+            "fulfillment": {},
+            "metadata": {
+                "intentId": norm["result"]["metadata"]["intentId"],
+                "intentName": {
+                    "confidence": data["intent"]["confidence"],
+                    "name": data["intent"]["name"]
+                },
+                "webhookUsed": "false"
+            },
+            "parameters": {
+                "cuisine": [
+                    "italian"
+                ]
+            },
+            "resolvedQuery": data["text"],
+            "score": None,
+            "source": "agent"
+        },
+        "sessionId": norm["sessionId"],
+        "status": {
+            "code": 200,
+            "errorType": "success"
+        },
+        "timestamp": norm["timestamp"]
+    }
+
+
 def test_dummy_request():
     from rasa_nlu.emulators import NoEmulator
     em = NoEmulator()
