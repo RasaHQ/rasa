@@ -92,7 +92,7 @@ class GCSPersistor(Persistor):
 
         try:
             self.storage_client.create_bucket(bucket_name)
-        except exceptions.Conflict, e:
+        except exceptions.Conflict as e:
             # bucket exists
             pass
         self.bucket = self.storage_client.bucket(bucket_name)
