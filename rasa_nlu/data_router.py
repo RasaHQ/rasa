@@ -98,11 +98,14 @@ class DataRouter(object):
         }
 
     @staticmethod
-    def load_model_from_s3(model_dir, config):
+    def load_model_from_cloud(model_dir, config):
         try:
-            from rasa_nlu.persistor import Persistor
-            p = Persistor(config['path'], config['aws_region'], config['bucket_name'])
-            p.fetch_and_extract('{0}.tar.gz'.format(os.path.basename(model_dir)))
+            from rasa_nlu.persistor import get_persistor
+            p = get_persistor(config)
+            if p is not None:
+                p.fetch_and_extract('{0}.tar.gz'.format(os.path.basename(model_dir)))
+            else:
+                raise RuntimeError("Unable to initialize persistor")
         except Exception as e:
             logging.warn("Using default interpreter, couldn't fetch model: {}".format(e.message))
 
@@ -117,7 +120,7 @@ class DataRouter(object):
 
             # download model from S3 if needed
             if not os.path.isdir(model_dir):
-                DataRouter.load_model_from_s3(model_dir, config)
+                DataRouter.load_model_from_cloud(model_dir, config)
 
             return Metadata.load(model_dir)
 

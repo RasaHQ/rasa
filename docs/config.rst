@@ -187,6 +187,32 @@ luis_data_tokenizer
 If you want to persist your trained models to S3, there are additional configuration options,
 see :ref:`section_persistence`
 
+storage
+~~~~~~~
+
+:Type: ``str``
+:Examples: ``"aws"`` or ``"gcs"``
+:Description:
+    Storage type for persistor. See :ref:`section_persistence` for more details.
+
+bucket_name
+~~~~~~~~~~~
+
+:Type: ``str``
+:Examples: ``"my_models"``
+:Description:
+    Name of the bucket in the cloud to store the models. If the specified bucket name does not exist, rasa will create it.
+    See :ref:`section_persistence` for more details.
+
+aws_region
+~~~~~~~~~~
+
+:Type: ``str``
+:Examples: ``"us-east-1"``
+:Description:
+    Name of the aws region to use. This is used only when ``"storage"`` is selected as ``"aws"``.
+    See :ref:`section_persistence` for more details.
+
 entity_crf_features
 ~~~~~~~~~~~~~~~~~~~
 

@@ -44,8 +44,8 @@ def create_persistor(config):
 
     persistor = None
     if "bucket_name" in config:
-        from rasa_nlu.persistor import Persistor
-        persistor = Persistor(config['path'], config['aws_region'], config['bucket_name'])
+        from rasa_nlu.persistor import get_persistor
+        persistor = get_persistor(config)
 
     return persistor
 

@@ -215,7 +215,7 @@ class Trainer(object):
         Metadata(metadata, dir_name).persist(dir_name)
 
         if persistor is not None:
-            persistor.send_tar_to_s3(dir_name)
+            persistor.save_tar(dir_name)
         logging.info("Successfully saved model into '{}'".format(os.path.abspath(dir_name)))
         return dir_name
 
