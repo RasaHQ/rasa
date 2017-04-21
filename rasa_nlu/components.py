@@ -55,6 +55,75 @@ def fill_args(arguments, context, config):
     return filled
 
 
+def validate_requirements(component_names):
+    # type: (List[Text]) -> None
+    """Ensures that all required python packages are installed to instantiate and used the passed components."""
+    from rasa_nlu import registry
+    import importlib
+
+    # Validate that all required packages are installed
+    failed_imports = []
+    for component_name in component_names:
+        component_class = registry.get_component_class(component_name)
+        for package in component_class.required_packages():
+            try:
+                importlib.import_module(package)
+            except ImportError:
+                failed_imports.append(package)
+    if failed_imports:
+        raise Exception("Not all required packages are installed. To use this pipeline, run\n\t" +
+                        "> pip install {}".format(" ".join(failed_imports)))
+
+
+def validate_arguments(pipeline, config, allow_empty_pipeline=False):
+    # type: (List[Component], RasaNLUConfig, bool) -> None
+    """Validates a pipeline before it is run. Ensures, that all arguments are present to train the pipeline."""
+
+    # Ensure the pipeline is not empty
+    if not allow_empty_pipeline and len(pipeline) == 0:
+        raise ValueError("Can not train an empty pipeline. " +
+                         "Make sure to specify a proper pipeline in the configuration using the `pipeline` key." +
+                         "The `backend` configuration key is NOT supported anymore.")
+
+    # Validate the init phase
+    context = {}
+
+    for component in pipeline:
+        try:
+            fill_args(component.pipeline_init_args(), context, config.as_dict())
+            updates = component.context_provides.get("pipeline_init", [])
+            for u in updates:
+                context[u] = None
+        except MissingArgumentError as e:
+            raise Exception("Failed to validate at component '{}'. {}".format(component.name, e.message))
+
+    after_init_context = context.copy()
+
+    context["training_data"] = None     # Prepare context for testing the training phase
+
+    for component in pipeline:
+        try:
+            fill_args(component.train_args(), context, config.as_dict())
+            updates = component.context_provides.get("train", [])
+            for u in updates:
+                context[u] = None
+        except MissingArgumentError as e:
+            raise Exception("Failed to validate at component '{}'. {}".format(component.name, e.message))
+
+    # Reset context to test processing phase and prepare for training phase
+    context = after_init_context
+    context["text"] = None
+
+    for component in pipeline:
+        try:
+            fill_args(component.process_args(), context, config.as_dict())
+            updates = component.context_provides.get("process", [])
+            for u in updates:
+                context[u] = None
+        except MissingArgumentError as e:
+            raise Exception("Failed to validate at component '{}'. {}".format(component.name, e.message))
+
+
 class MissingArgumentError(ValueError):
     """Raised when a function is called and not all parameters can be filled from the context / config.
 
