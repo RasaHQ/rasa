@@ -39,7 +39,7 @@ class MitieEntityExtractor(Component, EntityExtractor):
     @classmethod
     def required_packages(cls):
         # type: () -> List[Text]
-        return ["mitie", "testpackage"]
+        return ["mitie"]
 
     def extract_entities(self, text, tokens, feature_extractor):
         ents = []
