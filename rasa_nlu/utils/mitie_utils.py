@@ -9,6 +9,7 @@ import typing
 from builtins import str
 from typing import Any
 from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Text
 
@@ -31,6 +32,11 @@ class MitieNLP(Component):
         self.extractor = extractor
         self.mitie_file = mitie_file
         MitieNLP.ensure_proper_language_model(self.extractor)
+
+    @classmethod
+    def required_packages(cls):
+        # type: () -> List[Text]
+        return ["mitie"]
 
     @classmethod
     def create(cls, mitie_file):

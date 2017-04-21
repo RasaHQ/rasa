@@ -31,6 +31,11 @@ class MitieIntentClassifier(Component):
     def __init__(self, clf=None):
         self.clf = clf
 
+    @classmethod
+    def required_packages(cls):
+        # type: () -> List[Text]
+        return ["mitie"]
+
     def train(self, training_data, mitie_file, num_threads):
         # type: (TrainingData, Text, Optional[int]) -> None
         import mitie

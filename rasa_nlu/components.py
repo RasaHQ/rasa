@@ -101,6 +101,14 @@ class Component(object):
     output_provides = []
 
     @classmethod
+    def required_packages(cls):
+        # type: () -> List[Text]
+        """Specify which python packages need to be installed to use this component, e.g. `["spacy", "numpy"]`.
+
+        This list of requirements allows us to fail early during training if a required package is not installed."""
+        return []
+
+    @classmethod
     def load(cls, *args):
         # type: (*Any) -> Component
         """Load this component from file.

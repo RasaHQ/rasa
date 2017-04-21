@@ -8,6 +8,7 @@ import datetime
 import json
 import logging
 import os
+import importlib
 import io
 
 from typing import Any
@@ -124,6 +125,18 @@ class Trainer(object):
             raise ValueError("Can not train an empty pipeline. " +
                              "Make sure to specify a proper pipeline in the configuration using the `pipeline` key." +
                              "The `backend` configuration key is NOT supported anymore.")
+
+        # Validate that all required packages are installed
+        failed_imports = []
+        for component in self.pipeline:
+            for package in component.required_packages():
+                try:
+                    importlib.import_module(package)
+                except ImportError:
+                    failed_imports.append(package)
+        if failed_imports:
+            raise Exception("Not all required packages are installed. To use this pipeline, run\n\t" +
+                            "> pip install {}".format(" ".join(failed_imports)))
 
         # Validate the init phase
         context = {}

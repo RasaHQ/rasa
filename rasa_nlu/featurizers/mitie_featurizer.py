@@ -26,6 +26,11 @@ class MitieFeaturizer(Featurizer, Component):
         "process": ["intent_features"],
     }
 
+    @classmethod
+    def required_packages(cls):
+        # type: () -> List[Text]
+        return ["mitie", "numpy"]
+
     def ndim(self, feature_extractor):
         # type: (mitie.total_word_feature_extractor) -> int
 
@@ -50,7 +55,6 @@ class MitieFeaturizer(Featurizer, Component):
 
     def features_for_tokens(self, tokens, feature_extractor):
         # type: (List[Text], mitie.total_word_feature_extractor) -> np.ndarray
-        import numpy as np
 
         vec = np.zeros(self.ndim(feature_extractor))
         for token in tokens:

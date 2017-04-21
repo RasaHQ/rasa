@@ -28,6 +28,11 @@ class SpacyFeaturizer(Featurizer, Component):
         "process": ["intent_features"],
     }
 
+    @classmethod
+    def required_packages(cls):
+        # type: () -> List[Text]
+        return ["numpy"]
+
     def ndim(self, spacy_nlp):
         # type: (Language) -> int
 

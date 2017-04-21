@@ -50,6 +50,11 @@ class NGramFeaturizer(Component):
         self.best_num_ngrams = None
         self.all_ngrams = None
 
+    @classmethod
+    def required_packages(cls):
+        # type: () -> List[Text]
+        return ["spacy", "numpy", "sklearn", "cloudpickle"]
+
     def train(self, training_data, intent_features, spacy_nlp, max_number_of_ngrams):
         # type: (TrainingData, List[float], Language, Optional[int]) -> Dict[Text, Any]
 
