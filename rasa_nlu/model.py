@@ -192,7 +192,7 @@ class Interpreter(object):
 
     @staticmethod
     def load(meta, config, component_builder=None, skip_valdation=False):
-        # type: (Metadata, RasaNLUConfig, Optional[ComponentBuilder]) -> Interpreter
+        # type: (Metadata, RasaNLUConfig, Optional[ComponentBuilder], bool) -> Interpreter
         """Load a stored model and its components defined by the provided metadata."""
         context = {"model_dir": meta.model_dir}
         if component_builder is None:
