@@ -4,6 +4,9 @@ from __future__ import division
 from __future__ import absolute_import
 
 import logging
+import os
+from collections import defaultdict
+
 from builtins import object
 import inspect
 
@@ -55,6 +58,24 @@ def fill_args(arguments, context, config):
     return filled
 
 
+def __read_dev_requirements(file_name):
+    """Reads the dev requirements and groups the pinned versions into sections indicated by comments in the file.
+
+    The dev requirements should be grouped by preceeding comments. The comment should start with `#` followed by
+    the name of the requirement, e.g. `# sklearn`. All following lines till the next line starting with `#` will be
+    required to be installed if the name `sklearn` is requested to be available."""
+    with open(file_name) as f:
+        req_lines = f.readlines()
+    requirements = defaultdict(list)
+    current_name = None
+    for req_line in req_lines:
+        if req_line.startswith("#"):
+            current_name = req_line[1:].strip(' \n')
+        elif current_name is not None:
+            requirements[current_name].append(req_line.strip(' \n'))
+    return requirements
+
+
 def validate_requirements(component_names):
     # type: (List[Text]) -> None
     """Ensures that all required python packages are installed to instantiate and used the passed components."""
@@ -62,17 +83,24 @@ def validate_requirements(component_names):
     import importlib
 
     # Validate that all required packages are installed
-    failed_imports = []
+    failed_imports = set()
     for component_name in component_names:
         component_class = registry.get_component_class(component_name)
         for package in component_class.required_packages():
             try:
                 importlib.import_module(package)
             except ImportError:
-                failed_imports.append(package)
+                failed_imports.add(package)
     if failed_imports:
-        raise Exception("Not all required packages are installed. To use this pipeline, run\n\t" +
-                        "> pip install {}".format(" ".join(failed_imports)))
+        # if available, use the development file to figure out the correct version numbers for each requirement
+        if os.path.exists("dev-requirements.txt"):
+            all_requirements = __read_dev_requirements("dev-requirements.txt")
+            missing_requirements = [r for i in failed_imports for r in all_requirements[i]]
+            raise Exception("Not all required packages are installed. To use this pipeline, run\n\t" +
+                            "> pip install {}".format(" ".join(missing_requirements)))
+        else:
+            raise Exception("Not all required packages are installed. Please install {}".format(
+                    " ".join(failed_imports)))
 
 
 def validate_arguments(pipeline, config, allow_empty_pipeline=False):
