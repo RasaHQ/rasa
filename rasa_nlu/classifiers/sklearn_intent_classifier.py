@@ -84,7 +84,7 @@ class SklearnIntentClassifier(Component):
 
         # dirty str fix because sklearn is expecting str not instance of basestr...
         tuned_parameters = [{'C': [1, 2, 5, 10, 20, 100], 'kernel': [str('linear')]}]
-        cv_splits = max(2, min(MAX_CV_FOLDS, np.min(np.bincount(y)) / 5))  # aim for at least 5 examples in each fold
+        cv_splits = max(2, min(MAX_CV_FOLDS, np.min(np.bincount(y)) // 5))  # aim for at least 5 examples in each fold
 
         self.clf = GridSearchCV(SVC(C=1, probability=True),
                                 param_grid=tuned_parameters, n_jobs=num_threads,
