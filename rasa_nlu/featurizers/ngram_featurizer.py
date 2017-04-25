@@ -251,7 +251,7 @@ class NGramFeaturizer(Component):
         import numpy as np
 
         ngrams_to_use = self._ngrams_to_use(max_ngrams)
-        if ngrams_to_use == None:
+        if ngrams_to_use is None:
             return intent_features
         extras = np.array(self._ngrams_in_sentences(sentences, spacy_nlp, ngrams=ngrams_to_use))
         total = np.hstack((intent_features, extras))
