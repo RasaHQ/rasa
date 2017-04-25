@@ -60,16 +60,16 @@ class NGramFeaturizer(Component):
         self.best_num_ngrams = self._cross_validation(
             sentences, labels, intent_features, spacy_nlp, max_number_of_ngrams)
         logging.debug("Ngram collection took {} seconds".format(time.time() - start))
-        stacked = self._create_bow_vecs(intent_features, sentences, spacy_nlp)
+        stacked = self._create_bow_vecs(intent_features, sentences, spacy_nlp, max_ngrams=self.best_num_ngrams)
         return {"intent_features": stacked}
 
     def process(self, intent_features, text, spacy_nlp):
         # type: (List[float], Text, Language) -> Dict[Text, Any]
         import numpy as np
 
-        if self.all_ngrams:
+        if self.all_ngrams is not None:
             ngrams_to_use = self._ngrams_to_use(self.best_num_ngrams)
-            if not ngrams_to_use:
+            if ngrams_to_use is None:
                 return {"intent_features": intent_features}
 
             extras = np.array(self._ngrams_in_sentence(text, spacy_nlp, ngrams_to_use))
@@ -251,7 +251,7 @@ class NGramFeaturizer(Component):
         import numpy as np
 
         ngrams_to_use = self._ngrams_to_use(max_ngrams)
-        if not ngrams_to_use:
+        if ngrams_to_use == None:
             return intent_features
         extras = np.array(self._ngrams_in_sentences(sentences, spacy_nlp, ngrams=ngrams_to_use))
         total = np.hstack((intent_features, extras))
