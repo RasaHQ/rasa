@@ -52,7 +52,7 @@ class CRFEntityExtractor(Component, EntityExtractor):
 
     @classmethod
     def required_packages(cls):
-        return ["pycrfsuite", "spacy"]
+        return ["python-crfsuite", "spacy"]
 
     def train(self, training_data, spacy_nlp, entity_crf_BILOU_flag, entity_crf_features):
         # type: (TrainingData, Language, bool, [[Text]]) -> None
