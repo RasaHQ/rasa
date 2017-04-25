@@ -50,6 +50,11 @@ class SklearnIntentClassifier(Component):
             self.le = LabelEncoder()
         self.clf = clf
 
+    @classmethod
+    def required_packages(cls):
+        # type: () -> List[Text]
+        return ["numpy", "sklearn"]
+
     def transform_labels_str2num(self, labels):
         # type: (np.ndarray) -> np.ndarray
         """Transforms a list of strings into numeric label representation.

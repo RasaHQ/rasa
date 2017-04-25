@@ -25,6 +25,11 @@ class MitieTokenizer(Tokenizer, Component):
     def __init__(self):
         pass
 
+    @classmethod
+    def required_packages(cls):
+        # type: () -> List[Text]
+        return ["mitie"]
+
     def tokenize(self, text):
         # type: (Text) -> List[Text]
         from mitie import tokenize

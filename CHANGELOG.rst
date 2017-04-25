@@ -17,7 +17,8 @@ Added
 - python type annotations for nearly all public functions
 - support for arbitrary spacy model names
 - duckling components to provide normalized output for structured entities
-- Conditional random field entity extraction (Markov model for entity tagging, better named entity recognition with low and medium data and similarly well at big data level)
+- Conditional Random Field entity extraction (Markov model for entity tagging, better named entity recognition with low and medium data and similarly well at big data level)
+- dynamic check of requirements for the different components & error messages on missing dependencies
 
 Changed
 -------

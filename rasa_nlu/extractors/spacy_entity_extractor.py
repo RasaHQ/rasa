@@ -43,6 +43,11 @@ class SpacyEntityExtractor(Component, EntityExtractor):
         self.fine_tune_spacy_ner = fine_tune_spacy_ner
 
     @classmethod
+    def required_packages(cls):
+        # type: () -> List[Text]
+        return ["spacy"]
+
+    @classmethod
     def create(cls, fine_tune_spacy_ner):
         return SpacyEntityExtractor(fine_tune_spacy_ner)
 

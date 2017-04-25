@@ -67,7 +67,6 @@ def do_train(config, component_builder=None):
     trainer = Trainer(config, component_builder)
     persistor = create_persistor(config)
     training_data = load_data(config['data'])
-    trainer.validate()
     trainer.train(training_data)
     persisted_path = trainer.persist(config['path'], persistor)
     return trainer, persisted_path

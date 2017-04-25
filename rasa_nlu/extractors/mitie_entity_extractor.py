@@ -36,6 +36,11 @@ class MitieEntityExtractor(Component, EntityExtractor):
     def __init__(self, ner=None):
         self.ner = ner
 
+    @classmethod
+    def required_packages(cls):
+        # type: () -> List[Text]
+        return ["mitie"]
+
     def extract_entities(self, text, tokens, feature_extractor):
         ents = []
         offset = 0

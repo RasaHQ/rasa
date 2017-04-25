@@ -129,7 +129,6 @@ if __name__ == '__main__':
         trainer = Trainer(config)
         training_data = load_data(config['data'])
 
-        trainer.validate()
         trainer.train(training_data)
         persistor = create_persistor(config)
         trainer.persist(os.path.join("test_models", model_name), persistor, create_unique_subfolder=False)

@@ -26,6 +26,11 @@ class MitieFeaturizer(Featurizer, Component):
         "process": ["intent_features"],
     }
 
+    @classmethod
+    def required_packages(cls):
+        # type: () -> List[Text]
+        return ["mitie", "numpy"]
+
     def ndim(self, feature_extractor):
         # type: (mitie.total_word_feature_extractor) -> int
 

@@ -4,6 +4,9 @@ from __future__ import division
 from __future__ import absolute_import
 
 import logging
+import os
+from collections import defaultdict
+
 from builtins import object
 import inspect
 
@@ -55,6 +58,100 @@ def fill_args(arguments, context, config):
     return filled
 
 
+def __read_dev_requirements(file_name):
+    """Reads the dev requirements and groups the pinned versions into sections indicated by comments in the file.
+
+    The dev requirements should be grouped by preceeding comments. The comment should start with `#` followed by
+    the name of the requirement, e.g. `# sklearn`. All following lines till the next line starting with `#` will be
+    required to be installed if the name `sklearn` is requested to be available."""
+    with open(file_name) as f:
+        req_lines = f.readlines()
+    requirements = defaultdict(list)
+    current_name = None
+    for req_line in req_lines:
+        if req_line.startswith("#"):
+            current_name = req_line[1:].strip(' \n')
+        elif current_name is not None:
+            requirements[current_name].append(req_line.strip(' \n'))
+    return requirements
+
+
+def validate_requirements(component_names):
+    # type: (List[Text]) -> None
+    """Ensures that all required python packages are installed to instantiate and used the passed components."""
+    from rasa_nlu import registry
+    import importlib
+
+    # Validate that all required packages are installed
+    failed_imports = set()
+    for component_name in component_names:
+        component_class = registry.get_component_class(component_name)
+        for package in component_class.required_packages():
+            try:
+                importlib.import_module(package)
+            except ImportError:
+                failed_imports.add(package)
+    if failed_imports:
+        # if available, use the development file to figure out the correct version numbers for each requirement
+        if os.path.exists("dev-requirements.txt"):
+            all_requirements = __read_dev_requirements("dev-requirements.txt")
+            missing_requirements = [r for i in failed_imports for r in all_requirements[i]]
+            raise Exception("Not all required packages are installed. To use this pipeline, run\n\t" +
+                            "> pip install {}".format(" ".join(missing_requirements)))
+        else:
+            raise Exception("Not all required packages are installed. Please install {}".format(
+                    " ".join(failed_imports)))
+
+
+def validate_arguments(pipeline, config, allow_empty_pipeline=False):
+    # type: (List[Component], RasaNLUConfig, bool) -> None
+    """Validates a pipeline before it is run. Ensures, that all arguments are present to train the pipeline."""
+
+    # Ensure the pipeline is not empty
+    if not allow_empty_pipeline and len(pipeline) == 0:
+        raise ValueError("Can not train an empty pipeline. " +
+                         "Make sure to specify a proper pipeline in the configuration using the `pipeline` key." +
+                         "The `backend` configuration key is NOT supported anymore.")
+
+    # Validate the init phase
+    context = {}
+
+    for component in pipeline:
+        try:
+            fill_args(component.pipeline_init_args(), context, config.as_dict())
+            updates = component.context_provides.get("pipeline_init", [])
+            for u in updates:
+                context[u] = None
+        except MissingArgumentError as e:
+            raise Exception("Failed to validate at component '{}'. {}".format(component.name, e.message))
+
+    after_init_context = context.copy()
+
+    context["training_data"] = None     # Prepare context for testing the training phase
+
+    for component in pipeline:
+        try:
+            fill_args(component.train_args(), context, config.as_dict())
+            updates = component.context_provides.get("train", [])
+            for u in updates:
+                context[u] = None
+        except MissingArgumentError as e:
+            raise Exception("Failed to validate at component '{}'. {}".format(component.name, e.message))
+
+    # Reset context to test processing phase and prepare for training phase
+    context = after_init_context
+    context["text"] = None
+
+    for component in pipeline:
+        try:
+            fill_args(component.process_args(), context, config.as_dict())
+            updates = component.context_provides.get("process", [])
+            for u in updates:
+                context[u] = None
+        except MissingArgumentError as e:
+            raise Exception("Failed to validate at component '{}'. {}".format(component.name, e.message))
+
+
 class MissingArgumentError(ValueError):
     """Raised when a function is called and not all parameters can be filled from the context / config.
 
@@ -99,6 +196,14 @@ class Component(object):
     # wouldn't make much sense to keep an attribute in the output that is not generated. Every other attribute provided
     # in the context during the process step will be removed from the output json.
     output_provides = []
+
+    @classmethod
+    def required_packages(cls):
+        # type: () -> List[Text]
+        """Specify which python packages need to be installed to use this component, e.g. `["spacy", "numpy"]`.
+
+        This list of requirements allows us to fail early during training if a required package is not installed."""
+        return []
 
     @classmethod
     def load(cls, *args):
