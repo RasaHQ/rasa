@@ -69,7 +69,7 @@ def create_app(config, component_builder=None):
                 response = current_app.data_router.parse(data)
                 return jsonify(response)
             except InvalidModelError as e:
-                return jsonify({"error": "".format(e)}), 404
+                return jsonify({"error": "{}".format(e)}), 404
 
     @rasa_nlu_app.route("/status", methods=['GET'])
     @requires_auth
