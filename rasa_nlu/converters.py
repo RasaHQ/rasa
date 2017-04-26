@@ -235,7 +235,7 @@ def resolve_data_files(resource_name):
     try:
         return utils.recursively_find_files(resource_name)
     except ValueError as e:
-        raise ValueError("Invalid training data file / folder specified. " + e.message)
+        raise ValueError("Invalid training data file / folder specified. {}".format(e))
 
 
 def load_data(resource_name, fformat=None):

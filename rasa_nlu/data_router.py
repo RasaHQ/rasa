@@ -109,7 +109,7 @@ class DataRouter(object):
             else:
                 raise RuntimeError("Unable to initialize persistor")
         except Exception as e:
-            logging.warn("Using default interpreter, couldn't fetch model: {}".format(e.message))
+            logging.warn("Using default interpreter, couldn't fetch model: {}".format(e))
 
     @staticmethod
     def read_model_metadata(model_dir, config):
@@ -152,7 +152,7 @@ class DataRouter(object):
             try:
                 self.model_store[alias] = self.__interpreter_for_model(model_path=alias)
             except Exception as e:
-                raise InvalidModelError("No model found with alias '{}'. Error: {}".format(alias, e.message))
+                raise InvalidModelError("No model found with alias '{}'. Error: {}".format(alias, e))
 
         model = self.model_store[alias]
         response = model.parse(data['text'])

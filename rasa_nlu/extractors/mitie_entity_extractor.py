@@ -65,8 +65,7 @@ class MitieEntityExtractor(Component, EntityExtractor):
         tk = MitieTokenizer()
         tokens, offsets = tk.tokenize_with_offsets(text)
         if ent["start"] not in offsets:
-            message = "Invalid entity {0} in example '{1}':".format(ent, text) + \
-                      " entities must span whole tokens"
+            message = "Invalid entity {} in example '{}': entities must span whole tokens".format(ent, text)
             raise ValueError(message)
         start = offsets.index(ent["start"])
         _slice = text[ent["start"]:ent["end"]]

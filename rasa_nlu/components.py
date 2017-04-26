@@ -238,7 +238,7 @@ class ComponentBuilder(object):
                 self.__add_to_cache(component, cache_key)
             return component
         except MissingArgumentError as e:
-            raise Exception("Failed to load component '{}'. {}".format(component_name, e.message))
+            raise Exception("Failed to load component '{}'. {}".format(component_name, e))
 
     def create_component(self, component_name, config):
         # type: (Text, RasaNLUConfig) -> Component
@@ -257,4 +257,4 @@ class ComponentBuilder(object):
                 self.__add_to_cache(component, cache_key)
             return component
         except MissingArgumentError as e:
-            raise Exception("Failed to create component '{}'. {}".format(component_name, e.message))
+            raise Exception("Failed to create component '{}'. {}".format(component_name, e))

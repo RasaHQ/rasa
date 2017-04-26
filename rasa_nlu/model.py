@@ -46,7 +46,7 @@ class Metadata(object):
                 data = json.loads(f.read())
             return Metadata(data, model_dir)
         except Exception as e:
-            raise InvalidModelError("Failed to load model metadata. {}".format(e.message))
+            raise InvalidModelError("Failed to load model metadata. {}".format(e))
 
     def __init__(self, metadata, model_dir):
         # type: (Dict[Text, Any], Optional[Text]) -> None
@@ -137,7 +137,7 @@ class Trainer(object):
                 for u in updates:
                     context[u] = None
             except rasa_nlu.components.MissingArgumentError as e:
-                raise Exception("Failed to validate at component '{}'. {}".format(component.name, e.message))
+                raise Exception("Failed to validate at component '{}'. {}".format(component.name, e))
 
         after_init_context = context.copy()
 
@@ -150,7 +150,7 @@ class Trainer(object):
                 for u in updates:
                     context[u] = None
             except rasa_nlu.components.MissingArgumentError as e:
-                raise Exception("Failed to validate at component '{}'. {}".format(component.name, e.message))
+                raise Exception("Failed to validate at component '{}'. {}".format(component.name, e))
 
         # Reset context to test processing phase and prepare for training phase
         context = after_init_context
@@ -163,7 +163,7 @@ class Trainer(object):
                 for u in updates:
                     context[u] = None
             except rasa_nlu.components.MissingArgumentError as e:
-                raise Exception("Failed to validate at component '{}'. {}".format(component.name, e.message))
+                raise Exception("Failed to validate at component '{}'. {}".format(component.name, e))
 
     def train(self, data):
         # type: (TrainingData) -> Interpreter
@@ -252,7 +252,7 @@ class Interpreter(object):
                     context.update(updates)
                 pipeline.append(component)
             except rasa_nlu.components.MissingArgumentError as e:
-                raise Exception("Failed to initialize component '{}'. {}".format(component.name, e.message))
+                raise Exception("Failed to initialize component '{}'. {}".format(component.name, e))
 
         return Interpreter(pipeline, context, model_config)
 
@@ -288,7 +288,7 @@ class Interpreter(object):
                 if updates:
                     current_context.update(updates)
             except rasa_nlu.components.MissingArgumentError as e:
-                raise Exception("Failed to parse at component '{}'. {}".format(component.name, e.message))
+                raise Exception("Failed to parse at component '{}'. {}".format(component.name, e))
 
         result = self.default_output_attributes.copy()
         all_attributes = list(self.default_output_attributes.keys()) + self.output_attributes
