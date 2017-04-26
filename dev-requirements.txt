@@ -19,3 +19,5 @@ pytest-xdist==1.15.0
 pytest-services==1.1.14
 pytest-flask==0.10.0
 pytest==3.0.7
+# other
+google-cloud-storage==1.0.0
