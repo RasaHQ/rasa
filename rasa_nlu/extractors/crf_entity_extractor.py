@@ -175,14 +175,14 @@ class CRFEntityExtractor(Component, EntityExtractor):
         return json_ents
 
     @classmethod
-    def load(cls, model_dir):
+    def load(cls, model_dir, entity_extractor_crf):
         # type: (Text, Text) -> CRFEntityExtractor
         import pycrfsuite
 
-        if model_dir:
+        if model_dir and entity_extractor_crf:
             ent_tagger = pycrfsuite.Tagger()
-            ent_tagger.open(os.path.join(model_dir, 'ner', 'model.crfsuite'))
-            config = json.load(io.open(os.path.join(model_dir, 'ner', 'crf_config.json'), 'r'))
+            ent_tagger.open(os.path.join(model_dir, entity_extractor_crf, 'model.crfsuite'))
+            config = json.load(io.open(os.path.join(model_dir, entity_extractor_crf, 'crf_config.json'), 'r'))
 
             return CRFEntityExtractor(ent_tagger=ent_tagger,
                                       entity_crf_features=config['crf_features'],
@@ -208,11 +208,9 @@ class CRFEntityExtractor(Component, EntityExtractor):
 
             with io.open(entity_extractor_file, 'wb') as target:
                 shutil.copyfileobj(self.f.file, target)
-            return {
-                "entity_extractor": "ner",
-            }
+            return {"entity_extractor_crf": "ner"}
         else:
-            return {"entity_extractor": None}
+            return {"entity_extractor_crf": None}
 
     def _sentence_to_features(self, sentence):
         # type: (List[Tuple[Text, Text, Text]]) -> List[List[Text]]
@@ -290,7 +288,7 @@ class CRFEntityExtractor(Component, EntityExtractor):
 
         X_train = [self._sentence_to_features(sent) for sent in df_train]
         y_train = [self._sentence_to_labels(sent) for sent in df_train]
-        trainer = pycrfsuite.Trainer(verbose=True)
+        trainer = pycrfsuite.Trainer(verbose=False)
 
         for xseq, yseq in zip(X_train, y_train):
             trainer.append(xseq, yseq)
