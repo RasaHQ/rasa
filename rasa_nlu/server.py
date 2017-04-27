@@ -77,7 +77,6 @@ def create_app(config, component_builder=None):
         return jsonify(current_app.data_router.get_status())
 
     @rasa_nlu_app.route("/", methods=['GET'])
-    @requires_auth
     def hello():
         return "hello"
 
