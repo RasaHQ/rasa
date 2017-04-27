@@ -33,6 +33,9 @@ class InvalidModelError(Exception):
     def __init__(self, message):
         self.message = message
 
+    def __str__(self):
+        return self.message
+
 
 class Metadata(object):
     """Captures all necessary information about a model to load it and prepare it for usage."""

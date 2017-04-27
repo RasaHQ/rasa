@@ -73,7 +73,7 @@ def test_get_parse(client, response_test):
 def test_get_parse_invalid_model(client, response_test):
     response = client.get(response_test.endpoint)
     assert response.status_code == 404
-    assert response.json == response_test.expected_response
+    assert response.json.get("error").startswith(response_test.expected_response["error"])
 
 
 @pytest.mark.parametrize("response_test", [
@@ -116,7 +116,7 @@ def test_post_parse_invalid_model(client, response_test):
     response = client.post(response_test.endpoint,
                            data=json.dumps(response_test.payload), content_type='application/json')
     assert response.status_code == 404
-    assert response.json == response_test.expected_response
+    assert response.json.get("error").startswith(response_test.expected_response["error"])
 
 
 if __name__ == '__main__':
