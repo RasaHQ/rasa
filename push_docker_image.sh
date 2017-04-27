@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ "$TRAVIS_PYTHON_VERSION" = "2.7" ]; then
+if [ "$TRAVIS_PYTHON_VERSION" = "2.7" ] && [ "$TRAVIS_PULL_REQUEST" = "false" ]; then
     KEYFILE=golastmile-9baf26f3fde2.json
     openssl aes-256-cbc -K $encrypted_faee90f6e198_key -iv $encrypted_faee90f6e198_iv -in golastmile-9baf26f3fde2.json.enc -out "$KEYFILE" -d
 
