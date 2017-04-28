@@ -36,7 +36,7 @@ def temp_log_file_dir():
 
 
 def run_train(config, component_builder):
-    (trained, path) = do_train(config, component_builder)
+    (trained, _, path) = do_train(config, component_builder)
     return trained, path
 
 

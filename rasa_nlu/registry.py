@@ -26,6 +26,8 @@ from rasa_nlu.featurizers.mitie_featurizer import MitieFeaturizer
 from rasa_nlu.featurizers.ngram_featurizer import NGramFeaturizer
 from rasa_nlu.featurizers.spacy_featurizer import SpacyFeaturizer
 from rasa_nlu.tokenizers.mitie_tokenizer import MitieTokenizer
+from rasa_nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
+from rasa_nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa_nlu.utils.mitie_utils import MitieNLP
 from rasa_nlu.utils.spacy_utils import SpacyNLP
 
@@ -35,7 +37,8 @@ if typing.TYPE_CHECKING:
 # Classes of all known components. If a new component should be added, its class needs to be listed here.
 component_classes = [
     SpacyNLP, SpacyEntityExtractor, SklearnIntentClassifier, SpacyFeaturizer,
-    MitieNLP, MitieEntityExtractor, MitieIntentClassifier, MitieFeaturizer, MitieTokenizer,
+    MitieNLP, MitieEntityExtractor, MitieIntentClassifier, MitieFeaturizer,
+    MitieTokenizer, SpacyTokenizer, WhitespaceTokenizer,
     KeywordIntentClassifier, EntitySynonymMapper, NGramFeaturizer, DucklingExtractor, CRFEntityExtractor]
 
 # Mapping from a components name to its class to allow name based lookup.

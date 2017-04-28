@@ -12,6 +12,7 @@ from typing import Tuple
 
 from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.converters import load_data
+from rasa_nlu.model import Interpreter
 from rasa_nlu.model import Trainer
 
 from rasa_nlu.config import RasaNLUConfig
@@ -61,15 +62,15 @@ def init():
 
 
 def do_train(config, component_builder=None):
-    # type: (RasaNLUConfig, Optional[ComponentBuilder]) -> Tuple[Trainer, Text]
+    # type: (RasaNLUConfig, Optional[ComponentBuilder]) -> Tuple[Trainer, Interpreter, Text]
     """Loads the trainer and the data and runs the training of the specified model."""
 
     trainer = Trainer(config, component_builder)
     persistor = create_persistor(config)
     training_data = load_data(config['data'])
-    trainer.train(training_data)
+    interpreter = trainer.train(training_data)
     persisted_path = trainer.persist(config['path'], persistor)
-    return trainer, persisted_path
+    return trainer, interpreter, persisted_path
 
 
 if __name__ == '__main__':
