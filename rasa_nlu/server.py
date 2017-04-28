@@ -30,6 +30,8 @@ def create_arg_parser():
     parser.add_argument('-m', '--mitie_file',
                         help='file with mitie total_word_feature_extractor')
     parser.add_argument('-p', '--path', help="path where model files will be saved")
+    parser.add_argument('--pipeline', help="The pipeline to use. Either a pipeline template name or a list of " +
+                                           "components separated by comma")
     parser.add_argument('-P', '--port', type=int, help='port on which to run server')
     parser.add_argument('-t', '--token',
                         help="auth token. If set, reject requests which don't provide this token as a query parameter")
