@@ -39,7 +39,7 @@ install:
 - pip list
 script: py.test --pep8 --boxed -n0
 after_success:
-- ./push_docker_image.sh
+- ./build_push_docker.sh
 deploy:
   provider: pypi
   user: amn41
