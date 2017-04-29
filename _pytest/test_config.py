@@ -105,7 +105,7 @@ def test_pipeline_splits_list():
 
 
 def test_pipeline_looksup_registry():
-    pipeline_template = registered_pipeline_templates.keys()[0]
+    pipeline_template = list(registered_pipeline_templates)[0]
     file_config = {}
     cmdline_args = {"pipeline": pipeline_template}
     env_vars = {}
