@@ -112,4 +112,3 @@ def test_model_hot_reloading(client, rasa_default_train_data):
     time.sleep(3)    # training should be quick as the keyword model doesn't do any training
     response = client.get(query)
     assert response.status_code == 200, "Model should now exist after it got trained"
-
