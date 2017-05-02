@@ -32,7 +32,7 @@ def create_argparser():
     parser.add_argument('-d', '--data', default=None, help="file containing training data")
     parser.add_argument('-c', '--config', required=True, help="config file")
     parser.add_argument('-l', '--language', default=None, choices=['de', 'en'], help="model and data language")
-    parser.add_argument('-t', '--num_threads', default=1, type=int,
+    parser.add_argument('-t', '--num_threads', default=None, type=int,
                         help="number of threads to use during model training")
     parser.add_argument('-m', '--mitie_file', default=None,
                         help='file with mitie total_word_feature_extractor')
