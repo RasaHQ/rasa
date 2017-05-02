@@ -6,10 +6,11 @@ if [ "$TRAVIS_PYTHON_VERSION" = "2.7" ] \
 
     DIR=docker_minimal
     mkdir $DIR
-    cp -r rasa_nlu _pytest entrypoint.sh requirements.txt setup.py config_defaults.json $DIR
+    cp -r rasa_nlu _pytest test_models entrypoint.sh requirements.txt setup.py config_defaults.json $DIR
     cp Dockerfile_minimal $DIR/Dockerfile
     cd $DIR
-    docker build -t golastmile/rasa_nlu_minimal:$TRAVIS_TAG -t golastmile/rasa_nlu_minimal:latest .
+    docker build -t golastmile/rasa_nlu:$TRAVIS_TAG -t golastmile/rasa_nlu:latest .
+    cd ..
     rm -rf $DIR
 
     DIR=docker_full
@@ -17,7 +18,8 @@ if [ "$TRAVIS_PYTHON_VERSION" = "2.7" ] \
     cp dev-requirements.txt $DIR/dev-requirements.txt
     cp Dockerfile_full $DIR/Dockerfile
     cd $DIR
-    docker build -t golastmile/rasa_nlu:$1 -t golastmile/rasa_nlu:latest .
+    docker build -t golastmile/rasa_nlu_full:$TRAVIS_TAG -t golastmile/rasa_nlu_full:latest .
+    cd ..
     rm -rf $DIR
 
     docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
