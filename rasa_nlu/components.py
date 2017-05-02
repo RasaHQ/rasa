@@ -123,7 +123,7 @@ def validate_arguments(pipeline, config, allow_empty_pipeline=False):
             for u in updates:
                 context[u] = None
         except MissingArgumentError as e:
-            raise Exception("Failed to validate at component '{}'. {}".format(component.name, e.message))
+            raise Exception("Failed to validate at component '{}'. {}".format(component.name, e))
 
     after_init_context = context.copy()
 
@@ -136,7 +136,7 @@ def validate_arguments(pipeline, config, allow_empty_pipeline=False):
             for u in updates:
                 context[u] = None
         except MissingArgumentError as e:
-            raise Exception("Failed to validate at component '{}'. {}".format(component.name, e.message))
+            raise Exception("Failed to validate at component '{}'. {}".format(component.name, e))
 
     # Reset context to test processing phase and prepare for training phase
     context = after_init_context
@@ -149,7 +149,7 @@ def validate_arguments(pipeline, config, allow_empty_pipeline=False):
             for u in updates:
                 context[u] = None
         except MissingArgumentError as e:
-            raise Exception("Failed to validate at component '{}'. {}".format(component.name, e.message))
+            raise Exception("Failed to validate at component '{}'. {}".format(component.name, e))
 
 
 class MissingArgumentError(ValueError):
@@ -162,6 +162,9 @@ class MissingArgumentError(ValueError):
     def __init__(self, message):
         # type: (Text) -> None
         super(MissingArgumentError, self).__init__(message)
+
+    def __str__(self):
+        return self.message
 
 
 class Component(object):
@@ -343,7 +346,7 @@ class ComponentBuilder(object):
                 self.__add_to_cache(component, cache_key)
             return component
         except MissingArgumentError as e:
-            raise Exception("Failed to load component '{}'. {}".format(component_name, e.message))
+            raise Exception("Failed to load component '{}'. {}".format(component_name, e))
 
     def create_component(self, component_name, config):
         # type: (Text, RasaNLUConfig) -> Component
@@ -362,4 +365,4 @@ class ComponentBuilder(object):
                 self.__add_to_cache(component, cache_key)
             return component
         except MissingArgumentError as e:
-            raise Exception("Failed to create component '{}'. {}".format(component_name, e.message))
+            raise Exception("Failed to create component '{}'. {}".format(component_name, e))

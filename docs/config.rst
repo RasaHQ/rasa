@@ -25,6 +25,15 @@ Options
 -------
 A short explanation and examples for each configuration value.
 
+name
+~~~~
+
+:Type: ``str``
+:Examples: ``"my_model_name"``
+:Description:
+     Defines a models name used to store it and to refere to it when using the http server.
+     The default is ``null`` which will lead to a generated model name, e.g. ``"model_20170426-230305"``.
+
 pipeline
 ~~~~~~~~
 
