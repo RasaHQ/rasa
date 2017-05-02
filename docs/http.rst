@@ -47,7 +47,7 @@ Endpoints
 ``POST /parse`` (no emulation)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-you must POST data in this format ``'{"q":"<your text to parse>"}'``, you can do this with
+You must POST data in this format ``'{"q":"<your text to parse>"}'``, you can do this with
 
 .. code-block:: bash
 
@@ -57,8 +57,11 @@ you must POST data in this format ``'{"q":"<your text to parse>"}'``, you can do
 ``POST /train``
 ^^^^^^^^^^^^^^^
 
-you can post your training data to this endpoint to train a new model. 
-this starts a separate process which you can monitor with the ``/status`` endpoint. 
+You can post your training data to this endpoint to train a new model.
+this starts a separate process which you can monitor with the ``/status`` endpoint. If you want to name your model
+to be able to use it during parse requests later on, you should pass the name ``/train?name=my_model``. Any parameter
+passed with the query string will be treated as a configuration parameter of the model, hence you can change all
+the configuration values listed in the configuration section by passing in their name and the adjusted value.
 
 .. code-block:: bash
 
@@ -68,7 +71,7 @@ this starts a separate process which you can monitor with the ``/status`` endpoi
 ``GET /status``
 ^^^^^^^^^^^^^^^
 
-this checks if there is currently a training process running (you can only run one at a time).
+This checks if there is currently a training process running (you can only run one at a time).
 also returns a list of available models the server can use to fulfill ``/parse`` requests.
 
 .. code-block:: bash

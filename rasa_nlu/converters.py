@@ -7,6 +7,7 @@ import json
 import re
 import warnings
 
+import logging
 from typing import Any
 from typing import Dict
 from typing import List
@@ -247,6 +248,8 @@ def load_data(resource_name, fformat=None):
     if not fformat:
         fformat = guess_format(files)
 
+    logging.info("Training data format at {} is {}".format(resource_name, fformat))
+
     if fformat == LUIS_FILE_FORMAT:
         return load_luis_data(files[0])
     elif fformat == WIT_FILE_FORMAT:
@@ -256,4 +259,4 @@ def load_data(resource_name, fformat=None):
     elif fformat == RASA_FILE_FORMAT:
         return load_rasa_data(files[0])
     else:
-        raise ValueError("unknown training file format : {0}".format(fformat))
+        raise ValueError("unknown training file format : {} for file {}".format(fformat, resource_name))

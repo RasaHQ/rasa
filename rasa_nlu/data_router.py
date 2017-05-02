@@ -173,12 +173,15 @@ class DataRouter(object):
             "available_models": models
         }
 
-    def start_train_process(self, data):
+    def start_train_process(self, data, config_values):
         logging.info("Starting model training")
         f = tempfile.NamedTemporaryFile("w+", suffix="_training_data.json", delete=False)
         f.write(data)
         f.close()
+        # TODO: fix config handling
         _config = self.config.as_dict()
+        for key, val in config_values.items():
+            _config[key] = val
         _config["data"] = f.name
         train_config = RasaNLUConfig(cmdline_args=_config)
         process = multiprocessing.Process(target=do_train, args=(train_config, self.component_builder))

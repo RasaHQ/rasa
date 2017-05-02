@@ -206,10 +206,10 @@ class Trainer(object):
 
         if model_name is None:
             dir_name = os.path.join(path, "model_" + timestamp)
-            os.makedirs(dir_name)
         else:
             dir_name = os.path.join(path, model_name)
 
+        os.makedirs(dir_name)
         metadata.update(self.training_data.persist(dir_name))
 
         for component in self.pipeline:

@@ -61,3 +61,11 @@ def test_train_spacy_sklearn_finetune_ner(component_builder):
     # Although the model is trained on restaurant entities, we can use the entities (`GPE`, `DATE`)
     # from spacy since we are fine tuning. This should even be the case if the rasa-entity training data changes!
     assert {u'start': 15, u'end': 28, u'value': u'New York City', u'entity': u'GPE'} in entities
+
+
+def test_train_named_model(component_builder):
+    _config = utilities.base_test_conf("keyword")
+    _config['name'] = "my_keyword_model"
+    (trained, persisted_path) = utilities.run_train(_config, component_builder)
+    assert trained.pipeline
+    assert persisted_path.strip("/\\").endswith("my_keyword_model")    # should be saved in a dir named after model

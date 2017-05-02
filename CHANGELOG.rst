@@ -18,6 +18,7 @@ Added
 - support for arbitrary spacy model names
 - duckling components to provide normalized output for structured entities
 - Conditional random field entity extraction (Markov model for entity tagging, better named entity recognition with low and medium data and similarly well at big data level)
+- allow naming of trained models instead of generated model names
 
 Changed
 -------

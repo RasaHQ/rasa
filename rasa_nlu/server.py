@@ -85,7 +85,7 @@ def create_app(config, component_builder=None):
     @requires_auth
     def train():
         data_string = request.get_data(as_text=True)
-        current_app.data_router.start_train_process(data_string)
+        current_app.data_router.start_train_process(data_string, request.args)
         return jsonify(info="training started. Current pids: {}".format(current_app.data_router.train_procs))
 
     logging.basicConfig(filename=config['log_file'], level=config['log_level'])
