@@ -86,8 +86,8 @@ class EntitySynonymMapper(Component):
 
     def add_entities_if_synonyms(self, entity_a, entity_b):
         if entity_b is not None:
-            original = entity_a.lower() if type(entity_a) == str else str(entity_a)
-            replacement = entity_b.lower() if type(entity_b) == str else str(entity_b)
+            original = entity_a.lower() if type(entity_a) == str else str(entity_a).lower()
+            replacement = entity_b if type(entity_b) == str else str(entity_b)
 
             if original != replacement:
                 self.synonyms[original] = replacement
