@@ -20,6 +20,9 @@ from rasa_nlu.training_data import TrainingData
 # How many intents are at max put into the output intent ranking, everything else will be cut off
 INTENT_RANKING_LENGTH = 10
 
+# We try to find a good number of cross folds to use during intent training, this specifies the max number of folds
+MAX_CV_FOLDS = 5
+
 if typing.TYPE_CHECKING:
     import sklearn
     import numpy as np
@@ -46,6 +49,11 @@ class SklearnIntentClassifier(Component):
         else:
             self.le = LabelEncoder()
         self.clf = clf
+
+    @classmethod
+    def required_packages(cls):
+        # type: () -> List[Text]
+        return ["numpy", "sklearn"]
 
     def transform_labels_str2num(self, labels):
         # type: (np.ndarray) -> np.ndarray
@@ -81,7 +89,7 @@ class SklearnIntentClassifier(Component):
 
         # dirty str fix because sklearn is expecting str not instance of basestr...
         tuned_parameters = [{'C': [1, 2, 5, 10, 20, 100], 'kernel': [str('linear')]}]
-        cv_splits = max(2, min(5, np.min(np.bincount(y))))
+        cv_splits = max(2, min(MAX_CV_FOLDS, np.min(np.bincount(y)) // 5))  # aim for at least 5 examples in each fold
 
         self.clf = GridSearchCV(SVC(C=1, probability=True),
                                 param_grid=tuned_parameters, n_jobs=num_threads,

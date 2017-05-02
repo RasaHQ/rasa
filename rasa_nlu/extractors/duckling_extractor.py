@@ -39,6 +39,11 @@ class DucklingExtractor(Component):
         self.duckling = duckling
 
     @classmethod
+    def required_packages(cls):
+        # type: () -> List[Text]
+        return ["duckling"]
+
+    @classmethod
     def create(cls, duckling_processing_mode):
         if duckling_processing_mode not in DUCKLING_PROCESSING_MODES:
             raise ValueError("Invalid duckling processing mode. Got '{}'. Allowed: {}".format(

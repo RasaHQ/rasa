@@ -20,11 +20,29 @@ If you want to use the bleeding edge version use github + setup.py:
 
     git clone git@github.com:golastmile/rasa_nlu.git
     cd rasa_nlu
+    pip install -r requirements.txt
     python setup.py install
 
+rasa NLU allows you to use components to process your messages. E.g. there is a component for intent classification and
+there are several different components for entity recognition. The different components
+have their own requirements. To get you started quickly, this installation guide only installs
+the basic requirements, you may need to install other dependencies if you want to use
+certain components. When running rasa NLU it will check if all needed dependencies are
+installed and tell you which are missing, if any.
+
+.. note::
+    If you want to make sure you got all the dependencies installed any component might ever need, and you
+    don't mind the additional dependencies lying around, you can use
+
+    .. code-block:: bash
+
+        pip install -r dev-requirements.txt
+
+    to install all requirements.
 
 Setting up a backend
 ~~~~~~~~~~~~~~~~~~~~
+Most of the processing pipeline you can use with rasa NLU either require MITIE, spaCy or sklearn to be installed.
 
 Option 1 : MITIE
 ----------------

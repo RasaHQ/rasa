@@ -70,11 +70,11 @@ class RasaNLUConfig(object):
             self.override(file_config)
 
         if env_vars is not None:
-            env_config = self.format_env_vars(env_vars)
+            env_config = self.create_env_config(env_vars)
             self.override(env_config)
 
         if cmdline_args is not None:
-            cmdline_config = {k: v for k, v in list(cmdline_args.items()) if v is not None}
+            cmdline_config = self.create_cmdline_config(cmdline_args)
             self.override(cmdline_config)
 
         if isinstance(self.__dict__['pipeline'], six.string_types):
@@ -114,9 +114,19 @@ class RasaNLUConfig(object):
     def view(self):
         return json.dumps(self.__dict__, indent=4)
 
-    def format_env_vars(self, env_vars):
+    def split_pipeline(self, config):
+        if "pipeline" in config.keys() and "," in config["pipeline"]:
+            config["pipeline"] = config["pipeline"].split(",")
+        return config
+
+    def create_cmdline_config(self, cmdline_args):
+        cmdline_config = {k: v for k, v in list(cmdline_args.items()) if v is not None}
+        return self.split_pipeline(cmdline_config)
+
+    def create_env_config(self, env_vars):
         keys = [key for key in env_vars.keys() if "RASA" in key]
-        return {key.split('RASA_')[1].lower(): env_vars[key] for key in keys}
+        env_config = {key.split('RASA_')[1].lower(): env_vars[key] for key in keys}
+        return self.split_pipeline(env_config)
 
     def is_set(self, key):
         return key in self.__dict__ and self[key] is not None
