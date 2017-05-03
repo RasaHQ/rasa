@@ -264,9 +264,9 @@ class Interpreter(object):
 
     def init_context(self, context):
 
-        #TODO: create a pipeline class that allows to query certain attributes about the pipeline
-        #check if there is a component that outputs entities
+        # TODO: create a pipeline class that allows to query certain attributes about the pipeline
+        # check if there is a component that outputs entities
         if "entities" in [processes for component in self.pipeline for processes in component.output_provides]:
-            #Provide entities in the context so that process arguments can be filled
+            # Provide entities in the context so that process arguments can be filled
             context["entities"] = []
         return context
