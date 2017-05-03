@@ -85,6 +85,7 @@ rasa is a set of tools for building more advanced bots, developed by `LASTMILE <
    dataformat
    http
    python
+   entities
    closeloop
    persist
    languages
