@@ -172,6 +172,6 @@ class SpacyEntityExtractor(Component, EntityExtractor):
                 try:
                     nlp.tagger(doc)
                 except TypeError as e:
-                    Exception("The spaCy model loaded does not have a POS tagger trained. {}".format(e.message))
+                    Exception("The spaCy model loaded does not have a POS tagger trained. {}".format(e))
                 gold = GoldParse(doc, entities=entity_offsets)
                 ner.update(doc, gold)
