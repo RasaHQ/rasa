@@ -8,6 +8,7 @@ import io
 import json
 import os
 import warnings
+import six
 
 from typing import Any
 from typing import Dict
@@ -86,8 +87,9 @@ class EntitySynonymMapper(Component):
 
     def add_entities_if_synonyms(self, entity_a, entity_b):
         if entity_b is not None:
-            original = entity_a.lower() if type(entity_a) == str else str(entity_a).lower()
-            replacement = entity_b if type(entity_b) == str else str(entity_b)
+            original = entity_a if isinstance(entity_a, six.text_type) else six.text_type(entity_a)
+            original = original.lower()
+            replacement = entity_b if isinstance(entity_b, six.text_type) else six.text_type(entity_b)
 
             if original != replacement:
                 self.synonyms[original] = replacement
