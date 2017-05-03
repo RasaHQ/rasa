@@ -84,12 +84,12 @@ class NGramFeaturizer(Component):
             return {"intent_features": intent_features}
 
     @classmethod
-    def load(cls, model_dir, featurizer_file):
+    def load(cls, model_dir, ngram_featurizer):
         # type: (Text, Text) -> NGramFeaturizer
         import cloudpickle
 
-        if model_dir and featurizer_file:
-            classifier_file = os.path.join(model_dir, featurizer_file)
+        if model_dir and ngram_featurizer:
+            classifier_file = os.path.join(model_dir, ngram_featurizer)
             with io.open(classifier_file, 'rb') as f:
                 if PY3:
                     return cloudpickle.load(f, encoding="latin-1")
