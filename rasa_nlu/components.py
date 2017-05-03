@@ -115,6 +115,10 @@ def validate_arguments(pipeline, config, allow_empty_pipeline=False):
 
     # Validate the init phase
     context = {}
+    # check if there is a component that outputs entities
+    if "entities" in [processes for component in pipeline for processes in component.output_provides]:
+        # Provide entities in the context so that process arguments can be filled
+        context["entities"] = context.get("entities", [])
 
     for component in pipeline:
         try:

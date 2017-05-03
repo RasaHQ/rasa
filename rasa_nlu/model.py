@@ -134,6 +134,10 @@ class Trainer(object):
         self.training_data = data
 
         context = {}
+        # check if there is a component that outputs entities
+        if "entities" in [processes for component in self.pipeline for processes in component.output_provides]:
+            # Provide entities in the context so that process arguments can be filled
+            context["entities"] = context.get("entities", [])
 
         for component in self.pipeline:
             args = components.fill_args(component.pipeline_init_args(), context, self.config.as_dict())
@@ -195,6 +199,11 @@ class Interpreter(object):
         # type: (Metadata, RasaNLUConfig, Optional[ComponentBuilder], bool) -> Interpreter
         """Load a stored model and its components defined by the provided metadata."""
         context = {"model_dir": meta.model_dir}
+        # check if there is a component that outputs entities
+        if "entities" in [processes for component in meta.pipeline for processes in component.output_provides]:
+            # Provide entities in the context so that process arguments can be filled
+            context["entities"] = context.get("entities", [])
+
         if component_builder is None:
             # If no builder is passed, every interpreter creation will result in a new builder.
             # hence, no components are reused.
@@ -268,5 +277,5 @@ class Interpreter(object):
         # check if there is a component that outputs entities
         if "entities" in [processes for component in self.pipeline for processes in component.output_provides]:
             # Provide entities in the context so that process arguments can be filled
-            context["entities"] = []
+            context["entities"] = context.get("entities", [])
         return context
