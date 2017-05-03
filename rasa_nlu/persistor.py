@@ -7,6 +7,8 @@ import os
 import shutil
 import tarfile
 import io
+import json
+import pickle
 
 import boto3
 import botocore
@@ -82,6 +84,7 @@ class AWSPersistor(Persistor):
 
 class GCSPersistor(Persistor):
     """Store models on Google Cloud Storage and fetch them when needed instead of storing them on the local disk."""
+
     def __init__(self, data_dir, bucket_name):
         Persistor.__init__(self)
         from google.cloud import storage
@@ -119,3 +122,41 @@ class GCSPersistor(Persistor):
 
         with tarfile.open(filename, "r:gz") as tar:
             tar.extractall(self.data_dir)
+
+
+class MongoDBPersistor(Persistor):
+    """Store models on MongoDB and fetch them when needed instead of storing them on the file system."""
+
+    data_file_names = ['intent_classifier.pkl', 'metadata.json', 'training_data.json', 'ner/config.json', 'ner/model']
+
+    def __init__(self, mongo_uri, collection_name, restore_dir=None):
+        Persistor.__init__(self)
+        from pymongo import MongoClient
+        self.restore_dir = restore_dir
+        client = MongoClient(mongo_uri)
+        self.db = client.get_default_database()
+        self.collection = self.db[collection_name]
+
+    def save_tar(self, target_dir):
+        # type: (Text) -> None
+        """Uploads a model persisted in the `target_dir` to mongodb."""
+
+        if not os.path.isdir(target_dir):
+            raise ValueError("Target directory '{}' not found.".format(target_dir))
+        base_name = os.path.basename(target_dir)
+        # base_dir = os.path.dirname(target_dir)
+        data_dict = {'dir_name': base_name}
+        for file_name in MongoDBPersistor.data_file_names:
+            file_loc = "{0}/{1}".format(target_dir, file_name)
+            _, file_extension = os.path.splitext(file_name)
+            if file_extension == '.json':
+                with open(file_loc) as json_file:
+                    json_data = json.load(json_file)
+                    data_dict[file_name] = json_data
+            else:
+                with open(file_loc, 'rb') as pickle_file:
+                    data_dict[file_name] = pickle_file.read()
+        self.collection.insert(data_dict, check_keys=False)
+
+    def fetch_and_extract(self, model_name):
+        pass
