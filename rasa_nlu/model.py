@@ -226,7 +226,7 @@ class Interpreter(object):
         # type: (List[Component], Dict[Text, Any], Dict[Text, Any], Optional[Metadata]) -> None
 
         self.pipeline = pipeline
-        self.context = context
+        self.context = self.init_context(context)
         self.config = config
         self.meta = meta
         self.output_attributes = [output for component in pipeline for output in component.output_provides]
@@ -261,3 +261,12 @@ class Interpreter(object):
         # Ensure only keys of `all_attributes` are present and no other keys are returned
         result.update({key: current_context[key] for key in all_attributes if key in current_context})
         return result
+
+    def init_context(self, context):
+
+        #TODO: create a pipeline class that allows to query certain attributes about the pipeline
+        #check if there is a component that outputs entities
+        if "entities" in [processes for component in self.pipeline for processes in component.output_provides]:
+            #Provide entities in the context so that process arguments can be filled
+            context["entities"] = []
+        return context
