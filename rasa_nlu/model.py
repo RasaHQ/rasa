@@ -134,10 +134,6 @@ class Trainer(object):
         self.training_data = data
 
         context = {}
-        # check if there is a component that outputs entities
-        if "entities" in [processes for component in self.pipeline for processes in component.output_provides]:
-            # Provide entities in the context so that process arguments can be filled
-            context["entities"] = context.get("entities", [])
 
         for component in self.pipeline:
             args = components.fill_args(component.pipeline_init_args(), context, self.config.as_dict())
@@ -198,11 +194,7 @@ class Interpreter(object):
     def load(meta, config, component_builder=None, skip_valdation=False):
         # type: (Metadata, RasaNLUConfig, Optional[ComponentBuilder], bool) -> Interpreter
         """Load a stored model and its components defined by the provided metadata."""
-        context = {"model_dir": meta.model_dir}
-        # check if there is a component that outputs entities
-        if "entities" in [processes for component in meta.pipeline for processes in component.output_provides]:
-            # Provide entities in the context so that process arguments can be filled
-            context["entities"] = context.get("entities", [])
+        context = Interpreter.default_output_attributes.update({"model_dir": meta.model_dir})
 
         if component_builder is None:
             # If no builder is passed, every interpreter creation will result in a new builder.
@@ -235,7 +227,7 @@ class Interpreter(object):
         # type: (List[Component], Dict[Text, Any], Dict[Text, Any], Optional[Metadata]) -> None
 
         self.pipeline = pipeline
-        self.context = self.init_context(context)
+        self.context = self.default_output_attributes.update(context)
         self.config = config
         self.meta = meta
         self.output_attributes = [output for component in pipeline for output in component.output_provides]
@@ -270,12 +262,3 @@ class Interpreter(object):
         # Ensure only keys of `all_attributes` are present and no other keys are returned
         result.update({key: current_context[key] for key in all_attributes if key in current_context})
         return result
-
-    def init_context(self, context):
-
-        # TODO: create a pipeline class that allows to query certain attributes about the pipeline
-        # check if there is a component that outputs entities
-        if "entities" in [processes for component in self.pipeline for processes in component.output_provides]:
-            # Provide entities in the context so that process arguments can be filled
-            context["entities"] = context.get("entities", [])
-        return context
