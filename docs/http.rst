@@ -104,7 +104,7 @@ from the same process & avoid duplicating the memory load.
 
 .. note::
     Although this saves the backend from loading the same backend twice, it still needs to load one set of
-    word vectors (which make up most of the memor consumption) per language and backend.
+    word vectors (which make up most of the memory consumption) per language and backend.
 
 You can use the multi-tenancy mode by replacing the ``server_model_dirs`` config
 variable with a json object describing the different models.
