@@ -83,6 +83,12 @@ def load_luis_data(filename):
 
     with io.open(filename, encoding="utf-8-sig") as f:
         data = json.loads(f.read())
+
+    # Simple check to ensure we support this luis data schema version
+    if not data["luis_schema_version"].startswith("2"):
+        raise Exception("Invalid luis data schema version {}, should be 2.x.x. ".format(data["luis_schema_version"]) +
+                        "Make sure to use the latest luis version (e.g. by downloading your data again).")
+
     for s in data["utterances"]:
         text = s.get("text")
         intent = s.get("intent")
