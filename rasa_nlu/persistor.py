@@ -159,4 +159,25 @@ class MongoDBPersistor(Persistor):
         self.collection.insert(data_dict, check_keys=False)
 
     def fetch_and_extract(self, model_name):
-        pass
+        # type: (Text) -> None
+        """Downloads a model that has previously been persisted to mongodb."""
+
+        if not self.restore_dir:
+            raise ValueError("Restore directory not given.")
+        data_dict = self.collection.find_one({'dir_name': model_name})
+        if not data_dict:
+            raise ValueError("Collection does not contain a model for given name '{}'".format(model_name))
+        data_dict.pop('_id')
+        data_dict.pop('dir_name')
+        for (file_name, data) in data_dict.items():
+            _, file_extension = os.path.splitext(file_name)
+            file_loc = "{0}/{1}/{2}".format(self.restore_dir, model_name, file_name)
+            base_dir = os.path.dirname(file_loc)
+            if not os.path.exists(base_dir):
+                os.makedirs(base_dir)
+            if file_extension == '.json':
+                with open(file_loc, 'w') as json_file:
+                    json.dump(data, json_file)
+            else:
+                with open(file_loc, 'wb') as pickle_file:
+                    pickle_file.write(data)
