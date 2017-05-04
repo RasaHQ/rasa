@@ -1,0 +1,18 @@
+#/bin/bash
+
+case $1 in 
+    build)
+        docker build -t rasa .
+        docker run --name rasa_engine -p 5000:5000 rasa start
+        ;;
+    start)
+        docker start rasa_engine
+        ;;
+    stop)
+        docker stop rasa_engine
+        ;;
+    reload)
+        docker stop rasa_engine
+        docker start asa_engine
+        ;;
+esac
