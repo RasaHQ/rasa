@@ -36,7 +36,7 @@ RUN bash entrypoint.sh download spacy en
 #Uncomment this line using mitie and sklearn (and comment the lines of the other models)
 #COPY config_mitie_sklearn.json /app/config.json 
 
-
+RUN ls /app
 
 EXPOSE 5000
 
