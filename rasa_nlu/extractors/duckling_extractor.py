@@ -18,7 +18,8 @@ if typing.TYPE_CHECKING:
     from duckling import DucklingWrapper
 
 
-DUCKLING_PROCESSING_MODES = ["replace", "append"]
+DUCKLING_DIMENSIONS = ["time", "temperature", "number", "ordinal", "distance", "volume",
+                       "amount-of-money", "duration", "email", "url", "phone-number"]
 
 
 class DucklingExtractor(EntityExtractor):
@@ -32,10 +33,13 @@ class DucklingExtractor(EntityExtractor):
 
     output_provides = ["entities"]
 
-    def __init__(self, duckling_processing_mode, duckling=None):
+    def __init__(self, duckling_dimensions=DUCKLING_DIMENSIONS, duckling=None):
         # type: (Text, Optional[DucklingWrapper]) -> None
 
-        self.duckling_processing_mode = duckling_processing_mode
+        # If duckling dimensions == [] or == None
+        if not duckling_dimensions:
+            duckling_dimensions = DUCKLING_DIMENSIONS
+        self.duckling_dimensions = duckling_dimensions
         self.duckling = duckling
 
     @classmethod
@@ -44,12 +48,13 @@ class DucklingExtractor(EntityExtractor):
         return ["duckling"]
 
     @classmethod
-    def create(cls, duckling_processing_mode):
-        if duckling_processing_mode not in DUCKLING_PROCESSING_MODES:
-            raise ValueError("Invalid duckling processing mode. Got '{}'. Allowed: {}".format(
-                duckling_processing_mode, ", ".join(DUCKLING_PROCESSING_MODES)))
+    def create(cls, duckling_dimensions=DUCKLING_DIMENSIONS):
+        unknown_dimensions = [dim for dim in duckling_dimensions if dim not in DUCKLING_DIMENSIONS]
+        if len(unknown_dimensions) > 0:
+            raise ValueError("Invalid duckling dimension. Got '{}'. Allowed: {}".format(
+                ", ".join(unknown_dimensions), ", ".join(DUCKLING_DIMENSIONS)))
 
-        return DucklingExtractor(duckling_processing_mode)
+        return DucklingExtractor(duckling_dimensions)
 
     @classmethod
     def cache_key(cls, model_metadata):
@@ -68,34 +73,27 @@ class DucklingExtractor(EntityExtractor):
                 raise Exception("Duckling error. {}".format(e.message))
 
     def process(self, text, entities):
-        # type: (Text, List[Dict[Text, Any]], Text) -> Dict[Text, Any]
+        # type: (Text, List[Dict[Text, Any]]) -> Dict[Text, Any]
 
+        extracted = []
         if self.duckling is not None:
-            parsed = self.duckling.parse(text)
-            for duckling_match in parsed:
-                for entity in entities:
-                    if entity["start"] == duckling_match["start"] and entity["end"] == duckling_match["end"]:
-                        entity["value"] = duckling_match["value"]["value"]
-                        entity["duckling"] = duckling_match["dim"]
-                        break
-                else:
-                    if self.duckling_processing_mode == "append":
-                        # Duckling will retrieve multiple entities, even if they overlap..
-                        # hence the append mode might add some noise to the found entities
-                        entities.append({
-                            "entity": duckling_match["dim"],
-                            "duckling": duckling_match["dim"],
-                            "value": duckling_match["value"]["value"],
-                            "start": duckling_match["start"],
-                            "end": duckling_match["end"],
-                        })
+            matches = self.duckling.parse(text)
+            relevant_matches = [match for match in matches if match["dim"] in self.duckling_dimensions]
+            for match in relevant_matches:
+                entity = {"start": match["start"],
+                          "end": match["end"],
+                          "value": match["value"]["value"],
+                          "entity": match["dim"]}
 
+                extracted.append(entity)
+
+        extracted = self.add_extractor_name(extracted)
         return {
-            "entities": entities
+            "entities": entities.extend(extracted)
         }
 
     @classmethod
-    def load(cls, duckling_processing_mode):
+    def load(cls, duckling_dimensions=DUCKLING_DIMENSIONS):
         # type: (Text) -> DucklingExtractor
 
-        return cls.create(duckling_processing_mode)
+        return cls.create(duckling_dimensions)
