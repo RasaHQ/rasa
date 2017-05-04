@@ -19,7 +19,6 @@ from typing import Tuple
 from typing import Type
 
 from rasa_nlu.config import RasaNLUConfig
-from rasa_nlu.model import Interpreter
 
 
 def load_component(component_clz, context, config):
@@ -140,7 +139,7 @@ def validate_arguments(pipeline, config, allow_empty_pipeline=False):
             raise Exception("Failed to validate at component '{}'. {}".format(component.name, e.message))
 
     # Reset context to test processing phase and prepare for training phase
-    default_processing_context = Interpreter.default_output_attributes
+    default_processing_context = {"entities": []}
     context = default_processing_context.update(after_init_context)
 
     for component in pipeline:

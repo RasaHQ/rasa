@@ -10,7 +10,7 @@ from typing import List
 from typing import Optional
 from typing import Text
 
-from rasa_nlu.components import Component
+from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.model import Metadata
 
 
@@ -21,7 +21,7 @@ if typing.TYPE_CHECKING:
 DUCKLING_PROCESSING_MODES = ["replace", "append"]
 
 
-class DucklingExtractor(Component):
+class DucklingExtractor(EntityExtractor):
     """Adds entity normalization by analyzing found entities and transforming them into regular formats."""
 
     name = "ner_duckling"
