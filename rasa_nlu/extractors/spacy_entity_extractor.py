@@ -169,6 +169,9 @@ class SpacyEntityExtractor(Component, EntityExtractor):
             random.shuffle(train_data)
             for raw_text, entity_offsets in train_data:
                 doc = nlp.make_doc(raw_text)
-                nlp.tagger(doc)
+                try:
+                    nlp.tagger(doc)
+                except TypeError as e:
+                    Exception("The spaCy model loaded does not have a POS tagger trained. {}".format(e))
                 gold = GoldParse(doc, entities=entity_offsets)
                 ner.update(doc, gold)
