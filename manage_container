@@ -13,6 +13,6 @@ case $1 in
         ;;
     reload)
         docker stop rasa_engine
-        docker start asa_engine
+        docker start rasa_engine
         ;;
 esac
