@@ -227,7 +227,8 @@ class Interpreter(object):
         # type: (List[Component], Dict[Text, Any], Dict[Text, Any], Optional[Metadata]) -> None
 
         self.pipeline = pipeline
-        self.context = self.default_output_attributes.update(context)
+        self.context = self.default_output_attributes
+        self.context.update(context)
         self.config = config
         self.meta = meta
         self.output_attributes = [output for component in pipeline for output in component.output_provides]

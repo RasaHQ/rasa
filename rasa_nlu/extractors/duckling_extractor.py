@@ -3,6 +3,9 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import os
+import io
+import json
 import typing
 from typing import Any
 from typing import Dict
@@ -12,14 +15,11 @@ from typing import Text
 
 from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.model import Metadata
-
+from inspect import getmembers
 
 if typing.TYPE_CHECKING:
     from duckling import DucklingWrapper
-
-
-DUCKLING_DIMENSIONS = ["time", "temperature", "number", "ordinal", "distance", "volume",
-                       "amount-of-money", "duration", "email", "url", "phone-number"]
+    from duckling.dim import Dim
 
 
 class DucklingExtractor(EntityExtractor):
@@ -33,13 +33,14 @@ class DucklingExtractor(EntityExtractor):
 
     output_provides = ["entities"]
 
-    def __init__(self, duckling_dimensions=DUCKLING_DIMENSIONS, duckling=None):
+    @staticmethod
+    def available_dimensions():
+        return [m[1] for m in getmembers(Dim) if not m[0].startswith("__") and not m[0].endswith("__")]
+
+    def __init__(self, dimensions=None, duckling=None):
         # type: (Text, Optional[DucklingWrapper]) -> None
 
-        # If duckling dimensions == [] or == None
-        if not duckling_dimensions:
-            duckling_dimensions = DUCKLING_DIMENSIONS
-        self.duckling_dimensions = duckling_dimensions
+        self.dimensions = dimensions if dimensions else self.available_dimensions()
         self.duckling = duckling
 
     @classmethod
@@ -48,11 +49,11 @@ class DucklingExtractor(EntityExtractor):
         return ["duckling"]
 
     @classmethod
-    def create(cls, duckling_dimensions=DUCKLING_DIMENSIONS):
-        unknown_dimensions = [dim for dim in duckling_dimensions if dim not in DUCKLING_DIMENSIONS]
+    def create(cls, duckling_dimensions):
+        unknown_dimensions = [dim for dim in duckling_dimensions if dim not in available_dimensions]
         if len(unknown_dimensions) > 0:
             raise ValueError("Invalid duckling dimension. Got '{}'. Allowed: {}".format(
-                ", ".join(unknown_dimensions), ", ".join(DUCKLING_DIMENSIONS)))
+                ", ".join(unknown_dimensions), ", ".join(available_dimensions)))
 
         return DucklingExtractor(duckling_dimensions)
 
@@ -78,7 +79,7 @@ class DucklingExtractor(EntityExtractor):
         extracted = []
         if self.duckling is not None:
             matches = self.duckling.parse(text)
-            relevant_matches = [match for match in matches if match["dim"] in self.duckling_dimensions]
+            relevant_matches = [match for match in matches if match["dim"] in self.dimensions]
             for match in relevant_matches:
                 entity = {"start": match["start"],
                           "end": match["end"],
@@ -92,8 +93,19 @@ class DucklingExtractor(EntityExtractor):
             "entities": entities.extend(extracted)
         }
 
-    @classmethod
-    def load(cls, duckling_dimensions=DUCKLING_DIMENSIONS):
-        # type: (Text) -> DucklingExtractor
+    def persist(self, model_dir):
+        # type: (Text) -> Dict[Text, Any]
+        file_name = self.name+".json"
+        full_name = os.path.join(model_dir, file_name)
+        with io.open(full_name, 'w') as f:
+            f.write(json.dumps({"dimensions": self.dimensions}))
+        return {"ner_duckling_persisted": file_name}
 
-        return cls.create(duckling_dimensions)
+    @classmethod
+    def load(cls, model_dir, ner_duckling_persisted):
+        # type: (Text) -> DucklingExtractor
+        persisted = os.path.join(model_dir, ner_duckling_persisted)
+        if os.path.isfile(persisted):
+            with io.open(persisted, encoding='utf-8') as f:
+                persisted_data = json.loads(f.read())
+                return cls.create(persisted_data["dimensions"])

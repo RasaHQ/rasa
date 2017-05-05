@@ -32,7 +32,7 @@ DEFAULT_CONFIG = {
     "max_number_of_ngrams": 7,
     "pipeline": [],
     "response_log": "logs",
-    "duckling_dimensions": [],
+    "duckling_dimensions": None,
     "luis_data_tokenizer": None,
     "entity_crf_BILOU_flag": True,
     "entity_crf_features": [
