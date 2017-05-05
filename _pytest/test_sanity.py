@@ -63,7 +63,7 @@ def test_no_global_imports_of_banned_package(banned_package):
     import_submodules("rasa_nlu")
 
     def find_modules_importing(name):
-        return [v for k, vs in tracked_imports.items() if k.startswith(name) for v in vs]
+        return {v for k, vs in tracked_imports.items() if k.startswith(name) for v in vs}
 
     assert not find_modules_importing(banned_package), \
         "No module should import {} globally. Found in {}".format(
