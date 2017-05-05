@@ -93,7 +93,7 @@ class SklearnIntentClassifier(Component):
 
         self.clf = GridSearchCV(SVC(C=1, probability=True),
                                 param_grid=tuned_parameters, n_jobs=num_threads,
-                                cv=cv_splits, scoring='f1_weighted')
+                                cv=cv_splits, scoring='f1_weighted', verbose=1)
 
         self.clf.fit(X, y)
 

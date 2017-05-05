@@ -152,7 +152,9 @@ class Trainer(object):
 
         for component in self.pipeline:
             args = components.fill_args(component.train_args(), context, self.config.as_dict())
+            logging.info("Starting to train component {}".format(component.name))
             updates = component.train(*args)
+            logging.info("Finished training component.")
             if updates:
                 context.update(updates)
 
