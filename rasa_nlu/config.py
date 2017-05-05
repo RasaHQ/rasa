@@ -117,9 +117,10 @@ class RasaNLUConfig(object):
         return config
 
     def split_pipeline(self, config):
-        config = self.split_arg(config, "pipeline")
-        if "pipeline" in config and len(config["pipeline"]) == 1:
-            config["pipeline"] = config["pipeline"][0]
+        if "pipeline" in config and isinstance(config["pipeline"], six.string_types):
+            config = self.split_arg(config, "pipeline")
+            if "pipeline" in config and len(config["pipeline"]) == 1:
+                config["pipeline"] = config["pipeline"][0]
         return config
 
     def create_cmdline_config(self, cmdline_args):
