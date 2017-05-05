@@ -118,7 +118,7 @@ class RasaNLUConfig(object):
 
     def split_pipeline(self, config):
         config = self.split_arg(config, "pipeline")
-        if len(config["pipeline"]) == 1:
+        if "pipeline" in config and len(config["pipeline"]) == 1:
             config["pipeline"] = config["pipeline"][0]
         return config
 
