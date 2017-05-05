@@ -102,10 +102,13 @@ class DataRouter(object):
     @staticmethod
     def load_model_from_cloud(model_dir, config):
         try:
-            from rasa_nlu.persistor import get_persistor
+            from rasa_nlu.persistor import get_persistor, PersistorType
             p = get_persistor(config)
             if p is not None:
-                p.fetch_and_extract('{0}.tar.gz'.format(os.path.basename(model_dir)))
+                if p.type == PersistorType.FILESYSTEM:
+                    p.fetch_and_extract('{0}.tar.gz'.format(os.path.basename(model_dir)))
+                elif p.type == PersistorType.DATABASE:
+                    p.fetch_and_extract(model_dir)
             else:
                 raise RuntimeError("Unable to initialize persistor")
         except Exception as e:
