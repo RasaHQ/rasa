@@ -135,17 +135,17 @@ class CRFEntityExtractor(Component, EntityExtractor):
                     finished = False
                     end_char = start_char + len(word)
                     while not finished:
-                        if entities[ent_word_idx][2:] != entity[2:]:
+                        if len(entities) > ent_word_idx and entities[ent_word_idx][2:] != entity[2:]:
                             # words are not tagged the same entity class
-                            logging.warn(
+                            logging.debug(
                                 "Inconsistent BILOU tagging found, B- tag, L- tag pair encloses multiple " +
                                 "entity classes.i.e. ['B-a','I-b','L-a'] instead of ['B-a','I-a','L-a'].\n" +
                                 "Assuming B- class is correct.")
-                        if entities[ent_word_idx].startswith('L-'):
+                        if len(entities) > ent_word_idx and entities[ent_word_idx].startswith('L-'):
                             # end of the entity
                             end_char += len(sentence_doc[ent_word_idx]) + 1
                             finished = True
-                        elif entities[ent_word_idx].startswith('I-'):
+                        elif len(entities) > ent_word_idx and entities[ent_word_idx].startswith('I-'):
                             # middle part of the entity
                             end_char += len(sentence_doc[ent_word_idx]) + 1
                             ent_word_idx += 1
@@ -153,7 +153,7 @@ class CRFEntityExtractor(Component, EntityExtractor):
                             # entity not closed by an L- tag
                             finished = True
                             ent_word_idx -= 1
-                            logging.warn(
+                            logging.debug(
                                 "Inconsistent BILOU tagging found, B- tag not closed by L- tag, " +
                                 "i.e ['B-a','I-a','O'] instead of ['B-a','L-a','O'].\nAssuming last tag is L-")
                     ent = {'start': start_char, 'end': end_char,
