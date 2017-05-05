@@ -66,6 +66,10 @@ class DataRouter(object):
             models[model_name] = model_name
         return models
 
+    def __interpreter_for_model(self, model_path):
+        metadata = DataRouter.read_model_metadata(model_path, self.config)
+        return Interpreter.load(metadata, self.config, self.component_builder)
+
     def __create_model_store(self):
         # Fallback for users that specified the model path as a string and hence only want a single default model.
         if type(self.config.server_model_dirs) is Text:
@@ -80,9 +84,7 @@ class DataRouter(object):
         for alias, model_path in list(model_dict.items()):
             try:
                 logging.info("Loading model '{}'...".format(model_path))
-                metadata = DataRouter.read_model_metadata(model_path, self.config)
-                interpreter = Interpreter.load(metadata, self.config, self.component_builder)
-                model_store[alias] = interpreter
+                model_store[alias] = self.__interpreter_for_model(model_path)
             except Exception as e:
                 logging.exception("Failed to load model '{}'. Error: {}".format(model_path, e))
         if not model_store:
@@ -107,7 +109,7 @@ class DataRouter(object):
             else:
                 raise RuntimeError("Unable to initialize persistor")
         except Exception as e:
-            logging.warn("Using default interpreter, couldn't fetch model: {}".format(e.message))
+            logging.warn("Using default interpreter, couldn't fetch model: {}".format(e))
 
     @staticmethod
     def read_model_metadata(model_dir, config):
@@ -147,13 +149,16 @@ class DataRouter(object):
     def parse(self, data):
         alias = data.get("model") or self.DEFAULT_MODEL_NAME
         if alias not in self.model_store:
-            raise InvalidModelError("No model found with alias '{}'".format(alias))
-        else:
-            model = self.model_store[alias]
-            response = model.parse(data['text'])
-            if self.responses:
-                self.responses.info(json.dumps(response, sort_keys=True))
-            return self.format_response(response)
+            try:
+                self.model_store[alias] = self.__interpreter_for_model(model_path=alias)
+            except Exception as e:
+                raise InvalidModelError("No model found with alias '{}'. Error: {}".format(alias, e))
+
+        model = self.model_store[alias]
+        response = model.parse(data['text'])
+        if self.responses:
+            self.responses.info(json.dumps(response, sort_keys=True))
+        return self.format_response(response)
 
     def format_response(self, data):
         return self.emulator.normalise_response_json(data)
@@ -168,12 +173,15 @@ class DataRouter(object):
             "available_models": models
         }
 
-    def start_train_process(self, data):
+    def start_train_process(self, data, config_values):
         logging.info("Starting model training")
         f = tempfile.NamedTemporaryFile("w+", suffix="_training_data.json", delete=False)
         f.write(data)
         f.close()
+        # TODO: fix config handling
         _config = self.config.as_dict()
+        for key, val in config_values.items():
+            _config[key] = val
         _config["data"] = f.name
         train_config = RasaNLUConfig(cmdline_args=_config)
         process = multiprocessing.Process(target=do_train, args=(train_config, self.component_builder))

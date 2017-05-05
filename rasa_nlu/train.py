@@ -32,7 +32,7 @@ def create_argparser():
     parser.add_argument('-d', '--data', default=None, help="file containing training data")
     parser.add_argument('-c', '--config', required=True, help="config file")
     parser.add_argument('-l', '--language', default=None, choices=['de', 'en'], help="model and data language")
-    parser.add_argument('-t', '--num_threads', default=1, type=int,
+    parser.add_argument('-t', '--num_threads', default=None, type=int,
                         help="number of threads to use during model training")
     parser.add_argument('-m', '--mitie_file', default=None,
                         help='file with mitie total_word_feature_extractor')
@@ -65,11 +65,13 @@ def do_train(config, component_builder=None):
     # type: (RasaNLUConfig, Optional[ComponentBuilder]) -> Tuple[Trainer, Interpreter, Text]
     """Loads the trainer and the data and runs the training of the specified model."""
 
+    # Ensure we are training a model that we can save in the end
+    # WARN: there is still a race condition if a model with the same name is trained in another subprocess
     trainer = Trainer(config, component_builder)
     persistor = create_persistor(config)
     training_data = load_data(config['data'])
     interpreter = trainer.train(training_data)
-    persisted_path = trainer.persist(config['path'], persistor)
+    persisted_path = trainer.persist(config['path'], persistor, model_name=config['name'])
     return trainer, interpreter, persisted_path
 
 

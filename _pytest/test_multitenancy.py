@@ -63,17 +63,17 @@ def test_get_parse(client, response_test):
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
         "/parse?q=food",
-        {"error": "No model found with alias 'default'"}
+        {"error": "No model found with alias 'default'. Error: Failed to load model metadata. "}
     ),
     ResponseTest(
         "/parse?q=food&model=umpalumpa",
-        {"error": "No model found with alias 'umpalumpa'"}
+        {"error": "No model found with alias 'umpalumpa'. Error: Failed to load model metadata. "}
     )
 ])
 def test_get_parse_invalid_model(client, response_test):
     response = client.get(response_test.endpoint)
     assert response.status_code == 404
-    assert response.json == response_test.expected_response
+    assert response.json.get("error").startswith(response_test.expected_response["error"])
 
 
 @pytest.mark.parametrize("response_test", [
@@ -103,12 +103,12 @@ def test_post_parse(client, response_test):
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
         "/parse",
-        {"error": "No model found with alias 'default'"},
+        {"error": "No model found with alias 'default'. Error: Failed to load model metadata. "},
         payload={"q": "food"}
     ),
     ResponseTest(
         "/parse",
-        {"error": "No model found with alias 'umpalumpa'"},
+        {"error": "No model found with alias 'umpalumpa'. Error: Failed to load model metadata. "},
         payload={"q": "food", "model": "umpalumpa"}
     ),
 ])
@@ -116,7 +116,7 @@ def test_post_parse_invalid_model(client, response_test):
     response = client.post(response_test.endpoint,
                            data=json.dumps(response_test.payload), content_type='application/json')
     assert response.status_code == 404
-    assert response.json == response_test.expected_response
+    assert response.json.get("error").startswith(response_test.expected_response["error"])
 
 
 if __name__ == '__main__':
@@ -131,7 +131,7 @@ if __name__ == '__main__':
 
         trainer.train(training_data)
         persistor = create_persistor(config)
-        trainer.persist(os.path.join("test_models", model_name), persistor, create_unique_subfolder=False)
+        trainer.persist("test_models", persistor, model_name=model_name)
 
     train("config_mitie.json", "test_model_mitie")
     train("config_spacy.json", "test_model_spacy_sklearn")

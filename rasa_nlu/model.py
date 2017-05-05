@@ -36,6 +36,9 @@ class InvalidModelError(Exception):
     def __init__(self, message):
         self.message = message
 
+    def __str__(self):
+        return self.message
+
 
 class Metadata(object):
     """Captures all necessary information about a model to load it and prepare it for usage."""
@@ -44,10 +47,12 @@ class Metadata(object):
     def load(model_dir):
         # type: (Text) -> 'Metadata'
         """Loads the metadata from a models directory."""
-
-        with io.open(os.path.join(model_dir, 'metadata.json'), encoding="utf-8") as f:
-            data = json.loads(f.read())
-        return Metadata(data, model_dir)
+        try:
+            with io.open(os.path.join(model_dir, 'metadata.json'), encoding="utf-8") as f:
+                data = json.loads(f.read())
+            return Metadata(data, model_dir)
+        except Exception as e:
+            raise InvalidModelError("Failed to load model metadata. {}".format(e))
 
     def __init__(self, metadata, model_dir):
         # type: (Dict[Text, Any], Optional[Text]) -> None
@@ -153,7 +158,7 @@ class Trainer(object):
 
         return Interpreter(self.pipeline, context=init_context, config=self.config.as_dict())
 
-    def persist(self, path, persistor=None, create_unique_subfolder=True):
+    def persist(self, path, persistor=None, model_name=None):
         # type: (Text, Optional[Persistor], bool) -> Text
         """Persist all components of the pipeline to the passed path. Returns the directory of the persited model."""
 
@@ -163,12 +168,12 @@ class Trainer(object):
             "pipeline": [component.name for component in self.pipeline],
         }
 
-        if create_unique_subfolder:
+        if model_name is None:
             dir_name = os.path.join(path, "model_" + timestamp)
-            os.makedirs(dir_name)
         else:
-            dir_name = path
+            dir_name = os.path.join(path, model_name)
 
+        os.makedirs(dir_name)
         metadata.update(self.training_data.persist(dir_name))
 
         for component in self.pipeline:
@@ -218,7 +223,7 @@ class Interpreter(object):
                     context.update(updates)
                 pipeline.append(component)
             except components.MissingArgumentError as e:
-                raise Exception("Failed to initialize component '{}'. {}".format(component.name, e.message))
+                raise Exception("Failed to initialize component '{}'. {}".format(component.name, e))
 
         return Interpreter(pipeline, context, model_config)
 
@@ -254,7 +259,7 @@ class Interpreter(object):
                 if updates:
                     current_context.update(updates)
             except components.MissingArgumentError as e:
-                raise Exception("Failed to parse at component '{}'. {}".format(component.name, e.message))
+                raise Exception("Failed to parse at component '{}'. {}".format(component.name, e))
 
         result = self.default_output_attributes.copy()
         all_attributes = list(self.default_output_attributes.keys()) + self.output_attributes

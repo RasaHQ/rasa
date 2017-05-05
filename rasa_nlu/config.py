@@ -11,10 +11,13 @@ import six
 
 
 # Describes where to search for the configuration file if the location is not set by the user
+from typing import Text
+
 DEFAULT_CONFIG_LOCATION = "config.json"
 
 
 DEFAULT_CONFIG = {
+    "name": None,
     "config": DEFAULT_CONFIG_LOCATION,
     "data": None,
     "emulate": None,
