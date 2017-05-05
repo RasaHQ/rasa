@@ -21,7 +21,8 @@ def get_persistor(config):
     """Returns an instance of the requested persistor. Currently, `aws` and `gcs` are supported"""
     p = None
     if 'storage' not in config:
-        raise KeyError("No persistent storage specified. Supported values are {}".format(", ".join(['aws', 'gcs', 'mongodb'])))
+        raise KeyError(
+            "No persistent storage specified. Supported values are {}".format(", ".join(['aws', 'gcs', 'mongodb'])))
 
     if config['storage'] == 'aws':
         p = AWSPersistor(config['path'], config['aws_region'], config['bucket_name'])
@@ -138,7 +139,8 @@ class GCSPersistor(Persistor):
 class MongoDBPersistor(Persistor):
     """Store models on MongoDB and fetch them when needed instead of storing them on the file system."""
 
-    data_file_names = ['intent_classifier.pkl', 'metadata.json', 'entity_synonyms.json','training_data.json', 'ner/config.json', 'ner/model']
+    data_file_names = ['intent_classifier.pkl', 'metadata.json', 'entity_synonyms.json', 'training_data.json',
+                       'ner/config.json', 'ner/model']
     type = PersistorType.DATABASE
 
     def __init__(self, mongo_uri, collection_name):
@@ -155,7 +157,6 @@ class MongoDBPersistor(Persistor):
         if not os.path.isdir(target_dir):
             raise ValueError("Target directory '{}' not found.".format(target_dir))
         base_name = os.path.basename(target_dir)
-        # base_dir = os.path.dirname(target_dir)
         data_dict = {'model_name': base_name}
         for file_name in MongoDBPersistor.data_file_names:
             file_loc = "{0}/{1}".format(target_dir, file_name)
