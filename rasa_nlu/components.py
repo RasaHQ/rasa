@@ -139,8 +139,8 @@ def validate_arguments(pipeline, config, allow_empty_pipeline=False):
             raise Exception("Failed to validate at component '{}'. {}".format(component.name, e.message))
 
     # Reset context to test processing phase and prepare for training phase
-    default_processing_context = {"entities": []}
-    context = default_processing_context.update(after_init_context)
+    context = {"entities": []}
+    context.update(after_init_context)
 
     for component in pipeline:
         try:

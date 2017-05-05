@@ -90,9 +90,9 @@ class CRFEntityExtractor(EntityExtractor):
         # type: (Text, Language, List[Dict[Text, Any]]) -> Dict[Text, Any]
 
         extracted = self.add_extractor_name(self.extract_entities(text, spacy_nlp))
-
+        entities.extend(extracted)
         return {
-            'entities': entities.extend(extracted)
+            'entities': entities
         }
 
     def _convert_examples(self, entity_examples):

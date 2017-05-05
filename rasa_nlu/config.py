@@ -112,7 +112,7 @@ class RasaNLUConfig(object):
         return json.dumps(self.__dict__, indent=4)
 
     def split_arg(self, config, arg_name):
-        if arg_name in config.keys():
+        if arg_name in config and isinstance(config[arg_name], six.string_types):
             config[arg_name] = config[arg_name].split(",")
         return config
 

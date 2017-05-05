@@ -64,8 +64,9 @@ class SpacyEntityExtractor(EntityExtractor):
         # type: (Doc, Language, List[Dict[Text, Any]]) -> Dict[Text, Any]
 
         extracted = self.add_extractor_name(self.extract_entities(spacy_doc, spacy_nlp))
+        entities.extend(extracted)
         return {
-            "entities": entities.extend(entities)
+            "entities": entities
         }
 
     def extract_entities(self, doc, spacy_nlp):

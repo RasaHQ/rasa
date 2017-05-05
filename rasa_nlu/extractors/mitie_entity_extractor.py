@@ -103,8 +103,9 @@ class MitieEntityExtractor(EntityExtractor):
         # type: (Text, List[Text], mitie.total_word_feature_extractor, List[Dict[Text, Any]]) -> Dict[Text, Any]
 
         extracted = self.add_extractor_name(self.extract_entities(text, tokens, mitie_feature_extractor))
+        entities.extend(extracted)
         return {
-            "entities": entities.extend(extracted)
+            "entities": entities
         }
 
     @classmethod

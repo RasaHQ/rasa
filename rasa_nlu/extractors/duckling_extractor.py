@@ -19,7 +19,6 @@ from inspect import getmembers
 
 if typing.TYPE_CHECKING:
     from duckling import DucklingWrapper
-    from duckling.dim import Dim
 
 
 class DucklingExtractor(EntityExtractor):
@@ -35,6 +34,7 @@ class DucklingExtractor(EntityExtractor):
 
     @staticmethod
     def available_dimensions():
+        from duckling.dim import Dim
         return [m[1] for m in getmembers(Dim) if not m[0].startswith("__") and not m[0].endswith("__")]
 
     def __init__(self, dimensions=None, duckling=None):
@@ -50,10 +50,12 @@ class DucklingExtractor(EntityExtractor):
 
     @classmethod
     def create(cls, duckling_dimensions):
-        unknown_dimensions = [dim for dim in duckling_dimensions if dim not in available_dimensions]
+        if duckling_dimensions is None:
+            duckling_dimensions = cls.available_dimensions()
+        unknown_dimensions = [dim for dim in duckling_dimensions if dim not in cls.available_dimensions()]
         if len(unknown_dimensions) > 0:
             raise ValueError("Invalid duckling dimension. Got '{}'. Allowed: {}".format(
-                ", ".join(unknown_dimensions), ", ".join(available_dimensions)))
+                ", ".join(unknown_dimensions), ", ".join(cls.available_dimensions())))
 
         return DucklingExtractor(duckling_dimensions)
 
@@ -89,8 +91,9 @@ class DucklingExtractor(EntityExtractor):
                 extracted.append(entity)
 
         extracted = self.add_extractor_name(extracted)
+        entities.extend(extracted)
         return {
-            "entities": entities.extend(extracted)
+            "entities": entities
         }
 
     def persist(self, model_dir):
