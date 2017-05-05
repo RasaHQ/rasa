@@ -21,12 +21,14 @@ def get_persistor(config):
     """Returns an instance of the requested persistor. Currently, `aws` and `gcs` are supported"""
     p = None
     if 'storage' not in config:
-        raise KeyError("No persistent storage specified. Supported values are {}".format(", ".join(['aws', 'gcs'])))
+        raise KeyError("No persistent storage specified. Supported values are {}".format(", ".join(['aws', 'gcs', 'mongodb'])))
 
     if config['storage'] == 'aws':
         p = AWSPersistor(config['path'], config['aws_region'], config['bucket_name'])
     elif config['storage'] == 'gcs':
         p = GCSPersistor(config['path'], config['bucket_name'])
+    elif config['storage'] == 'mongodb':
+        p = MongoDBPersistor(config['mongodb_uri'], config['collection_name'], config['restore_dir'])
     return p
 
 
