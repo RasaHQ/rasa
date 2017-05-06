@@ -154,6 +154,7 @@ class MongoDBPersistor(Persistor):
         # type: (Text) -> None
         """Uploads a model persisted in the `target_dir` to mongodb."""
 
+        from bson.binary import Binary
         if not os.path.isdir(target_dir):
             raise ValueError("Target directory '{}' not found.".format(target_dir))
         base_name = os.path.basename(target_dir)
@@ -167,7 +168,7 @@ class MongoDBPersistor(Persistor):
                     data_dict[file_name] = json_data
             else:
                 with open(file_loc, 'rb') as pickle_file:
-                    data_dict[file_name] = pickle_file.read()
+                    data_dict[file_name] = Binary(pickle_file.read(), 0)
         self.collection.insert(data_dict, check_keys=False)
 
     def fetch_and_extract(self, model_dir):
