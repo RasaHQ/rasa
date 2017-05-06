@@ -27,7 +27,7 @@ and returning structured data like
 
 
 The intended audience is mainly people developing bots. 
-You can use rasa as a drop-in replacement for `wit <https://wit.ai>`_ , `LUIS <https://luis.ai>`_ , or `api.ai <https://api.ai>`_, the only change in your code is to send requests to ``localhost`` instead (see :ref:`section_migration` for details). 
+You can use rasa as a drop-in replacement for `wit <https://wit.ai>`_ , `LUIS <https://www.luis.ai>`_ , or `api.ai <https://api.ai>`_, the only change in your code is to send requests to ``localhost`` instead (see :ref:`section_migration` for details).
 
 Why might you use rasa instead of one of those services?
 
