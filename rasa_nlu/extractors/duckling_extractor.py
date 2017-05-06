@@ -73,7 +73,7 @@ class DucklingExtractor(EntityExtractor):
             try:
                 self.duckling = DucklingWrapper(language=language)  # languages in duckling are eg "de$core"
             except ValueError as e:
-                raise Exception("Duckling error. {}".format(e.message))
+                raise Exception("Duckling error. {}".format(e))
 
     def process(self, text, entities):
         # type: (Text, List[Dict[Text, Any]]) -> Dict[Text, Any]
