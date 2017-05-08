@@ -43,5 +43,6 @@ def test_samples(pipeline_template, component_builder):
         # This ensures the model doesn't detect entities that are not present
         # Models on our test data set are not stable enough to require the entities to be found
         for entity in result['entities']:
+            del entity["extractor"]
             assert entity in gold['entities'], \
                 "Wrong entities for sample '{}'".format(text)

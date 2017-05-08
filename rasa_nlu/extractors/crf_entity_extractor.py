@@ -17,7 +17,6 @@ from typing import List
 from typing import Text
 from typing import Tuple
 
-from rasa_nlu.components import Component
 from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.training_data import TrainingData
 from builtins import str
@@ -28,7 +27,7 @@ if typing.TYPE_CHECKING:
     from spacy.tokens import Doc
 
 
-class CRFEntityExtractor(Component, EntityExtractor):
+class CRFEntityExtractor(EntityExtractor):
     name = "ner_crf"
 
     context_provides = {
@@ -88,11 +87,13 @@ class CRFEntityExtractor(Component, EntityExtractor):
             dataset = [self._from_json_to_crf(q, spacy_nlp) for q in test_data]
             self._test_model(dataset)
 
-    def process(self, text, spacy_nlp):
-        # type: (Text, Language) -> Dict[Text, Any]
+    def process(self, text, spacy_nlp, entities):
+        # type: (Text, Language, List[Dict[Text, Any]]) -> Dict[Text, Any]
 
+        extracted = self.add_extractor_name(self.extract_entities(text, spacy_nlp))
+        entities.extend(extracted)
         return {
-            'entities': self.extract_entities(text, spacy_nlp)
+            'entities': entities
         }
 
     def _convert_examples(self, entity_examples):
@@ -136,17 +137,17 @@ class CRFEntityExtractor(Component, EntityExtractor):
                     finished = False
                     end_char = start_char + len(word)
                     while not finished:
-                        if entities[ent_word_idx][2:] != entity[2:]:
+                        if len(entities) > ent_word_idx and entities[ent_word_idx][2:] != entity[2:]:
                             # words are not tagged the same entity class
-                            logging.warn(
+                            logging.debug(
                                 "Inconsistent BILOU tagging found, B- tag, L- tag pair encloses multiple " +
                                 "entity classes.i.e. ['B-a','I-b','L-a'] instead of ['B-a','I-a','L-a'].\n" +
                                 "Assuming B- class is correct.")
-                        if entities[ent_word_idx].startswith('L-'):
+                        if len(entities) > ent_word_idx and entities[ent_word_idx].startswith('L-'):
                             # end of the entity
                             end_char += len(sentence_doc[ent_word_idx]) + 1
                             finished = True
-                        elif entities[ent_word_idx].startswith('I-'):
+                        elif len(entities) > ent_word_idx and entities[ent_word_idx].startswith('I-'):
                             # middle part of the entity
                             end_char += len(sentence_doc[ent_word_idx]) + 1
                             ent_word_idx += 1
@@ -154,7 +155,7 @@ class CRFEntityExtractor(Component, EntityExtractor):
                             # entity not closed by an L- tag
                             finished = True
                             ent_word_idx -= 1
-                            logging.warn(
+                            logging.debug(
                                 "Inconsistent BILOU tagging found, B- tag not closed by L- tag, " +
                                 "i.e ['B-a','I-a','O'] instead of ['B-a','L-a','O'].\nAssuming last tag is L-")
                     ent = {'start': start_char, 'end': end_char,

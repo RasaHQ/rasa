@@ -7,6 +7,7 @@ import pytest
 
 from rasa_nlu import registry
 from rasa_nlu.components import fill_args
+from rasa_nlu.extractors import EntityExtractor
 
 
 @pytest.mark.parametrize("component_class", registry.component_classes)
@@ -82,3 +83,8 @@ def test_all_arguments_can_be_satisfied_during_parse(component_class, default_co
 
     filled_args = fill_args(component.process_args(), context_arguments, default_config.as_dict())
     assert len(filled_args) == len(component.process_args())
+
+
+def test_all_extractors_use_previous_entities():
+    extractors = [c for c in registry.component_classes if isinstance(c, EntityExtractor)]
+    assert all(["entities" in ex.process_args() for ex in extractors])
