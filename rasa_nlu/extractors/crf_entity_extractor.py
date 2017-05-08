@@ -46,6 +46,7 @@ class CRFEntityExtractor(EntityExtractor):
         # type: (pycrfsuite.Tagger, List[List[Text]], bool) -> None
 
         self.ent_tagger = ent_tagger
+        self.crf_file = None
 
         # BILOU_flag determines whether to use BILOU tagging or not.
         # More rigorous however requires more examples per entity
@@ -196,7 +197,7 @@ class CRFEntityExtractor(EntityExtractor):
         """Persist this model into the passed directory. Returns the metadata necessary to load the model again."""
         import json
 
-        if self.f:
+        if self.crf_file:
             ner_dir = os.path.join(model_dir, 'ner')
             if not os.path.exists(ner_dir):
                 os.mkdir(ner_dir)
@@ -208,7 +209,7 @@ class CRFEntityExtractor(EntityExtractor):
                 f.write(str(json.dumps(config)))
 
             with io.open(entity_extractor_file, 'wb') as target:
-                shutil.copyfileobj(self.f.file, target)
+                shutil.copyfileobj(self.crf_file.file, target)
             return {"entity_extractor_crf": "ner"}
         else:
             return {"entity_extractor_crf": None}
@@ -302,9 +303,9 @@ class CRFEntityExtractor(EntityExtractor):
             # include transitions that are possible, but not observed
             'feature.possible_transitions': True
         })
-        self.f = NamedTemporaryFile()
-        trainer.train(self.f.name)
-        self.ent_tagger.open(self.f.name)
+        self.crf_file = NamedTemporaryFile()
+        trainer.train(self.crf_file.name)
+        self.ent_tagger.open(self.crf_file.name)
 
     def _test_model(self, df_test):
         # type: (List[List[Tuple[Text, Text, Text]]]) -> None

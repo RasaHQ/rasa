@@ -50,7 +50,7 @@ registered_components = {
 registered_pipeline_templates = {
     "spacy_sklearn": [
         "nlp_spacy",
-        "ner_spacy",
+        "ner_crf",
         "ner_synonyms",
         "intent_featurizer_spacy",
         "intent_classifier_sklearn",

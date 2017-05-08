@@ -44,7 +44,7 @@ Changed
     where ``extractor`` denotes the entity extractor that originally found an entity, and ``processor`` denotes components that alter entities, such as the synonym component.
 - camel cased MITIE classes (e.g. ``MITIETokenizer`` → ``MitieTokenizer``)
 - model metadata changed, see migration guide
-- updated to spacy 1.7 (breaks existing spacy models!)
+- updated to spacy 1.7 and dropped training and loading capabilities for the spacy component (breaks existing spacy models!)
 - introduced compatibility with both Python 2 and 3
 
 Removed

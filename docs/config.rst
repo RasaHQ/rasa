@@ -138,14 +138,6 @@ spacy_model_name
     If the spacy model to be used has a name that is different from the language tag (``"en"``, ``"de"``, etc.),
     the model name can be specified using this configuration variable. The name will be passed to ``spacy.load(name)``.
 
-fine_tune_spacy_ner
-~~~~~~~~~~~~~~~~~~~
-
-:Type: ``bool``
-:Examples: ``true``
-:Description:
-    Fine tune existing spacy NER models vs training from scratch. (``ner_spacy`` component only)
-
 server_model_dirs
 ~~~~~~~~~~~~~~~~~
 

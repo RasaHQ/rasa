@@ -16,7 +16,7 @@ the processing has finished. For example, for the sentence ``"I am looking for C
     {
         "text": "I am looking for Chinese food",
         "entities": [
-            {"start": 8, "end": 15, "value": "chinese", "entity": "cuisine", "extractor": "ner_spacy"}
+            {"start": 8, "end": 15, "value": "chinese", "entity": "cuisine", "extractor": "ner_crf"}
         ],
         "intent": {"confidence": 0.6485910906220309, "name": "restaurant_search"},
         "intent_ranking": [
@@ -26,7 +26,7 @@ the processing has finished. For example, for the sentence ``"I am looking for C
     }
 
 is created as a combination of the results of the different components in the pre-configured pipeline ``spacy_sklearn``.
-For example, the ``entities`` attribute is created by the ``ner_spacy`` component.
+For example, the ``entities`` attribute is created by the ``ner_crf`` component.
 
 Pre-configured Pipelines
 ------------------------
@@ -37,7 +37,7 @@ Here is a list of the existing templates:
 +---------------+----------------------------------------------------------------------------------------------------------------------------+
 | template name | corresponding pipeline                                                                                                     |
 +===============+============================================================================================================================+
-| spacy_sklearn | ``["nlp_spacy", "ner_spacy", "ner_synonyms", "intent_featurizer_spacy", "intent_classifier_sklearn"]``                     |
+| spacy_sklearn | ``["nlp_spacy", "ner_crf", "ner_synonyms", "intent_featurizer_spacy", "intent_classifier_sklearn"]``                       |
 +---------------+----------------------------------------------------------------------------------------------------------------------------+
 | mitie         | ``["nlp_mitie", "tokenizer_mitie", "ner_mitie", "ner_synonyms", "intent_classifier_mitie"]``                               |
 +---------------+----------------------------------------------------------------------------------------------------------------------------+
@@ -47,7 +47,7 @@ Here is a list of the existing templates:
 +---------------+----------------------------------------------------------------------------------------------------------------------------+
 
 Creating your own pipelines is possible by directly passing the names of the components to rasa NLU in the ``pipeline``
-configuration variable, e.g. ``"pipeline": ["nlp_spacy", "ner_spacy", "ner_synonyms"]``. This creates a pipeline
+configuration variable, e.g. ``"pipeline": ["nlp_spacy", "ner_crf", "ner_synonyms"]``. This creates a pipeline
 that only does entity recognition, but no intent classification. Hence, the output will not contain any useful intents.
 
 Built-in Components
@@ -239,7 +239,7 @@ ner_spacy
 
 :Description:
     Using spacy this component predicts the entities of a message. spacy uses a statistical BILUO transition model.
-    The entity extractor expects around 5000 training examples per entity to perform good.
+    As of now, this component can only use the spacy builtin entity extraction models and can not be retrained.
 
 ner_synonyms
 ~~~~~~~~~~~~
