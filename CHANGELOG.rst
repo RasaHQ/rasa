@@ -20,6 +20,7 @@ Added
 - Conditional random field entity extraction (Markov model for entity tagging, better named entity recognition with low and medium data and similarly well at big data level)
 - allow naming of trained models instead of generated model names
 - dynamic check of requirements for the different components & error messages on missing dependencies
+- support for using multiple entity extractors and combining results downstream
 
 Changed
 -------
@@ -28,13 +29,19 @@ Changed
 - when loading data in a foreign format (api.ai, luis, wit) the data gets properly split into intent & entity examples
 - Configuration:
     - added ``max_number_of_ngrams``
-    - added ``pipeline``
+    - removed ``backend`` and added ``pipeline`` as a replacement
     - added ``luis_data_tokenizer``
-    - removed ``backend``
+    - added ``duckling_dimensions``
 - parser output format changed
     from ``{"intent": "greeting", "confidence": 0.9, "entities": []}``
 
     to ``{"intent": {"name": "greeting", "confidence": 0.9}, "entities": []}``
+- entities output format changed
+    from ``{"start": 15, "end": 28, "value": "New York City", "entity": "GPE"}``
+
+    to ``{"extractor": "ner_mitie", "processors": ["ner_synonyms"], "start": 15, "end": 28, "value": "New York City", "entity": "GPE"}``
+
+    where ``extractor`` denotes the entity extractor that originally found an entity, and ``processor`` denotes components that alter entities, such as the synonym component.
 - camel cased MITIE classes (e.g. ``MITIETokenizer`` → ``MitieTokenizer``)
 - model metadata changed, see migration guide
 - updated to spacy 1.7 (breaks existing spacy models!)

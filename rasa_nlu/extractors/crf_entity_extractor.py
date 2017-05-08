@@ -17,7 +17,6 @@ from typing import List
 from typing import Text
 from typing import Tuple
 
-from rasa_nlu.components import Component
 from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.training_data import TrainingData
 from builtins import str
@@ -28,7 +27,7 @@ if typing.TYPE_CHECKING:
     from spacy.tokens import Doc
 
 
-class CRFEntityExtractor(Component, EntityExtractor):
+class CRFEntityExtractor(EntityExtractor):
     name = "ner_crf"
 
     context_provides = {
@@ -87,11 +86,13 @@ class CRFEntityExtractor(Component, EntityExtractor):
             dataset = [self._from_json_to_crf(q, spacy_nlp) for q in test_data]
             self._test_model(dataset)
 
-    def process(self, text, spacy_nlp):
-        # type: (Text, Language) -> Dict[Text, Any]
+    def process(self, text, spacy_nlp, entities):
+        # type: (Text, Language, List[Dict[Text, Any]]) -> Dict[Text, Any]
 
+        extracted = self.add_extractor_name(self.extract_entities(text, spacy_nlp))
+        entities.extend(extracted)
         return {
-            'entities': self.extract_entities(text, spacy_nlp)
+            'entities': entities
         }
 
     def _convert_examples(self, entity_examples):

@@ -8,6 +8,7 @@ import io
 import json
 import logging
 import os
+import copy
 
 from builtins import object
 from builtins import str
@@ -195,13 +196,17 @@ class Interpreter(object):
     """Use a trained pipeline of components to parse text messages"""
 
     # Defines all attributes (and their default values) that will be returned by `parse`
-    default_output_attributes = {"intent": {"name": "", "confidence": 0.0}, "entities": [], "text": ""}
+    @staticmethod
+    def default_output_attributes():
+        return {"intent": {"name": "", "confidence": 0.0}, "entities": [], "text": ""}
 
     @staticmethod
     def load(meta, config, component_builder=None, skip_valdation=False):
         # type: (Metadata, RasaNLUConfig, Optional[ComponentBuilder], bool) -> Interpreter
         """Load a stored model and its components defined by the provided metadata."""
-        context = {"model_dir": meta.model_dir}
+        context = Interpreter.default_output_attributes()
+        context.update({"model_dir": meta.model_dir})
+
         if component_builder is None:
             # If no builder is passed, every interpreter creation will result in a new builder.
             # hence, no components are reused.
@@ -233,7 +238,9 @@ class Interpreter(object):
         # type: (List[Component], Dict[Text, Any], Dict[Text, Any], Optional[Metadata]) -> None
 
         self.pipeline = pipeline
-        self.context = context
+        self.context = self.default_output_attributes()
+        if context is not None:
+            self.context.update(context)
         self.config = config
         self.meta = meta
         self.output_attributes = [output for component in pipeline for output in component.output_provides]
@@ -246,7 +253,7 @@ class Interpreter(object):
             # Not all components are able to handle empty strings. So we need to prevent that...
             # This default return will not contain all output attributes of all components,
             # but in the end, no one should pass an empty string in the first place.
-            return self.default_output_attributes.copy()
+            return self.default_output_attributes()
 
         current_context = self.context.copy()
 
@@ -263,8 +270,8 @@ class Interpreter(object):
             except components.MissingArgumentError as e:
                 raise Exception("Failed to parse at component '{}'. {}".format(component.name, e))
 
-        result = self.default_output_attributes.copy()
-        all_attributes = list(self.default_output_attributes.keys()) + self.output_attributes
+        result = self.default_output_attributes()
+        all_attributes = list(self.default_output_attributes().keys()) + self.output_attributes
         # Ensure only keys of `all_attributes` are present and no other keys are returned
         result.update({key: current_context[key] for key in all_attributes if key in current_context})
         return result

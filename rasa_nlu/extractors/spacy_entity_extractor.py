@@ -19,7 +19,6 @@ from typing import List
 from typing import Optional
 from typing import Text
 
-from rasa_nlu.components import Component
 from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.training_data import TrainingData
 
@@ -29,7 +28,7 @@ if typing.TYPE_CHECKING:
     from spacy.tokens import Doc
 
 
-class SpacyEntityExtractor(Component, EntityExtractor):
+class SpacyEntityExtractor(EntityExtractor):
     name = "ner_spacy"
 
     context_provides = {
@@ -61,11 +60,13 @@ class SpacyEntityExtractor(Component, EntityExtractor):
 
             self.ner = self._train_from_scratch(spacy_nlp, entity_types, train_data)
 
-    def process(self, spacy_doc, spacy_nlp):
-        # type: (Doc, Language) -> Dict[Text, Any]
+    def process(self, spacy_doc, spacy_nlp, entities):
+        # type: (Doc, Language, List[Dict[Text, Any]]) -> Dict[Text, Any]
 
+        extracted = self.add_extractor_name(self.extract_entities(spacy_doc, spacy_nlp))
+        entities.extend(extracted)
         return {
-            "entities": self.extract_entities(spacy_doc, spacy_nlp)
+            "entities": entities
         }
 
     def extract_entities(self, doc, spacy_nlp):
