@@ -11,10 +11,13 @@ import six
 
 
 # Describes where to search for the configuration file if the location is not set by the user
+from typing import Text
+
 DEFAULT_CONFIG_LOCATION = "config.json"
 
 
 DEFAULT_CONFIG = {
+    "name": None,
     "config": DEFAULT_CONFIG_LOCATION,
     "data": None,
     "emulate": None,
@@ -24,7 +27,6 @@ DEFAULT_CONFIG = {
     "mitie_file": os.path.join("data", "total_word_feature_extractor.dat"),
     "spacy_model_name": None,
     "num_threads": 1,
-    "fine_tune_spacy_ner": False,
     "path": "models",
     "port": 5000,
     "server_model_dirs": None,

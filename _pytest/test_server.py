@@ -6,7 +6,9 @@ from __future__ import absolute_import
 import tempfile
 
 import pytest
+import time
 
+import utilities
 from rasa_nlu.config import RasaNLUConfig
 import json
 import io
@@ -16,13 +18,13 @@ from rasa_nlu.server import create_app
 
 
 @pytest.fixture(scope="module")
-def app():
+def app(tmpdir_factory):
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
     _config = {
         'write': nlu_log_file,
         'port': -1,                 # unused in test app
         "backend": "mitie",
-        "path": "./models",
+        "path": tmpdir_factory.mktemp("models").strpath,
         "server_model_dirs": {},
         "data": "./data/demo-restaurants.json",
         "luis_data_tokenizer": "tokenizer_mitie",
@@ -31,6 +33,13 @@ def app():
     config = RasaNLUConfig(cmdline_args=_config)
     application = create_app(config)
     return application
+
+
+@pytest.fixture
+def rasa_default_train_data():
+    with io.open('data/examples/rasa/demo-rasa.json',
+                 encoding='utf-8') as train_file:
+        return json.loads(train_file.read())
 
 
 def test_root(client):
@@ -86,9 +95,20 @@ def test_post_parse(client, response_test):
     assert all(prop in response.json[0] for prop in ['entities', 'intent', '_text', 'confidence'])
 
 
-def test_post_train(client):
-    with io.open('data/examples/luis/demo-restaurants.json',
-                 encoding='utf-8') as train_file:
-        train_data = json.loads(train_file.read())
-    response = client.post("/train", data=json.dumps(train_data), content_type='application/json')
+@utilities.slowtest
+def test_post_train(client, rasa_default_train_data):
+    response = client.post("/train", data=json.dumps(rasa_default_train_data), content_type='application/json')
     assert response.status_code == 200
+
+
+def test_model_hot_reloading(client, rasa_default_train_data):
+    query = "/parse?q=hello&model=my_keyword_model"
+    response = client.get(query)
+    assert response.status_code == 404, "Model should not exist yet"
+    response = client.post("/train?name=my_keyword_model&pipeline=keyword",
+                           data=json.dumps(rasa_default_train_data),
+                           content_type='application/json')
+    assert response.status_code == 200, "Training should start successfully"
+    time.sleep(3)    # training should be quick as the keyword model doesn't do any training
+    response = client.get(query)
+    assert response.status_code == 200, "Model should now exist after it got trained"
