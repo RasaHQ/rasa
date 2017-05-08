@@ -6,7 +6,7 @@ how you can migrate from one version to another.
 0.7.x to master
 ---------------
 
-- Due to the update of spacy to 1.7 (and them breaking backwards compatibility), spacy models need to be retrained.
+- The training and loading capability for the spacy entity extraction was dropped in favor of the new CRF extractor. That means models need to be retrained using the crf extractor.
 
 - The parameter and configuration value name of ``backend`` changed to ``pipeline``.
 
