@@ -15,15 +15,14 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-COPY ./requirements.txt ${RASA_NLU_HOME}/requirements.txt
+WORKDIR ${RASA_NLU_HOME}
 
-RUN cat ${RASA_NLU_HOME}/requirements.txt | grep -v "^-e .$" > ${RASA_NLU_HOME}/requirements-nonlocal.txt
+COPY ./requirements.txt requirements.txt
 
-RUN pip install -r "${RASA_NLU_HOME}/requirements-nonlocal.txt"
+# Split into pre-requirements, so as to allow for Docker build caching
+RUN pip install $(tail -n +2 requirements.txt)
 
 COPY . ${RASA_NLU_HOME}
-
-WORKDIR ${RASA_NLU_HOME}
 
 RUN python setup.py install
 
