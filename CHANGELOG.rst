@@ -11,11 +11,25 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 Added
 -----
+
+Changed
+-------
+
+Removed
+-------
+
+Fixed
+-----
+
+[0.8.0] - 2017-05-08
+^^^^^^^^^^^^^^^^^^^^
+Added
+-----
 - ngram character featurizer (allows better handling of out-of-vocab words)
 - replaced pre-wired backends with more flexible pipeline definitions
 - return top 10 intents with sklearn classifier `#199 <https://github.com/golastmile/rasa_nlu/pull/199>`_
 - python type annotations for nearly all public functions
-- support for arbitrary spacy model names
+- support for arbitrary spacy language model names
 - duckling components to provide normalized output for structured entities
 - Conditional random field entity extraction (Markov model for entity tagging, better named entity recognition with low and medium data and similarly well at big data level)
 - allow naming of trained models instead of generated model names
