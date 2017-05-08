@@ -17,6 +17,7 @@ If you are new to rasa NLU and want to create a bot, you should start with the [
 - [Setup](#setup) 
 - [FAQ](#faq)
 - [How to contribute](#how-to-contribute)
+- [Development Internals](#development-internals)
 - [License](#license)
 
 
@@ -92,5 +93,22 @@ In general the process is rather simple:
 
 You pull request will be reviewed by a maintainer, who might get back to you about any necessary changes or questions.
 
+## Development Internals
+
+### Steps to release a new version
+Releasing a new version is quite simple, as the packages are build and distributed by travis. The following things need to be done to release a new version
+1. update [rasa_nlu/version.py](https://github.com/golastmile/rasa_nlu/blob/master/rasa_nlu/version.py) to reflect the correct version number
+2. edit the [CHANGELOG.rst](https://github.com/golastmile/rasa_nlu/blob/master/CHANGELOG.rst), create a new section for the release (eg by moving the items from the collected master section) and create a new master logging section
+3. edit the [migration guide](https://github.com/golastmile/rasa_nlu/blob/master/docs/migrations.rst) to provide assistance for users updating to the new version 
+4. commit all the above changes and tag a new release, e.g. using 
+    ```
+    git tag -f 0.7.0 -m "Some helpfull line describing the release"
+    git push origin master --tags
+    ```
+5. only if it is a **major release**, a new branch should be created pointing to the same commit as the tag to allow for future minor patches, e.g.
+    ```
+    git checkout -b 0.7.x
+    git push origin 0.7.x
+    ```
 ## License
 Licensed under the Apache License, Version 2.0. Copyright 2016 LastMile Technologies Ltd. [Copy of the license](LICENSE.txt).
