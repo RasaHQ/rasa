@@ -1,3 +1,4 @@
+-e .\n
 gevent==1.2.1
 flask==0.12
 boto3==1.4.4

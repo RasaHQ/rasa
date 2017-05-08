@@ -17,13 +17,13 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
 
 COPY ./requirements.txt ${RASA_NLU_HOME}/requirements.txt
 
-RUN pip install -r "${RASA_NLU_HOME}/requirements.txt"
+RUN cat ${RASA_NLU_HOME}/requirements.txt | grep -v "^-e .$" > ${RASA_NLU_HOME}/requirements-nonlocal.txt
+
+RUN pip install -r "${RASA_NLU_HOME}/requirements-nonlocal.txt"
 
 COPY . ${RASA_NLU_HOME}
 
 WORKDIR ${RASA_NLU_HOME}
-
-RUN echo "-e .\n" | cat - ./requirements.txt > /tmp/out && mv /tmp/out ./requirements.txt
 
 RUN python setup.py install
 
