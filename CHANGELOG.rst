@@ -56,6 +56,14 @@ Fixed
 - support entity only training `#181 <https://github.com/golastmile/rasa_nlu/issues/181>`_
 - resolved conflicts between metadata and configuration values `#219 <https://github.com/golastmile/rasa_nlu/issues/219>`_
 - removed tokenization when reading Luis.ai data (they changed their format) `#241 <https://github.com/golastmile/rasa_nlu/issues/241>`_
+
+[0.7.4] - 2017-03-27
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed failed loading of example data after renaming attributes, i.e. "KeyError: 'entities'"
+
 [0.7.3] - 2017-03-15
 ^^^^^^^^^^^^^^^^^^^^
 
