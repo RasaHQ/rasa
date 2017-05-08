@@ -1,0 +1,8 @@
+{
+  "pipeline": "spacy_sklearn",
+  "path" : "../models",
+  "data" : "../data/examples/rasa/demo-rasa.json",
+  "storage": "mongodb",
+  "mongodb_uri": "mongodb://localhost:27017/rasa-test",
+  "collection_name": "models"
+}
