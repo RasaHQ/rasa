@@ -255,7 +255,7 @@ class Interpreter(object):
             # but in the end, no one should pass an empty string in the first place.
             return self.default_output_attributes()
 
-        current_context = self.context.copy()
+        current_context = copy.deepcopy(self.context)
 
         current_context.update({
             "text": text,

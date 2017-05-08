@@ -21,6 +21,13 @@ Removed
 Fixed
 -----
 
+[0.8.1] - 2017-05-08
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- NER training reuses context inbetween requests
+
 [0.8.0] - 2017-05-08
 ^^^^^^^^^^^^^^^^^^^^
 Added
