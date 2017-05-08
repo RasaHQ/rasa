@@ -8,6 +8,7 @@ import io
 import json
 import os
 import warnings
+import six
 
 from typing import Any
 from typing import Dict
@@ -15,11 +16,11 @@ from typing import List
 from typing import Optional
 from typing import Text
 
-from rasa_nlu.components import Component
+from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.training_data import TrainingData
 
 
-class EntitySynonymMapper(Component):
+class EntitySynonymMapper(EntityExtractor):
     name = "ner_synonyms"
 
     context_provides = {
@@ -79,15 +80,17 @@ class EntitySynonymMapper(Component):
         return EntitySynonymMapper()
 
     def replace_synonyms(self, entities):
-        for i in range(len(entities)):
-            entity_value = entities[i]["value"]
+        for entity in entities:
+            entity_value = entity["value"]
             if entity_value.lower() in self.synonyms:
-                entities[i]["value"] = self.synonyms[entity_value.lower()]
+                entity["value"] = self.synonyms[entity_value.lower()]
+                self.add_processor_name(entity)
 
     def add_entities_if_synonyms(self, entity_a, entity_b):
         if entity_b is not None:
-            original = entity_a.lower() if type(entity_a) == str else str(entity_a)
-            replacement = entity_b.lower() if type(entity_b) == str else str(entity_b)
+            original = entity_a if isinstance(entity_a, six.text_type) else six.text_type(entity_a)
+            original = original.lower()
+            replacement = entity_b if isinstance(entity_b, six.text_type) else six.text_type(entity_b)
 
             if original != replacement:
                 self.synonyms[original] = replacement

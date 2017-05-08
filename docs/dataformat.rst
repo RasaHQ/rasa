@@ -10,8 +10,13 @@ However, if you need lots and lots of examples to train a good entity recogniser
 your intent model because your classes are totally unbalanced. In that case it makes sense
 to split up these lists. 
 
-Entities are specified with a ``start`` and  ``end`` value, which together make a python style range to apply to the string, e.g. in the example below, with ``text="show me chinese restaurants"``, then ``text[8:15] == 'chinese'``.
-Entities can span multiple words, and in fact the ``value`` field doesn't have to correspond exactly to the substring in your example. That way you can map syonyms, or misspellings, to the same ``value``.
+Entities are specified with a ``start`` and  ``end`` value, which together make a python
+style range to apply to the string, e.g. in the example below, with ``text="show me chinese
+restaurants"``, then ``text[8:15] == 'chinese'``. Entities can span multiple words, and in
+fact the ``value`` field does not have to correspond exactly to the substring in your example.
+That way you can map syonyms, or misspellings, to the same ``value``. Also, the ``extractor``
+field of an entity tells you which entity extractor found this particular entity. The ``processors``
+field contains the name of components that altered this specific entity.
 
 
 .. code-block:: json
@@ -24,7 +29,9 @@ Entities can span multiple words, and in fact the ``value`` field doesn't have t
           "start": 8, 
           "end": 15, 
           "value": "chinese", 
-          "entity": "cuisine"
+          "entity": "cuisine",
+          "extractor": "ner_mitie",
+          "processors": []
         }
       ]
     }
@@ -44,7 +51,9 @@ If you define entities as having the same value they will be treated as synonyms
             "start": 17,
             "end": 20,
             "value": "New York City",
-            "entity": "city"
+            "entity": "city",
+            "extractor": "ner_mitie",
+            "processors": ["ner_synonyms"]
           }
         ]
       },
@@ -56,7 +65,8 @@ If you define entities as having the same value they will be treated as synonyms
             "start": 17,
             "end": 30,
             "value": "New York City",
-            "entity": "city"
+            "entity": "city",
+            "extractor": "ner_mitie"
           }
         ]
       }

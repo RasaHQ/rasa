@@ -6,4 +6,3 @@ typing==3.5.3.0
 future==0.16.0
 six==1.10.0
 jsonschema==2.6.0
-google-cloud-storage==1.0.0

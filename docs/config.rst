@@ -25,6 +25,15 @@ Options
 -------
 A short explanation and examples for each configuration value.
 
+name
+~~~~
+
+:Type: ``str``
+:Examples: ``"my_model_name"``
+:Description:
+     Defines a models name used to store it and to refere to it when using the http server.
+     The default is ``null`` which will lead to a generated model name, e.g. ``"model_20170426-230305"``.
+
 pipeline
 ~~~~~~~~
 
@@ -163,15 +172,16 @@ max_number_of_ngrams
     Maximum number of ngrams to use when augmenting feature vectors with character ngrams
     (``intent_featurizer_ngrams`` component only)
 
-duckling_processing_mode
+.. _section_configuration_duckling_dimensions:
+
+duckling_dimensions
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-:Type: ``string``
-:Examples: ``"append"``
+:Type: ``list``
+:Examples: ``["time", "number", "money", "distance"]``
 :Description:
-    Defines whether the duckling component will ``"append"`` (hence, modify already found entities and add all entities
-    found by the duckling processor) or ``"replace"`` (which will only replace already found entities by other components.
-    Additional entities found by the duckling component will be ignored).
+    Defines which dimensions, i.e. entity types, the :ref:`duckling component <section_pipeline_duckling>` will extract.
+    A full list of available dimensions can be found in the `duckling documentation <https://duckling.wit.ai/>`_.
 
 
 luis_data_tokenizer

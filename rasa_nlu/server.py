@@ -30,6 +30,8 @@ def create_arg_parser():
     parser.add_argument('-m', '--mitie_file',
                         help='file with mitie total_word_feature_extractor')
     parser.add_argument('-p', '--path', help="path where model files will be saved")
+    parser.add_argument('--pipeline', help="The pipeline to use. Either a pipeline template name or a list of " +
+                                           "components separated by comma")
     parser.add_argument('-P', '--port', type=int, help='port on which to run server')
     parser.add_argument('-t', '--token',
                         help="auth token. If set, reject requests which don't provide this token as a query parameter")
@@ -69,7 +71,7 @@ def create_app(config, component_builder=None):
                 response = current_app.data_router.parse(data)
                 return jsonify(response)
             except InvalidModelError as e:
-                return jsonify({"error": e.message}), 404
+                return jsonify({"error": "{}".format(e)}), 404
 
     @rasa_nlu_app.route("/status", methods=['GET'])
     @requires_auth
@@ -77,7 +79,6 @@ def create_app(config, component_builder=None):
         return jsonify(current_app.data_router.get_status())
 
     @rasa_nlu_app.route("/", methods=['GET'])
-    @requires_auth
     def hello():
         return "hello"
 
@@ -85,7 +86,7 @@ def create_app(config, component_builder=None):
     @requires_auth
     def train():
         data_string = request.get_data(as_text=True)
-        current_app.data_router.start_train_process(data_string)
+        current_app.data_router.start_train_process(data_string, request.args)
         return jsonify(info="training started. Current pids: {}".format(current_app.data_router.train_procs))
 
     logging.basicConfig(filename=config['log_file'], level=config['log_level'])
