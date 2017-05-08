@@ -11,7 +11,6 @@ if [ "$TRAVIS_PYTHON_VERSION" = "2.7" ] \
     cd $DIR
     docker build -t golastmile/rasa_nlu:$TRAVIS_TAG -t golastmile/rasa_nlu:latest .
     cd ..
-    rm -rf $DIR
 
     DIR=docker_full
     mkdir $DIR
@@ -20,11 +19,10 @@ if [ "$TRAVIS_PYTHON_VERSION" = "2.7" ] \
     cd $DIR
     docker build -t golastmile/rasa_nlu_full:$TRAVIS_TAG -t golastmile/rasa_nlu_full:latest .
     cd ..
-    rm -rf $DIR
 
     docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
-    docker push golastmile/rasa_nlu_minimal:"$TRAVIS_TAG"
-    docker push golastmile/rasa_nlu_minimal:latest
     docker push golastmile/rasa_nlu:"$TRAVIS_TAG"
     docker push golastmile/rasa_nlu:latest
+    docker push golastmile/rasa_nlu_full:"$TRAVIS_TAG"
+    docker push golastmile/rasa_nlu_full:latest
 fi
