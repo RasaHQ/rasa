@@ -238,9 +238,7 @@ class Interpreter(object):
         # type: (List[Component], Dict[Text, Any], Dict[Text, Any], Optional[Metadata]) -> None
 
         self.pipeline = pipeline
-        self.context = self.default_output_attributes()
-        if context is not None:
-            self.context.update(context)
+        self.context = context if context is not None else {}
         self.config = config
         self.meta = meta
         self.output_attributes = [output for component in pipeline for output in component.output_provides]
@@ -255,7 +253,8 @@ class Interpreter(object):
             # but in the end, no one should pass an empty string in the first place.
             return self.default_output_attributes()
 
-        current_context = copy.deepcopy(self.context)
+        current_context = self.context.copy()
+        current_context.update(self.default_output_attributes())
 
         current_context.update({
             "text": text,
