@@ -79,12 +79,6 @@ def create_app(config, component_builder=None):
     def version():
         return jsonify({'version': __version__})
 
-    @rasa_nlu_app.route("/serverlog", methods=['GET'])
-    @requires_auth
-    def serverlog():
-        with open(config['log_file'], 'r') as f:
-            return(f.read())
-
     @rasa_nlu_app.route("/config", methods=['GET'])
     @requires_auth
     def rasaconfig():
