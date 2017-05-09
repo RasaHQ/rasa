@@ -82,7 +82,7 @@ def create_app(config, component_builder=None):
     @rasa_nlu_app.route("/config", methods=['GET'])
     @requires_auth
     def rasaconfig():
-        return jsonify(rasa_nlu_config.as_dict())
+        return jsonify(config.as_dict())
 
     @rasa_nlu_app.route("/status", methods=['GET'])
     @requires_auth
