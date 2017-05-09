@@ -8,6 +8,7 @@ import logging
 import typing
 from typing import Any
 from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Text
 
@@ -33,6 +34,11 @@ class SpacyNLP(Component):
         self.nlp = nlp
         self.language = language
         self.spacy_model_name = spacy_model_name
+
+    @classmethod
+    def required_packages(cls):
+        # type: () -> List[Text]
+        return ["spacy"]
 
     @classmethod
     def create(cls, language, spacy_model_name):

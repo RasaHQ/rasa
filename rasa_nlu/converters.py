@@ -7,6 +7,7 @@ import json
 import re
 import warnings
 
+import logging
 from typing import Any
 from typing import Dict
 from typing import List
@@ -82,6 +83,12 @@ def load_luis_data(filename):
 
     with io.open(filename, encoding="utf-8-sig") as f:
         data = json.loads(f.read())
+
+    # Simple check to ensure we support this luis data schema version
+    if not data["luis_schema_version"].startswith("2"):
+        raise Exception("Invalid luis data schema version {}, should be 2.x.x. ".format(data["luis_schema_version"]) +
+                        "Make sure to use the latest luis version (e.g. by downloading your data again).")
+
     for s in data["utterances"]:
         text = s.get("text")
         intent = s.get("intent")
@@ -235,7 +242,7 @@ def resolve_data_files(resource_name):
     try:
         return utils.recursively_find_files(resource_name)
     except ValueError as e:
-        raise ValueError("Invalid training data file / folder specified. " + e.message)
+        raise ValueError("Invalid training data file / folder specified. {}".format(e))
 
 
 def load_data(resource_name, fformat=None):
@@ -247,6 +254,8 @@ def load_data(resource_name, fformat=None):
     if not fformat:
         fformat = guess_format(files)
 
+    logging.info("Training data format at {} is {}".format(resource_name, fformat))
+
     if fformat == LUIS_FILE_FORMAT:
         return load_luis_data(files[0])
     elif fformat == WIT_FILE_FORMAT:
@@ -256,4 +265,4 @@ def load_data(resource_name, fformat=None):
     elif fformat == RASA_FILE_FORMAT:
         return load_rasa_data(files[0])
     else:
-        raise ValueError("unknown training file format : {0}".format(fformat))
+        raise ValueError("unknown training file format : {} for file {}".format(fformat, resource_name))

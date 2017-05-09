@@ -11,10 +11,13 @@ import six
 
 
 # Describes where to search for the configuration file if the location is not set by the user
+from typing import Text
+
 DEFAULT_CONFIG_LOCATION = "config.json"
 
 
 DEFAULT_CONFIG = {
+    "name": None,
     "config": DEFAULT_CONFIG_LOCATION,
     "data": None,
     "emulate": None,
@@ -24,7 +27,6 @@ DEFAULT_CONFIG = {
     "mitie_file": os.path.join("data", "total_word_feature_extractor.dat"),
     "spacy_model_name": None,
     "num_threads": 1,
-    "fine_tune_spacy_ner": False,
     "path": "models",
     "port": 5000,
     "server_model_dirs": None,
@@ -32,7 +34,7 @@ DEFAULT_CONFIG = {
     "max_number_of_ngrams": 7,
     "pipeline": [],
     "response_log": "logs",
-    "duckling_processing_mode": "append",
+    "duckling_dimensions": None,
     "luis_data_tokenizer": None,
     "entity_crf_BILOU_flag": True,
     "entity_crf_features": [
@@ -46,7 +48,7 @@ class InvalidConfigError(ValueError):
     """Raised if an invalid configuration is encountered."""
 
     def __init__(self, message):
-        # type: (str) -> None
+        # type: (Text) -> None
         super(InvalidConfigError, self).__init__(message)
 
 
@@ -67,11 +69,11 @@ class RasaNLUConfig(object):
             self.override(file_config)
 
         if env_vars is not None:
-            env_config = self.format_env_vars(env_vars)
+            env_config = self.create_env_config(env_vars)
             self.override(env_config)
 
         if cmdline_args is not None:
-            cmdline_config = {k: v for k, v in list(cmdline_args.items()) if v is not None}
+            cmdline_config = self.create_cmdline_config(cmdline_args)
             self.override(cmdline_config)
 
         if isinstance(self.__dict__['pipeline'], six.string_types):
@@ -79,8 +81,10 @@ class RasaNLUConfig(object):
             if self.__dict__['pipeline'] in registry.registered_pipeline_templates:
                 self.__dict__['pipeline'] = registry.registered_pipeline_templates[self.__dict__['pipeline']]
             else:
-                warnings.warn("No pipeline specified and unknown pipeline template " +
-                              "'{}' passed.".format(self.__dict__['pipeline']))
+                raise InvalidConfigError("No pipeline specified and unknown pipeline template " +
+                                         "'{}' passed. Known pipeline templates: {}".format(
+                                             self.__dict__['pipeline'],
+                                             ", ".join(registry.registered_pipeline_templates.keys())))
 
         for key, value in self.items():
             setattr(self, key, value)
@@ -109,9 +113,30 @@ class RasaNLUConfig(object):
     def view(self):
         return json.dumps(self.__dict__, indent=4)
 
-    def format_env_vars(self, env_vars):
+    def split_arg(self, config, arg_name):
+        if arg_name in config and isinstance(config[arg_name], six.string_types):
+            config[arg_name] = config[arg_name].split(",")
+        return config
+
+    def split_pipeline(self, config):
+        if "pipeline" in config and isinstance(config["pipeline"], six.string_types):
+            config = self.split_arg(config, "pipeline")
+            if "pipeline" in config and len(config["pipeline"]) == 1:
+                config["pipeline"] = config["pipeline"][0]
+        return config
+
+    def create_cmdline_config(self, cmdline_args):
+        cmdline_config = {k: v for k, v in list(cmdline_args.items()) if v is not None}
+        cmdline_config = self.split_pipeline(cmdline_config)
+        cmdline_config = self.split_arg(cmdline_config, "duckling_dimensions")
+        return cmdline_config
+
+    def create_env_config(self, env_vars):
         keys = [key for key in env_vars.keys() if "RASA" in key]
-        return {key.split('RASA_')[1].lower(): env_vars[key] for key in keys}
+        env_config = {key.split('RASA_')[1].lower(): env_vars[key] for key in keys}
+        env_config = self.split_pipeline(env_config)
+        env_config = self.split_arg(env_config, "duckling_dimensions")
+        return env_config
 
     def is_set(self, key):
         return key in self.__dict__ and self[key] is not None

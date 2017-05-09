@@ -5,6 +5,7 @@ from __future__ import absolute_import
 from builtins import object
 import tempfile
 import pytest
+import json
 
 from rasa_nlu import registry
 from rasa_nlu.config import RasaNLUConfig
@@ -25,6 +26,13 @@ def base_test_conf(pipeline_template):
     })
 
 
+def write_file_config(file_config):
+    with tempfile.NamedTemporaryFile("w+", suffix="_tmp_config_file.json", delete=False) as f:
+        f.write(json.dumps(file_config))
+        f.flush()
+        return f
+
+
 def interpreter_for(component_builder, config):
     (trained, path) = run_train(config, component_builder)
     interpreter = load_interpreter_for_model(config, path, component_builder)
@@ -36,7 +44,7 @@ def temp_log_file_dir():
 
 
 def run_train(config, component_builder):
-    (trained, path) = do_train(config, component_builder)
+    (trained, _, path) = do_train(config, component_builder)
     return trained, path
 
 

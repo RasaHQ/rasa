@@ -14,7 +14,6 @@ from typing import List
 from typing import Optional
 from typing import Text
 
-from rasa_nlu.components import Component
 from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa_nlu.training_data import TrainingData
@@ -24,7 +23,7 @@ if typing.TYPE_CHECKING:
     import mitie
 
 
-class MitieEntityExtractor(Component, EntityExtractor):
+class MitieEntityExtractor(EntityExtractor):
     name = "ner_mitie"
 
     context_provides = {
@@ -35,6 +34,11 @@ class MitieEntityExtractor(Component, EntityExtractor):
 
     def __init__(self, ner=None):
         self.ner = ner
+
+    @classmethod
+    def required_packages(cls):
+        # type: () -> List[Text]
+        return ["mitie"]
 
     def extract_entities(self, text, tokens, feature_extractor):
         ents = []
@@ -65,8 +69,7 @@ class MitieEntityExtractor(Component, EntityExtractor):
         tk = MitieTokenizer()
         tokens, offsets = tk.tokenize_with_offsets(text)
         if ent["start"] not in offsets:
-            message = "Invalid entity {0} in example '{1}':".format(ent, text) + \
-                      " entities must span whole tokens"
+            message = "Invalid entity {} in example '{}': entities must span whole tokens".format(ent, text)
             raise ValueError(message)
         start = offsets.index(ent["start"])
         _slice = text[ent["start"]:ent["end"]]
@@ -95,11 +98,13 @@ class MitieEntityExtractor(Component, EntityExtractor):
         if found_one_entity:
             self.ner = trainer.train()
 
-    def process(self, text, tokens, mitie_feature_extractor):
-        # type: (Text, List[Text], mitie.total_word_feature_extractor) -> Dict[Text, Any]
+    def process(self, text, tokens, mitie_feature_extractor, entities):
+        # type: (Text, List[Text], mitie.total_word_feature_extractor, List[Dict[Text, Any]]) -> Dict[Text, Any]
 
+        extracted = self.add_extractor_name(self.extract_entities(text, tokens, mitie_feature_extractor))
+        entities.extend(extracted)
         return {
-            "entities": self.extract_entities(text, tokens, mitie_feature_extractor)
+            "entities": entities
         }
 
     @classmethod

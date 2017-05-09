@@ -25,6 +25,15 @@ Options
 -------
 A short explanation and examples for each configuration value.
 
+name
+~~~~
+
+:Type: ``str``
+:Examples: ``"my_model_name"``
+:Description:
+     Defines a models name used to store it and to refere to it when using the http server.
+     The default is ``null`` which will lead to a generated model name, e.g. ``"model_20170426-230305"``.
+
 pipeline
 ~~~~~~~~
 
@@ -129,14 +138,6 @@ spacy_model_name
     If the spacy model to be used has a name that is different from the language tag (``"en"``, ``"de"``, etc.),
     the model name can be specified using this configuration variable. The name will be passed to ``spacy.load(name)``.
 
-fine_tune_spacy_ner
-~~~~~~~~~~~~~~~~~~~
-
-:Type: ``bool``
-:Examples: ``true``
-:Description:
-    Fine tune existing spacy NER models vs training from scratch. (``ner_spacy`` component only)
-
 server_model_dirs
 ~~~~~~~~~~~~~~~~~
 
@@ -163,15 +164,16 @@ max_number_of_ngrams
     Maximum number of ngrams to use when augmenting feature vectors with character ngrams
     (``intent_featurizer_ngrams`` component only)
 
-duckling_processing_mode
+.. _section_configuration_duckling_dimensions:
+
+duckling_dimensions
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-:Type: ``string``
-:Examples: ``"append"``
+:Type: ``list``
+:Examples: ``["time", "number", "money", "distance"]``
 :Description:
-    Defines whether the duckling component will ``"append"`` (hence, modify already found entities and add all entities
-    found by the duckling processor) or ``"replace"`` (which will only replace already found entities by other components.
-    Additional entities found by the duckling component will be ignored).
+    Defines which dimensions, i.e. entity types, the :ref:`duckling component <section_pipeline_duckling>` will extract.
+    A full list of available dimensions can be found in the `duckling documentation <https://duckling.wit.ai/>`_.
 
 
 luis_data_tokenizer
@@ -186,6 +188,32 @@ luis_data_tokenizer
 
 If you want to persist your trained models to S3, there are additional configuration options,
 see :ref:`section_persistence`
+
+storage
+~~~~~~~
+
+:Type: ``str``
+:Examples: ``"aws"`` or ``"gcs"``
+:Description:
+    Storage type for persistor. See :ref:`section_persistence` for more details.
+
+bucket_name
+~~~~~~~~~~~
+
+:Type: ``str``
+:Examples: ``"my_models"``
+:Description:
+    Name of the bucket in the cloud to store the models. If the specified bucket name does not exist, rasa will create it.
+    See :ref:`section_persistence` for more details.
+
+aws_region
+~~~~~~~~~~
+
+:Type: ``str``
+:Examples: ``"us-east-1"``
+:Description:
+    Name of the aws region to use. This is used only when ``"storage"`` is selected as ``"aws"``.
+    See :ref:`section_persistence` for more details.
 
 entity_crf_features
 ~~~~~~~~~~~~~~~~~~~

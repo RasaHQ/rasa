@@ -11,21 +11,24 @@ import pytest
 from six import PY2
 
 
-def import_submodules(package_name):
-    """ Import all submodules of a module, recursively, including subpackages."""
+def import_submodules(package_name, skip_list):
+    """ Import all submodules of a module, recursively, including subpackages.
+
+    `skip_list` denotes packages that should be skipped during the import"""
 
     package = importlib.import_module(package_name)
     results = []
     for loader, name, is_pkg in pkgutil.walk_packages(package.__path__):
         full_name = package.__name__ + '.' + name
-        module = importlib.import_module(full_name)
-        if PY2:
-            reload(module)
-        else:
-            importlib.reload(module)
-        results.append(full_name)
-        if is_pkg:
-            results += import_submodules(full_name)
+        if full_name not in skip_list:
+            module = importlib.import_module(full_name)
+            if PY2:
+                reload(module)
+            else:
+                importlib.reload(module)
+            results.append(full_name)
+            if is_pkg:
+                results += import_submodules(full_name, skip_list)
     return results
 
 
@@ -60,10 +63,10 @@ def test_no_global_imports_of_banned_package(banned_package):
         builtins.__import__ = import_tracking
 
     # import all available modules and track imports on the way
-    import_submodules("rasa_nlu")
+    import_submodules("rasa_nlu", skip_list={"rasa_nlu.wsgi"})      # wsgi needs to be skipped as it instantiates an app
 
     def find_modules_importing(name):
-        return [v for k, vs in tracked_imports.items() if k.startswith(name) for v in vs]
+        return {v for k, vs in tracked_imports.items() if k.startswith(name) for v in vs}
 
     assert not find_modules_importing(banned_package), \
         "No module should import {} globally. Found in {}".format(
