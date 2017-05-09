@@ -62,6 +62,8 @@ curl 'http://localhost:5000/parse?q=hello'
 ```
 
 #### B.2 Install with Docker automatically
+Automatically installation uses spacy english model and configure trained model as default if there is only one trained model.
+If you want to use another model read the Dockerfile, comment spacy english model lines and uncomment the lines for your selected model.
 
 ##### 1. Create container
 
@@ -87,6 +89,10 @@ Try it with any phrase suitable for your intents, using %20 as spaces in the URL
 ```
 curl 'http://localhost:5000/parse?q=hello%20machine'
 ```
+
+##### 5. Change configuration
+
+
 
 ### C. (Experimental) Deploying to Docker Cloud
 [![Deploy to Docker Cloud](https://files.cloud.docker.com/images/deploy-to-dockercloud.svg)](https://cloud.docker.com/stack/deploy/)
