@@ -15,4 +15,6 @@ case $1 in
         docker stop rasa_engine
         docker start rasa_engine
         ;;
+    *)
+      echo "Usage: ./manage_container build|start|stop|reload"
 esac
