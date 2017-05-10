@@ -21,6 +21,13 @@ Removed
 Fixed
 -----
 
+[0.8.4] - 2017-05-10
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Fixed CRF model training without entities. fixes #345
+
 [0.8.3] - 2017-05-10
 ^^^^^^^^^^^^^^^^^^^^
 

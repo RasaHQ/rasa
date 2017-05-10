@@ -30,6 +30,7 @@ def test_train_model_noents(pipeline_template, component_builder):
     assert trained.pipeline
     loaded = utilities.load_interpreter_for_model(_config, persisted_path, component_builder)
     assert loaded.pipeline
+    assert loaded.parse("hello") is not None
 
 
 @slowtest

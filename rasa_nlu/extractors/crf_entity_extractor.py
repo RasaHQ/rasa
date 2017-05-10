@@ -108,12 +108,16 @@ class CRFEntityExtractor(EntityExtractor):
         return [convert_example(entity_example) for entity_example in entity_examples]
 
     def extract_entities(self, text, spacy_nlp):
-        # take a sentence and return entities in json format
-        # type (unicode sentence, spacy nlp) -> dict
-        text_data = self._from_text_to_crf(text, spacy_nlp)
-        features = self._sentence_to_features(text_data)
-        ents = self.ent_tagger.tag(features)
-        return self._from_crf_to_json(spacy_nlp(text), ents)
+        # type: (Text, Language) -> List[Dict[Text, Any]]
+        """Take a sentence and return entities in json format"""
+
+        if self.ent_tagger is not None:
+            text_data = self._from_text_to_crf(text, spacy_nlp)
+            features = self._sentence_to_features(text_data)
+            ents = self.ent_tagger.tag(features)
+            return self._from_crf_to_json(spacy_nlp(text), ents)
+        else:
+            return []
 
     def _from_crf_to_json(self, sentence_doc, entities):
         # type: (Doc, List[Any]) -> List[Dict[Text, Any]]
