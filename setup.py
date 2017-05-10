@@ -14,13 +14,17 @@ install_requires = [
     "requests",
     "pathlib",
     "cloudpickle",
+    "gevent",
+    "flask",
     "boto3",
     "typing",
+    "future",
+    "six",
+    "jsonschema"
 ]
 
 extras_requires = {
     'test': tests_requires,
-    'http': ["flask", "gevent"],
     'spacy': ["sklearn", "scipy", "numpy"],
     'mitie': ["mitie", "numpy"],
 }

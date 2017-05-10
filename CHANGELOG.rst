@@ -21,6 +21,13 @@ Removed
 Fixed
 -----
 
+[0.8.5] - 2017-05-10
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Fixed pypi installation dependencies (e.g. flask). fixes #354
+
 [0.8.4] - 2017-05-10
 ^^^^^^^^^^^^^^^^^^^^
 
