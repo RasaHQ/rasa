@@ -21,6 +21,13 @@ Removed
 Fixed
 -----
 
+[0.8.3] - 2017-05-10
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Fixed Luis emulation and added test to catch regression. Fixes #353
+
 [0.8.2] - 2017-05-08
 ^^^^^^^^^^^^^^^^^^^^
 

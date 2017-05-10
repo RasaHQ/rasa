@@ -28,7 +28,7 @@ class LUISEmulator(NoEmulator):
 
     def _ranking(self, data):
         if data.get("intent_ranking"):
-            return [{"intent": el["intent"], "score": el["confidence"]} for el in data["intent_ranking"]]
+            return [{"intent": el["name"], "score": el["confidence"]} for el in data["intent_ranking"]]
         else:
             return [self._top_intent(data)]
 
