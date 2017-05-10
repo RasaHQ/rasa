@@ -56,7 +56,6 @@ def test_status(client):
 
 def test_config(client):
     response = client.get("/config")
-    rjs = response.json
     assert response.status_code == 200
 
 
@@ -65,11 +64,6 @@ def test_version(client):
     rjs = response.json
     assert response.status_code == 200 and \
         ("version" in rjs)
-
-
-def test_server_log_file(client):
-    response = client.get("/serverlog")
-    assert response.status_code == 200
 
 
 @pytest.mark.parametrize("response_test", [
