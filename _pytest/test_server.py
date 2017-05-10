@@ -44,7 +44,7 @@ def rasa_default_train_data():
 
 def test_root(client):
     response = client.get("/")
-    assert response.status_code == 200 and response.data.startswith("hello")
+    assert response.status_code == 200 and response.data.startswith(b"hello")
 
 
 def test_status(client):
