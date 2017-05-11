@@ -15,6 +15,7 @@ from gevent.wsgi import WSGIServer
 
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.data_router import DataRouter, InvalidModelError
+from rasa_nlu.version import __version__
 
 
 def create_arg_parser():
@@ -73,6 +74,16 @@ def create_app(config, component_builder=None):
             except InvalidModelError as e:
                 return jsonify({"error": "{}".format(e)}), 404
 
+    @rasa_nlu_app.route("/version", methods=['GET'])
+    @requires_auth
+    def version():
+        return jsonify({'version': __version__})
+
+    @rasa_nlu_app.route("/config", methods=['GET'])
+    @requires_auth
+    def rasaconfig():
+        return jsonify(config.as_dict())
+
     @rasa_nlu_app.route("/status", methods=['GET'])
     @requires_auth
     def status():
@@ -80,7 +91,7 @@ def create_app(config, component_builder=None):
 
     @rasa_nlu_app.route("/", methods=['GET'])
     def hello():
-        return "hello"
+        return "hello from Rasa NLU: " + __version__
 
     @rasa_nlu_app.route("/train", methods=['POST'])
     @requires_auth

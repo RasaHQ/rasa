@@ -44,7 +44,7 @@ def rasa_default_train_data():
 
 def test_root(client):
     response = client.get("/")
-    assert response.status_code == 200 and response.data == b"hello"
+    assert response.status_code == 200 and response.data.startswith(b"hello")
 
 
 def test_status(client):
@@ -52,6 +52,18 @@ def test_status(client):
     rjs = response.json
     assert response.status_code == 200 and \
         ("trainings_under_this_process" in rjs and "available_models" in rjs)
+
+
+def test_config(client):
+    response = client.get("/config")
+    assert response.status_code == 200
+
+
+def test_version(client):
+    response = client.get("/version")
+    rjs = response.json
+    assert response.status_code == 200 and \
+        ("version" in rjs)
 
 
 @pytest.mark.parametrize("response_test", [
