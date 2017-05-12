@@ -69,7 +69,6 @@ If you want to use another model read the Dockerfile, comment spacy english mode
 
 Execute as root:
 ```
-chmod +x ./manage_container
 ./manage_container build
 ```
 ##### 2. Training system
