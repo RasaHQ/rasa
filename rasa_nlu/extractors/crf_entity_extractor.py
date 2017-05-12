@@ -8,9 +8,9 @@ import json
 import logging
 import os
 import shutil
-from tempfile import NamedTemporaryFile
 
 import typing
+from six import PY3
 from typing import Any
 from typing import Dict
 from typing import List
@@ -23,7 +23,7 @@ from builtins import str
 
 if typing.TYPE_CHECKING:
     from spacy.language import Language
-    import pycrfsuite
+    import sklearn_crfsuite
     from spacy.tokens import Doc
 
 
@@ -43,10 +43,9 @@ class CRFEntityExtractor(EntityExtractor):
                      'digit': lambda doc: str(doc[0].isdigit())}
 
     def __init__(self, ent_tagger=None, entity_crf_features=None, entity_crf_BILOU_flag=True):
-        # type: (pycrfsuite.Tagger, List[List[Text]], bool) -> None
+        # type: (sklearn_crfsuite.CRF, List[List[Text]], bool) -> None
 
         self.ent_tagger = ent_tagger
-        self.crf_file = None
 
         # BILOU_flag determines whether to use BILOU tagging or not.
         # More rigorous however requires more examples per entity
@@ -65,7 +64,7 @@ class CRFEntityExtractor(EntityExtractor):
 
     @classmethod
     def required_packages(cls):
-        return ["pycrfsuite", "spacy"]
+        return ["sklearn_crfsuite", "sklearn", "spacy"]
 
     def train(self, training_data, spacy_nlp, entity_crf_BILOU_flag, entity_crf_features):
         # type: (TrainingData, Language, bool, List[List[Text]]) -> None
@@ -114,7 +113,7 @@ class CRFEntityExtractor(EntityExtractor):
         if self.ent_tagger is not None:
             text_data = self._from_text_to_crf(text, spacy_nlp)
             features = self._sentence_to_features(text_data)
-            ents = self.ent_tagger.tag(features)
+            ents = self.ent_tagger.predict_single(features)
             return self._from_crf_to_json(spacy_nlp(text), ents)
         else:
             return []
@@ -124,7 +123,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         json_ents = []
         if len(sentence_doc) != len(entities):
-            raise Exception('Inconsistency in amount of tokens between pycrfsuite and spacy')
+            raise Exception('Inconsistency in amount of tokens between crfsuite and spacy')
         if self.BILOU_flag:
             # using the BILOU tagging scheme
             start_char = 0
@@ -144,9 +143,9 @@ class CRFEntityExtractor(EntityExtractor):
                         if len(entities) > ent_word_idx and entities[ent_word_idx][2:] != entity[2:]:
                             # words are not tagged the same entity class
                             logging.debug(
-                                "Inconsistent BILOU tagging found, B- tag, L- tag pair encloses multiple " +
-                                "entity classes.i.e. ['B-a','I-b','L-a'] instead of ['B-a','I-a','L-a'].\n" +
-                                "Assuming B- class is correct.")
+                                    "Inconsistent BILOU tagging found, B- tag, L- tag pair encloses multiple " +
+                                    "entity classes.i.e. ['B-a','I-b','L-a'] instead of ['B-a','I-a','L-a'].\n" +
+                                    "Assuming B- class is correct.")
                         if len(entities) > ent_word_idx and entities[ent_word_idx].startswith('L-'):
                             # end of the entity
                             end_char += len(sentence_doc[ent_word_idx]) + 1
@@ -160,8 +159,8 @@ class CRFEntityExtractor(EntityExtractor):
                             finished = True
                             ent_word_idx -= 1
                             logging.debug(
-                                "Inconsistent BILOU tagging found, B- tag not closed by L- tag, " +
-                                "i.e ['B-a','I-a','O'] instead of ['B-a','L-a','O'].\nAssuming last tag is L-")
+                                    "Inconsistent BILOU tagging found, B- tag not closed by L- tag, " +
+                                    "i.e ['B-a','I-a','O'] instead of ['B-a','L-a','O'].\nAssuming last tag is L-")
                     ent = {'start': start_char, 'end': end_char,
                            'value': sentence_doc[word_idx:ent_word_idx + 1].text,
                            'entity': entity[2:]}
@@ -182,39 +181,30 @@ class CRFEntityExtractor(EntityExtractor):
 
     @classmethod
     def load(cls, model_dir, entity_extractor_crf):
-        # type: (Text, Text) -> CRFEntityExtractor
-        import pycrfsuite
+        # type: (Text, Dict[String, Any]) -> CRFEntityExtractor
+        from sklearn.externals import joblib
 
         if model_dir and entity_extractor_crf:
-            ent_tagger = pycrfsuite.Tagger()
-            ent_tagger.open(os.path.join(model_dir, entity_extractor_crf, 'model.crfsuite'))
-            config = json.load(io.open(os.path.join(model_dir, entity_extractor_crf, 'crf_config.json'), 'r'))
-
+            ent_tagger = joblib.load(os.path.join(model_dir, entity_extractor_crf["model_file"]))
             return CRFEntityExtractor(ent_tagger=ent_tagger,
-                                      entity_crf_features=config['crf_features'],
-                                      entity_crf_BILOU_flag=config['BILOU_flag'])
+                                      entity_crf_features=entity_extractor_crf['crf_features'],
+                                      entity_crf_BILOU_flag=entity_extractor_crf['BILOU_flag'])
         else:
             return CRFEntityExtractor()
 
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]
         """Persist this model into the passed directory. Returns the metadata necessary to load the model again."""
-        import json
+        from sklearn.externals import joblib
 
-        if self.crf_file:
-            ner_dir = os.path.join(model_dir, 'ner')
-            if not os.path.exists(ner_dir):
-                os.mkdir(ner_dir)
+        if self.ent_tagger:
+            model_file_name = os.path.join(model_dir, "crf_model.pkl")
 
-            entity_extractor_config_file = os.path.join(ner_dir, "crf_config.json")
-            entity_extractor_file = os.path.join(ner_dir, "model.crfsuite")
-            config = {'crf_features': self.crf_features, 'BILOU_flag': self.BILOU_flag}
-            with io.open(entity_extractor_config_file, 'w') as f:
-                f.write(str(json.dumps(config)))
-
-            with io.open(entity_extractor_file, 'wb') as target:
-                shutil.copyfileobj(self.crf_file.file, target)
-            return {"entity_extractor_crf": "ner"}
+            joblib.dump(self.ent_tagger, model_file_name)
+            return {"entity_extractor_crf": {"model_file": "crf_model.pkl",
+                                             "crf_features": self.crf_features,
+                                             "BILOU_flag": self.BILOU_flag,
+                                             "version": 1}}
         else:
             return {"entity_extractor_crf": None}
 
@@ -248,10 +238,7 @@ class CRFEntityExtractor(EntityExtractor):
     def _sentence_to_labels(self, sentence):
         # type: (List[Tuple[Text, Text, Text]]) -> List[Text]
 
-        labels = []
-        for word in sentence:
-            labels.append(word[2])
-        return labels
+        return [label for token, postag, label in sentence]
 
     def _from_json_to_crf(self, json_eg, spacy_nlp):
         # type: (Tuple[Text, List[Tuple[int, int, Text]]], Language) -> List[Tuple[Text, Text, Text]]
@@ -288,35 +275,25 @@ class CRFEntityExtractor(EntityExtractor):
     def _train_model(self, df_train):
         # type: (List[List[Tuple[Text, Text, Text]]]) -> None
         """Train the crf tagger based on the training data."""
-        import pycrfsuite
-
-        self.ent_tagger = pycrfsuite.Tagger()
+        import sklearn_crfsuite
 
         X_train = [self._sentence_to_features(sent) for sent in df_train]
         y_train = [self._sentence_to_labels(sent) for sent in df_train]
-        trainer = pycrfsuite.Trainer(verbose=False)
-
-        for xseq, yseq in zip(X_train, y_train):
-            trainer.append(xseq, yseq)
-
-        trainer.set_params({
-            'c1': 1.0,  # coefficient for L1 penalty
-            'c2': 1e-3,  # coefficient for L2 penalty
-            'max_iterations': 50,  # stop earlier
-
-            # include transitions that are possible, but not observed
-            'feature.possible_transitions': True
-        })
-        self.crf_file = NamedTemporaryFile()
-        trainer.train(self.crf_file.name)
-        self.ent_tagger.open(self.crf_file.name)
+        self.ent_tagger = sklearn_crfsuite.CRF(
+                algorithm='lbfgs',
+                c1=1.0,     # coefficient for L1 penalty
+                c2=1e-3,    # coefficient for L2 penalty
+                max_iterations=50,      # stop earlier
+                all_possible_transitions=True   # include transitions that are possible, but not observed
+        )
+        self.ent_tagger.fit(X_train, y_train)
 
     def _test_model(self, df_test):
         # type: (List[List[Tuple[Text, Text, Text]]]) -> None
 
         X_test = [self._sentence_to_features(sent) for sent in df_test]
         y_test = [self._sentence_to_labels(sent) for sent in df_test]
-        y_pred = [self.ent_tagger.tag(xseq) for xseq in X_test]
+        y_pred = [self.ent_tagger.predict_single(xseq) for xseq in X_test]
         print(bio_classification_report(y_test, y_pred))
 
 
@@ -342,8 +319,8 @@ def bio_classification_report(y_true, y_pred):
     class_indices = {cls: idx for idx, cls in enumerate(lb.classes_)}
 
     return classification_report(
-        y_true_combined,
-        y_pred_combined,
-        labels=[class_indices[cls] for cls in tagset],
-        target_names=tagset,
+            y_true_combined,
+            y_pred_combined,
+            labels=[class_indices[cls] for cls in tagset],
+            target_names=tagset,
     )

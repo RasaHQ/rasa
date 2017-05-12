@@ -9,11 +9,13 @@ Here we'll go through a few use cases and make recommendations of what to use.
 Component           Requires    Model           	         notes
 ================    ==========  ========================    ===================================
 ``ner_mitie``       MITIE       structured SVM              good for training custom entities
-``ner_crf``         pycrfsuite  conditional random field    good for training custom entities
+``ner_crf``         crfsuite    conditional random field    good for training custom entities
 ``ner_spacy``       spaCy       averaged perceptron         provides pre-trained entities
 ``ner_duckling``    duckling    context-free grammar        provides pre-trained entities
 ================    ==========  ========================    ===================================
 
+The exact required packages can be found in ``dev-requirements.txt`` and they should also be shown when they are missing
+and a component is used that requires them.
 
 .. note::
     To use these components, you will probably want to define a custom pipeline, see :ref:`section_pipeline`.
