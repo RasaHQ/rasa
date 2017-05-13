@@ -101,8 +101,8 @@ class DucklingExtractor(EntityExtractor):
         # type: (Text) -> Dict[Text, Any]
         file_name = self.name+".json"
         full_name = os.path.join(model_dir, file_name)
-        with io.open(full_name, 'w', encoding="utf-8") as f:
-            f.write(json.dumps({"dimensions": self.dimensions}, ensure_ascii=False))
+        with io.open(full_name, 'w') as f:
+            f.write(unicode(json.dumps({"dimensions": self.dimensions})))
         return {"ner_duckling_persisted": file_name}
 
     @classmethod
