@@ -172,6 +172,7 @@ class MissingArgumentError(ValueError):
     def __init__(self, message):
         # type: (Text) -> None
         super(MissingArgumentError, self).__init__(message)
+        self.message = message
 
     def __str__(self):
         return self.message
