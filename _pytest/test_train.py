@@ -19,12 +19,12 @@ def test_train_model(pipeline_template, component_builder):
     assert trained.pipeline
     loaded = utilities.load_interpreter_for_model(_config, persisted_path, component_builder)
     assert loaded.pipeline
+    assert loaded.parse("hello") is not None
 
 
 @slowtest
-@pytest.mark.parametrize("pipeline_template", list(registry.registered_pipeline_templates.keys()))
-def test_train_model_noents(pipeline_template, component_builder):
-    _config = utilities.base_test_conf(pipeline_template)
+def test_train_model_noents(component_builder):
+    _config = utilities.base_test_conf("all_components")
     _config['data'] = "./data/examples/rasa/demo-rasa-noents.json"
     (trained, persisted_path) = utilities.run_train(_config, component_builder)
     assert trained.pipeline
@@ -34,14 +34,14 @@ def test_train_model_noents(pipeline_template, component_builder):
 
 
 @slowtest
-@pytest.mark.parametrize("pipeline_template", list(registry.registered_pipeline_templates.keys()))
-def test_train_model_multithread(pipeline_template, component_builder):
-    _config = utilities.base_test_conf(pipeline_template)
+def test_train_model_multithread(component_builder):
+    _config = utilities.base_test_conf("all_components")
     _config['num_threads'] = 2
     (trained, persisted_path) = utilities.run_train(_config, component_builder)
     assert trained.pipeline
     loaded = utilities.load_interpreter_for_model(_config, persisted_path, component_builder)
     assert loaded.pipeline
+    assert loaded.parse("hello") is not None
 
 
 def test_train_model_empty_pipeline(component_builder):

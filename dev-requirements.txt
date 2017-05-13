@@ -18,6 +18,7 @@ pytest-pep8==1.0.6
 pytest-xdist==1.15.0
 pytest-services==1.1.14
 pytest-flask==0.10.0
+pytest-cov==2.5.1
 pytest==3.0.7
 # other
 google-cloud-storage==1.0.0

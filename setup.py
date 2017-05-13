@@ -8,6 +8,7 @@ tests_requires = [
     "pytest-xdist",
     "pytest-services",
     "pytest-flask",
+    "pytest-cov"
 ]
 
 install_requires = [

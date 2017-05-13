@@ -37,8 +37,9 @@ install:
 - if [[ ! -f data/total_word_feature_extractor.dat ]]; then wget -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat;
   fi
 - pip list
-script: py.test --pep8 --boxed -n0
+script: py.test --cov rasa_nlu --pep8 --boxed -n0
 after_success:
+- coveralls
 - ./build_push_docker.sh
 deploy:
   provider: pypi
