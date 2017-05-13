@@ -79,9 +79,9 @@ registered_pipeline_templates = {
     "all_components": [
         "nlp_spacy",
         "nlp_mitie",
+        "tokenizer_whitespace",
         "tokenizer_mitie",
         "tokenizer_spacy",
-        "tokenizer_whitespace",
         "ner_mitie",
         "ner_crf",
         "ner_spacy",
@@ -90,9 +90,9 @@ registered_pipeline_templates = {
         "intent_featurizer_mitie",
         "intent_featurizer_spacy",
         "intent_featurizer_ngrams",
+        "intent_classifier_keyword",
         "intent_classifier_sklearn",
         "intent_classifier_mitie",
-        "intent_classifier_keyword",
     ]
 }
 

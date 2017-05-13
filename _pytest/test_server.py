@@ -3,6 +3,8 @@ from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
+
+import os
 import tempfile
 
 import pytest
@@ -124,3 +126,11 @@ def test_model_hot_reloading(client, rasa_default_train_data):
     time.sleep(3)    # training should be quick as the keyword model doesn't do any training
     response = client.get(query)
     assert response.status_code == 200, "Model should now exist after it got trained"
+
+
+def test_wsgi():
+    # this avoids the loading of any models when starting the server --> faster
+    os.environ["RASA_path"] = "some_none/existent/path"
+    from rasa_nlu.wsgi import application
+    assert application is not None
+    del os.environ["RASA_path"]

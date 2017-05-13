@@ -12,7 +12,7 @@
         "entities": []
       }, 
       {
-        "text": "hey there", 
+        "text": "hey there",
         "intent": "greet", 
         "entities": []
       }, 
@@ -166,7 +166,7 @@
         ]
       },
       {
-        "text": "i am looking for an indian spot",
+        "text": "i am looking for an indian spot called olaolaolaolaolaola",
         "intent": "restaurant_search",
         "entities": [
           {

@@ -11,6 +11,7 @@ import io
 import pytest
 from jsonschema import ValidationError
 
+from rasa_nlu.convert import convert_training_data
 from rasa_nlu.converters import load_data, validate_rasa_nlu_data
 from rasa_nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 
@@ -46,7 +47,7 @@ def test_luis_data():
 def test_wit_data():
     td = load_data('data/examples/wit/demo-flights.json')
     assert td.entity_examples != []
-    assert td.intent_examples == []
+    assert td.intent_examples != []
     assert td.entity_synonyms == {}
 
 
@@ -163,3 +164,15 @@ def test_nonascii_entities():
         assert entity["start"] == 19
         assert entity["end"] == 27
         assert entity["entity"] == "description"
+
+
+@pytest.mark.parametrize("data_file", [
+    "data/examples/wit/demo-flights.json",
+    "data/examples/luis/demo-restaurants.json",
+    "data/examples/api/"])
+def test_training_data_conversion(tmpdir, data_file):
+    out_path = tmpdir.join("rasa_nlu_data.json")
+    convert_training_data(data_file, out_path.strpath)
+    td = load_data(out_path.strpath)
+    assert td.entity_examples != []
+    assert td.intent_examples != []

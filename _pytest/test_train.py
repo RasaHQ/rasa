@@ -5,6 +5,13 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 import pytest
+from rasa_nlu.training_data import TrainingData
+
+from rasa_nlu.converters import load_data
+
+from rasa_nlu.train import create_persistor
+
+from rasa_nlu.model import Trainer
 
 import utilities
 from utilities import slowtest
@@ -56,3 +63,24 @@ def test_train_named_model(component_builder):
     (trained, persisted_path) = utilities.run_train(_config, component_builder)
     assert trained.pipeline
     assert persisted_path.strip("/\\").endswith("my_keyword_model")    # should be saved in a dir named after model
+
+
+def test_load_and_persist_without_train(component_builder):
+    _config = utilities.base_test_conf("all_components")
+    trainer = Trainer(_config, component_builder)
+    persistor = create_persistor(_config)
+    persisted_path = trainer.persist(_config['path'], persistor, model_name=_config['name'])
+    loaded = utilities.load_interpreter_for_model(_config, persisted_path, component_builder)
+    assert loaded.pipeline
+    assert loaded.parse("hello") is not None
+
+
+def test_train_with_empty_data(component_builder):
+    _config = utilities.base_test_conf("all_components")
+    trainer = Trainer(_config, component_builder)
+    trainer.train(TrainingData())
+    persistor = create_persistor(_config)
+    persisted_path = trainer.persist(_config['path'], persistor, model_name=_config['name'])
+    loaded = utilities.load_interpreter_for_model(_config, persisted_path, component_builder)
+    assert loaded.pipeline
+    assert loaded.parse("hello") is not None

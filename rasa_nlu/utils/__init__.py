@@ -32,7 +32,7 @@ def create_dir_for_file(file_path):
 
 def recursively_find_files(resource_name):
     # type: (Text) -> List[Text]
-    """Traverse directory hirachry to find files.
+    """Traverse directory hierarchy to find files.
 
     `resource_name` can be a folder or a file. In both cases we will return a list of files."""
 
@@ -56,7 +56,5 @@ def recursively_find_files(resource_name):
                 resources += [current_node]
             nodes_to_visit = nodes_to_visit[1:]
         return resources
-    elif not os.path.exists(resource_name):
-        raise ValueError("Could not locate the resource '{}'.".format(os.path.abspath(resource_name)))
     else:
-        raise ValueError("Resource name must be an existing directory or file")
+        raise ValueError("Could not locate the resource '{}'.".format(os.path.abspath(resource_name)))

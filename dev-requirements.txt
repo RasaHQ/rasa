@@ -14,6 +14,7 @@ numpy==1.12.1
 # cloudpickle
 cloudpickle==0.2.2
 # test
+python-coveralls==2.9.1
 pytest-pep8==1.0.6
 pytest-xdist==1.15.0
 pytest-services==1.1.14

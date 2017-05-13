@@ -74,7 +74,7 @@ class DucklingExtractor(EntityExtractor):
         if self.duckling is None:
             try:
                 self.duckling = DucklingWrapper(language=language)  # languages in duckling are eg "de$core"
-            except ValueError as e:
+            except ValueError as e:     # pragma: no cover
                 raise Exception("Duckling error. {}".format(e))
 
     def process(self, text, entities):

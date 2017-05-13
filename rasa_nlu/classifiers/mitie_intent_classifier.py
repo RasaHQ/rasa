@@ -45,16 +45,25 @@ class MitieIntentClassifier(Component):
         for example in training_data.intent_examples:
             tokens = mitie.tokenize(example["text"])
             trainer.add_labeled_text(tokens, example["intent"])
-        self.clf = trainer.train()
+
+        if training_data.intent_examples:
+            # we can not call train if there are no examples!
+            self.clf = trainer.train()
 
     def process(self, tokens, mitie_feature_extractor):
         # type: (List[Text], mitie.total_word_feature_extractor) -> Dict[Text, Any]
 
-        intent, score = self.clf(tokens, mitie_feature_extractor)
+        if self.clf:
+            intent, confidence = self.clf(tokens, mitie_feature_extractor)
+        else:
+            # either the model didn't get trained or it wasn't provided with any data
+            intent = None
+            confidence = 0.0
+
         return {
             "intent": {
                 "name": intent,
-                "confidence": score,
+                "confidence": confidence,
             }
         }
 

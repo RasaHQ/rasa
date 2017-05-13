@@ -62,7 +62,7 @@ def load_api_data(files):
                 elif intent:
                     intent_examples.append({"text": text, "intent": intent})
                 elif entities:
-                    entity_examples.append({"text": text, "intent": intent, "entities": entities})
+                    entity_examples.append({"text": text, "entities": entities})
 
         # create synonyms dictionary
         if "name" in data and "entries" in data:
@@ -103,7 +103,7 @@ def load_luis_data(filename):
         elif intent:
             intent_examples.append({"text": text, "intent": intent})
         elif entities:
-            entity_examples.append({"text": text, "intent": intent, "entities": entities})
+            entity_examples.append({"text": text, "entities": entities})
     return TrainingData(intent_examples, entity_examples, common_examples)
 
 
@@ -134,7 +134,7 @@ def load_wit_data(filename):
         elif intent:
             intent_examples.append({"text": text, "intent": intent})
         elif entities:
-            entity_examples.append({"text": text, "intent": intent, "entities": entities})
+            entity_examples.append({"text": text, "entities": entities})
     return TrainingData(intent_examples, entity_examples, common_examples)
 
 
