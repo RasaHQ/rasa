@@ -7,7 +7,7 @@ import pytest
 from rasa_nlu.model import Metadata
 
 from rasa_nlu import registry
-from rasa_nlu.components import fill_args, load_component, create_component, MissingArgumentError, validate_requirements, \
+from rasa_nlu.components import fill_args, load_component, create_component, MissingArgumentError, \
     find_unavailable_packages, _read_dev_requirements
 from rasa_nlu.extractors import EntityExtractor
 
