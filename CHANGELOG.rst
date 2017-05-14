@@ -11,6 +11,7 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 Added
 -----
+- increased test coverage to avoid regressions (ongoing)
 
 Changed
 -------
@@ -20,6 +21,7 @@ Removed
 
 Fixed
 -----
+- properly update coverallis coverage report from travis
 
 [0.8.5] - 2017-05-10
 ^^^^^^^^^^^^^^^^^^^^
