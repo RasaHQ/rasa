@@ -22,6 +22,7 @@ Removed
 Fixed
 -----
 - properly update coverallis coverage report from travis
+- persistence of duckling dimensions
 
 [0.8.5] - 2017-05-10
 ^^^^^^^^^^^^^^^^^^^^
