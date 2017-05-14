@@ -5,7 +5,6 @@ exec(open('rasa_nlu/version.py').read())
 
 tests_requires = [
     "pytest-pep8",
-    "pytest-xdist",
     "pytest-services",
     "pytest-flask",
     "pytest-cov"

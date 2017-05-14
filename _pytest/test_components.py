@@ -41,7 +41,7 @@ def test_all_components_are_in_all_components_template():
         assert cls.name in template_with_all_components, "`all_components` template is missing component."
 
 
-@pytest.mark.parametrize("component_class   ", registry.component_classes)
+@pytest.mark.parametrize("component_class", registry.component_classes)
 def test_all_arguments_can_be_satisfied_during_init(component_class, default_config, component_builder):
     """Check that `pipeline_init` method parameters can be filled filled from the context.
 
