@@ -27,7 +27,6 @@ install:
 - source activate test-environment
 - pip install -r dev-requirements.txt
 - pip install -r requirements.txt
-- pip install -e .
 - pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-1.2.0/en_core_web_sm-1.2.0.tar.gz
   --no-cache-dir > jnk
 - python -m spacy link en_core_web_sm en
