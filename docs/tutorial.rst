@@ -91,7 +91,7 @@ Training Your Model
 -------------------
 
 Now we're going to create a configuration file. Make sure first that you've set up a backend, see :ref:`section_backends` .
-Create a file called ``config.json`` in your working directory which looks like this
+Create a file called ``config_spacy.json`` or ``config_mitie.json``, depending on the pipeline selected, in your working directory which looks like this
 
  
 .. literalinclude:: ../config_spacy.json

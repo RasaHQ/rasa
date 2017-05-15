@@ -13,6 +13,8 @@ from typing import List
 from typing import Optional
 from typing import Text
 
+from builtins import str
+
 from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.model import Metadata
 from inspect import getmembers
@@ -101,7 +103,7 @@ class DucklingExtractor(EntityExtractor):
         file_name = self.name+".json"
         full_name = os.path.join(model_dir, file_name)
         with io.open(full_name, 'w') as f:
-            f.write(json.dumps({"dimensions": self.dimensions}))
+            f.write(str(json.dumps({"dimensions": self.dimensions})))
         return {"ner_duckling_persisted": file_name}
 
     @classmethod
