@@ -1,4 +1,4 @@
-FROM golastmile/rasa_nlu:latest
+FROM rasa/rasa_nlu:latest
 
 RUN apt-get update -qq && apt-get install -y --no-install-recommends wget \
     && wget -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat \
