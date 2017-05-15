@@ -85,6 +85,7 @@ class DucklingExtractor(EntityExtractor):
             for match in relevant_matches:
                 entity = {"start": match["start"],
                           "end": match["end"],
+                          "text": match["text"],
                           "value": match["value"]["value"],
                           "entity": match["dim"]}
 
@@ -101,7 +102,7 @@ class DucklingExtractor(EntityExtractor):
         file_name = self.name+".json"
         full_name = os.path.join(model_dir, file_name)
         with io.open(full_name, 'w') as f:
-            f.write(json.dumps({"dimensions": self.dimensions}))
+            f.write(json.dumps({"dimensions": self.dimensions}, ensure_ascii=False))
         return {"ner_duckling_persisted": file_name}
 
     @classmethod
