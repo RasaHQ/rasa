@@ -21,6 +21,13 @@ Removed
 Fixed
 -----
 
+[0.8.6] - 2017-05-15
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Fixed duckling dimension persistence. fixes #358
+
 [0.8.5] - 2017-05-10
 ^^^^^^^^^^^^^^^^^^^^
 
