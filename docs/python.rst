@@ -50,6 +50,20 @@ a ``ComponentBuilder`` should be passed when loading and training models, e.g.:
 
 .. testcode::
 
+    from rasa_nlu.converters import load_data
+    from rasa_nlu.config import RasaNLUConfig
+    from rasa_nlu.components import ComponentBuilder
+    from rasa_nlu.model import Trainer
+
+    builder = ComponentBuilder(use_cache=True)
+
+    training_data = load_data('data/examples/rasa/demo-rasa.json')
+    trainer = Trainer(RasaNLUConfig("config_spacy.json"), builder)
+    trainer.train(training_data)
+    model_directory = trainer.persist('./models/')  # Returns the directory the model is stored in
+
+.. testcode::
+
     from rasa_nlu.model import Metadata, Interpreter
     from rasa_nlu.components import ComponentBuilder
     config = RasaNLUConfig("config_spacy.json")
@@ -62,5 +76,3 @@ a ``ComponentBuilder`` should be passed when loading and training models, e.g.:
     interpreter = Interpreter.load(metadata_model, config, builder)
     # the clone will share resources with the first model, as long as the same builder is passed!
     interpreter_clone = Interpreter.load(metadata_model, config, builder)
-
-
