@@ -81,6 +81,35 @@ also returns a list of available models the server can use to fulfill ``/parse``
       "training" : False
       "models" : []
     }
+    
+``GET /version``
+^^^^^^^^^^^^^^^
+
+This will return the current version of the Rasa NLU instance.
+
+.. code-block:: bash
+
+    $ curl localhost:5000/version | python -mjson.tool
+    {
+      "version" : "0.8.2"
+    }
+
+    
+``GET /config``
+^^^^^^^^^^^^^^^
+
+This will return the currently running configuration of the Rasa NLU instance.
+
+.. code-block:: bash
+
+    $ curl localhost:5000/config | python -mjson.tool
+    {
+        "config": "/app/rasa_shared/config_mitie.json",
+        "data": "/app/rasa_nlu/data/examples/rasa/demo-rasa.json",
+        "duckling_dimensions": null,
+        "emulate": null,
+        ...
+      }
 
 .. _section_auth:
 

@@ -102,7 +102,7 @@ Releasing a new version is quite simple, as the packages are build and distribut
 3. edit the [migration guide](https://github.com/golastmile/rasa_nlu/blob/master/docs/migrations.rst) to provide assistance for users updating to the new version 
 4. commit all the above changes and tag a new release, e.g. using 
     ```
-    git tag -f 0.7.0 -m "Some helpfull line describing the release"
+    git tag -f 0.7.0 -m "Some helpful line describing the release"
     git push origin master --tags
     ```
     travis will build this tag and push a package to [pypi](https://pypi.python.org/pypi/rasa_nlu)
