@@ -31,7 +31,8 @@ class DataRouter(object):
         self.model_dir = config['path']
         self.token = config['token']
         self.emulator = self.__create_emulator()
-        self.component_builder = component_builder if component_builder else ComponentBuilder(use_cache=True)
+        self.component_builder = component_builder if component_builder else ComponentBuilder(
+            use_cache=True)
         self.model_store = self.__create_model_store()
 
     @staticmethod
@@ -71,6 +72,29 @@ class DataRouter(object):
         return Interpreter.load(metadata, self.config, self.component_builder)
 
     def __create_model_store(self):
+        # Fallback for users that specified the model path as a string and hence only want a single default model.
+        if type(self.config.server_model_dirs) is Text:
+            model_dict = {self.DEFAULT_MODEL_NAME: self.config.server_model_dirs}
+        elif self.config.server_model_dirs is None:
+            model_dict = self.__search_for_models()
+        else:
+            model_dict = self.config.server_model_dirs
+
+        model_store = {}
+
+        for alias, model_path in list(model_dict.items()):
+            try:
+                logging.info("Loading model '{}'...".format(model_path))
+                model_store[alias] = self.__interpreter_for_model(model_path)
+            except Exception as e:
+                logging.exception("Failed to load model '{}'. Error: {}".format(model_path, e))
+        if not model_store:
+            meta = Metadata({"pipeline": ["intent_classifier_keyword"]}, "")
+            interpreter = Interpreter.load(meta, self.config, self.component_builder)
+            model_store[self.DEFAULT_MODEL_NAME] = interpreter
+        return model_store
+
+    def recreate_model_store(self):
         # Fallback for users that specified the model path as a string and hence only want a single default model.
         if type(self.config.server_model_dirs) is Text:
             model_dict = {self.DEFAULT_MODEL_NAME: self.config.server_model_dirs}
@@ -152,7 +176,8 @@ class DataRouter(object):
             try:
                 self.model_store[alias] = self.__interpreter_for_model(model_path=alias)
             except Exception as e:
-                raise InvalidModelError("No model found with alias '{}'. Error: {}".format(alias, e))
+                raise InvalidModelError(
+                    "No model found with alias '{}'. Error: {}".format(alias, e))
 
         model = self.model_store[alias]
         response = model.parse(data['text'])
@@ -184,7 +209,8 @@ class DataRouter(object):
             _config[key] = val
         _config["data"] = f.name
         train_config = RasaNLUConfig(cmdline_args=_config)
-        process = multiprocessing.Process(target=do_train, args=(train_config, self.component_builder))
+        process = multiprocessing.Process(target=do_train,
+                                          args=(train_config, self.component_builder, self))
         self.train_procs.append(process)
         process.start()
         logging.info("Training process {} started".format(process))

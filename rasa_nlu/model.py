@@ -161,7 +161,7 @@ class Trainer(object):
 
         return Interpreter(self.pipeline, context=init_context, config=self.config.as_dict())
 
-    def persist(self, path, persistor=None, model_name=None):
+    def persist(self, data_router, path, persistor=None, model_name=None):
         # type: (Text, Optional[Persistor], bool) -> Text
         """Persist all components of the pipeline to the passed path. Returns the directory of the persited model."""
 
@@ -189,6 +189,8 @@ class Trainer(object):
         if persistor is not None:
             persistor.save_tar(dir_name)
         logging.info("Successfully saved model into '{}'".format(os.path.abspath(dir_name)))
+        data_router.recreate_model_store()
+
         return dir_name
 
 
