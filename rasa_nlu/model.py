@@ -10,6 +10,7 @@ import logging
 import os
 import copy
 
+import errno
 from builtins import object
 from builtins import str
 from typing import Any
@@ -25,6 +26,7 @@ from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.persistor import Persistor
 from rasa_nlu.training_data import TrainingData
+from rasa_nlu.utils import create_dir
 
 
 class InvalidModelError(Exception):
@@ -162,7 +164,7 @@ class Trainer(object):
         return Interpreter(self.pipeline, context=init_context, config=self.config.as_dict())
 
     def persist(self, path, persistor=None, model_name=None):
-        # type: (Text, Optional[Persistor], bool) -> Text
+        # type: (Text, Optional[Persistor], Text) -> Text
         """Persist all components of the pipeline to the passed path. Returns the directory of the persited model."""
 
         timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
@@ -176,7 +178,7 @@ class Trainer(object):
         else:
             dir_name = os.path.join(path, model_name)
 
-        os.makedirs(dir_name)
+        create_dir(dir_name)
         metadata.update(self.training_data.persist(dir_name))
 
         for component in self.pipeline:
