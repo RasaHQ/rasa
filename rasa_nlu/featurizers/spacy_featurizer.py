@@ -13,11 +13,41 @@ from rasa_nlu.featurizers import Featurizer
 from rasa_nlu.components import Component
 from rasa_nlu.training_data import TrainingData
 
-
 if typing.TYPE_CHECKING:
     from spacy.language import Language
     from spacy.tokens import Doc
     import numpy as np
+
+
+def ndim(spacy_nlp):
+    # type: (Language) -> int
+
+    return spacy_nlp.vocab.vectors_length
+
+
+def features_for_doc(doc, nlp):
+    # type: (Doc, Language) -> np.ndarray
+    import numpy as np
+
+    vec = []
+    for token in doc:
+        if token.has_vector:
+            vec.append(token.vector)
+    if vec:
+        return np.sum(vec, axis=0) / len(vec)
+    else:
+        return np.zeros(ndim(nlp))
+
+
+def features_for_sentences(sentences, nlp):
+    # type: (List[Text], Language, int) -> np.ndarray
+    import numpy as np
+
+    X = np.zeros((len(sentences), ndim(nlp)))
+    for idx, sentence in enumerate(sentences):
+        doc = nlp(sentence)
+        X[idx, :] = features_for_doc(doc, nlp)
+    return X
 
 
 class SpacyFeaturizer(Featurizer, Component):
@@ -33,16 +63,11 @@ class SpacyFeaturizer(Featurizer, Component):
         # type: () -> List[Text]
         return ["numpy"]
 
-    def ndim(self, spacy_nlp):
-        # type: (Language) -> int
-
-        return spacy_nlp.vocab.vectors_length
-
     def train(self, spacy_nlp, training_data):
         # type: (Language, TrainingData) -> Dict[Text, Any]
 
         sentences = [e["text"] for e in training_data.intent_examples]
-        features = self.features_for_sentences(sentences, spacy_nlp)
+        features = features_for_sentences(sentences, spacy_nlp)
         return {
             "intent_features": features
         }
@@ -50,30 +75,7 @@ class SpacyFeaturizer(Featurizer, Component):
     def process(self, spacy_doc, spacy_nlp):
         # type: (Doc, Language) -> Dict[Text, Any]
 
-        features = self.features_for_doc(spacy_doc, spacy_nlp)
+        features = features_for_doc(spacy_doc, spacy_nlp)
         return {
             "intent_features": features
         }
-
-    def features_for_doc(self, doc, nlp):
-        # type: (Doc, Language) -> np.ndarray
-        import numpy as np
-
-        vec = []
-        for token in doc:
-            if token.has_vector:
-                vec.append(token.vector)
-        if vec:
-            return np.sum(vec, axis=0) / len(vec)
-        else:
-            return np.zeros(self.ndim(nlp))
-
-    def features_for_sentences(self, sentences, nlp):
-        # type: (List[Text], Language) -> np.ndarray
-        import numpy as np
-
-        X = np.zeros((len(sentences), self.ndim(nlp)))
-        for idx, sentence in enumerate(sentences):
-            doc = nlp(sentence)
-            X[idx, :] = self.features_for_doc(doc, nlp)
-        return X

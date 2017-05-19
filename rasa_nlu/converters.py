@@ -161,6 +161,14 @@ def rasa_nlu_data_schema():
         "required": ["text"]
     }
 
+    faq_example_schema = {
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+            "examples":  {"type": "array", "items": {"type": "string"}}
+        }
+    }
+
     return {
         "type": "object",
         "properties": {
@@ -178,6 +186,10 @@ def rasa_nlu_data_schema():
                     "entity_examples": {
                         "type": "array",
                         "items": training_example_schema
+                    },
+                    "faq_examples": {
+                        "type": "array",
+                        "items": faq_example_schema
                     }
                 }
             }
@@ -212,8 +224,9 @@ def load_rasa_data(filename):
     common = data['rasa_nlu_data'].get("common_examples", list())
     intent = data['rasa_nlu_data'].get("intent_examples", list())
     entity = data['rasa_nlu_data'].get("entity_examples", list())
+    faq = data['rasa_nlu_data'].get("faq_examples", list())
 
-    return TrainingData(intent, entity, common)
+    return TrainingData(intent, entity, common, faq_examples=faq)
 
 
 def guess_format(files):
