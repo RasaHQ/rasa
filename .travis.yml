@@ -5,7 +5,7 @@ services:
 cache:
   directories:
   - "$HOME/.cache/pip"
-  - "$HOME/build/golastmile/rasa_nlu/data"
+  - "$HOME/build/RasaHQ/rasa_nlu/data"
   - "$HOME/google-cloud-sdk/"
 python:
 - '2.7'

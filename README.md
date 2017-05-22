@@ -1,6 +1,6 @@
 # rasa NLU
 [![Join the chat at https://gitter.im/golastmile/rasa_nlu](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/golastmile/rasa_nlu?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Build Status](https://travis-ci.org/golastmile/rasa_nlu.svg?branch=master)](https://travis-ci.org/RasaHQ/rasa_nlu)
+[![Build Status](https://travis-ci.org/RasaHQ/rasa_nlu.svg?branch=master)](https://travis-ci.org/RasaHQ/rasa_nlu)
 [![Coverage Status](https://coveralls.io/repos/github/RasaHQ/rasa_nlu/badge.svg?branch=master)](https://coveralls.io/github/RasaHQ/rasa_nlu?branch=master)
 [![PyPI version](https://badge.fury.io/py/rasa_nlu.svg)](https://badge.fury.io/py/rasa_nlu)
 [![Documentation Status](https://readthedocs.org/projects/rasa-nlu/badge/)](https://rasa-nlu.readthedocs.io/en/stable/)
@@ -77,7 +77,7 @@ The intended audience is mainly __people developing bots__, starting from scratc
 * You don't have to make a `https` call to parse every message.
 * You can tune models to work well on your particular use case.
 
-These points are laid out in more detail in a [blog post](https://medium.com/lastmile-conversations/do-it-yourself-nlp-for-bot-developers-2e2da2817f3d). rasa is a set of tools for building more advanced bots, developed by [LASTMILE](https://golastmile.com). rasa NLU is the natural language understanding module, and the first component to be open sourced. 
+These points are laid out in more detail in a [blog post](https://medium.com/lastmile-conversations/do-it-yourself-nlp-for-bot-developers-2e2da2817f3d). rasa is a set of tools for building more advanced bots, developed by [Rasa](https://rasa.ai). rasa NLU is the natural language understanding module, and the first component to be open sourced. 
 
 ### What languages does it support?
 Short answer: English, German, and Spanish currently. 
@@ -87,7 +87,7 @@ Longer answer: If you want to add a new language, the key things you need are a 
 We are very happy to receive and merge your contributions. There is some more information about the style of the code and docs in the [documentation](http://rasa-nlu.readthedocs.io/en/stable/contribute.html).
 
 In general the process is rather simple:
-1. create an issue describing the feature you want to work on (or have a look at issues with the label [help wanted](https://github.com/golastmile/rasa_nlu/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22))
+1. create an issue describing the feature you want to work on (or have a look at issues with the label [help wanted](https://github.com/RasaHQ/rasa_nlu/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22))
 2. write your code, tests and documentation
 3. create a pull request describing your changes
 
@@ -97,9 +97,9 @@ You pull request will be reviewed by a maintainer, who might get back to you abo
 
 ### Steps to release a new version
 Releasing a new version is quite simple, as the packages are build and distributed by travis. The following things need to be done to release a new version
-1. update [rasa_nlu/version.py](https://github.com/golastmile/rasa_nlu/blob/master/rasa_nlu/version.py) to reflect the correct version number
-2. edit the [CHANGELOG.rst](https://github.com/golastmile/rasa_nlu/blob/master/CHANGELOG.rst), create a new section for the release (eg by moving the items from the collected master section) and create a new master logging section
-3. edit the [migration guide](https://github.com/golastmile/rasa_nlu/blob/master/docs/migrations.rst) to provide assistance for users updating to the new version 
+1. update [rasa_nlu/version.py](https://github.com/RasaHQ/rasa_nlu/blob/master/rasa_nlu/version.py) to reflect the correct version number
+2. edit the [CHANGELOG.rst](https://github.com/RasaHQ/rasa_nlu/blob/master/CHANGELOG.rst), create a new section for the release (eg by moving the items from the collected master section) and create a new master logging section
+3. edit the [migration guide](https://github.com/RasaHQ/rasa_nlu/blob/master/docs/migrations.rst) to provide assistance for users updating to the new version 
 4. commit all the above changes and tag a new release, e.g. using 
     ```
     git tag -f 0.7.0 -m "Some helpful line describing the release"

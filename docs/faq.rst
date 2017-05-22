@@ -10,7 +10,7 @@ Yes it does, rasa NLU supports python 2.7 as well as python 3.5 and 3.6. If ther
 Which languages are supported?
 ------------------------------
 There is a list containing all officialy supported languages :ref:`here <section_languages>`. Nevertheless, there are
-others working on adding more languages, feel free to have a look at the `github issues <https://github.com/golastmile/rasa_nlu/issues>`_
+others working on adding more languages, feel free to have a look at the `github issues <https://github.com/RasaHQ/rasa_nlu/issues>`_
 section or the `gitter chat <https://gitter.im/golastmile/rasa_nlu>`_.
 
 .. _section_faq_version:
@@ -41,7 +41,7 @@ Hence, the solution is to add more training samples. As this is only a warning, 
 I have an issue, can you help me?
 ---------------------------------
 We'd love to help you. If you are unsure if your issue is related to your setup, you should state your problem in the `gitter chat <https://gitter.im/golastmile/rasa_nlu>`_.
-If you found an issue with the framework, please file a report on `github issues <https://github.com/golastmile/rasa_nlu/issues>`_
+If you found an issue with the framework, please file a report on `github issues <https://github.com/RasaHQ/rasa_nlu/issues>`_
 including all the information needed to reproduce the problem.
 
 .. toctree::
