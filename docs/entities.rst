@@ -45,3 +45,26 @@ Custom, Domain-specific entities
 In the introductory tutorial we build a restaurant bot, and create custom entities for location and cuisine.
 The best components for training these domain-specific entity recognisers are the ``ner_mitie`` and ``ner_crf`` components. 
 It is recommended that you experiment with both of these to see what works best for your data set. 
+
+Returned Entities Object
+-----------------------
+In the object returned after parsing there are two fields that show information about how the pipeline impacted the entities returned. The ``extractor`` field of an entity tells you which entity extractor found this particular entity. The ``processors`` field contains the name of components that altered this specific entity.
+
+The use of synonyms can also cause the ``value`` field not match the ``text`` exaclty. Instead it will return the trained synonym.
+
+.. code-block:: json
+
+    {
+      "text": "show me chinese restaurants",
+      "intent": "restaurant_search",
+      "entities": [
+        {
+          "start": 8,
+          "end": 15,
+          "value": "chinese",
+          "entity": "cuisine",
+          "extractor": "ner_mitie",
+          "processors": []
+        }
+      ]
+    }
