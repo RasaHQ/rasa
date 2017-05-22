@@ -21,8 +21,10 @@ Removed
 
 Fixed
 -----
-- properly update coverallis coverage report from travis
+- properly update coveralls coverage report from travis
 - persistence of duckling dimensions
+- changed default response of untrained ``intent_classifier_sklearn`` from ``"intent": None`` to
+``"intent": {"name": None, "confidence": 0.0}``
 
 [0.8.5] - 2017-05-10
 ^^^^^^^^^^^^^^^^^^^^

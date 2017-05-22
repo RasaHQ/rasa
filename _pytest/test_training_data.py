@@ -166,13 +166,22 @@ def test_nonascii_entities():
         assert entity["entity"] == "description"
 
 
-@pytest.mark.parametrize("data_file", [
-    "data/examples/wit/demo-flights.json",
-    "data/examples/luis/demo-restaurants.json",
-    "data/examples/api/"])
-def test_training_data_conversion(tmpdir, data_file):
+@pytest.mark.parametrize("data_file,gold_standard_file", [
+    ("data/examples/wit/demo-flights.json", "data/test/wit_converted_to_rasa.json"),
+    ("data/examples/luis/demo-restaurants.json", "data/test/luis_converted_to_rasa.json"),
+    ("data/examples/api/", "data/test/api_converted_to_rasa.json")])
+def test_training_data_conversion(tmpdir, data_file, gold_standard_file):
     out_path = tmpdir.join("rasa_nlu_data.json")
     convert_training_data(data_file, out_path.strpath)
     td = load_data(out_path.strpath)
     assert td.entity_examples != []
     assert td.intent_examples != []
+
+    gold_standard = load_data(gold_standard_file)
+    assert td.entity_examples == gold_standard.entity_examples
+    assert td.intent_examples == gold_standard.intent_examples
+    assert td.entity_synonyms == gold_standard.entity_synonyms
+
+    # If the above assert fails - this can be used to dump to the file and diff using git
+    # with io.open(gold_standard_file) as f:
+    #     f.write(td.as_json(indent=2))
