@@ -14,6 +14,7 @@ Added
 
 Changed
 -------
+- replaced existing CRF library (python-crfsuite) with sklearn-crfsuite (due to better windows support)
 
 Removed
 -------
