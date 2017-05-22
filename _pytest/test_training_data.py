@@ -178,8 +178,8 @@ def test_training_data_conversion(tmpdir, data_file, gold_standard_file):
     assert td.intent_examples != []
 
     gold_standard = load_data(gold_standard_file)
-    assert td.entity_examples == gold_standard.entity_examples
-    assert td.intent_examples == gold_standard.intent_examples
+    assert sorted(td.entity_examples) == sorted(gold_standard.entity_examples)
+    assert sorted(td.intent_examples) == sorted(gold_standard.intent_examples)
     assert td.entity_synonyms == gold_standard.entity_synonyms
 
     # If the above assert fails - this can be used to dump to the file and diff using git
