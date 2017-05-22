@@ -15,6 +15,7 @@ Added
 
 Changed
 -------
+- replaced existing CRF library (python-crfsuite) with sklearn-crfsuite (due to better windows support)
 
 Removed
 -------
@@ -25,6 +26,7 @@ Fixed
 - persistence of duckling dimensions
 - changed default response of untrained ``intent_classifier_sklearn`` from ``"intent": None`` to
 ``"intent": {"name": None, "confidence": 0.0}``
+- /status endpoint showing all available models instead of only those whose name starts with *model*
 
 [0.8.5] - 2017-05-10
 ^^^^^^^^^^^^^^^^^^^^
@@ -67,7 +69,7 @@ Added
 -----
 - ngram character featurizer (allows better handling of out-of-vocab words)
 - replaced pre-wired backends with more flexible pipeline definitions
-- return top 10 intents with sklearn classifier `#199 <https://github.com/golastmile/rasa_nlu/pull/199>`_
+- return top 10 intents with sklearn classifier `#199 <https://github.com/RasaHQ/rasa_nlu/pull/199>`_
 - python type annotations for nearly all public functions
 - support for arbitrary spacy language model names
 - duckling components to provide normalized output for structured entities
@@ -106,10 +108,10 @@ Removed
 
 Fixed
 -----
-- properly parse ``str`` additionally to ``unicode`` `#210 <https://github.com/golastmile/rasa_nlu/issues/210>`_
-- support entity only training `#181 <https://github.com/golastmile/rasa_nlu/issues/181>`_
-- resolved conflicts between metadata and configuration values `#219 <https://github.com/golastmile/rasa_nlu/issues/219>`_
-- removed tokenization when reading Luis.ai data (they changed their format) `#241 <https://github.com/golastmile/rasa_nlu/issues/241>`_
+- properly parse ``str`` additionally to ``unicode`` `#210 <https://github.com/RasaHQ/rasa_nlu/issues/210>`_
+- support entity only training `#181 <https://github.com/RasaHQ/rasa_nlu/issues/181>`_
+- resolved conflicts between metadata and configuration values `#219 <https://github.com/RasaHQ/rasa_nlu/issues/219>`_
+- removed tokenization when reading Luis.ai data (they changed their format) `#241 <https://github.com/RasaHQ/rasa_nlu/issues/241>`_
 
 [0.7.4] - 2017-03-27
 ^^^^^^^^^^^^^^^^^^^^
@@ -138,7 +140,7 @@ Fixed
 
 Fixed
 -----
-- mitie tokenization value generation `#207 <https://github.com/golastmile/rasa_nlu/pull/207>`_, thanks @cristinacaputo
+- mitie tokenization value generation `#207 <https://github.com/RasaHQ/rasa_nlu/pull/207>`_, thanks @cristinacaputo
 - changed log file extension from ``.json`` to ``.log``, since the contained text is not proper json
 
 
@@ -165,6 +167,6 @@ Fixed
 [0.6-beta] - 2017-01-31
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-.. _`master`: https://github.com/golastmile/rasa_nlu/
+.. _`master`: https://github.com/RasaHQ/rasa_nlu/
 
 .. _`Semantic Versioning`: http://semver.org/

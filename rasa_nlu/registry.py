@@ -115,7 +115,7 @@ def load_component_by_name(component_name, context, config):
 
 def create_component_by_name(component_name, config):
     # type: (Text, Dict[Text, Any]) -> Optional[Component]
-    """Resolves a components name and calls it's load method to init it based on a previously persisted model."""
+    """Resolves a components name and calls it's create method to init it based on a previously persisted model."""
     from rasa_nlu.components import create_component
 
     component_clz = get_component_class(component_name)

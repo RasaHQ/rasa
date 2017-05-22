@@ -52,8 +52,8 @@ setup(
     extras_require=extras_requires,
     description="rasa NLU a natural language parser for bots",
     author='Alan Nichol',
-    author_email='alan@golastmile.com',
+    author_email='alan@rasa.ai',
     url="https://rasa.ai",
     keywords=["NLP", "bots"],
-    download_url="https://github.com/golastmile/rasa_nlu/archive/{}.tar.gz".format(__version__)
+    download_url="https://github.com/RasaHQ/rasa_nlu/archive/{}.tar.gz".format(__version__)
 )

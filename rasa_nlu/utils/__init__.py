@@ -4,6 +4,7 @@ from __future__ import division
 from __future__ import absolute_import
 import os
 
+import errno
 from typing import List
 from typing import Optional
 from typing import Text
@@ -19,15 +20,28 @@ def relative_normpath(f, path):
         return None
 
 
+def create_dir(dir_path):
+    # type: (Text) -> None
+    """Creates a directory and its super paths. Succeeds even if the path already exists."""
+
+    try:
+        os.makedirs(dir_path)
+    except OSError as e:
+        # be happy if someone already created the path
+        if e.errno != errno.EEXIST:
+            raise
+
+
 def create_dir_for_file(file_path):
     # type: (Text) -> None
     """Creates any missing parent directories of this files path."""
 
     try:
         os.makedirs(os.path.dirname(file_path))
-    except OSError:
+    except OSError as e:
         # be happy if someone already created the path
-        pass
+        if e.errno != errno.EEXIST:
+            raise
 
 
 def recursively_find_files(resource_name):
