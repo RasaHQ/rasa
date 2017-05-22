@@ -1,7 +1,7 @@
 # rasa NLU
 [![Join the chat at https://gitter.im/golastmile/rasa_nlu](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/golastmile/rasa_nlu?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Build Status](https://travis-ci.org/golastmile/rasa_nlu.svg?branch=master)](https://travis-ci.org/golastmile/rasa_nlu)
-[![Coverage Status](https://coveralls.io/repos/github/golastmile/rasa_nlu/badge.svg?branch=master)](https://coveralls.io/github/golastmile/rasa_nlu?branch=master)
+[![Build Status](https://travis-ci.org/golastmile/rasa_nlu.svg?branch=master)](https://travis-ci.org/RasaHQ/rasa_nlu)
+[![Coverage Status](https://coveralls.io/repos/github/RasaHQ/rasa_nlu/badge.svg?branch=master)](https://coveralls.io/github/RasaHQ/rasa_nlu?branch=master)
 [![PyPI version](https://badge.fury.io/py/rasa_nlu.svg)](https://badge.fury.io/py/rasa_nlu)
 [![Documentation Status](https://readthedocs.org/projects/rasa-nlu/badge/)](https://rasa-nlu.readthedocs.io/en/stable/)
 
@@ -29,7 +29,7 @@ pip install rasa_nlu
 ```
 From github:
 ```
-git clone git@github.com:golastmile/rasa_nlu.git
+git clone git@github.com:RasaHQ/rasa_nlu.git
 cd rasa_nlu
 pip install -r requirements.txt
 python setup.py install
