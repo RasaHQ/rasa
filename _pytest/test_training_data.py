@@ -168,6 +168,20 @@ def test_nonascii_entities():
         assert entity["entity"] == "description"
 
 
+def cmp_dict_list(firsts, seconds):
+    if len(firsts) != len(seconds):
+        return False
+
+    for a in firsts:
+        for idx, b in enumerate(seconds):
+            if a == b:
+                del seconds[idx]
+                break
+        else:
+            return False
+    return not seconds
+
+
 @pytest.mark.parametrize("data_file,gold_standard_file", [
     ("data/examples/wit/demo-flights.json", "data/test/wit_converted_to_rasa.json"),
     ("data/examples/luis/demo-restaurants.json", "data/test/luis_converted_to_rasa.json"),
@@ -180,8 +194,8 @@ def test_training_data_conversion(tmpdir, data_file, gold_standard_file):
     assert td.intent_examples != []
 
     gold_standard = load_data(gold_standard_file)
-    assert Counter(td.entity_examples) == Counter(gold_standard.entity_examples)
-    assert Counter(td.intent_examples) == Counter(gold_standard.intent_examples)
+    assert cmp_dict_list(td.entity_examples, gold_standard.entity_examples)
+    assert cmp_dict_list(td.intent_examples, gold_standard.intent_examples)
     assert td.entity_synonyms == gold_standard.entity_synonyms
 
     # If the above assert fails - this can be used to dump to the file and diff using git
