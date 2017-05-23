@@ -11,6 +11,7 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 Added
 -----
+- increased test coverage to avoid regressions (ongoing)
 
 Changed
 -------
@@ -21,6 +22,10 @@ Removed
 
 Fixed
 -----
+- properly update coveralls coverage report from travis
+- persistence of duckling dimensions
+- changed default response of untrained ``intent_classifier_sklearn`` from ``"intent": None`` to
+``"intent": {"name": None, "confidence": 0.0}``
 - /status endpoint showing all available models instead of only those whose name starts with *model*
 
 [0.8.5] - 2017-05-10

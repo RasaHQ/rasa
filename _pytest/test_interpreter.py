@@ -12,7 +12,10 @@ from rasa_nlu import registry
 @slowtest
 @pytest.mark.parametrize("pipeline_template", list(registry.registered_pipeline_templates.keys()))
 def test_samples(pipeline_template, component_builder):
-    interpreter = utilities.interpreter_for(component_builder, utilities.base_test_conf(pipeline_template))
+    _conf = utilities.base_test_conf(pipeline_template)
+    _conf["data"] = "./data/examples/rasa/demo-rasa.json"
+
+    interpreter = utilities.interpreter_for(component_builder, _conf)
     available_intents = ["greet", "restaurant_search", "affirm", "goodbye", "None"]
     samples = [
         (

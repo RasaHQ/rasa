@@ -8,9 +8,12 @@ import json
 import tempfile
 
 import io
+from collections import Counter
+
 import pytest
 from jsonschema import ValidationError
 
+from rasa_nlu.convert import convert_training_data
 from rasa_nlu.converters import load_data, validate_rasa_nlu_data
 from rasa_nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 
@@ -46,7 +49,7 @@ def test_luis_data():
 def test_wit_data():
     td = load_data('data/examples/wit/demo-flights.json')
     assert td.entity_examples != []
-    assert td.intent_examples == []
+    assert td.intent_examples != []
     assert td.entity_synonyms == {}
 
 
@@ -163,3 +166,38 @@ def test_nonascii_entities():
         assert entity["start"] == 19
         assert entity["end"] == 27
         assert entity["entity"] == "description"
+
+
+def cmp_dict_list(firsts, seconds):
+    if len(firsts) != len(seconds):
+        return False
+
+    for a in firsts:
+        for idx, b in enumerate(seconds):
+            if a == b:
+                del seconds[idx]
+                break
+        else:
+            return False
+    return not seconds
+
+
+@pytest.mark.parametrize("data_file,gold_standard_file", [
+    ("data/examples/wit/demo-flights.json", "data/test/wit_converted_to_rasa.json"),
+    ("data/examples/luis/demo-restaurants.json", "data/test/luis_converted_to_rasa.json"),
+    ("data/examples/api/", "data/test/api_converted_to_rasa.json")])
+def test_training_data_conversion(tmpdir, data_file, gold_standard_file):
+    out_path = tmpdir.join("rasa_nlu_data.json")
+    convert_training_data(data_file, out_path.strpath)
+    td = load_data(out_path.strpath)
+    assert td.entity_examples != []
+    assert td.intent_examples != []
+
+    gold_standard = load_data(gold_standard_file)
+    assert cmp_dict_list(td.entity_examples, gold_standard.entity_examples)
+    assert cmp_dict_list(td.intent_examples, gold_standard.intent_examples)
+    assert td.entity_synonyms == gold_standard.entity_synonyms
+
+    # If the above assert fails - this can be used to dump to the file and diff using git
+    # with io.open(gold_standard_file) as f:
+    #     f.write(td.as_json(indent=2))

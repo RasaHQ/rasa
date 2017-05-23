@@ -3,6 +3,7 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+import logging
 import typing
 from builtins import zip
 import os
@@ -56,7 +57,7 @@ class SklearnIntentClassifier(Component):
         return ["numpy", "sklearn"]
 
     def transform_labels_str2num(self, labels):
-        # type: (np.ndarray) -> np.ndarray
+        # type: (List[Text]) -> np.ndarray
         """Transforms a list of strings into numeric label representation.
 
         :param labels: List of labels to convert to numeric representation"""
@@ -83,29 +84,36 @@ class SklearnIntentClassifier(Component):
         labels = [e["intent"] for e in training_data.intent_examples]
 
         if len(set(labels)) < 2:
-            raise Exception("Can not train an intent classifier. Need at least 2 different classes.")
-        y = self.transform_labels_str2num(labels)
-        X = intent_features
+            logging.warn("Can not train an intent classifier. Need at least 2 different classes. " +
+                         "Skipping training of intent classifier.")
+        else:
+            y = self.transform_labels_str2num(labels)
+            X = intent_features
 
-        # dirty str fix because sklearn is expecting str not instance of basestr...
-        tuned_parameters = [{'C': [1, 2, 5, 10, 20, 100], 'kernel': [str('linear')]}]
-        cv_splits = max(2, min(MAX_CV_FOLDS, np.min(np.bincount(y)) // 5))  # aim for at least 5 examples in each fold
+            # dirty str fix because sklearn is expecting str not instance of basestr...
+            tuned_parameters = [{'C': [1, 2, 5, 10, 20, 100], 'kernel': [str('linear')]}]
+            cv_splits = max(2, min(MAX_CV_FOLDS, np.min(np.bincount(y)) // 5))  # aim for 5 examples in each fold
 
-        self.clf = GridSearchCV(SVC(C=1, probability=True),
-                                param_grid=tuned_parameters, n_jobs=num_threads,
-                                cv=cv_splits, scoring='f1_weighted', verbose=1)
+            self.clf = GridSearchCV(SVC(C=1, probability=True),
+                                    param_grid=tuned_parameters, n_jobs=num_threads,
+                                    cv=cv_splits, scoring='f1_weighted', verbose=1)
 
-        self.clf.fit(X, y)
+            self.clf.fit(X, y)
 
     def process(self, intent_features):
         # type: (np.ndarray) -> Dict[Text, Any]
         """Returns the most likely intent and its probability for the input text."""
+
+        if not self.clf:
+            # component is either not trained or didn't receive enough training data
+            return {"intent": None, "intent_ranking": []}
 
         X = intent_features.reshape(1, -1)
         intent_ids, probabilities = self.predict(X)
         intents = self.transform_labels_num2str(intent_ids)
         # `predict` returns a matrix as it is supposed to work for multiple examples as well, hence we need to flatten
         intents, probabilities = intents.flatten(), probabilities.flatten()
+
         if intents.size > 0 and probabilities.size > 0:
             ranking = list(zip(list(intents), list(probabilities)))[:INTENT_RANKING_LENGTH]
             return {
@@ -116,7 +124,7 @@ class SklearnIntentClassifier(Component):
                 "intent_ranking": [{"name": intent, "confidence": score} for intent, score in ranking]
             }
         else:
-            return {"intent": None, "intent_ranking": []}
+            return {"intent": {"name": None, "confidence": 0.0}, "intent_ranking": []}
 
     def predict_prob(self, X):
         # type: (np.ndarray) -> np.ndarray
@@ -148,7 +156,7 @@ class SklearnIntentClassifier(Component):
 
         if model_dir and intent_classifier_sklearn:
             classifier_file = os.path.join(model_dir, intent_classifier_sklearn)
-            with io.open(classifier_file, 'rb') as f:
+            with io.open(classifier_file, 'rb') as f:   # pragma: no test
                 if PY3:
                     return cloudpickle.load(f, encoding="latin-1")
                 else:

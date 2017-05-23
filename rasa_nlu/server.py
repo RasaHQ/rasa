@@ -18,7 +18,7 @@ from rasa_nlu.data_router import DataRouter, InvalidModelError
 from rasa_nlu.version import __version__
 
 
-def create_arg_parser():
+def create_argparser():
     parser = argparse.ArgumentParser(description='parse incoming text')
     parser.add_argument('-c', '--config',
                         help="config file, all the command line options can also be passed via a (json-formatted) " +
@@ -111,7 +111,7 @@ def create_app(config, component_builder=None):
 
 if __name__ == '__main__':
     # Running as standalone python application
-    arg_parser = create_arg_parser()
+    arg_parser = create_argparser()
     cmdline_args = {key: val for key, val in list(vars(arg_parser.parse_args()).items()) if val is not None}
     rasa_nlu_config = RasaNLUConfig(cmdline_args.get("config"), os.environ, cmdline_args)
     app = WSGIServer(('0.0.0.0', rasa_nlu_config['port']), create_app(rasa_nlu_config))

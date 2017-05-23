@@ -27,7 +27,6 @@ install:
 - source activate test-environment
 - pip install -r dev-requirements.txt
 - pip install -r requirements.txt
-- python setup.py install
 - pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-1.2.0/en_core_web_sm-1.2.0.tar.gz
   --no-cache-dir > jnk
 - python -m spacy link en_core_web_sm en
@@ -37,8 +36,9 @@ install:
 - if [[ ! -f data/total_word_feature_extractor.dat ]]; then wget -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat;
   fi
 - pip list
-script: py.test --pep8 --boxed -n0
+script: py.test _pytest --cov rasa_nlu --pep8 -v
 after_success:
+- coveralls
 - ./build_push_docker.sh
 deploy:
   provider: pypi

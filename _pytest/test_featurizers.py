@@ -34,3 +34,26 @@ def test_mitie_featurizer(mitie_feature_extractor, default_config):
     tokens = MitieTokenizer().tokenize(sentence)
     vecs = ftr.features_for_tokens(tokens, mitie_feature_extractor)
     assert np.allclose(vecs[:5], np.array([0., -4.4551446, 0.26073121, -1.46632245, -1.84205751]), atol=1e-5)
+
+
+def test_ngram_featurizer(spacy_nlp):
+    from rasa_nlu.featurizers.ngram_featurizer import NGramFeaturizer
+    ftr = NGramFeaturizer()
+    repetition_factor = 5   # ensures that during random sampling of the ngram CV we don't end up with a one-class-split
+    labeled_sentences = {
+        "heyheyheyhey": "greet",
+        "howdyheyhowdy": "greet",
+        "heyhey howdyheyhowdy": "greet",
+        "howdyheyhowdy heyhey": "greet",
+        "astalavistasista": "goodby",
+        "astalavistasista sistala": "goodby",
+        "sistala astalavistasista": "goodby",
+    }
+    ftr.min_intent_examples_for_ngram_classification = 2
+    ftr.train_on_sentences(list(labeled_sentences.keys()) * repetition_factor,
+                           list(labeled_sentences.values()) * repetition_factor,
+                           spacy_nlp,
+                           max_number_of_ngrams=10,
+                           intent_features=[[0.5]] * len(labeled_sentences) * repetition_factor)
+    assert len(ftr.all_ngrams) > 0
+    assert ftr.best_num_ngrams > 0

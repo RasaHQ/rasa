@@ -28,7 +28,7 @@ def create_argparser():
     return parser
 
 
-def download_mitie_fe_file(fe_file):
+def download_mitie_fe_file(fe_file):    # pragma: no cover
     # type: (Text) -> None
     """Download the mitie feature extractor needed to run & train mitie classifiers.
 
@@ -45,7 +45,7 @@ def download_mitie_fe_file(fe_file):
     logging.debug("file written! {0}, {1}".format(fe_file, os.path.exists(fe_file)))
 
 
-def download(config, pkg="mitie"):
+def download(config, pkg="mitie"):  # pragma: no cover
     # type: (RasaNLUConfig, Text) -> None
     if pkg == "mitie":
         download_mitie_fe_file(config.mitie_file)

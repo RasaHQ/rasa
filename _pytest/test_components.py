@@ -4,9 +4,11 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import pytest
+from rasa_nlu.model import Metadata
 
 from rasa_nlu import registry
-from rasa_nlu.components import fill_args
+from rasa_nlu.components import fill_args, load_component, create_component, MissingArgumentError, \
+    find_unavailable_packages, _read_dev_requirements
 from rasa_nlu.extractors import EntityExtractor
 
 
@@ -28,6 +30,15 @@ def test_all_components_in_model_templates_exist(pipeline_template):
     components = registry.registered_pipeline_templates[pipeline_template]
     for component in components:
         assert component in registry.registered_components, "Model template contains unknown component."
+
+
+def test_all_components_are_in_all_components_template():
+    """There is a template that includes all components to test the train-persist-load-use cycle. Ensures that really
+    all Components are in there."""
+
+    template_with_all_components = registry.registered_pipeline_templates["all_components"]
+    for cls in registry.component_classes:
+        assert cls.name in template_with_all_components, "`all_components` template is missing component."
 
 
 @pytest.mark.parametrize("component_class", registry.component_classes)
@@ -88,3 +99,54 @@ def test_all_arguments_can_be_satisfied_during_parse(component_class, default_co
 def test_all_extractors_use_previous_entities():
     extractors = [c for c in registry.component_classes if isinstance(c, EntityExtractor)]
     assert all(["entities" in ex.process_args() for ex in extractors])
+
+
+def test_load_can_handle_none():
+    assert load_component(None, {}, {}) is None
+
+
+def test_create_can_handle_none():
+    assert create_component(None, {}) is None
+
+
+def test_fill_args_with_unsatisfiable_param_from_context():
+    with pytest.raises(MissingArgumentError) as excinfo:
+        fill_args(["good_one", "bad_one"], {"good_one": 1}, {})
+    assert "bad_one" in str(excinfo.value)
+    assert "good_one" not in str(excinfo.value)
+
+
+def test_fill_args_with_unsatisfiable_param_from_config():
+    with pytest.raises(MissingArgumentError) as excinfo:
+        fill_args(["good_one", "bad_one"], {}, {"good_one": 1})
+    assert "bad_one" in str(excinfo.value)
+    assert "good_one" not in str(excinfo.value)
+
+
+def test_find_unavailable_packages():
+    unavailable = find_unavailable_packages(["my_made_up_package_name", "io", "foo_bar", "foo_bar"])
+    assert unavailable == {"my_made_up_package_name", "foo_bar"}
+
+
+def test_read_dev_requirements(tmpdir):
+    package_name = "my_made_up_package_name"
+
+    # two imaginary packages should be installed if imaginary `package_name` is required
+    install_names = ["my_install_name_one", "my_install_name_two"]
+    f = tmpdir.join("tmp-requirements.txt")
+    f.write("# {}\n{}".format(package_name, "\n".join(install_names)))
+    requirements = _read_dev_requirements(f.strpath)
+    assert package_name in requirements
+    assert requirements[package_name] == install_names
+
+
+def test_builder_create_unknown(component_builder, default_config):
+    with pytest.raises(Exception) as excinfo:
+        component_builder.create_component("my_made_up_componment", default_config)
+    assert "Unknown component name" in str(excinfo.value)
+
+
+def test_builder_load_unknown(component_builder):
+    with pytest.raises(Exception) as excinfo:
+        component_builder.load_component("my_made_up_componment", {}, {}, Metadata({}, None))
+    assert "Unknown component name" in str(excinfo.value)

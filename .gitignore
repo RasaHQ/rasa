@@ -3,6 +3,7 @@
 dist/
 data/*
 !data/examples
+!data/test
 docs/_build
 server/
 scala/

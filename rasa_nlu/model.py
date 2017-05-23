@@ -179,7 +179,9 @@ class Trainer(object):
             dir_name = os.path.join(path, model_name)
 
         create_dir(dir_name)
-        metadata.update(self.training_data.persist(dir_name))
+
+        if self.training_data:
+            metadata.update(self.training_data.persist(dir_name))
 
         for component in self.pipeline:
             update = component.persist(dir_name)
