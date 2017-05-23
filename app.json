@@ -2,7 +2,7 @@
   "name": "rasa_nlu",
   "description": "a service for interpreting natural language",
   "image": "heroku/python",
-  "repository": "https://github.com/golastmile/rasa_nlu",
+  "repository": "https://github.com/RasaHQ/rasa_nlu",
   "keywords": ["python" ],
   "addons": [],
   "scripts": {

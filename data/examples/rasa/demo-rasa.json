@@ -12,7 +12,7 @@
         "entities": []
       }, 
       {
-        "text": "hey there", 
+        "text": "hey there",
         "intent": "greet", 
         "entities": []
       }, 
@@ -166,7 +166,7 @@
         ]
       },
       {
-        "text": "i am looking for an indian spot",
+        "text": "i am looking for an indian spot called olaolaolaolaolaola",
         "intent": "restaurant_search",
         "entities": [
           {
@@ -190,6 +190,30 @@
             "end": 20,
             "value": "west",
             "entity": "location"
+          }
+        ]
+      },
+      {
+        "text": "I am looking for asian fusion food",
+        "intent": "restaurant_search",
+        "entities": [
+          {
+            "start": 17,
+            "end": 29,
+            "value": "asian fusion",
+            "entity": "cuisine"
+          }
+        ]
+      },
+      {
+        "text": "I am looking for mexican indian fusion",
+        "intent": "restaurant_search",
+        "entities": [
+          {
+            "start": 17,
+            "end": 38,
+            "value": "mexican indian fusion",
+            "entity": "cuisine"
           }
         ]
       },

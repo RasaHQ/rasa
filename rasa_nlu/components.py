@@ -14,6 +14,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Set
 from typing import Text
 from typing import Tuple
 from typing import Type
@@ -58,7 +59,7 @@ def fill_args(arguments, context, config):
     return filled
 
 
-def __read_dev_requirements(file_name):
+def _read_dev_requirements(file_name):
     """Reads the dev requirements and groups the pinned versions into sections indicated by comments in the file.
 
     The dev requirements should be grouped by preceeding comments. The comment should start with `#` followed by
@@ -76,25 +77,34 @@ def __read_dev_requirements(file_name):
     return requirements
 
 
-def validate_requirements(component_names):
+def find_unavailable_packages(package_names):
+    # type: (List[Text]) -> Set[Text]
+    """Tries to import all the package names and returns the packages where it failed."""
+    import importlib
+
+    failed_imports = set()
+    for package in package_names:
+        try:
+            importlib.import_module(package)
+        except ImportError:
+            failed_imports.add(package)
+    return failed_imports
+
+
+def validate_requirements(component_names, dev_requirements_file="dev-requirements.txt"):
     # type: (List[Text]) -> None
     """Ensures that all required python packages are installed to instantiate and used the passed components."""
     from rasa_nlu import registry
-    import importlib
 
     # Validate that all required packages are installed
     failed_imports = set()
     for component_name in component_names:
         component_class = registry.get_component_class(component_name)
-        for package in component_class.required_packages():
-            try:
-                importlib.import_module(package)
-            except ImportError:
-                failed_imports.add(package)
-    if failed_imports:
+        failed_imports.update(find_unavailable_packages(component_class.required_packages()))
+    if failed_imports:  # pragma: no cover
         # if available, use the development file to figure out the correct version numbers for each requirement
-        if os.path.exists("dev-requirements.txt"):
-            all_requirements = __read_dev_requirements("dev-requirements.txt")
+        if os.path.exists(dev_requirements_file):
+            all_requirements = _read_dev_requirements(dev_requirements_file)
             missing_requirements = [r for i in failed_imports for r in all_requirements[i]]
             raise Exception("Not all required packages are installed. To use this pipeline, run\n\t" +
                             "> pip install {}".format(" ".join(missing_requirements)))
@@ -122,8 +132,8 @@ def validate_arguments(pipeline, config, allow_empty_pipeline=False):
             updates = component.context_provides.get("pipeline_init", [])
             for u in updates:
                 context[u] = None
-        except MissingArgumentError as e:
-            raise Exception("Failed to validate at component '{}'. {}".format(component.name, e))
+        except MissingArgumentError as e:   # pragma: no cover
+            raise Exception("Failed to validate component '{}'. {}".format(component.name, e))
 
     after_init_context = context.copy()
 
@@ -135,7 +145,7 @@ def validate_arguments(pipeline, config, allow_empty_pipeline=False):
             updates = component.context_provides.get("train", [])
             for u in updates:
                 context[u] = None
-        except MissingArgumentError as e:
+        except MissingArgumentError as e:   # pragma: no cover
             raise Exception("Failed to validate at component '{}'. {}".format(component.name, e))
 
     # Reset context to test processing phase and prepare for training phase
@@ -148,7 +158,7 @@ def validate_arguments(pipeline, config, allow_empty_pipeline=False):
             updates = component.context_provides.get("process", [])
             for u in updates:
                 context[u] = None
-        except MissingArgumentError as e:
+        except MissingArgumentError as e:   # pragma: no cover
             raise Exception("Failed to validate at component '{}'. {}".format(component.name, e))
 
 
@@ -162,6 +172,7 @@ class MissingArgumentError(ValueError):
     def __init__(self, message):
         # type: (Text) -> None
         super(MissingArgumentError, self).__init__(message)
+        self.message = message
 
     def __str__(self):
         return self.message
@@ -340,12 +351,9 @@ class ComponentBuilder(object):
             component, cache_key = self.__get_cached_component(component_name, meta)
             if component is None:
                 component = registry.load_component_by_name(component_name, context, model_config)
-                if component is None:
-                    raise Exception(
-                        "Failed to load component '{}'. Unknown component name.".format(component_name))
                 self.__add_to_cache(component, cache_key)
             return component
-        except MissingArgumentError as e:
+        except MissingArgumentError as e:   # pragma: no cover
             raise Exception("Failed to load component '{}'. {}".format(component_name, e))
 
     def create_component(self, component_name, config):
@@ -359,10 +367,7 @@ class ComponentBuilder(object):
             component, cache_key = self.__get_cached_component(component_name, Metadata(config.as_dict(), None))
             if component is None:
                 component = registry.create_component_by_name(component_name, config.as_dict())
-                if component is None:
-                    raise Exception(
-                        "Failed to create component '{}'. Unknown component name.".format(component_name))
                 self.__add_to_cache(component, cache_key)
             return component
-        except MissingArgumentError as e:
+        except MissingArgumentError as e:   # pragma: no cover
             raise Exception("Failed to create component '{}'. {}".format(component_name, e))

@@ -74,6 +74,27 @@ registered_pipeline_templates = {
     ],
     "keyword": [
         "intent_classifier_keyword",
+    ],
+    # this template really is just for testing
+    # every component should be in here so train-persist-load-use cycle can be tested
+    # they still need to be in a useful order - hence we can not simply generate this automatically
+    "all_components": [
+        "nlp_spacy",
+        "nlp_mitie",
+        "tokenizer_whitespace",
+        "tokenizer_mitie",
+        "tokenizer_spacy",
+        "ner_mitie",
+        "ner_crf",
+        "ner_spacy",
+        "ner_duckling",
+        "ner_synonyms",
+        "intent_featurizer_mitie",
+        "intent_featurizer_spacy",
+        "intent_featurizer_ngrams",
+        "intent_classifier_keyword",
+        "intent_classifier_sklearn",
+        "intent_classifier_mitie",
     ]
 }
 
@@ -96,7 +117,7 @@ def load_component_by_name(component_name, context, config):
 
 def create_component_by_name(component_name, config):
     # type: (Text, Dict[Text, Any]) -> Optional[Component]
-    """Resolves a components name and calls it's load method to init it based on a previously persisted model."""
+    """Resolves a components name and calls it's create method to init it based on a previously persisted model."""
     from rasa_nlu.components import create_component
 
     component_clz = get_component_class(component_name)

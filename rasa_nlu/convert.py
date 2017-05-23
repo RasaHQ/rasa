@@ -17,12 +17,13 @@ def create_argparser():
     return parser
 
 
-def write_file(td, out_file):
+def convert_training_data(data_file, out_file):
+    td = load_data(data_file)
     with io.open(out_file, "w") as f:
         f.write(td.as_json(indent=2))
+
 
 if __name__ == "__main__":
     parser = create_argparser()
     args = parser.parse_args()
-    td = load_data(args.data_file)
-    write_file(td, args.out_file)
+    convert_training_data(args.data_file, args.out_file)

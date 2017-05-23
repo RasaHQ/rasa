@@ -167,7 +167,8 @@ class DataRouter(object):
         # This will only count the trainings started from this process, if run in multi worker mode, there might
         # be other trainings run in different processes we don't know about.
         num_trainings = len([p for p in self.train_procs if p.is_alive()])
-        models = glob.glob(os.path.join(self.model_dir, 'model*'))
+        models = glob.glob(os.path.join(self.model_dir, '*'))
+        models = [model for model in models if os.path.isfile(os.path.join(model, "metadata.json"))]
         return {
             "trainings_under_this_process": num_trainings,
             "available_models": models

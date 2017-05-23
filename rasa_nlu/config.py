@@ -138,9 +138,6 @@ class RasaNLUConfig(object):
         env_config = self.split_arg(env_config, "duckling_dimensions")
         return env_config
 
-    def is_set(self, key):
-        return key in self.__dict__ and self[key] is not None
-
     def make_paths_absolute(self, config, keys):
         abs_path_config = dict(config)
         for key in keys:

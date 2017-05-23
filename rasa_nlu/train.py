@@ -51,7 +51,7 @@ def create_persistor(config):
     return persistor
 
 
-def init():
+def init():     # pragma: no cover
     # type: () -> RasaNLUConfig
     """Combines passed arguments to create rasa NLU config."""
 

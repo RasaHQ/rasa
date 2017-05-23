@@ -18,7 +18,7 @@ If you want to use the bleeding edge version use github + setup.py:
 
 .. code-block:: bash
 
-    git clone git@github.com:golastmile/rasa_nlu.git
+    git clone git@github.com:RasaHQ/rasa_nlu.git
     cd rasa_nlu
     pip install -r requirements.txt
     python setup.py install
