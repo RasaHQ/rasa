@@ -16,7 +16,7 @@ Added
 Changed
 -------
 - replaced existing CRF library (python-crfsuite) with sklearn-crfsuite (due to better windows support)
-
+- updated to spacy 1.8.2
 Removed
 -------
 
