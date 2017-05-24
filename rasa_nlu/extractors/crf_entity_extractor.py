@@ -122,19 +122,17 @@ class CRFEntityExtractor(EntityExtractor):
             raise Exception('Inconsistency in amount of tokens between crfsuite and spacy')
         if self.BILOU_flag:
             # using the BILOU tagging scheme
-            start_char = 0
             for word_idx in range(len(sentence_doc)):
                 entity = entities[word_idx]
                 word = sentence_doc[word_idx]
                 if entity.startswith('U-'):
-                    ent = {'start': start_char, 'end': start_char + len(word),
+                    ent = {'start': word.idx, 'end': word.idx + len(word),
                            'value': word.text, 'entity': entity[2:]}
                     json_ents.append(ent)
                 elif entity.startswith('B-'):
                     # start of a multi-word entity, need to represent whole extent
                     ent_word_idx = word_idx + 1
                     finished = False
-                    end_char = start_char + len(word)
                     while not finished:
                         if len(entities) > ent_word_idx and entities[ent_word_idx][2:] != entity[2:]:
                             # words are not tagged the same entity class
@@ -144,11 +142,9 @@ class CRFEntityExtractor(EntityExtractor):
                                     "Assuming B- class is correct.")
                         if len(entities) > ent_word_idx and entities[ent_word_idx].startswith('L-'):
                             # end of the entity
-                            end_char += len(sentence_doc[ent_word_idx]) + 1
                             finished = True
                         elif len(entities) > ent_word_idx and entities[ent_word_idx].startswith('I-'):
                             # middle part of the entity
-                            end_char += len(sentence_doc[ent_word_idx]) + 1
                             ent_word_idx += 1
                         else:
                             # entity not closed by an L- tag
@@ -157,22 +153,19 @@ class CRFEntityExtractor(EntityExtractor):
                             logging.debug(
                                     "Inconsistent BILOU tagging found, B- tag not closed by L- tag, " +
                                     "i.e ['B-a','I-a','O'] instead of ['B-a','L-a','O'].\nAssuming last tag is L-")
-                    ent = {'start': start_char, 'end': end_char,
+                    ent = {'start': word.idx, 'end': sentence_doc[word_idx:ent_word_idx + 1].end_char,
                            'value': sentence_doc[word_idx:ent_word_idx + 1].text,
                            'entity': entity[2:]}
                     json_ents.append(ent)
-                start_char += 1 + len(word)
         elif not self.BILOU_flag:
             # not using BILOU tagging scheme, multi-word entities are split.
-            start_char = 0
             for word_idx in range(len(sentence_doc)):
                 entity = entities[word_idx]
                 word = sentence_doc[word_idx]
                 if entity != 'O':
-                    ent = {'start': start_char, 'end': start_char + len(word),
+                    ent = {'start': word.idx, 'end': word.idx + len(word),
                            'value': word.text, 'entity': entity}
                     json_ents.append(ent)
-                start_char += len(word) + 1
         return json_ents
 
     @classmethod
