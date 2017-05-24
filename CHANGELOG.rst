@@ -17,6 +17,7 @@ Changed
 -------
 - replaced existing CRF library (python-crfsuite) with sklearn-crfsuite (due to better windows support)
 - updated to spacy 1.8.2
+
 Removed
 -------
 
@@ -27,6 +28,20 @@ Fixed
 - changed default response of untrained ``intent_classifier_sklearn`` from ``"intent": None`` to
 ``"intent": {"name": None, "confidence": 0.0}``
 - /status endpoint showing all available models instead of only those whose name starts with *model*
+
+[0.8.7] - 2017-05-24
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Fixed range calculation for crf #355
+
+[0.8.6] - 2017-05-15
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Fixed duckling dimension persistence. fixes #358
 
 [0.8.5] - 2017-05-10
 ^^^^^^^^^^^^^^^^^^^^
