@@ -101,7 +101,12 @@ def get_component_class(component_name):
     # type: (Text) -> Optional[Type[Component]]
     """Resolve component name to a registered components class."""
 
-    return registered_components.get(component_name)
+    if component_name not in registered_components:
+        raise Exception("Failed to find component class for '{}'. Unknown component name. ".format(component_name) +
+                        "Check your configured pipeline and make sure the mentioned component is not misspelled. " +
+                        "If you are creating your own component, make sure it is listed as part of the " +
+                        "`component_classes` in `rasa_nlu.registry.py`.")
+    return registered_components[component_name]
 
 
 def load_component_by_name(component_name, context, config):

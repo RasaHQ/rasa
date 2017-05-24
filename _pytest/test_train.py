@@ -65,6 +65,14 @@ def test_train_named_model(component_builder):
     assert persisted_path.strip("/\\").endswith("my_keyword_model")    # should be saved in a dir named after model
 
 
+def test_handles_pipeline_with_non_existing_component(component_builder):
+    _config = utilities.base_test_conf("spacy_sklearn")
+    _config['pipeline'].append("my_made_up_component")
+    with pytest.raises(Exception) as execinfo:
+        utilities.run_train(_config, component_builder)
+    assert "Failed to find component" in str(execinfo.value)
+
+
 def test_load_and_persist_without_train(component_builder):
     _config = utilities.base_test_conf("all_components")
     trainer = Trainer(_config, component_builder)

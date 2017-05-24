@@ -63,12 +63,6 @@ class Metadata(object):
         self.metadata = metadata
         self.model_dir = model_dir
 
-    def __prepend_path(self, prop):
-        if self.metadata.get(prop) is not None:
-            return os.path.normpath(os.path.join(self.model_dir, self.metadata[prop]))
-        else:
-            return None
-
     @property
     def language(self):
         # type: () -> Optional[Text]
@@ -81,13 +75,7 @@ class Metadata(object):
         # type: () -> List[Text]
         """Names of the processing pipeline elements."""
 
-        if 'pipeline' in self.metadata:
-            return self.metadata['pipeline']
-        elif 'backend' in self.metadata:   # This is for backwards compatibility of models trained before 0.8
-            from rasa_nlu import registry
-            return registry.registered_pipeline_templates.get(self.metadata.get('backend'))
-        else:
-            return []
+        return self.metadata.get('pipeline', [])
 
     def persist(self, model_dir):
         # type: (Text) -> None
