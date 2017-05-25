@@ -175,7 +175,7 @@ class DataRouter(object):
                 raise InvalidModelError("No model found with alias '{}'. Error: {}".format(alias, e))
 
         model = self.model_store[alias]
-        response = model.parse(data['text'])
+        response = model.parse(data['text'], data['ref_time'])
         if self.responses:
             self.responses.info(json.dumps(response, sort_keys=True))
         return self.format_response(response)

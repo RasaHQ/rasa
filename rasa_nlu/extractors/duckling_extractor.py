@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import os
 import io
 import json
+import logging
 import typing
 from typing import Any
 from typing import Dict
@@ -48,7 +49,7 @@ class DucklingExtractor(EntityExtractor):
     @classmethod
     def required_packages(cls):
         # type: () -> List[Text]
-        return ["duckling"]
+        return ["duckling", "dateutil"]
 
     @classmethod
     def create(cls, duckling_dimensions):
@@ -77,12 +78,28 @@ class DucklingExtractor(EntityExtractor):
             except ValueError as e:     # pragma: no cover
                 raise Exception("Duckling error. {}".format(e))
 
-    def process(self, text, entities):
+    def process(self, text, entities, ref_time=""):
         # type: (Text, List[Dict[Text, Any]]) -> Dict[Text, Any]
 
         extracted = []
         if self.duckling is not None:
-            matches = self.duckling.parse(text)
+            # check if ref_time is a datetime is in a known format
+            # If its not parseable, make it empty
+            if not ref_time:
+                ref_time = ""
+            else:
+                print(ref_time)
+                try:
+                    from dateutil import parser
+                    parser.parse(ref_time)
+                    logging.debug(
+                        "Passing reference time {} to duckling".format(ref_time))
+                except:
+                    logging.warning(
+                        "Could not parse {}. Reference time will not be passed to duckling".format(ref_time))
+                    ref_time = ""
+
+            matches = self.duckling.parse(text, reference_time=ref_time)
             relevant_matches = [match for match in matches if match["dim"] in self.dimensions]
             for match in relevant_matches:
                 entity = {"start": match["start"],

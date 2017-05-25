@@ -235,7 +235,7 @@ class Interpreter(object):
         self.meta = meta
         self.output_attributes = [output for component in pipeline for output in component.output_provides]
 
-    def parse(self, text):
+    def parse(self, text, ref_time=""):
         # type: (Text) -> Dict[Text, Any]
         """Parse the input text, classify it and return an object containing its intent and entities."""
 
@@ -250,6 +250,7 @@ class Interpreter(object):
 
         current_context.update({
             "text": text,
+            "ref_time": ref_time
         })
 
         for component in self.pipeline:
