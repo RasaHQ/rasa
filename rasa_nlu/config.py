@@ -141,7 +141,7 @@ class RasaNLUConfig(object):
     def make_paths_absolute(self, config, keys):
         abs_path_config = dict(config)
         for key in keys:
-            if key in abs_path_config and not os.path.isabs(abs_path_config[key]):
+            if key in abs_path_config and abs_path_config[key] is not None and not os.path.isabs(abs_path_config[key]):
                 abs_path_config[key] = os.path.join(os.getcwd(), abs_path_config[key])
         return abs_path_config
 
