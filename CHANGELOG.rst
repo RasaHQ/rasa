@@ -21,6 +21,13 @@ Removed
 Fixed
 -----
 
+[0.8.9] - 2017-05-26
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- properly handle response_log configuration variable being set to ``null``
+
 [0.8.8] - 2017-05-26
 ^^^^^^^^^^^^^^^^^^^^
 
