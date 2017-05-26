@@ -21,6 +21,13 @@ Removed
 Fixed
 -----
 
+[0.8.8] - 2017-05-26
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- /status endpoint showing all available models instead of only those whose name starts with *model*
+
 [0.8.7] - 2017-05-24
 ^^^^^^^^^^^^^^^^^^^^
 
