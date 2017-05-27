@@ -113,6 +113,8 @@ def test_post_parse(client, response_test):
 def test_post_train(client, rasa_default_train_data):
     response = client.post("/train", data=json.dumps(rasa_default_train_data), content_type='application/json')
     assert response.status_code == 200
+    assert len(response.json["training_process_ids"]) == 1
+    assert response.json["info"] == "training started."
 
 
 def test_model_hot_reloading(client, rasa_default_train_data):

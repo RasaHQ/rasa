@@ -28,6 +28,7 @@ Fixed
 - changed default response of untrained ``intent_classifier_sklearn`` from ``"intent": None`` to
 ``"intent": {"name": None, "confidence": 0.0}``
 - /status endpoint showing all available models instead of only those whose name starts with *model*
+- properly return training process ids #391
 
 [0.8.7] - 2017-05-24
 ^^^^^^^^^^^^^^^^^^^^

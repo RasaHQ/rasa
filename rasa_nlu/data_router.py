@@ -27,7 +27,7 @@ class DataRouter(object):
     def __init__(self, config, component_builder):
         self.config = config
         self.responses = DataRouter._create_query_logger(config['response_log'])
-        self.train_procs = []
+        self._train_procs = []
         self.model_dir = config['path']
         self.token = config['token']
         self.emulator = self.__create_emulator()
@@ -58,6 +58,26 @@ class DataRouter(object):
             # If the user didn't provide a logging directory, we wont log!
             logging.info("Logging of requests is disabled. (No 'request_log' directory configured)")
             return None
+
+    def _remove_finished_procs(self):
+        """Remove finished training processes from the list of running training processes."""
+        self._train_procs = [p for p in self._train_procs if p.is_alive()]
+
+    def _add_train_proc(self, p):
+        """Adds a new training process to the list of running processes."""
+        self._train_procs.append(p)
+
+    @property
+    def train_procs(self):
+        """Instead of accessing the `_train_procs` property directly, this method will ensure that trainings that
+        are finished will be removed from the list."""
+
+        self._remove_finished_procs()
+        return self._train_procs
+
+    def train_proc_ids(self):
+        """Returns the ids of the running trainings processes."""
+        return [p.ident for p in self.train_procs]
 
     def __search_for_models(self):
         models = {}
@@ -166,12 +186,13 @@ class DataRouter(object):
     def get_status(self):
         # This will only count the trainings started from this process, if run in multi worker mode, there might
         # be other trainings run in different processes we don't know about.
-        num_trainings = len([p for p in self.train_procs if p.is_alive()])
+        num_trainings = len(self.train_procs)
         models = glob.glob(os.path.join(self.model_dir, '*'))
         models = [model for model in models if os.path.isfile(os.path.join(model, "metadata.json"))]
         return {
             "trainings_under_this_process": num_trainings,
-            "available_models": models
+            "available_models": models,
+            "training_process_ids": self.train_proc_ids()
         }
 
     def start_train_process(self, data, config_values):
@@ -186,6 +207,6 @@ class DataRouter(object):
         _config["data"] = f.name
         train_config = RasaNLUConfig(cmdline_args=_config)
         process = multiprocessing.Process(target=do_train, args=(train_config, self.component_builder))
-        self.train_procs.append(process)
+        self._add_train_proc(process)
         process.start()
         logging.info("Training process {} started".format(process))
