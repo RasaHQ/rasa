@@ -69,19 +69,19 @@ class FAQClassifierSklearn(Component):
 
         return self.le.inverse_transform(y)
 
-    def train(self, training_data, spacy_nlp, num_threads):
+    def train(self, training_data, intent_features, spacy_nlp, num_threads):
         # type: (TrainingData, spacy.language.Language, int) -> None
         """Train the intent classifier on a data set.
 
         :param num_threads: number of threads used during training time"""
         from sklearn.neighbors import KNeighborsClassifier
 
-        labels = [e["name"] for e in training_data.faq_examples for _ in e["examples"]]
+        labels = [e["refinement"] for e in training_data.intent_examples if "refinement" in e]
+        ex_idx = ["refinement" in e for e in training_data.intent_examples]
 
         y = self.transform_labels_str2num(labels)
 
-        sentences = [example for e in training_data.faq_examples for example in e["examples"]]
-        X = features_for_sentences(sentences, spacy_nlp)
+        X = intent_features[ex_idx,:]
 
         self.clf = KNeighborsClassifier(n_neighbors=self.number_of_neighbours)
 

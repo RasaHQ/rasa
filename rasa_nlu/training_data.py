@@ -34,14 +34,12 @@ class TrainingData(object):
                  intent_examples_only=None,  # type: Optional[TrainingExamples]
                  entity_examples_only=None,  # type: Optional[TrainingExamples]
                  common_examples=None,  # type: Optional[TrainingExamples]
-                 entity_synonyms=None,  # type: Optional[TrainingExamples]
-                 faq_examples=None  # type: Optional[TrainingExamples]
+                 entity_synonyms=None  # type: Optional[TrainingExamples]
                  ):
         self.intent_examples_only = intent_examples_only if intent_examples_only else []
         self.entity_examples_only = entity_examples_only if entity_examples_only else []
         self.common_examples = common_examples if common_examples else []
         self.entity_synonyms = entity_synonyms if entity_synonyms else {}
-        self.faq_examples = faq_examples if faq_examples else []
 
         self.validate()
 
@@ -77,8 +75,7 @@ class TrainingData(object):
             "rasa_nlu_data": {
                 "common_examples": self.common_examples,
                 "intent_examples": self.intent_examples_only,
-                "entity_examples": self.entity_examples_only,
-                "faq_examples": self.faq_examples
+                "entity_examples": self.entity_examples_only
             }
         }, **kwargs))
 
