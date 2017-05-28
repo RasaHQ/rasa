@@ -81,7 +81,7 @@ class FAQClassifierSklearn(Component):
 
         y = self.transform_labels_str2num(labels)
 
-        X = intent_features[ex_idx,:]
+        X = intent_features[ex_idx, :]
 
         self.clf = KNeighborsClassifier(n_neighbors=self.number_of_neighbours)
 
