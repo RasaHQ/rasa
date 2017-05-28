@@ -176,8 +176,9 @@ class DataRouter(object):
 
         model = self.model_store[alias]
         response = model.parse(data['text'])
+        log={"user_input": response, "model": alias, "timestamp": datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')}
         if self.responses:
-            self.responses.info(json.dumps(response, sort_keys=True))
+            self.responses.info(json.dumps(log, sort_keys=True))
         return self.format_response(response)
 
     def format_response(self, data):
