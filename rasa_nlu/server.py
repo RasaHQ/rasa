@@ -3,15 +3,12 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 import argparse
+import json
 import logging
 import os
 from functools import wraps
 
-from flask import Flask
-from flask import current_app
-from flask import jsonify
-from flask import request
-from gevent.wsgi import WSGIServer
+from klein import Klein
 
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.data_router import DataRouter, InvalidModelError
@@ -46,67 +43,80 @@ def requires_auth(f):
 
     @wraps(f)
     def decorated(*args, **kwargs):
-        token = request.args.get('token', '')
-        if current_app.data_router.token is None or token == current_app.data_router.token:
+        self = args[0]
+        request = args[1]
+        token = request.args.get('token', '')[0]
+        if self.data_router.token is None or token == self.data_router.token:
             return f(*args, **kwargs)
         return "unauthorized", 401
 
     return decorated
 
 
-def create_app(config, component_builder=None):
-    rasa_nlu_app = Flask(__name__)
+class RasaApp(object):
+    rasa_nlu_app = Klein()
+
+    def __init__(self, config, component_builder=None):
+        logging.basicConfig(filename=config['log_file'], level=config['log_level'])
+        logging.captureWarnings(True)
+        logging.info("Configuration: " + config.view())
+
+        logging.debug("Creating a new data router")
+        self.config = config
+        self.data_router = DataRouter(config, component_builder)
+        # logging.info('Started http server on port %s' % config['port'])
 
     @rasa_nlu_app.route("/parse", methods=['GET', 'POST'])
     @requires_auth
-    def parse_get():
+    def parse_get(self, request):
         if request.method == 'GET':
             request_params = request.args
         else:
-            request_params = request.get_json(force=True)
+            request_params = json.loads(request.content.read())
         if 'q' not in request_params:
-            return jsonify(error="Invalid parse parameter specified"), 404
+            request.setResponseCode(404)
+            request.setHeader('Content-Type', 'application/json')
+            return json.dumps({"error": "Invalid parse parameter specified"})
         else:
             try:
-                data = current_app.data_router.extract(request_params)
-                response = current_app.data_router.parse(data)
-                return jsonify(response)
+                data = self.data_router.extract(request_params)
+                response = self.data_router.parse(data)
+                request.setHeader('Content-Type', 'application/json')
+                return json.dumps(response)
             except InvalidModelError as e:
-                return jsonify({"error": "{}".format(e)}), 404
+                request.setResponseCode(404)
+                request.setHeader('Content-Type', 'application/json')
+                return json.dumps({"error": "{}".format(e)})
 
     @rasa_nlu_app.route("/version", methods=['GET'])
     @requires_auth
-    def version():
-        return jsonify({'version': __version__})
+    def version(self, request):
+        request.setHeader('Content-Type', 'application/json')
+        return json.dumps({'version': __version__})
 
     @rasa_nlu_app.route("/config", methods=['GET'])
     @requires_auth
-    def rasaconfig():
-        return jsonify(config.as_dict())
+    def rasaconfig(self, request):
+        request.setHeader('Content-Type', 'application/json')
+        return json.dumps(self.config.as_dict())
 
     @rasa_nlu_app.route("/status", methods=['GET'])
     @requires_auth
-    def status():
-        return jsonify(current_app.data_router.get_status())
+    def status(self, request):
+        request.setHeader('Content-Type', 'application/json')
+        return json.dumps(self.data_router.get_status())
 
     @rasa_nlu_app.route("/", methods=['GET'])
-    def hello():
+    def hello(self, request):
         return "hello from Rasa NLU: " + __version__
 
     @rasa_nlu_app.route("/train", methods=['POST'])
     @requires_auth
-    def train():
+    def train(self, request):
         data_string = request.get_data(as_text=True)
-        current_app.data_router.start_train_process(data_string, request.args)
-        return jsonify(info="training started.", training_process_ids=current_app.data_router.train_proc_ids())
-
-    logging.basicConfig(filename=config['log_file'], level=config['log_level'])
-    logging.captureWarnings(True)
-    logging.info("Configuration: " + config.view())
-
-    logging.debug("Creating a new data router")
-    rasa_nlu_app.data_router = DataRouter(config, component_builder)
-    return rasa_nlu_app
+        self.data_router.start_train_process(data_string, request.args)
+        request.setHeader('Content-Type', 'application/json')
+        return json.dumps({"info": "training started.", "training_process_ids": self.data_router.train_proc_ids()})
 
 
 if __name__ == '__main__':
@@ -114,6 +124,6 @@ if __name__ == '__main__':
     arg_parser = create_argparser()
     cmdline_args = {key: val for key, val in list(vars(arg_parser.parse_args()).items()) if val is not None}
     rasa_nlu_config = RasaNLUConfig(cmdline_args.get("config"), os.environ, cmdline_args)
-    app = WSGIServer(('0.0.0.0', rasa_nlu_config['port']), create_app(rasa_nlu_config))
-    logging.info('Started http server on port %s' % rasa_nlu_config['port'])
-    app.serve_forever()
+
+    app = RasaApp(rasa_nlu_config)
+    app.rasa_nlu_app.run('0.0.0.0', rasa_nlu_config['port'])
