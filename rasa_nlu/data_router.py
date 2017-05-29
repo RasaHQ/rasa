@@ -175,9 +175,9 @@ class DataRouter(object):
                 raise InvalidModelError("No model found with alias '{}'. Error: {}".format(alias, e))
 
         model = self.model_store[alias]
-        response = model.parse(data['text'])
-        log={"user_input": response, "model": alias, "timestamp": datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')}
+        response = model.parse(data['text'])       
         if self.responses:
+            log={"user_input": response, "model": alias, "time": datetime.datetime.now().isoformat()}
             self.responses.info(json.dumps(log, sort_keys=True))
         return self.format_response(response)
 
