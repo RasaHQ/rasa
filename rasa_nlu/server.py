@@ -45,7 +45,7 @@ def requires_auth(f):
     def decorated(*args, **kwargs):
         self = args[0]
         request = args[1]
-        token = request.args.get('token', '')[0]
+        token = request.args.get('token', [''])[0]
         if self.data_router.token is None or token == self.data_router.token:
             return f(*args, **kwargs)
         return "unauthorized", 401
