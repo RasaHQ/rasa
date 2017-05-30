@@ -18,6 +18,7 @@ Changed
 - replaced existing CRF library (python-crfsuite) with sklearn-crfsuite (due to better windows support)
 - updated to spacy 1.8.2
 - logging format of logged request now includes model name and timestamp
+- use module specific loggers instead of default python root logger
 
 Removed
 -------
