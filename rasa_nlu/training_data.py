@@ -131,9 +131,9 @@ class TrainingData(object):
                 warnings.warn(template.format(entity, size, self.MIN_EXAMPLES_PER_ENTITY))
 
         logger.info("Training data stats: \n" +
-                     "\t- intent examples: {} ({} distinct intents)\n".format(
-                         self.num_intent_examples, len(different_intents)) +
-                     "\t- found intents: {}\n".format(", ".join(different_intents)) +
-                     "\t- entity examples: {} ({} distinct entities)\n".format(
-                         self.num_entity_examples, len(different_entities)) +
-                     "\t- found entities: {}\n".format(", ".join(different_entities)))
+                    "\t- intent examples: {} ({} distinct intents)\n".format(
+                            self.num_intent_examples, len(different_intents)) +
+                    "\t- found intents: {}\n".format(", ".join(different_intents)) +
+                    "\t- entity examples: {} ({} distinct entities)\n".format(
+                            self.num_entity_examples, len(different_entities)) +
+                    "\t- found entities: {}\n".format(", ".join(different_entities)))

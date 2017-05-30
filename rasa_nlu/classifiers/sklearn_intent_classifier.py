@@ -87,7 +87,7 @@ class SklearnIntentClassifier(Component):
 
         if len(set(labels)) < 2:
             logger.warn("Can not train an intent classifier. Need at least 2 different classes. " +
-                         "Skipping training of intent classifier.")
+                        "Skipping training of intent classifier.")
         else:
             y = self.transform_labels_str2num(labels)
             X = intent_features
