@@ -7,17 +7,19 @@ import logging
 
 import typing
 from typing import Any
+from typing import ClassVar
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Text
 
 from rasa_nlu.components import Component
-from rasa_nlu.model import Metadata
 
+logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from spacy.language import Language
+    from rasa_nlu.model import Metadata
 
 
 class SpacyNLP(Component):
@@ -47,7 +49,7 @@ class SpacyNLP(Component):
 
         if spacy_model_name is None:
             spacy_model_name = language
-        logging.info("Trying to load spacy model with name '{}'".format(spacy_model_name))
+        logger.info("Trying to load spacy model with name '{}'".format(spacy_model_name))
         nlp = spacy.load(spacy_model_name, parser=False)
         spacy_model_name = spacy_model_name
         cls.ensure_proper_language_model(nlp)

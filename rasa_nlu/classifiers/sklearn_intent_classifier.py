@@ -18,6 +18,8 @@ from typing import Tuple
 from rasa_nlu.components import Component
 from rasa_nlu.training_data import TrainingData
 
+logger = logging.getLogger(__name__)
+
 # How many intents are at max put into the output intent ranking, everything else will be cut off
 INTENT_RANKING_LENGTH = 10
 
@@ -84,7 +86,7 @@ class SklearnIntentClassifier(Component):
         labels = [e["intent"] for e in training_data.intent_examples]
 
         if len(set(labels)) < 2:
-            logging.warn("Can not train an intent classifier. Need at least 2 different classes. " +
+            logger.warn("Can not train an intent classifier. Need at least 2 different classes. " +
                          "Skipping training of intent classifier.")
         else:
             y = self.transform_labels_str2num(labels)

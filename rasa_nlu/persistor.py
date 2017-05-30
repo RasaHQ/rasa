@@ -10,22 +10,24 @@ import io
 
 import boto3
 import botocore
+from typing import Optional
 from typing import Text
 from rasa_nlu.config import RasaNLUConfig
 
 
 def get_persistor(config):
-    # type: (RasaNLUConfig) -> Persistor
+    # type: (RasaNLUConfig) -> Optional[Persistor]
     """Returns an instance of the requested persistor. Currently, `aws` and `gcs` are supported"""
-    p = None
+
     if 'storage' not in config:
         raise KeyError("No persistent storage specified. Supported values are {}".format(", ".join(['aws', 'gcs'])))
 
     if config['storage'] == 'aws':
-        p = AWSPersistor(config['path'], config['aws_region'], config['bucket_name'])
+        return AWSPersistor(config['path'], config['aws_region'], config['bucket_name'])
     elif config['storage'] == 'gcs':
-        p = GCSPersistor(config['path'], config['bucket_name'])
-    return p
+        return GCSPersistor(config['path'], config['bucket_name'])
+    else:
+        return None
 
 
 class Persistor(object):
@@ -53,7 +55,7 @@ class AWSPersistor(Persistor):
         self.bucket_name = bucket_name
         try:
             self.s3.create_bucket(Bucket=bucket_name, CreateBucketConfiguration={'LocationConstraint': aws_region})
-        except botocore.exceptions.ClientError as e:
+        except botocore.exceptions.ClientError:
             pass  # bucket already exists
         self.bucket = self.s3.Bucket(bucket_name)
 
@@ -92,7 +94,7 @@ class GCSPersistor(Persistor):
 
         try:
             self.storage_client.create_bucket(bucket_name)
-        except exceptions.Conflict as e:
+        except exceptions.Conflict:
             # bucket exists
             pass
         self.bucket = self.storage_client.bucket(bucket_name)

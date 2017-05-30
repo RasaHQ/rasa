@@ -20,6 +20,8 @@ from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.model import Metadata, InvalidModelError, Interpreter
 from rasa_nlu.train import do_train
 
+logger = logging.getLogger(__name__)
+
 
 class DataRouter(object):
     DEFAULT_MODEL_NAME = "default"
@@ -45,18 +47,19 @@ class DataRouter(object):
             log_file_name = "rasa_nlu_log-{}-{}.log".format(timestamp, os.getpid())
             response_logfile = os.path.join(response_log_dir, log_file_name)
             # Instantiate a standard python logger, which we are going to use to log requests
-            logger = logging.getLogger('query-logger')
-            logger.setLevel(logging.INFO)
+            query_logger = logging.getLogger('query-logger')
+            query_logger.setLevel(logging.INFO)
             utils.create_dir_for_file(response_logfile)
             ch = logging.FileHandler(response_logfile)
             ch.setFormatter(logging.Formatter('%(message)s'))
-            logger.propagate = False  # Prevents queries getting logged with parent logger --> might log them to stdout
-            logger.addHandler(ch)
-            logging.info("Logging requests to '{}'.".format(response_logfile))
-            return logger
+            # Prevents queries getting logged with parent logger --> might log them to stdout
+            query_logger.propagate = False
+            query_logger.addHandler(ch)
+            logger.info("Logging requests to '{}'.".format(response_logfile))
+            return query_logger
         else:
             # If the user didn't provide a logging directory, we wont log!
-            logging.info("Logging of requests is disabled. (No 'request_log' directory configured)")
+            logger.info("Logging of requests is disabled. (No 'request_log' directory configured)")
             return None
 
     def _remove_finished_procs(self):
@@ -103,10 +106,10 @@ class DataRouter(object):
 
         for alias, model_path in list(model_dict.items()):
             try:
-                logging.info("Loading model '{}'...".format(model_path))
+                logger.info("Loading model '{}'...".format(model_path))
                 model_store[alias] = self.__interpreter_for_model(model_path)
             except Exception as e:
-                logging.exception("Failed to load model '{}'. Error: {}".format(model_path, e))
+                logger.exception("Failed to load model '{}'. Error: {}".format(model_path, e))
         if not model_store:
             meta = Metadata({"pipeline": ["intent_classifier_keyword"]}, "")
             interpreter = Interpreter.load(meta, self.config, self.component_builder)
@@ -129,7 +132,7 @@ class DataRouter(object):
             else:
                 raise RuntimeError("Unable to initialize persistor")
         except Exception as e:
-            logging.warn("Using default interpreter, couldn't fetch model: {}".format(e))
+            logger.warn("Using default interpreter, couldn't fetch model: {}".format(e))
 
     @staticmethod
     def read_model_metadata(model_dir, config):
@@ -175,9 +178,9 @@ class DataRouter(object):
                 raise InvalidModelError("No model found with alias '{}'. Error: {}".format(alias, e))
 
         model = self.model_store[alias]
-        response = model.parse(data['text'])       
+        response = model.parse(data['text'])
         if self.responses:
-            log={"user_input": response, "model": alias, "time": datetime.datetime.now().isoformat()}
+            log = {"user_input": response, "model": alias, "time": datetime.datetime.now().isoformat()}
             self.responses.info(json.dumps(log, sort_keys=True))
         return self.format_response(response)
 
@@ -197,7 +200,7 @@ class DataRouter(object):
         }
 
     def start_train_process(self, data, config_values):
-        logging.info("Starting model training")
+        logger.info("Starting model training")
         f = tempfile.NamedTemporaryFile("w+", suffix="_training_data.json", delete=False)
         f.write(data)
         f.close()
@@ -210,4 +213,4 @@ class DataRouter(object):
         process = multiprocessing.Process(target=do_train, args=(train_config, self.component_builder))
         self._add_train_proc(process)
         process.start()
-        logging.info("Training process {} started".format(process))
+        logger.info("Training process {} started".format(process))
