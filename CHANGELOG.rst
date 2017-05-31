@@ -21,6 +21,14 @@ Removed
 Fixed
 -----
 
+[0.8.10] - 2017-05-31
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed documentation about training data format
+
+
 [0.8.9] - 2017-05-26
 ^^^^^^^^^^^^^^^^^^^^
 

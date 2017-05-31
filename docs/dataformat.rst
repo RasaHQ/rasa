@@ -14,9 +14,7 @@ Entities are specified with a ``start`` and  ``end`` value, which together make 
 style range to apply to the string, e.g. in the example below, with ``text="show me chinese
 restaurants"``, then ``text[8:15] == 'chinese'``. Entities can span multiple words, and in
 fact the ``value`` field does not have to correspond exactly to the substring in your example.
-That way you can map syonyms, or misspellings, to the same ``value``. Also, the ``extractor``
-field of an entity tells you which entity extractor found this particular entity. The ``processors``
-field contains the name of components that altered this specific entity.
+That way you can map synonyms, or misspellings, to the same ``value``.
 
 
 .. code-block:: json
@@ -29,9 +27,7 @@ field contains the name of components that altered this specific entity.
           "start": 8, 
           "end": 15, 
           "value": "chinese", 
-          "entity": "cuisine",
-          "extractor": "ner_mitie",
-          "processors": []
+          "entity": "cuisine"
         }
       ]
     }
@@ -51,9 +47,7 @@ If you define entities as having the same value they will be treated as synonyms
             "start": 17,
             "end": 20,
             "value": "New York City",
-            "entity": "city",
-            "extractor": "ner_mitie",
-            "processors": ["ner_synonyms"]
+            "entity": "city"
           }
         ]
       },
@@ -65,8 +59,7 @@ If you define entities as having the same value they will be treated as synonyms
             "start": 17,
             "end": 30,
             "value": "New York City",
-            "entity": "city",
-            "extractor": "ner_mitie"
+            "entity": "city"
           }
         ]
       }
