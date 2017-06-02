@@ -85,7 +85,7 @@ def test_all_arguments_can_be_satisfied_during_parse(component_class, default_co
 
     # All available context arguments that will ever be generated during parse
     component = component_builder.create_component(component_class.name, default_config)
-    context_arguments = {"text": None, "ref_time": ""}
+    context_arguments = {"text": None, "time": None}
     for clz in registry.component_classes:
         for ctx_arg in clz.context_provides.get("pipeline_init", []):
             context_arguments[ctx_arg] = None

@@ -8,6 +8,7 @@ import io
 import json
 import logging
 import typing
+import datetime
 from typing import Any
 from typing import Dict
 from typing import List
@@ -49,7 +50,7 @@ class DucklingExtractor(EntityExtractor):
     @classmethod
     def required_packages(cls):
         # type: () -> List[Text]
-        return ["duckling", "dateutil"]
+        return ["duckling"]
 
     @classmethod
     def create(cls, duckling_dimensions):
@@ -78,26 +79,22 @@ class DucklingExtractor(EntityExtractor):
             except ValueError as e:     # pragma: no cover
                 raise Exception("Duckling error. {}".format(e))
 
-    def process(self, text, entities, ref_time=""):
+    def process(self, text, entities, time):
         # type: (Text, List[Dict[Text, Any]]) -> Dict[Text, Any]
 
         extracted = []
         if self.duckling is not None:
-            # check if ref_time is a datetime is in a known format
-            # If its not parseable, make it empty
-            if not ref_time:
-                ref_time = ""
-            else:
-                print(ref_time)
+            ref_time = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S+00:00')
+            if time is not None:
+                # check if time given is valid
                 try:
-                    from dateutil import parser
-                    parser.parse(ref_time)
+                    ref_time = datetime.datetime.utcfromtimestamp(int(time)/1000.0).strftime('%Y-%m-%dT%H:%M:%S+00:00')
                     logging.debug(
                         "Passing reference time {} to duckling".format(ref_time))
                 except:
                     logging.warning(
-                        "Could not parse {}. Reference time will not be passed to duckling".format(ref_time))
-                    ref_time = ""
+                        "Could not parse timestamp {}. "
+                        "Instead current UTC time {} will be passed to duckling".format(time, ref_time))
 
             matches = self.duckling.parse(text, reference_time=ref_time)
             relevant_matches = [match for match in matches if match["dim"] in self.dimensions]
