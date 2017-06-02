@@ -35,7 +35,7 @@ def test_samples(pipeline_template, component_builder):
     ]
 
     for text, gold in samples:
-        result = interpreter.parse(text)
+        result = interpreter.parse(text, time=None)
         assert result['text'] == text, \
             "Wrong text for sample '{}'".format(text)
         assert result['intent']['name'] in available_intents, \
