@@ -75,7 +75,7 @@ class SklearnIntentClassifier(Component):
 
         return self.le.inverse_transform(y)
 
-    def train(self, training_data, config,  **kwargs):
+    def train(self, training_data, config, **kwargs):
         # type: (TrainingData, RasaNLUConfig, **Any) -> None
         """Train the intent classifier on a data set.
 
@@ -159,7 +159,7 @@ class SklearnIntentClassifier(Component):
 
         if model_dir and model_metadata.get("intent_classifier_sklearn"):
             classifier_file = os.path.join(model_dir, model_metadata.get("intent_classifier_sklearn"))
-            with io.open(classifier_file, 'rb') as f:   # pragma: no test
+            with io.open(classifier_file, 'rb') as f:  # pragma: no test
                 if PY3:
                     return cloudpickle.load(f, encoding="latin-1")
                 else:

@@ -34,7 +34,7 @@ class Message(object):
         return self.data.get(prop, default)
 
     def as_dict(self):
-        return dict(self.data, text = self.text)
+        return dict(self.data, text=self.text)
 
 
 class TrainingData(object):
@@ -135,8 +135,8 @@ class TrainingData(object):
 
         logging.info("Training data stats: \n" +
                      "\t- intent examples: {} ({} distinct intents)\n".format(
-                         self.num_intent_examples, len(different_intents)) +
+                             self.num_intent_examples, len(different_intents)) +
                      "\t- found intents: {}\n".format(", ".join(different_intents)) +
                      "\t- entity examples: {} ({} distinct entities)\n".format(
-                         self.num_entity_examples, len(different_entities)) +
+                             self.num_entity_examples, len(different_entities)) +
                      "\t- found entities: {}\n".format(", ".join(different_entities)))

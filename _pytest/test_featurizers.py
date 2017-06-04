@@ -40,16 +40,16 @@ def test_mitie_featurizer(mitie_feature_extractor, default_config):
 def test_ngram_featurizer(spacy_nlp):
     from rasa_nlu.featurizers.ngram_featurizer import NGramFeaturizer
     ftr = NGramFeaturizer()
-    repetition_factor = 5   # ensures that during random sampling of the ngram CV we don't end up with a one-class-split
+    repetition_factor = 5  # ensures that during random sampling of the ngram CV we don't end up with a one-class-split
     labeled_sentences = [
-        Message("heyheyheyhey", {"intent": "greet", "text_features": [0.5]}),
-        Message("howdyheyhowdy", {"intent": "greet", "text_features": [0.5]}),
-        Message("heyhey howdyheyhowdy", {"intent": "greet", "text_features": [0.5]}),
-        Message("howdyheyhowdy heyhey", {"intent": "greet", "text_features": [0.5]}),
-        Message("astalavistasista", {"intent": "goodby", "text_features": [0.5]}),
-        Message("astalavistasista sistala", {"intent": "goodby", "text_features": [0.5]}),
-        Message("sistala astalavistasista", {"intent": "goodby", "text_features": [0.5]})
-   ] * repetition_factor
+                            Message("heyheyheyhey", {"intent": "greet", "text_features": [0.5]}),
+                            Message("howdyheyhowdy", {"intent": "greet", "text_features": [0.5]}),
+                            Message("heyhey howdyheyhowdy", {"intent": "greet", "text_features": [0.5]}),
+                            Message("howdyheyhowdy heyhey", {"intent": "greet", "text_features": [0.5]}),
+                            Message("astalavistasista", {"intent": "goodby", "text_features": [0.5]}),
+                            Message("astalavistasista sistala", {"intent": "goodby", "text_features": [0.5]}),
+                            Message("sistala astalavistasista", {"intent": "goodby", "text_features": [0.5]})
+                        ] * repetition_factor
 
     for m in labeled_sentences:
         m.set("spacy_doc", spacy_nlp(m.text))
