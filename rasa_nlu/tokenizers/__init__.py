@@ -7,3 +7,9 @@ from builtins import object
 
 class Tokenizer(object):
     pass
+
+
+class Token(object):
+    def __init__(self, text, offset):
+        self.offset = offset
+        self.text = text

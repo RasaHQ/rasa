@@ -10,29 +10,34 @@ from typing import List
 from typing import Optional
 from typing import Text
 
-from rasa_nlu.tokenizers import Tokenizer
+from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu.tokenizers import Tokenizer, Token
 from rasa_nlu.components import Component
-
+from rasa_nlu.training_data import Message
+from rasa_nlu.training_data import TrainingData
 
 if typing.TYPE_CHECKING:
     from spacy.language import Language
+    from spacy.tokens.doc import Doc
 
 
 class SpacyTokenizer(Tokenizer, Component):
     name = "tokenizer_spacy"
 
-    context_provides = {
-        "process": ["tokens"],
-    }
+    provides = ["tokens"]
 
-    def process(self, text, spacy_nlp):
-        # type: (Text, Language) -> Optional[Dict[Text, Any]]
+    def train(self, training_data, config, **kwargs):
+        # type: (TrainingData, RasaNLUConfig, **Any) -> None
 
-        return {
-            "tokens": self.tokenize(text, spacy_nlp)
-        }
+        for example in training_data.training_examples:
+            example.set("tokens", self.tokenize(example.get("spacy_doc")))
 
-    def tokenize(self, text, spacy_nlp):
-        # type: (Text, Language) -> List[Text]
+    def process(self, message, **kwargs):
+        # type: (Message, **Any) -> None
 
-        return [t.text for t in spacy_nlp(text)]
+        message.set("tokens", self.tokenize(message.get("spacy_doc")))
+
+    def tokenize(self, doc):
+        # type: (Doc) -> List[Token]
+
+        return [Token(t.text, t.idx) for t in doc]

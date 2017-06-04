@@ -7,6 +7,7 @@ import logging
 import os
 from collections import defaultdict
 
+import typing
 from builtins import object
 import inspect
 
@@ -20,43 +21,11 @@ from typing import Tuple
 from typing import Type
 
 from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu.training_data import Message
 
-
-def load_component(component_clz, context, config):
-    # type: (Type[Component], Dict[Text, Any], Dict[Text, Any]) -> Optional[Component]
-    """Calls a components load method to init it based on a previously persisted model."""
-
-    if component_clz is not None:
-        load_args = fill_args(component_clz.load_args(), context, config)
-        return component_clz.load(*load_args)
-    else:
-        return None
-
-
-def create_component(component_clz, config):
-    # type: (Type[Component], Dict[Text, Any]) -> Optional[Component]
-    """Calls a components load method to init it based on a previously persisted model."""
-
-    if component_clz is not None:
-        create_args = fill_args(component_clz.create_args(), context={}, config=config)
-        return component_clz.create(*create_args)
-    else:
-        return None
-
-
-def fill_args(arguments, context, config):
-    # type: (List[Text], Dict[Text, Any], Dict[Text, Any]) -> List[Any]
-    """Given a list of arguments, tries to look up these argument names in the config / context to fill the arguments"""
-
-    filled = []
-    for arg in arguments:
-        if arg in context:
-            filled.append(context[arg])
-        elif arg in config:
-            filled.append(config[arg])
-        else:
-            raise MissingArgumentError("Couldn't fill argument '{}' :(".format(arg))
-    return filled
+if typing.TYPE_CHECKING:
+    from rasa_nlu.training_data import TrainingData
+    from rasa_nlu.model import Metadata
 
 
 def _read_dev_requirements(file_name):
@@ -113,8 +82,8 @@ def validate_requirements(component_names, dev_requirements_file="dev-requiremen
                     " ".join(failed_imports)))
 
 
-def validate_arguments(pipeline, config, allow_empty_pipeline=False):
-    # type: (List[Component], RasaNLUConfig, bool) -> None
+def validate_arguments(pipeline, context, allow_empty_pipeline=False):
+    # type: (List[Component], Dict[Text, Any], bool) -> None
     """Validates a pipeline before it is run. Ensures, that all arguments are present to train the pipeline."""
 
     # Ensure the pipeline is not empty
@@ -122,44 +91,14 @@ def validate_arguments(pipeline, config, allow_empty_pipeline=False):
         raise ValueError("Can not train an empty pipeline. " +
                          "Make sure to specify a proper pipeline in the configuration using the `pipeline` key." +
                          "The `backend` configuration key is NOT supported anymore.")
-
-    # Validate the init phase
-    context = {}
+    provided_properties = set(context.keys())
 
     for component in pipeline:
-        try:
-            fill_args(component.pipeline_init_args(), context, config.as_dict())
-            updates = component.context_provides.get("pipeline_init", [])
-            for u in updates:
-                context[u] = None
-        except MissingArgumentError as e:   # pragma: no cover
-            raise Exception("Failed to validate component '{}'. {}".format(component.name, e))
-
-    after_init_context = context.copy()
-
-    context["training_data"] = None     # Prepare context for testing the training phase
-
-    for component in pipeline:
-        try:
-            fill_args(component.train_args(), context, config.as_dict())
-            updates = component.context_provides.get("train", [])
-            for u in updates:
-                context[u] = None
-        except MissingArgumentError as e:   # pragma: no cover
-            raise Exception("Failed to validate at component '{}'. {}".format(component.name, e))
-
-    # Reset context to test processing phase and prepare for training phase
-    context = {"entities": [], "text": None}
-    context.update(after_init_context)
-
-    for component in pipeline:
-        try:
-            fill_args(component.process_args(), context, config.as_dict())
-            updates = component.context_provides.get("process", [])
-            for u in updates:
-                context[u] = None
-        except MissingArgumentError as e:   # pragma: no cover
-            raise Exception("Failed to validate at component '{}'. {}".format(component.name, e))
+        for r in component.requires:
+            if r not in provided_properties:
+                raise Exception("Failed to validate at component '{}'. Missing property: '{}'".format(
+                        component.name, r))
+        provided_properties.update(component.provides)
 
 
 class MissingArgumentError(ValueError):
@@ -199,11 +138,9 @@ class Component(object):
     # Defines what attributes the pipeline component will provide when called. The different keys indicate the
     # different functions (`pipeline_init`, `train`, `process`) that are able to update the pipelines context.
     # (mostly used to check if the pipeline is valid)
-    context_provides = {
-        "pipeline_init": [],
-        "train": [],
-        "process": [],
-    }
+    provides = []
+
+    requires = []
 
     # Defines which of the attributes the component provides should be added to the final output json at the end of the
     # pipeline. Every attribute in `output_provides` should be part of the above `context_provides['process']`. As it
@@ -220,25 +157,25 @@ class Component(object):
         return []
 
     @classmethod
-    def load(cls, *args):
-        # type: (*Any) -> Component
+    def load(cls, model_dir=None, model_metadata=None, **kwargs):
+        # type: (Text, Metadata, RasaNLUConfig, **Any) -> Component
         """Load this component from file.
 
         After a component got trained, it will be persisted by calling `persist`. When the pipeline gets loaded again,
          this component needs to be able to restore itself. Components can rely on any context attributes that are
          created by `pipeline_init` calls to components previous to this one."""
-        return cls(*args)
+        return cls()
 
     @classmethod
-    def create(cls, *args):
-        # type: (*Any) -> Component
+    def create(cls, config):
+        # type: (RasaNLUConfig) -> Component
         """Creates this component (e.g. before a training is started).
 
         Method can access all configuration parameters."""
-        return cls(*args)
+        return cls()
 
-    def pipeline_init(self, *args):
-        # type: (*Any) -> Optional[Dict[Text, Any]]
+    def provide_context(self):
+        # type: (RasaNLUConfig) -> Optional[Dict[Text, Any]]
         """Initialize this component for a new pipeline
 
         This function will be called before the training is started and before the first message is processed using
@@ -248,8 +185,8 @@ class Component(object):
         (e.g. loading word vectors for the pipeline)."""
         pass
 
-    def train(self, *args):
-        # type: (*Any) -> Optional[Dict[Text, Any]]
+    def train(self, training_data, config, **kwargs):
+        # type: (TrainingData, RasaNLUConfig, **Any) -> None
         """Train this component.
 
         This is the components chance to train itself provided with the training data. The component can rely on
@@ -257,8 +194,8 @@ class Component(object):
         on any context attributes created by a call to `train` of components previous to this one."""
         pass
 
-    def process(self, *args):
-        # type: (*Any) -> Optional[Dict[Text, Any]]
+    def process(self, message, **kwargs):
+        # type: (Message, **Any) -> None
         """Process an incomming message.
 
        This is the components chance to process an incommng message. The component can rely on
@@ -282,28 +219,6 @@ class Component(object):
 
         return None
 
-    def pipeline_init_args(self):
-        # type: () -> List[Text]
-        return [arg for arg in inspect.getargspec(self.pipeline_init).args if arg not in ["self"]]
-
-    @classmethod
-    def create_args(cls):
-        # type: () -> List[Text]
-        return [arg for arg in inspect.getargspec(cls.create).args if arg not in ["cls"]]
-
-    def train_args(self):
-        # type: () -> List[Text]
-        return [arg for arg in inspect.getargspec(self.train).args if arg not in ["self"]]
-
-    def process_args(self):
-        # type: () -> List[Text]
-        return [arg for arg in inspect.getargspec(self.process).args if arg not in ["self"]]
-
-    @classmethod
-    def load_args(cls):
-        # type: () -> List[Text]
-        return [arg for arg in inspect.getargspec(cls.load).args if arg not in ["cls"]]
-
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
@@ -317,14 +232,14 @@ class ComponentBuilder(object):
         # every component that implements a cache-key will be cached
         self.component_cache = {}
 
-    def __get_cached_component(self, component_name, metadata):
+    def __get_cached_component(self, component_name, model_metadata):
         # type: (Text, Metadata) -> Tuple[Optional[Component], Optional[Text]]
         """Load a component from the cache, if it exists. Returns the component, if found, and the cache key."""
         from rasa_nlu import registry
         from rasa_nlu.model import Metadata
 
         component_class = registry.get_component_class(component_name)
-        cache_key = component_class.cache_key(metadata)
+        cache_key = component_class.cache_key(model_metadata)
         if cache_key is not None and self.use_cache and cache_key in self.component_cache:
             return self.component_cache[cache_key], cache_key
         else:
@@ -338,16 +253,16 @@ class ComponentBuilder(object):
             self.component_cache[cache_key] = component
             logging.info("Added '{}' to component cache. Key '{}'.".format(component.name, cache_key))
 
-    def load_component(self, component_name, context, model_config, meta):
-        # type: (Text, Dict[Text, Any], Dict[Text, Any], Metadata) -> Component
+    def load_component(self, component_name, model_dir, model_metadata, **context):
+        # type: (Text, Text, Metadata, **Any) -> Component
         """Tries to retrieve a component from the cache, calls `load` to create a new component."""
         from rasa_nlu import registry
         from rasa_nlu.model import Metadata
 
         try:
-            component, cache_key = self.__get_cached_component(component_name, meta)
+            component, cache_key = self.__get_cached_component(component_name, model_metadata)
             if component is None:
-                component = registry.load_component_by_name(component_name, context, model_config)
+                component = registry.load_component_by_name(component_name, model_dir, model_metadata, **context)
                 self.__add_to_cache(component, cache_key)
             return component
         except MissingArgumentError as e:   # pragma: no cover

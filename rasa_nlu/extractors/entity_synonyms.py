@@ -16,16 +16,17 @@ from typing import List
 from typing import Optional
 from typing import Text
 
+from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.extractors import EntityExtractor
+from rasa_nlu.model import Metadata
+from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
 
 
 class EntitySynonymMapper(EntityExtractor):
     name = "ner_synonyms"
 
-    context_provides = {
-        "process": ["entities"],
-    }
+    provides = ["entities"]
 
     output_provides = ["entities"]
 
@@ -33,26 +34,23 @@ class EntitySynonymMapper(EntityExtractor):
         # type: (Optional[Dict[Text, Text]]) -> None
         self.synonyms = synonyms if synonyms else {}
 
-    def train(self, training_data):
+    def train(self, training_data, config, **kwargs):
         # type: (TrainingData) -> None
 
         for key, value in list(training_data.entity_synonyms.items()):
             self.add_entities_if_synonyms(key, value)
 
         for example in training_data.entity_examples:
-            for entity in example["entities"]:
-                entity_val = example["text"][entity["start"]:entity["end"]]
+            for entity in example.get("entities", []):
+                entity_val = example.text[entity["start"]:entity["end"]]
                 self.add_entities_if_synonyms(entity_val, entity.get("value"))
 
-    def process(self, entities):
-        # type: (List[Dict[Text, Any]]) -> Dict[Text, Any]
+    def process(self, message, **kwargs):
+        # type: (Message, **Any) -> None
 
-        updated_entities = entities[:]
+        updated_entities = message.get("entities", [])[:]
         self.replace_synonyms(updated_entities)
-
-        return {
-            "entities": updated_entities
-        }
+        message.set("entities", updated_entities)
 
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]
@@ -66,11 +64,11 @@ class EntitySynonymMapper(EntityExtractor):
             return {"entity_synonyms": None}
 
     @classmethod
-    def load(cls, model_dir, entity_synonyms):
-        # type: (Text, Text) -> EntitySynonymMapper
+    def load(cls, model_dir, model_metadata, **kwargs):
+        # type: (Text, Metadata, **Any) -> EntitySynonymMapper
 
-        if model_dir and entity_synonyms:
-            entity_synonyms_file = os.path.join(model_dir, entity_synonyms)
+        if model_dir and model_metadata.get("entity_synonyms"):
+            entity_synonyms_file = os.path.join(model_dir, model_metadata.get("entity_synonyms"))
             if os.path.isfile(entity_synonyms_file):
                 with io.open(entity_synonyms_file, encoding='utf-8') as f:
                     synonyms = json.loads(f.read())

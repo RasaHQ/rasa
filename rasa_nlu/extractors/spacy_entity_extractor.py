@@ -9,47 +9,36 @@ from typing import List
 from typing import Text
 
 from rasa_nlu.extractors import EntityExtractor
+from rasa_nlu.training_data import Message
 
 if typing.TYPE_CHECKING:
-    from spacy.language import Language
+    from spacy.tokens.doc import Doc
 
 
 class SpacyEntityExtractor(EntityExtractor):
     name = "ner_spacy"
 
-    context_provides = {
-        "process": ["entities"],
-    }
+    provides = ["entities"]
 
     output_provides = ["entities"]
 
-    @classmethod
-    def required_packages(cls):
-        # type: () -> List[Text]
-        return ["spacy"]
+    requires = ["spacy_doc"]
 
-    def process(self, text, spacy_nlp, entities):
-        # type: (Doc, Language, List[Dict[Text, Any]]) -> Dict[Text, Any]
-        extracted = self.add_extractor_name(self.extract_entities(text, spacy_nlp))
-        entities.extend(extracted)
-        return {
-            "entities": entities
-        }
+    def process(self, message, **kwargs):
+        # type: (Message, **Any) -> None
 
-    def extract_entities(self, text, spacy_nlp):
-        # type: (Text, Language) -> List[Dict[Text, Any]]
+        extracted = self.add_extractor_name(self.extract_entities(message.get("spacy_doc")))
+        message.set("entities", message.get("entities", []).extend(extracted))
 
-        if spacy_nlp.entity is not None:
-            doc = spacy_nlp(text)
+    def extract_entities(self, doc):
+        # type: (Doc) -> List[Dict[Text, Any]]
 
-            entities = [
-                {
-                    "entity": ent.label_,
-                    "value": ent.text,
-                    "start": ent.start_char,
-                    "end": ent.end_char
-                }
-                for ent in doc.ents]
-            return entities
-        else:
-            return []
+        entities = [
+            {
+                "entity": ent.label_,
+                "value": ent.text,
+                "start": ent.start_char,
+                "end": ent.end_char
+            }
+            for ent in doc.ents]
+        return entities

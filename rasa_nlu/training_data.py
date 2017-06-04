@@ -1,26 +1,40 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
-import logging
-from builtins import object, str, filter
+import io
 import json
+import logging
 import os
 import warnings
 from itertools import groupby
-import io
 
+from builtins import object, str
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Text
 
-TrainingExample = Dict[Text, Any]
-TrainingExamples = List[TrainingExample]
+from rasa_nlu.utils import lazyproperty
+
+
+class Message(object):
+    def __init__(self, text, data=None):
+        self.text = text
+        self.data = data if data else {}
+
+    def set(self, prop, info):
+        self.data[prop] = info
+
+    def get(self, prop, default=None):
+        return self.data.get(prop, default)
+
+    def as_dict(self):
+        return dict(self.data, text = self.text)
 
 
 class TrainingData(object):
@@ -30,37 +44,31 @@ class TrainingData(object):
     MIN_EXAMPLES_PER_INTENT = 2
     MIN_EXAMPLES_PER_ENTITY = 2
 
-    def __init__(self,
-                 intent_examples_only=None,  # type: Optional[TrainingExamples]
-                 entity_examples_only=None,  # type: Optional[TrainingExamples]
-                 common_examples=None,  # type: Optional[TrainingExamples]
-                 entity_synonyms=None  # type: Optional[TrainingExamples]
-                 ):
-        self.intent_examples_only = intent_examples_only if intent_examples_only else []
-        self.entity_examples_only = entity_examples_only if entity_examples_only else []
-        self.common_examples = common_examples if common_examples else []
+    def __init__(self, training_examples=None, entity_synonyms=None):
+        # type: (Optional[List[Message]], Optional[List[Message]]) -> None
+
+        self.training_examples = training_examples
         self.entity_synonyms = entity_synonyms if entity_synonyms else {}
 
         self.validate()
 
-    @property
+    @lazyproperty
     def intent_examples(self):
-        return list(filter(lambda e: "intent" in e,
-                           self.intent_examples_only + self.common_examples))
+        return [e for e in self.training_examples if e.get("intent") is not None]
 
-    @property
+    @lazyproperty
     def entity_examples(self):
-        return list(filter(lambda e: "entities" in e,
-                           self.entity_examples_only + self.common_examples))
+        # type: () -> List[Message]
+        return [e for e in self.training_examples if e.get("entities") is not None]
 
-    @property
+    @lazyproperty
     def num_entity_examples(self):
         # type: () -> int
-        """Returns the number of entity examples."""
+        """Returns the number of proper entity training examples (containing at least one annotated entity)."""
 
-        return len([e for e in self.entity_examples if len(e["entities"]) > 0])
+        return len([e for e in self.training_examples if len(e.get("entities", [])) > 0])
 
-    @property
+    @lazyproperty
     def num_intent_examples(self):
         # type: () -> int
         """Returns the number of intent examples."""
@@ -73,9 +81,7 @@ class TrainingData(object):
 
         return str(json.dumps({
             "rasa_nlu_data": {
-                "common_examples": self.common_examples,
-                "intent_examples": self.intent_examples_only,
-                "entity_examples": self.entity_examples_only,
+                "training_examples": [example.as_dict() for example in self.training_examples],
             }
         }, **kwargs))
 
@@ -92,16 +98,17 @@ class TrainingData(object):
         }
 
     def sorted_entity_examples(self):
-        # type: () -> List[TrainingExample]
+        # type: () -> List[Message]
         """Sorts the entity examples by the annotated entity."""
 
-        return sorted([entity for ex in self.entity_examples for entity in ex["entities"]], key=lambda e: e["entity"])
+        return sorted([entity for ex in self.entity_examples for entity in ex.get("entities")],
+                      key=lambda e: e["entity"])
 
     def sorted_intent_examples(self):
-        # type: () -> List[TrainingExample]
+        # type: () -> List[Message]
         """Sorts the intent examples by the name of the intent."""
 
-        return sorted(self.intent_examples, key=lambda e: e["intent"])
+        return sorted(self.intent_examples, key=lambda e: e.get("intent"))
 
     def validate(self):
         # type: () -> None
@@ -110,7 +117,7 @@ class TrainingData(object):
         logging.debug("Validating training data...")
         examples = self.sorted_intent_examples()
         different_intents = []
-        for intent, group in groupby(examples, lambda e: e["intent"]):
+        for intent, group in groupby(examples, lambda e: e.get("intent")):
             size = len(list(group))
             different_intents.append(intent)
             if size < self.MIN_EXAMPLES_PER_INTENT:

@@ -8,15 +8,14 @@ from typing import Dict
 from typing import Text
 
 from rasa_nlu.components import Component
+from rasa_nlu.training_data import Message
 
 
 class KeywordIntentClassifier(Component):
 
     name = "intent_classifier_keyword"
 
-    context_provides = {
-        "process": ["intent"],
-    }
+    provides = ["intent"]
 
     output_provides = ["intent"]
 
@@ -24,15 +23,10 @@ class KeywordIntentClassifier(Component):
 
     byes = ["bye", "goodbye"]
 
-    def process(self, text):
-        # type: (Text) -> Dict[Text, Any]
+    def process(self, message, **kwargs):
+        # type: (Message, **Any) -> None
 
-        return {
-            "intent": {
-                "name": self.parse(text),
-                "confidence": 1.0,
-            }
-        }
+        message.set("intent", {"name": self.parse(message.text), "confidence": 1.0})
 
     def parse(self, text):
         # type: (Text) -> Text

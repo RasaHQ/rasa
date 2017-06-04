@@ -16,6 +16,7 @@ from jsonschema import ValidationError
 from rasa_nlu.convert import convert_training_data
 from rasa_nlu.converters import load_data, validate_rasa_nlu_data
 from rasa_nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
+from rasa_nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
 
 def test_example_training_data_is_valid():
@@ -57,7 +58,7 @@ def test_rasa_data():
     td = load_data('data/examples/rasa/demo-rasa.json')
     assert td.entity_examples != []
     assert td.intent_examples != []
-    assert len(td.sorted_entity_examples()) >= len([e for e in td.entity_examples if e["entities"]])
+    assert len(td.sorted_entity_examples()) >= len([e for e in td.entity_examples if e.get("entities")])
     assert len(td.sorted_intent_examples()) == len(td.intent_examples)
     assert td.entity_synonyms == {}
 
@@ -95,9 +96,10 @@ def test_repeated_entities():
         td = load_data(f.name)
         assert len(td.entity_examples) == 1
         example = td.entity_examples[0]
-        entities = example["entities"]
+        entities = example.get("entities")
         assert len(entities) == 1
-        start, end = MitieEntityExtractor.find_entity(entities[0], example["text"])
+        tokens = WhitespaceTokenizer().tokenize(example.text)
+        start, end = MitieEntityExtractor.find_entity(entities[0], example.text, tokens)
         assert start == 9
         assert end == 10
 
@@ -128,9 +130,10 @@ def test_multiword_entities():
         td = load_data(f.name)
         assert len(td.entity_examples) == 1
         example = td.entity_examples[0]
-        entities = example["entities"]
+        entities = example.get("entities")
         assert len(entities) == 1
-        start, end = MitieEntityExtractor.find_entity(entities[0], example["text"])
+        tokens = WhitespaceTokenizer().tokenize(example.text)
+        start, end = MitieEntityExtractor.find_entity(entities[0], example.text, tokens)
         assert start == 4
         assert end == 7
 
@@ -159,7 +162,7 @@ def test_nonascii_entities():
         td = load_data(f.name)
         assert len(td.entity_examples) == 1
         example = td.entity_examples[0]
-        entities = example["entities"]
+        entities = example.get("entities")
         assert len(entities) == 1
         entity = entities[0]
         assert entity["value"] == "ßäæ ?€ö)"
