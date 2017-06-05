@@ -89,7 +89,7 @@ class DucklingExtractor(EntityExtractor):
                 entity = {"start": match["start"],
                           "end": match["end"],
                           "text": match["text"],
-                          "value": match["value"]["value"],
+                          "value": match["value"],
                           "entity": match["dim"]}
 
                 extracted.append(entity)
