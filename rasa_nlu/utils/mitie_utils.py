@@ -54,8 +54,8 @@ class MitieNLP(Component):
         else:
             return None
 
-    def pipeline_init(self, mitie_file):
-        # type: (Text) -> Dict[Text, Any]
+    def pipeline_init(self):
+        # type: () -> Dict[Text, Any]
 
         return {"mitie_feature_extractor": self.extractor}
 

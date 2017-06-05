@@ -127,13 +127,9 @@ def validate_arguments(pipeline, config, allow_empty_pipeline=False):
     context = {}
 
     for component in pipeline:
-        try:
-            fill_args(component.pipeline_init_args(), context, config.as_dict())
-            updates = component.context_provides.get("pipeline_init", [])
-            for u in updates:
-                context[u] = None
-        except MissingArgumentError as e:   # pragma: no cover
-            raise Exception("Failed to validate component '{}'. {}".format(component.name, e))
+        updates = component.context_provides.get("pipeline_init", [])
+        for u in updates:
+            context[u] = None
 
     after_init_context = context.copy()
 
@@ -237,8 +233,8 @@ class Component(object):
         Method can access all configuration parameters."""
         return cls(*args)
 
-    def pipeline_init(self, *args):
-        # type: (*Any) -> Optional[Dict[Text, Any]]
+    def pipeline_init(self):
+        # type: () -> Optional[Dict[Text, Any]]
         """Initialize this component for a new pipeline
 
         This function will be called before the training is started and before the first message is processed using
@@ -282,22 +278,25 @@ class Component(object):
 
         return None
 
-    def pipeline_init_args(self):
+    @classmethod
+    def pipeline_init_args(cls):
         # type: () -> List[Text]
-        return [arg for arg in inspect.getargspec(self.pipeline_init).args if arg not in ["self"]]
+        return [arg for arg in inspect.getargspec(cls.pipeline_init).args if arg not in ["self"]]
 
     @classmethod
     def create_args(cls):
         # type: () -> List[Text]
         return [arg for arg in inspect.getargspec(cls.create).args if arg not in ["cls"]]
 
-    def train_args(self):
+    @classmethod
+    def train_args(cls):
         # type: () -> List[Text]
-        return [arg for arg in inspect.getargspec(self.train).args if arg not in ["self"]]
+        return [arg for arg in inspect.getargspec(cls.train).args if arg not in ["self"]]
 
-    def process_args(self):
+    @classmethod
+    def process_args(cls):
         # type: () -> List[Text]
-        return [arg for arg in inspect.getargspec(self.process).args if arg not in ["self"]]
+        return [arg for arg in inspect.getargspec(cls.process).args if arg not in ["self"]]
 
     @classmethod
     def load_args(cls):
