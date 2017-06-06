@@ -60,7 +60,7 @@ The file you need is ``total_word_feature_extractor.dat``. Save this somewhere a
 .. note::
     Training MITIE can be quite slow on datasets with more than a few intents. You can try
         - to use the sklearn + MITIE backend instead (which uses sklearn for the training) or
-        - you can install `our mitie fork <https://github.com/amn41/mitie>`_ which should reduce the training time as well.
+        - you can install `our mitie fork <https://github.com/tmbo/mitie>`_ which should reduce the training time as well.
 
 Option 2 : spaCy + sklearn
 --------------------------
