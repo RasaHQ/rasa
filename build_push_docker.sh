@@ -1,7 +1,6 @@
 #!/bin/bash
 
 if [ "$TRAVIS_PYTHON_VERSION" = "2.7" ] \
-    && [ "$TRAVIS_BRANCH" = "master" ] \
     && [ -n "$TRAVIS_TAG" ]; then
 
     DIR=docker_minimal
