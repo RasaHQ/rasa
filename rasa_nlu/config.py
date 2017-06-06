@@ -156,5 +156,7 @@ class RasaNLUConfig(object):
         return config
 
     def override(self, config):
+        if all([config.get("pipeline"), isinstance(config.get("pipeline"), str)]):
+            config["pipeline"] = [config["pipeline"]]
         abs_path_config = self.make_unicode(self.make_paths_absolute(config, ["path", "response_log"]))
         self.__dict__.update(abs_path_config)
