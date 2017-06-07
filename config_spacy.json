@@ -1,5 +1,5 @@
 {
-  "pipeline": "spacy_slearn",
+  "pipeline": "spacy_sklearn",
   "path" : "./models",
   "data" : "./data/examples/rasa/demo-rasa.json"
 }
