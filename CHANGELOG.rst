@@ -21,6 +21,13 @@ Removed
 Fixed
 -----
 
+[0.8.11] - 2017-06-07
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- updated mitie installation documentation
+
 [0.8.10] - 2017-05-31
 ^^^^^^^^^^^^^^^^^^^^
 
