@@ -1,7 +1,5 @@
 {
-  "pipeline": "mitie",
-  "mitie_file": "./data/total_word_feature_extractor.dat",
+  "pipeline": "spacy_slearn",
   "path" : "./models",
-  "data" : "./data/examples/rasa/demo-rasa.json",
-  "server_model_dirs": "/Users/tmbo/lastmile/bot-ai/rasa_nlu/models/model_20170531-225550"
+  "data" : "./data/examples/rasa/demo-rasa.json"
 }
