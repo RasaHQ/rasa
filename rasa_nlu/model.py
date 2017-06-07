@@ -126,7 +126,7 @@ class Trainer(object):
         # type: (TrainingData) -> Interpreter
         """Trains the underlying pipeline by using the provided training data."""
 
-        self.training_data = data
+        self.training_data = copy.deepcopy(data)
 
         context = {}
 
@@ -187,7 +187,7 @@ class Interpreter(object):
     # Defines all attributes (and their default values) that will be returned by `parse`
     @staticmethod
     def default_output_attributes():
-        return {"intent": {"name": "", "confidence": 0.0}, "entities": [], "text": ""}
+        return {"intent": {"name": "", "confidence": 0.0}, "entities": []}
 
     @staticmethod
     def load(model_metadata, config, component_builder=None, skip_valdation=False):
@@ -235,15 +235,17 @@ class Interpreter(object):
             # Not all components are able to handle empty strings. So we need to prevent that...
             # This default return will not contain all output attributes of all components,
             # but in the end, no one should pass an empty string in the first place.
-            return self.default_output_attributes()
+            output = self.default_output_attributes()
+            output["text"] = ""
+            return output
 
         message = Message(text, self.default_output_attributes())
 
         for component in self.pipeline:
             component.process(message, **self.context)
 
-        result = self.default_output_attributes()
         all_attributes = list(self.default_output_attributes().keys()) + self.output_attributes
         # Ensure only keys of `all_attributes` are present and no other keys are returned
-        result.update({key: message.get(key) for key in all_attributes if message.get(key) is not None})
+        result = {key: message.get(key) for key in all_attributes if message.get(key) is not None}
+        result["text"] = message.text
         return result

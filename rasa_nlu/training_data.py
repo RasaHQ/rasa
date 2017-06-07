@@ -36,6 +36,12 @@ class Message(object):
     def as_dict(self):
         return dict(self.data, text=self.text)
 
+    def __eq__(self, other):
+        if not isinstance(other, Message):
+            return False
+        else:
+            return other.text == self.text and other.data == self.data
+
 
 class TrainingData(object):
     """Holds loaded intent and entity training data."""
@@ -47,7 +53,7 @@ class TrainingData(object):
     def __init__(self, training_examples=None, entity_synonyms=None):
         # type: (Optional[List[Message]], Optional[List[Message]]) -> None
 
-        self.training_examples = training_examples
+        self.training_examples = training_examples if training_examples else []
         self.entity_synonyms = entity_synonyms if entity_synonyms else {}
 
         self.validate()

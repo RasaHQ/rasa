@@ -171,9 +171,8 @@ def test_nonascii_entities():
         assert entity["entity"] == "description"
 
 
-def cmp_dict_list(firsts, seconds):
-    if len(firsts) != len(seconds):
-        return False
+def cmp_message_list(firsts, seconds):
+    assert len(firsts) == len(seconds), "Message lists have unequal length"
 
     for a in firsts:
         for idx, b in enumerate(seconds):
@@ -181,7 +180,7 @@ def cmp_dict_list(firsts, seconds):
                 del seconds[idx]
                 break
         else:
-            return False
+            assert False, "Failed to find message {} in {}".format(a.text, ", ".join([e.text for e in seconds]))
     return not seconds
 
 
@@ -197,8 +196,8 @@ def test_training_data_conversion(tmpdir, data_file, gold_standard_file):
     assert td.intent_examples != []
 
     gold_standard = load_data(gold_standard_file)
-    assert cmp_dict_list(td.entity_examples, gold_standard.entity_examples)
-    assert cmp_dict_list(td.intent_examples, gold_standard.intent_examples)
+    cmp_message_list(td.entity_examples, gold_standard.entity_examples)
+    cmp_message_list(td.intent_examples, gold_standard.intent_examples)
     assert td.entity_synonyms == gold_standard.entity_synonyms
 
     # If the above assert fails - this can be used to dump to the file and diff using git

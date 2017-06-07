@@ -28,7 +28,7 @@ class SpacyEntityExtractor(EntityExtractor):
         # type: (Message, **Any) -> None
 
         extracted = self.add_extractor_name(self.extract_entities(message.get("spacy_doc")))
-        message.set("entities", message.get("entities", []).extend(extracted))
+        message.set("entities", message.get("entities", []) + extracted)
 
     def extract_entities(self, doc):
         # type: (Doc) -> List[Dict[Text, Any]]

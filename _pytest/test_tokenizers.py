@@ -14,8 +14,8 @@ def test_whitespace():
     assert [t.text for t in tk.tokenize("Forecast for lunch")] == ['Forecast', 'for', 'lunch']
     assert [t.offset for t in tk.tokenize("Forecast for lunch")] == [0, 9, 13]
 
-    assert [t.text for t in tk.tokenize("hey ńöñàśçií how're you?")] == ['hey', 'ńöñàśçií', 'how\'re', 'you', '?']
-    assert [t.offset for t in tk.tokenize("hey ńöñàśçií how're you?")] == [0, 4, 13, 20, 23]
+    assert [t.text for t in tk.tokenize("hey ńöñàśçií how're you?")] == ['hey', 'ńöñàśçií', 'how\'re', 'you?']
+    assert [t.offset for t in tk.tokenize("hey ńöñàśçií how're you?")] == [0, 4, 13, 20]
 
 
 def test_spacy(spacy_nlp):

@@ -61,7 +61,8 @@ class MitieIntentClassifier(Component):
             raise Exception("Failed to train 'intent_featurizer_mitie'. Missing a proper MITIE feature extractor.")
 
         if self.clf:
-            intent, confidence = self.clf(message.get("tokens"), mitie_feature_extractor)
+            token_strs = [token.text for token in message.get("tokens", [])]
+            intent, confidence = self.clf(token_strs, mitie_feature_extractor)
         else:
             # either the model didn't get trained or it wasn't provided with any data
             intent = None

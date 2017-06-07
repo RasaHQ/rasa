@@ -96,7 +96,7 @@ class DucklingExtractor(EntityExtractor):
                 extracted.append(entity)
 
         extracted = self.add_extractor_name(extracted)
-        message.set("entities", message.get("entities", []).extend(extracted))
+        message.set("entities", message.get("entities", []) + extracted)
 
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]

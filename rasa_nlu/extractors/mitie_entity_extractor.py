@@ -49,10 +49,7 @@ class MitieEntityExtractor(EntityExtractor):
             for e in entities:
                 if len(e[0]):
                     start = e[0][0]
-                    if e[0][-1] + 1 < len(tokens):
-                        end = tokens[e[0][-1]+1].offset
-                    else:
-                        end = len(text)
+                    end = tokens[e[0][-1]].end
 
                     ents.append({
                         "entity": e[1],
@@ -107,7 +104,7 @@ class MitieEntityExtractor(EntityExtractor):
 
         ents = self.extract_entities(message.text, message.get("tokens"), mitie_feature_extractor)
         extracted = self.add_extractor_name(ents)
-        message.set("entities", message.get("entities", []).extend(extracted))
+        message.set("entities", message.get("entities", []) + extracted)
 
     @classmethod
     def load(cls, model_dir, model_metadata, **kwargs):

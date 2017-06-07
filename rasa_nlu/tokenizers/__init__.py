@@ -13,3 +13,4 @@ class Token(object):
     def __init__(self, text, offset):
         self.offset = offset
         self.text = text
+        self.end = offset + len(text)

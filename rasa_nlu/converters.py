@@ -57,7 +57,7 @@ def load_api_data(files):
                 data = {}
                 if intent:
                     data["intent"] = intent
-                if entities:
+                if entities is not None:
                     data["entities"] = entities
                 training_examples.append(Message(text, data))
 
@@ -93,11 +93,9 @@ def load_luis_data(filename):
             val = text[start:end]
             entities.append({"entity": e["entity"], "value": val, "start": start, "end": end})
 
-        data = {}
+        data = {"entities": entities}
         if intent:
             data["intent"] = intent
-        if entities:
-            data["entities"] = entities
         training_examples.append(Message(text, data))
     return TrainingData(training_examples)
 
@@ -125,7 +123,7 @@ def load_wit_data(filename):
         data = {}
         if intent:
             data["intent"] = intent
-        if entities:
+        if entities is not None:
             data["entities"] = entities
         training_examples.append(Message(text, data))
     return TrainingData(training_examples)
@@ -218,7 +216,7 @@ def load_rasa_data(filename):
         data = {}
         if e.get("intent"):
             data["intent"] = e["intent"]
-        if e.get("entities"):
+        if e.get("entities") is not None:
             data["entities"] = e["entities"]
         training_examples.append(Message(e["text"], data))
 

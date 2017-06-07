@@ -278,7 +278,10 @@ class NGramFeaturizer(Component):
         from sklearn.model_selection import cross_val_score
         import numpy as np
 
-        existing_text_features = np.stack([example.get("text_features") for example in examples])
+        if examples:
+            existing_text_features = np.stack([example.get("text_features") for example in examples])
+        else:
+            existing_text_features = np.empty(shape=(0,0))
 
         def features_with_ngrams(max_ngrams):
             ngrams_to_use = self._ngrams_to_use(max_ngrams)

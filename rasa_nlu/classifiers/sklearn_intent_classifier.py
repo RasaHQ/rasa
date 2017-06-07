@@ -122,7 +122,7 @@ class SklearnIntentClassifier(Component):
             if intents.size > 0 and probabilities.size > 0:
                 ranking = list(zip(list(intents), list(probabilities)))[:INTENT_RANKING_LENGTH]
                 intent = {"name": intents[0], "confidence": probabilities[0]}
-                intent_ranking = [{"name": intent, "confidence": score} for intent, score in ranking]
+                intent_ranking = [{"name": intent_name, "confidence": score} for intent_name, score in ranking]
             else:
                 intent = {"name": None, "confidence": 0.0}
                 intent_ranking = []

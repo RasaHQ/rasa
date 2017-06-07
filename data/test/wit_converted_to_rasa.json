@@ -1,6 +1,6 @@
 {
   "rasa_nlu_data": {
-    "common_examples": [
+    "training_examples": [
       {
         "text": "i want to go from berlin to tokyo tomorrow", 
         "intent": "flight_booking", 
@@ -26,9 +26,7 @@
             "entity": "datetime"
           }
         ]
-      }
-    ], 
-    "entity_examples": [
+      },
       {
         "text": "i'm looking for a flight from london to amsterdam next monday", 
         "entities": [
@@ -78,7 +76,6 @@
           }
         ]
       }
-    ], 
-    "intent_examples": []
+    ]
   }
 }
