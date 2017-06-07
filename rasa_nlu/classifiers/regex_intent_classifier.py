@@ -8,6 +8,9 @@ from typing import Dict
 from typing import Text
 import re
 
+import rasa_nlu.converters as converters
+from rasa_nlu.training_data import TrainingData
+
 from rasa_nlu.components import Component
 
 
@@ -26,17 +29,12 @@ class RegExIntentClassifier(Component):
         self.regex_dict = {}
 
     def train(self, training_data):
-    # extract dictionary of (regexp: intent) pairs from a text file with 'regexp : intent' on each line
-        self.regex_dict = {}
-        with open(training_data) as f:
-            for line in f:
-                if ':' in line:
-                    regex, intent = line.strip().split(' : ')
-                    self.regex_dict[regex] = intent
+    # build regex: intent dict from training data
+        for example in training_data.intent_examples:
+            self.regex_dict[example["text"]] = example["intent"]
 
     def process(self, text):
         # type: (Text) -> Dict[Text, Any]
-
         return {
             "intent": {
                 "name": self.parse(text),
