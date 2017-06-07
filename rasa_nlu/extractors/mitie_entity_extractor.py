@@ -62,16 +62,18 @@ class MitieEntityExtractor(EntityExtractor):
 
     @staticmethod
     def find_entity(ent, text, tokens):
-        import mitie
-
         offsets = [token.offset for token in tokens]
+        ends = [token.end for token in tokens]
         if ent["start"] not in offsets:
-            message = "Invalid entity {} in example '{}': entities must span whole tokens".format(ent, text)
+            message = "Invalid entity {} in example '{}': entities must span whole tokens. Wrong entity start.".format(
+                    ent, text)
+            raise ValueError(message)
+        if ent["end"] not in ends:
+            message = "Invalid entity {} in example '{}': entities must span whole tokens. Wrong entity end.".format(
+                    ent, text)
             raise ValueError(message)
         start = offsets.index(ent["start"])
-        _slice = text[ent["start"]:ent["end"]]
-        val_tokens = mitie.tokenize(_slice)
-        end = start + len(val_tokens)
+        end = ends.index(ent["end"]) + 1
         return start, end
 
     def train(self, training_data, config, **kwargs):
