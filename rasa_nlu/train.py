@@ -18,6 +18,7 @@ from rasa_nlu.model import Trainer
 from rasa_nlu.config import RasaNLUConfig
 from typing import Optional
 
+logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from rasa_nlu.persistor import Persistor
@@ -81,4 +82,4 @@ if __name__ == '__main__':
     logging.basicConfig(level=config['log_level'])
 
     do_train(config)
-    logging.info("done")
+    logger.info("Finished training")

@@ -7,10 +7,12 @@ import logging
 import os
 from collections import defaultdict
 
+import typing
 from builtins import object
 import inspect
 
 from typing import Any
+from typing import ClassVar
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -20,6 +22,11 @@ from typing import Tuple
 from typing import Type
 
 from rasa_nlu.config import RasaNLUConfig
+
+logger = logging.getLogger(__name__)
+
+if typing.TYPE_CHECKING:
+    from rasa_nlu.model import Metadata
 
 
 def load_component(component_clz, context, config):
@@ -92,7 +99,7 @@ def find_unavailable_packages(package_names):
 
 
 def validate_requirements(component_names, dev_requirements_file="dev-requirements.txt"):
-    # type: (List[Text]) -> None
+    # type: (List[Text], Text) -> None
     """Ensures that all required python packages are installed to instantiate and used the passed components."""
     from rasa_nlu import registry
 
@@ -124,7 +131,7 @@ def validate_arguments(pipeline, config, allow_empty_pipeline=False):
                          "The `backend` configuration key is NOT supported anymore.")
 
     # Validate the init phase
-    context = {}
+    context = {}    # type: Dict[Text, Any]
 
     for component in pipeline:
         try:
@@ -203,13 +210,13 @@ class Component(object):
         "pipeline_init": [],
         "train": [],
         "process": [],
-    }
+    }                       # type: Dict[Text, Any]
 
     # Defines which of the attributes the component provides should be added to the final output json at the end of the
     # pipeline. Every attribute in `output_provides` should be part of the above `context_provides['process']`. As it
     # wouldn't make much sense to keep an attribute in the output that is not generated. Every other attribute provided
     # in the context during the process step will be removed from the output json.
-    output_provides = []
+    output_provides = []    # type: List[Text]
 
     @classmethod
     def required_packages(cls):
@@ -336,7 +343,7 @@ class ComponentBuilder(object):
 
         if cache_key is not None and self.use_cache:
             self.component_cache[cache_key] = component
-            logging.info("Added '{}' to component cache. Key '{}'.".format(component.name, cache_key))
+            logger.info("Added '{}' to component cache. Key '{}'.".format(component.name, cache_key))
 
     def load_component(self, component_name, context, model_config, meta):
         # type: (Text, Dict[Text, Any], Dict[Text, Any], Metadata) -> Component
