@@ -241,6 +241,10 @@ class CRFEntityExtractor(EntityExtractor):
         entity_offsets = json_eg[1]
         gold = GoldParse(doc, entities=entity_offsets)
         ents = [l[5] for l in gold.orig_annot]
+        if '-' in ents:
+            logger.warn("Misaligned entity annotation in sentence '{}'. ".format(doc.text) +
+                        "Make sure the start and end values of the annotated training " +
+                        "examples end at token boundaries (e.g. don't include trailing whitespaces).")
         if not self.BILOU_flag:
             def ent_clean(entity):
                 if entity.startswith('B-') or entity.startswith('I-') or entity.startswith('U-') or entity.startswith(
