@@ -19,6 +19,8 @@ from typing import List
 from typing import Optional
 from typing import Text
 
+logger = logging.getLogger(__name__)
+
 TrainingExample = Dict[Text, Any]
 TrainingExamples = List[TrainingExample]
 
@@ -34,8 +36,10 @@ class TrainingData(object):
                  intent_examples_only=None,  # type: Optional[TrainingExamples]
                  entity_examples_only=None,  # type: Optional[TrainingExamples]
                  common_examples=None,  # type: Optional[TrainingExamples]
-                 entity_synonyms=None  # type: Optional[TrainingExamples]
+                 entity_synonyms=None  # type: Optional[Dict[Text, List[Text]]]
                  ):
+        # type: (...) -> None
+
         self.intent_examples_only = intent_examples_only if intent_examples_only else []
         self.entity_examples_only = entity_examples_only if entity_examples_only else []
         self.common_examples = common_examples if common_examples else []
@@ -107,7 +111,7 @@ class TrainingData(object):
         # type: () -> None
         """Ensures that the loaded training data is valid, e.g. has a minimum of certain training examples."""
 
-        logging.debug("Validating training data...")
+        logger.debug("Validating training data...")
         examples = self.sorted_intent_examples()
         different_intents = []
         for intent, group in groupby(examples, lambda e: e["intent"]):
@@ -126,10 +130,10 @@ class TrainingData(object):
                 template = "Entity '{}' has only {} training examples! minimum is {}, training may fail."
                 warnings.warn(template.format(entity, size, self.MIN_EXAMPLES_PER_ENTITY))
 
-        logging.info("Training data stats: \n" +
-                     "\t- intent examples: {} ({} distinct intents)\n".format(
-                         self.num_intent_examples, len(different_intents)) +
-                     "\t- found intents: {}\n".format(", ".join(different_intents)) +
-                     "\t- entity examples: {} ({} distinct entities)\n".format(
-                         self.num_entity_examples, len(different_entities)) +
-                     "\t- found entities: {}\n".format(", ".join(different_entities)))
+        logger.info("Training data stats: \n" +
+                    "\t- intent examples: {} ({} distinct intents)\n".format(
+                            self.num_intent_examples, len(different_intents)) +
+                    "\t- found intents: {}\n".format(", ".join(different_intents)) +
+                    "\t- entity examples: {} ({} distinct entities)\n".format(
+                            self.num_entity_examples, len(different_entities)) +
+                    "\t- found entities: {}\n".format(", ".join(different_entities)))

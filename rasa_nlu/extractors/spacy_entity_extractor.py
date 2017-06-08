@@ -12,6 +12,7 @@ from rasa_nlu.extractors import EntityExtractor
 
 if typing.TYPE_CHECKING:
     from spacy.language import Language
+    from spacy.tokens.doc import Doc
 
 
 class SpacyEntityExtractor(EntityExtractor):
