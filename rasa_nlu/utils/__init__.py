@@ -72,3 +72,7 @@ def recursively_find_files(resource_name):
         return resources
     else:
         raise ValueError("Could not locate the resource '{}'.".format(os.path.abspath(resource_name)))
+
+
+def list_to_str(l, delim=", ", quote="'"):
+    return delim.join([quote + e + quote for e in l])

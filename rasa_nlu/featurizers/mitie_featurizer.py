@@ -16,6 +16,7 @@ from rasa_nlu.training_data import TrainingData
 if typing.TYPE_CHECKING:
     import mitie
     import numpy as np
+    from builtins import str
 
 
 class MitieFeaturizer(Featurizer, Component):
@@ -54,7 +55,7 @@ class MitieFeaturizer(Featurizer, Component):
         }
 
     def features_for_tokens(self, tokens, feature_extractor):
-        # type: (List[Text], mitie.total_word_feature_extractor) -> np.ndarray
+        # type: (List[str], mitie.total_word_feature_extractor) -> np.ndarray
         import numpy as np
 
         vec = np.zeros(self.ndim(feature_extractor))

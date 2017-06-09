@@ -68,7 +68,7 @@ class DucklingExtractor(EntityExtractor):
         return cls.name + "-" + model_metadata.language
 
     def pipeline_init(self, language):
-        # type: (Text, Text) -> None
+        # type: (Text) -> None
         from duckling import DucklingWrapper
 
         if self.duckling is None:
@@ -88,7 +88,7 @@ class DucklingExtractor(EntityExtractor):
                 entity = {"start": match["start"],
                           "end": match["end"],
                           "text": match["text"],
-                          "value": match["value"]["value"],
+                          "value": match["value"],
                           "entity": match["dim"]}
 
                 extracted.append(entity)
@@ -109,9 +109,11 @@ class DucklingExtractor(EntityExtractor):
 
     @classmethod
     def load(cls, model_dir, ner_duckling_persisted):
-        # type: (Text) -> DucklingExtractor
+        # type: (Text, Text) -> DucklingExtractor
         persisted = os.path.join(model_dir, ner_duckling_persisted)
         if os.path.isfile(persisted):
             with io.open(persisted, encoding='utf-8') as f:
                 persisted_data = json.loads(f.read())
                 return cls.create(persisted_data["dimensions"])
+        else:
+            return cls.create(None)

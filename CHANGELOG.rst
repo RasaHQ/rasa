@@ -17,6 +17,9 @@ Changed
 -------
 - replaced existing CRF library (python-crfsuite) with sklearn-crfsuite (due to better windows support)
 - updated to spacy 1.8.2
+- logging format of logged request now includes model name and timestamp
+- use module specific loggers instead of default python root logger
+- output format of the duckling extractor changed. the ``value`` field now includes the complete value from duckling instead of just text (so this is an property is an object now instead of just text). includes granularity information now.
 
 Removed
 -------
