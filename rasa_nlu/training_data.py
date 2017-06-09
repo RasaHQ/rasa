@@ -19,6 +19,10 @@ from typing import List
 from typing import Optional
 from typing import Text
 
+from rasa_nlu.utils import list_to_str
+
+logger = logging.getLogger(__name__)
+
 TrainingExample = Dict[Text, Any]
 TrainingExamples = List[TrainingExample]
 
@@ -34,14 +38,36 @@ class TrainingData(object):
                  intent_examples_only=None,  # type: Optional[TrainingExamples]
                  entity_examples_only=None,  # type: Optional[TrainingExamples]
                  common_examples=None,  # type: Optional[TrainingExamples]
-                 entity_synonyms=None  # type: Optional[TrainingExamples]
+                 entity_synonyms=None  # type: Optional[Dict[Text, List[Text]]]
                  ):
-        self.intent_examples_only = intent_examples_only if intent_examples_only else []
-        self.entity_examples_only = entity_examples_only if entity_examples_only else []
-        self.common_examples = common_examples if common_examples else []
+        # type: (...) -> None
+
+        if intent_examples_only:
+            self.intent_examples_only = self.sanitice_examples(intent_examples_only)
+        else:
+            self.intent_examples_only = []
+
+        if common_examples:
+            self.common_examples = self.sanitice_examples(common_examples)
+        else:
+            self.common_examples = []
+
+        if entity_examples_only:
+            self.entity_examples_only = self.sanitice_examples(entity_examples_only)
+        else:
+            self.entity_examples_only = []
+
         self.entity_synonyms = entity_synonyms if entity_synonyms else {}
 
         self.validate()
+
+    def sanitice_examples(self, examples):
+        """Makes sure the training data is cleaned, e.q. removes trailing whitespaces from intent annotations."""
+
+        for e in examples:
+            if "intent" in e:
+                e["intent"] = e["intent"].strip()
+        return examples
 
     @property
     def intent_examples(self):
@@ -107,7 +133,7 @@ class TrainingData(object):
         # type: () -> None
         """Ensures that the loaded training data is valid, e.g. has a minimum of certain training examples."""
 
-        logging.debug("Validating training data...")
+        logger.debug("Validating training data...")
         examples = self.sorted_intent_examples()
         different_intents = []
         for intent, group in groupby(examples, lambda e: e["intent"]):
@@ -126,10 +152,10 @@ class TrainingData(object):
                 template = "Entity '{}' has only {} training examples! minimum is {}, training may fail."
                 warnings.warn(template.format(entity, size, self.MIN_EXAMPLES_PER_ENTITY))
 
-        logging.info("Training data stats: \n" +
-                     "\t- intent examples: {} ({} distinct intents)\n".format(
-                         self.num_intent_examples, len(different_intents)) +
-                     "\t- found intents: {}\n".format(", ".join(different_intents)) +
-                     "\t- entity examples: {} ({} distinct entities)\n".format(
-                         self.num_entity_examples, len(different_entities)) +
-                     "\t- found entities: {}\n".format(", ".join(different_entities)))
+        logger.info("Training data stats: \n" +
+                    "\t- intent examples: {} ({} distinct intents)\n".format(
+                            self.num_intent_examples, len(different_intents)) +
+                    "\t- found intents: {}\n".format(list_to_str(different_intents)) +
+                    "\t- entity examples: {} ({} distinct entities)\n".format(
+                            self.num_entity_examples, len(different_entities)) +
+                    "\t- found entities: {}\n".format(list_to_str(different_entities)))

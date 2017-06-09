@@ -6,7 +6,6 @@ from builtins import object
 import io
 import json
 import os
-import warnings
 import six
 
 

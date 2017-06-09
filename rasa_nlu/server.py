@@ -14,6 +14,8 @@ from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.data_router import DataRouter, InvalidModelError
 from rasa_nlu.version import __version__
 
+logger = logging.getLogger(__name__)
+
 
 def create_argparser():
     parser = argparse.ArgumentParser(description='parse incoming text')
@@ -59,12 +61,11 @@ class RasaApp(object):
     def __init__(self, config, component_builder=None):
         logging.basicConfig(filename=config['log_file'], level=config['log_level'])
         logging.captureWarnings(True)
-        logging.info("Configuration: " + config.view())
+        logger.info("Configuration: " + config.view())
 
-        logging.debug("Creating a new data router")
+        logger.debug("Creating a new data router")
         self.config = config
         self.data_router = DataRouter(config, component_builder)
-        # logging.info('Started http server on port %s' % config['port'])
 
     @rasa_nlu_app.route("/parse", methods=['GET', 'POST'])
     @requires_auth
@@ -124,6 +125,6 @@ if __name__ == '__main__':
     arg_parser = create_argparser()
     cmdline_args = {key: val for key, val in list(vars(arg_parser.parse_args()).items()) if val is not None}
     rasa_nlu_config = RasaNLUConfig(cmdline_args.get("config"), os.environ, cmdline_args)
-
     app = RasaApp(rasa_nlu_config)
     app.rasa_nlu_app.run('0.0.0.0', rasa_nlu_config['port'])
+    logger.info('Started http server on port %s' % rasa_nlu_config['port'])

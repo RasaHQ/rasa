@@ -1,13 +1,12 @@
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import io
 import json
-import re
-import warnings
-
 import logging
+
 from typing import Any
 from typing import Dict
 from typing import List
@@ -15,8 +14,9 @@ from typing import Optional
 from typing import Text
 
 from rasa_nlu import utils
-from rasa_nlu.tokenizers import Tokenizer
 from rasa_nlu.training_data import TrainingData
+
+logger = logging.getLogger(__name__)
 
 # Different supported file formats and their identifier
 WIT_FILE_FORMAT = "wit"
@@ -254,7 +254,7 @@ def load_data(resource_name, fformat=None):
     if not fformat:
         fformat = guess_format(files)
 
-    logging.info("Training data format at {} is {}".format(resource_name, fformat))
+    logger.info("Training data format at {} is {}".format(resource_name, fformat))
 
     if fformat == LUIS_FILE_FORMAT:
         return load_luis_data(files[0])
