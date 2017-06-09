@@ -17,11 +17,13 @@ from typing import Type
 from rasa_nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
 from rasa_nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
 from rasa_nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
+from rasa_nlu.classifiers.regex_intent_classifier import RegExIntentClassifier
 from rasa_nlu.extractors.duckling_extractor import DucklingExtractor
 from rasa_nlu.extractors.entity_synonyms import EntitySynonymMapper
 from rasa_nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa_nlu.extractors.crf_entity_extractor import CRFEntityExtractor
+from rasa_nlu.extractors.regex_entity_extractor import RegExEntityExtractor
 from rasa_nlu.featurizers.mitie_featurizer import MitieFeaturizer
 from rasa_nlu.featurizers.ngram_featurizer import NGramFeaturizer
 from rasa_nlu.featurizers.spacy_featurizer import SpacyFeaturizer
@@ -39,7 +41,7 @@ component_classes = [
     SpacyNLP, SpacyEntityExtractor, SklearnIntentClassifier, SpacyFeaturizer,
     MitieNLP, MitieEntityExtractor, MitieIntentClassifier, MitieFeaturizer,
     MitieTokenizer, SpacyTokenizer, WhitespaceTokenizer,
-    KeywordIntentClassifier, EntitySynonymMapper, NGramFeaturizer, DucklingExtractor, CRFEntityExtractor]
+    KeywordIntentClassifier, EntitySynonymMapper, NGramFeaturizer, DucklingExtractor, CRFEntityExtractor, RegExIntentClassifier, RegExEntityExtractor]
 
 # Mapping from a components name to its class to allow name based lookup.
 registered_components = {

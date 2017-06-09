@@ -161,12 +161,26 @@ def rasa_nlu_data_schema():
         "required": ["text"]
     }
 
+    regex_feature_schema = {
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+            "intent": {"type": "string"},
+            "entity": {"type": "string"},
+            "pattern": {"type": "string"},
+        }
+    }
+
     return {
         "type": "object",
         "properties": {
             "rasa_nlu_data": {
                 "type": "object",
                 "properties": {
+                    "regex_features": {
+                        "type": "array",
+                        "items": regex_feature_schema
+                    },
                     "common_examples": {
                         "type": "array",
                         "items": training_example_schema
@@ -212,8 +226,9 @@ def load_rasa_data(filename):
     common = data['rasa_nlu_data'].get("common_examples", list())
     intent = data['rasa_nlu_data'].get("intent_examples", list())
     entity = data['rasa_nlu_data'].get("entity_examples", list())
+    regex = data['rasa_nlu_data'].get("regex_features", list())
 
-    return TrainingData(intent, entity, common)
+    return TrainingData(intent, entity, common, regex)
 
 
 def guess_format(files):
@@ -266,3 +281,4 @@ def load_data(resource_name, fformat=None):
         return load_rasa_data(files[0])
     else:
         raise ValueError("unknown training file format : {} for file {}".format(fformat, resource_name))
+

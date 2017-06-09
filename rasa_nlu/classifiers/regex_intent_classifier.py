@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
+
 from builtins import map
 from typing import Any
 from typing import Dict
@@ -30,8 +31,9 @@ class RegExIntentClassifier(Component):
 
     def train(self, training_data):
     # build regex: intent dict from training data
-        for example in training_data.intent_examples:
-            self.regex_dict[example["text"]] = example["intent"]
+        for example in training_data.regex_features:
+            if ("intent" in example):
+                self.regex_dict[example["pattern"]] = example["intent"]
 
     def process(self, text):
         # type: (Text) -> Dict[Text, Any]
