@@ -210,7 +210,5 @@ class DataRouter(object):
             _config[key] = val
         _config["data"] = f.name
         train_config = RasaNLUConfig(cmdline_args=_config)
-        process = multiprocessing.Process(target=do_train, args=(train_config, self.component_builder))
-        self._add_train_proc(process)
-        process.start()
-        logger.info("Training process {} started".format(process))
+        do_train(train_config, self.component_builder)
+        logger.info("Training process started")

@@ -9,6 +9,7 @@ import os
 from functools import wraps
 
 from klein import Klein
+from twisted.internet import reactor, defer, threads
 
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.data_router import DataRouter, InvalidModelError
@@ -60,17 +61,19 @@ class RasaApp(object):
 
     def __init__(self, config, component_builder=None):
         logging.basicConfig(filename=config['log_file'], level=config['log_level'])
-        logging.captureWarnings(True)logger.info("Configuration: " + config.view())
+        logging.captureWarnings(True)
+        logger.info("Configuration: " + config.view())
 
         logger.debug("Creating a new data router")
         self.config = config
         self.data_router = DataRouter(config, component_builder)
+        reactor.suggestThreadPoolSize(20)
 
     @rasa_nlu_app.route("/parse", methods=['GET', 'POST'])
     @requires_auth
     def parse_get(self, request):
         if request.method == 'GET':
-            request_params = request.args
+            request_params = {key: value[0] for key, value in request.args.items()}
         else:
             request_params = json.loads(request.content.read())
         if 'q' not in request_params:
@@ -113,8 +116,11 @@ class RasaApp(object):
     @rasa_nlu_app.route("/train", methods=['POST'])
     @requires_auth
     def train(self, request):
-        data_string = request.get_data(as_text=True)
-        self.data_router.start_train_process(data_string, request.args)
+        data_string = request.content.read()
+        def_training_result = threads.deferToThread(self.data_router.start_train_process, data_string,
+                                                    {key: value[0] for key, value in request.args.items()})
+        def_training_result.addCallback(lambda ignored: print('Trained'))
+        def_training_result.addErrback(lambda err: print(err))
         request.setHeader('Content-Type', 'application/json')
         return json.dumps({"info": "training started.", "training_process_ids": self.data_router.train_proc_ids()})
 
