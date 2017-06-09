@@ -210,5 +210,6 @@ class DataRouter(object):
             _config[key] = val
         _config["data"] = f.name
         train_config = RasaNLUConfig(cmdline_args=_config)
-        do_train(train_config, self.component_builder)
         logger.info("Training process started")
+        result = do_train(train_config, self.component_builder)
+        return result

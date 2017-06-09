@@ -119,8 +119,8 @@ class RasaApp(object):
         data_string = request.content.read()
         def_training_result = threads.deferToThread(self.data_router.start_train_process, data_string,
                                                     {key: value[0] for key, value in request.args.items()})
-        def_training_result.addCallback(lambda ignored: print('Trained'))
-        def_training_result.addErrback(lambda err: print(err))
+        def_training_result.addCallback(lambda x: print('Trained {}'.format(x)))
+        def_training_result.addErrback(lambda failure: failure.trap(Exception))
         request.setHeader('Content-Type', 'application/json')
         return json.dumps({"info": "training started.", "training_process_ids": self.data_router.train_proc_ids()})
 
