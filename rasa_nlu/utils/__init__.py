@@ -74,6 +74,7 @@ def recursively_find_files(resource_name):
         raise ValueError("Could not locate the resource '{}'.".format(os.path.abspath(resource_name)))
 
 
+
 def lazyproperty(fn):
     """Allows to avoid recomputing a property over and over. Instead the result gets stored in a local var.
 
@@ -89,3 +90,8 @@ def lazyproperty(fn):
         return getattr(self, attr_name)
 
     return _lazyprop
+
+
+def list_to_str(l, delim=", ", quote="'"):
+    return delim.join([quote + e + quote for e in l])
+

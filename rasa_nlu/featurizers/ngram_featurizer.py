@@ -26,6 +26,7 @@ from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
 
+logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from spacy.language import Language
@@ -62,7 +63,7 @@ class NGramFeaturizer(Component):
 
         start = time.time()
         self.train_on_sentences(training_data.intent_examples, config["max_number_of_ngrams"])
-        logging.debug("Ngram collection took {} seconds".format(time.time() - start))
+        logger.debug("Ngram collection took {} seconds".format(time.time() - start))
 
         for example in training_data.training_examples:
             updated = self._text_features_with_ngrams(example, self.best_num_ngrams)
@@ -294,7 +295,7 @@ class NGramFeaturizer(Component):
         y = intent_encoder.transform(labels)
         cv_splits = min(10, np.min(np.bincount(y))) if y.size > 0 else 0
         if cv_splits >= 3:
-            logging.debug("Started ngram cross-validation to find best number of ngrams to use...")
+            logger.debug("Started ngram cross-validation to find best number of ngrams to use...")
             num_ngrams = np.unique(list(map(int, np.floor(np.linspace(1, max_ngrams, 8)))))
             no_ngrams_X = features_with_ngrams(max_ngrams=0)
             no_ngrams_score = np.mean(cross_val_score(clf2, no_ngrams_X, y, cv=cv_splits))
@@ -303,10 +304,10 @@ class NGramFeaturizer(Component):
                 X = features_with_ngrams(max_ngrams=n)
                 score = np.mean(cross_val_score(clf2, X, y, cv=cv_splits))
                 scores.append(score)
-                logging.debug("Evaluating usage of {} ngrams. Score: {}".format(n, score))
+                logger.debug("Evaluating usage of {} ngrams. Score: {}".format(n, score))
             n_top = num_ngrams[np.argmax(scores)]
-            logging.debug("Score without ngrams: {}".format(no_ngrams_score))
-            logging.info("Best score with {} ngrams: {}".format(n_top, np.max(scores)))
+            logger.debug("Score without ngrams: {}".format(no_ngrams_score))
+            logger.info("Best score with {} ngrams: {}".format(n_top, np.max(scores)))
             return n_top
         else:
             warnings.warn("Can't cross-validate ngram featurizer. There aren't enough examples per intent (at least 3)")

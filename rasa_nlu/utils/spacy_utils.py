@@ -14,12 +14,14 @@ from typing import Text
 
 from rasa_nlu.components import Component
 from rasa_nlu.config import RasaNLUConfig
-from rasa_nlu.model import Metadata
 from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
 
+logger = logging.getLogger(__name__)
+
 if typing.TYPE_CHECKING:
     from spacy.language import Language
+    from rasa_nlu.model import Metadata
 
 
 class SpacyNLP(Component):
@@ -46,7 +48,7 @@ class SpacyNLP(Component):
         spacy_model_name = config["spacy_model_name"]
         if spacy_model_name is None:
             spacy_model_name = config["language"]
-        logging.info("Trying to load spacy model with name '{}'".format(spacy_model_name))
+        logger.info("Trying to load spacy model with name '{}'".format(spacy_model_name))
         nlp = spacy.load(spacy_model_name, parser=False)
         cls.ensure_proper_language_model(nlp)
         return SpacyNLP(nlp, config["language"], spacy_model_name)

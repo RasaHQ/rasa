@@ -8,9 +8,8 @@ import io
 import json
 import logging
 import os
-import copy
 
-import errno
+import copy
 from builtins import object
 from builtins import str
 from typing import Any
@@ -27,6 +26,8 @@ from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.persistor import Persistor
 from rasa_nlu.training_data import TrainingData, Message
 from rasa_nlu.utils import create_dir
+
+logger = logging.getLogger(__name__)
 
 
 class InvalidModelError(Exception):
@@ -106,8 +107,8 @@ class Trainer(object):
 
         self.config = config
         self.skip_validation = skip_validation
-        self.training_data = None
-        self.pipeline = []
+        self.training_data = None       # type: Optional[TrainingData]
+        self.pipeline = []              # type: List[Component]
         if component_builder is None:
             # If no builder is passed, every interpreter creation will result in a new builder.
             # hence, no components are reused.
@@ -128,7 +129,7 @@ class Trainer(object):
 
         self.training_data = copy.deepcopy(data)
 
-        context = {}
+        context = {}        # type: Dict[Text, Any]
 
         for component in self.pipeline:
             updates = component.provide_context()
@@ -140,9 +141,9 @@ class Trainer(object):
             components.validate_arguments(self.pipeline, context)
 
         for component in self.pipeline:
-            logging.info("Starting to train component {}".format(component.name))
+            logger.info("Starting to train component {}".format(component.name))
             updates = component.train(data, self.config, **context)
-            logging.info("Finished training component.")
+            logger.info("Finished training component.")
             if updates:
                 context.update(updates)
 
@@ -177,7 +178,7 @@ class Trainer(object):
 
         if persistor is not None:
             persistor.save_tar(dir_name)
-        logging.info("Successfully saved model into '{}'".format(os.path.abspath(dir_name)))
+        logger.info("Successfully saved model into '{}'".format(os.path.abspath(dir_name)))
         return dir_name
 
 

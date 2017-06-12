@@ -12,6 +12,7 @@ from builtins import object
 import inspect
 
 from typing import Any
+from typing import ClassVar
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -26,6 +27,8 @@ from rasa_nlu.training_data import Message
 if typing.TYPE_CHECKING:
     from rasa_nlu.training_data import TrainingData
     from rasa_nlu.model import Metadata
+
+logger = logging.getLogger(__name__)
 
 
 def _read_dev_requirements(file_name):
@@ -61,7 +64,7 @@ def find_unavailable_packages(package_names):
 
 
 def validate_requirements(component_names, dev_requirements_file="dev-requirements.txt"):
-    # type: (List[Text]) -> None
+    # type: (List[Text], Text) -> None
     """Ensures that all required python packages are installed to instantiate and used the passed components."""
     from rasa_nlu import registry
 
@@ -146,7 +149,7 @@ class Component(object):
     # pipeline. Every attribute in `output_provides` should be part of the above `context_provides['process']`. As it
     # wouldn't make much sense to keep an attribute in the output that is not generated. Every other attribute provided
     # in the context during the process step will be removed from the output json.
-    output_provides = []
+    output_provides = []    # type: List[Text]
 
     @classmethod
     def required_packages(cls):
@@ -251,7 +254,7 @@ class ComponentBuilder(object):
 
         if cache_key is not None and self.use_cache:
             self.component_cache[cache_key] = component
-            logging.info("Added '{}' to component cache. Key '{}'.".format(component.name, cache_key))
+            logger.info("Added '{}' to component cache. Key '{}'.".format(component.name, cache_key))
 
     def load_component(self, component_name, model_dir, model_metadata, **context):
         # type: (Text, Text, Metadata, **Any) -> Component

@@ -21,6 +21,8 @@ from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
 from builtins import str
 
+logger = logging.getLogger(__name__)
+
 if typing.TYPE_CHECKING:
     from spacy.language import Language
     import sklearn_crfsuite
@@ -140,7 +142,7 @@ class CRFEntityExtractor(EntityExtractor):
                     while not finished:
                         if len(entities) > ent_word_idx and entities[ent_word_idx][2:] != entity[2:]:
                             # words are not tagged the same entity class
-                            logging.debug(
+                            logger.debug(
                                     "Inconsistent BILOU tagging found, B- tag, L- tag pair encloses multiple " +
                                     "entity classes.i.e. ['B-a','I-b','L-a'] instead of ['B-a','I-a','L-a'].\n" +
                                     "Assuming B- class is correct.")
@@ -154,7 +156,7 @@ class CRFEntityExtractor(EntityExtractor):
                             # entity not closed by an L- tag
                             finished = True
                             ent_word_idx -= 1
-                            logging.debug(
+                            logger.debug(
                                     "Inconsistent BILOU tagging found, B- tag not closed by L- tag, " +
                                     "i.e ['B-a','I-a','O'] instead of ['B-a','L-a','O'].\nAssuming last tag is L-")
                     ent = {'start': word.idx,
@@ -245,6 +247,10 @@ class CRFEntityExtractor(EntityExtractor):
         doc = example.get("spacy_doc")
         gold = GoldParse(doc, entities=entity_offsets)
         ents = [l[5] for l in gold.orig_annot]
+        if '-' in ents:
+            logger.warn("Misaligned entity annotation in sentence '{}'. ".format(doc.text) +
+                        "Make sure the start and end values of the annotated training " +
+                        "examples end at token boundaries (e.g. don't include trailing whitespaces).")
         if not self.BILOU_flag:
             def ent_clean(entity):
                 if entity.startswith('B-') or entity.startswith('I-') or entity.startswith('U-') or entity.startswith(
