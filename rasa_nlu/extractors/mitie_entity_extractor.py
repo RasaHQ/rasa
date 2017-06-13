@@ -48,7 +48,7 @@ class MitieEntityExtractor(EntityExtractor):
             entities = self.ner.extract_entities(tokens_strs, feature_extractor)
             for e in entities:
                 if len(e[0]):
-                    start = e[0][0]
+                    start = tokens[e[0][0]].offset
                     end = tokens[e[0][-1]].end
 
                     ents.append({
