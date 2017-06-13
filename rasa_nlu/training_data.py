@@ -81,7 +81,7 @@ class TrainingData(object):
 
         return str(json.dumps({
             "rasa_nlu_data": {
-                "training_examples": self.training_examples,
+                "common_examples": self.training_examples,
             }
         }, **kwargs))
 
