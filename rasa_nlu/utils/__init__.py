@@ -88,3 +88,7 @@ def lazyproperty(fn):
         return getattr(self, attr_name)
 
     return _lazyprop
+
+
+def list_to_str(l, delim=", ", quote="'"):
+    return delim.join([quote + e + quote for e in l])

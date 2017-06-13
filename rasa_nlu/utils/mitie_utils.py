@@ -68,7 +68,7 @@ class MitieNLP(Component):
 
     @classmethod
     def load(cls, mitie_file):
-        # type: (Text, Text) -> MitieNLP
+        # type: (Text) -> MitieNLP
 
         return cls.create(mitie_file)
 

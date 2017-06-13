@@ -1,13 +1,12 @@
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import io
 import json
-import re
-import warnings
-
 import logging
+
 from typing import Any
 from typing import Dict
 from typing import List
@@ -15,8 +14,9 @@ from typing import Optional
 from typing import Text
 
 from rasa_nlu import utils
-from rasa_nlu.tokenizers import Tokenizer
 from rasa_nlu.training_data import TrainingData
+
+logger = logging.getLogger(__name__)
 
 # Different supported file formats and their identifier
 WIT_FILE_FORMAT = "wit"
@@ -164,10 +164,6 @@ def rasa_nlu_data_schema():
                         "type": "array",
                         "items": training_example_schema
                     },
-                    "training_examples": {
-                        "type": "array",
-                        "items": training_example_schema
-                    },
                     "intent_examples": {
                         "type": "array",
                         "items": training_example_schema
@@ -210,9 +206,12 @@ def load_rasa_data(filename):
     common = data['rasa_nlu_data'].get("common_examples", list())
     intent = data['rasa_nlu_data'].get("intent_examples", list())
     entity = data['rasa_nlu_data'].get("entity_examples", list())
-    training = data['rasa_nlu_data'].get("training_examples", list())
 
-    all_examples = common + intent + entity + training
+    if intent or entity:
+        logger.warn("DEPRECATION warning: Data file contains 'intent_examples' or 'entity_examples' which will be " +
+                    "removed in the future. Consider putting all your examples into the 'common_examples' section.")
+
+    all_examples = common + intent + entity
     return TrainingData(all_examples)
 
 
@@ -254,7 +253,7 @@ def load_data(resource_name, fformat=None):
     if not fformat:
         fformat = guess_format(files)
 
-    logging.info("Training data format at {} is {}".format(resource_name, fformat))
+    logger.info("Training data format at {} is {}".format(resource_name, fformat))
 
     if fformat == LUIS_FILE_FORMAT:
         return load_luis_data(files[0])

@@ -111,7 +111,7 @@ class DucklingExtractor(EntityExtractor):
 
     @classmethod
     def load(cls, model_dir, ner_duckling_persisted, language):
-        # type: (Text) -> DucklingExtractor
+        # type: (Text, Text, Text) -> DucklingExtractor
 
         persisted = os.path.join(model_dir, ner_duckling_persisted)
         if os.path.isfile(persisted):
