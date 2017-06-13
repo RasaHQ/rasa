@@ -93,3 +93,12 @@ def lazyproperty(fn):
 
 def list_to_str(l, delim=", ", quote="'"):
     return delim.join([quote + e + quote for e in l])
+
+
+def ordered(obj):
+    if isinstance(obj, dict):
+        return sorted((k, ordered(v)) for k, v in obj.items())
+    if isinstance(obj, list):
+        return sorted(ordered(x) for x in obj)
+    else:
+        return obj

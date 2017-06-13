@@ -19,7 +19,7 @@ from typing import List
 from typing import Optional
 from typing import Text
 
-from rasa_nlu.utils import lazyproperty
+from rasa_nlu.utils import lazyproperty, ordered
 from rasa_nlu.utils import list_to_str
 
 logger = logging.getLogger(__name__)
@@ -43,7 +43,10 @@ class Message(object):
         if not isinstance(other, Message):
             return False
         else:
-            return other.text == self.text and other.data == self.data
+            return (other.text, ordered(other.data)) == (self.text, ordered(self.data))
+
+    def __hash__(self):
+        return hash((self.text, str(ordered(self.data))))
 
 
 class TrainingData(object):

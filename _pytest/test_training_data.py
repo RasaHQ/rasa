@@ -176,7 +176,7 @@ def cmp_message_list(firsts, seconds):
 
     for a in firsts:
         for idx, b in enumerate(seconds):
-            if a == b:
+            if hash(a) == hash(b):
                 del seconds[idx]
                 break
         else:
