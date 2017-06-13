@@ -42,32 +42,11 @@ def test_all_components_are_in_all_components_template():
 
 
 @pytest.mark.parametrize("component_class", registry.component_classes)
-def test_all_arguments_can_be_satisfied_during_init(component_class, default_config, component_builder):
-    """Check that `pipeline_init` method parameters can be filled filled from the context.
-
-    The parameters declared on the `pipeline_init` are not filled directly, rather the method is called via reflection.
-    During the reflection, the parameters are filled from a so called context that is created when creating the
-    pipeline and gets initialized with the configuration values. To make sure all arguments `pipeline_init` declares
-    can be provided during the reflection, we do a 'dry run' where we check all parameters are part of the context."""
-
-    # All available context arguments that will ever be generated during init
-    component = component_builder.create_component(component_class.name, default_config)
-    context_arguments = {}
-    for clz in registry.component_classes:
-        for ctx_arg in clz.context_provides.get("pipeline_init", []):
-            context_arguments[ctx_arg] = None
-
-    filled_args = fill_args(component.pipeline_init_args(), context_arguments, default_config.as_dict())
-    assert len(filled_args) == len(component.pipeline_init_args())
-
-
-@pytest.mark.parametrize("component_class", registry.component_classes)
-def test_all_arguments_can_be_satisfied_during_train(component_class, default_config, component_builder):
+def test_all_arguments_can_be_satisfied_during_train(component_class, default_config):
     """Check that `train` method parameters can be filled filled from the context. Similar to `pipeline_init` test."""
 
     # All available context arguments that will ever be generated during train
     # it might still happen, that in a certain pipeline configuration arguments can not be satisfied!
-    component = component_builder.create_component(component_class.name, default_config)
     context_arguments = {"training_data": None}
     for clz in registry.component_classes:
         for ctx_arg in clz.context_provides.get("pipeline_init", []):
@@ -75,16 +54,15 @@ def test_all_arguments_can_be_satisfied_during_train(component_class, default_co
         for ctx_arg in clz.context_provides.get("train", []):
             context_arguments[ctx_arg] = None
 
-    filled_args = fill_args(component.train_args(), context_arguments, default_config.as_dict())
-    assert len(filled_args) == len(component.train_args())
+    filled_args = fill_args(component_class.train_args(), context_arguments, default_config.as_dict())
+    assert len(filled_args) == len(component_class.train_args())
 
 
 @pytest.mark.parametrize("component_class", registry.component_classes)
-def test_all_arguments_can_be_satisfied_during_parse(component_class, default_config, component_builder):
+def test_all_arguments_can_be_satisfied_during_parse(component_class, default_config):
     """Check that `parse` method parameters can be filled filled from the context. Similar to `pipeline_init` test."""
 
     # All available context arguments that will ever be generated during parse
-    component = component_builder.create_component(component_class.name, default_config)
     context_arguments = {"text": None}
     for clz in registry.component_classes:
         for ctx_arg in clz.context_provides.get("pipeline_init", []):
@@ -92,8 +70,8 @@ def test_all_arguments_can_be_satisfied_during_parse(component_class, default_co
         for ctx_arg in clz.context_provides.get("process", []):
             context_arguments[ctx_arg] = None
 
-    filled_args = fill_args(component.process_args(), context_arguments, default_config.as_dict())
-    assert len(filled_args) == len(component.process_args())
+    filled_args = fill_args(component_class.process_args(), context_arguments, default_config.as_dict())
+    assert len(filled_args) == len(component_class.process_args())
 
 
 def test_all_extractors_use_previous_entities():
