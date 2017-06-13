@@ -41,7 +41,7 @@ def test_all_components_are_in_all_components_template():
 
 
 @pytest.mark.parametrize("component_class", registry.component_classes)
-def test_all_arguments_can_be_satisfied(component_class, default_config, component_builder):
+def test_all_arguments_can_be_satisfied(component_class):
     """Check that `train` method parameters can be filled filled from the context. Similar to `pipeline_init` test."""
 
     # All available context arguments that will ever be generated during train

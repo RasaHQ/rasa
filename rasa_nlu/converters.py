@@ -48,12 +48,12 @@ def load_api_data(files):
                     end = start + len(e["text"])
                     val = text[start:end]
                     entities.append(
-                        {
-                            "entity": e["alias"] if "alias" in e else e["meta"],
-                            "value": val,
-                            "start": start,
-                            "end": end
-                        }
+                            {
+                                "entity": e["alias"] if "alias" in e else e["meta"],
+                                "value": val,
+                                "start": start,
+                                "end": end
+                            }
                     )
                 data = {}
                 if intent:
@@ -209,9 +209,12 @@ def load_rasa_data(filename):
     common = data['rasa_nlu_data'].get("common_examples", list())
     intent = data['rasa_nlu_data'].get("intent_examples", list())
     entity = data['rasa_nlu_data'].get("entity_examples", list())
-    training = data['rasa_nlu_data'].get("training_examples", list())
 
-    all_examples = common + intent + entity + training
+    if intent or entity:
+        logger.warn("DEPRECATION warning: Data file contains 'intent_examples' or 'entity_examples' which will be " +
+                    "removed in the future. Consider putting all your examples into the 'common_examples' section.")
+
+    all_examples = common + intent + entity
     training_examples = []
     for e in all_examples:
         data = {}

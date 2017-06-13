@@ -54,7 +54,7 @@ class MitieNLP(Component):
             return None
 
     def provide_context(self):
-        # type: (RasaNLUConfig) -> Dict[Text, Any]
+        # type: () -> Dict[Text, Any]
 
         return {"mitie_feature_extractor": self.extractor}
 

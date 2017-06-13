@@ -75,6 +75,7 @@ class TrainingData(object):
 
     @lazyproperty
     def intent_examples(self):
+        # type: () -> List[Message]
         return [e for e in self.training_examples if e.get("intent") is not None]
 
     @lazyproperty
@@ -102,7 +103,7 @@ class TrainingData(object):
 
         return str(json.dumps({
             "rasa_nlu_data": {
-                "training_examples": [example.as_dict() for example in self.training_examples],
+                "common_examples": [example.as_dict() for example in self.training_examples],
             }
         }, **kwargs))
 
@@ -157,7 +158,7 @@ class TrainingData(object):
         logger.info("Training data stats: \n" +
                     "\t- intent examples: {} ({} distinct intents)\n".format(
                             self.num_intent_examples, len(different_intents)) +
-                    "\t- found intents: {}\n".format(list_to_str(different_intents)) +
+                    "\t- found intents: {}\n".format(list_to_str(different_entities)) +
                     "\t- entity examples: {} ({} distinct entities)\n".format(
                             self.num_entity_examples, len(different_entities)) +
                     "\t- found entities: {}\n".format(list_to_str(different_entities)))

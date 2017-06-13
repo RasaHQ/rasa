@@ -180,7 +180,7 @@ class Component(object):
         return cls()
 
     def provide_context(self):
-        # type: (RasaNLUConfig) -> Optional[Dict[Text, Any]]
+        # type: () -> Optional[Dict[Text, Any]]
         """Initialize this component for a new pipeline
 
         This function will be called before the training is started and before the first message is processed using
