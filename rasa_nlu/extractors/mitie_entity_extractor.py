@@ -29,8 +29,6 @@ class MitieEntityExtractor(EntityExtractor):
 
     provides = ["entities"]
 
-    output_provides = ["entities"]
-
     requires = ["tokens"]
 
     def __init__(self, ner=None):
@@ -106,7 +104,7 @@ class MitieEntityExtractor(EntityExtractor):
 
         ents = self.extract_entities(message.text, message.get("tokens"), mitie_feature_extractor)
         extracted = self.add_extractor_name(ents)
-        message.set("entities", message.get("entities", []) + extracted)
+        message.set("entities", message.get("entities", []) + extracted, add_to_output=True)
 
     @classmethod
     def load(cls, model_dir, model_metadata, cached_component, **kwargs):

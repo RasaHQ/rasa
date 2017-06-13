@@ -19,7 +19,7 @@ def test_crf_extractor(spacy_nlp):
         Message("central indian restaurant", {
             "intent": "restaurant_search",
             "entities": [{"start": 0, "end": 7, "value": "central", "entity": "location"}],
-            "spacy_doc": spacy_nlp("anywhere in the west")
+            "spacy_doc": spacy_nlp("central indian restaurant")
         })]
     config = {"entity_crf_BILOU_flag": True, "entity_crf_features": ext.crf_features}
     ext.train(TrainingData(training_examples=examples), config)

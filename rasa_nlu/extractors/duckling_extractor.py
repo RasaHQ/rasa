@@ -33,8 +33,6 @@ class DucklingExtractor(EntityExtractor):
 
     provides = ["entities"]
 
-    output_provides = ["entities"]
-
     @staticmethod
     def available_dimensions():
         from duckling.dim import Dim
@@ -97,7 +95,7 @@ class DucklingExtractor(EntityExtractor):
                 extracted.append(entity)
 
         extracted = self.add_extractor_name(extracted)
-        message.set("entities", message.get("entities", []) + extracted)
+        message.set("entities", message.get("entities", []) + extracted, add_to_output=True)
 
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]

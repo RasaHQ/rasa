@@ -41,8 +41,6 @@ class SklearnIntentClassifier(Component):
 
     provides = ["intent", "intent_ranking"]
 
-    output_provides = ["intent", "intent_ranking"]
-
     requires = ["text_features"]
 
     def __init__(self, clf=None, le=None):
@@ -129,8 +127,8 @@ class SklearnIntentClassifier(Component):
                 intent = {"name": None, "confidence": 0.0}
                 intent_ranking = []
 
-        message.set("intent", intent)
-        message.set("intent_ranking", intent_ranking)
+        message.set("intent", intent, add_to_output=True)
+        message.set("intent_ranking", intent_ranking, add_to_output=True)
 
     def predict_prob(self, X):
         # type: (np.ndarray) -> np.ndarray

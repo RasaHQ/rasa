@@ -147,12 +147,6 @@ class Component(object):
     # previous component in the pipeline needs to have "tokens" within the above described `provides` property.
     requires = []
 
-    # Defines which of the attributes the component provides should be added to the final output json at the end of the
-    # pipeline. Every attribute in `output_provides` should be part of the above `provides`. As it
-    # wouldn't make much sense to keep an attribute in the output that is not generated. Every other attribute provided
-    # in the context during the process step will be removed from the output json.
-    output_provides = []    # type: List[Text]
-
     @classmethod
     def required_packages(cls):
         # type: () -> List[Text]

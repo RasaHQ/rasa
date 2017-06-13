@@ -20,15 +20,13 @@ class SpacyEntityExtractor(EntityExtractor):
 
     provides = ["entities"]
 
-    output_provides = ["entities"]
-
     requires = ["spacy_doc"]
 
     def process(self, message, **kwargs):
         # type: (Message, **Any) -> None
 
         extracted = self.add_extractor_name(self.extract_entities(message.get("spacy_doc")))
-        message.set("entities", message.get("entities", []) + extracted)
+        message.set("entities", message.get("entities", []) + extracted, add_to_output=True)
 
     def extract_entities(self, doc):
         # type: (Doc) -> List[Dict[Text, Any]]

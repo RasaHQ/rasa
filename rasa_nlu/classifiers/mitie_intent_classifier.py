@@ -27,8 +27,6 @@ class MitieIntentClassifier(Component):
 
     provides = ["intent"]
 
-    output_provides = ["intent"]
-
     requires = ["tokens"]
 
     def __init__(self, clf=None):
@@ -46,7 +44,7 @@ class MitieIntentClassifier(Component):
         trainer = mitie.text_categorizer_trainer(config["mitie_file"])
         trainer.num_threads = config["num_threads"]
         for example in training_data.intent_examples:
-            tokens = mitie.tokenize(example.text)
+            tokens = self._tokens_of_message(example)
             trainer.add_labeled_text(tokens, example.get("intent"))
 
         if training_data.intent_examples:
@@ -61,14 +59,17 @@ class MitieIntentClassifier(Component):
             raise Exception("Failed to train 'intent_featurizer_mitie'. Missing a proper MITIE feature extractor.")
 
         if self.clf:
-            token_strs = [token.text for token in message.get("tokens", [])]
+            token_strs = self._tokens_of_message(message)
             intent, confidence = self.clf(token_strs, mitie_feature_extractor)
         else:
             # either the model didn't get trained or it wasn't provided with any data
             intent = None
             confidence = 0.0
 
-        message.set("intent", {"name": intent, "confidence": confidence})
+        message.set("intent", {"name": intent, "confidence": confidence}, add_to_output=True)
+
+    def _tokens_of_message(self, message):
+        return [token.text for token in message.get("tokens", [])]
 
     @classmethod
     def load(cls, model_dir, model_metadata, cached_component, **kwargs):

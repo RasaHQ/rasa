@@ -28,8 +28,6 @@ class EntitySynonymMapper(EntityExtractor):
 
     provides = ["entities"]
 
-    output_provides = ["entities"]
-
     def __init__(self, synonyms=None):
         # type: (Optional[Dict[Text, Text]]) -> None
         self.synonyms = synonyms if synonyms else {}
@@ -50,7 +48,7 @@ class EntitySynonymMapper(EntityExtractor):
 
         updated_entities = message.get("entities", [])[:]
         self.replace_synonyms(updated_entities)
-        message.set("entities", updated_entities)
+        message.set("entities", updated_entities, add_to_output=True)
 
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]

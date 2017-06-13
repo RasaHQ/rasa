@@ -163,10 +163,6 @@ def rasa_nlu_data_schema():
                         "type": "array",
                         "items": training_example_schema
                     },
-                    "training_examples": {
-                        "type": "array",
-                        "items": training_example_schema
-                    },
                     "intent_examples": {
                         "type": "array",
                         "items": training_example_schema

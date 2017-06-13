@@ -35,9 +35,7 @@ class CRFEntityExtractor(EntityExtractor):
 
     provides = ["entities"]
 
-    output_provides = ["entities"]
-
-    requires = ["tokens"]
+    requires = ["spacy_doc"]
 
     function_dict = {'low': lambda doc: doc[0].lower(), 'title': lambda doc: str(doc[0].istitle()),
                      'word3': lambda doc: doc[0][-3:], 'word2': lambda doc: doc[0][-2:],
@@ -81,6 +79,7 @@ class CRFEntityExtractor(EntityExtractor):
             self._train_model(dataset)
 
     def _create_dataset(self, examples):
+        # type: (List[Message]) -> List[List[Tuple[Text, Text, Text]]]
         dataset = []
         for example in examples:
             entity_offsets = self._convert_example(example)
@@ -98,7 +97,7 @@ class CRFEntityExtractor(EntityExtractor):
         # type: (Message, **Any) -> None
 
         extracted = self.add_extractor_name(self.extract_entities(message))
-        message.set("entities", message.get("entities", []) + extracted)
+        message.set("entities", message.get("entities", []) + extracted, add_to_output=True)
 
     def _convert_example(self, example):
         # type: (Message) -> List[Tuple[int, int, Text]]
@@ -241,7 +240,7 @@ class CRFEntityExtractor(EntityExtractor):
         return [label for token, postag, label in sentence]
 
     def _from_json_to_crf(self, example, entity_offsets):
-        # type: (Message, Tuple[int, int, Text]) -> List[Tuple[Text, Text, Text]]
+        # type: (Message, List[Tuple[int, int, Text]]) -> List[Tuple[Text, Text, Text]]
         """Takes the json examples and switches them to a format which crfsuite likes."""
         from spacy.gold import GoldParse
 

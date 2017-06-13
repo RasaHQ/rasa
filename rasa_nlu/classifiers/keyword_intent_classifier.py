@@ -17,8 +17,6 @@ class KeywordIntentClassifier(Component):
 
     provides = ["intent"]
 
-    output_provides = ["intent"]
-
     his = ["hello", "hi", "hey"]
 
     byes = ["bye", "goodbye"]
@@ -26,7 +24,7 @@ class KeywordIntentClassifier(Component):
     def process(self, message, **kwargs):
         # type: (Message, **Any) -> None
 
-        message.set("intent", {"name": self.parse(message.text), "confidence": 1.0})
+        message.set("intent", {"name": self.parse(message.text), "confidence": 1.0}, add_to_output=True)
 
     def parse(self, text):
         # type: (Text) -> Text

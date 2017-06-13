@@ -226,7 +226,6 @@ class Interpreter(object):
         self.pipeline = pipeline
         self.context = context if context is not None else {}
         self.model_metadata = model_metadata
-        self.output_attributes = [output for component in pipeline for output in component.output_provides]
 
     def parse(self, text):
         # type: (Text) -> Dict[Text, Any]
@@ -245,8 +244,6 @@ class Interpreter(object):
         for component in self.pipeline:
             component.process(message, **self.context)
 
-        all_attributes = list(self.default_output_attributes().keys()) + self.output_attributes
-        # Ensure only keys of `all_attributes` are present and no other keys are returned
-        result = {key: message.get(key) for key in all_attributes if message.get(key) is not None}
-        result["text"] = message.text
-        return result
+        output = self.default_output_attributes()
+        output.update(message.as_dict(only_output_properties=True))
+        return output
