@@ -7,10 +7,12 @@ import logging
 import os
 from collections import defaultdict
 
+import typing
 from builtins import object
 import inspect
 
 from typing import Any
+from typing import ClassVar
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -20,6 +22,11 @@ from typing import Tuple
 from typing import Type
 
 from rasa_nlu.config import RasaNLUConfig
+
+logger = logging.getLogger(__name__)
+
+if typing.TYPE_CHECKING:
+    from rasa_nlu.model import Metadata
 
 
 def load_component(component_clz, context, config):
@@ -92,7 +99,7 @@ def find_unavailable_packages(package_names):
 
 
 def validate_requirements(component_names, dev_requirements_file="dev-requirements.txt"):
-    # type: (List[Text]) -> None
+    # type: (List[Text], Text) -> None
     """Ensures that all required python packages are installed to instantiate and used the passed components."""
     from rasa_nlu import registry
 
@@ -124,16 +131,12 @@ def validate_arguments(pipeline, config, allow_empty_pipeline=False):
                          "The `backend` configuration key is NOT supported anymore.")
 
     # Validate the init phase
-    context = {}
+    context = {}    # type: Dict[Text, Any]
 
     for component in pipeline:
-        try:
-            fill_args(component.pipeline_init_args(), context, config.as_dict())
-            updates = component.context_provides.get("pipeline_init", [])
-            for u in updates:
-                context[u] = None
-        except MissingArgumentError as e:   # pragma: no cover
-            raise Exception("Failed to validate component '{}'. {}".format(component.name, e))
+        updates = component.context_provides.get("pipeline_init", [])
+        for u in updates:
+            context[u] = None
 
     after_init_context = context.copy()
 
@@ -203,13 +206,13 @@ class Component(object):
         "pipeline_init": [],
         "train": [],
         "process": [],
-    }
+    }                       # type: Dict[Text, Any]
 
     # Defines which of the attributes the component provides should be added to the final output json at the end of the
     # pipeline. Every attribute in `output_provides` should be part of the above `context_provides['process']`. As it
     # wouldn't make much sense to keep an attribute in the output that is not generated. Every other attribute provided
     # in the context during the process step will be removed from the output json.
-    output_provides = []
+    output_provides = []    # type: List[Text]
 
     @classmethod
     def required_packages(cls):
@@ -237,8 +240,8 @@ class Component(object):
         Method can access all configuration parameters."""
         return cls(*args)
 
-    def pipeline_init(self, *args):
-        # type: (*Any) -> Optional[Dict[Text, Any]]
+    def pipeline_init(self):
+        # type: () -> Optional[Dict[Text, Any]]
         """Initialize this component for a new pipeline
 
         This function will be called before the training is started and before the first message is processed using
@@ -282,22 +285,25 @@ class Component(object):
 
         return None
 
-    def pipeline_init_args(self):
+    @classmethod
+    def pipeline_init_args(cls):
         # type: () -> List[Text]
-        return [arg for arg in inspect.getargspec(self.pipeline_init).args if arg not in ["self"]]
+        return [arg for arg in inspect.getargspec(cls.pipeline_init).args if arg not in ["self"]]
 
     @classmethod
     def create_args(cls):
         # type: () -> List[Text]
         return [arg for arg in inspect.getargspec(cls.create).args if arg not in ["cls"]]
 
-    def train_args(self):
+    @classmethod
+    def train_args(cls):
         # type: () -> List[Text]
-        return [arg for arg in inspect.getargspec(self.train).args if arg not in ["self"]]
+        return [arg for arg in inspect.getargspec(cls.train).args if arg not in ["self"]]
 
-    def process_args(self):
+    @classmethod
+    def process_args(cls):
         # type: () -> List[Text]
-        return [arg for arg in inspect.getargspec(self.process).args if arg not in ["self"]]
+        return [arg for arg in inspect.getargspec(cls.process).args if arg not in ["self"]]
 
     @classmethod
     def load_args(cls):
@@ -336,7 +342,7 @@ class ComponentBuilder(object):
 
         if cache_key is not None and self.use_cache:
             self.component_cache[cache_key] = component
-            logging.info("Added '{}' to component cache. Key '{}'.".format(component.name, cache_key))
+            logger.info("Added '{}' to component cache. Key '{}'.".format(component.name, cache_key))
 
     def load_component(self, component_name, context, model_config, meta):
         # type: (Text, Dict[Text, Any], Dict[Text, Any], Metadata) -> Component

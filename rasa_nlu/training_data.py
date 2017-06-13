@@ -1,23 +1,28 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
-import logging
-from builtins import object, str, filter
+import io
 import json
+import logging
 import os
 import warnings
 from itertools import groupby
-import io
 
+from builtins import object, str
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Text
+
+from rasa_nlu.utils import lazyproperty
+from rasa_nlu.utils import list_to_str
+
+logger = logging.getLogger(__name__)
 
 TrainingExample = Dict[Text, Any]
 TrainingExamples = List[TrainingExample]
@@ -30,37 +35,40 @@ class TrainingData(object):
     MIN_EXAMPLES_PER_INTENT = 2
     MIN_EXAMPLES_PER_ENTITY = 2
 
-    def __init__(self,
-                 intent_examples_only=None,  # type: Optional[TrainingExamples]
-                 entity_examples_only=None,  # type: Optional[TrainingExamples]
-                 common_examples=None,  # type: Optional[TrainingExamples]
-                 entity_synonyms=None  # type: Optional[TrainingExamples]
-                 ):
-        self.intent_examples_only = intent_examples_only if intent_examples_only else []
-        self.entity_examples_only = entity_examples_only if entity_examples_only else []
-        self.common_examples = common_examples if common_examples else []
+    def __init__(self, training_examples=None, entity_synonyms=None):
+        # type: (Optional[TrainingExamples], Optional[Dict[Text, List[Text]]]) -> None
+
+        self.training_examples = self.sanitice_examples(training_examples) if training_examples else []
         self.entity_synonyms = entity_synonyms if entity_synonyms else {}
 
         self.validate()
 
-    @property
+    def sanitice_examples(self, examples):
+        """Makes sure the training data is cleaned, e.q. removes trailing whitespaces from intent annotations."""
+
+        for e in examples:
+            if "intent" in e:
+                e["intent"] = e["intent"].strip()
+        return examples
+
+    @lazyproperty
     def intent_examples(self):
-        return list(filter(lambda e: "intent" in e,
-                           self.intent_examples_only + self.common_examples))
+        # type: () -> TrainingExamples
+        return [e for e in self.training_examples if "intent" in e]
 
-    @property
+    @lazyproperty
     def entity_examples(self):
-        return list(filter(lambda e: "entities" in e,
-                           self.entity_examples_only + self.common_examples))
+        # type: () -> TrainingExamples
+        return [e for e in self.training_examples if "entities" in e]
 
-    @property
+    @lazyproperty
     def num_entity_examples(self):
         # type: () -> int
-        """Returns the number of entity examples."""
+        """Returns the number of proper entity training examples (containing at least one annotated entity)."""
 
-        return len([e for e in self.entity_examples if len(e["entities"]) > 0])
+        return len([e for e in self.training_examples if len(e.get("entities", [])) > 0])
 
-    @property
+    @lazyproperty
     def num_intent_examples(self):
         # type: () -> int
         """Returns the number of intent examples."""
@@ -73,9 +81,7 @@ class TrainingData(object):
 
         return str(json.dumps({
             "rasa_nlu_data": {
-                "common_examples": self.common_examples,
-                "intent_examples": self.intent_examples_only,
-                "entity_examples": self.entity_examples_only,
+                "common_examples": self.training_examples,
             }
         }, **kwargs))
 
@@ -107,7 +113,7 @@ class TrainingData(object):
         # type: () -> None
         """Ensures that the loaded training data is valid, e.g. has a minimum of certain training examples."""
 
-        logging.debug("Validating training data...")
+        logger.debug("Validating training data...")
         examples = self.sorted_intent_examples()
         different_intents = []
         for intent, group in groupby(examples, lambda e: e["intent"]):
@@ -126,10 +132,10 @@ class TrainingData(object):
                 template = "Entity '{}' has only {} training examples! minimum is {}, training may fail."
                 warnings.warn(template.format(entity, size, self.MIN_EXAMPLES_PER_ENTITY))
 
-        logging.info("Training data stats: \n" +
-                     "\t- intent examples: {} ({} distinct intents)\n".format(
-                         self.num_intent_examples, len(different_intents)) +
-                     "\t- found intents: {}\n".format(", ".join(different_intents)) +
-                     "\t- entity examples: {} ({} distinct entities)\n".format(
-                         self.num_entity_examples, len(different_entities)) +
-                     "\t- found entities: {}\n".format(", ".join(different_entities)))
+        logger.info("Training data stats: \n" +
+                    "\t- intent examples: {} ({} distinct intents)\n".format(
+                            self.num_intent_examples, len(different_intents)) +
+                    "\t- found intents: {}\n".format(list_to_str(different_entities)) +
+                    "\t- entity examples: {} ({} distinct entities)\n".format(
+                            self.num_entity_examples, len(different_entities)) +
+                    "\t- found entities: {}\n".format(list_to_str(different_entities)))
