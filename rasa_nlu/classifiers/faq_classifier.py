@@ -3,6 +3,7 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+import logging
 import typing
 from builtins import zip
 import os
@@ -22,6 +23,8 @@ if typing.TYPE_CHECKING:
     import sklearn
     import spacy
     import numpy as np
+
+logger = logging.getLogger(__name__)
 
 
 class FAQClassifierSklearn(Component):
@@ -79,17 +82,24 @@ class FAQClassifierSklearn(Component):
         labels = [e["refinement"] for e in training_data.intent_examples if "refinement" in e]
         ex_idx = ["refinement" in e for e in training_data.intent_examples]
 
-        y = self.transform_labels_str2num(labels)
+        if labels:
+            y = self.transform_labels_str2num(labels)
 
-        X = intent_features[ex_idx, :]
+            X = intent_features[ex_idx, :]
 
-        self.clf = KNeighborsClassifier(n_neighbors=self.number_of_neighbours)
+            self.clf = KNeighborsClassifier(n_neighbors=self.number_of_neighbours)
 
-        self.clf.fit(X, y)
+            self.clf.fit(X, y)
+        else:
+            logger.info("Skipped training of 'faq_classifier_sklearn', since there are no labeld refinement examples.")
 
     def process(self, intent_features):
         # type: (np.ndarray) -> Dict[Text, Any]
         """Returns the most likely intent and its probability for the input text."""
+
+        if not self.clf:
+            # The classifier wasn't trained - e.g. due to no examples being present
+            return {"faq": None, "faq_ranking": []}
 
         X = intent_features.reshape(1, -1)
         intent_ids, probabilities = self.predict(X)

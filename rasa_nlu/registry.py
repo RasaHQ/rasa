@@ -95,6 +95,7 @@ registered_pipeline_templates = {
         "intent_classifier_keyword",
         "intent_classifier_sklearn",
         "intent_classifier_mitie",
+        "faq_classifier_sklearn",
     ]
 }
 
