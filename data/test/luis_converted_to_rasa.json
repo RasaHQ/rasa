@@ -96,22 +96,19 @@
             "entity": "cuisine"
           }
         ]
-      }, 
+      },
       {
-        "text": "any indonesian places?", 
-        "intent": "inform", 
+        "text": "any indonesian places?",
+        "intent": "inform",
         "entities": [
           {
-            "start": 4, 
-            "end": 14, 
-            "value": "indonesian", 
+            "start": 4,
+            "end": 14,
+            "value": "indonesian",
             "entity": "cuisine"
           }
         ]
-      }
-    ], 
-    "entity_examples": [], 
-    "intent_examples": [
+      },
       {
         "text": "hello", 
         "intent": "greet"

@@ -3,33 +3,27 @@
 Training Data Format
 ====================
 
-The training data for rasa NLU has three arrays inside of a top level object ``common_examples``, ``intent_examples``, and ``entity_examples``. Not all three are required, you can use each of them as needed by the model you are trying to train.
+The training data for rasa NLU is structured into different parts. The most important one is ``common_examples``.
 
 .. code-block:: json
 
     {
         "rasa_nlu_data": {
-            "common_examples": [],
-            "intent_examples": [],
-            "entity_examples": []
+            "common_examples": []
         }
     }
 
-The ``common_examples`` are used to train both the entity and the intent models while the other arrays target intents and entities exclusively.
-
-In many cases it's fine to put all of your training examples in the ``common_examples`` array. 
-However, if you need lots and lots of examples to train a good entity recogniser, that can mess up 
-your intent model because your classes would become unbalanced. In that case it makes sense
-to split up these lists.
+The ``common_examples`` are used to train both the entity and the intent models. You should put all of your training
+examples in the ``common_examples`` array. The next section describes in detail how an example looks like.
 
 Common Examples
 ---------------
 
 Common examples have three components: ``text``, ``intent``, and ``entities``. The first two are strings while the last one is an array.
 
- - The *text* is the search query; An example of what would be submitted for parsing.
- - The *intent* is the intent that should be associated with the text.
- - The *entities* are specific parts of the text which need to be identified.
+ - The *text* is the search query; An example of what would be submitted for parsing. [required]
+ - The *intent* is the intent that should be associated with the text. [optional]
+ - The *entities* are specific parts of the text which need to be identified. [optional]
 
 Entities are specified with a ``start`` and  ``end`` value, which together make a python
 style range to apply to the string, e.g. in the example below, with ``text="show me chinese
@@ -42,35 +36,6 @@ That way you can map syonyms, or misspellings, to the same ``value``.
     {
       "text": "show me chinese restaurants", 
       "intent": "restaurant_search", 
-      "entities": [
-        {
-          "start": 8, 
-          "end": 15, 
-          "value": "chinese", 
-          "entity": "cuisine"
-        }
-      ]
-    }
-    
-Intent Examples
----------------
-Omit the entire entities array:
-
-.. code-block:: json
-
-    {
-      "text": "show me chinese restaurants", 
-      "intent": "restaurant_search"
-    }
-
-Entity Examples
----------------
-Simply omit the ``intent`` section:
-
-.. code-block:: json
-
-    {
-      "text": "show me chinese restaurants", 
       "entities": [
         {
           "start": 8, 
