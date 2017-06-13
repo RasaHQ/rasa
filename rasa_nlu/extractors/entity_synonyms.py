@@ -64,8 +64,8 @@ class EntitySynonymMapper(EntityExtractor):
             return {"entity_synonyms": None}
 
     @classmethod
-    def load(cls, model_dir, model_metadata, **kwargs):
-        # type: (Text, Metadata, **Any) -> EntitySynonymMapper
+    def load(cls, model_dir, model_metadata, cached_component, **kwargs):
+        # type: (Text, Metadata, Optional[EntitySynonymMapper], **Any) -> EntitySynonymMapper
 
         if model_dir and model_metadata.get("entity_synonyms"):
             entity_synonyms_file = os.path.join(model_dir, model_metadata.get("entity_synonyms"))

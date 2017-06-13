@@ -71,8 +71,8 @@ class MitieIntentClassifier(Component):
         message.set("intent", {"name": intent, "confidence": confidence})
 
     @classmethod
-    def load(cls, model_dir, model_metadata, **kwargs):
-        # type: (Text, Metadata, **Any) -> MitieIntentClassifier
+    def load(cls, model_dir, model_metadata, cached_component, **kwargs):
+        # type: (Text, Metadata, Optional[MitieIntentClassifier], **Any) -> MitieIntentClassifier
         import mitie
 
         if model_dir and model_metadata.get("intent_classifier_mitie"):

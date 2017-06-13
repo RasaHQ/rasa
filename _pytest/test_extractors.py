@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import utilities
 from rasa_nlu.training_data import TrainingData, Message
 
 
@@ -58,3 +59,13 @@ def test_crf_json_from_non_BILOU(spacy_nlp):
     assert r[2] == {u'start': 23, u'end': 28, u'value': u'close', u'entity': u'where'}
     assert r[3] == {u'start': 28, u'end': 29, u'value': u'-', u'entity': u'where'}
     assert r[4] == {u'start': 29, u'end': 31, u'value': u'by', u'entity': u'where'}
+
+
+def test_duckling_entity_extractor(component_builder):
+    _config = utilities.base_test_conf("all_components")
+    _config["duckling_dimensions"] = ["time"]
+    duckling = component_builder.create_component("ner_duckling", _config)
+    message = Message("Today is the 5th of May. Let us meet tomorrow.")
+    duckling.process(message)
+    entities = message.get("entities")
+    assert len(entities) == 3

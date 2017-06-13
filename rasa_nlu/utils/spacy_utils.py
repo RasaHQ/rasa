@@ -88,9 +88,12 @@ class SpacyNLP(Component):
         }
 
     @classmethod
-    def load(cls, model_dir, model_metadata, **kwargs):
-        # type: (Text, Metadata, RasaNLUConfig, **Any) -> SpacyNLP
+    def load(cls, model_dir, model_metadata, cached_component, **kwargs):
+        # type: (Text, Metadata, Optional[SpacyNLP], **Any) -> SpacyNLP
         import spacy
+
+        if cached_component:
+            return cached_component
 
         nlp = spacy.load(model_metadata.get("spacy_model_name"), parser=False)
         cls.ensure_proper_language_model(nlp)

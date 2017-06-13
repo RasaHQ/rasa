@@ -111,12 +111,12 @@ def get_component_class(component_name):
     return registered_components[component_name]
 
 
-def load_component_by_name(component_name, model_dir, metadata, **kwargs):
-    # type: (Text, Text, Metadata, **Any) -> Optional[Component]
+def load_component_by_name(component_name, model_dir, metadata, cached_component, **kwargs):
+    # type: (Text, Text, Metadata, Optional[Component], **Any) -> Optional[Component]
     """Resolves a components name and calls it's load method to init it based on a previously persisted model."""
 
     component_clz = get_component_class(component_name)
-    return component_clz.load(model_dir, metadata, **kwargs)
+    return component_clz.load(model_dir, metadata, cached_component, **kwargs)
 
 
 def create_component_by_name(component_name, config):

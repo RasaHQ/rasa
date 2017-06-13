@@ -109,8 +109,8 @@ class MitieEntityExtractor(EntityExtractor):
         message.set("entities", message.get("entities", []) + extracted)
 
     @classmethod
-    def load(cls, model_dir, model_metadata, **kwargs):
-        # type: (Text, Metadata, **Any) -> MitieEntityExtractor
+    def load(cls, model_dir, model_metadata, cached_component, **kwargs):
+        # type: (Text, Metadata, Optional[MitieEntityExtractor], **Any) -> MitieEntityExtractor
         import mitie
 
         if model_dir and model_metadata.get("entity_extractor_mitie"):

@@ -66,10 +66,10 @@ class MitieNLP(Component):
             raise Exception("Failed to load MITIE feature extractor. Loading the model returned 'None'.")
 
     @classmethod
-    def load(cls, model_dir, model_metadata, **kwargs):
-        # type: (Text, Metadata, **Any) -> MitieNLP
+    def load(cls, model_dir, model_metadata, cached_component, **kwargs):
+        # type: (Text, Metadata, Optional[MitieNLP], **Any) -> MitieNLP
 
-        return cls.create(model_metadata.get("mitie_file"))
+        return cached_component if cached_component else cls.create(model_metadata.get("mitie_file"))
 
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]

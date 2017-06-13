@@ -90,7 +90,8 @@ class DucklingExtractor(EntityExtractor):
                 entity = {"start": match["start"],
                           "end": match["end"],
                           "text": match["text"],
-                          "value": match["value"],
+                          "value": match["value"]["value"],
+                          "additional_info": match["value"],
                           "entity": match["dim"]}
 
                 extracted.append(entity)
@@ -108,13 +109,17 @@ class DucklingExtractor(EntityExtractor):
         return {"ner_duckling_persisted": file_name}
 
     @classmethod
-    def load(cls, model_dir, model_metadata, **kwargs):
-        # type: (Text, Metadata, **Any) -> DucklingExtractor
+    def load(cls, model_dir, model_metadata, cached_component, **kwargs):
+        # type: (Text, Metadata, Optional[DucklingExtractor], **Any) -> DucklingExtractor
 
         persisted = os.path.join(model_dir, model_metadata.get("ner_duckling_persisted"))
+        if cached_component:
+            duckling = cached_component.duckling
+        else:
+            duckling = cls._create_duckling_wrapper(model_metadata.get("language"))
+
         if os.path.isfile(persisted):
             with io.open(persisted, encoding='utf-8') as f:
                 persisted_data = json.loads(f.read())
-                return DucklingExtractor(cls._create_duckling_wrapper(model_metadata.get("language")),
-                                         persisted_data["dimensions"])
-        return DucklingExtractor(cls._create_duckling_wrapper(model_metadata.get("language")))
+                return DucklingExtractor(duckling, persisted_data["dimensions"])
+        return DucklingExtractor(duckling)

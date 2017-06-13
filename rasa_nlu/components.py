@@ -138,15 +138,17 @@ class Component(object):
     # will be a proper pipeline definition where `ComponentA` is the name of the first component of the pipeline.
     name = ""
 
-    # Defines what attributes the pipeline component will provide when called. The different keys indicate the
-    # different functions (`pipeline_init`, `train`, `process`) that are able to update the pipelines context.
-    # (mostly used to check if the pipeline is valid)
+    # Defines what attributes the pipeline component will provide when called. The listed attributes
+    # should be set by the component on the message object during test and train, e.g.
+    # ```message.set("entities", [...])```
     provides = []
 
+    # Which attributes on a message are required by this component. e.g. if requires contains "tokens", than a
+    # previous component in the pipeline needs to have "tokens" within the above described `provides` property.
     requires = []
 
     # Defines which of the attributes the component provides should be added to the final output json at the end of the
-    # pipeline. Every attribute in `output_provides` should be part of the above `context_provides['process']`. As it
+    # pipeline. Every attribute in `output_provides` should be part of the above `provides`. As it
     # wouldn't make much sense to keep an attribute in the output that is not generated. Every other attribute provided
     # in the context during the process step will be removed from the output json.
     output_provides = []    # type: List[Text]
@@ -160,14 +162,14 @@ class Component(object):
         return []
 
     @classmethod
-    def load(cls, model_dir=None, model_metadata=None, **kwargs):
-        # type: (Text, Metadata, RasaNLUConfig, **Any) -> Component
+    def load(cls, model_dir=None, model_metadata=None, cached_component=None, **kwargs):
+        # type: (Text, Metadata, RasaNLUConfig, Optional[Component], **Any) -> Component
         """Load this component from file.
 
         After a component got trained, it will be persisted by calling `persist`. When the pipeline gets loaded again,
          this component needs to be able to restore itself. Components can rely on any context attributes that are
          created by `pipeline_init` calls to components previous to this one."""
-        return cls()
+        return cached_component if cached_component else cls()
 
     @classmethod
     def create(cls, config):
@@ -263,9 +265,11 @@ class ComponentBuilder(object):
         from rasa_nlu.model import Metadata
 
         try:
-            component, cache_key = self.__get_cached_component(component_name, model_metadata)
-            if component is None:
-                component = registry.load_component_by_name(component_name, model_dir, model_metadata, **context)
+            cached_component, cache_key = self.__get_cached_component(component_name, model_metadata)
+            component = registry.load_component_by_name(component_name, model_dir,
+                                                        model_metadata, cached_component, **context)
+            if not cached_component:
+                # If the component wasn't in the cache, let us add it if possible
                 self.__add_to_cache(component, cache_key)
             return component
         except MissingArgumentError as e:   # pragma: no cover

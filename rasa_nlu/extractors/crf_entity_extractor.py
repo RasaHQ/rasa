@@ -10,6 +10,7 @@ import typing
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Optional
 from typing import Text
 from typing import Tuple
 
@@ -178,8 +179,8 @@ class CRFEntityExtractor(EntityExtractor):
         return json_ents
 
     @classmethod
-    def load(cls, model_dir, model_metadata, **kwargs):
-        # type: (Text, Metadata, **Any) -> CRFEntityExtractor
+    def load(cls, model_dir, model_metadata, cached_component, **kwargs):
+        # type: (Text, Metadata, Optional[CRFEntityExtractor], **Any) -> CRFEntityExtractor
         from sklearn.externals import joblib
 
         if model_dir and model_metadata.get("entity_extractor_crf"):

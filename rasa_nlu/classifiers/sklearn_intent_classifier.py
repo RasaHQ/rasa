@@ -156,7 +156,7 @@ class SklearnIntentClassifier(Component):
         return sorted_indices, pred_result[:, sorted_indices]
 
     @classmethod
-    def load(cls, model_dir, model_metadata, **kwargs):
+    def load(cls, model_dir, model_metadata, cached_component, **kwargs):
         # type: (Text, Metadata, **Any) -> SklearnIntentClassifier
         import cloudpickle
 

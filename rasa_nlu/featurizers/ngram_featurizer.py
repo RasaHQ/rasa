@@ -87,8 +87,8 @@ class NGramFeaturizer(Component):
             return message.get("text_features")
 
     @classmethod
-    def load(cls, model_dir, model_metadata, **kwargs):
-        # type: (Text, Metadata, **Any) -> NGramFeaturizer
+    def load(cls, model_dir, model_metadata, cached_component, **kwargs):
+        # type: (Text, Metadata, Optional[NGramFeaturizer], **Any) -> NGramFeaturizer
         import cloudpickle
 
         if model_dir and model_metadata.get("ngram_featurizer"):
