@@ -80,6 +80,7 @@ def load_luis_data(filename):
     intent_examples = []
     entity_examples = []
     common_examples = []
+    regex_features = []
 
     with io.open(filename, encoding="utf-8-sig") as f:
         data = json.loads(f.read())

@@ -53,7 +53,9 @@ registered_pipeline_templates = {
     "spacy_sklearn": [
         "nlp_spacy",
         "ner_crf",
+        "ner_regex",
         "ner_synonyms",
+        "intent_classifier_regex"
         "intent_featurizer_spacy",
         "intent_classifier_sklearn",
     ],
@@ -61,14 +63,18 @@ registered_pipeline_templates = {
         "nlp_mitie",
         "tokenizer_mitie",
         "ner_mitie",
+        "ner_regex",
         "ner_synonyms",
+        "intent_classifier_regex"
         "intent_classifier_mitie",
     ],
     "mitie_sklearn": [
         "nlp_mitie",
         "tokenizer_mitie",
         "ner_mitie",
+        "ner_regex",
         "ner_synonyms",
+        "intent_classifier_regex"
         "intent_featurizer_mitie",
         "intent_classifier_sklearn",
     ],
@@ -89,12 +95,14 @@ registered_pipeline_templates = {
         "ner_spacy",
         "ner_duckling",
         "ner_synonyms",
+        "ner_regex",
         "intent_featurizer_mitie",
         "intent_featurizer_spacy",
         "intent_featurizer_ngrams",
         "intent_classifier_keyword",
         "intent_classifier_sklearn",
         "intent_classifier_mitie",
+        "intent_classifier_regex"
     ]
 }
 
