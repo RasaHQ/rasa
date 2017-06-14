@@ -53,3 +53,31 @@ def test_crf_json_from_non_BILOU(spacy_nlp):
     assert r[2] == {u'start': 23, u'end': 28, u'value': u'close', u'entity': u'where'}
     assert r[3] == {u'start': 28, u'end': 29, u'value': u'-', u'entity': u'where'}
     assert r[4] == {u'start': 29, u'end': 31, u'value': u'by', u'entity': u'where'}
+
+def test_ner_regex_no_entities():
+    from rasa_nlu.extractors.regex_entity_extractor import RegExEntityExtractor
+    regex_dict = {u'\\bmexican\\b': u'mexican', 
+                  u'[0-9]+': u'number'}
+    txt = "I want indian food"
+    ext = RegExEntityExtractor(regex_dict)
+    assert ext.extract_entities(txt) == []
+
+def test_ner_regex_multi_entities():
+    from rasa_nlu.extractors.regex_entity_extractor import RegExEntityExtractor
+    regex_dict = {u'\\bmexican\\b': u'mexican', 
+                  u'[0-9]+': u'number'}
+    txt = "find me 2 mexican restaurants"
+    ext = RegExEntityExtractor(regex_dict)
+    r = ext.extract_entities(txt)
+    assert r[0] == {u'start': 10, u'end': 17, u'value': 'mexican', u'entity': 'mexican'}
+    assert r[1] == {u'start': 8, u'end': 9, u'value': '2', u'entity': 'number'}
+
+def test_ner_regex_1_entity():
+    from rasa_nlu.extractors.regex_entity_extractor import RegExEntityExtractor
+    regex_dict = {u'\\bmexican\\b': u'mexican', 
+                  u'[0-9]+': u'number'}
+    txt = "my insurance number is 934049430"
+    ext = RegExEntityExtractor(regex_dict)
+    r = ext.extract_entities(txt)
+    assert r[0] == {u'start': 23, u'end': 32, u'value': '934049430', u'entity': 'number'}
+
