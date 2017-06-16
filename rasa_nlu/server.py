@@ -9,7 +9,6 @@ import os
 from functools import wraps
 
 from klein import Klein
-from twisted.internet import reactor, defer, threads
 
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.data_router import DataRouter, InvalidModelError
@@ -67,7 +66,6 @@ class RasaApp(object):
         logger.debug("Creating a new data router")
         self.config = config
         self.data_router = DataRouter(config, component_builder)
-        reactor.suggestThreadPoolSize(20)
 
     @rasa_nlu_app.route("/parse", methods=['GET', 'POST'])
     @requires_auth
@@ -117,10 +115,9 @@ class RasaApp(object):
     @requires_auth
     def train(self, request):
         data_string = request.content.read()
-        def_training_result = threads.deferToThread(self.data_router.start_train_process, data_string,
-                                                    {key: value[0] for key, value in request.args.items()})
-        def_training_result.addCallback(lambda x: print('Trained {}'.format(x)))
-        def_training_result.addErrback(lambda failure: failure.trap(Exception))
+
+        test = self.data_router.start_train_process(data_string, {key: value[0] for key, value in request.args.items()})
+
         request.setHeader('Content-Type', 'application/json')
         return json.dumps({"info": "training started.", "training_process_ids": self.data_router.train_proc_ids()})
 

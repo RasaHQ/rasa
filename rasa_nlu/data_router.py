@@ -7,12 +7,15 @@ import datetime
 import glob
 import json
 import logging
-import multiprocessing
 import os
 import tempfile
 
 from builtins import object
 from typing import Text
+
+from concurrent.futures import ProcessPoolExecutor as ProcessPool
+from twisted.internet import defer
+# from pathos.multiprocessing import ProcessPool
 
 from rasa_nlu import utils
 from rasa_nlu.components import ComponentBuilder
@@ -21,6 +24,20 @@ from rasa_nlu.model import Metadata, InvalidModelError, Interpreter
 from rasa_nlu.train import do_train
 
 logger = logging.getLogger(__name__)
+
+
+def deferred_from_future(future):
+    d = defer.Deferred()
+
+    def callback(future):
+        e = future.exception()
+        if e:
+            d.errback(e)
+            return
+        d.callback(future.result())
+
+    future.add_done_callback(callback)
+    return d
 
 
 class DataRouter(object):
@@ -35,6 +52,10 @@ class DataRouter(object):
         self.emulator = self.__create_emulator()
         self.component_builder = component_builder if component_builder else ComponentBuilder(use_cache=True)
         self.model_store = self.__create_model_store()
+        self.pool = ProcessPool()
+
+    def __del__(self):
+        self.pool.shutdown()
 
     @staticmethod
     def _create_query_logger(response_log_dir):
@@ -211,5 +232,10 @@ class DataRouter(object):
         _config["data"] = f.name
         train_config = RasaNLUConfig(cmdline_args=_config)
         logger.info("Training process started")
-        result = do_train(train_config, self.component_builder)
-        return result
+        config = train_config.as_dict()
+        result = self.pool.submit(do_train, config)
+
+        return deferred_from_future(result)
+
+        # do_train(config)
+        # return

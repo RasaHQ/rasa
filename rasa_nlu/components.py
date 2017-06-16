@@ -144,7 +144,7 @@ def validate_arguments(pipeline, config, allow_empty_pipeline=False):
 
     for component in pipeline:
         try:
-            fill_args(component.train_args(), context, config.as_dict())
+            fill_args(component.train_args(), context, config)
             updates = component.context_provides.get("train", [])
             for u in updates:
                 context[u] = None
@@ -157,7 +157,7 @@ def validate_arguments(pipeline, config, allow_empty_pipeline=False):
 
     for component in pipeline:
         try:
-            fill_args(component.process_args(), context, config.as_dict())
+            fill_args(component.process_args(), context, config)
             updates = component.context_provides.get("process", [])
             for u in updates:
                 context[u] = None
@@ -367,9 +367,9 @@ class ComponentBuilder(object):
         from rasa_nlu.model import Metadata
 
         try:
-            component, cache_key = self.__get_cached_component(component_name, Metadata(config.as_dict(), None))
+            component, cache_key = self.__get_cached_component(component_name, Metadata(config, None))
             if component is None:
-                component = registry.create_component_by_name(component_name, config.as_dict())
+                component = registry.create_component_by_name(component_name, config)
                 self.__add_to_cache(component, cache_key)
             return component
         except MissingArgumentError as e:   # pragma: no cover

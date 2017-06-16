@@ -52,7 +52,7 @@ def create_persistor(config):
     return persistor
 
 
-def init():     # pragma: no cover
+def init():  # pragma: no cover
     # type: () -> RasaNLUConfig
     """Combines passed arguments to create rasa NLU config."""
 
@@ -73,11 +73,11 @@ def do_train(config, component_builder=None):
     training_data = load_data(config['data'])
     interpreter = trainer.train(training_data)
     persisted_path = trainer.persist(config['path'], persistor, model_name=config['name'])
-    return trainer, interpreter, persisted_path
+    # return trainer, interpreter, persisted_path
+    return
 
 
 if __name__ == '__main__':
-
     config = init()
     logging.basicConfig(level=config['log_level'])
 

@@ -112,10 +112,10 @@ class Trainer(object):
 
         # Before instantiating the component classes, lets check if all required packages are available
         if not self.skip_validation:
-            components.validate_requirements(config.pipeline)
+            components.validate_requirements(config["pipeline"])
 
         # Transform the passed names of the pipeline components into classes
-        for component_name in config.pipeline:
+        for component_name in config["pipeline"]:
             component = component_builder.create_component(component_name, config)
             self.pipeline.append(component)
 
@@ -141,14 +141,14 @@ class Trainer(object):
         context["training_data"] = data
 
         for component in self.pipeline:
-            args = components.fill_args(component.train_args(), context, self.config.as_dict())
+            args = components.fill_args(component.train_args(), context, self.config)
             logger.info("Starting to train component {}".format(component.name))
             updates = component.train(*args)
             logger.info("Finished training component.")
             if updates:
                 context.update(updates)
 
-        return Interpreter(self.pipeline, context=init_context, config=self.config.as_dict())
+        return Interpreter(self.pipeline, context=init_context, config=self.config)
 
     def persist(self, path, persistor=None, model_name=None):
         # type: (Text, Optional[Persistor], Text) -> Text
