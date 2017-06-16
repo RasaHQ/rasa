@@ -20,7 +20,7 @@ def test_crf_extractor(spacy_nlp):
             "intent": "restaurant_search",
             "entities": [{"start": 0, "end": 7, "value": "central", "entity": "location"}]
         }]
-    ext.train(TrainingData(entity_examples_only=examples), spacy_nlp, True, ext.crf_features)
+    ext.train(TrainingData(training_examples=examples), spacy_nlp, True, ext.crf_features)
     crf_format = ext._from_text_to_crf('anywhere in the west', spacy_nlp)
     assert ([word[0] for word in crf_format] == ['anywhere', 'in', 'the', 'west'])
     feats = ext._sentence_to_features(crf_format)
