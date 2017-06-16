@@ -66,10 +66,7 @@
             "entity": "location"
           }
         ]
-      }
-    ], 
-    "entity_examples": [], 
-    "intent_examples": [
+      },
       {
         "text": "great", 
         "intent": "affirm"

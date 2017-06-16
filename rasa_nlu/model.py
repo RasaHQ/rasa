@@ -132,8 +132,7 @@ class Trainer(object):
         context = {}        # type: Dict[Text, Any]
 
         for component in self.pipeline:
-            args = components.fill_args(component.pipeline_init_args(), context, self.config.as_dict())
-            updates = component.pipeline_init(*args)
+            updates = component.pipeline_init()
             if updates:
                 context.update(updates)
 
@@ -193,11 +192,11 @@ class Interpreter(object):
         return {"intent": {"name": "", "confidence": 0.0}, "entities": [], "text": ""}
 
     @staticmethod
-    def load(meta, config, component_builder=None, skip_valdation=False):
+    def load(model_metadata, config, component_builder=None, skip_valdation=False):
         # type: (Metadata, RasaNLUConfig, Optional[ComponentBuilder], bool) -> Interpreter
         """Load a stored model and its components defined by the provided metadata."""
         context = Interpreter.default_output_attributes()
-        context.update({"model_dir": meta.model_dir})
+        context.update({"model_dir": model_metadata.model_dir})
 
         if component_builder is None:
             # If no builder is passed, every interpreter creation will result in a new builder.
@@ -205,24 +204,20 @@ class Interpreter(object):
             component_builder = components.ComponentBuilder()
 
         model_config = config.as_dict()
-        model_config.update(meta.metadata)
+        model_config.update(model_metadata.metadata)
 
         pipeline = []
 
         # Before instantiating the component classes, lets check if all required packages are available
         if not skip_valdation:
-            components.validate_requirements(meta.pipeline)
+            components.validate_requirements(model_metadata.pipeline)
 
-        for component_name in meta.pipeline:
-            component = component_builder.load_component(component_name, context, model_config, meta)
-            try:
-                args = components.fill_args(component.pipeline_init_args(), context, model_config)
-                updates = component.pipeline_init(*args)
-                if updates:
-                    context.update(updates)
-                pipeline.append(component)
-            except components.MissingArgumentError as e:
-                raise Exception("Failed to initialize component '{}'. {}".format(component.name, e))
+        for component_name in model_metadata.pipeline:
+            component = component_builder.load_component(component_name, context, model_config, model_metadata)
+            updates = component.pipeline_init()
+            if updates:
+                context.update(updates)
+            pipeline.append(component)
 
         return Interpreter(pipeline, context, model_config)
 
