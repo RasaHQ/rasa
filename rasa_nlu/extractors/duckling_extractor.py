@@ -80,16 +80,6 @@ class DucklingExtractor(EntityExtractor):
 
         return cls.name + "-" + model_metadata.language
 
-    def pipeline_init(self, language):
-        # type: (Text, Text) -> None
-        from duckling import DucklingWrapper
-
-        if self.duckling is None:
-            try:
-                self.duckling = DucklingWrapper(language=language)  # languages in duckling are eg "de$core"
-            except ValueError as e:     # pragma: no cover
-                raise Exception("Duckling error. {}".format(e))
-
     def process(self, text, entities, time):
         # type: (Text, List[Dict[Text, Any]]) -> Dict[Text, Any]
 
