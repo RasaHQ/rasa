@@ -167,27 +167,13 @@ max_number_of_ngrams
 .. _section_configuration_duckling_dimensions:
 
 duckling_dimensions
-~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
 
 :Type: ``list``
 :Examples: ``["time", "number", "money", "distance"]``
 :Description:
     Defines which dimensions, i.e. entity types, the :ref:`duckling component <section_pipeline_duckling>` will extract.
     A full list of available dimensions can be found in the `duckling documentation <https://duckling.wit.ai/>`_.
-
-
-luis_data_tokenizer
-~~~~~~~~~~~~~~~~~~~
-
-:Type: ``str``
-:Examples: ``"tokenizer_mitie"``
-:Description:
-    Name of the tokenization component used to process luis data (Luis data annotates entities using token offset
-    instead of character offsets, to convert the token offsets to character positions a tokenizer is required.)
-    see :ref:`section_migration`
-
-If you want to persist your trained models to S3, there are additional configuration options,
-see :ref:`section_persistence`
 
 storage
 ~~~~~~~
