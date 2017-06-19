@@ -231,7 +231,7 @@ class Interpreter(object):
         self.output_attributes = [output for component in pipeline for output in component.output_provides]
 
 
-def parse(self, text):
+def parse(self, text, time):
     # type: (Text) -> Dict[Text, Any]
     """Parse the input text, classify it and return an object containing its intent and entities."""
 
@@ -246,6 +246,7 @@ def parse(self, text):
 
     current_context.update({
         "text": text,
+        "time": time
     })
 
     for component in self.pipeline:
