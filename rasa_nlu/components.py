@@ -117,7 +117,7 @@ def validate_requirements(component_names, dev_requirements_file="dev-requiremen
                             "> pip install {}".format(" ".join(missing_requirements)))
         else:
             raise Exception("Not all required packages are installed. Please install {}".format(
-                    " ".join(failed_imports)))
+                " ".join(failed_imports)))
 
 
 def validate_arguments(pipeline, config, allow_empty_pipeline=False):
@@ -131,7 +131,7 @@ def validate_arguments(pipeline, config, allow_empty_pipeline=False):
                          "The `backend` configuration key is NOT supported anymore.")
 
     # Validate the init phase
-    context = {}    # type: Dict[Text, Any]
+    context = {}  # type: Dict[Text, Any]
 
     for component in pipeline:
         updates = component.context_provides.get("pipeline_init", [])
@@ -140,15 +140,15 @@ def validate_arguments(pipeline, config, allow_empty_pipeline=False):
 
     after_init_context = context.copy()
 
-    context["training_data"] = None     # Prepare context for testing the training phase
+    context["training_data"] = None  # Prepare context for testing the training phase
 
     for component in pipeline:
         try:
-            fill_args(component.train_args(), context, config)
+            fill_args(component.train_args(), context, config.as_dict())
             updates = component.context_provides.get("train", [])
             for u in updates:
                 context[u] = None
-        except MissingArgumentError as e:   # pragma: no cover
+        except MissingArgumentError as e:  # pragma: no cover
             raise Exception("Failed to validate at component '{}'. {}".format(component.name, e))
 
     # Reset context to test processing phase and prepare for training phase
@@ -157,11 +157,11 @@ def validate_arguments(pipeline, config, allow_empty_pipeline=False):
 
     for component in pipeline:
         try:
-            fill_args(component.process_args(), context, config)
+            fill_args(component.process_args(), context, config.as_dict())
             updates = component.context_provides.get("process", [])
             for u in updates:
                 context[u] = None
-        except MissingArgumentError as e:   # pragma: no cover
+        except MissingArgumentError as e:  # pragma: no cover
             raise Exception("Failed to validate at component '{}'. {}".format(component.name, e))
 
 
@@ -206,13 +206,13 @@ class Component(object):
         "pipeline_init": [],
         "train": [],
         "process": [],
-    }                       # type: Dict[Text, Any]
+    }  # type: Dict[Text, Any]
 
     # Defines which of the attributes the component provides should be added to the final output json at the end of the
     # pipeline. Every attribute in `output_provides` should be part of the above `context_provides['process']`. As it
     # wouldn't make much sense to keep an attribute in the output that is not generated. Every other attribute provided
     # in the context during the process step will be removed from the output json.
-    output_provides = []    # type: List[Text]
+    output_provides = []  # type: List[Text]
 
     @classmethod
     def required_packages(cls):
@@ -356,7 +356,7 @@ class ComponentBuilder(object):
                 component = registry.load_component_by_name(component_name, context, model_config)
                 self.__add_to_cache(component, cache_key)
             return component
-        except MissingArgumentError as e:   # pragma: no cover
+        except MissingArgumentError as e:  # pragma: no cover
             raise Exception("Failed to load component '{}'. {}".format(component_name, e))
 
     def create_component(self, component_name, config):
@@ -367,10 +367,10 @@ class ComponentBuilder(object):
         from rasa_nlu.model import Metadata
 
         try:
-            component, cache_key = self.__get_cached_component(component_name, Metadata(config, None))
+            component, cache_key = self.__get_cached_component(component_name, Metadata(config.as_dict(), None))
             if component is None:
-                component = registry.create_component_by_name(component_name, config)
+                component = registry.create_component_by_name(component_name, config.as_dict())
                 self.__add_to_cache(component, cache_key)
             return component
-        except MissingArgumentError as e:   # pragma: no cover
+        except MissingArgumentError as e:  # pragma: no cover
             raise Exception("Failed to create component '{}'. {}".format(component_name, e))

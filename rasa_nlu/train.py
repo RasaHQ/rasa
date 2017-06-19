@@ -62,7 +62,7 @@ def init():  # pragma: no cover
     return config
 
 
-def do_train(config, component_builder=None):
+def do_train(config, component_builder=None, in_worker=False):
     # type: (RasaNLUConfig, Optional[ComponentBuilder]) -> Tuple[Trainer, Interpreter, Text]
     """Loads the trainer and the data and runs the training of the specified model."""
 
@@ -73,8 +73,11 @@ def do_train(config, component_builder=None):
     training_data = load_data(config['data'])
     interpreter = trainer.train(training_data)
     persisted_path = trainer.persist(config['path'], persistor, model_name=config['name'])
-    # return trainer, interpreter, persisted_path
-    return
+
+    if in_worker:
+        return persisted_path
+    else:
+        return trainer, interpreter, persisted_path
 
 
 if __name__ == '__main__':

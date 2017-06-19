@@ -117,6 +117,7 @@ class RasaApp(object):
         data_string = request.content.read()
 
         test = self.data_router.start_train_process(data_string, {key: value[0] for key, value in request.args.items()})
+        test.addCallback(lambda x: print(x))
 
         request.setHeader('Content-Type', 'application/json')
         return json.dumps({"info": "training started.", "training_process_ids": self.data_router.train_proc_ids()})

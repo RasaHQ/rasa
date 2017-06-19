@@ -15,7 +15,6 @@ from typing import Text
 
 from concurrent.futures import ProcessPoolExecutor as ProcessPool
 from twisted.internet import defer
-# from pathos.multiprocessing import ProcessPool
 
 from rasa_nlu import utils
 from rasa_nlu.components import ComponentBuilder
@@ -232,10 +231,6 @@ class DataRouter(object):
         _config["data"] = f.name
         train_config = RasaNLUConfig(cmdline_args=_config)
         logger.info("Training process started")
-        config = train_config.as_dict()
-        result = self.pool.submit(do_train, config)
 
+        result = self.pool.submit(do_train, train_config, in_worker=True)
         return deferred_from_future(result)
-
-        # do_train(config)
-        # return

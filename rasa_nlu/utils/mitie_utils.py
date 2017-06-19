@@ -16,7 +16,6 @@ from typing import Text
 from rasa_nlu.components import Component
 from rasa_nlu.model import Metadata
 
-
 if typing.TYPE_CHECKING:
     import mitie
 

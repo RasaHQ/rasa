@@ -103,8 +103,8 @@ class Trainer(object):
 
         self.config = config
         self.skip_validation = skip_validation
-        self.training_data = None       # type: Optional[TrainingData]
-        self.pipeline = []              # type: List[Component]
+        self.training_data = None  # type: Optional[TrainingData]
+        self.pipeline = []  # type: List[Component]
         if component_builder is None:
             # If no builder is passed, every interpreter creation will result in a new builder.
             # hence, no components are reused.
@@ -112,10 +112,10 @@ class Trainer(object):
 
         # Before instantiating the component classes, lets check if all required packages are available
         if not self.skip_validation:
-            components.validate_requirements(config["pipeline"])
+            components.validate_requirements(config.pipeline)
 
         # Transform the passed names of the pipeline components into classes
-        for component_name in config["pipeline"]:
+        for component_name in config.pipeline:
             component = component_builder.create_component(component_name, config)
             self.pipeline.append(component)
 
@@ -129,7 +129,7 @@ class Trainer(object):
 
         self.training_data = data
 
-        context = {}        # type: Dict[Text, Any]
+        context = {}  # type: Dict[Text, Any]
 
         for component in self.pipeline:
             updates = component.pipeline_init()
@@ -141,18 +141,18 @@ class Trainer(object):
         context["training_data"] = data
 
         for component in self.pipeline:
-            args = components.fill_args(component.train_args(), context, self.config)
+            args = components.fill_args(component.train_args(), context, self.config.as_dict())
             logger.info("Starting to train component {}".format(component.name))
             updates = component.train(*args)
             logger.info("Finished training component.")
             if updates:
                 context.update(updates)
 
-        return Interpreter(self.pipeline, context=init_context, config=self.config)
+        return Interpreter(self.pipeline, context=init_context, config=self.config.as_dict())
 
     def persist(self, path, persistor=None, model_name=None):
         # type: (Text, Optional[Persistor], Text) -> Text
-        """Persist all components of the pipeline to the passed path. Returns the directory of the persited model."""
+        """Persist all components of the pipeline to the passed path. Returns the directory of the persisted model."""
 
         timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
         metadata = {
@@ -230,34 +230,35 @@ class Interpreter(object):
         self.meta = meta
         self.output_attributes = [output for component in pipeline for output in component.output_provides]
 
-    def parse(self, text):
-        # type: (Text) -> Dict[Text, Any]
-        """Parse the input text, classify it and return an object containing its intent and entities."""
 
-        if not text:
-            # Not all components are able to handle empty strings. So we need to prevent that...
-            # This default return will not contain all output attributes of all components,
-            # but in the end, no one should pass an empty string in the first place.
-            return self.default_output_attributes()
+def parse(self, text):
+    # type: (Text) -> Dict[Text, Any]
+    """Parse the input text, classify it and return an object containing its intent and entities."""
 
-        current_context = self.context.copy()
-        current_context.update(self.default_output_attributes())
+    if not text:
+        # Not all components are able to handle empty strings. So we need to prevent that...
+        # This default return will not contain all output attributes of all components,
+        # but in the end, no one should pass an empty string in the first place.
+        return self.default_output_attributes()
 
-        current_context.update({
-            "text": text,
-        })
+    current_context = self.context.copy()
+    current_context.update(self.default_output_attributes())
 
-        for component in self.pipeline:
-            try:
-                args = components.fill_args(component.process_args(), current_context, self.config)
-                updates = component.process(*args)
-                if updates:
-                    current_context.update(updates)
-            except components.MissingArgumentError as e:
-                raise Exception("Failed to parse at component '{}'. {}".format(component.name, e))
+    current_context.update({
+        "text": text,
+    })
 
-        result = self.default_output_attributes()
-        all_attributes = list(self.default_output_attributes().keys()) + self.output_attributes
-        # Ensure only keys of `all_attributes` are present and no other keys are returned
-        result.update({key: current_context[key] for key in all_attributes if key in current_context})
-        return result
+    for component in self.pipeline:
+        try:
+            args = components.fill_args(component.process_args(), current_context, self.config)
+            updates = component.process(*args)
+            if updates:
+                current_context.update(updates)
+        except components.MissingArgumentError as e:
+            raise Exception("Failed to parse at component '{}'. {}".format(component.name, e))
+
+    result = self.default_output_attributes()
+    all_attributes = list(self.default_output_attributes().keys()) + self.output_attributes
+    # Ensure only keys of `all_attributes` are present and no other keys are returned
+    result.update({key: current_context[key] for key in all_attributes if key in current_context})
+    return result
