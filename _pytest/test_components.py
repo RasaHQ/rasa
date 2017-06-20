@@ -63,7 +63,7 @@ def test_all_arguments_can_be_satisfied_during_parse(component_class, default_co
     """Check that `parse` method parameters can be filled filled from the context. Similar to `pipeline_init` test."""
 
     # All available context arguments that will ever be generated during parse
-    context_arguments = {"text": None}
+    context_arguments = {"text": None, "time": None}
     for clz in registry.component_classes:
         for ctx_arg in clz.context_provides.get("pipeline_init", []):
             context_arguments[ctx_arg] = None
