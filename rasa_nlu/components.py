@@ -77,7 +77,7 @@ def _read_dev_requirements(file_name):
         import pkg_resources
         req_lines = pkg_resources.resource_string("rasa_nlu", "../" + file_name).split("\n")
     except Exception as e:
-        logger.info("Failed to read dev-requirements.txt. Error: {}".format(e))
+        logger.info("Couldn't read dev-requirements.txt. Error: {}".format(e))
         req_lines = []
     requirements = defaultdict(list)
     current_name = None
@@ -123,8 +123,9 @@ def validate_requirements(component_names, dev_requirements_file="dev-requiremen
                             "To use this pipeline, you need to install the missing dependencies, e.g. by running:\n\t" +
                             "> pip install {}".format(" ".join(missing_requirements)))
         else:
-            raise Exception("Not all required packages are installed. Please install {}".format(
-                    " ".join(failed_imports)))
+            raise Exception("Not all required packages are installed. " +
+                            "To use this pipeline, you need to install the missing dependencies. " +
+                            "Please install {}".format(", ".join(failed_imports)))
 
 
 def validate_arguments(pipeline, config, allow_empty_pipeline=False):
