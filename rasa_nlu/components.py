@@ -113,7 +113,9 @@ def validate_requirements(component_names, dev_requirements_file="dev-requiremen
         if os.path.exists(dev_requirements_file):
             all_requirements = _read_dev_requirements(dev_requirements_file)
             missing_requirements = [r for i in failed_imports for r in all_requirements[i]]
-            raise Exception("Not all required packages are installed. To use this pipeline, run\n\t" +
+            raise Exception("Not all required packages are installed. " +
+                            "Failed to find the following imports {}.".format(", ".join(failed_imports)) +
+                            "To use this pipeline, you need to install the missing dependencies, e.g. by running\n\t" +
                             "> pip install {}".format(" ".join(missing_requirements)))
         else:
             raise Exception("Not all required packages are installed. Please install {}".format(
