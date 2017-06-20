@@ -9,12 +9,14 @@ import json
 import logging
 import os
 import tempfile
+import io
 
 from builtins import object
 from typing import Text
 
 from concurrent.futures import ProcessPoolExecutor as ProcessPool
 from twisted.internet import defer
+from twisted.logger import jsonFileLogObserver, Logger
 
 from rasa_nlu import utils
 from rasa_nlu.components import ComponentBuilder
@@ -67,14 +69,10 @@ class DataRouter(object):
             log_file_name = "rasa_nlu_log-{}-{}.log".format(timestamp, os.getpid())
             response_logfile = os.path.join(response_log_dir, log_file_name)
             # Instantiate a standard python logger, which we are going to use to log requests
-            query_logger = logging.getLogger('query-logger')
-            query_logger.setLevel(logging.INFO)
             utils.create_dir_for_file(response_logfile)
-            ch = logging.FileHandler(response_logfile)
-            ch.setFormatter(logging.Formatter('%(message)s'))
+            query_logger = Logger(observer=jsonFileLogObserver(io.open(response_logfile, 'a', encoding='utf8')),
+                                  namespace='query-logger')
             # Prevents queries getting logged with parent logger --> might log them to stdout
-            query_logger.propagate = False
-            query_logger.addHandler(ch)
             logger.info("Logging requests to '{}'.".format(response_logfile))
             return query_logger
         else:
@@ -200,8 +198,7 @@ class DataRouter(object):
         model = self.model_store[alias]
         response = model.parse(data['text'], data.get('time', None))
         if self.responses:
-            log = {"user_input": response, "model": alias, "time": datetime.datetime.now().isoformat()}
-            self.responses.info(json.dumps(log, sort_keys=True))
+            self.responses.info(user_input=response, model=alias)
         return self.format_response(response)
 
     def format_response(self, data):
