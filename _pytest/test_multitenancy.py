@@ -6,7 +6,7 @@ from __future__ import absolute_import
 import json
 import os
 import tempfile
-import requests
+from treq.testing import StubTreq
 
 import pytest
 
@@ -37,8 +37,9 @@ def app(component_builder):
         }
     }
     config = RasaNLUConfig(cmdline_args=_config)
-    application = RasaNLU(config, component_builder)
-    return application
+    application = RasaNLU(config, component_builder).app.resource()
+
+    return StubTreq(RasaNLU(config).app.resource())
 
 
 @pytest.mark.parametrize("response_test", [
@@ -55,8 +56,9 @@ def app(component_builder):
         {"entities": [], "intent": "restaurant_search", "text": "food"}
     ),
 ])
-def test_get_parse(response_test):
-    response = requests.get(response_test.endpoint)
+@pytest.inlineCallbacks
+def test_get_parse(app, response_test):
+    response = yield app.get(response_test.endpoint)
     assert response.status_code == 200
     assert all(prop in response.json for prop in ['entities', 'intent', 'text'])
 
@@ -71,8 +73,9 @@ def test_get_parse(response_test):
         {"error": "No model found with alias 'umpalumpa'. Error: Failed to load model metadata. "}
     )
 ])
-def test_get_parse_invalid_model(response_test):
-    response = requests.get(response_test.endpoint)
+@pytest.inlineCallbacks
+def test_get_parse_invalid_model(app, response_test):
+    response = yield app.get(response_test.endpoint)
     assert response.status_code == 404
     assert response.json().get("error").startswith(response_test.expected_response["error"])
 
@@ -94,9 +97,10 @@ def test_get_parse_invalid_model(response_test):
         payload={"q": "food", "model": "three"}
     ),
 ])
-def test_post_parse(response_test):
-    response = requests.post(response_test.endpoint,
-                           data=json.dumps(response_test.payload), content_type='application/json')
+@pytest.inlineCallbacks
+def test_post_parse(app, response_test):
+    response = yield app.post(response_test.endpoint,
+                              data=json.dumps(response_test.payload), content_type='application/json')
     assert response.status_code == 200
     assert all(prop in response.json for prop in ['entities', 'intent', 'text'])
 
@@ -113,9 +117,10 @@ def test_post_parse(response_test):
         payload={"q": "food", "model": "umpalumpa"}
     ),
 ])
-def test_post_parse_invalid_model(response_test):
-    response = requests.post(response_test.endpoint,
-                           data=json.dumps(response_test.payload), content_type='application/json')
+@pytest.inlineCallbacks
+def test_post_parse_invalid_model(app, response_test):
+    response = yield app.post(response_test.endpoint,
+                              data=json.dumps(response_test.payload), content_type='application/json')
     assert response.status_code == 404
     assert response.json().get("error").startswith(response_test.expected_response["error"])
 
@@ -134,8 +139,7 @@ if __name__ == '__main__':
         persistor = create_persistor(config)
         trainer.persist("test_models", persistor, model_name=model_name)
 
+
     train("config_mitie.json", "test_model_mitie")
     train("config_spacy.json", "test_model_spacy_sklearn")
     train("config_mitie_sklearn.json", "test_model_mitie_sklearn")
-
-    app.run()
