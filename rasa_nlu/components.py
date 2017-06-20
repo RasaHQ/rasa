@@ -72,8 +72,13 @@ def _read_dev_requirements(file_name):
     The dev requirements should be grouped by preceeding comments. The comment should start with `#` followed by
     the name of the requirement, e.g. `# sklearn`. All following lines till the next line starting with `#` will be
     required to be installed if the name `sklearn` is requested to be available."""
-    with open(file_name) as f:
-        req_lines = f.readlines()
+
+    try:
+        import pkg_resources
+        req_lines = pkg_resources.resource_string("rasa_nlu", "../" + file_name).split("\n")
+    except Exception as e:
+        logger.info("Failed to read dev-requirements.txt. Error: {}".format(e))
+        req_lines = []
     requirements = defaultdict(list)
     current_name = None
     for req_line in req_lines:
@@ -110,12 +115,12 @@ def validate_requirements(component_names, dev_requirements_file="dev-requiremen
         failed_imports.update(find_unavailable_packages(component_class.required_packages()))
     if failed_imports:  # pragma: no cover
         # if available, use the development file to figure out the correct version numbers for each requirement
-        if os.path.exists(dev_requirements_file):
-            all_requirements = _read_dev_requirements(dev_requirements_file)
+        all_requirements = _read_dev_requirements(dev_requirements_file)
+        if all_requirements:
             missing_requirements = [r for i in failed_imports for r in all_requirements[i]]
             raise Exception("Not all required packages are installed. " +
-                            "Failed to find the following imports {}.".format(", ".join(failed_imports)) +
-                            "To use this pipeline, you need to install the missing dependencies, e.g. by running\n\t" +
+                            "Failed to find the following imports {}. ".format(", ".join(failed_imports)) +
+                            "To use this pipeline, you need to install the missing dependencies, e.g. by running:\n\t" +
                             "> pip install {}".format(" ".join(missing_requirements)))
         else:
             raise Exception("Not all required packages are installed. Please install {}".format(
