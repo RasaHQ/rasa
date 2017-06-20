@@ -230,36 +230,35 @@ class Interpreter(object):
         self.meta = meta
         self.output_attributes = [output for component in pipeline for output in component.output_provides]
 
+    def parse(self, text, time):
+        # type: (Text) -> Dict[Text, Any]
+        """Parse the input text, classify it and return an object containing its intent and entities."""
 
-def parse(self, text, time):
-    # type: (Text) -> Dict[Text, Any]
-    """Parse the input text, classify it and return an object containing its intent and entities."""
+        if not text:
+            # Not all components are able to handle empty strings. So we need to prevent that...
+            # This default return will not contain all output attributes of all components,
+            # but in the end, no one should pass an empty string in the first place.
+            return self.default_output_attributes()
 
-    if not text:
-        # Not all components are able to handle empty strings. So we need to prevent that...
-        # This default return will not contain all output attributes of all components,
-        # but in the end, no one should pass an empty string in the first place.
-        return self.default_output_attributes()
+        current_context = self.context.copy()
+        current_context.update(self.default_output_attributes())
 
-    current_context = self.context.copy()
-    current_context.update(self.default_output_attributes())
+        current_context.update({
+            "text": text,
+            "time": time
+        })
 
-    current_context.update({
-        "text": text,
-        "time": time
-    })
+        for component in self.pipeline:
+            try:
+                args = components.fill_args(component.process_args(), current_context, self.config)
+                updates = component.process(*args)
+                if updates:
+                    current_context.update(updates)
+            except components.MissingArgumentError as e:
+                raise Exception("Failed to parse at component '{}'. {}".format(component.name, e))
 
-    for component in self.pipeline:
-        try:
-            args = components.fill_args(component.process_args(), current_context, self.config)
-            updates = component.process(*args)
-            if updates:
-                current_context.update(updates)
-        except components.MissingArgumentError as e:
-            raise Exception("Failed to parse at component '{}'. {}".format(component.name, e))
-
-    result = self.default_output_attributes()
-    all_attributes = list(self.default_output_attributes().keys()) + self.output_attributes
-    # Ensure only keys of `all_attributes` are present and no other keys are returned
-    result.update({key: current_context[key] for key in all_attributes if key in current_context})
-    return result
+        result = self.default_output_attributes()
+        all_attributes = list(self.default_output_attributes().keys()) + self.output_attributes
+        # Ensure only keys of `all_attributes` are present and no other keys are returned
+        result.update({key: current_context[key] for key in all_attributes if key in current_context})
+        return result
