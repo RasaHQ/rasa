@@ -6,6 +6,7 @@ from __future__ import absolute_import
 import json
 import os
 import tempfile
+import requests
 
 import pytest
 
@@ -15,7 +16,7 @@ from rasa_nlu.server import RasaNLU
 from utilities import ResponseTest
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def app(component_builder):
     if "TRAVIS_BUILD_DIR" in os.environ:
         root_dir = os.environ["TRAVIS_BUILD_DIR"]
@@ -42,59 +43,59 @@ def app(component_builder):
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-        "/parse?q=food&model=one",
+        "http://localhost:5000/parse?q=food&model=one",
         {"entities": [], "intent": "affirm", "text": "food"}
     ),
     ResponseTest(
-        "/parse?q=food&model=two",
+        "http://localhost:5000/parse?q=food&model=two",
         {"entities": [], "intent": "restaurant_search", "text": "food"}
     ),
     ResponseTest(
-        "/parse?q=food&model=three",
+        "http://localhost:5000/parse?q=food&model=three",
         {"entities": [], "intent": "restaurant_search", "text": "food"}
     ),
 ])
-def test_get_parse(client, response_test):
-    response = client.get(response_test.endpoint)
+def test_get_parse(response_test):
+    response = requests.get(response_test.endpoint)
     assert response.status_code == 200
     assert all(prop in response.json for prop in ['entities', 'intent', 'text'])
 
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-        "/parse?q=food",
+        "http://localhost:5000/parse?q=food",
         {"error": "No model found with alias 'default'. Error: Failed to load model metadata. "}
     ),
     ResponseTest(
-        "/parse?q=food&model=umpalumpa",
+        "http://localhost:5000/parse?q=food&model=umpalumpa",
         {"error": "No model found with alias 'umpalumpa'. Error: Failed to load model metadata. "}
     )
 ])
-def test_get_parse_invalid_model(client, response_test):
-    response = client.get(response_test.endpoint)
+def test_get_parse_invalid_model(response_test):
+    response = requests.get(response_test.endpoint)
     assert response.status_code == 404
-    assert response.json.get("error").startswith(response_test.expected_response["error"])
+    assert response.json().get("error").startswith(response_test.expected_response["error"])
 
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-        "/parse",
+        "http://localhost:5000/parse",
         {"entities": [], "intent": "affirm", "text": "food"},
         payload={"q": "food", "model": "one"}
     ),
     ResponseTest(
-        "/parse",
+        "http://localhost:5000/parse",
         {"entities": [], "intent": "restaurant_search", "text": "food"},
         payload={"q": "food", "model": "two"}
     ),
     ResponseTest(
-        "/parse",
+        "http://localhost:5000/parse",
         {"entities": [], "intent": "restaurant_search", "text": "food"},
         payload={"q": "food", "model": "three"}
     ),
 ])
-def test_post_parse(client, response_test):
-    response = client.post(response_test.endpoint,
+def test_post_parse(response_test):
+    response = requests.post(response_test.endpoint,
                            data=json.dumps(response_test.payload), content_type='application/json')
     assert response.status_code == 200
     assert all(prop in response.json for prop in ['entities', 'intent', 'text'])
@@ -102,21 +103,21 @@ def test_post_parse(client, response_test):
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-        "/parse",
+        "http://localhost:5000//parse",
         {"error": "No model found with alias 'default'. Error: Failed to load model metadata. "},
         payload={"q": "food"}
     ),
     ResponseTest(
-        "/parse",
+        "http://localhost:5000//parse",
         {"error": "No model found with alias 'umpalumpa'. Error: Failed to load model metadata. "},
         payload={"q": "food", "model": "umpalumpa"}
     ),
 ])
-def test_post_parse_invalid_model(client, response_test):
-    response = client.post(response_test.endpoint,
+def test_post_parse_invalid_model(response_test):
+    response = requests.post(response_test.endpoint,
                            data=json.dumps(response_test.payload), content_type='application/json')
     assert response.status_code == 404
-    assert response.json.get("error").startswith(response_test.expected_response["error"])
+    assert response.json().get("error").startswith(response_test.expected_response["error"])
 
 
 if __name__ == '__main__':
@@ -136,3 +137,5 @@ if __name__ == '__main__':
     train("config_mitie.json", "test_model_mitie")
     train("config_spacy.json", "test_model_spacy_sklearn")
     train("config_mitie_sklearn.json", "test_model_mitie_sklearn")
+
+    app.run()
