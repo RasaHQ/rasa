@@ -11,7 +11,7 @@ import pytest
 
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.model import Trainer
-from rasa_nlu.server import create_app
+from rasa_nlu.server import RasaNLU
 from utilities import ResponseTest
 
 
@@ -36,7 +36,7 @@ def app(component_builder):
         }
     }
     config = RasaNLUConfig(cmdline_args=_config)
-    application = create_app(config, component_builder)
+    application = RasaNLU(config, component_builder)
     return application
 
 

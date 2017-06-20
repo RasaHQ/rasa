@@ -56,8 +56,8 @@ def requires_auth(f):
     return decorated
 
 
-class RasaApp(object):
-    rasa_nlu_app = Klein()
+class RasaNLU(object):
+    app = Klein()
 
     def __init__(self, config, component_builder=None):
         logging.basicConfig(filename=config['log_file'], level=config['log_level'])
@@ -69,7 +69,7 @@ class RasaApp(object):
         self.data_router = DataRouter(config, component_builder)
         reactor.suggestThreadPoolSize(20)
 
-    @rasa_nlu_app.route("/parse", methods=['GET', 'POST'])
+    @app.route("/parse", methods=['GET', 'POST'])
     @requires_auth
     def parse_get(self, request):
         if request.method == 'GET':
@@ -92,29 +92,29 @@ class RasaApp(object):
                 request.setHeader('Content-Type', 'application/json')
                 return json.dumps({"error": "{}".format(e)})
 
-    @rasa_nlu_app.route("/version", methods=['GET'])
+    @app.route("/version", methods=['GET'])
     @requires_auth
     def version(self, request):
         request.setHeader('Content-Type', 'application/json')
         return json.dumps({'version': __version__})
 
-    @rasa_nlu_app.route("/config", methods=['GET'])
+    @app.route("/config", methods=['GET'])
     @requires_auth
     def rasaconfig(self, request):
         request.setHeader('Content-Type', 'application/json')
         return json.dumps(self.config.as_dict())
 
-    @rasa_nlu_app.route("/status", methods=['GET'])
+    @app.route("/status", methods=['GET'])
     @requires_auth
     def status(self, request):
         request.setHeader('Content-Type', 'application/json')
         return json.dumps(self.data_router.get_status())
 
-    @rasa_nlu_app.route("/", methods=['GET'])
+    @app.route("/", methods=['GET'])
     def hello(self, request):
         return "hello from Rasa NLU: " + __version__
 
-    @rasa_nlu_app.route("/train", methods=['POST'])
+    @app.route("/train", methods=['POST'])
     @requires_auth
     def train(self, request):
         data_string = request.content.read()
@@ -131,6 +131,6 @@ if __name__ == '__main__':
     arg_parser = create_argparser()
     cmdline_args = {key: val for key, val in list(vars(arg_parser.parse_args()).items()) if val is not None}
     rasa_nlu_config = RasaNLUConfig(cmdline_args.get("config"), os.environ, cmdline_args)
-    app = RasaApp(rasa_nlu_config)
-    app.rasa_nlu_app.run('0.0.0.0', rasa_nlu_config['port'])
+    rasa = RasaNLU(rasa_nlu_config)
+    rasa.app.run('0.0.0.0', rasa_nlu_config['port'])
     logger.info('Started http server on port %s' % rasa_nlu_config['port'])

@@ -16,7 +16,7 @@ import json
 import io
 
 from utilities import ResponseTest
-from rasa_nlu.server import create_app
+from rasa_nlu.server import RasaNLU
 
 
 @pytest.fixture(scope="module")
@@ -32,7 +32,7 @@ def app(tmpdir_factory):
         "emulate": "wit",
     }
     config = RasaNLUConfig(cmdline_args=_config)
-    application = create_app(config)
+    application = RasaNLU(config)
     return application
 
 
