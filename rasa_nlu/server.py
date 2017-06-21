@@ -130,7 +130,7 @@ class RasaNLU(object):
         test = self.data_router.start_train_process(data_string,
                                                     {key.decode('utf-8', 'strict'): value[0].decode('utf-8', 'strict')
                                                      for key, value in request.args.items()})
-        test.addCallback(lambda model_path: logger.debug("Created model at: {}".format(model_path)))
+        test.addCallback(logger.debug)
         test.addErrback(errback)
 
         request.setHeader('Content-Type', 'application/json')
