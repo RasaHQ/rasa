@@ -72,10 +72,13 @@ class RasaNLU(object):
     @app.route("/parse", methods=['GET', 'POST'])
     @requires_auth
     def parse_get(self, request):
-        if request.method == 'GET':
-            request_params = {key: value[0].decode("utf-8", "strict") for key, value in request.args.items()}
+        if request.method.decode('utf-8', 'strict') == 'GET':
+            print(request.args.items())
+            request_params = {key.decode('utf-8', 'strict'): value[0].decode('utf-8', 'strict') for key, value in
+                              request.args.items()}
         else:
-            request_params = json.loads(request.content.read().decode("utf-8", "strict"))
+            print(request.method)
+            request_params = json.loads(request.content.read().decode('utf-8', 'strict'))
         if 'q' not in request_params:
             request.setResponseCode(404)
             request.setHeader('Content-Type', 'application/json')
@@ -122,7 +125,9 @@ class RasaNLU(object):
     def train(self, request):
         data_string = request.content.read()
 
-        test = self.data_router.start_train_process(data_string, {key: value[0] for key, value in request.args.items()})
+        test = self.data_router.start_train_process(data_string.decode('utf-8', 'strict'),
+                                                    {key.decode('utf-8', 'strict'): value[0].decode('utf-8', 'strict')
+                                                     for key, value in request.args.items()})
         test.addCallback(lambda x: print(x))
 
         request.setHeader('Content-Type', 'application/json')

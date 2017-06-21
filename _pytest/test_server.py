@@ -156,6 +156,6 @@ def test_model_hot_reloading(stub, rasa_default_train_data):
     assert response.status_code == 404, "Model should not exist yet"
     response = stub(requests.post)("/train?name=my_keyword_model&pipeline=keyword", json=rasa_default_train_data)
     assert response.status_code == 200, "Training should start successfully"
-    time.sleep(5)  # training should be quick as the keyword model doesn't do any training
+    time.sleep(60)  # training should be quick as the keyword model doesn't do any training
     response = stub(requests.get)(query)
     assert response.status_code == 200, "Model should now exist after it got trained"
