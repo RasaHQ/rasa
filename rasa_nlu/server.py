@@ -75,7 +75,7 @@ class RasaNLU(object):
         if request.method == 'GET':
             request_params = {key: value[0].decode("utf-8", "strict") for key, value in request.args.items()}
         else:
-            request_params = json.loads(request.content.read())
+            request_params = json.loads(request.content.read().decode("utf-8", "strict"))
         if 'q' not in request_params:
             request.setResponseCode(404)
             request.setHeader('Content-Type', 'application/json')

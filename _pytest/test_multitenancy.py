@@ -3,13 +3,16 @@ from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
-import json
 import os
 import signal
 import tempfile
 import requests
 
 import pytest
+import sys
+from multiprocessing import Semaphore
+
+import time
 
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.model import Trainer
@@ -19,6 +22,7 @@ from utilities import ResponseTest
 
 @pytest.fixture(scope="module")
 def stub(component_builder):
+    sem = Semaphore(1)
     if "TRAVIS_BUILD_DIR" in os.environ:
         root_dir = os.environ["TRAVIS_BUILD_DIR"]
     else:
@@ -37,14 +41,21 @@ def stub(component_builder):
             "three": "test_model_spacy_sklearn",
         }
     }
-    config = RasaNLUConfig(cmdline_args=_config)
     url = '127.0.0.1'
     port = 5000
-    rasa = RasaNLU(config, component_builder)
     pid = os.fork()
     if pid == 0:
+        sem.acquire()
+        config = RasaNLUConfig(cmdline_args=_config)
+        rasa = RasaNLU(config, component_builder)
+        sem.release()
         rasa.app.run(url, port)
+        rasa.data_router.__del__()
         os._exit(0)
+    else:
+        time.sleep(3)
+        sem.acquire()
+        sem.release()
 
     def with_base_url(method):
         """
@@ -57,8 +68,10 @@ def stub(component_builder):
         return request
 
     yield with_base_url
+
     if pid != 0:
         os.kill(pid, signal.SIGTERM)
+        os.waitpid(pid, 0)
 
 
 @pytest.mark.parametrize("response_test", [

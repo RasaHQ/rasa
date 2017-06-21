@@ -11,6 +11,7 @@ import requests
 
 import pytest
 import time
+from multiprocessing import Semaphore
 
 import utilities
 from rasa_nlu.config import RasaNLUConfig
@@ -23,6 +24,7 @@ from rasa_nlu.server import RasaNLU
 
 @pytest.fixture(scope="module")
 def stub(tmpdir_factory):
+    sem = Semaphore(1)
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
     _config = {
         'write': nlu_log_file,
@@ -33,14 +35,22 @@ def stub(tmpdir_factory):
         "data": "./data/demo-restaurants.json",
         "emulate": "wit",
     }
-    config = RasaNLUConfig(cmdline_args=_config)
     url = '127.0.0.1'
     port = 5000
-    rasa = RasaNLU(config)
     pid = os.fork()
     if pid == 0:
+        sem.acquire()
+        config = RasaNLUConfig(cmdline_args=_config)
+        rasa = RasaNLU(config)
+        sem.release()
         rasa.app.run(url, port)
+        rasa.data_router.__del__()
         os._exit(0)
+
+    else:
+        time.sleep(3)
+        sem.acquire()
+        sem.release()
 
     def with_base_url(method):
         """
@@ -53,8 +63,10 @@ def stub(tmpdir_factory):
         return request
 
     yield with_base_url
+
     if pid != 0:
         os.kill(pid, signal.SIGTERM)
+        os.waitpid(pid, 0)
 
 
 @pytest.fixture
@@ -144,6 +156,6 @@ def test_model_hot_reloading(stub, rasa_default_train_data):
     assert response.status_code == 404, "Model should not exist yet"
     response = stub(requests.post)("/train?name=my_keyword_model&pipeline=keyword", json=rasa_default_train_data)
     assert response.status_code == 200, "Training should start successfully"
-    time.sleep(3)  # training should be quick as the keyword model doesn't do any training
+    time.sleep(5)  # training should be quick as the keyword model doesn't do any training
     response = stub(requests.get)(query)
     assert response.status_code == 200, "Model should now exist after it got trained"
