@@ -5,7 +5,9 @@ from __future__ import division
 from __future__ import absolute_import
 
 import os
+import signal
 import tempfile
+import requests
 
 import pytest
 import time
@@ -14,14 +16,13 @@ import utilities
 from rasa_nlu.config import RasaNLUConfig
 import json
 import io
-from treq.testing import StubTreq
 
 from utilities import ResponseTest
 from rasa_nlu.server import RasaNLU
 
 
 @pytest.fixture(scope="module")
-def app(tmpdir_factory):
+def stub(tmpdir_factory):
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
     _config = {
         'write': nlu_log_file,
@@ -33,7 +34,27 @@ def app(tmpdir_factory):
         "emulate": "wit",
     }
     config = RasaNLUConfig(cmdline_args=_config)
-    return StubTreq(RasaNLU(config).app.resource())
+    url = '127.0.0.1'
+    port = 5000
+    rasa = RasaNLU(config)
+    pid = os.fork()
+    if pid == 0:
+        rasa.app.run(url, port)
+        os._exit(0)
+
+    def with_base_url(method):
+        """
+        Save some typing and ensure we always use our own pool.
+        """
+
+        def request(path, *args, **kwargs):
+            return method("http://{}:{}".format(url, port) + path, *args, **kwargs)
+
+        return request
+
+    yield with_base_url
+    if pid != 0:
+        os.kill(pid, signal.SIGTERM)
 
 
 @pytest.fixture
@@ -43,96 +64,86 @@ def rasa_default_train_data():
         return json.loads(train_file.read())
 
 
-@pytest.inlineCallbacks
-def test_root(app):
-    response = yield app.get("http://localhost:5000/")
-    assert response.status_code == 200 and response.text.startswith(b"hello")
+def test_root(stub):
+    response = stub(requests.get)("/")
+    content = response.content
+    assert response.status_code == 200 and content.startswith(b"hello")
 
 
-@pytest.inlineCallbacks
-def test_status(app):
-    response = yield app.get("http://localhost:5000/status")
+def test_status(stub):
+    response = stub(requests.get)("/status")
     rjs = response.json()
-    assert response.status_code == 200 and \
-           ("trainings_under_this_process" in rjs and "available_models" in rjs)
+    assert response.status_code == 200 and ("trainings_under_this_process" in rjs and "available_models" in rjs)
 
 
-@pytest.inlineCallbacks
-def test_config(app):
-    response = yield app.get("http://localhost:5000/config")
+def test_config(stub):
+    response = stub(requests.get)("/config")
     assert response.status_code == 200
 
 
-@pytest.inlineCallbacks
-def test_version(app):
-    response = yield app.get("http://localhost:5000/version")
+def test_version(stub):
+    response = stub(requests.get)("/version")
     rjs = response.json()
-    assert response.status_code == 200 and \
-           ("version" in rjs)
+    assert response.status_code == 200 and ("version" in rjs)
 
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-        "http://localhost:5000/parse?q=hello",
+        "/parse?q=hello",
         [{"entities": {}, "confidence": 1.0, "intent": "greet", "_text": "hello"}]
     ),
     ResponseTest(
-        "http://localhost:5000/parse?q=hello ńöñàśçií",
+        "/parse?q=hello ńöñàśçií",
         [{"entities": {}, "confidence": 1.0, "intent": "greet", "_text": "hello ńöñàśçií"}]
     ),
     ResponseTest(
-        "http://localhost:5000/parse?q=",
+        "/parse?q=",
         [{"entities": {}, "confidence": 0.0, "intent": None, "_text": ""}]
     ),
 ])
-@pytest.inlineCallbacks
-def test_get_parse(app, response_test):
-    response = yield app.get(response_test.endpoint)
+def test_get_parse(stub, response_test):
+    response = stub(requests.get)(response_test.endpoint)
+    rjs = response.json()
     assert response.status_code == 200
-    assert len(response.json()) == 1
-    assert all(prop in response.json()[0] for prop in ['entities', 'intent', '_text', 'confidence'])
+    assert len(rjs) == 1
+    assert all(prop in rjs[0] for prop in ['entities', 'intent', '_text', 'confidence'])
 
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-        "http://localhost:5000/parse",
+        "/parse",
         [{"entities": {}, "confidence": 1.0, "intent": "greet", "_text": "hello"}],
         payload={"q": "hello"}
     ),
     ResponseTest(
-        "http://localhost:5000/parse",
+        "/parse",
         [{"entities": {}, "confidence": 1.0, "intent": "greet", "_text": "hello ńöñàśçií"}],
         payload={"q": "hello ńöñàśçií"}
     ),
 ])
-@pytest.inlineCallbacks
-def test_post_parse(app, response_test):
-    response = yield app.post(response_test.endpoint,
-                              data=json.dumps(response_test.payload), content_type='application/json')
+def test_post_parse(stub, response_test):
+    response = stub(requests.post)(response_test.endpoint, json=response_test.payload)
+    rjs = response.json()
     assert response.status_code == 200
-    assert len(response.json()) == 1
-    assert all(prop in response.json()[0] for prop in ['entities', 'intent', '_text', 'confidence'])
+    assert len(rjs) == 1
+    assert all(prop in rjs[0] for prop in ['entities', 'intent', '_text', 'confidence'])
 
 
 @utilities.slowtest
-@pytest.inlineCallbacks
-def test_post_train(app, rasa_default_train_data):
-    response = yield app.post("http://localhost:5000/train", data=json.dumps(rasa_default_train_data),
-                              content_type='application/json')
+def test_post_train(stub, rasa_default_train_data):
+    response = stub(requests.post)("/train", json=rasa_default_train_data)
+    rjs = response.json()
     assert response.status_code == 200
-    assert len(response.json()["training_process_ids"]) == 1
-    assert response.json()["info"] == "training started."
+    assert len(rjs["training_process_ids"]) == 0
+    assert rjs["info"] == "training started."
 
 
-@pytest.inlineCallbacks
-def test_model_hot_reloading(app, rasa_default_train_data):
-    query = "http://localhost:5000/parse?q=hello&model=my_keyword_model"
-    response = yield app.get(query)
+def test_model_hot_reloading(stub, rasa_default_train_data):
+    query = "/parse?q=hello&model=my_keyword_model"
+    response = stub(requests.get)(query)
     assert response.status_code == 404, "Model should not exist yet"
-    response = yield app.post("http://localhost:5000/train?name=my_keyword_model&pipeline=keyword",
-                              data=json.dumps(rasa_default_train_data),
-                              content_type='application/json')
+    response = stub(requests.post)("/train?name=my_keyword_model&pipeline=keyword", json=rasa_default_train_data)
     assert response.status_code == 200, "Training should start successfully"
     time.sleep(3)  # training should be quick as the keyword model doesn't do any training
-    response = yield app.get(query)
+    response = stub(requests.get)(query)
     assert response.status_code == 200, "Model should now exist after it got trained"

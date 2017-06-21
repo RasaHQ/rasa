@@ -10,7 +10,6 @@ import pytest
 from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.config import RasaNLUConfig
 
-pytest_plugins = "pytest_twisted"
 logging.basicConfig(level="DEBUG")
 
 CONFIG_DEFAULTS_PATH = "config_defaults.json"

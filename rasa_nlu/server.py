@@ -73,7 +73,7 @@ class RasaNLU(object):
     @requires_auth
     def parse_get(self, request):
         if request.method == 'GET':
-            request_params = {key: value[0] for key, value in request.args.items()}
+            request_params = {key: value[0].decode("utf-8", "strict") for key, value in request.args.items()}
         else:
             request_params = json.loads(request.content.read())
         if 'q' not in request_params:
@@ -81,16 +81,19 @@ class RasaNLU(object):
             request.setHeader('Content-Type', 'application/json')
             return json.dumps({"error": "Invalid parse parameter specified"})
         else:
-            try:
-                data = self.data_router.extract(request_params)
-                response = threads.deferToThread(self.data_router.parse, data)
-                request.setHeader('Content-Type', 'application/json')
-                response.addCallback(json.dumps)
-                return response
-            except InvalidModelError as e:
+            def errback(f):
+                f.trap(InvalidModelError)
+
                 request.setResponseCode(404)
                 request.setHeader('Content-Type', 'application/json')
-                return json.dumps({"error": "{}".format(e)})
+                return json.dumps({"error": "{}".format(f.getErrorMessage())})
+
+            data = self.data_router.extract(request_params)
+            response = threads.deferToThread(self.data_router.parse, data)
+            request.setHeader('Content-Type', 'application/json')
+            response.addCallback(json.dumps)
+            response.addErrback(errback)
+            return response
 
     @app.route("/version", methods=['GET'])
     @requires_auth

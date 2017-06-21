@@ -6,9 +6,8 @@ exec (open('rasa_nlu/version.py').read())
 tests_requires = [
     "pytest-pep8",
     "pytest-services",
-    "pytest-flask",
     "pytest-cov",
-    "pytest-twisted"
+    "requests"
 ]
 
 install_requires = [
@@ -16,7 +15,7 @@ install_requires = [
     "pathlib",
     "cloudpickle",
     "gevent",
-    "flask",
+    "klein",
     "boto3",
     "typing",
     "future",

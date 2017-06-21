@@ -5,8 +5,9 @@ from __future__ import division
 from __future__ import absolute_import
 import json
 import os
+import signal
 import tempfile
-from treq.testing import StubTreq
+import requests
 
 import pytest
 
@@ -17,7 +18,7 @@ from utilities import ResponseTest
 
 
 @pytest.fixture(scope="module")
-def app(component_builder):
+def stub(component_builder):
     if "TRAVIS_BUILD_DIR" in os.environ:
         root_dir = os.environ["TRAVIS_BUILD_DIR"]
     else:
@@ -37,92 +38,109 @@ def app(component_builder):
         }
     }
     config = RasaNLUConfig(cmdline_args=_config)
-    application = RasaNLU(config, component_builder).app.resource()
+    url = '127.0.0.1'
+    port = 5000
+    rasa = RasaNLU(config, component_builder)
+    pid = os.fork()
+    if pid == 0:
+        rasa.app.run(url, port)
+        os._exit(0)
 
-    return StubTreq(RasaNLU(config).app.resource())
+    def with_base_url(method):
+        """
+        Save some typing and ensure we always use our own pool.
+        """
+
+        def request(path, *args, **kwargs):
+            return method("http://{}:{}".format(url, port) + path, *args, **kwargs)
+
+        return request
+
+    yield with_base_url
+    if pid != 0:
+        os.kill(pid, signal.SIGTERM)
 
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-        "http://localhost:5000/parse?q=food&model=one",
+        "/parse?q=food&model=one",
         {"entities": [], "intent": "affirm", "text": "food"}
     ),
     ResponseTest(
-        "http://localhost:5000/parse?q=food&model=two",
+        "/parse?q=food&model=two",
         {"entities": [], "intent": "restaurant_search", "text": "food"}
     ),
     ResponseTest(
-        "http://localhost:5000/parse?q=food&model=three",
+        "/parse?q=food&model=three",
         {"entities": [], "intent": "restaurant_search", "text": "food"}
     ),
 ])
-@pytest.inlineCallbacks
-def test_get_parse(app, response_test):
-    response = yield app.get(response_test.endpoint)
+def test_get_parse(stub, response_test):
+    response = stub(requests.get)(response_test.endpoint)
+    rjs = response.json()
+
     assert response.status_code == 200
-    assert all(prop in response.json for prop in ['entities', 'intent', 'text'])
+    assert all(prop in rjs for prop in ['entities', 'intent', 'text'])
 
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-        "http://localhost:5000/parse?q=food",
+        "/parse?q=food",
         {"error": "No model found with alias 'default'. Error: Failed to load model metadata. "}
     ),
     ResponseTest(
-        "http://localhost:5000/parse?q=food&model=umpalumpa",
+        "/parse?q=food&model=umpalumpa",
         {"error": "No model found with alias 'umpalumpa'. Error: Failed to load model metadata. "}
     )
 ])
-@pytest.inlineCallbacks
-def test_get_parse_invalid_model(app, response_test):
-    response = yield app.get(response_test.endpoint)
+def test_get_parse_invalid_model(stub, response_test):
+    response = stub(requests.get)(response_test.endpoint)
+    rjs = response.json()
     assert response.status_code == 404
-    assert response.json().get("error").startswith(response_test.expected_response["error"])
+    assert rjs.get("error").startswith(response_test.expected_response["error"])
 
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-        "http://localhost:5000/parse",
+        "/parse",
         {"entities": [], "intent": "affirm", "text": "food"},
         payload={"q": "food", "model": "one"}
     ),
     ResponseTest(
-        "http://localhost:5000/parse",
+        "/parse",
         {"entities": [], "intent": "restaurant_search", "text": "food"},
         payload={"q": "food", "model": "two"}
     ),
     ResponseTest(
-        "http://localhost:5000/parse",
+        "/parse",
         {"entities": [], "intent": "restaurant_search", "text": "food"},
         payload={"q": "food", "model": "three"}
     ),
 ])
-@pytest.inlineCallbacks
-def test_post_parse(app, response_test):
-    response = yield app.post(response_test.endpoint,
-                              data=json.dumps(response_test.payload), content_type='application/json')
+def test_post_parse(stub, response_test):
+    response = stub(requests.post)(response_test.endpoint, json=response_test.payload)
+    rjs = response.json()
     assert response.status_code == 200
-    assert all(prop in response.json for prop in ['entities', 'intent', 'text'])
+    assert all(prop in rjs for prop in ['entities', 'intent', 'text'])
 
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-        "http://localhost:5000//parse",
+        "/parse",
         {"error": "No model found with alias 'default'. Error: Failed to load model metadata. "},
         payload={"q": "food"}
     ),
     ResponseTest(
-        "http://localhost:5000//parse",
+        "/parse",
         {"error": "No model found with alias 'umpalumpa'. Error: Failed to load model metadata. "},
         payload={"q": "food", "model": "umpalumpa"}
     ),
 ])
-@pytest.inlineCallbacks
-def test_post_parse_invalid_model(app, response_test):
-    response = yield app.post(response_test.endpoint,
-                              data=json.dumps(response_test.payload), content_type='application/json')
+def test_post_parse_invalid_model(stub, response_test):
+    response = stub(requests.post)(response_test.endpoint, json=response_test.payload)
+    rjs = response.json()
     assert response.status_code == 404
-    assert response.json().get("error").startswith(response_test.expected_response["error"])
+    assert rjs.get("error").startswith(response_test.expected_response["error"])
 
 
 if __name__ == '__main__':
@@ -138,7 +156,6 @@ if __name__ == '__main__':
         trainer.train(training_data)
         persistor = create_persistor(config)
         trainer.persist("test_models", persistor, model_name=model_name)
-
 
     train("config_mitie.json", "test_model_mitie")
     train("config_spacy.json", "test_model_spacy_sklearn")
