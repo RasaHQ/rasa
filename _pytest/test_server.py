@@ -66,7 +66,6 @@ def stub(tmpdir_factory):
 
     if pid != 0:
         os.kill(pid, signal.SIGTERM)
-        os.waitpid(pid, 0)
 
 
 @pytest.fixture
@@ -156,6 +155,6 @@ def test_model_hot_reloading(stub, rasa_default_train_data):
     assert response.status_code == 404, "Model should not exist yet"
     response = stub(requests.post)("/train?name=my_keyword_model&pipeline=keyword", json=rasa_default_train_data)
     assert response.status_code == 200, "Training should start successfully"
-    time.sleep(60)  # training should be quick as the keyword model doesn't do any training
+    time.sleep(3)  # training should be quick as the keyword model doesn't do any training
     response = stub(requests.get)(query)
     assert response.status_code == 200, "Model should now exist after it got trained"

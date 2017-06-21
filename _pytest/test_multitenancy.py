@@ -71,7 +71,6 @@ def stub(component_builder):
 
     if pid != 0:
         os.kill(pid, signal.SIGTERM)
-        os.waitpid(pid, 0)
 
 
 @pytest.mark.parametrize("response_test", [

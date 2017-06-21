@@ -73,11 +73,9 @@ class RasaNLU(object):
     @requires_auth
     def parse_get(self, request):
         if request.method.decode('utf-8', 'strict') == 'GET':
-            print(request.args.items())
             request_params = {key.decode('utf-8', 'strict'): value[0].decode('utf-8', 'strict') for key, value in
                               request.args.items()}
         else:
-            print(request.method)
             request_params = json.loads(request.content.read().decode('utf-8', 'strict'))
         if 'q' not in request_params:
             request.setResponseCode(404)
@@ -123,12 +121,17 @@ class RasaNLU(object):
     @app.route("/train", methods=['POST'])
     @requires_auth
     def train(self, request):
-        data_string = request.content.read()
+        def errback(f):
+            f.trap(ValueError)
+            logger.debug("error: {}".format(f.getErrorMessage()))
 
-        test = self.data_router.start_train_process(data_string.decode('utf-8', 'strict'),
+        data_string = request.content.read().decode('utf-8', 'strict')
+
+        test = self.data_router.start_train_process(data_string,
                                                     {key.decode('utf-8', 'strict'): value[0].decode('utf-8', 'strict')
                                                      for key, value in request.args.items()})
-        test.addCallback(lambda x: print(x))
+        test.addCallback(lambda model_path: logger.debug("Created model at: {}".format(model_path)))
+        test.addErrback(errback)
 
         request.setHeader('Content-Type', 'application/json')
         return json.dumps({"info": "training started.", "training_process_ids": self.data_router.train_proc_ids()})
