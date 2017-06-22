@@ -63,7 +63,7 @@ def test_all_arguments_can_be_satisfied_during_parse(component_class, default_co
     """Check that `parse` method parameters can be filled filled from the context. Similar to `pipeline_init` test."""
 
     # All available context arguments that will ever be generated during parse
-    context_arguments = {"text": None}
+    context_arguments = {"text": None, "time": None}
     for clz in registry.component_classes:
         for ctx_arg in clz.context_provides.get("pipeline_init", []):
             context_arguments[ctx_arg] = None
@@ -104,18 +104,6 @@ def test_fill_args_with_unsatisfiable_param_from_config():
 def test_find_unavailable_packages():
     unavailable = find_unavailable_packages(["my_made_up_package_name", "io", "foo_bar", "foo_bar"])
     assert unavailable == {"my_made_up_package_name", "foo_bar"}
-
-
-def test_read_dev_requirements(tmpdir):
-    package_name = "my_made_up_package_name"
-
-    # two imaginary packages should be installed if imaginary `package_name` is required
-    install_names = ["my_install_name_one", "my_install_name_two"]
-    f = tmpdir.join("tmp-requirements.txt")
-    f.write("# {}\n{}".format(package_name, "\n".join(install_names)))
-    requirements = _read_dev_requirements(f.strpath)
-    assert package_name in requirements
-    assert requirements[package_name] == install_names
 
 
 def test_builder_create_unknown(component_builder, default_config):

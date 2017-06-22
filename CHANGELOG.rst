@@ -21,8 +21,11 @@ Changed
 - use module specific loggers instead of default python root logger
 - output format of the duckling extractor changed. the ``value`` field now includes the complete value from duckling instead of just text (so this is an property is an object now instead of just text). includes granularity information now.
 - deprecated ``intent_examples`` and ``entity_examples`` sections in training data. all examples should go into the ``common_examples`` section
+- weight training samples based on class distribution during ner_crf cross validation and sklearn intent classification training
+
 Removed
 -------
+- luis data tokenizer configuration value (not used anymore, luis exports char offsets now)
 
 Fixed
 -----

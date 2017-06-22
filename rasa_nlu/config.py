@@ -34,7 +34,6 @@ DEFAULT_CONFIG = {
     "pipeline": [],
     "response_log": "logs",
     "duckling_dimensions": None,
-    "luis_data_tokenizer": None,
     "entity_crf_BILOU_flag": True,
     "entity_crf_features": [
         ["low", "title", "upper", "pos", "pos2"],

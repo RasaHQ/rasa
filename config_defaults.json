@@ -17,7 +17,6 @@
   "token": null,
   "max_number_of_ngrams": 7,
   "duckling_dimensions": null,
-  "luis_data_tokenizer": null,
   "entity_crf_BILOU_flag": true,
   "entity_crf_features": [
     ["low", "title", "upper", "pos", "pos2"],
