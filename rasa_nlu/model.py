@@ -150,7 +150,7 @@ class Trainer(object):
 
         return Interpreter(self.pipeline, context=init_context, config=self.config.as_dict())
 
-    def persist(self, path, persistor=None, model_name=None):
+    def persist(self, path, persistor=None, agent_name=None):
         # type: (Text, Optional[Persistor], Text) -> Text
         """Persist all components of the pipeline to the passed path. Returns the directory of the persisted model."""
 
@@ -160,10 +160,10 @@ class Trainer(object):
             "pipeline": [component.name for component in self.pipeline],
         }
 
-        if model_name is None:
-            dir_name = os.path.join(path, "model_" + timestamp)
+        if agent_name is None:
+            dir_name = os.path.join(path, "default_agent", "model_" + timestamp)
         else:
-            dir_name = os.path.join(path, model_name)
+            dir_name = os.path.join(path, agent_name, "model_" + timestamp)
 
         create_dir(dir_name)
 

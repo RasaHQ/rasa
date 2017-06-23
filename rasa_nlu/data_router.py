@@ -5,7 +5,6 @@ from __future__ import unicode_literals
 
 import datetime
 import glob
-import json
 import logging
 import os
 import tempfile
@@ -42,7 +41,7 @@ def deferred_from_future(future):
 
 
 class DataRouter(object):
-    DEFAULT_MODEL_NAME = "default"
+    DEFAULT_AGENT_NAME = "default_agent"
 
     def __init__(self, config, component_builder):
         self.config = config
@@ -52,11 +51,20 @@ class DataRouter(object):
         self.token = config['token']
         self.emulator = self.__create_emulator()
         self.component_builder = component_builder if component_builder else ComponentBuilder(use_cache=True)
-        self.model_store = self.__create_model_store()
-        self.pool = ProcessPool()
+        self.agent_store = self.__create_agent_store()
+        self.pool = ProcessPool(config['max_training_processes'])
 
     def __del__(self):
         self.pool.shutdown()
+
+    @staticmethod
+    def _latest_agent_model(agent_path):
+        """Retrieves the latest trained model for an agent"""
+
+        agent_models = {model[6:]: model for model in os.listdir(agent_path)}
+        time_list = [datetime.datetime.strptime(time, '%Y%m%d-%H%M%S') for time, model in agent_models.items()]
+
+        return agent_models[max(time_list).strftime('%Y%m%d-%H%M%S')]
 
     @staticmethod
     def _create_query_logger(response_log_dir):
@@ -80,59 +88,40 @@ class DataRouter(object):
             logger.info("Logging of requests is disabled. (No 'request_log' directory configured)")
             return None
 
-    def _remove_finished_procs(self):
-        """Remove finished training processes from the list of running training processes."""
-        self._train_procs = [p for p in self._train_procs if p.is_alive()]
-
-    def _add_train_proc(self, p):
-        """Adds a new training process to the list of running processes."""
-        self._train_procs.append(p)
-
-    @property
-    def train_procs(self):
-        """Instead of accessing the `_train_procs` property directly, this method will ensure that trainings that
-        are finished will be removed from the list."""
-
-        self._remove_finished_procs()
-        return self._train_procs
-
-    def train_proc_ids(self):
-        """Returns the ids of the running trainings processes."""
-        return [p.ident for p in self.train_procs]
-
     def __search_for_models(self):
         models = {}
-        for metadata_path in glob.glob(os.path.join(self.config.path, '*/metadata.json')):
-            model_name = os.path.basename(os.path.dirname(metadata_path))
-            models[model_name] = model_name
+        for agent_dirname in os.listdir(self.config.path):
+            agent_path = os.path.join(self.config['path'], agent_dirname)
+            models[agent_dirname] = DataRouter._latest_agent_model(agent_path)
         return models
 
-    def __interpreter_for_model(self, model_path):
-        metadata = DataRouter.read_model_metadata(model_path, self.config)
+    def __interpreter_for_model(self, latest_model_path):
+        metadata = DataRouter.read_model_metadata(latest_model_path, self.config)
         return Interpreter.load(metadata, self.config, self.component_builder)
 
-    def __create_model_store(self):
+    def __create_agent_store(self):
         # Fallback for users that specified the model path as a string and hence only want a single default model.
         if type(self.config.server_model_dirs) is Text:
-            model_dict = {self.DEFAULT_MODEL_NAME: self.config.server_model_dirs}
+            model_dict = {self.DEFAULT_AGENT_NAME: self.config.server_model_dirs}
         elif self.config.server_model_dirs is None:
             model_dict = self.__search_for_models()
         else:
             model_dict = self.config.server_model_dirs
 
-        model_store = {}
-
-        for alias, model_path in list(model_dict.items()):
+        agent_store = {}
+        model_path = ''
+        for agent, model_dirname in list(model_dict.items()):
             try:
-                logger.info("Loading model '{}'...".format(model_path))
-                model_store[alias] = self.__interpreter_for_model(model_path)
+                model_path = os.path.join(self.config['path'], agent, model_dirname)
+                logger.info("Loading agent '{}'...".format(agent))
+                agent_store[agent] = self.__interpreter_for_model(model_path)
             except Exception as e:
-                logger.exception("Failed to load model '{}'. Error: {}".format(model_path, e))
-        if not model_store:
+                logger.exception("Failed to load agent '{}'. Error: {}".format(agent, e))
+        if not agent_store:
             meta = Metadata({"pipeline": ["intent_classifier_keyword"]}, "")
             interpreter = Interpreter.load(meta, self.config, self.component_builder)
-            model_store[self.DEFAULT_MODEL_NAME] = interpreter
-        return model_store
+            agent_store[self.DEFAULT_AGENT_NAME] = interpreter
+        return agent_store
 
     @staticmethod
     def default_model_metadata():
@@ -150,7 +139,7 @@ class DataRouter(object):
             else:
                 raise RuntimeError("Unable to initialize persistor")
         except Exception as e:
-            logger.warn("Using default interpreter, couldn't fetch model: {}".format(e))
+            logger.warning("Using default interpreter, couldn't fetch model: {}".format(e))
 
     @staticmethod
     def read_model_metadata(model_dir, config):
@@ -166,6 +155,12 @@ class DataRouter(object):
                 DataRouter.load_model_from_cloud(model_dir, config)
 
             return Metadata.load(model_dir)
+
+    # TODO: protect the agent_store from concurrent access
+    def _update_agent_store(self, model_path):
+        agent = os.path.basename(os.path.dirname(os.path.normpath(model_path)))
+        print(agent)
+        self.agent_store[agent] = self.__interpreter_for_model(model_path)
 
     def __create_emulator(self):
         mode = self.config['emulate']
@@ -188,17 +183,20 @@ class DataRouter(object):
         return self.emulator.normalise_request_json(data)
 
     def parse(self, data):
-        alias = data.get("model") or self.DEFAULT_MODEL_NAME
-        if alias not in self.model_store:
+        agent = data.get("model") or self.DEFAULT_AGENT_NAME
+        if agent not in self.agent_store:
+            agent_path = os.path.join(self.config['path'], agent)
             try:
-                self.model_store[alias] = self.__interpreter_for_model(model_path=alias)
+                latest_model = DataRouter._latest_agent_model(agent_path)
+                latest_model = os.path.join(agent_path, latest_model)
+                self.agent_store[agent] = self.__interpreter_for_model(latest_model)
             except Exception as e:
-                raise InvalidModelError("No model found with alias '{}'. Error: {}".format(alias, e))
+                raise InvalidModelError("No agent found with name '{}'. Error: {}".format(agent, e))
 
-        model = self.model_store[alias]
+        model = self.agent_store[agent]
         response = model.parse(data['text'], data.get('time', None))
         if self.responses:
-            self.responses.info(user_input=response, model=alias)
+            self.responses.info(user_input=response, model=agent)
         return self.format_response(response)
 
     def format_response(self, data):
@@ -207,14 +205,10 @@ class DataRouter(object):
     def get_status(self):
         # This will only count the trainings started from this process, if run in multi worker mode, there might
         # be other trainings run in different processes we don't know about.
-        num_trainings = len(self.train_procs)
         models = glob.glob(os.path.join(self.model_dir, '*'))
         models = [model for model in models if os.path.isfile(os.path.join(model, "metadata.json"))]
-        return {
-            "trainings_under_this_process": num_trainings,
-            "available_models": models,
-            "training_process_ids": self.train_proc_ids()
-        }
+
+        return {"available_models": models}
 
     def start_train_process(self, data, config_values):
         logger.info("Starting model training")
@@ -226,8 +220,13 @@ class DataRouter(object):
         for key, val in config_values.items():
             _config[key] = val
         _config["data"] = f.name
+
         train_config = RasaNLUConfig(cmdline_args=_config)
         logger.info("Training process started")
 
         result = self.pool.submit(do_train, train_config, in_worker=True)
-        return deferred_from_future(result)
+        result = deferred_from_future(result)
+
+        result.addCallback(lambda model_path: self._update_agent_store(model_path))
+
+        return result

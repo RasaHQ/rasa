@@ -67,7 +67,11 @@ class RasaNLU(object):
         logger.debug("Creating a new data router")
         self.config = config
         self.data_router = DataRouter(config, component_builder)
-        reactor.suggestThreadPoolSize(20)
+        reactor.suggestThreadPoolSize(config['num_threads'] * 5)
+
+    @app.route("/", methods=['GET'])
+    def hello(self, request):
+        return "hello from Rasa NLU: " + __version__
 
     @app.route("/parse", methods=['GET', 'POST'])
     @requires_auth
@@ -114,10 +118,6 @@ class RasaNLU(object):
         request.setHeader('Content-Type', 'application/json')
         return json.dumps(self.data_router.get_status())
 
-    @app.route("/", methods=['GET'])
-    def hello(self, request):
-        return "hello from Rasa NLU: " + __version__
-
     @app.route("/train", methods=['POST'])
     @requires_auth
     def train(self, request):
@@ -130,11 +130,11 @@ class RasaNLU(object):
         test = self.data_router.start_train_process(data_string,
                                                     {key.decode('utf-8', 'strict'): value[0].decode('utf-8', 'strict')
                                                      for key, value in request.args.items()})
-        test.addCallback(lambda model_path: logger.debug("Created model at: {}".format(model_path)))
+        test.addCallback(lambda model_path: logger.info("Created model at: {}".format(model_path)))
         test.addErrback(errback)
 
         request.setHeader('Content-Type', 'application/json')
-        return json.dumps({"info": "training started.", "training_process_ids": self.data_router.train_proc_ids()})
+        return json.dumps({"info": "training started."})
 
 
 if __name__ == '__main__':

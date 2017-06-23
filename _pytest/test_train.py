@@ -77,7 +77,7 @@ def test_load_and_persist_without_train(component_builder):
     _config = utilities.base_test_conf("all_components")
     trainer = Trainer(_config, component_builder)
     persistor = create_persistor(_config)
-    persisted_path = trainer.persist(_config['path'], persistor, model_name=_config['name'])
+    persisted_path = trainer.persist(_config['path'], persistor, agent_name=_config['name'])
     loaded = utilities.load_interpreter_for_model(_config, persisted_path, component_builder)
     assert loaded.pipeline
     assert loaded.parse("hello", time=None) is not None
@@ -88,7 +88,7 @@ def test_train_with_empty_data(component_builder):
     trainer = Trainer(_config, component_builder)
     trainer.train(TrainingData())
     persistor = create_persistor(_config)
-    persisted_path = trainer.persist(_config['path'], persistor, model_name=_config['name'])
+    persisted_path = trainer.persist(_config['path'], persistor, agent_name=_config['name'])
     loaded = utilities.load_interpreter_for_model(_config, persisted_path, component_builder)
     assert loaded.pipeline
     assert loaded.parse("hello", time=None) is not None

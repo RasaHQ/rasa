@@ -167,7 +167,7 @@ if __name__ == '__main__':
 
         trainer.train(training_data)
         persistor = create_persistor(config)
-        trainer.persist("test_models", persistor, model_name=model_name)
+        trainer.persist("test_models", persistor, agent_name=model_name)
 
     train("config_mitie.json", "test_model_mitie")
     train("config_spacy.json", "test_model_spacy_sklearn")
