@@ -159,7 +159,6 @@ class DataRouter(object):
     # TODO: protect the agent_store from concurrent access
     def _update_agent_store(self, model_path):
         agent = os.path.basename(os.path.dirname(os.path.normpath(model_path)))
-        print(agent)
         self.agent_store[agent] = self.__interpreter_for_model(model_path)
 
     def __create_emulator(self):
@@ -185,13 +184,13 @@ class DataRouter(object):
     def parse(self, data):
         agent = data.get("model") or self.DEFAULT_AGENT_NAME
         if agent not in self.agent_store:
-            agent_path = os.path.join(self.config['path'], agent)
-            try:
-                latest_model = DataRouter._latest_agent_model(agent_path)
-                latest_model = os.path.join(agent_path, latest_model)
-                self.agent_store[agent] = self.__interpreter_for_model(latest_model)
-            except Exception as e:
-                raise InvalidModelError("No agent found with name '{}'. Error: {}".format(agent, e))
+            # agent_path = os.path.join(self.config['path'], agent)
+            #     try:
+            #         latest_model = DataRouter._latest_agent_model(agent_path)
+            #         latest_model = os.path.join(agent_path, latest_model)
+            #         self.agent_store[agent] = self.__interpreter_for_model(latest_model)
+            #     except Exception as e:
+            raise InvalidModelError("No agent found with name '{}'.".format(agent))
 
         model = self.agent_store[agent]
         response = model.parse(data['text'], data.get('time', None))
@@ -205,10 +204,8 @@ class DataRouter(object):
     def get_status(self):
         # This will only count the trainings started from this process, if run in multi worker mode, there might
         # be other trainings run in different processes we don't know about.
-        models = glob.glob(os.path.join(self.model_dir, '*'))
-        models = [model for model in models if os.path.isfile(os.path.join(model, "metadata.json"))]
 
-        return {"available_models": models}
+        return {"available_agents": list(self.agent_store.keys())}
 
     def start_train_process(self, data, config_values):
         logger.info("Starting model training")
@@ -227,6 +224,6 @@ class DataRouter(object):
         result = self.pool.submit(do_train, train_config, in_worker=True)
         result = deferred_from_future(result)
 
-        result.addCallback(lambda model_path: self._update_agent_store(model_path))
+        result.addCallback(self._update_agent_store)
 
         return result

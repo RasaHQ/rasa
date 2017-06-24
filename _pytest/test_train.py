@@ -4,6 +4,8 @@ from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
+
+import os
 import pytest
 from rasa_nlu.training_data import TrainingData
 
@@ -52,7 +54,7 @@ def test_train_model_multithread(component_builder):
 
 
 def test_train_model_empty_pipeline(component_builder):
-    _config = utilities.base_test_conf(pipeline_template=None)   # Should return an empty pipeline
+    _config = utilities.base_test_conf(pipeline_template=None)  # Should return an empty pipeline
     with pytest.raises(ValueError):
         utilities.run_train(_config, component_builder)
 
@@ -62,7 +64,8 @@ def test_train_named_model(component_builder):
     _config['name'] = "my_keyword_model"
     (trained, persisted_path) = utilities.run_train(_config, component_builder)
     assert trained.pipeline
-    assert persisted_path.strip("/\\").endswith("my_keyword_model")    # should be saved in a dir named after model
+    # Should be saved in a dir named after agent
+    assert os.path.basename(os.path.dirname(os.path.normpath(persisted_path))) == "my_keyword_model"
 
 
 def test_handles_pipeline_with_non_existing_component(component_builder):

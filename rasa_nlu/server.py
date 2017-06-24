@@ -135,7 +135,7 @@ class RasaNLU(object):
         test.addErrback(errback)
 
         request.setHeader('Content-Type', 'application/json')
-        return json.dumps({"info": "training started."})
+        return json.dumps({"info": "Training started."})
 
 
 if __name__ == '__main__':

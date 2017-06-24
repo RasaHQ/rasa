@@ -84,7 +84,7 @@ def test_root(stub):
 def test_status(stub):
     response = stub(requests.get)("/status")
     rjs = response.json()
-    assert response.status_code == 200 and ("trainings_under_this_process" in rjs and "available_models" in rjs)
+    assert response.status_code == 200 and ("available_agents" in rjs)
 
 
 def test_config(stub):
@@ -145,8 +145,7 @@ def test_post_train(stub, rasa_default_train_data):
     response = stub(requests.post)("/train", json=rasa_default_train_data)
     rjs = response.json()
     assert response.status_code == 200
-    assert len(rjs["training_process_ids"]) == 0
-    assert rjs["info"] == "training started."
+    assert rjs["info"] == "Training started."
 
 
 def test_model_hot_reloading(stub, rasa_default_train_data):

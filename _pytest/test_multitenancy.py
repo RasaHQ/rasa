@@ -34,18 +34,14 @@ def stub(component_builder):
         'port': -1,  # unused in test app
         "backend": "mitie",
         "path": os.path.join(root_dir, "test_models"),
-        "data": os.path.join(root_dir, "data/demo-restaurants.json"),
-        "server_model_dirs": {
-            "one": "test_model_mitie",
-            "two": "test_model_mitie_sklearn",
-            "three": "test_model_spacy_sklearn",
-        }
+        "data": os.path.join(root_dir, "data/demo-restaurants.json")
     }
     url = '127.0.0.1'
     port = 5000
     pid = os.fork()
     if pid == 0:
         sem.acquire()
+        train_models()
         config = RasaNLUConfig(cmdline_args=_config)
         rasa = RasaNLU(config, component_builder)
         sem.release()
@@ -75,15 +71,15 @@ def stub(component_builder):
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-        "/parse?q=food&model=one",
+        "/parse?q=food&model=test_model_mitie",
         {"entities": [], "intent": "affirm", "text": "food"}
     ),
     ResponseTest(
-        "/parse?q=food&model=two",
+        "/parse?q=food&model=test_model_mitie_sklearn",
         {"entities": [], "intent": "restaurant_search", "text": "food"}
     ),
     ResponseTest(
-        "/parse?q=food&model=three",
+        "/parse?q=food&model=test_model_spacy_sklearn",
         {"entities": [], "intent": "restaurant_search", "text": "food"}
     ),
 ])
@@ -98,11 +94,11 @@ def test_get_parse(stub, response_test):
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
         "/parse?q=food",
-        {"error": "No model found with alias 'default'. Error: Failed to load model metadata. "}
+        {"error": "No agent found with name 'default_agent'."}
     ),
     ResponseTest(
         "/parse?q=food&model=umpalumpa",
-        {"error": "No model found with alias 'umpalumpa'. Error: Failed to load model metadata. "}
+        {"error": "No agent found with name 'umpalumpa'."}
     )
 ])
 def test_get_parse_invalid_model(stub, response_test):
@@ -116,17 +112,17 @@ def test_get_parse_invalid_model(stub, response_test):
     ResponseTest(
         "/parse",
         {"entities": [], "intent": "affirm", "text": "food"},
-        payload={"q": "food", "model": "one"}
+        payload={"q": "food", "model": "test_model_mitie"}
     ),
     ResponseTest(
         "/parse",
         {"entities": [], "intent": "restaurant_search", "text": "food"},
-        payload={"q": "food", "model": "two"}
+        payload={"q": "food", "model": "test_model_mitie_sklearn"}
     ),
     ResponseTest(
         "/parse",
         {"entities": [], "intent": "restaurant_search", "text": "food"},
-        payload={"q": "food", "model": "three"}
+        payload={"q": "food", "model": "test_model_spacy_sklearn"}
     ),
 ])
 def test_post_parse(stub, response_test):
@@ -139,12 +135,12 @@ def test_post_parse(stub, response_test):
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
         "/parse",
-        {"error": "No model found with alias 'default'. Error: Failed to load model metadata. "},
+        {"error": "No agent found with name 'default_agent'."},
         payload={"q": "food"}
     ),
     ResponseTest(
         "/parse",
-        {"error": "No model found with alias 'umpalumpa'. Error: Failed to load model metadata. "},
+        {"error": "No agent found with name 'umpalumpa'."},
         payload={"q": "food", "model": "umpalumpa"}
     ),
 ])
@@ -155,7 +151,7 @@ def test_post_parse_invalid_model(stub, response_test):
     assert rjs.get("error").startswith(response_test.expected_response["error"])
 
 
-if __name__ == '__main__':
+def train_models():
     # Retrain different multitenancy models
     def train(cfg_name, model_name):
         from rasa_nlu.train import create_persistor
