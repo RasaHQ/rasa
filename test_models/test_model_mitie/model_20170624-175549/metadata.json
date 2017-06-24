@@ -1,0 +1,18 @@
+{
+    "training_data": "training_data.json",
+    "mitie_feature_extractor_fingerprint": 10023965992282753551,
+    "entity_synonyms": "entity_synonyms.json",
+    "trained_at": "20170624-175550",
+    "entity_extractor_mitie": "entity_extractor.dat",
+    "intent_classifier_mitie": "intent_classifier.dat",
+    "language": "en",
+    "pipeline": [
+        "nlp_mitie",
+        "tokenizer_mitie",
+        "ner_mitie",
+        "ner_synonyms",
+        "intent_classifier_mitie"
+    ],
+    "mitie_file": "./data/total_word_feature_extractor.dat",
+    "rasa_nlu_version": "0.9.0a4"
+}

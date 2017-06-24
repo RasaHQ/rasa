@@ -41,7 +41,6 @@ def stub(component_builder):
     pid = os.fork()
     if pid == 0:
         sem.acquire()
-        train_models()
         config = RasaNLUConfig(cmdline_args=_config)
         rasa = RasaNLU(config, component_builder)
         sem.release()
@@ -49,7 +48,7 @@ def stub(component_builder):
         rasa.data_router.__del__()
         os._exit(0)
     else:
-        time.sleep(10)
+        time.sleep(3)
         sem.acquire()
         sem.release()
 
