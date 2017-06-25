@@ -96,7 +96,7 @@ class SklearnIntentClassifier(Component):
             tuned_parameters = [{'C': [1, 2, 5, 10, 20, 100], 'kernel': [str('linear')]}]
             cv_splits = max(2, min(MAX_CV_FOLDS, np.min(np.bincount(y)) // 5))  # aim for 5 examples in each fold
 
-            self.clf = GridSearchCV(SVC(C=1, probability=True),
+            self.clf = GridSearchCV(SVC(C=1, probability=True, class_weight='balanced'),
                                     param_grid=tuned_parameters, n_jobs=num_threads,
                                     cv=cv_splits, scoring='f1_weighted', verbose=1)
 
