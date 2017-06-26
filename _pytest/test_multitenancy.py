@@ -38,6 +38,7 @@ def stub(component_builder):
     }
     url = '127.0.0.1'
     port = 5000
+    train_models(component_builder)
     pid = os.fork()
     if pid == 0:
         sem.acquire()
@@ -150,14 +151,14 @@ def test_post_parse_invalid_model(stub, response_test):
     assert rjs.get("error").startswith(response_test.expected_response["error"])
 
 
-def train_models():
+def train_models(component_builder):
     # Retrain different multitenancy models
     def train(cfg_name, model_name):
         from rasa_nlu.train import create_persistor
         from rasa_nlu.converters import load_data
 
         config = RasaNLUConfig(cfg_name)
-        trainer = Trainer(config)
+        trainer = Trainer(config, component_builder)
         training_data = load_data(config['data'])
 
         trainer.train(training_data)
