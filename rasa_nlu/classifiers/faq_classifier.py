@@ -16,7 +16,6 @@ from typing import Text
 from typing import Tuple
 
 from rasa_nlu.components import Component
-from rasa_nlu.featurizers.spacy_featurizer import features_for_sentences
 from rasa_nlu.training_data import TrainingData
 
 if typing.TYPE_CHECKING:
@@ -32,15 +31,13 @@ class FAQClassifierSklearn(Component):
 
     name = "faq_classifier_sklearn"
 
-    number_of_neighbours = 3
-
     context_provides = {
         "process": ["faq", "faq_ranking"],
     }
 
     output_provides = ["faq", "faq_ranking"]
 
-    def __init__(self, clf=None, le=None):
+    def __init__(self, clf=None, le=None, vectorizer=None):
         # type: (sklearn.neighbors.KNeighborsClassifier, sklearn.preprocessing.LabelEncoder) -> None
         """Construct a new faq classifier using the sklearn framework."""
         from sklearn.preprocessing import LabelEncoder
@@ -49,6 +46,8 @@ class FAQClassifierSklearn(Component):
             self.le = le
         else:
             self.le = LabelEncoder()
+
+        self.vectorizer = vectorizer
         self.clf = clf
 
     @classmethod
@@ -72,28 +71,41 @@ class FAQClassifierSklearn(Component):
 
         return self.le.inverse_transform(y)
 
-    def train(self, training_data, intent_features, spacy_nlp, num_threads):
+    def train(self, training_data, num_threads):
         # type: (TrainingData, spacy.language.Language, int) -> None
         """Train the intent classifier on a data set.
 
         :param num_threads: number of threads used during training time"""
         from sklearn.neighbors import KNeighborsClassifier
+        import numpy as np
+        from sklearn.model_selection import GridSearchCV
+        from sklearn.linear_model import SGDClassifier
 
         labels = [e["refinement"] for e in training_data.intent_examples if "refinement" in e]
-        ex_idx = ["refinement" in e for e in training_data.intent_examples]
+        texts = [e["text"] for e in training_data.intent_examples if "refinement" in e]
 
         if labels:
             y = self.transform_labels_str2num(labels)
 
-            X = intent_features[ex_idx, :]
+            from sklearn.feature_extraction.text import TfidfVectorizer
+            self.vectorizer = TfidfVectorizer(min_df=1)
+            X = self.vectorizer.fit_transform(texts)
 
-            self.clf = KNeighborsClassifier(n_neighbors=self.number_of_neighbours)
+            tuned_parameters = [{'alpha': (0.00001, 0.000001),
+                                 'penalty': ('l2', 'elasticnet'),
+                                 'loss': ('modified_huber', 'log')}]
+
+            cv_splits = max(2, min(5, np.min(np.bincount(y)) // 5))  # aim for 5 examples in each fold
+
+            self.clf = GridSearchCV(SGDClassifier(class_weight='balanced'),
+                                    param_grid=tuned_parameters, n_jobs=num_threads,
+                                    cv=cv_splits, scoring='f1_weighted', verbose=1)
 
             self.clf.fit(X, y)
         else:
-            logger.info("Skipped training of 'faq_classifier_sklearn', since there are no labeld refinement examples.")
+            logger.info("Skipped training of 'faq_classifier_sklearn', since there are no labeled refinement examples.")
 
-    def process(self, intent_features):
+    def process(self, text):
         # type: (np.ndarray) -> Dict[Text, Any]
         """Returns the most likely intent and its probability for the input text."""
 
@@ -101,7 +113,7 @@ class FAQClassifierSklearn(Component):
             # The classifier wasn't trained - e.g. due to no examples being present
             return {"faq": None, "faq_ranking": []}
 
-        X = intent_features.reshape(1, -1)
+        X = self.vectorizer.transform([text])
         intent_ids, probabilities = self.predict(X)
         faqs = self.transform_labels_num2str(intent_ids)
         # `predict` returns a matrix as it is supposed to work for multiple examples as well, hence we need to flatten
