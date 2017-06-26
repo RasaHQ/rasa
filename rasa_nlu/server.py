@@ -57,6 +57,8 @@ def requires_auth(f):
 
 
 class RasaNLU(object):
+    """Class representing RASA NLU http server"""
+
     app = Klein()
 
     def __init__(self, config, component_builder=None):
@@ -71,11 +73,15 @@ class RasaNLU(object):
 
     @app.route("/", methods=['GET'])
     def hello(self, request):
+        """Main RASA route to check if the server is online"""
+
         return "hello from Rasa NLU: " + __version__
 
     @app.route("/parse", methods=['GET', 'POST'])
     @requires_auth
     def parse_get(self, request):
+        """Process http request containing user input to extract NLU data from"""
+
         if request.method.decode('utf-8', 'strict') == 'GET':
             request_params = {key.decode('utf-8', 'strict'): value[0].decode('utf-8', 'strict') for key, value in
                               request.args.items()}
@@ -103,24 +109,32 @@ class RasaNLU(object):
     @app.route("/version", methods=['GET'])
     @requires_auth
     def version(self, request):
+        """Returns the RASA server's version"""
+
         request.setHeader('Content-Type', 'application/json')
         return json.dumps({'version': __version__})
 
     @app.route("/config", methods=['GET'])
     @requires_auth
     def rasaconfig(self, request):
+        """Returns the in-memory configuration of the RASA server"""
+
         request.setHeader('Content-Type', 'application/json')
         return json.dumps(self.config.as_dict())
 
     @app.route("/status", methods=['GET'])
     @requires_auth
     def status(self, request):
+        """Returns the agents status"""
+
         request.setHeader('Content-Type', 'application/json')
         return json.dumps(self.data_router.get_status())
 
     @app.route("/train", methods=['POST'])
     @requires_auth
     def train(self, request):
+        """Process http request containing user data to train a new/existing agent"""
+
         def errback(f):
             f.trap(ValueError)
             logger.debug("error: {}".format(f.getErrorMessage()))

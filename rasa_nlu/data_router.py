@@ -27,6 +27,8 @@ logger = logging.getLogger(__name__)
 
 
 def deferred_from_future(future):
+    """Convert a concurrent.future into a twisted Deferred"""
+
     d = defer.Deferred()
 
     def callback(future):
@@ -89,6 +91,7 @@ class DataRouter(object):
             return None
 
     def __search_for_models(self):
+        """Looks for existing models in agents folders"""
         models = {}
         for agent_dirname in os.listdir(self.config.path):
             agent_path = os.path.join(self.config['path'], agent_dirname)
@@ -156,12 +159,12 @@ class DataRouter(object):
 
             return Metadata.load(model_dir)
 
-    # TODO: protect the agent_store from concurrent access
     def _update_agent_store(self, model_path):
         agent = os.path.basename(os.path.dirname(os.path.normpath(model_path)))
         self.agent_store[agent] = self.__interpreter_for_model(model_path)
 
     def __create_emulator(self):
+        """Sets which NLU webservice to emulate among those supported by RASA"""
         mode = self.config['emulate']
         if mode is None:
             from rasa_nlu.emulators import NoEmulator
@@ -179,17 +182,13 @@ class DataRouter(object):
             raise ValueError("unknown mode : {0}".format(mode))
 
     def extract(self, data):
+        """Extracts request parameters"""
         return self.emulator.normalise_request_json(data)
 
     def parse(self, data):
+        """Extracts NLU data from user input"""
         agent = data.get("model") or self.DEFAULT_AGENT_NAME
         if agent not in self.agent_store:
-            # agent_path = os.path.join(self.config['path'], agent)
-            #     try:
-            #         latest_model = DataRouter._latest_agent_model(agent_path)
-            #         latest_model = os.path.join(agent_path, latest_model)
-            #         self.agent_store[agent] = self.__interpreter_for_model(latest_model)
-            #     except Exception as e:
             raise InvalidModelError("No agent found with name '{}'.".format(agent))
 
         model = self.agent_store[agent]
@@ -208,6 +207,7 @@ class DataRouter(object):
         return {"available_agents": list(self.agent_store.keys())}
 
     def start_train_process(self, data, config_values):
+        """Adds an agent for the training process to train"""
         logger.info("Starting model training")
         f = tempfile.NamedTemporaryFile("w+", suffix="_training_data.json", delete=False)
         f.write(data)
