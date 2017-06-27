@@ -21,7 +21,7 @@ class NoEmulator(object):
         _data = {}
         _data["text"] = data["q"][0] if type(data["q"]) == list else data["q"]
         if not data.get("model"):
-            _data["model"] = "default"
+            _data["model"] = "default_agent"
         elif type(data["model"]) == list:
             _data["model"] = data["model"][0]
         else:
