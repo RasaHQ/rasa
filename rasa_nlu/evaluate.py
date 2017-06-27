@@ -103,4 +103,3 @@ if __name__ == '__main__':
 
     do_evaluation(config, args.model)
     logger.info("Finished evaluation")
-
