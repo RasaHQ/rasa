@@ -181,8 +181,9 @@ class DataRouter(object):
     def parse(self, data):
         agent = data.get("model") or self.DEFAULT_AGENT_NAME
         if agent not in self.agent_store:
+            model_dict = self.__search_for_models()
             try:
-                self.agent_store[agent] = self.__interpreter_for_model(latest_model_path=agent)
+                self.agent_store[agent] = self.__interpreter_for_model(latest_model_path=model_dict[agent])
             except Exception as e:
                 raise InvalidModelError("No agent found with name '{}'. Error: {}".format(agent, e))
 

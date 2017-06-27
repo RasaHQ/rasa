@@ -161,7 +161,7 @@ class Trainer(object):
         }
 
         if agent_name is None:
-            dir_name = os.path.join(path, "default_agent", "model_" + timestamp)
+            dir_name = os.path.join(path, "default", "model_" + timestamp)
         else:
             dir_name = os.path.join(path, agent_name, "model_" + timestamp)
 
