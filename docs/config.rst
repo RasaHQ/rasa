@@ -201,6 +201,15 @@ aws_region
     Name of the aws region to use. This is used only when ``"storage"`` is selected as ``"aws"``.
     See :ref:`section_persistence` for more details.
 
+aws_endpoint_url
+~~~~~~~~~~
+
+:Type: ``str``
+:Examples: ``"http://10.0.0.1:9000"``
+:Description:
+    Optional endpoint of the custom S3 compatible storage provider. This is used only when ``"storage"`` is selected as ``"aws"``.
+    See :ref:`section_persistence` for more details.
+
 entity_crf_features
 ~~~~~~~~~~~~~~~~~~~
 
