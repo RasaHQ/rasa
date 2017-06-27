@@ -1,5 +1,6 @@
 language: python
 sudo: required
+group: deprecated-2017Q2
 services:
   - docker
 cache:
