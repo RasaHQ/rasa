@@ -4,15 +4,11 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import argparse
+import itertools
 import logging
 import os
 
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import classification_report
-from sklearn.metrics import confusion_matrix
-from sklearn.metrics import f1_score
-from sklearn.metrics import precision_score
-from sklearn.utils.multiclass import unique_labels
+import matplotlib.pyplot as plt
 
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.converters import load_data
@@ -35,13 +31,10 @@ def plot_confusion_matrix(cm, classes,
                           normalize=False,
                           title='Confusion matrix',
                           cmap=None):
-    """
-    This function prints and plots the confusion matrix.
-    Normalization can be applied by setting `normalize=True`.
-    """
-    import itertools
+    """This function prints and plots the confusion matrix.
+
+    Normalization can be applied by setting `normalize=True`."""
     import numpy as np
-    import matplotlib.pyplot as plt
 
     plt.imshow(cm, interpolation='nearest', cmap=cmap if cmap else plt.cm.Blues)
     plt.title(title)
@@ -70,6 +63,13 @@ def plot_confusion_matrix(cm, classes,
 
 
 def do_evaluation(config, model_path, component_builder=None):
+    from sklearn.metrics import accuracy_score
+    from sklearn.metrics import classification_report
+    from sklearn.metrics import confusion_matrix
+    from sklearn.metrics import f1_score
+    from sklearn.metrics import precision_score
+    from sklearn.utils.multiclass import unique_labels
+
     # get the metadata config from the package data
     test_data = load_data(config['data'])
     metadata = Metadata.load(model_path)
@@ -88,7 +88,6 @@ def do_evaluation(config, model_path, component_builder=None):
     print(classification_report(test_y, preds))
 
     cnf_matrix = confusion_matrix(test_y, preds)
-    import matplotlib.pyplot as plt
     plot_confusion_matrix(cnf_matrix, classes=unique_labels(test_y, preds),
                           title='Confusion matrix')
 
