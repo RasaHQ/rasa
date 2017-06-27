@@ -4,7 +4,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import datetime
-import glob
 import logging
 import os
 import tempfile
@@ -21,7 +20,7 @@ from rasa_nlu import utils
 from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.model import Metadata, InvalidModelError, Interpreter
-from rasa_nlu.train import do_train
+from rasa_nlu.train import do_train_in_worker
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +56,12 @@ class DataRouter(object):
         self.pool = ProcessPool(config['max_training_processes'])
 
     def __del__(self):
+        """Terminates workers pool processes"""
         self.pool.shutdown()
+
+    def shutdown(self):
+        """Public wrapper over the internal __del__ function"""
+        self.__del__()
 
     @staticmethod
     def _latest_agent_model(agent_path):
@@ -164,7 +168,7 @@ class DataRouter(object):
         self.agent_store[agent] = self.__interpreter_for_model(model_path)
 
     def __create_emulator(self):
-        """Sets which NLU webservice to emulate among those supported by RASA"""
+        """Sets which NLU webservice to emulate among those supported by Rasa"""
         mode = self.config['emulate']
         if mode is None:
             from rasa_nlu.emulators import NoEmulator
@@ -221,7 +225,7 @@ class DataRouter(object):
         train_config = RasaNLUConfig(cmdline_args=_config)
         logger.info("Training process started")
 
-        result = self.pool.submit(do_train, train_config, in_worker=True)
+        result = self.pool.submit(do_train_in_worker, train_config)
         result = deferred_from_future(result)
 
         result.addCallback(self._update_agent_store)

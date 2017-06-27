@@ -9,7 +9,6 @@ import tempfile
 import requests
 
 import pytest
-import sys
 from multiprocessing import Semaphore
 
 import time
@@ -46,7 +45,7 @@ def stub(component_builder):
         rasa = RasaNLU(config, component_builder)
         sem.release()
         rasa.app.run(url, port)
-        rasa.data_router.__del__()
+        rasa.data_router.shutdown()
         os._exit(0)
     else:
         time.sleep(3)

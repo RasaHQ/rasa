@@ -120,7 +120,7 @@ Licenses of minimal dependencies:
 | required package | License            	|
 |------------------|------------------------|
 | gevent     	   | MIT                	|
-| klein     	   | MIT      	|
+| klein     	   | MIT      	            |
 | boto3      	   | Apache License 2.0 	|
 | typing     	   | PSF                	|
 | future     	   | MIT                	|
