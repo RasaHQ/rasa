@@ -289,7 +289,7 @@ class NGramFeaturizer(Component):
             extras = np.array(self._ngrams_in_sentences(examples, ngrams_to_use))
             return np.hstack((existing_text_features, extras))
 
-        clf2 = LogisticRegression()
+        clf2 = LogisticRegression(class_weight='balanced')
         intent_encoder = preprocessing.LabelEncoder()
         intent_encoder.fit(labels)
         y = intent_encoder.transform(labels)

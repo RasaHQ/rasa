@@ -227,7 +227,7 @@ class Interpreter(object):
         self.context = context if context is not None else {}
         self.model_metadata = model_metadata
 
-    def parse(self, text):
+    def parse(self, text, time=None):
         # type: (Text) -> Dict[Text, Any]
         """Parse the input text, classify it and return an object containing its intent and entities."""
 
@@ -239,7 +239,7 @@ class Interpreter(object):
             output["text"] = ""
             return output
 
-        message = Message(text, self.default_output_attributes())
+        message = Message(text, self.default_output_attributes(), time=time)
 
         for component in self.pipeline:
             component.process(message, **self.context)

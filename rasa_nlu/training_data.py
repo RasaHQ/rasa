@@ -26,8 +26,9 @@ logger = logging.getLogger(__name__)
 
 
 class Message(object):
-    def __init__(self, text, data=None, output_properties=None):
+    def __init__(self, text, data=None, output_properties=None, time=None):
         self.text = text
+        self.time = time
         self.data = data if data else {}
         self.output_properties = output_properties if output_properties else set()
 
@@ -165,7 +166,7 @@ class TrainingData(object):
         logger.info("Training data stats: \n" +
                     "\t- intent examples: {} ({} distinct intents)\n".format(
                             self.num_intent_examples, len(different_intents)) +
-                    "\t- found intents: {}\n".format(list_to_str(different_entities)) +
+                    "\t- found intents: {}\n".format(list_to_str(different_intents)) +
                     "\t- entity examples: {} ({} distinct entities)\n".format(
                             self.num_entity_examples, len(different_entities)) +
                     "\t- found entities: {}\n".format(list_to_str(different_entities)))

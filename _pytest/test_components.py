@@ -57,18 +57,6 @@ def test_find_unavailable_packages():
     assert unavailable == {"my_made_up_package_name", "foo_bar"}
 
 
-def test_read_dev_requirements(tmpdir):
-    package_name = "my_made_up_package_name"
-
-    # two imaginary packages should be installed if imaginary `package_name` is required
-    install_names = ["my_install_name_one", "my_install_name_two"]
-    f = tmpdir.join("tmp-requirements.txt")
-    f.write("# {}\n{}".format(package_name, "\n".join(install_names)))
-    requirements = _read_dev_requirements(f.strpath)
-    assert package_name in requirements
-    assert requirements[package_name] == install_names
-
-
 def test_builder_create_unknown(component_builder, default_config):
     with pytest.raises(Exception) as excinfo:
         component_builder.create_component("my_made_up_componment", default_config)

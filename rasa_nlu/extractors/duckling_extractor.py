@@ -6,7 +6,9 @@ from __future__ import unicode_literals
 import os
 import io
 import json
+import logging
 import typing
+import datetime
 from typing import Any
 from typing import Dict
 from typing import List
@@ -82,7 +84,21 @@ class DucklingExtractor(EntityExtractor):
 
         extracted = []
         if self.duckling is not None:
-            matches = self.duckling.parse(message.text)
+            ref_time = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S+00:00')
+            if message.time is not None:
+                # check if time given is valid
+                try:
+                    ref_time = datetime.datetime\
+                        .utcfromtimestamp(int(message.time)/1000.0)\
+                        .strftime('%Y-%m-%dT%H:%M:%S+00:00')
+                    logging.debug(
+                            "Passing reference time {} to duckling".format(ref_time))
+                except Exception as e:
+                    logging.warning(
+                            "Could not parse timestamp {}. "
+                            "Instead current UTC time {} will be passed to duckling".format(message.time, ref_time))
+
+            matches = self.duckling.parse(message.text, reference_time=ref_time)
             relevant_matches = [match for match in matches if match["dim"] in self.dimensions]
             for match in relevant_matches:
                 entity = {"start": match["start"],
