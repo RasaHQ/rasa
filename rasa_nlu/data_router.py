@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import datetime
+
 import glob
 import json
 import logging
@@ -22,7 +23,7 @@ from rasa_nlu import utils
 from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.model import Metadata, InvalidModelError, Interpreter
-from rasa_nlu.train import do_train
+from rasa_nlu.train import do_train_in_worker
 
 logger = logging.getLogger(__name__)
 
@@ -53,10 +54,15 @@ class DataRouter(object):
         self.emulator = self.__create_emulator()
         self.component_builder = component_builder if component_builder else ComponentBuilder(use_cache=True)
         self.model_store = self.__create_model_store()
-        self.pool = ProcessPool()
+        self.pool = ProcessPool(config['max_training_processes'] or 1)
 
     def __del__(self):
+        """Terminates workers pool processes"""
         self.pool.shutdown()
+
+    def shutdown(self):
+        """Public wrapper over the internal __del__ function"""
+        self.__del__()
 
     @staticmethod
     def _create_query_logger(response_log_dir):
@@ -150,7 +156,7 @@ class DataRouter(object):
             else:
                 raise RuntimeError("Unable to initialize persistor")
         except Exception as e:
-            logger.warn("Using default interpreter, couldn't fetch model: {}".format(e))
+            logger.warning("Using default interpreter, couldn't fetch model: {}".format(e))
 
     @staticmethod
     def read_model_metadata(model_dir, config):
@@ -168,6 +174,8 @@ class DataRouter(object):
             return Metadata.load(model_dir)
 
     def __create_emulator(self):
+        """Sets which NLU webservice to emulate among those supported by Rasa"""
+
         mode = self.config['emulate']
         if mode is None:
             from rasa_nlu.emulators import NoEmulator
@@ -229,5 +237,7 @@ class DataRouter(object):
         train_config = RasaNLUConfig(cmdline_args=_config)
         logger.info("Training process started")
 
-        result = self.pool.submit(do_train, train_config, in_worker=True)
-        return deferred_from_future(result)
+        result = self.pool.submit(do_train_in_worker, train_config)
+        result = deferred_from_future(result)
+
+        return result

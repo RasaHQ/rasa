@@ -57,17 +57,25 @@ def requires_auth(f):
 
 
 class RasaNLU(object):
+    """Class representing Rasa NLU http server"""
+
     app = Klein()
 
     def __init__(self, config, component_builder=None):
         logging.basicConfig(filename=config['log_file'], level=config['log_level'])
         logging.captureWarnings(True)
-        logger.info("Configuration: " + config.view())
+        logger.debug("Configuration: " + config.view())
 
         logger.debug("Creating a new data router")
         self.config = config
         self.data_router = DataRouter(config, component_builder)
-        reactor.suggestThreadPoolSize(20)
+        reactor.suggestThreadPoolSize(config['num_threads'] * 5)
+
+    @app.route("/", methods=['GET'])
+    def hello(self, request):
+        """Main Rasa route to check if the server is online"""
+
+        return "hello from Rasa NLU: " + __version__
 
     @app.route("/parse", methods=['GET', 'POST'])
     @requires_auth
@@ -99,12 +107,16 @@ class RasaNLU(object):
     @app.route("/version", methods=['GET'])
     @requires_auth
     def version(self, request):
+        """Returns the Rasa server's version"""
+
         request.setHeader('Content-Type', 'application/json')
         return json.dumps({'version': __version__})
 
     @app.route("/config", methods=['GET'])
     @requires_auth
     def rasaconfig(self, request):
+        """Returns the in-memory configuration of the Rasa server"""
+
         request.setHeader('Content-Type', 'application/json')
         return json.dumps(self.config.as_dict())
 
@@ -113,10 +125,6 @@ class RasaNLU(object):
     def status(self, request):
         request.setHeader('Content-Type', 'application/json')
         return json.dumps(self.data_router.get_status())
-
-    @app.route("/", methods=['GET'])
-    def hello(self, request):
-        return "hello from Rasa NLU: " + __version__
 
     @app.route("/train", methods=['POST'])
     @requires_auth
@@ -143,5 +151,5 @@ if __name__ == '__main__':
     cmdline_args = {key: val for key, val in list(vars(arg_parser.parse_args()).items()) if val is not None}
     rasa_nlu_config = RasaNLUConfig(cmdline_args.get("config"), os.environ, cmdline_args)
     rasa = RasaNLU(rasa_nlu_config)
-    rasa.app.run('0.0.0.0', rasa_nlu_config['port'])
     logger.info('Started http server on port %s' % rasa_nlu_config['port'])
+    rasa.app.run('0.0.0.0', rasa_nlu_config['port'])
