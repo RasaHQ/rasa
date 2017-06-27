@@ -158,7 +158,7 @@ class SklearnIntentClassifier(Component):
 
         if model_dir and intent_classifier_sklearn:
             classifier_file = os.path.join(model_dir, intent_classifier_sklearn)
-            with io.open(classifier_file, 'rb') as f:   # pragma: no test
+            with io.open(classifier_file, 'rb') as f:  # pragma: no test
                 if PY3:
                     return cloudpickle.load(f, encoding="latin-1")
                 else:

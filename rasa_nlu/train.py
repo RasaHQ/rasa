@@ -52,7 +52,7 @@ def create_persistor(config):
     return persistor
 
 
-def init():     # pragma: no cover
+def init():  # pragma: no cover
     # type: () -> RasaNLUConfig
     """Combines passed arguments to create rasa NLU config."""
 
@@ -60,6 +60,21 @@ def init():     # pragma: no cover
     args = parser.parse_args()
     config = RasaNLUConfig(args.config, os.environ, vars(args))
     return config
+
+
+def do_train_in_worker(config):
+    # type: (RasaNLUConfig) -> Text
+    """Loads the trainer and the data and runs the training of the specified model in a subprocess."""
+
+    # Ensure we are training a model that we can save in the end
+    # WARN: there is still a race condition if a model with the same name is trained in another subprocess
+    trainer = Trainer(config)
+    persistor = create_persistor(config)
+    training_data = load_data(config['data'])
+    interpreter = trainer.train(training_data)
+    persisted_path = trainer.persist(config['path'], persistor, agent_name=config['name'])
+
+    return persisted_path
 
 
 def do_train(config, component_builder=None):
@@ -72,12 +87,12 @@ def do_train(config, component_builder=None):
     persistor = create_persistor(config)
     training_data = load_data(config['data'])
     interpreter = trainer.train(training_data)
-    persisted_path = trainer.persist(config['path'], persistor, model_name=config['name'])
+    persisted_path = trainer.persist(config['path'], persistor, agent_name=config['name'])
+
     return trainer, interpreter, persisted_path
 
 
 if __name__ == '__main__':
-
     config = init()
     logging.basicConfig(level=config['log_level'])
 

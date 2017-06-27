@@ -13,7 +13,7 @@ class NoEmulator(object):
     def __init__(self):
         # type: () -> None
 
-        self.name = None    # type: Optional[Text]
+        self.name = None  # type: Optional[Text]
 
     def normalise_request_json(self, data):
         # type: (Dict[Text, Any]) -> Dict[Text, Any]
@@ -21,7 +21,7 @@ class NoEmulator(object):
         _data = {}
         _data["text"] = data["q"][0] if type(data["q"]) == list else data["q"]
         if not data.get("model"):
-            _data["model"] = "default"
+            _data["model"] = "default_agent"
         elif type(data["model"]) == list:
             _data["model"] = data["model"][0]
         else:

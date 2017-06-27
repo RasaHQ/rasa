@@ -5,10 +5,13 @@ from __future__ import division
 from __future__ import absolute_import
 
 import os
+import signal
 import tempfile
+import requests
 
 import pytest
 import time
+from multiprocessing import Semaphore
 
 import utilities
 from rasa_nlu.config import RasaNLUConfig
@@ -16,24 +19,53 @@ import json
 import io
 
 from utilities import ResponseTest
-from rasa_nlu.server import create_app
+from rasa_nlu.server import RasaNLU
 
 
 @pytest.fixture(scope="module")
-def app(tmpdir_factory):
+def stub(tmpdir_factory):
+    sem = Semaphore(1)
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
     _config = {
         'write': nlu_log_file,
-        'port': -1,                 # unused in test app
+        'port': -1,  # unused in test app
         "backend": "mitie",
         "path": tmpdir_factory.mktemp("models").strpath,
         "server_model_dirs": {},
         "data": "./data/demo-restaurants.json",
         "emulate": "wit",
     }
-    config = RasaNLUConfig(cmdline_args=_config)
-    application = create_app(config)
-    return application
+    url = '127.0.0.1'
+    port = 5000
+    pid = os.fork()
+    if pid == 0:
+        sem.acquire()
+        config = RasaNLUConfig(cmdline_args=_config)
+        rasa = RasaNLU(config)
+        sem.release()
+        rasa.app.run(url, port)
+        rasa.data_router.__del__()
+        os._exit(0)
+
+    else:
+        time.sleep(3)
+        sem.acquire()
+        sem.release()
+
+    def with_base_url(method):
+        """
+        Save some typing and ensure we always use our own pool.
+        """
+
+        def request(path, *args, **kwargs):
+            return method("http://{}:{}".format(url, port) + path, *args, **kwargs)
+
+        return request
+
+    yield with_base_url
+
+    if pid != 0:
+        os.kill(pid, signal.SIGTERM)
 
 
 @pytest.fixture
@@ -43,28 +75,27 @@ def rasa_default_train_data():
         return json.loads(train_file.read())
 
 
-def test_root(client):
-    response = client.get("/")
-    assert response.status_code == 200 and response.data.startswith(b"hello")
+def test_root(stub):
+    response = stub(requests.get)("/")
+    content = response.content
+    assert response.status_code == 200 and content.startswith(b"hello")
 
 
-def test_status(client):
-    response = client.get("/status")
-    rjs = response.json
-    assert response.status_code == 200 and \
-        ("trainings_under_this_process" in rjs and "available_models" in rjs)
+def test_status(stub):
+    response = stub(requests.get)("/status")
+    rjs = response.json()
+    assert response.status_code == 200 and ("available_agents" in rjs)
 
 
-def test_config(client):
-    response = client.get("/config")
+def test_config(stub):
+    response = stub(requests.get)("/config")
     assert response.status_code == 200
 
 
-def test_version(client):
-    response = client.get("/version")
-    rjs = response.json
-    assert response.status_code == 200 and \
-        ("version" in rjs)
+def test_version(stub):
+    response = stub(requests.get)("/version")
+    rjs = response.json()
+    assert response.status_code == 200 and ("version" in rjs)
 
 
 @pytest.mark.parametrize("response_test", [
@@ -81,11 +112,12 @@ def test_version(client):
         [{"entities": {}, "confidence": 0.0, "intent": None, "_text": ""}]
     ),
 ])
-def test_get_parse(client, response_test):
-    response = client.get(response_test.endpoint)
+def test_get_parse(stub, response_test):
+    response = stub(requests.get)(response_test.endpoint)
+    rjs = response.json()
     assert response.status_code == 200
-    assert len(response.json) == 1
-    assert all(prop in response.json[0] for prop in ['entities', 'intent', '_text', 'confidence'])
+    assert len(rjs) == 1
+    assert all(prop in rjs[0] for prop in ['entities', 'intent', '_text', 'confidence'])
 
 
 @pytest.mark.parametrize("response_test", [
@@ -100,38 +132,28 @@ def test_get_parse(client, response_test):
         payload={"q": "hello ńöñàśçií"}
     ),
 ])
-def test_post_parse(client, response_test):
-    response = client.post(response_test.endpoint,
-                           data=json.dumps(response_test.payload), content_type='application/json')
+def test_post_parse(stub, response_test):
+    response = stub(requests.post)(response_test.endpoint, json=response_test.payload)
+    rjs = response.json()
     assert response.status_code == 200
-    assert len(response.json) == 1
-    assert all(prop in response.json[0] for prop in ['entities', 'intent', '_text', 'confidence'])
+    assert len(rjs) == 1
+    assert all(prop in rjs[0] for prop in ['entities', 'intent', '_text', 'confidence'])
 
 
 @utilities.slowtest
-def test_post_train(client, rasa_default_train_data):
-    response = client.post("/train", data=json.dumps(rasa_default_train_data), content_type='application/json')
+def test_post_train(stub, rasa_default_train_data):
+    response = stub(requests.post)("/train", json=rasa_default_train_data)
+    rjs = response.json()
     assert response.status_code == 200
-    assert len(response.json["training_process_ids"]) == 1
-    assert response.json["info"] == "training started."
+    assert rjs["info"] == "Training started."
 
 
-def test_model_hot_reloading(client, rasa_default_train_data):
+def test_model_hot_reloading(stub, rasa_default_train_data):
     query = "/parse?q=hello&model=my_keyword_model"
-    response = client.get(query)
+    response = stub(requests.get)(query)
     assert response.status_code == 404, "Model should not exist yet"
-    response = client.post("/train?name=my_keyword_model&pipeline=keyword",
-                           data=json.dumps(rasa_default_train_data),
-                           content_type='application/json')
+    response = stub(requests.post)("/train?name=my_keyword_model&pipeline=keyword", json=rasa_default_train_data)
     assert response.status_code == 200, "Training should start successfully"
-    time.sleep(3)    # training should be quick as the keyword model doesn't do any training
-    response = client.get(query)
+    time.sleep(5)  # training should be quick as the keyword model doesn't do any training
+    response = stub(requests.get)(query)
     assert response.status_code == 200, "Model should now exist after it got trained"
-
-
-def test_wsgi():
-    # this avoids the loading of any models when starting the server --> faster
-    os.environ["RASA_path"] = "some_none/existent/path"
-    from rasa_nlu.wsgi import application
-    assert application is not None
-    del os.environ["RASA_path"]
