@@ -7,8 +7,8 @@ import datetime
 import logging
 import os
 import tempfile
-import io
 import json
+import multiprocessing
 
 from builtins import object
 from typing import Text
@@ -91,9 +91,10 @@ class DataRouter(object):
 
     def __search_for_models(self):
         models = {}
-        for agent_dirname in os.listdir(self.config.path):
-            agent_path = os.path.join(self.config['path'], agent_dirname)
-            models[agent_dirname] = DataRouter._latest_agent_model(agent_path)
+        if os.path.isdir(self.config.path):
+            for agent_dirname in os.listdir(self.config.path):
+                agent_path = os.path.join(self.config['path'], agent_dirname)
+                models[agent_dirname] = DataRouter._latest_agent_model(agent_path)
 
         return models
 
@@ -183,7 +184,8 @@ class DataRouter(object):
         if agent not in self.agent_store:
             model_dict = self.__search_for_models()
             try:
-                self.agent_store[agent] = self.__interpreter_for_model(latest_model_path=model_dict[agent])
+                model_path = os.path.join(self.config['path'], agent, model_dict[agent])
+                self.agent_store[agent] = self.__interpreter_for_model(latest_model_path=model_path)
             except Exception as e:
                 raise InvalidModelError("No agent found with name '{}'. Error: {}".format(agent, e))
 
@@ -201,11 +203,10 @@ class DataRouter(object):
         # This will only count the trainings started from this process, if run in multi worker mode, there might
         # be other trainings run in different processes we don't know about.
         num_trainings = len(self.train_procs)
-        models = glob.glob(os.path.join(self.model_dir, '*'))
-        models = [model for model in models if os.path.isfile(os.path.join(model, "metadata.json"))]
+        agents = list(self.agent_store.keys())
         return {
             "trainings_under_this_process": num_trainings,
-            "available_models": models,
+            "available_models": agents,
             "training_process_ids": self.train_proc_ids()
         }
 
