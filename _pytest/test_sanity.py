@@ -23,6 +23,10 @@ def import_submodules(package_name, skip_list):
         full_name = package.__name__ + '.' + name
         if full_name not in skip_list:
             imported_module = importlib.import_module(full_name)
+            if PY2:
+                reload(imported_module)
+            else:
+                importlib.reload(imported_module)
             results.append(full_name)
             if is_pkg:
                 results += import_submodules(full_name, skip_list)
