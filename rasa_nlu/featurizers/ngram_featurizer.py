@@ -289,7 +289,7 @@ class NGramFeaturizer(Component):
         from sklearn.model_selection import cross_val_score
         import numpy as np
 
-        clf2 = LogisticRegression()
+        clf2 = LogisticRegression(class_weight='balanced')
         intent_encoder = preprocessing.LabelEncoder()
         intent_encoder.fit(labels)
         y = intent_encoder.transform(labels)
