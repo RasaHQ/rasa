@@ -186,6 +186,9 @@ class DataRouter(object):
             try:
                 model_path = os.path.join(self.config['path'], agent, model_dict[agent])
                 self.agent_store[agent] = self.__interpreter_for_model(latest_model_path=model_path)
+            except KeyError as e:
+                raise InvalidModelError(
+                    "No agent found with name '{}'. Error: Failed to load model metadata".format(agent))
             except Exception as e:
                 raise InvalidModelError("No agent found with name '{}'. Error: {}".format(agent, e))
 
