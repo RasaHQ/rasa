@@ -30,7 +30,7 @@ def app(component_builder):
         "path": os.path.join(root_dir, "test_models"),
         "data": os.path.join(root_dir, "data/demo-restaurants.json")
     }
-    train_models(component_builder)
+    # train_models(component_builder)
     config = RasaNLUConfig(cmdline_args=_config)
     application = create_app(config, component_builder)
     return application
@@ -59,11 +59,11 @@ def test_get_parse(client, response_test):
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
         "/parse?q=food",
-        {"error": "No agent found with name 'default'. Error: Failed to load model metadata. "}
+        {"error": "No agent found with name 'default'."}
     ),
     ResponseTest(
         "/parse?q=food&model=umpalumpa",
-        {"error": "No agent found with name 'umpalumpa'. Error: Failed to load model metadata. "}
+        {"error": "No agent found with name 'umpalumpa'."}
     )
 ])
 def test_get_parse_invalid_model(client, response_test):
@@ -99,12 +99,12 @@ def test_post_parse(client, response_test):
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
         "/parse",
-        {"error": "No agent found name alias 'default'. Error: Failed to load model metadata. "},
+        {"error": "No agent found with name 'default'."},
         payload={"q": "food"}
     ),
     ResponseTest(
         "/parse",
-        {"error": "No agent found with name 'umpalumpa'. Error: Failed to load model metadata. "},
+        {"error": "No agent found with name 'umpalumpa'."},
         payload={"q": "food", "model": "umpalumpa"}
     ),
 ])
