@@ -20,6 +20,8 @@ install_requires = [
     "typing",
     "future",
     "six",
+    "tqdm",
+    "requests",
     "jsonschema"
 ]
 
