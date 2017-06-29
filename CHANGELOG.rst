@@ -21,15 +21,23 @@ Removed
 Fixed
 -----
 
+[0.8.12] - 2017-06-29
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed missing argument attribute error
+
+
 [0.8.11] - 2017-06-07
-^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^
 
 Fixed
 -----
 - updated mitie installation documentation
 
 [0.8.10] - 2017-05-31
-^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^
 
 Fixed
 -----
@@ -40,7 +48,7 @@ Fixed
 ^^^^^^^^^^^^^^^^^^^^
 
 Fixed
------
+-----^
 - properly handle response_log configuration variable being set to ``null``
 
 [0.8.8] - 2017-05-26
