@@ -72,7 +72,7 @@ def do_train_in_worker(config):
     persistor = create_persistor(config)
     training_data = load_data(config['data'])
     interpreter = trainer.train(training_data)
-    persisted_path = trainer.persist(config['path'], persistor, agent_name=config['name'])
+    persisted_path = trainer.persist(config['path'], persistor, model_name=config['name'])
 
     return persisted_path
 
