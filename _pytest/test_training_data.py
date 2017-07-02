@@ -212,6 +212,7 @@ def test_entities_synonyms():
         td = load_data(f.name, "en")
         assert td.entity_synonyms["New York City"] == "nyc"
 
+
 def cmp_dict_list(firsts, seconds):
     if len(firsts) != len(seconds):
         return False
