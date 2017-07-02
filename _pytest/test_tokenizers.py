@@ -10,27 +10,28 @@ from __future__ import absolute_import
 def test_whitespace():
     from rasa_nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
     tk = WhitespaceTokenizer()
-    assert tk.tokenize(u"Hi. My name is rasa") == [u'Hi.', u'My', u'name', u'is', u'rasa']
-    assert tk.tokenize(u"hello ńöñàśçií") == [u'hello', u'ńöñàśçií']
+    assert tk.tokenize("Hi. My name is rasa") == ['Hi.', 'My', 'name', 'is', 'rasa']
+    assert tk.tokenize("hello ńöñàśçií") == ['hello', 'ńöñàśçií']
 
 
-def test_spacy(spacy_nlp_en):
+def test_spacy(spacy_nlp):
+
     def tokenize_sentence(sentence, expected_result):
         from rasa_nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
-        tk = SpacyTokenizer(spacy_nlp_en)
-        assert tk.tokenize(sentence) == expected_result
+        tk = SpacyTokenizer()
+        assert tk.tokenize(sentence, spacy_nlp) == expected_result
 
-    tokenize_sentence(u"Hi. My name is rasa", [u'Hi', u'.', u'My', u'name', u'is', u'rasa'])
-    tokenize_sentence(u"hello ńöñàśçií", [u'hello', u'ńöñàśçií'])
+    tokenize_sentence("Hi. My name is rasa", ['Hi', '.', 'My', 'name', 'is', 'rasa'])
+    tokenize_sentence("hello ńöñàśçií", ['hello', 'ńöñàśçií'])
 
 
 def test_mitie():
     from rasa_nlu.tokenizers.mitie_tokenizer import MitieTokenizer
     tk = MitieTokenizer()
 
-    assert tk.tokenize(u"Hi. My name is rasa") == [u'Hi', u'My', u'name', u'is', u'rasa']
-    assert tk.tokenize(u"ὦ ἄνδρες ᾿Αθηναῖοι") == [u'ὦ', u'ἄνδρες', u'᾿Αθηναῖοι']
-    assert tk.tokenize_with_offsets(u"Forecast for lunch") == ([u'Forecast', u'for', u'lunch'], [0, 9, 13])
-    assert tk.tokenize_with_offsets(u"hey ńöñàśçií how're you?") == (
-        [u'hey', u'ńöñàśçií', u'how', u'\'re', 'you', '?'],
+    assert tk.tokenize("Hi. My name is rasa") == ['Hi', 'My', 'name', 'is', 'rasa']
+    assert tk.tokenize("ὦ ἄνδρες ᾿Αθηναῖοι") == ['ὦ', 'ἄνδρες', '᾿Αθηναῖοι']
+    assert tk.tokenize_with_offsets("Forecast for lunch") == (['Forecast', 'for', 'lunch'], [0, 9, 13])
+    assert tk.tokenize_with_offsets("hey ńöñàśçií how're you?") == (
+        ['hey', 'ńöñàśçií', 'how', '\'re', 'you', '?'],
         [0, 4, 13, 16, 20, 23])

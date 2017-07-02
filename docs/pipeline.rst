@@ -9,14 +9,14 @@ pre-processing and there will be many more in the future.
 Each component processes the input and creates an output. The ouput can be used by any component that comes after
 this component in the pipeline. There are components which only produce information that is used by other components
 in the pipeline and there are other components that produce ``Output`` attributes which will be returned after
-the processing has finished. E.g. for the sentence ``"I am looking for Chinese food"`` the output
+the processing has finished. For example, for the sentence ``"I am looking for Chinese food"`` the output
 
 .. code-block:: json
 
     {
         "text": "I am looking for Chinese food",
         "entities": [
-            {"start": 8, "end": 15, "value": "chinese", "entity": "cuisine"}
+            {"start": 8, "end": 15, "value": "chinese", "entity": "cuisine", "extractor": "ner_crf"}
         ],
         "intent": {"confidence": 0.6485910906220309, "name": "restaurant_search"},
         "intent_ranking": [
@@ -26,7 +26,7 @@ the processing has finished. E.g. for the sentence ``"I am looking for Chinese f
     }
 
 is created as a combination of the results of the different components in the pre-configured pipeline ``spacy_sklearn``.
-For example, the ``entities`` attribute is created by the ``ner_spacy`` component.
+For example, the ``entities`` attribute is created by the ``ner_crf`` component.
 
 Pre-configured Pipelines
 ------------------------
@@ -37,20 +37,20 @@ Here is a list of the existing templates:
 +---------------+----------------------------------------------------------------------------------------------------------------------------+
 | template name | corresponding pipeline                                                                                                     |
 +===============+============================================================================================================================+
-| spacy_sklearn | ``["init_spacy", "ner_spacy", "ner_synonyms", "intent_featurizer_spacy", "intent_classifier_sklearn"]``                    |
+| spacy_sklearn | ``["nlp_spacy", "ner_crf", "ner_synonyms", "intent_featurizer_spacy", "intent_classifier_sklearn"]``                       |
 +---------------+----------------------------------------------------------------------------------------------------------------------------+
-| mitie         | ``["init_mitie", "tokenizer_mitie", "ner_mitie", "ner_synonyms", "intent_classifier_mitie"]``                              |
+| mitie         | ``["nlp_mitie", "tokenizer_mitie", "ner_mitie", "ner_synonyms", "intent_classifier_mitie"]``                               |
 +---------------+----------------------------------------------------------------------------------------------------------------------------+
-| mitie_sklearn | ``["init_mitie", "tokenizer_mitie", "ner_mitie", "ner_synonyms", "intent_featurizer_mitie", "intent_classifier_sklearn"]`` |
+| mitie_sklearn | ``["nlp_mitie", "tokenizer_mitie", "ner_mitie", "ner_synonyms", "intent_featurizer_mitie", "intent_classifier_sklearn"]``  |
 +---------------+----------------------------------------------------------------------------------------------------------------------------+
 | keyword       | ``["intent_classifier_keyword"]``                                                                                          |
 +---------------+----------------------------------------------------------------------------------------------------------------------------+
 
 Creating your own pipelines is possible by directly passing the names of the components to rasa NLU in the ``pipeline``
-configuration variable, e.g. ``"pipeline": ["init_spacy", "ner_spacy", "ner_synonyms"]``. This creates a pipeline
+configuration variable, e.g. ``"pipeline": ["nlp_spacy", "ner_crf", "ner_synonyms"]``. This creates a pipeline
 that only does entity recognition, but no intent classification. Hence, the output will not contain any useful intents.
 
-Build-in Components
+Built-in Components
 -------------------
 
 Short explanation of every components and it's attributes. If you are looking for more details, you should have
@@ -58,8 +58,8 @@ a look at the corresponding source code for the component. ``Output`` describes,
 output result of processing a message. If no output is present, the component is most likely a preprocessor for another
 component.
 
-init_mitie
-~~~~~~~~~~
+nlp_mitie
+~~~~~~~~~
 
 :Short: MITIE initializer
 :Outputs: nothing
@@ -67,8 +67,8 @@ init_mitie
     Initializes mitie structures. Every mitie component relies on this, hence this should be put at the beginning
     of every pipeline that uses any mitie components.
 
-init_spacy
-~~~~~~~~~~
+nlp_spacy
+~~~~~~~~~
 
 :Short: spacy language initializer
 :Outputs: nothing
@@ -203,13 +203,17 @@ ner_mitie
 ~~~~~~~~~
 
 :Short: MITIE entity extraction (using a `mitie ner trainer <https://github.com/mit-nlp/MITIE/blob/master/mitielib/src/ner_trainer.cpp>`_)
-:Outputs: ``entities``
+:Outputs: appends ``entities``
 :Output-Example:
 
     .. code-block:: json
 
         {
-            "entities": [{"value": "New York City", "start": 20, "end": 33, "entity": "city"}]
+            "entities": [{"value": "New York City",
+                          "start": 20,
+                          "end": 33,
+                          "entity": "city",
+                          "extractor": "ner_mitie"}]
         }
 
 :Description:
@@ -220,24 +224,28 @@ ner_spacy
 ~~~~~~~~~
 
 :Short: spacy entity extraction
-:Outputs: ``entities``
+:Outputs: appends ``entities``
 :Output-Example:
 
     .. code-block:: json
 
         {
-            "entities": [{"value": "New York City", "start": 20, "end": 33, "entity": "city"}]
+            "entities": [{"value": "New York City",
+                          "start": 20,
+                          "end": 33,
+                          "entity": "city",
+                          "extractor": "ner_spacy"}]
         }
 
 :Description:
     Using spacy this component predicts the entities of a message. spacy uses a statistical BILUO transition model.
-    The entity extractor expects around 5000 training examples per entity to perform good.
+    As of now, this component can only use the spacy builtin entity extraction models and can not be retrained.
 
 ner_synonyms
 ~~~~~~~~~~~~
 
 :Short: Maps synonymous entity values to the same value.
-:Outputs: modifies existing output of a previous entity extraction component
+:Outputs: modifies existing entities that previous entity extraction components found
 
 :Description:
     If the training data contains defined synonyms (by using the ``value`` attribute on the entity examples).
@@ -249,33 +257,80 @@ ner_synonyms
         [{
           "text": "I moved to New York City",
           "intent": "inform_relocation",
-          "entities": [{"value": "nyc", "start": 11, "end": 24, "entity": "city"}]
+          "entities": [{"value": "nyc",
+                        "start": 11,
+                        "end": 24,
+                        "entity": "city",
+                        "extractor" "ner_mitie",
+                        "processor": ["ner_synonyms"]}]
         },
         {
           "text": "I got a new flat in NYC.",
           "intent": "inform_relocation",
-          "entities": [{"value": "nyc", "start": 20, "end": 23, "entity": "city"}]
+          "entities": [{"value": "nyc",
+                        "start": 20,
+                        "end": 23,
+                        "entity": "city",
+                        "extractor" "ner_mitie",
+                        "processor": ["ner_synonyms"]}]
         }]
 
     this component will allow you to map the entities ``New York City`` and ``NYC`` to ``nyc``. The entitiy
-    extraction will return ``nyc`` even though the message contains ``NYC``.
+    extraction will return ``nyc`` even though the message contains ``NYC``. When this component changes an
+    exisiting entity, it appends itself to the processor list of this entity.
 
-ner_synonyms
-~~~~~~~~~~~~
+ner_crf
+~~~~~~~
 
-:Short: MITIE intent classifier (using a `text categorizer <https://github.com/mit-nlp/MITIE/blob/master/examples/python/text_categorizer_pure_model.py>`_)
-:Outputs: ``intent``
+:Short: conditional random field entity extraction
+:Outputs: appends ``entities``
 :Output-Example:
 
     .. code-block:: json
 
         {
-            "intent": {"name": "greet", "confidence": 0.98343}
+            "entities": [{"value":"New York City",
+                          "start": 20,
+                          "end": 33,
+                          "entity": "city",
+                          "extractor": "ner_crf"}]
         }
 
 :Description:
-    This classifier uses MITIE to perform intent classification. The underlying classifier
-    is using a multi class linear SV; with a sparse linear kernel (see `mitie trainer code <https://github.com/mit-nlp/MITIE/blob/master/mitielib/src/text_categorizer_trainer.cpp#L222>`_).
+    This component implements conditional random fields to do named entity recognition.
+    CRFs can be thought of as an undirected Markov chain where the time steps are words
+    and the states are entity classes. Features of the words (capitalisation, POS tagging,
+    etc.) give probabilities to certain entity classes, as are transitions between
+    neighbouring entity tags: the most likely set of tags is then calculated and returned.
+
+.. _section_pipeline_duckling:
+
+ner_duckling
+~~~~~~~~~~~~
+:Short: Adds duckling support to the pipeline to unify entity types (e.g. to retrieve common date / number formats)
+:Outputs: appends entities
+:Output-Example:
+
+    .. code-block:: json
+
+        {
+            "entities": [{"end": 53,
+                          "entity": "time",
+                          "start": 48,
+                          "value": "2017-04-10T00:00:00.000+02:00",
+                          "extractor": "ner_duckling"}]
+        }
+
+:Description:
+    Duckling allows to recognize dates, numbers, distances and other structured entities
+    and normalizes them (for a reference of all available entities
+    see `the duckling documentation <https://duckling.wit.ai/#getting-started>`_).
+    The component recognizes the entity types defined by the :ref:`duckling dimensions configuration variable <section_configuration_duckling_dimensions>`.
+    Please be aware that duckling tries to extract as many entity types as possible without
+    providing a ranking. For example, if you specify both ``number`` and ``time`` as dimensions
+    for the duckling component, the component will extract two entities: ``10`` as a number and
+    ``in 10 minutes`` as a time from the text ``I will be there in 10 minutes``. In such a
+    situation, your application would have to decide which entity type is be the correct one.
 
 
 Creating new Components
@@ -284,3 +339,21 @@ Currently you need to rely on the components that are shipped with rasa NLU, but
 create your own components in your code. Nevertheless, we are looking forward to your contribution of a new component
 (e.g. a component to do sentiment analysis). A glimpse into the code of ``rasa_nlu.components.Component`` will reveal
 which functions need to be implemented to create a new component.
+
+Component Lifecycle
+-------------------
+Every component can implement several methods from the ``Component`` base class; in a pipeline these different methods
+will be called in a specific order. Lets assume, we added the following pipeline to our config:
+``"pipeline": ["Component A", "Component B", "Last Component"]``.
+The image shows the call order during the training of this pipeline :
+
+.. image:: _static/images/component_lifecycle.png
+
+Before the first component is created using the ``create`` function, a so called ``context`` is created (which is
+nothing more than a python dict). This context is used to pass information between the components. For example,
+one component can calculate feature vectors for the training data, store that within the context and another
+component can retrieve these feature vectors from the context and do intent classification.
+
+Initially the context is filled with all configuration values, the arrows in the image show the call order
+and visualize the path of the passed context. After all components are trained and persisted, the
+final context dictionary is used to persist the models metadata.

@@ -25,13 +25,22 @@ Options
 -------
 A short explanation and examples for each configuration value.
 
+name
+~~~~
+
+:Type: ``str``
+:Examples: ``"my_model_name"``
+:Description:
+     Defines a models name used to store it and to refere to it when using the http server.
+     The default is ``null`` which will lead to a generated model name, e.g. ``"model_20170426-230305"``.
+
 pipeline
 ~~~~~~~~
 
 :Type: ``str`` or ``[str]``
 :Examples:
     ``"mitie"`` or
-    ``["init_spacy", "ner_spacy", "ner_synonyms"]``
+    ``["nlp_spacy", "ner_spacy", "ner_synonyms"]``
 
 :Description:
     The pipeline used for training. Can either be a template (passing a string) or a list of components (array). For all
@@ -120,19 +129,20 @@ mitie_file
 :Description:
     File containing ``total_word_feature_extractor.dat`` (see :ref:`section_backends`)
 
-fine_tune_spacy_ner
-~~~~~~~~~~~~~~~~~~~
+spacy_model_name
+~~~~~~~~~~~~~~~~
 
-:Type: ``bool``
-:Examples: ``true``
+:Type: ``str``
+:Examples: ``"en_core_web_sm"``
 :Description:
-    Fine tune existing spacy NER models vs training from scratch. (``ner_spacy`` component only)
+    If the spacy model to be used has a name that is different from the language tag (``"en"``, ``"de"``, etc.),
+    the model name can be specified using this configuration variable. The name will be passed to ``spacy.load(name)``.
 
 server_model_dirs
 ~~~~~~~~~~~~~~~~~
 
 :Type: ``str``
-:Examples: ``models/``
+:Examples: ``"models/"``
 :Description:
     Directory containing the model to be used by server or an object describing multiple models.
     see :ref:`HTTP server config<section_http_config>`
@@ -154,15 +164,60 @@ max_number_of_ngrams
     Maximum number of ngrams to use when augmenting feature vectors with character ngrams
     (``intent_featurizer_ngrams`` component only)
 
-luis_data_tokenizer
+.. _section_configuration_duckling_dimensions:
+
+duckling_dimensions
 ~~~~~~~~~~~~~~~~~~~
 
-:Type: ``str``
-:Examples: ``"tokenizer_mitie"``
+:Type: ``list``
+:Examples: ``["time", "number", "money", "distance"]``
 :Description:
-    Name of the tokenization component used to process luis data (Luis data annotates entities using token offset
-    instead of character offsets, to convert the token offsets to character positions a tokenizer is required.)
-    see :ref:`section_migration`
+    Defines which dimensions, i.e. entity types, the :ref:`duckling component <section_pipeline_duckling>` will extract.
+    A full list of available dimensions can be found in the `duckling documentation <https://duckling.wit.ai/>`_.
 
-If you want to persist your trained models to S3, there are additional configuration options,
-see :ref:`section_persistence`
+storage
+~~~~~~~
+
+:Type: ``str``
+:Examples: ``"aws"`` or ``"gcs"``
+:Description:
+    Storage type for persistor. See :ref:`section_persistence` for more details.
+
+bucket_name
+~~~~~~~~~~~
+
+:Type: ``str``
+:Examples: ``"my_models"``
+:Description:
+    Name of the bucket in the cloud to store the models. If the specified bucket name does not exist, rasa will create it.
+    See :ref:`section_persistence` for more details.
+
+aws_region
+~~~~~~~~~~
+
+:Type: ``str``
+:Examples: ``"us-east-1"``
+:Description:
+    Name of the aws region to use. This is used only when ``"storage"`` is selected as ``"aws"``.
+    See :ref:`section_persistence` for more details.
+
+entity_crf_features
+~~~~~~~~~~~~~~~~~~~
+
+:Type: ``[[str]]``
+:Examples: ``[["low", "title"], ["bias", "word3"], ["upper", "pos", "pos2"]]``
+:Description:
+    The features are a ``[before, word, after]`` array with before, word, after holding keys about which
+    features to use for each word, for example, ``"title"`` in array before will have the feature
+    "is the preceding word in title case?".
+    Available features are:
+    ``low``, ``title``, ``word3``, ``word2``, ``pos``, ``pos2``, ``bias``, ``upper`` and ``digit``
+
+entitiy_crf_BILOU_flag
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Type: ``bool``
+:Examples: ``true``
+:Description:
+     The flag determines whether to use BILOU tagging or not. BILOU tagging is more rigorous however
+     requires more examples per entity. Rule of thumb: use only if more than 100 examples per entity.

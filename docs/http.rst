@@ -19,7 +19,7 @@ If your server needs to handle more than one request at a time, you can use any 
 
 .. code-block:: bash
 
-    $ gunicorn -w 4 --threads 12 -k gevent -b 127.0.0.1:5000 rasa_nlu.server
+    $ gunicorn -w 4 --threads 12 -k gevent -b 127.0.0.1:5000 rasa_nlu.wsgi
 
 This will start a server with four processes and 12 threads. Since there is no standard way to pass command line arguments to the server, all your configuration
 options need to be placed in your configuration file (including the ``server_model_dirs``!). You can set the location of the configuration file using environment
@@ -47,7 +47,7 @@ Endpoints
 ``POST /parse`` (no emulation)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-you must POST data in this format ``'{"q":"<your text to parse>"}'``, you can do this with
+You must POST data in this format ``'{"q":"<your text to parse>"}'``, you can do this with
 
 .. code-block:: bash
 
@@ -57,8 +57,11 @@ you must POST data in this format ``'{"q":"<your text to parse>"}'``, you can do
 ``POST /train``
 ^^^^^^^^^^^^^^^
 
-you can post your training data to this endpoint to train a new model. 
-this starts a separate process which you can monitor with the ``/status`` endpoint. 
+You can post your training data to this endpoint to train a new model.
+this starts a separate process which you can monitor with the ``/status`` endpoint. If you want to name your model
+to be able to use it during parse requests later on, you should pass the name ``/train?name=my_model``. Any parameter
+passed with the query string will be treated as a configuration parameter of the model, hence you can change all
+the configuration values listed in the configuration section by passing in their name and the adjusted value.
 
 .. code-block:: bash
 
@@ -68,7 +71,7 @@ this starts a separate process which you can monitor with the ``/status`` endpoi
 ``GET /status``
 ^^^^^^^^^^^^^^^
 
-this checks if there is currently a training process running (you can only run one at a time).
+This checks if there is currently a training process running (you can only run one at a time).
 also returns a list of available models the server can use to fulfill ``/parse`` requests.
 
 .. code-block:: bash
@@ -78,6 +81,35 @@ also returns a list of available models the server can use to fulfill ``/parse``
       "training" : False
       "models" : []
     }
+    
+``GET /version``
+^^^^^^^^^^^^^^^
+
+This will return the current version of the Rasa NLU instance.
+
+.. code-block:: bash
+
+    $ curl localhost:5000/version | python -mjson.tool
+    {
+      "version" : "0.8.2"
+    }
+
+    
+``GET /config``
+^^^^^^^^^^^^^^^
+
+This will return the currently running configuration of the Rasa NLU instance.
+
+.. code-block:: bash
+
+    $ curl localhost:5000/config | python -mjson.tool
+    {
+        "config": "/app/rasa_shared/config_mitie.json",
+        "data": "/app/rasa_nlu/data/examples/rasa/demo-rasa.json",
+        "duckling_dimensions": null,
+        "emulate": null,
+        ...
+      }
 
 .. _section_auth:
 
@@ -101,7 +133,7 @@ from the same process & avoid duplicating the memory load.
 
 .. note::
     Although this saves the backend from loading the same backend twice, it still needs to load one set of
-    word vectors (which make up most of the memor consumption) per language and backend.
+    word vectors (which make up most of the memory consumption) per language and backend.
 
 You can use the multi-tenancy mode by replacing the ``server_model_dirs`` config
 variable with a json object describing the different models.

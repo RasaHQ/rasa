@@ -27,7 +27,7 @@ and returning structured data like
 
 
 The intended audience is mainly people developing bots. 
-You can use rasa as a drop-in replacement for `wit <https://wit.ai>`_ , `LUIS <https://luis.ai>`_ , or `api.ai <https://api.ai>`_, the only change in your code is to send requests to ``localhost`` instead (see :ref:`section_migration` for details). 
+You can use rasa as a drop-in replacement for `wit <https://wit.ai>`_ , `LUIS <https://www.luis.ai>`_ , or `api.ai <https://api.ai>`_, the only change in your code is to send requests to ``localhost`` instead (see :ref:`section_migration` for details).
 
 Why might you use rasa instead of one of those services?
 
@@ -66,7 +66,7 @@ The setup process is designed to be as simple as possible. If you're currently u
 rasa NLU is written in Python, but it you can use it from any language through :ref:`section_http`.
 If your project *is* written in Python you can simply import the relevant classes.
 
-rasa is a set of tools for building more advanced bots, developed by `LASTMILE <https://golastmile.com>`_ . This is the natural language understanding module, and the first component to be open sourced. 
+rasa is a set of tools for building more advanced bots, developed by `Rasa <https://rasa.ai>`_ . This is the natural language understanding module, and the first component to be open sourced.
 
 
 .. toctree::
@@ -85,6 +85,7 @@ rasa is a set of tools for building more advanced bots, developed by `LASTMILE <
    dataformat
    http
    python
+   entities
    closeloop
    persist
    languages

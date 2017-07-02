@@ -1,0 +1,194 @@
+{
+  "rasa_nlu_data": {
+    "common_examples": [
+      {
+        "text": "i'm looking for a place in the north of town", 
+        "intent": "inform", 
+        "entities": [
+          {
+            "start": 31, 
+            "end": 36, 
+            "value": "north", 
+            "entity": "location"
+          }
+        ]
+      }, 
+      {
+        "text": "show me chinese restaurants", 
+        "intent": "greet",
+        "entities": [
+          {
+            "start": 8, 
+            "end": 15, 
+            "value": "chinese", 
+            "entity": "cuisine"
+          }
+        ]
+      }, 
+      {
+        "text": "show me a mexican place in the centre", 
+        "intent": "inform", 
+        "entities": [
+          {
+            "start": 10, 
+            "end": 17, 
+            "value": "mexican", 
+            "entity": "cuisine"
+          }, 
+          {
+            "start": 31, 
+            "end": 37, 
+            "value": "centre", 
+            "entity": "location"
+          }
+        ]
+      }, 
+      {
+        "text": "anywhere in the west", 
+        "intent": "inform", 
+        "entities": [
+          {
+            "start": 16, 
+            "end": 20, 
+            "value": "west", 
+            "entity": "location"
+          }
+        ]
+      }, 
+      {
+        "text": "central indian restaurant", 
+        "intent": "greet", 
+        "entities": [
+          {
+            "start": 8, 
+            "end": 14, 
+            "value": "indian", 
+            "entity": "cuisine"
+          }, 
+          {
+            "start": 0, 
+            "end": 7, 
+            "value": "central", 
+            "entity": "location"
+          }
+        ]
+      }, 
+      {
+        "text": "do you know any good vietnamese places?", 
+        "intent": "inform", 
+        "entities": [
+          {
+            "start": 21, 
+            "end": 31, 
+            "value": "vietnamese", 
+            "entity": "cuisine"
+          }
+        ]
+      }, 
+      {
+        "text": "i want some russian food", 
+        "intent": "inform", 
+        "entities": [
+          {
+            "start": 12, 
+            "end": 19, 
+            "value": "russian", 
+            "entity": "cuisine"
+          }
+        ]
+      },
+      {
+        "text": "any indonesian places?",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 4,
+            "end": 14,
+            "value": "indonesian",
+            "entity": "cuisine"
+          }
+        ]
+      },
+      {
+        "text": "hello", 
+        "intent": "greet"
+      }, 
+      {
+        "text": "hey", 
+        "intent": "greet"
+      }, 
+      {
+        "text": "hi", 
+        "intent": "greet"
+      }, 
+      {
+        "text": "hey there", 
+        "intent": "greet"
+      }, 
+      {
+        "text": "howdy", 
+        "intent": "greet"
+      }, 
+      {
+        "text": "i'm looking for a place to eat", 
+        "intent": "inform"
+      }, 
+      {
+        "text": "yes", 
+        "intent": "affirm"
+      }, 
+      {
+        "text": "yep", 
+        "intent": "affirm"
+      }, 
+      {
+        "text": "yeah", 
+        "intent": "affirm"
+      }, 
+      {
+        "text": "bye", 
+        "intent": "goodbye"
+      }, 
+      {
+        "text": "goodbye", 
+        "intent": "goodbye"
+      }, 
+      {
+        "text": "good bye", 
+        "intent": "goodbye"
+      }, 
+      {
+        "text": "stop", 
+        "intent": "goodbye"
+      }, 
+      {
+        "text": "end", 
+        "intent": "goodbye"
+      }, 
+      {
+        "text": "i am looking for an indian spot", 
+        "intent": "inform"
+      }, 
+      {
+        "text": "search for restaurants", 
+        "intent": "inform"
+      }, 
+      {
+        "text": "indeed", 
+        "intent": "affirm"
+      }, 
+      {
+        "text": "that's right", 
+        "intent": "affirm"
+      }, 
+      {
+        "text": "ok", 
+        "intent": "affirm"
+      }, 
+      {
+        "text": "great", 
+        "intent": "affirm"
+      }
+    ]
+  }
+}

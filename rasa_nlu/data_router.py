@@ -1,8 +1,8 @@
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
 from __future__ import absolute_import
-from builtins import object
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import datetime
 import glob
 import json
@@ -11,64 +11,29 @@ import multiprocessing
 import os
 import tempfile
 
-from flask import json
+from builtins import object
 from typing import Text
 
-import rasa_nlu.components
-from rasa_nlu import registry
+from rasa_nlu import utils
+from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.model import Metadata, InvalidModelError, Interpreter
 from rasa_nlu.train import do_train
-from rasa_nlu import utils
 
-
-class InterpreterBuilder(object):
-    def __init__(self, use_cache=True):
-        self.use_cache = use_cache
-        # Reuse nlp and featurizers where possible to save memory
-        self.component_cache = {}
-
-    def __get_component(self, component_name, meta, context, model_config):
-        component_class = registry.get_component_class(component_name)
-        cache_key = component_class.cache_key(meta)
-        if cache_key is not None and self.use_cache and cache_key in self.component_cache:
-            component = self.component_cache[cache_key]
-        else:
-            component = registry.load_component_by_name(component_name, context, model_config)
-            if cache_key is not None and self.use_cache:
-                self.component_cache[cache_key] = component
-        return component
-
-    def create_interpreter(self, meta, config):
-        context = {"model_dir": meta.model_dir}
-
-        model_config = dict(list(config.items()))
-        model_config.update(meta.metadata)
-
-        pipeline = []
-
-        for component_name in meta.pipeline:
-            try:
-                component = self.__get_component(component_name, meta, context, model_config)
-                rasa_nlu.components.init_component(component, context, model_config)
-                pipeline.append(component)
-            except rasa_nlu.components.MissingArgumentError as e:
-                raise Exception("Failed to initialize component '{}'. {}".format(component_name, e.message))
-
-        return Interpreter(pipeline, context, model_config)
+logger = logging.getLogger(__name__)
 
 
 class DataRouter(object):
     DEFAULT_MODEL_NAME = "default"
 
-    def __init__(self, config):
+    def __init__(self, config, component_builder):
         self.config = config
         self.responses = DataRouter._create_query_logger(config['response_log'])
-        self.train_procs = []
+        self._train_procs = []
         self.model_dir = config['path']
         self.token = config['token']
         self.emulator = self.__create_emulator()
-        self.interpreter_builder = InterpreterBuilder()
+        self.component_builder = component_builder if component_builder else ComponentBuilder(use_cache=True)
         self.model_store = self.__create_model_store()
 
     @staticmethod
@@ -82,19 +47,40 @@ class DataRouter(object):
             log_file_name = "rasa_nlu_log-{}-{}.log".format(timestamp, os.getpid())
             response_logfile = os.path.join(response_log_dir, log_file_name)
             # Instantiate a standard python logger, which we are going to use to log requests
-            logger = logging.getLogger('query-logger')
-            logger.setLevel(logging.INFO)
+            query_logger = logging.getLogger('query-logger')
+            query_logger.setLevel(logging.INFO)
             utils.create_dir_for_file(response_logfile)
             ch = logging.FileHandler(response_logfile)
             ch.setFormatter(logging.Formatter('%(message)s'))
-            logger.propagate = False  # Prevents queries getting logged with parent logger --> might log them to stdout
-            logger.addHandler(ch)
-            logging.info("Logging requests to '{}'.".format(response_logfile))
-            return logger
+            # Prevents queries getting logged with parent logger --> might log them to stdout
+            query_logger.propagate = False
+            query_logger.addHandler(ch)
+            logger.info("Logging requests to '{}'.".format(response_logfile))
+            return query_logger
         else:
             # If the user didn't provide a logging directory, we wont log!
-            logging.info("Logging of requests is disabled. (No 'request_log' directory configured)")
+            logger.info("Logging of requests is disabled. (No 'request_log' directory configured)")
             return None
+
+    def _remove_finished_procs(self):
+        """Remove finished training processes from the list of running training processes."""
+        self._train_procs = [p for p in self._train_procs if p.is_alive()]
+
+    def _add_train_proc(self, p):
+        """Adds a new training process to the list of running processes."""
+        self._train_procs.append(p)
+
+    @property
+    def train_procs(self):
+        """Instead of accessing the `_train_procs` property directly, this method will ensure that trainings that
+        are finished will be removed from the list."""
+
+        self._remove_finished_procs()
+        return self._train_procs
+
+    def train_proc_ids(self):
+        """Returns the ids of the running trainings processes."""
+        return [p.ident for p in self.train_procs]
 
     def __search_for_models(self):
         models = {}
@@ -102,6 +88,10 @@ class DataRouter(object):
             model_name = os.path.basename(os.path.dirname(metadata_path))
             models[model_name] = model_name
         return models
+
+    def __interpreter_for_model(self, model_path):
+        metadata = DataRouter.read_model_metadata(model_path, self.config)
+        return Interpreter.load(metadata, self.config, self.component_builder)
 
     def __create_model_store(self):
         # Fallback for users that specified the model path as a string and hence only want a single default model.
@@ -116,15 +106,13 @@ class DataRouter(object):
 
         for alias, model_path in list(model_dict.items()):
             try:
-                logging.info("Loading model '{}'...".format(model_path))
-                metadata = DataRouter.read_model_metadata(model_path, self.config)
-                interpreter = self.interpreter_builder.create_interpreter(metadata, self.config)
-                model_store[alias] = interpreter
+                logger.info("Loading model '{}'...".format(model_path))
+                model_store[alias] = self.__interpreter_for_model(model_path)
             except Exception as e:
-                logging.error("Failed to load model '{}'. Error: {}".format(model_path, e))
+                logger.exception("Failed to load model '{}'. Error: {}".format(model_path, e))
         if not model_store:
             meta = Metadata({"pipeline": ["intent_classifier_keyword"]}, "")
-            interpreter = self.interpreter_builder.create_interpreter(meta, self.config)
+            interpreter = Interpreter.load(meta, self.config, self.component_builder)
             model_store[self.DEFAULT_MODEL_NAME] = interpreter
         return model_store
 
@@ -135,13 +123,16 @@ class DataRouter(object):
         }
 
     @staticmethod
-    def load_model_from_s3(model_dir, config):
+    def load_model_from_cloud(model_dir, config):
         try:
-            from rasa_nlu.persistor import Persistor
-            p = Persistor(config['path'], config['aws_region'], config['bucket_name'])
-            p.fetch_and_extract('{0}.tar.gz'.format(os.path.basename(model_dir)))
+            from rasa_nlu.persistor import get_persistor
+            p = get_persistor(config)
+            if p is not None:
+                p.fetch_and_extract('{0}.tar.gz'.format(os.path.basename(model_dir)))
+            else:
+                raise RuntimeError("Unable to initialize persistor")
         except Exception as e:
-            logging.warn("Using default interpreter, couldn't fetch model: {}".format(e.message))
+            logger.warn("Using default interpreter, couldn't fetch model: {}".format(e))
 
     @staticmethod
     def read_model_metadata(model_dir, config):
@@ -154,7 +145,7 @@ class DataRouter(object):
 
             # download model from S3 if needed
             if not os.path.isdir(model_dir):
-                DataRouter.load_model_from_s3(model_dir, config)
+                DataRouter.load_model_from_cloud(model_dir, config)
 
             return Metadata.load(model_dir)
 
@@ -181,13 +172,17 @@ class DataRouter(object):
     def parse(self, data):
         alias = data.get("model") or self.DEFAULT_MODEL_NAME
         if alias not in self.model_store:
-            raise InvalidModelError("No model found with alias '{}'".format(alias))
-        else:
-            model = self.model_store[alias]
-            response = model.parse(data['text'])
-            if self.responses:
-                self.responses.info(json.dumps(response, sort_keys=True))
-            return self.format_response(response)
+            try:
+                self.model_store[alias] = self.__interpreter_for_model(model_path=alias)
+            except Exception as e:
+                raise InvalidModelError("No model found with alias '{}'. Error: {}".format(alias, e))
+
+        model = self.model_store[alias]
+        response = model.parse(data['text'], data.get('time', None))
+        if self.responses:
+            log = {"user_input": response, "model": alias, "time": datetime.datetime.now().isoformat()}
+            self.responses.info(json.dumps(log, sort_keys=True))
+        return self.format_response(response)
 
     def format_response(self, data):
         return self.emulator.normalise_response_json(data)
@@ -195,22 +190,27 @@ class DataRouter(object):
     def get_status(self):
         # This will only count the trainings started from this process, if run in multi worker mode, there might
         # be other trainings run in different processes we don't know about.
-        num_trainings = len([p for p in self.train_procs if p.is_alive()])
-        models = glob.glob(os.path.join(self.model_dir, 'model*'))
+        num_trainings = len(self.train_procs)
+        models = glob.glob(os.path.join(self.model_dir, '*'))
+        models = [model for model in models if os.path.isfile(os.path.join(model, "metadata.json"))]
         return {
             "trainings_under_this_process": num_trainings,
-            "available_models": models
+            "available_models": models,
+            "training_process_ids": self.train_proc_ids()
         }
 
-    def start_train_process(self, data):
-        logging.info("Starting model training")
+    def start_train_process(self, data, config_values):
+        logger.info("Starting model training")
         f = tempfile.NamedTemporaryFile("w+", suffix="_training_data.json", delete=False)
         f.write(data)
         f.close()
-        _config = dict(list(self.config.items()))
+        # TODO: fix config handling
+        _config = self.config.as_dict()
+        for key, val in config_values.items():
+            _config[key] = val
         _config["data"] = f.name
         train_config = RasaNLUConfig(cmdline_args=_config)
-        process = multiprocessing.Process(target=do_train, args=(train_config,))
-        self.train_procs.append(process)
+        process = multiprocessing.Process(target=do_train, args=(train_config, self.component_builder))
+        self._add_train_proc(process)
         process.start()
-        logging.info("Training process {} started".format(process))
+        logger.info("Training process {} started".format(process))

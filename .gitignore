@@ -3,6 +3,7 @@
 dist/
 data/*
 !data/examples
+!data/test
 docs/_build
 server/
 scala/
@@ -32,3 +33,4 @@ models/
 test_models/model_*
 
 rasa_nlu/tmbo_test.py
+.mypy_cache/

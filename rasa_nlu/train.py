@@ -6,11 +6,22 @@ import argparse
 import logging
 import os
 
+import typing
+from typing import Text
+from typing import Tuple
+
+from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.converters import load_data
+from rasa_nlu.model import Interpreter
 from rasa_nlu.model import Trainer
 
 from rasa_nlu.config import RasaNLUConfig
 from typing import Optional
+
+logger = logging.getLogger(__name__)
+
+if typing.TYPE_CHECKING:
+    from rasa_nlu.persistor import Persistor
 
 
 def create_argparser():
@@ -22,7 +33,7 @@ def create_argparser():
     parser.add_argument('-d', '--data', default=None, help="file containing training data")
     parser.add_argument('-c', '--config', required=True, help="config file")
     parser.add_argument('-l', '--language', default=None, choices=['de', 'en'], help="model and data language")
-    parser.add_argument('-t', '--num_threads', default=1, type=int,
+    parser.add_argument('-t', '--num_threads', default=None, type=int,
                         help="number of threads to use during model training")
     parser.add_argument('-m', '--mitie_file', default=None,
                         help='file with mitie total_word_feature_extractor')
@@ -35,13 +46,13 @@ def create_persistor(config):
 
     persistor = None
     if "bucket_name" in config:
-        from rasa_nlu.persistor import Persistor
-        persistor = Persistor(config['path'], config['aws_region'], config['bucket_name'])
+        from rasa_nlu.persistor import get_persistor
+        persistor = get_persistor(config)
 
     return persistor
 
 
-def init():
+def init():     # pragma: no cover
     # type: () -> RasaNLUConfig
     """Combines passed arguments to create rasa NLU config."""
 
@@ -51,17 +62,18 @@ def init():
     return config
 
 
-def do_train(config):
-    # type: (RasaNLUConfig) -> (Trainer, str)
+def do_train(config, component_builder=None):
+    # type: (RasaNLUConfig, Optional[ComponentBuilder]) -> Tuple[Trainer, Interpreter, Text]
     """Loads the trainer and the data and runs the training of the specified model."""
 
-    trainer = Trainer(config)
+    # Ensure we are training a model that we can save in the end
+    # WARN: there is still a race condition if a model with the same name is trained in another subprocess
+    trainer = Trainer(config, component_builder)
     persistor = create_persistor(config)
-    training_data = load_data(config['data'], config['language'], luis_data_tokenizer=config['luis_data_tokenizer'])
-    trainer.validate()
-    trainer.train(training_data)
-    persisted_path = trainer.persist(config['path'], persistor)
-    return trainer, persisted_path
+    training_data = load_data(config['data'])
+    interpreter = trainer.train(training_data)
+    persisted_path = trainer.persist(config['path'], persistor, model_name=config['name'])
+    return trainer, interpreter, persisted_path
 
 
 if __name__ == '__main__':
@@ -70,4 +82,4 @@ if __name__ == '__main__':
     logging.basicConfig(level=config['log_level'])
 
     do_train(config)
-    logging.info("done")
+    logger.info("Finished training")

@@ -3,7 +3,7 @@
 Migrating an existing app
 =========================
 
-rasa NLU is designed to make migrating from wit/LUIS/api.ai as simple as possible. 
+Rasa NLU is designed to make migrating from wit/LUIS/api.ai as simple as possible.
 The TLDR instructions for migrating are: 
 
 - download an export of your app data from wit/LUIS/api.ai
@@ -26,13 +26,7 @@ The file you want from your download is called ``expressions.json``
 LUIS.ai
 ^^^^^^^
 
-When you download your model, the entity locations are specified by the index of the tokens. 
-This is pretty fragile because not every tokenizer will behave the same as LUIS's, so your entities may be incorrectly labelled. 
-Run your training once and you'll get a copy of your training data in the ``model_XXXXX`` dir. 
-Do any fixes required and use that to train. 
-Use the visualizer (see :ref:`visualizing-the-training-data`) to spot mistakes easily.
-
-To specify the tokenizer you are using you need to define the ``luis_data_tokenizer`` configuration variable.
+Nothing special here. Downloading the data and importing it into Rasa NLU should work without issues
 
 api.ai
 ^^^^^^
@@ -46,7 +40,7 @@ and pass that path to the trainer.
 Emulation
 ---------
 
-To make rasa NLU easy to try out with existing projects, the server can `emulate` wit, LUIS, or api.ai.
+To make Rasa NLU easy to try out with existing projects, the server can `emulate` wit, LUIS, or api.ai.
 In native mode, a request / response looks like this : 
 
 .. code-block:: console

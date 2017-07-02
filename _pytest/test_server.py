@@ -3,10 +3,14 @@ from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
+
+import os
 import tempfile
 
 import pytest
+import time
 
+import utilities
 from rasa_nlu.config import RasaNLUConfig
 import json
 import io
@@ -16,16 +20,15 @@ from rasa_nlu.server import create_app
 
 
 @pytest.fixture(scope="module")
-def app():
+def app(tmpdir_factory):
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
     _config = {
         'write': nlu_log_file,
         'port': -1,                 # unused in test app
         "backend": "mitie",
-        "path": "./models",
+        "path": tmpdir_factory.mktemp("models").strpath,
         "server_model_dirs": {},
         "data": "./data/demo-restaurants.json",
-        "luis_data_tokenizer": "tokenizer_mitie",
         "emulate": "wit",
     }
     config = RasaNLUConfig(cmdline_args=_config)
@@ -33,9 +36,16 @@ def app():
     return application
 
 
+@pytest.fixture
+def rasa_default_train_data():
+    with io.open('data/examples/rasa/demo-rasa.json',
+                 encoding='utf-8') as train_file:
+        return json.loads(train_file.read())
+
+
 def test_root(client):
     response = client.get("/")
-    assert response.status_code == 200 and response.data == b"hello"
+    assert response.status_code == 200 and response.data.startswith(b"hello")
 
 
 def test_status(client):
@@ -45,14 +55,30 @@ def test_status(client):
         ("trainings_under_this_process" in rjs and "available_models" in rjs)
 
 
+def test_config(client):
+    response = client.get("/config")
+    assert response.status_code == 200
+
+
+def test_version(client):
+    response = client.get("/version")
+    rjs = response.json
+    assert response.status_code == 200 and \
+        ("version" in rjs)
+
+
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-        u"/parse?q=hello",
-        [{u"entities": {}, u"confidence": 1.0, u"intent": u"greet", u"_text": u"hello"}]
+        "/parse?q=hello",
+        [{"entities": {}, "confidence": 1.0, "intent": "greet", "_text": "hello"}]
     ),
     ResponseTest(
-        u"/parse?q=hello ńöñàśçií",
-        [{u"entities": {}, u"confidence": 1.0, u"intent": u"greet", u"_text": u"hello ńöñàśçií"}]
+        "/parse?q=hello ńöñàśçií",
+        [{"entities": {}, "confidence": 1.0, "intent": "greet", "_text": "hello ńöñàśçií"}]
+    ),
+    ResponseTest(
+        "/parse?q=",
+        [{"entities": {}, "confidence": 0.0, "intent": None, "_text": ""}]
     ),
 ])
 def test_get_parse(client, response_test):
@@ -65,13 +91,13 @@ def test_get_parse(client, response_test):
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
         "/parse",
-        [{u"entities": {}, u"confidence": 1.0, u"intent": u"greet", u"_text": u"hello"}],
-        payload={u"q": u"hello"}
+        [{"entities": {}, "confidence": 1.0, "intent": "greet", "_text": "hello"}],
+        payload={"q": "hello"}
     ),
     ResponseTest(
         "/parse",
-        [{u"entities": {}, u"confidence": 1.0, u"intent": u"greet", u"_text": u"hello ńöñàśçií"}],
-        payload={u"q": u"hello ńöñàśçií"}
+        [{"entities": {}, "confidence": 1.0, "intent": "greet", "_text": "hello ńöñàśçií"}],
+        payload={"q": "hello ńöñàśçií"}
     ),
 ])
 def test_post_parse(client, response_test):
@@ -82,9 +108,30 @@ def test_post_parse(client, response_test):
     assert all(prop in response.json[0] for prop in ['entities', 'intent', '_text', 'confidence'])
 
 
-def test_post_train(client):
-    with io.open('data/examples/luis/demo-restaurants.json',
-                 encoding='utf-8') as train_file:
-        train_data = json.loads(train_file.read())
-    response = client.post("/train", data=json.dumps(train_data), content_type='application/json')
+@utilities.slowtest
+def test_post_train(client, rasa_default_train_data):
+    response = client.post("/train", data=json.dumps(rasa_default_train_data), content_type='application/json')
     assert response.status_code == 200
+    assert len(response.json["training_process_ids"]) == 1
+    assert response.json["info"] == "training started."
+
+
+def test_model_hot_reloading(client, rasa_default_train_data):
+    query = "/parse?q=hello&model=my_keyword_model"
+    response = client.get(query)
+    assert response.status_code == 404, "Model should not exist yet"
+    response = client.post("/train?name=my_keyword_model&pipeline=keyword",
+                           data=json.dumps(rasa_default_train_data),
+                           content_type='application/json')
+    assert response.status_code == 200, "Training should start successfully"
+    time.sleep(3)    # training should be quick as the keyword model doesn't do any training
+    response = client.get(query)
+    assert response.status_code == 200, "Model should now exist after it got trained"
+
+
+def test_wsgi():
+    # this avoids the loading of any models when starting the server --> faster
+    os.environ["RASA_path"] = "some_none/existent/path"
+    from rasa_nlu.wsgi import application
+    assert application is not None
+    del os.environ["RASA_path"]

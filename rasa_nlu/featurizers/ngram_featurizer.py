@@ -2,6 +2,8 @@ from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
+
+import typing
 from builtins import map
 from builtins import range
 import logging
@@ -12,12 +14,21 @@ import warnings
 import io
 from collections import Counter
 from string import punctuation
-import cloudpickle
+from typing import Any
+from typing import Dict
+from typing import List
 from typing import Optional
 from future.utils import PY3
+from typing import Text
 
 from rasa_nlu.components import Component
 from rasa_nlu.training_data import TrainingData
+
+logger = logging.getLogger(__name__)
+
+if typing.TYPE_CHECKING:
+    from spacy.language import Language
+    import numpy as np
 
 
 class NGramFeaturizer(Component):
@@ -40,30 +51,29 @@ class NGramFeaturizer(Component):
         self.best_num_ngrams = None
         self.all_ngrams = None
 
+    @classmethod
+    def required_packages(cls):
+        # type: () -> List[Text]
+        return ["spacy", "numpy", "sklearn", "cloudpickle"]
+
     def train(self, training_data, intent_features, spacy_nlp, max_number_of_ngrams):
-        # type: (TrainingData, [float], Language, Optional[int]) -> dict
-        from spacy.language import Language
+        # type: (TrainingData, List[float], Language, Optional[int]) -> Dict[Text, Any]
 
         start = time.time()
         labels = [e['intent'] for e in training_data.intent_examples]
         sentences = [e['text'] for e in training_data.intent_examples]
-        self.all_ngrams = self._get_best_ngrams(sentences, labels, spacy_nlp)
-        self.best_num_ngrams = self._cross_validation(
-            sentences, labels, intent_features, spacy_nlp, max_number_of_ngrams)
-        logging.debug("Ngram collection took {} seconds".format(time.time() - start))
-        stacked = self._create_bow_vecs(intent_features, sentences, spacy_nlp)
+        self.train_on_sentences(sentences, labels, spacy_nlp, max_number_of_ngrams, intent_features)
+        logger.debug("Ngram collection took {} seconds".format(time.time() - start))
+        stacked = self._create_bow_vecs(intent_features, sentences, spacy_nlp, max_ngrams=self.best_num_ngrams)
         return {"intent_features": stacked}
 
     def process(self, intent_features, text, spacy_nlp):
-        # type: ([float], str, Language) -> dict
-        from spacy.language import Language
+        # type: (List[float], Text, Language) -> Dict[Text, Any]
         import numpy as np
 
-        if self.all_ngrams:
-            ngrams_to_use = self._ngrams_to_use(self.best_num_ngrams)
-            if not ngrams_to_use:
-                return {"intent_features": intent_features}
+        ngrams_to_use = self._ngrams_to_use(self.best_num_ngrams)
 
+        if ngrams_to_use is not None:
             extras = np.array(self._ngrams_in_sentence(text, spacy_nlp, ngrams_to_use))
             total = np.hstack((intent_features, extras))
             return {"intent_features": total}
@@ -71,12 +81,13 @@ class NGramFeaturizer(Component):
             return {"intent_features": intent_features}
 
     @classmethod
-    def load(cls, model_dir, featurizer_file):
-        # type: (str, str) -> NGramFeaturizer
+    def load(cls, model_dir, ngram_featurizer):
+        # type: (Text, Text) -> NGramFeaturizer
+        import cloudpickle
 
-        if model_dir and featurizer_file:
-            classifier_file = os.path.join(model_dir, featurizer_file)
-            with io.open(classifier_file, 'rb') as f:
+        if model_dir and ngram_featurizer:
+            classifier_file = os.path.join(model_dir, ngram_featurizer)
+            with io.open(classifier_file, 'rb') as f:  # pramga: no cover
                 if PY3:
                     return cloudpickle.load(f, encoding="latin-1")
                 else:
@@ -85,8 +96,9 @@ class NGramFeaturizer(Component):
             return NGramFeaturizer()
 
     def persist(self, model_dir):
-        # type: (str) -> dict
+        # type: (Text) -> Dict[Text, Any]
         """Persist this model into the passed directory. Returns the metadata necessary to load the model again."""
+        import cloudpickle
 
         classifier_file = os.path.join(model_dir, "ngram_featurizer.pkl")
         with io.open(classifier_file, 'wb') as f:
@@ -96,8 +108,13 @@ class NGramFeaturizer(Component):
             "ngram_featurizer": "ngram_featurizer.pkl"
         }
 
+    def train_on_sentences(self, sentences, labels, spacy_nlp, max_number_of_ngrams, intent_features=None):
+        self.all_ngrams = self._get_best_ngrams(sentences, labels, spacy_nlp)
+        self.best_num_ngrams = self._cross_validation(
+                sentences, labels, intent_features, spacy_nlp, max_number_of_ngrams)
+
     def _ngrams_to_use(self, num_ngrams):
-        if num_ngrams == 0:
+        if num_ngrams == 0 or self.all_ngrams is None:
             return None
         elif num_ngrams is not None:
             return self.all_ngrams[:num_ngrams]
@@ -149,28 +166,40 @@ class NGramFeaturizer(Component):
             from sklearn import linear_model, preprocessing
             import numpy as np
 
+            # filter examples where we do not have enough labeled instances for cv
             usable_labels = []
             for label in np.unique(labels):
                 lab_sents = np.array(sentences)[np.array(labels) == label]
-                if len(lab_sents) < min_intent_examples_for_ngram_classification:
+                if len(lab_sents) < self.min_intent_examples_for_ngram_classification:
                     continue
                 usable_labels.append(label)
 
             mask = [label in usable_labels for label in labels]
-            sentences = np.array(sentences)[mask]
-            labels = np.array(labels)[mask]
+            if any(mask) and len(usable_labels) >= 2:
+                try:
+                    sentences = np.array(sentences)[mask]
+                    labels = np.array(labels)[mask]
 
-            X = np.array(self._ngrams_in_sentences(sentences, spacy_nlp, list_of_ngrams))
-            intent_encoder = preprocessing.LabelEncoder()
-            intent_encoder.fit(labels)
-            y = intent_encoder.transform(labels)
+                    X = np.array(self._ngrams_in_sentences(sentences, spacy_nlp, list_of_ngrams))
+                    intent_encoder = preprocessing.LabelEncoder()
+                    intent_encoder.fit(labels)
+                    y = intent_encoder.transform(labels)
 
-            clf = linear_model.RandomizedLogisticRegression(C=1)
-            clf.fit(X, y)
-            scores = clf.scores_
-            sort_idx = [i[0] for i in sorted(enumerate(scores), key=lambda x: -1 * x[1])]
+                    clf = linear_model.RandomizedLogisticRegression(C=1)
+                    clf.fit(X, y)
+                    scores = clf.scores_
+                    sort_idx = [i[0] for i in sorted(enumerate(scores), key=lambda x: -1 * x[1])]
 
-            return np.array(list_of_ngrams)[sort_idx]
+                    return np.array(list_of_ngrams)[sort_idx]
+                except ValueError as e:
+                    if "needs samples of at least 2 classes" in str(e):
+                        # we got unlucky during the random sampling :( and selected a slice that only contains one class
+                        return []
+                    else:
+                        raise e
+            else:
+                # there is no example we can use for the cross validation
+                return []
         else:
             return []
 
@@ -201,7 +230,7 @@ class NGramFeaturizer(Component):
         and occur independently of longer superset ngrams at least once."""
 
         features = {}
-        counters = {}
+        counters = {self.n_gram_min_length - 1: Counter()}
 
         for n in range(self.n_gram_min_length, self.n_gram_max_length):
             candidates = []
@@ -220,11 +249,11 @@ class NGramFeaturizer(Component):
 
             # iterate over these candidates picking only the applicable ones
             for can in candidates:
-                if counters[n][can] > self.n_gram_min_occurrences:
+                if counters[n][can] >= self.n_gram_min_occurrences:
                     features[n].append(can)
                     begin = can[:-1]
                     end = can[1:]
-                    if n > self.n_gram_min_length:
+                    if n >= self.n_gram_min_length:
                         if counters[n - 1][begin] == counters[n][can] and begin in features[n - 1]:
                             features[n - 1].remove(begin)
                         if counters[n - 1][end] == counters[n][can] and end in features[n - 1]:
@@ -241,11 +270,12 @@ class NGramFeaturizer(Component):
         import numpy as np
 
         ngrams_to_use = self._ngrams_to_use(max_ngrams)
-        if not ngrams_to_use:
+        if ngrams_to_use is None or len(ngrams_to_use) == 0:
             return intent_features
-        extras = np.array(self._ngrams_in_sentences(sentences, spacy_nlp, ngrams=ngrams_to_use))
-        total = np.hstack((intent_features, extras))
-        return total
+        else:
+            extras = np.array(self._ngrams_in_sentences(sentences, spacy_nlp, ngrams=ngrams_to_use))
+            total = np.hstack((intent_features, extras))
+            return total
 
     def _cross_validation(self, sentences, labels, intent_features, spacy_nlp, max_ngrams):
         """choose the best number of ngrams to include in bow.
@@ -259,13 +289,13 @@ class NGramFeaturizer(Component):
         from sklearn.model_selection import cross_val_score
         import numpy as np
 
-        clf2 = LogisticRegression()
+        clf2 = LogisticRegression(class_weight='balanced')
         intent_encoder = preprocessing.LabelEncoder()
         intent_encoder.fit(labels)
         y = intent_encoder.transform(labels)
-        cv_splits = min(10, np.min(np.bincount(y)))
+        cv_splits = min(10, np.min(np.bincount(y))) if y.size > 0 else 0
         if cv_splits >= 3:
-            logging.debug("Started ngram cross-validation to find best number of ngrams to use...")
+            logger.debug("Started ngram cross-validation to find best number of ngrams to use...")
             num_ngrams = np.unique(list(map(int, np.floor(np.linspace(1, max_ngrams, 8)))))
             no_ngrams_X = self._create_bow_vecs(intent_features, sentences, spacy_nlp, max_ngrams=0)
             no_ngrams_score = np.mean(cross_val_score(clf2, no_ngrams_X, y, cv=cv_splits))
@@ -274,10 +304,10 @@ class NGramFeaturizer(Component):
                 X = self._create_bow_vecs(intent_features, sentences, spacy_nlp, max_ngrams=n)
                 score = np.mean(cross_val_score(clf2, X, y, cv=cv_splits))
                 scores.append(score)
-                logging.debug("Evaluating usage of {} ngrams. Score: {}".format(n, score))
+                logger.debug("Evaluating usage of {} ngrams. Score: {}".format(n, score))
             n_top = num_ngrams[np.argmax(scores)]
-            logging.debug("Score without ngrams: {}".format(no_ngrams_score))
-            logging.info("Best score with {} ngrams: {}".format(n_top, np.max(scores)))
+            logger.debug("Score without ngrams: {}".format(no_ngrams_score))
+            logger.info("Best score with {} ngrams: {}".format(n_top, np.max(scores)))
             return n_top
         else:
             warnings.warn("Can't cross-validate ngram featurizer. There aren't enough examples per intent (at least 3)")

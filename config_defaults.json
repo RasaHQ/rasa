@@ -1,4 +1,5 @@
 {
+  "name": null,
   "pipeline": [],
   "language": "en",
   "num_threads": 1,
@@ -11,9 +12,14 @@
   "emulate": null,
   "log_file": null,
   "mitie_file": "data/total_word_feature_extractor.dat",
-  "fine_tune_spacy_ner": false,
+  "spacy_model_name": null,
   "server_model_dirs": null,
   "token": null,
   "max_number_of_ngrams": 7,
-  "luis_data_tokenizer": null
+  "duckling_dimensions": null,
+  "entity_crf_BILOU_flag": true,
+  "entity_crf_features": [
+    ["low", "title", "upper", "pos", "pos2"],
+    ["bias", "low", "word3", "word2", "upper", "title", "digit", "pos", "pos2"],
+    ["low", "title", "upper", "pos", "pos2"]]
 }

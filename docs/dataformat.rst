@@ -3,16 +3,33 @@
 Training Data Format
 ====================
 
-In the rasa NLU data format, there are three lists of examples: ``common_examples``, ``intent_examples``, and ``entity_examples``.
-The ``common_examples`` are used to train both the entity and the intent models. 
-In many cases it's fine to put all of your training examples in there. 
-However, if you need lots and lots of examples to train a good entity recogniser, that can mess up 
-your intent model because your classes are totally unbalanced. In that case it makes sense
-to split up these lists. 
+The training data for rasa NLU is structured into different parts. The most important one is ``common_examples``.
 
-Entities are specified with a ``start`` and  ``end`` value, which together make a python style range to apply to the string, e.g. in the example below, with ``text="show me chinese restaurants"``, then ``text[8:15] == 'chinese'``.
-Entities can span multiple words, and in fact the ``value`` field doesn't have to correspond exactly to the substring in your example. That way you can map syonyms, or misspellings, to the same ``value``.
+.. code-block:: json
 
+    {
+        "rasa_nlu_data": {
+            "common_examples": []
+        }
+    }
+
+The ``common_examples`` are used to train both the entity and the intent models. You should put all of your training
+examples in the ``common_examples`` array. The next section describes in detail how an example looks like.
+
+Common Examples
+---------------
+
+Common examples have three components: ``text``, ``intent``, and ``entities``. The first two are strings while the last one is an array.
+
+ - The *text* is the search query; An example of what would be submitted for parsing. [required]
+ - The *intent* is the intent that should be associated with the text. [optional]
+ - The *entities* are specific parts of the text which need to be identified. [optional]
+
+Entities are specified with a ``start`` and  ``end`` value, which together make a python
+style range to apply to the string, e.g. in the example below, with ``text="show me chinese
+restaurants"``, then ``text[8:15] == 'chinese'``. Entities can span multiple words, and in
+fact the ``value`` field does not have to correspond exactly to the substring in your example.
+That way you can map syonyms, or misspellings, to the same ``value``.
 
 .. code-block:: json
 
