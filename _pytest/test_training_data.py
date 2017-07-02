@@ -209,7 +209,7 @@ def test_entities_synonyms():
     with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
         f.write(data.encode("utf-8"))
         f.flush()
-        td = load_data(f.name, "en")
+        td = load_data(f.name)
         assert td.entity_synonyms["New York City"] == "nyc"
 
 
