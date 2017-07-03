@@ -27,11 +27,11 @@ def create_argparser():
     return parser
 
 
-def plot_confusion_matrix(cm, classes,
-                          normalize=False,
-                          title='Confusion matrix',
-                          cmap=None):
-    """This function prints and plots the confusion matrix.
+def plot_intent_confusion_matrix(cm, classes,
+                                 normalize=False,
+                                 title='Confusion matrix',
+                                 cmap=None):
+    """This function prints and plots the confusion matrix for the intent classification.
 
     Normalization can be applied by setting `normalize=True`."""
     import numpy as np
@@ -45,11 +45,10 @@ def plot_confusion_matrix(cm, classes,
 
     if normalize:
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-        print("Normalized confusion matrix")
+        logger.info("Normalized confusion matrix: \n{}".format(cm))
     else:
-        print('Confusion matrix, without normalization')
+        logger.info("Confusion matrix, without normalization: \n{}".format(cm))
 
-    print(cm)
 
     thresh = cm.max() / 2.
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
@@ -62,7 +61,7 @@ def plot_confusion_matrix(cm, classes,
     plt.xlabel('Predicted label')
 
 
-def do_evaluation(config, model_path, component_builder=None):
+def run_intent_evaluation(config, model_path, component_builder=None):
     from sklearn.metrics import accuracy_score
     from sklearn.metrics import classification_report
     from sklearn.metrics import confusion_matrix
@@ -75,21 +74,25 @@ def do_evaluation(config, model_path, component_builder=None):
     metadata = Metadata.load(model_path)
     interpreter = Interpreter.load(metadata, config, component_builder)
 
-    test_y = [e["refinement"] for e in test_data.training_examples]
+    test_y = [e.get("intent") for e in test_data.training_examples]
 
     preds = []
     for e in test_data.training_examples:
-        res = interpreter.parse(e["text"])
-        preds.append(res['faq']['name'])
+        res = interpreter.parse(e.text)
+        if res.get('intent'):
+            preds.append(res['intent'].get('name'))
+        else:
+            preds.append(None)
 
-    print('f1 = {}'.format(f1_score(test_y, preds, average='weighted')))
-    print('precision = {}'.format(precision_score(test_y, preds, average='weighted')))
-    print('accuracy_score = {}'.format(accuracy_score(test_y, preds)))
-    print(classification_report(test_y, preds))
+    logger.info("Intent Evaluation Results")
+    logger.info("F1-Score:  {}".format(f1_score(test_y, preds, average='weighted')))
+    logger.info("Precision: {}".format(precision_score(test_y, preds, average='weighted')))
+    logger.info("Accuracy:  {}".format(accuracy_score(test_y, preds)))
+    logger.info("Classification report: \n{}".format(classification_report(test_y, preds)))
 
     cnf_matrix = confusion_matrix(test_y, preds)
-    plot_confusion_matrix(cnf_matrix, classes=unique_labels(test_y, preds),
-                          title='Confusion matrix')
+    plot_intent_confusion_matrix(cnf_matrix, classes=unique_labels(test_y, preds),
+                          title='Intent Confusion matrix')
 
     plt.show()
     return
@@ -98,8 +101,8 @@ def do_evaluation(config, model_path, component_builder=None):
 if __name__ == '__main__':
     parser = create_argparser()
     args = parser.parse_args()
-    config = RasaNLUConfig(args.config, os.environ, vars(args))
-    logging.basicConfig(level=config['log_level'])
+    nlu_config = RasaNLUConfig(args.config, os.environ, vars(args))
+    logging.basicConfig(level=nlu_config['log_level'])
 
-    do_evaluation(config, args.model)
+    run_intent_evaluation(nlu_config, args.model)
     logger.info("Finished evaluation")
