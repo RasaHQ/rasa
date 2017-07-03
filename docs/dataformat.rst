@@ -86,3 +86,18 @@ synonym instead of the actual text in the message.
 
 To use the synonyms defined in your training data, you need to make sure the pipeline contains the ``ner_synonyms``
 component (see :ref:`section_pipeline`).
+
+Alternatively, you can add an "entity_synonyms" array to define several synonyms to one entity value. Here is an example of that:
+
+.. code-block:: json
+
+  {
+    "rasa_nlu_data": {
+      "entity_synonyms": [
+        {
+          "value": "New York City",
+          "synonyms": ["NYC", "nyc", "the big apple"]
+        }
+      ]
+    }
+  }

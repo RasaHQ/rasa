@@ -205,6 +205,14 @@ def load_rasa_data(filename):
     common = data['rasa_nlu_data'].get("common_examples", list())
     intent = data['rasa_nlu_data'].get("intent_examples", list())
     entity = data['rasa_nlu_data'].get("entity_examples", list())
+    synonyms = data['rasa_nlu_data'].get("entity_synonyms", list())
+
+    # build entity_synonyms dictionary
+    entity_synonyms = {}
+    for s in synonyms:
+        if "value" in s and "synonyms" in s:
+            for synonym in s["synonyms"]:
+                entity_synonyms[synonym] = s["value"]
 
     if intent or entity:
         logger.warn("DEPRECATION warning: Data file contains 'intent_examples' or 'entity_examples' which will be " +
@@ -220,7 +228,7 @@ def load_rasa_data(filename):
             data["entities"] = e["entities"]
         training_examples.append(Message(e["text"], data))
 
-    return TrainingData(training_examples)
+    return TrainingData(training_examples, entity_synonyms)
 
 
 def guess_format(files):

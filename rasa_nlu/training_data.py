@@ -65,7 +65,7 @@ class TrainingData(object):
     MIN_EXAMPLES_PER_ENTITY = 2
 
     def __init__(self, training_examples=None, entity_synonyms=None):
-        # type: (Optional[List[Message]], Optional[List[Message]]) -> None
+        # type: (Optional[List[Message]], Optional[Dict[Text, Text]]) -> None
 
         self.training_examples = self.sanitice_examples(training_examples) if training_examples else []
         self.entity_synonyms = entity_synonyms if entity_synonyms else {}
