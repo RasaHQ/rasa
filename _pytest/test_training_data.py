@@ -168,6 +168,51 @@ def test_nonascii_entities():
         assert entity["entity"] == "description"
 
 
+def test_entities_synonyms():
+    data = u"""
+{
+  "rasa_nlu_data": {
+    "entity_synonyms": [
+      {
+        "value": "nyc",
+        "synonyms": ["New York City", "nyc", "the big apple"]
+      }
+    ],
+    "common_examples" : [
+      {
+        "text": "show me flights to New York City",
+        "intent": "unk",
+        "entities": [
+          {
+            "entity": "destination",
+            "start": 19,
+            "end": 32,
+            "value": "NYC"
+          }
+        ]
+      },
+      {
+        "text": "show me flights to nyc",
+        "intent": "unk",
+        "entities": [
+          {
+            "entity": "destination",
+            "start": 19,
+            "end": 22,
+            "value": "nyc"
+          }
+        ]
+      }
+    ]
+  }
+}"""
+    with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
+        f.write(data.encode("utf-8"))
+        f.flush()
+        td = load_data(f.name)
+        assert td.entity_synonyms["New York City"] == "nyc"
+
+
 def cmp_dict_list(firsts, seconds):
     if len(firsts) != len(seconds):
         return False
