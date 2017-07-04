@@ -76,9 +76,10 @@ def test_ner_regex_multi_entities():
                   u'[0-9]+': u'number'}
     txt = "find me 2 mexican restaurants"
     ext = RegExEntityExtractor(regex_dict)
-    r = ext.extract_entities(txt)
-    assert r[0] == {u'start': 10, u'end': 17, u'value': 'mexican', u'entity': 'mexican'}
-    assert r[1] == {u'start': 8, u'end': 9, u'value': '2', u'entity': 'number'}
+    r = sorted(ext.extract_entities(txt), key=lambda k: k['start'])
+    assert r[0] == {u'start': 8, u'end': 9, u'value': '2', u'entity': 'number'}
+    assert r[1] == {u'start': 10, u'end': 17, u'value': 'mexican', u'entity': 'mexican'}
+
 
 
 def test_ner_regex_1_entity():
