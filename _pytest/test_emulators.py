@@ -8,7 +8,7 @@ def test_luis_request():
     from rasa_nlu.emulators.luis import LUISEmulator
     em = LUISEmulator()
     norm = em.normalise_request_json({"q": ["arb text"]})
-    assert norm == {"text": "arb text", "model": "default"}
+    assert norm == {"text": "arb text", "model": "default", "time": None}
 
 
 def test_luis_response():
@@ -78,7 +78,7 @@ def test_wit_request():
     from rasa_nlu.emulators.wit import WitEmulator
     em = WitEmulator()
     norm = em.normalise_request_json({"q": ["arb text"]})
-    assert norm == {"text": "arb text", "model": "default"}
+    assert norm == {"text": "arb text", "model": "default", "time": None}
 
 
 def test_wit_response():
@@ -109,7 +109,7 @@ def test_api_request():
     from rasa_nlu.emulators.api import ApiEmulator
     em = ApiEmulator()
     norm = em.normalise_request_json({"q": ["arb text"]})
-    assert norm == {"text": "arb text", "model": "default"}
+    assert norm == {"text": "arb text", "model": "default", "time": None}
 
 
 def test_api_response():
@@ -159,10 +159,10 @@ def test_dummy_request():
     from rasa_nlu.emulators import NoEmulator
     em = NoEmulator()
     norm = em.normalise_request_json({"q": ["arb text"]})
-    assert norm == {"text": "arb text", "model": "default"}
+    assert norm == {"text": "arb text", "model": "default", "time": None}
 
-    norm = em.normalise_request_json({"q": ["arb text"], "model": "specific"})
-    assert norm == {"text": "arb text", "model": "specific"}
+    norm = em.normalise_request_json({"q": ["arb text"], "model": "specific", "time": "1499279161658"})
+    assert norm == {"text": "arb text", "model": "specific", "time": "1499279161658"}
 
 
 def test_dummy_response():

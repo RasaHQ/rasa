@@ -20,7 +20,10 @@ install_requires = [
     "typing",
     "future",
     "six",
-    "jsonschema"
+    "tqdm",
+    "requests",
+    "jsonschema",
+    "matplotlib"
 ]
 
 extras_requires = {
@@ -50,6 +53,7 @@ setup(
     install_requires=install_requires,
     tests_require=tests_requires,
     extras_require=extras_requires,
+    include_package_data=True,
     description="rasa NLU a natural language parser for bots",
     author='Alan Nichol',
     author_email='alan@rasa.ai',

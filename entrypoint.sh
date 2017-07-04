@@ -21,7 +21,7 @@ function download_package {
             case $2 in 
                 en|de)
                     echo "Downloading spacy.$2 model..."
-                    python -m spacy."$2".download all
+                    python -m spacy download "$2"
                     echo "Done."
                     ;;
                 *) 

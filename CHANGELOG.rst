@@ -20,9 +20,13 @@ Changed
 - logging format of logged request now includes model name and timestamp
 - use module specific loggers instead of default python root logger
 - output format of the duckling extractor changed. the ``value`` field now includes the complete value from duckling instead of just text (so this is an property is an object now instead of just text). includes granularity information now.
+- deprecated ``intent_examples`` and ``entity_examples`` sections in training data. all examples should go into the ``common_examples`` section
+- weight training samples based on class distribution during ner_crf cross validation and sklearn intent classification training
+- large refactoring of the internal training data structure and pipeline architecture
 
 Removed
 -------
+- luis data tokenizer configuration value (not used anymore, luis exports char offsets now)
 
 Fixed
 -----
@@ -90,6 +94,7 @@ Added
 - replaced pre-wired backends with more flexible pipeline definitions
 - return top 10 intents with sklearn classifier `#199 <https://github.com/RasaHQ/rasa_nlu/pull/199>`_
 - python type annotations for nearly all public functions
+- added alternative method of defining entity synonyms
 - support for arbitrary spacy language model names
 - duckling components to provide normalized output for structured entities
 - Conditional random field entity extraction (Markov model for entity tagging, better named entity recognition with low and medium data and similarly well at big data level)
