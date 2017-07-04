@@ -59,3 +59,19 @@ def test_ngram_featurizer(spacy_nlp):
                            max_number_of_ngrams=10)
     assert len(ftr.all_ngrams) > 0
     assert ftr.best_num_ngrams > 0
+
+
+@pytest.mark.parametrize("sentence, expected", [
+    ("hey how are you today", [0., 1.]),
+    ("hey 123 how are you", [1., 1.]),
+    ("blah balh random eh", [0., 0.])
+])
+def test_regex_featurizer(sentence, expected, spacy_nlp):
+    from rasa_nlu.featurizers.regex_featurizer import RegexFeaturizer
+    regex_dict = {
+        u'[0-9]+': None,
+        u'\\bhey*': None
+    }
+    ftr = RegexFeaturizer(regex_dict)
+    result = ftr._regexes_match_sentence(sentence)    
+    assert np.allclose(result, expected, atol=1e-10)
