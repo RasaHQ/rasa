@@ -14,7 +14,8 @@ from typing import Optional
 from typing import Text
 
 from rasa_nlu import utils
-from rasa_nlu.training_data import TrainingData
+from rasa_nlu.tokenizers import Tokenizer
+from rasa_nlu.training_data import TrainingData, Message
 
 logger = logging.getLogger(__name__)
 
@@ -54,12 +55,12 @@ def load_api_data(files):
                                 "end": end
                             }
                     )
-                data = {"text": text}
+                data = {}
                 if intent:
                     data["intent"] = intent
-                if entities:
+                if entities is not None:
                     data["entities"] = entities
-                training_examples.append(data)
+                training_examples.append(Message(text, data))
 
         # create synonyms dictionary
         if "name" in data and "entries" in data:
@@ -93,12 +94,10 @@ def load_luis_data(filename):
             val = text[start:end]
             entities.append({"entity": e["entity"], "value": val, "start": start, "end": end})
 
-        data = {"text": text}
+        data = {"entities": entities}
         if intent:
             data["intent"] = intent
-        if entities:
-            data["entities"] = entities
-        training_examples.append(data)
+        training_examples.append(Message(text, data))
     return TrainingData(training_examples)
 
 
@@ -122,12 +121,12 @@ def load_wit_data(filename):
         for e in entities:
             e["value"] = e["value"].strip("\"")    # for some reason wit adds additional quotes around entity values
 
-        data = {"text": text}
+        data = {}
         if intent:
             data["intent"] = intent
-        if entities:
+        if entities is not None:
             data["entities"] = entities
-        training_examples.append(data)
+        training_examples.append(Message(text, data))
     return TrainingData(training_examples)
 
 
@@ -220,7 +219,16 @@ def load_rasa_data(filename):
                     "removed in the future. Consider putting all your examples into the 'common_examples' section.")
 
     all_examples = common + intent + entity
-    return TrainingData(all_examples, entity_synonyms)
+    training_examples = []
+    for e in all_examples:
+        data = {}
+        if e.get("intent"):
+            data["intent"] = e["intent"]
+        if e.get("entities") is not None:
+            data["entities"] = e["entities"]
+        training_examples.append(Message(e["text"], data))
+
+    return TrainingData(training_examples, entity_synonyms)
 
 
 def guess_format(files):

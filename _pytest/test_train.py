@@ -26,7 +26,8 @@ def test_train_model(pipeline_template, component_builder):
     assert trained.pipeline
     loaded = utilities.load_interpreter_for_model(_config, persisted_path, component_builder)
     assert loaded.pipeline
-    assert loaded.parse("hello", time=None) is not None
+    assert loaded.parse("hello") is not None
+    assert loaded.parse("Hello today is Monday, again!") is not None
 
 
 @slowtest
@@ -37,7 +38,8 @@ def test_train_model_noents(component_builder):
     assert trained.pipeline
     loaded = utilities.load_interpreter_for_model(_config, persisted_path, component_builder)
     assert loaded.pipeline
-    assert loaded.parse("hello", time=None) is not None
+    assert loaded.parse("hello") is not None
+    assert loaded.parse("Hello today is Monday, again!") is not None
 
 
 @slowtest
@@ -48,7 +50,8 @@ def test_train_model_multithread(component_builder):
     assert trained.pipeline
     loaded = utilities.load_interpreter_for_model(_config, persisted_path, component_builder)
     assert loaded.pipeline
-    assert loaded.parse("hello", time=None) is not None
+    assert loaded.parse("hello") is not None
+    assert loaded.parse("Hello today is Monday, again!") is not None
 
 
 def test_train_model_empty_pipeline(component_builder):
@@ -80,7 +83,8 @@ def test_load_and_persist_without_train(component_builder):
     persisted_path = trainer.persist(_config['path'], persistor, model_name=_config['name'])
     loaded = utilities.load_interpreter_for_model(_config, persisted_path, component_builder)
     assert loaded.pipeline
-    assert loaded.parse("hello", time=None) is not None
+    assert loaded.parse("hello") is not None
+    assert loaded.parse("Hello today is Monday, again!") is not None
 
 
 def test_train_with_empty_data(component_builder):
@@ -91,4 +95,5 @@ def test_train_with_empty_data(component_builder):
     persisted_path = trainer.persist(_config['path'], persistor, model_name=_config['name'])
     loaded = utilities.load_interpreter_for_model(_config, persisted_path, component_builder)
     assert loaded.pipeline
-    assert loaded.parse("hello", time=None) is not None
+    assert loaded.parse("hello") is not None
+    assert loaded.parse("Hello today is Monday, again!") is not None

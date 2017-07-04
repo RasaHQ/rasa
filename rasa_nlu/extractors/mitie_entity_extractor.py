@@ -6,7 +6,6 @@ from __future__ import absolute_import
 import typing
 from builtins import range
 import os
-import re
 
 from typing import Any
 from typing import Dict
@@ -14,8 +13,10 @@ from typing import List
 from typing import Optional
 from typing import Text
 
+from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.extractors import EntityExtractor
-from rasa_nlu.tokenizers.mitie_tokenizer import MitieTokenizer
+from rasa_nlu.model import Metadata
+from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
 
 
@@ -26,11 +27,9 @@ if typing.TYPE_CHECKING:
 class MitieEntityExtractor(EntityExtractor):
     name = "ner_mitie"
 
-    context_provides = {
-        "process": ["entities"],
-    }
+    provides = ["entities"]
 
-    output_provides = ["entities"]
+    requires = ["tokens"]
 
     def __init__(self, ner=None):
         self.ner = ner
@@ -42,54 +41,52 @@ class MitieEntityExtractor(EntityExtractor):
 
     def extract_entities(self, text, tokens, feature_extractor):
         ents = []
-        offset = 0
+        tokens_strs = [token.text for token in tokens]
         if self.ner:
-            entities = self.ner.extract_entities(tokens, feature_extractor)
+            entities = self.ner.extract_entities(tokens_strs, feature_extractor)
             for e in entities:
-                _range = e[0]
-                _regex = "\s*".join(re.escape(tokens[i]) for i in _range)
-                expr = re.compile(_regex)
-                m = expr.search(text[offset:])
-                start, end = m.start() + offset, m.end() + offset
-                entity_value = text[start:end]
-                offset += m.end()
-                ents.append({
-                    "entity": e[1],
-                    "value": entity_value,
-                    "start": start,
-                    "end": end
-                })
+                if len(e[0]):
+                    start = tokens[e[0][0]].offset
+                    end = tokens[e[0][-1]].end
+
+                    ents.append({
+                        "entity": e[1],
+                        "value": text[start:end],
+                        "start": start,
+                        "end": end
+                    })
 
         return ents
 
     @staticmethod
-    def find_entity(ent, text):
-        import mitie
-
-        tk = MitieTokenizer()
-        tokens, offsets = tk.tokenize_with_offsets(text)
+    def find_entity(ent, text, tokens):
+        offsets = [token.offset for token in tokens]
+        ends = [token.end for token in tokens]
         if ent["start"] not in offsets:
-            message = "Invalid entity {} in example '{}': entities must span whole tokens".format(ent, text)
+            message = "Invalid entity {} in example '{}': entities must span whole tokens. Wrong entity start.".format(
+                    ent, text)
+            raise ValueError(message)
+        if ent["end"] not in ends:
+            message = "Invalid entity {} in example '{}': entities must span whole tokens. Wrong entity end.".format(
+                    ent, text)
             raise ValueError(message)
         start = offsets.index(ent["start"])
-        _slice = text[ent["start"]:ent["end"]]
-        val_tokens = mitie.tokenize(_slice)
-        end = start + len(val_tokens)
+        end = ends.index(ent["end"]) + 1
         return start, end
 
-    def train(self, training_data, mitie_file, num_threads):
-        # type: (TrainingData, Text, Optional[int]) -> None
+    def train(self, training_data, config, **kwargs):
+        # type: (TrainingData, RasaNLUConfig) -> None
         import mitie
 
-        trainer = mitie.ner_trainer(mitie_file)
-        trainer.num_threads = num_threads
+        trainer = mitie.ner_trainer(config["mitie_file"])
+        trainer.num_threads = config["num_threads"]
         found_one_entity = False
         for example in training_data.entity_examples:
-            text = example["text"]
-            tokens = mitie.tokenize(text)
-            sample = mitie.ner_training_instance(tokens)
-            for ent in example["entities"]:
-                start, end = MitieEntityExtractor.find_entity(ent, text)
+            text = example.text
+            tokens = example.get("tokens")
+            sample = mitie.ner_training_instance([t.text for t in tokens])
+            for ent in example.get("entities", []):
+                start, end = MitieEntityExtractor.find_entity(ent, text, tokens)
                 sample.add_entity(list(range(start, end)), ent["entity"])
                 found_one_entity = True
 
@@ -98,22 +95,24 @@ class MitieEntityExtractor(EntityExtractor):
         if found_one_entity:
             self.ner = trainer.train()
 
-    def process(self, text, tokens, mitie_feature_extractor, entities):
-        # type: (Text, List[Text], mitie.total_word_feature_extractor, List[Dict[Text, Any]]) -> Dict[Text, Any]
+    def process(self, message, **kwargs):
+        # type: (Message, **Any) -> None
 
-        extracted = self.add_extractor_name(self.extract_entities(text, tokens, mitie_feature_extractor))
-        entities.extend(extracted)
-        return {
-            "entities": entities
-        }
+        mitie_feature_extractor = kwargs.get("mitie_feature_extractor")
+        if not mitie_feature_extractor:
+            raise Exception("Failed to train 'intent_featurizer_mitie'. Missing a proper MITIE feature extractor.")
+
+        ents = self.extract_entities(message.text, message.get("tokens"), mitie_feature_extractor)
+        extracted = self.add_extractor_name(ents)
+        message.set("entities", message.get("entities", []) + extracted, add_to_output=True)
 
     @classmethod
-    def load(cls, model_dir, entity_extractor_mitie):
-        # type: (Text, Text) -> MitieEntityExtractor
+    def load(cls, model_dir, model_metadata, cached_component, **kwargs):
+        # type: (Text, Metadata, Optional[MitieEntityExtractor], **Any) -> MitieEntityExtractor
         import mitie
 
-        if model_dir and entity_extractor_mitie:
-            entity_extractor_file = os.path.join(model_dir, entity_extractor_mitie)
+        if model_dir and model_metadata.get("entity_extractor_mitie"):
+            entity_extractor_file = os.path.join(model_dir, model_metadata.get("entity_extractor_mitie"))
             extractor = mitie.named_entity_extractor(entity_extractor_file)
             return MitieEntityExtractor(extractor)
         else:
