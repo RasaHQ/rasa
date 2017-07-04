@@ -3,38 +3,21 @@
 Training Data Format
 ====================
 
-<<<<<<< HEAD
-The training data for rasa NLU has four arrays inside of a top level object ``common_examples``, ``intent_examples``, ``entity_examples``, and ``regex_features``. Not all three are required, you can use each of them as needed by the model you are trying to train.
-=======
-The training data for rasa NLU is structured into different parts. The most important one is ``common_examples``.
->>>>>>> master
+The training data for rasa NLU is structured into different parts, ``common_examples``, ``entity_synonyms`` and ``regex_features``. The most important one is ``common_examples``.
 
 .. code-block:: json
 
     {
         "rasa_nlu_data": {
-<<<<<<< HEAD
             "common_examples": [],
-            "intent_examples": [],
-            "entity_examples": [], 
-            "regex_features" : []
-        }
-    }
-
-The ``common_examples`` are used to train both the entity and the intent models while the other arrays target intents and entities exclusively.  Regex_features extracts entities and/or classifies intent based on a set of regular expressions.
-
-In many cases it's fine to put all of your training examples in the ``common_examples`` array. 
-However, if you need lots and lots of examples to train a good entity recogniser, that can mess up 
-your intent model because your classes would become unbalanced. In that case it makes sense
-to split up these lists.
-=======
-            "common_examples": []
+            "regex_features" : [],
+            "entity_synonyms": []
         }
     }
 
 The ``common_examples`` are used to train both the entity and the intent models. You should put all of your training
 examples in the ``common_examples`` array. The next section describes in detail how an example looks like.
->>>>>>> master
+Regex_features extracts entities and/or classifies intent based on a set of regular expressions.
 
 Common Examples
 ---------------
@@ -107,25 +90,6 @@ synonym instead of the actual text in the message.
 To use the synonyms defined in your training data, you need to make sure the pipeline contains the ``ner_synonyms``
 component (see :ref:`section_pipeline`).
 
-<<<<<<< HEAD
-Regular Expression Features
----------------------------
-Regular expressions can be used to classify the intent, or extract the entities in the text by defining an expression and a corresponding intent or entity in the `regex_features` array of the training data.
-
-.. code-block:: json
-
-    {
-      "name": "cuisine",
-      "entity": "mexican",
-      "pattern": "\\bmexican\\b"
-
-    },
-    {
-      "name": "greeting",
-      "intent": "greet",
-     "pattern": "\\bhey*"  
-    } 
-=======
 Alternatively, you can add an "entity_synonyms" array to define several synonyms to one entity value. Here is an example of that:
 
 .. code-block:: json
@@ -140,4 +104,21 @@ Alternatively, you can add an "entity_synonyms" array to define several synonyms
       ]
     }
   }
->>>>>>> master
+
+Regular Expression Features
+---------------------------
+Regular expressions can be used to classify the intent, or extract the entities in the text by defining an expression and a corresponding intent or entity in the ``regex_features`` array of the training data.
+
+.. code-block:: json
+
+    {
+      "name": "cuisine",
+      "entity": "mexican",
+      "pattern": "\\bmexican\\b"
+
+    },
+    {
+      "name": "greeting",
+      "intent": "greet",
+     "pattern": "\\bhey*"  
+    } 
