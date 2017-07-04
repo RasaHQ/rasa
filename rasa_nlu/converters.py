@@ -297,4 +297,3 @@ def load_data(resource_name, fformat=None):
         return load_rasa_data(files[0])
     else:
         raise ValueError("unknown training file format : {} for file {}".format(fformat, resource_name))
-
