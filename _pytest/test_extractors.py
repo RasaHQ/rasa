@@ -81,7 +81,6 @@ def test_ner_regex_multi_entities():
     assert r[1] == {u'start': 10, u'end': 17, u'value': 'mexican', u'entity': 'mexican'}
 
 
-
 def test_ner_regex_1_entity():
     from rasa_nlu.extractors.regex_entity_extractor import RegExEntityExtractor
     regex_dict = {u'\\bmexican\\b': u'mexican',
