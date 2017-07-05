@@ -23,7 +23,7 @@ from rasa_nlu.server import RasaNLU
 
 
 @pytest.fixture(scope="module")
-def stub(tmpdir_factory):
+def http_test_server(tmpdir_factory):
     sem = Semaphore(1)
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
     _config = {
@@ -44,7 +44,7 @@ def stub(tmpdir_factory):
         rasa = RasaNLU(config)
         sem.release()
         rasa.app.run(url, port)
-        rasa.data_router.__del__()
+        rasa.data_router.shutdown()
         os._exit(0)
 
     else:
@@ -75,25 +75,25 @@ def rasa_default_train_data():
         return json.loads(train_file.read())
 
 
-def test_root(stub):
-    response = stub(requests.get)("/")
+def test_root(http_test_server):
+    response = http_test_server(requests.get)("/")
     content = response.content
     assert response.status_code == 200 and content.startswith(b"hello")
 
 
-def test_status(stub):
-    response = stub(requests.get)("/status")
+def test_status(http_test_server):
+    response = http_test_server(requests.get)("/status")
     rjs = response.json()
     assert response.status_code == 200 and ("trainings_under_this_process" in rjs and "available_models" in rjs)
 
 
-def test_config(stub):
-    response = stub(requests.get)("/config")
+def test_config(http_test_server):
+    response = http_test_server(requests.get)("/config")
     assert response.status_code == 200
 
 
-def test_version(stub):
-    response = stub(requests.get)("/version")
+def test_version(http_test_server):
+    response = http_test_server(requests.get)("/version")
     rjs = response.json()
     assert response.status_code == 200 and ("version" in rjs)
 
@@ -112,8 +112,8 @@ def test_version(stub):
         [{"entities": {}, "confidence": 0.0, "intent": None, "_text": ""}]
     ),
 ])
-def test_get_parse(stub, response_test):
-    response = stub(requests.get)(response_test.endpoint)
+def test_get_parse(http_test_server, response_test):
+    response = http_test_server(requests.get)(response_test.endpoint)
     rjs = response.json()
     assert response.status_code == 200
     assert len(rjs) == 1
@@ -132,8 +132,8 @@ def test_get_parse(stub, response_test):
         payload={"q": "hello ńöñàśçií"}
     ),
 ])
-def test_post_parse(stub, response_test):
-    response = stub(requests.post)(response_test.endpoint, json=response_test.payload)
+def test_post_parse(http_test_server, response_test):
+    response = http_test_server(requests.post)(response_test.endpoint, json=response_test.payload)
     rjs = response.json()
     assert response.status_code == 200
     assert len(rjs) == 1
@@ -141,20 +141,20 @@ def test_post_parse(stub, response_test):
 
 
 @utilities.slowtest
-def test_post_train(stub, rasa_default_train_data):
-    response = stub(requests.post)("/train", json=rasa_default_train_data)
+def test_post_train(http_test_server, rasa_default_train_data):
+    response = http_test_server(requests.post)("/train", json=rasa_default_train_data)
     rjs = response.json()
     assert response.status_code == 200
     assert len(rjs["training_process_ids"]) == 0
     assert rjs["info"] == "training started."
 
 
-def test_model_hot_reloading(stub, rasa_default_train_data):
+def test_model_hot_reloading(http_test_server, rasa_default_train_data):
     query = "/parse?q=hello&model=my_keyword_model"
-    response = stub(requests.get)(query)
+    response = http_test_server(requests.get)(query)
     assert response.status_code == 404, "Model should not exist yet"
-    response = stub(requests.post)("/train?name=my_keyword_model&pipeline=keyword", json=rasa_default_train_data)
+    response = http_test_server(requests.post)("/train?name=my_keyword_model&pipeline=keyword", json=rasa_default_train_data)
     assert response.status_code == 200, "Training should start successfully"
     time.sleep(5)  # training should be quick as the keyword model doesn't do any training
-    response = stub(requests.get)(query)
+    response = http_test_server(requests.get)(query)
     assert response.status_code == 200, "Model should now exist after it got trained"

@@ -20,7 +20,7 @@ from utilities import ResponseTest
 
 
 @pytest.fixture(scope="module")
-def stub(component_builder):
+def http_test_server(component_builder):
     sem = Semaphore(1)
     if "TRAVIS_BUILD_DIR" in os.environ:
         root_dir = os.environ["TRAVIS_BUILD_DIR"]
@@ -86,8 +86,8 @@ def stub(component_builder):
         {"entities": [], "intent": "restaurant_search", "text": "food"}
     ),
 ])
-def test_get_parse(stub, response_test):
-    response = stub(requests.get)(response_test.endpoint)
+def test_get_parse(http_test_server, response_test):
+    response = http_test_server(requests.get)(response_test.endpoint)
     rjs = response.json()
 
     assert response.status_code == 200
@@ -104,8 +104,8 @@ def test_get_parse(stub, response_test):
         {"error": "No model found with alias 'umpalumpa'. Error: Failed to load model metadata. "}
     )
 ])
-def test_get_parse_invalid_model(stub, response_test):
-    response = stub(requests.get)(response_test.endpoint)
+def test_get_parse_invalid_model(http_test_server, response_test):
+    response = http_test_server(requests.get)(response_test.endpoint)
     rjs = response.json()
     assert response.status_code == 404
     assert rjs.get("error").startswith(response_test.expected_response["error"])
@@ -128,8 +128,8 @@ def test_get_parse_invalid_model(stub, response_test):
         payload={"q": "food", "model": "three"}
     ),
 ])
-def test_post_parse(stub, response_test):
-    response = stub(requests.post)(response_test.endpoint, json=response_test.payload)
+def test_post_parse(http_test_server, response_test):
+    response = http_test_server(requests.post)(response_test.endpoint, json=response_test.payload)
     rjs = response.json()
     assert response.status_code == 200
     assert all(prop in rjs for prop in ['entities', 'intent', 'text'])
@@ -147,8 +147,8 @@ def test_post_parse(stub, response_test):
         payload={"q": "food", "model": "umpalumpa"}
     ),
 ])
-def test_post_parse_invalid_model(stub, response_test):
-    response = stub(requests.post)(response_test.endpoint, json=response_test.payload)
+def test_post_parse_invalid_model(http_test_server, response_test):
+    response = http_test_server(requests.post)(response_test.endpoint, json=response_test.payload)
     rjs = response.json()
     assert response.status_code == 404
     assert rjs.get("error").startswith(response_test.expected_response["error"])
