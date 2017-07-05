@@ -69,6 +69,8 @@ class MitieNLP(Component):
     def load(cls, model_dir, model_metadata, cached_component, **kwargs):
         # type: (Text, Metadata, Optional[MitieNLP], **Any) -> MitieNLP
 
+        
+
         return cached_component if cached_component else cls.create(model_metadata.get("mitie_file"))
 
     def persist(self, model_dir):

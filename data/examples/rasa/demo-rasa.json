@@ -1,5 +1,11 @@
 {
   "rasa_nlu_data": {
+    "regex_features": [
+      {
+        "name": "hello",
+        "pattern": "^how.*"
+      }
+    ],
     "entity_synonyms": [
       {
         "value": "chinese",

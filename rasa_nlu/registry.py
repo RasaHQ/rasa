@@ -17,13 +17,11 @@ from typing import Type
 from rasa_nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
 from rasa_nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
 from rasa_nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
-from rasa_nlu.classifiers.regex_intent_classifier import RegExIntentClassifier
 from rasa_nlu.extractors.duckling_extractor import DucklingExtractor
 from rasa_nlu.extractors.entity_synonyms import EntitySynonymMapper
 from rasa_nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa_nlu.extractors.crf_entity_extractor import CRFEntityExtractor
-from rasa_nlu.extractors.regex_entity_extractor import RegExEntityExtractor
 from rasa_nlu.featurizers.mitie_featurizer import MitieFeaturizer
 from rasa_nlu.featurizers.ngram_featurizer import NGramFeaturizer
 from rasa_nlu.featurizers.regex_featurizer import RegexFeaturizer
@@ -41,11 +39,11 @@ if typing.TYPE_CHECKING:
 # Classes of all known components. If a new component should be added, its class needs to be listed here.
 component_classes = [
     SpacyNLP, MitieNLP,
-    SpacyEntityExtractor, MitieEntityExtractor, DucklingExtractor, CRFEntityExtractor, RegExEntityExtractor,
+    SpacyEntityExtractor, MitieEntityExtractor, DucklingExtractor, CRFEntityExtractor,
     EntitySynonymMapper,
     SpacyFeaturizer, MitieFeaturizer, NGramFeaturizer, RegexFeaturizer,
     MitieTokenizer, SpacyTokenizer, WhitespaceTokenizer,
-    SklearnIntentClassifier, MitieIntentClassifier, KeywordIntentClassifier, RegExIntentClassifier,
+    SklearnIntentClassifier, MitieIntentClassifier, KeywordIntentClassifier,
 ]
 
 # Mapping from a components name to its class to allow name based lookup.
@@ -58,29 +56,24 @@ registered_pipeline_templates = {
     "spacy_sklearn": [
         "nlp_spacy",
         "tokenizer_spacy",
-        "ner_crf",
-        "ner_regex",
-        "ner_synonyms",
-        "intent_classifier_regex",
         "intent_featurizer_spacy",
+        "intent_featurizer_regex",
+        "ner_crf",
+        "ner_synonyms",
         "intent_classifier_sklearn",
     ],
     "mitie": [
         "nlp_mitie",
         "tokenizer_mitie",
         "ner_mitie",
-        "ner_regex",
         "ner_synonyms",
-        "intent_classifier_regex",
         "intent_classifier_mitie",
     ],
     "mitie_sklearn": [
         "nlp_mitie",
         "tokenizer_mitie",
         "ner_mitie",
-        "ner_regex",
         "ner_synonyms",
-        "intent_classifier_regex",
         "intent_featurizer_mitie",
         "intent_classifier_sklearn",
     ],
@@ -101,7 +94,6 @@ registered_pipeline_templates = {
         "ner_spacy",
         "ner_duckling",
         "ner_synonyms",
-        "ner_regex",
         "intent_featurizer_mitie",
         "intent_featurizer_spacy",
         "intent_featurizer_ngrams",
@@ -109,7 +101,6 @@ registered_pipeline_templates = {
         "intent_classifier_keyword",
         "intent_classifier_sklearn",
         "intent_classifier_mitie",
-        "intent_classifier_regex",
     ]
 }
 

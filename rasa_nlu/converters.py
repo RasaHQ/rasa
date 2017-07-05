@@ -158,8 +158,6 @@ def rasa_nlu_data_schema():
         "type": "object",
         "properties": {
             "name": {"type": "string"},
-            "intent": {"type": "string"},
-            "entity": {"type": "string"},
             "pattern": {"type": "string"},
         }
     }

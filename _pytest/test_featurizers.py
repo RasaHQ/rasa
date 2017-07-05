@@ -68,10 +68,10 @@ def test_ngram_featurizer(spacy_nlp):
 ])
 def test_regex_featurizer(sentence, expected, spacy_nlp):
     from rasa_nlu.featurizers.regex_featurizer import RegexFeaturizer
-    regex_dict = {
-        u'[0-9]+': None,
-        u'\\bhey*': None
-    }
-    ftr = RegexFeaturizer(regex_dict)
-    result = ftr._regexes_match_sentence(sentence)    
+    patterns = [
+        {"pattern": '[0-9]+', "name": "number", "usage": "intent"},
+        {"pattern": '\\bhey*', "name": "hello", "usage": "intent"}
+    ]
+    ftr = RegexFeaturizer(patterns)
+    result = ftr.features_for_patterns(Message(sentence))
     assert np.allclose(result, expected, atol=1e-10)
