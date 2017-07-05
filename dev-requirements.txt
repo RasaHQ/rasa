@@ -9,8 +9,6 @@ scipy==0.19.0
 duckling==1.7.1
 # sklearn_crfsuite
 sklearn-crfsuite==0.3.5
-# numpy
-numpy==1.12.1
 # cloudpickle
 cloudpickle==0.2.2
 # test
