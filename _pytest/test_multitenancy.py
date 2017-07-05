@@ -30,7 +30,7 @@ def app(component_builder):
         "path": os.path.join(root_dir, "test_models"),
         "data": os.path.join(root_dir, "data/demo-restaurants.json")
     }
-    # train_models(component_builder)
+    train_models(component_builder)
     config = RasaNLUConfig(cmdline_args=_config)
     application = create_app(config, component_builder)
     return application
