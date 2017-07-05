@@ -153,7 +153,8 @@ def test_model_hot_reloading(http_test_server, rasa_default_train_data):
     query = "/parse?q=hello&model=my_keyword_model"
     response = http_test_server(requests.get)(query)
     assert response.status_code == 404, "Model should not exist yet"
-    response = http_test_server(requests.post)("/train?name=my_keyword_model&pipeline=keyword", json=rasa_default_train_data)
+    response = http_test_server(requests.post)("/train?name=my_keyword_model&pipeline=keyword",
+                                               json=rasa_default_train_data)
     assert response.status_code == 200, "Training should start successfully"
     time.sleep(5)  # training should be quick as the keyword model doesn't do any training
     response = http_test_server(requests.get)(query)
