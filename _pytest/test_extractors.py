@@ -89,7 +89,7 @@ def test_crf_json_from_non_BILOU(spacy_nlp):
 #     ext = RegExEntityExtractor(regex_dict)
 #     r = ext.extract_entities(txt)
 #     assert r[0] == {u'start': 23, u'end': 32, u'value': '934049430', u'entity': 'number'}
-#
+
 
 def test_duckling_entity_extractor(component_builder):
     _config = utilities.base_test_conf("all_components")
