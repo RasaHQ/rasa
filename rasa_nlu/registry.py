@@ -34,6 +34,7 @@ from rasa_nlu.utils.spacy_utils import SpacyNLP
 
 if typing.TYPE_CHECKING:
     from rasa_nlu.components import Component
+    from rasa_nlu.config import RasaNLUConfig
 
 # Classes of all known components. If a new component should be added, its class needs to be listed here.
 component_classes = [
@@ -120,7 +121,7 @@ def load_component_by_name(component_name, model_dir, metadata, cached_component
 
 
 def create_component_by_name(component_name, config):
-    # type: (Text, Dict[Text, Any]) -> Optional[Component]
+    # type: (Text, RasaNLUConfig) -> Optional[Component]
     """Resolves a components name and calls it's create method to init it based on a previously persisted model."""
 
     component_clz = get_component_class(component_name)
