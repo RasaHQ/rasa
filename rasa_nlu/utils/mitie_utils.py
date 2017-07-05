@@ -14,6 +14,7 @@ from typing import Optional
 from typing import Text
 
 from rasa_nlu.components import Component
+from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.model import Metadata
 
 
@@ -24,9 +25,7 @@ if typing.TYPE_CHECKING:
 class MitieNLP(Component):
     name = "nlp_mitie"
 
-    context_provides = {
-        "pipeline_init": ["mitie_feature_extractor"],
-    }
+    provides = ["mitie_feature_extractor"]
 
     def __init__(self, mitie_file, extractor=None):
         self.extractor = extractor
@@ -39,10 +38,9 @@ class MitieNLP(Component):
         return ["mitie"]
 
     @classmethod
-    def create(cls, mitie_file):
+    def create(cls, config):
         import mitie
-        extractor = mitie.total_word_feature_extractor(mitie_file)
-        return MitieNLP(mitie_file, extractor)
+        return MitieNLP(config["mitie_file"], mitie.total_word_feature_extractor(config["mitie_file"]))
 
     @classmethod
     def cache_key(cls, model_metadata):
@@ -54,7 +52,7 @@ class MitieNLP(Component):
         else:
             return None
 
-    def pipeline_init(self):
+    def provide_context(self):
         # type: () -> Dict[Text, Any]
 
         return {"mitie_feature_extractor": self.extractor}
@@ -67,10 +65,15 @@ class MitieNLP(Component):
             raise Exception("Failed to load MITIE feature extractor. Loading the model returned 'None'.")
 
     @classmethod
-    def load(cls, mitie_file):
-        # type: (Text) -> MitieNLP
+    def load(cls, model_dir=None, model_metadata=None, cached_component=None, **kwargs):
+        # type: (Text, Metadata, Optional[MitieNLP], **Any) -> MitieNLP
+        import mitie
 
-        return cls.create(mitie_file)
+        if cached_component:
+            return cached_component
+
+        mitie_file = model_metadata.get("mitie_file")
+        return MitieNLP(mitie_file, mitie.total_word_feature_extractor(mitie_file))
 
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]
