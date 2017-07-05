@@ -25,6 +25,7 @@ from rasa_nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa_nlu.featurizers.mitie_featurizer import MitieFeaturizer
 from rasa_nlu.featurizers.ngram_featurizer import NGramFeaturizer
 from rasa_nlu.featurizers.spacy_featurizer import SpacyFeaturizer
+from rasa_nlu.model import Metadata
 from rasa_nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa_nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa_nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
@@ -50,6 +51,7 @@ registered_components = {
 registered_pipeline_templates = {
     "spacy_sklearn": [
         "nlp_spacy",
+        "tokenizer_spacy",
         "ner_crf",
         "ner_synonyms",
         "intent_featurizer_spacy",
@@ -109,19 +111,17 @@ def get_component_class(component_name):
     return registered_components[component_name]
 
 
-def load_component_by_name(component_name, context, config):
-    # type: (Text, Dict[Text, Any], Dict[Text, Any]) -> Optional[Component]
+def load_component_by_name(component_name, model_dir, metadata, cached_component, **kwargs):
+    # type: (Text, Text, Metadata, Optional[Component], **Any) -> Optional[Component]
     """Resolves a components name and calls it's load method to init it based on a previously persisted model."""
-    from rasa_nlu.components import load_component
 
     component_clz = get_component_class(component_name)
-    return load_component(component_clz, context, config)
+    return component_clz.load(model_dir, metadata, cached_component, **kwargs)
 
 
 def create_component_by_name(component_name, config):
     # type: (Text, Dict[Text, Any]) -> Optional[Component]
     """Resolves a components name and calls it's create method to init it based on a previously persisted model."""
-    from rasa_nlu.components import create_component
 
     component_clz = get_component_class(component_name)
-    return create_component(component_clz, config)
+    return component_clz.create(config)

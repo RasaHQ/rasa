@@ -10,10 +10,15 @@ import typing
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Optional
 from typing import Text
 from typing import Tuple
 
+from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.extractors import EntityExtractor
+from rasa_nlu.model import Metadata
+from rasa_nlu.tokenizers import Token
+from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
 from builtins import str
 
@@ -28,11 +33,9 @@ if typing.TYPE_CHECKING:
 class CRFEntityExtractor(EntityExtractor):
     name = "ner_crf"
 
-    context_provides = {
-        "process": ["entities"],
-    }
+    provides = ["entities"]
 
-    output_provides = ["entities"]
+    requires = ["spacy_doc"]
 
     function_dict = {'low': lambda doc: doc[0].lower(), 'title': lambda doc: str(doc[0].istitle()),
                      'word3': lambda doc: doc[0][-3:], 'word2': lambda doc: doc[0][-2:],
@@ -64,61 +67,62 @@ class CRFEntityExtractor(EntityExtractor):
     def required_packages(cls):
         return ["sklearn_crfsuite", "sklearn", "spacy"]
 
-    def train(self, training_data, spacy_nlp, entity_crf_BILOU_flag, entity_crf_features):
-        # type: (TrainingData, Language, bool, List[List[Text]]) -> None
+    def train(self, training_data, config, **kwargs):
+        # type: (TrainingData, RasaNLUConfig) -> None
 
-        self.BILOU_flag = entity_crf_BILOU_flag
-        self.crf_features = entity_crf_features
-        if training_data.num_entity_examples > 0:
-            train_data = self._convert_examples(training_data.entity_examples)
+        self.BILOU_flag = config["entity_crf_BILOU_flag"]
+        self.crf_features = config["entity_crf_features"]
+        if training_data.entity_examples:
             # convert the dataset into features
-            dataset = [self._from_json_to_crf(q, spacy_nlp) for q in train_data]
+            dataset = self._create_dataset(training_data.entity_examples)
             # train the model
             self._train_model(dataset)
 
-    def test(self, testing_data, spacy_nlp):
+    def _create_dataset(self, examples):
+        # type: (List[Message]) -> List[List[Tuple[Text, Text, Text]]]
+        dataset = []
+        for example in examples:
+            entity_offsets = self._convert_example(example)
+            dataset.append(self._from_json_to_crf(example, entity_offsets))
+        return dataset
+
+    def test(self, testing_data):
         # type: (TrainingData, Language) -> None
 
         if testing_data.num_entity_examples > 0:
-            test_data = self._convert_examples(testing_data.entity_examples)
-            dataset = [self._from_json_to_crf(q, spacy_nlp) for q in test_data]
+            dataset = self._create_dataset(testing_data.entity_examples)
             self._test_model(dataset)
 
-    def process(self, text, spacy_nlp, entities):
-        # type: (Text, Language, List[Dict[Text, Any]]) -> Dict[Text, Any]
+    def process(self, message, **kwargs):
+        # type: (Message, **Any) -> None
 
-        extracted = self.add_extractor_name(self.extract_entities(text, spacy_nlp))
-        entities.extend(extracted)
-        return {
-            'entities': entities
-        }
+        extracted = self.add_extractor_name(self.extract_entities(message))
+        message.set("entities", message.get("entities", []) + extracted, add_to_output=True)
 
-    def _convert_examples(self, entity_examples):
-        # type: (List[dict]) -> List[Tuple[Text, List[Tuple[int, int, Text]]]]
+    def _convert_example(self, example):
+        # type: (Message) -> List[Tuple[int, int, Text]]
 
         def convert_entity(ent):
             return ent["start"], ent["end"], ent["entity"]
 
-        def convert_example(example):
-            return example["text"], [convert_entity(ent) for ent in example["entities"]]
+        return [convert_entity(ent) for ent in example.get("entities", [])]
 
-        return [convert_example(entity_example) for entity_example in entity_examples]
-
-    def extract_entities(self, text, spacy_nlp):
-        # type: (Text, Language) -> List[Dict[Text, Any]]
+    def extract_entities(self, message):
+        # type: (Message) -> List[Dict[Text, Any]]
         """Take a sentence and return entities in json format"""
 
         if self.ent_tagger is not None:
-            text_data = self._from_text_to_crf(text, spacy_nlp)
+            text_data = self._from_text_to_crf(message)
             features = self._sentence_to_features(text_data)
             ents = self.ent_tagger.predict_single(features)
-            return self._from_crf_to_json(spacy_nlp(text), ents)
+            return self._from_crf_to_json(message, ents)
         else:
             return []
 
-    def _from_crf_to_json(self, sentence_doc, entities):
-        # type: (Doc, List[Any]) -> List[Dict[Text, Any]]
+    def _from_crf_to_json(self, message, entities):
+        # type: (Message, List[Any]) -> List[Dict[Text, Any]]
 
+        sentence_doc = message.get("spacy_doc")
         json_ents = []
         if len(sentence_doc) != len(entities):
             raise Exception('Inconsistency in amount of tokens between crfsuite and spacy')
@@ -155,7 +159,8 @@ class CRFEntityExtractor(EntityExtractor):
                             logger.debug(
                                     "Inconsistent BILOU tagging found, B- tag not closed by L- tag, " +
                                     "i.e ['B-a','I-a','O'] instead of ['B-a','L-a','O'].\nAssuming last tag is L-")
-                    ent = {'start': word.idx, 'end': sentence_doc[word_idx:ent_word_idx + 1].end_char,
+                    ent = {'start': word.idx,
+                           'end': sentence_doc[word_idx:ent_word_idx + 1].end_char,
                            'value': sentence_doc[word_idx:ent_word_idx + 1].text,
                            'entity': entity[2:]}
                     json_ents.append(ent)
@@ -165,21 +170,24 @@ class CRFEntityExtractor(EntityExtractor):
                 entity = entities[word_idx]
                 word = sentence_doc[word_idx]
                 if entity != 'O':
-                    ent = {'start': word.idx, 'end': word.idx + len(word),
-                           'value': word.text, 'entity': entity}
+                    ent = {'start': word.idx,
+                           'end': word.idx + len(word),
+                           'value': word.text,
+                           'entity': entity}
                     json_ents.append(ent)
         return json_ents
 
     @classmethod
-    def load(cls, model_dir, entity_extractor_crf):
-        # type: (Text, Dict[Text, Any]) -> CRFEntityExtractor
+    def load(cls, model_dir, model_metadata, cached_component, **kwargs):
+        # type: (Text, Metadata, Optional[CRFEntityExtractor], **Any) -> CRFEntityExtractor
         from sklearn.externals import joblib
 
-        if model_dir and entity_extractor_crf:
-            ent_tagger = joblib.load(os.path.join(model_dir, entity_extractor_crf["model_file"]))
+        if model_dir and model_metadata.get("entity_extractor_crf"):
+            meta = model_metadata.get("entity_extractor_crf")
+            ent_tagger = joblib.load(os.path.join(model_dir, meta["model_file"]))
             return CRFEntityExtractor(ent_tagger=ent_tagger,
-                                      entity_crf_features=entity_extractor_crf['crf_features'],
-                                      entity_crf_BILOU_flag=entity_extractor_crf['BILOU_flag'])
+                                      entity_crf_features=meta['crf_features'],
+                                      entity_crf_BILOU_flag=meta['BILOU_flag'])
         else:
             return CRFEntityExtractor()
 
@@ -231,14 +239,12 @@ class CRFEntityExtractor(EntityExtractor):
 
         return [label for token, postag, label in sentence]
 
-    def _from_json_to_crf(self, json_eg, spacy_nlp):
-        # type: (Tuple[Text, List[Tuple[int, int, Text]]], Language) -> List[Tuple[Text, Text, Text]]
+    def _from_json_to_crf(self, example, entity_offsets):
+        # type: (Message, List[Tuple[int, int, Text]]) -> List[Tuple[Text, Text, Text]]
         """Takes the json examples and switches them to a format which crfsuite likes."""
-        from spacy.language import Language
         from spacy.gold import GoldParse
 
-        doc = spacy_nlp(json_eg[0])
-        entity_offsets = json_eg[1]
+        doc = example.get("spacy_doc")
         gold = GoldParse(doc, entities=entity_offsets)
         ents = [l[5] for l in gold.orig_annot]
         if '-' in ents:
@@ -259,12 +265,11 @@ class CRFEntityExtractor(EntityExtractor):
         crf_format = [(doc[i].text, doc[i].tag_, ent_clean(ents[i])) for i in range(len(doc))]
         return crf_format
 
-    def _from_text_to_crf(self, sentence, spacy_nlp):
-        # type: (Text, Language) -> List[Tuple[Text, Text, Text]]
+    def _from_text_to_crf(self, message):
+        # type: (Message) -> List[Tuple[Text, Text, Text]]
         """Takes a sentence and switches it to crfsuite format."""
 
-        doc = spacy_nlp(sentence)
-        crf_format = [(doc[i].text, doc[i].tag_, 'N/A') for i in range(len(doc))]
+        crf_format = [(token.text, token.tag_, 'N/A') for token in message.get("spacy_doc")]
         return crf_format
 
     def _train_model(self, df_train):
@@ -276,10 +281,10 @@ class CRFEntityExtractor(EntityExtractor):
         y_train = [self._sentence_to_labels(sent) for sent in df_train]
         self.ent_tagger = sklearn_crfsuite.CRF(
                 algorithm='lbfgs',
-                c1=1.0,     # coefficient for L1 penalty
-                c2=1e-3,    # coefficient for L2 penalty
-                max_iterations=50,      # stop earlier
-                all_possible_transitions=True   # include transitions that are possible, but not observed
+                c1=1.0,  # coefficient for L1 penalty
+                c2=1e-3,  # coefficient for L2 penalty
+                max_iterations=50,  # stop earlier
+                all_possible_transitions=True  # include transitions that are possible, but not observed
         )
         self.ent_tagger.fit(X_train, y_train)
 

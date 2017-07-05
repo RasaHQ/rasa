@@ -22,7 +22,8 @@ install_requires = [
     "six",
     "tqdm",
     "requests",
-    "jsonschema"
+    "jsonschema",
+    "matplotlib"
 ]
 
 extras_requires = {
