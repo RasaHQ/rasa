@@ -23,6 +23,7 @@ Changed
 - deprecated ``intent_examples`` and ``entity_examples`` sections in training data. all examples should go into the ``common_examples`` section
 - weight training samples based on class distribution during ner_crf cross validation and sklearn intent classification training
 - large refactoring of the internal training data structure and pipeline architecture
+- numpy is now a required dependency
 
 Removed
 -------
