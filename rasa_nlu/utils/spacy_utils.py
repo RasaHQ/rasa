@@ -88,7 +88,7 @@ class SpacyNLP(Component):
         }
 
     @classmethod
-    def load(cls, model_dir, model_metadata, cached_component, **kwargs):
+    def load(cls, model_dir=None, model_metadata=None, cached_component=None, **kwargs):
         # type: (Text, Metadata, Optional[SpacyNLP], **Any) -> SpacyNLP
         import spacy
 
