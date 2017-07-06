@@ -12,11 +12,13 @@ Component           Requires    Model           	          notes
 ``ner_crf``         crfsuite    conditional random field    good for training custom entities
 ``ner_spacy``       spaCy       averaged perceptron         provides pre-trained entities
 ``ner_duckling``    duckling    context-free grammar        provides pre-trained entities
-``ner_regex``       re          regular expressions         good for custom keyword entities
 ================    ==========  ========================    ===================================
 
 The exact required packages can be found in ``dev-requirements.txt`` and they should also be shown when they are missing
 and a component is used that requires them.
+
+To improve entity extraction, you can use regex features if your entities have a distinctive format (e.g. zipcodes).
+More information can be found in the :ref:`section_dataformat`.
 
 .. note::
     To use these components, you will probably want to define a custom pipeline, see :ref:`section_pipeline`.
@@ -26,7 +28,6 @@ Use Cases
 ---------
 
 Here we'll outline some common use cases for entity extraction, and make recommendations on which components to use.
-
 
 
 Places, Dates, People, Organisations
