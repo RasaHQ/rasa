@@ -179,7 +179,7 @@ intent_featurizer_regex
 :Short: regex feature creation to support intent and entity classification
 :Outputs: ``text_features`` and ``tokens.pattern``
 :Description:
-    During training, the regex intent featurizer creates a list of `regular expressions` collected from the training data.
+    During training, the regex intent featurizer creates a list of `regular expressions` defined in the training data format.
     If an expression is found in the input, a feature will be set, that will later be fed into intent classifier / entity
     extractor to simplify classifcation (assuming the classifier has learned during the training phase, that this set
     feature indicates a certain intent). Regex features for entity extraction are currently only supported by the

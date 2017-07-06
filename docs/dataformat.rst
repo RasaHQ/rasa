@@ -132,7 +132,7 @@ The name doesn't define the entity nor the intent, it is just a human readable d
 this regex is used for. As you can see in the above example, you can also use the regex features to improve the intent
 classification performance.
 
-Try to create your regular expressions in a wy that they match as few words as possible. E.g. using ``hey[^\s]*``
+Try to create your regular expressions in a way that they match as few words as possible. E.g. using ``hey[^\s]*``
 instead of ``hey.*``, as the later one might match the whole message whereas the first one only matches a single word.
 
 Regex features for entity extraction are currently only supported by the ``ner_crf`` component! Hence, other entity
