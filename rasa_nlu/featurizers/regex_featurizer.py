@@ -4,12 +4,14 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import io
+import json
 import logging
 import os
 import re
+import warnings
 
 import typing
-from future.utils import PY3
+from builtins import str
 from typing import Any
 from typing import Dict
 from typing import List
@@ -41,7 +43,7 @@ class RegexFeaturizer(Featurizer):
     @classmethod
     def required_packages(cls):
         # type: () -> List[Text]
-        return ["numpy", "cloudpickle"]
+        return ["numpy"]
 
     def train(self, training_data, config, **kwargs):
         # type: (TrainingData, RasaNLUConfig, **Any) -> None
@@ -67,7 +69,10 @@ class RegexFeaturizer(Featurizer):
             return message.get("text_features")
 
     def features_for_patterns(self, message):
-        """Given a sentence, returns a vector of {1,0} values indicating which regexes match"""
+        """Checks which known patterns match the message.
+
+        Given a sentence, returns a vector of {1,0} values indicating which regexes did match. Furthermore, if the
+        message is tokenized, the function will mark the matching regex on the tokens that are part of the match."""
 
         import numpy as np
         found = []
@@ -85,27 +90,25 @@ class RegexFeaturizer(Featurizer):
     @classmethod
     def load(cls, model_dir=None, model_metadata=None, cached_component=None, **kwargs):
         # type: (Text, Metadata, Optional[RegexFeaturizer], **Any) -> RegexFeaturizer
-        import cloudpickle
 
         if model_dir and model_metadata.get("regex_featurizer"):
             regex_file = os.path.join(model_dir, model_metadata.get("regex_featurizer"))
-            with io.open(regex_file, 'rb') as f:  # pramga: no cover
-                if PY3:
-                    return cloudpickle.load(f, encoding="latin-1")
-                else:
-                    return cloudpickle.load(f)
-        else:
-            return RegexFeaturizer()
+            if os.path.isfile(regex_file):
+                with io.open(regex_file, encoding='utf-8') as f:
+                    known_patterns = json.loads(f.read())
+                return RegexFeaturizer(known_patterns)
+            else:
+                warnings.warn("Failed to load regex pattern file '{}'".format(regex_file))
+        return RegexFeaturizer()
 
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]
         """Persist this model into the passed directory. Returns the metadata necessary to load the model again."""
-        import cloudpickle
 
-        regex_file = os.path.join(model_dir, "regex_featurizer.pkl")
-        with io.open(regex_file, 'wb') as f:
-            cloudpickle.dump(self, f)
-
-        return {
-            "regex_featurizer": "regex_featurizer.pkl"
-        }
+        if self.known_patterns:
+            regex_file = os.path.join(model_dir, "regex_featurizer.json")
+            with io.open(regex_file, 'w') as f:
+                f.write(str(json.dumps(self.known_patterns)))
+            return {"regex_featurizer": "regex_featurizer.json"}
+        else:
+            return {"regex_featurizer": None}
