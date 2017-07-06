@@ -2,8 +2,8 @@
   "rasa_nlu_data": {
     "regex_features": [
       {
-        "name": "hello",
-        "pattern": "^how.*"
+        "name": "zipcode",
+        "pattern": "[0-9]{5}"
       }
     ],
     "entity_synonyms": [
@@ -201,6 +201,18 @@
             "start": 16,
             "end": 20,
             "value": "west",
+            "entity": "location"
+          }
+        ]
+      },
+      {
+        "text": "anywhere near 18328",
+        "intent": "restaurant_search",
+        "entities": [
+          {
+            "start": 14,
+            "end": 19,
+            "value": "18328",
             "entity": "location"
           }
         ]

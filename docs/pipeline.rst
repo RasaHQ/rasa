@@ -37,11 +37,11 @@ Here is a list of the existing templates:
 +---------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | template name | corresponding pipeline                                                                                                                                            |
 +===============+===================================================================================================================================================================+
-| spacy_sklearn | ``["nlp_spacy", "ner_crf", "ner_regex", "ner_synonyms", "intent_classifier_regex", "intent_featurizer_spacy", "intent_classifier_sklearn"]``                      |
+| spacy_sklearn | ``["nlp_spacy", "tokenizer_spacy", "intent_featurizer_regex", "intent_featurizer_spacy", "ner_crf", "ner_synonyms",  "intent_classifier_sklearn"]``               |
 +---------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| mitie         | ``["nlp_mitie", "tokenizer_mitie", "ner_mitie", "ner_regex", "ner_synonyms", "intent_classifier_regex", "intent_classifier_mitie"]``                              |
+| mitie         | ``["nlp_mitie", "tokenizer_mitie", "ner_mitie", "ner_synonyms", "intent_featurizer_regex", "intent_classifier_mitie"]``                                           |
 +---------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| mitie_sklearn | ``["nlp_mitie", "tokenizer_mitie", "ner_mitie", "ner_regex", "ner_synonyms", "intent_classifier_regex", "intent_featurizer_mitie", "intent_classifier_sklearn"]`` |
+| mitie_sklearn | ``["nlp_mitie", "tokenizer_mitie", "ner_mitie", "ner_synonyms", "intent_featurizer_regex", "intent_featurizer_mitie", "intent_classifier_sklearn"]``              |
 +---------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | keyword       | ``["intent_classifier_keyword"]``                                                                                                                                 |
 +---------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
@@ -173,21 +173,17 @@ intent_classifier_sklearn
     to other classifiers it also provides rankings of the labels that did not "win". The spacy intent classifier
     needs to be preceded by a featurizer in the pipeline. This featurizer creates the features used for the classification.
 
-intent_classifier_regex
-~~~~~~~~~~~~~~~~~~~~~~~~~
+intent_featurizer_regex
+~~~~~~~~~~~~~~~~~~~~~~~
 
-:Short: regex intent classifier
-:Outputs: ``intent`` 
-:Output-Example:
-
-    .. code-block:: json
-
-        {
-            "intent": {"name": "greet", "confidence": 1.0}
-        }
-
+:Short: regex feature creation to support intent and entity classification
+:Outputs: ``text_features`` and ``tokens.pattern``
 :Description:
-    During training, the regex intent classifier creates a dictionary of `regular expressions: intent` pairs.  If an expression is found in the input, the corresponding intent will be assigned, otherwise 'None' will be returned as the intent.  The confidence of the classifier is always '1.0'.
+    During training, the regex intent featurizer creates a list of `regular expressions` collected from the training data.
+    If an expression is found in the input, a feature will be set, that will later be fed into intent classifier / entity
+    extractor to simplify classifcation (assuming the classifier has learned during the training phase, that this set
+    feature indicates a certain intent). Regex features for entity extraction are currently only supported by the
+    ``ner_crf`` component!
 
 tokenizer_whitespace
 ~~~~~~~~~~~~~~~~~~~~
@@ -347,27 +343,6 @@ ner_duckling
     for the duckling component, the component will extract two entities: ``10`` as a number and
     ``in 10 minutes`` as a time from the text ``I will be there in 10 minutes``. In such a
     situation, your application would have to decide which entity type is be the correct one.
-
-ner_regex
-~~~~~~~~~
-
-:Short: regex entity extraction
-:Outputs: appends ``entities``
-:Output-Example:
-
-    .. code-block:: json
-
-        {
-            "entities": [{"value": "New York City",
-                          "start": 20,
-                          "end": 33,
-                          "entity": "city", 
-                          "extractor": "ner_regex"}]
-        }
-
-:Description:
-    During training, the regex entity extractor creates a dictionary of regexp: entity pairs.  During extraction, each one is checked against the input and if a match occurs, the corresonding entity along with its value, start position, and end position are appended to the list of entities. 
-
 
 Creating new Components
 -----------------------
