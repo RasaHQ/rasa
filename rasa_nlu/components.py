@@ -133,6 +133,17 @@ class MissingArgumentError(ValueError):
         return self.message
 
 
+class A(object):
+    def __init__(self):
+        self.a = 4
+        self.b = 5
+
+    def __getstate__(self):
+        d = self.__dict__.copy()
+        del d["b"]
+        return d
+
+
 class Component(object):
     """A component is a message processing unit in a pipeline.
 
@@ -163,6 +174,15 @@ class Component(object):
     def __init__(self):
         self.partial_processing_pipeline = None
         self.partial_processing_context = None
+
+    def __getstate__(self):
+        d = self.__dict__.copy()
+        # these properties should not be pickled
+        if "partial_processing_context" in d:
+            del d["partial_processing_context"]
+        if "partial_processing_pipeline" in d:
+            del d["partial_processing_pipeline"]
+        return d
 
     @classmethod
     def required_packages(cls):
