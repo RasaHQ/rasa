@@ -86,6 +86,10 @@ def load_luis_data(filename):
         raise Exception("Invalid luis data schema version {}, should be 2.x.x. ".format(data["luis_schema_version"]) +
                         "Make sure to use the latest luis version (e.g. by downloading your data again).")
 
+    for r in data.get("regex_features", []):
+        if r.get("activated", False):
+            regex_features.append({"name": r.get("name"), "pattern": r.get("pattern")})
+
     for s in data["utterances"]:
         text = s.get("text")
         intent = s.get("intent")
@@ -99,7 +103,7 @@ def load_luis_data(filename):
         if intent:
             data["intent"] = intent
         training_examples.append(Message(text, data))
-    return TrainingData(training_examples)
+    return TrainingData(training_examples, regex_features=regex_features)
 
 
 def load_wit_data(filename):
