@@ -25,11 +25,11 @@ def test_crf_extractor(spacy_nlp):
     ext.train(TrainingData(training_examples=examples), config)
     sentence = 'anywhere in the west'
     crf_format = ext._from_text_to_crf(Message(sentence, {"spacy_doc": spacy_nlp(sentence)}))
-    assert ([word[0] for word in crf_format] == ['anywhere', 'in', 'the', 'west'])
+    assert [word[0] for word in crf_format] == ['anywhere', 'in', 'the', 'west']
     feats = ext._sentence_to_features(crf_format)
-    assert ('BOS' in feats[0])
-    assert ('EOS' in feats[-1])
-    assert ('0:low:in' in feats[1])
+    assert 'BOS' in feats[0]
+    assert 'EOS' in feats[-1]
+    assert feats[1]['0:low'] == "in"
     sentence = 'anywhere in the west'
     ext.extract_entities(Message(sentence, {"spacy_doc": spacy_nlp(sentence)}))
 

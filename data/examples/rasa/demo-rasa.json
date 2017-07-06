@@ -230,6 +230,18 @@
         ]
       },
       {
+        "text": "I am looking a restaurant in 29432",
+        "intent": "restaurant_search",
+        "entities": [
+          {
+            "start": 29,
+            "end": 34,
+            "value": "29432",
+            "entity": "location"
+          }
+        ]
+      },
+      {
         "text": "I am looking for mexican indian fusion",
         "intent": "restaurant_search",
         "entities": [

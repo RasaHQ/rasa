@@ -39,15 +39,15 @@ class CRFEntityExtractor(EntityExtractor):
 
     function_dict = {
         'low': lambda doc: doc[0].lower(),
-        'title': lambda doc: str(doc[0].istitle()),
+        'title': lambda doc: doc[0].istitle(),
         'word3': lambda doc: doc[0][-3:],
         'word2': lambda doc: doc[0][-2:],
         'pos': lambda doc: doc[1],
         'pos2': lambda doc: doc[1][:2],
         'bias': lambda doc: 'bias',
-        'upper': lambda doc: str(doc[0].isupper()),
-        'digit': lambda doc: str(doc[0].isdigit()),
-        'pattern': lambda doc: doc[2],
+        'upper': lambda doc: doc[0].isupper(),
+        'digit': lambda doc: doc[0].isdigit(),
+        'pattern': lambda doc: str(doc[3]) if doc[3] is not None else 'N/A',
     }
 
     def __init__(self, ent_tagger=None, entity_crf_features=None, entity_crf_BILOU_flag=True):
@@ -217,20 +217,20 @@ class CRFEntityExtractor(EntityExtractor):
             return {"entity_extractor_crf": None}
 
     def _sentence_to_features(self, sentence):
-        # type: (List[Tuple[Text, Text, Text, Text]]) -> List[List[Text]]
+        # type: (List[Tuple[Text, Text, Text, Text]]) -> List[Dict[Text, Any]]
         """Convert a word into discrete features in self.crf_features, including word before and word after."""
 
         sentence_features = []
         for word_idx in range(len(sentence)):
             # word before(-1), current word(0), next word(+1)
             prefixes = ['-1', '0', '+1']
-            word_features = []
+            word_features = {}
             for i in range(3):
                 if word_idx == len(sentence) - 1 and i == 2:
-                    word_features.append('EOS')
+                    word_features['EOS'] = True
                     # End Of Sentence
                 elif word_idx == 0 and i == 0:
-                    word_features.append('BOS')
+                    word_features['BOS'] = True
                     # Beginning Of Sentence
                 else:
                     word = sentence[word_idx - 1 + i]
@@ -239,7 +239,7 @@ class CRFEntityExtractor(EntityExtractor):
                     for feature in features:
                         # append each feature to a feature vector
                         # word_features.append(prefix + feature + ':' + self.function_dict[feature](word))
-                        word_features.append(':'.join((prefix, feature, self.function_dict[feature](word))))
+                        word_features[prefix + ":" + feature] = self.function_dict[feature](word)
             sentence_features.append(word_features)
         return sentence_features
 
@@ -272,9 +272,9 @@ class CRFEntityExtractor(EntityExtractor):
 
     def __pattern_of_token(self, message, i):
         if message.get("tokens"):
-            return str(message.get("tokens")[i].get("pattern", "N/A"))
+            return message.get("tokens")[i].get("pattern")
         else:
-            return "N/A"
+            return None
 
     def _from_text_to_crf(self, message, entities=None):
         # type: (Message, List[Text]) -> List[Tuple[Text, Text, Text, Text]]
