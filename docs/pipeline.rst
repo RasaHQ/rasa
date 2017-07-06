@@ -37,11 +37,11 @@ Here is a list of the existing templates:
 +---------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | template name | corresponding pipeline                                                                                                                                            |
 +===============+===================================================================================================================================================================+
-| spacy_sklearn | ``["nlp_spacy", "tokenizer_spacy", "intent_featurizer_regex", "intent_featurizer_spacy", "ner_crf", "ner_synonyms",  "intent_classifier_sklearn"]``               |
+| spacy_sklearn | ``["nlp_spacy", "tokenizer_spacy", "intent_entity_featurizer_regex", "intent_featurizer_spacy", "ner_crf", "ner_synonyms",  "intent_classifier_sklearn"]``        |
 +---------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| mitie         | ``["nlp_mitie", "tokenizer_mitie", "ner_mitie", "ner_synonyms", "intent_featurizer_regex", "intent_classifier_mitie"]``                                           |
+| mitie         | ``["nlp_mitie", "tokenizer_mitie", "ner_mitie", "ner_synonyms", "intent_entity_featurizer_regex", "intent_classifier_mitie"]``                                    |
 +---------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| mitie_sklearn | ``["nlp_mitie", "tokenizer_mitie", "ner_mitie", "ner_synonyms", "intent_featurizer_regex", "intent_featurizer_mitie", "intent_classifier_sklearn"]``              |
+| mitie_sklearn | ``["nlp_mitie", "tokenizer_mitie", "ner_mitie", "ner_synonyms", "intent_entity_featurizer_regex", "intent_featurizer_mitie", "intent_classifier_sklearn"]``       |
 +---------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | keyword       | ``["intent_classifier_keyword"]``                                                                                                                                 |
 +---------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
@@ -173,8 +173,8 @@ intent_classifier_sklearn
     to other classifiers it also provides rankings of the labels that did not "win". The spacy intent classifier
     needs to be preceded by a featurizer in the pipeline. This featurizer creates the features used for the classification.
 
-intent_featurizer_regex
-~~~~~~~~~~~~~~~~~~~~~~~
+intent_entity_featurizer_regex
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Short: regex feature creation to support intent and entity classification
 :Outputs: ``text_features`` and ``tokens.pattern``

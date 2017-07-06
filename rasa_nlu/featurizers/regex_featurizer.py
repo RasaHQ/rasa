@@ -29,7 +29,7 @@ if typing.TYPE_CHECKING:
 
 
 class RegexFeaturizer(Featurizer):
-    name = "intent_featurizer_regex"
+    name = "intent_entity_featurizer_regex"
 
     provides = ["text_features"]
 
