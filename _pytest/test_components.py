@@ -71,7 +71,7 @@ def test_builder_load_unknown(component_builder):
 
 
 def test_requirement_parsing():
-    lines  = [
+    lines = [
         "rasa_nlu==1.0.0",
         "#spacy",
         "spacy==2.0.0",
