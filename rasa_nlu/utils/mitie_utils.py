@@ -40,8 +40,7 @@ class MitieNLP(Component):
     @classmethod
     def create(cls, config):
         import mitie
-        extractor = mitie.total_word_feature_extractor(config["mitie_file"])
-        return MitieNLP(config["mitie_file"], extractor)
+        return MitieNLP(config["mitie_file"], mitie.total_word_feature_extractor(config["mitie_file"]))
 
     @classmethod
     def cache_key(cls, model_metadata):
@@ -66,10 +65,15 @@ class MitieNLP(Component):
             raise Exception("Failed to load MITIE feature extractor. Loading the model returned 'None'.")
 
     @classmethod
-    def load(cls, model_dir, model_metadata, cached_component, **kwargs):
+    def load(cls, model_dir=None, model_metadata=None, cached_component=None, **kwargs):
         # type: (Text, Metadata, Optional[MitieNLP], **Any) -> MitieNLP
+        import mitie
 
-        return cached_component if cached_component else cls.create(model_metadata.get("mitie_file"))
+        if cached_component:
+            return cached_component
+
+        mitie_file = model_metadata.get("mitie_file")
+        return MitieNLP(mitie_file, mitie.total_word_feature_extractor(mitie_file))
 
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]

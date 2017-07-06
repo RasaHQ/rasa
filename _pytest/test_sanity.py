@@ -32,7 +32,7 @@ def import_submodules(package_name, skip_list):
     return results
 
 
-@pytest.mark.parametrize("banned_package", ["spacy", "mitie", "numpy", "sklearn", "duckling"])
+@pytest.mark.parametrize("banned_package", ["spacy", "mitie", "sklearn", "duckling"])
 def test_no_global_imports_of_banned_package(banned_package):
     """This test ensures that neither of the banned packages are imported module wise in any of our code files.
 
