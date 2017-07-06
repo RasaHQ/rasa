@@ -9,7 +9,7 @@ from builtins import zip
 import os
 import io
 from future.utils import PY3
-from typing import Any
+from typing import Any, Optional
 from typing import Dict
 from typing import List
 from typing import Text
@@ -154,8 +154,8 @@ class SklearnIntentClassifier(Component):
         return sorted_indices, pred_result[:, sorted_indices]
 
     @classmethod
-    def load(cls, model_dir, model_metadata, cached_component, **kwargs):
-        # type: (Text, Metadata, **Any) -> SklearnIntentClassifier
+    def load(cls, model_dir=None, model_metadata=None, cached_component=None, **kwargs):
+        # type: (Text, Metadata, Optional[Component], **Any) -> SklearnIntentClassifier
         import cloudpickle
 
         if model_dir and model_metadata.get("intent_classifier_sklearn"):

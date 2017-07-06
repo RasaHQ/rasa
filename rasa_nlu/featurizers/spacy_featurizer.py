@@ -21,7 +21,7 @@ if typing.TYPE_CHECKING:
     import numpy as np
 
 
-class SpacyFeaturizer(Featurizer, Component):
+class SpacyFeaturizer(Featurizer):
     name = "intent_featurizer_spacy"
 
     provides = ["text_features"]
@@ -33,13 +33,13 @@ class SpacyFeaturizer(Featurizer, Component):
 
         for example in training_data.intent_examples:
             features = self.features_for_doc(example.get("spacy_doc"))
-            example.set("text_features", features)
+            example.set("text_features", self._combine_with_existing_text_features(example, features))
 
     def process(self, message, **kwargs):
         # type: (Message, **Any) -> None
 
         features = self.features_for_doc(message.get("spacy_doc"))
-        message.set("text_features", features)
+        message.set("text_features", self._combine_with_existing_text_features(message, features))
 
     def features_for_doc(self, doc):
         # type: (Doc) -> np.ndarray

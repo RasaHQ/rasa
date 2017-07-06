@@ -72,7 +72,7 @@ class MitieIntentClassifier(Component):
         return [token.text for token in message.get("tokens", [])]
 
     @classmethod
-    def load(cls, model_dir, model_metadata, cached_component, **kwargs):
+    def load(cls, model_dir=None, model_metadata=None, cached_component=None, **kwargs):
         # type: (Text, Metadata, Optional[MitieIntentClassifier], **Any) -> MitieIntentClassifier
         import mitie
 

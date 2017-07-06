@@ -76,6 +76,7 @@ def load_luis_data(filename):
     """Loads training data stored in the LUIS.ai data format."""
 
     training_examples = []
+    regex_features = []
 
     with io.open(filename, encoding="utf-8-sig") as f:
         data = json.loads(f.read())
@@ -84,6 +85,10 @@ def load_luis_data(filename):
     if not data["luis_schema_version"].startswith("2"):
         raise Exception("Invalid luis data schema version {}, should be 2.x.x. ".format(data["luis_schema_version"]) +
                         "Make sure to use the latest luis version (e.g. by downloading your data again).")
+
+    for r in data.get("regex_features", []):
+        if r.get("activated", False):
+            regex_features.append({"name": r.get("name"), "pattern": r.get("pattern")})
 
     for s in data["utterances"]:
         text = s.get("text")
@@ -98,7 +103,7 @@ def load_luis_data(filename):
         if intent:
             data["intent"] = intent
         training_examples.append(Message(text, data))
-    return TrainingData(training_examples)
+    return TrainingData(training_examples, regex_features=regex_features)
 
 
 def load_wit_data(filename):
@@ -153,12 +158,24 @@ def rasa_nlu_data_schema():
         "required": ["text"]
     }
 
+    regex_feature_schema = {
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+            "pattern": {"type": "string"},
+        }
+    }
+
     return {
         "type": "object",
         "properties": {
             "rasa_nlu_data": {
                 "type": "object",
                 "properties": {
+                    "regex_features": {
+                        "type": "array",
+                        "items": regex_feature_schema
+                    },
                     "common_examples": {
                         "type": "array",
                         "items": training_example_schema
@@ -205,6 +222,7 @@ def load_rasa_data(filename):
     common = data['rasa_nlu_data'].get("common_examples", list())
     intent = data['rasa_nlu_data'].get("intent_examples", list())
     entity = data['rasa_nlu_data'].get("entity_examples", list())
+    regex_features = data['rasa_nlu_data'].get("regex_features", list())
     synonyms = data['rasa_nlu_data'].get("entity_synonyms", list())
 
     # build entity_synonyms dictionary
@@ -228,7 +246,7 @@ def load_rasa_data(filename):
             data["entities"] = e["entities"]
         training_examples.append(Message(e["text"], data))
 
-    return TrainingData(training_examples, entity_synonyms)
+    return TrainingData(training_examples, entity_synonyms, regex_features)
 
 
 def guess_format(files):

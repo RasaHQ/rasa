@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 
 from rasa_nlu.tokenizers.mitie_tokenizer import MitieTokenizer
+from rasa_nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa_nlu.training_data import Message
 
 
@@ -48,7 +49,7 @@ def test_ngram_featurizer(spacy_nlp):
                             Message("howdyheyhowdy heyhey", {"intent": "greet", "text_features": [0.5]}),
                             Message("astalavistasista", {"intent": "goodby", "text_features": [0.5]}),
                             Message("astalavistasista sistala", {"intent": "goodby", "text_features": [0.5]}),
-                            Message("sistala astalavistasista", {"intent": "goodby", "text_features": [0.5]})
+                            Message("sistala astalavistasista", {"intent": "goodby", "text_features": [0.5]}),
                         ] * repetition_factor
 
     for m in labeled_sentences:
@@ -59,3 +60,33 @@ def test_ngram_featurizer(spacy_nlp):
                            max_number_of_ngrams=10)
     assert len(ftr.all_ngrams) > 0
     assert ftr.best_num_ngrams > 0
+
+
+@pytest.mark.parametrize("sentence, expected, labeled_tokens", [
+    ("hey how are you today", [0., 1.], [0]),
+    ("hey 123 how are you", [1., 1.], [0, 1]),
+    ("blah balh random eh", [0., 0.], []),
+    ("looks really like 123 today", [1., 0.], [3]),
+])
+def test_regex_featurizer(sentence, expected, labeled_tokens, spacy_nlp):
+    from rasa_nlu.featurizers.regex_featurizer import RegexFeaturizer
+    patterns = [
+        {"pattern": '[0-9]+', "name": "number", "usage": "intent"},
+        {"pattern": '\\bhey*', "name": "hello", "usage": "intent"}
+    ]
+    ftr = RegexFeaturizer(patterns)
+
+    # adds tokens to the message
+    tokenizer = SpacyTokenizer()
+    message = Message(sentence)
+    message.set("spacy_doc", spacy_nlp(sentence))
+    tokenizer.process(message)
+
+    result = ftr.features_for_patterns(message)
+    assert np.allclose(result, expected, atol=1e-10)
+    assert len(message.get("tokens", [])) > 0  # the tokenizer should have added tokens
+    for i, token in enumerate(message.get("tokens")):
+        if i in labeled_tokens:
+            assert token.get("pattern") in [0, 1]
+        else:
+            assert token.get("pattern") is None  # if the token is not part of a regex the pattern should not be set

@@ -6,7 +6,7 @@ There are a number of different entity extraction components, which can seem int
 Here we'll go through a few use cases and make recommendations of what to use. 
 
 ================    ==========  ========================    ===================================
-Component           Requires    Model           	         notes
+Component           Requires    Model           	          notes
 ================    ==========  ========================    ===================================
 ``ner_mitie``       MITIE       structured SVM              good for training custom entities
 ``ner_crf``         crfsuite    conditional random field    good for training custom entities
@@ -17,6 +17,9 @@ Component           Requires    Model           	         notes
 The exact required packages can be found in ``dev-requirements.txt`` and they should also be shown when they are missing
 and a component is used that requires them.
 
+To improve entity extraction, you can use regex features if your entities have a distinctive format (e.g. zipcodes).
+More information can be found in the :ref:`section_dataformat`.
+
 .. note::
     To use these components, you will probably want to define a custom pipeline, see :ref:`section_pipeline`.
     You can add multiple ner components to your pipeline; the results from each will be combined in the final output.
@@ -25,7 +28,6 @@ Use Cases
 ---------
 
 Here we'll outline some common use cases for entity extraction, and make recommendations on which components to use.
-
 
 
 Places, Dates, People, Organisations
@@ -47,7 +49,7 @@ The best components for training these domain-specific entity recognisers are th
 It is recommended that you experiment with both of these to see what works best for your data set. 
 
 Returned Entities Object
------------------------
+------------------------
 In the object returned after parsing there are two fields that show information about how the pipeline impacted the entities returned. The ``extractor`` field of an entity tells you which entity extractor found this particular entity. The ``processors`` field contains the name of components that altered this specific entity.
 
 The use of synonyms can also cause the ``value`` field not match the ``text`` exaclty. Instead it will return the trained synonym.
