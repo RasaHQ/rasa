@@ -69,3 +69,11 @@ def test_duckling_entity_extractor(component_builder):
     duckling.process(message)
     entities = message.get("entities")
     assert len(entities) == 3
+
+    # Test duckling with a defined date
+    message = Message("Let us meet tomorrow.", time="1381536182000")  # 1381536182000 == 2013/10/12 02:03:02
+    duckling.process(message)
+    entities = message.get("entities")
+    assert len(entities) == 1
+    assert entities[0]["text"] == "tomorrow"
+    assert entities[0]["value"] == "2013-10-13T00:00:00.000Z"

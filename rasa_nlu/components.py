@@ -38,12 +38,17 @@ def _read_dev_requirements(file_name):
     the name of the requirement, e.g. `# sklearn`. All following lines till the next line starting with `#` will be
     required to be installed if the name `sklearn` is requested to be available."""
 
+    # pragma: no cover
     try:
         import pkg_resources
         req_lines = pkg_resources.resource_string("rasa_nlu", "../" + file_name).split("\n")
     except Exception as e:
         logger.info("Couldn't read dev-requirements.txt. Error: {}".format(e))
         req_lines = []
+    return _requirements_from_lines(req_lines)
+
+
+def _requirements_from_lines(req_lines):
     requirements = defaultdict(list)
     current_name = None
     for req_line in req_lines:
