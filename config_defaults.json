@@ -15,6 +15,7 @@
   "spacy_model_name": null,
   "server_model_dirs": null,
   "token": null,
+  "aws_endpoint_url": null,
   "max_number_of_ngrams": 7,
   "duckling_dimensions": null,
   "entity_crf_BILOU_flag": true,

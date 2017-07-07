@@ -23,7 +23,7 @@ def get_persistor(config):
         raise KeyError("No persistent storage specified. Supported values are {}".format(", ".join(['aws', 'gcs'])))
 
     if config['storage'] == 'aws':
-        return AWSPersistor(config['path'], config['aws_region'], config['bucket_name'], config.as_dict().get('aws_endpoint_url'))
+        return AWSPersistor(config['path'], config['aws_region'], config['bucket_name'], config['aws_endpoint_url'])
     elif config['storage'] == 'gcs':
         return GCSPersistor(config['path'], config['bucket_name'])
     else:

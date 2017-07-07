@@ -33,6 +33,7 @@ DEFAULT_CONFIG = {
     "max_number_of_ngrams": 7,
     "pipeline": [],
     "response_log": "logs",
+    "aws_endpoint_url": None,
     "duckling_dimensions": None,
     "entity_crf_BILOU_flag": True,
     "entity_crf_features": [
