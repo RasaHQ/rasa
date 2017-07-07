@@ -9,6 +9,9 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 .. note:: This version is not yet released and is under active development.
 
+[0.9.0] - 2017-07-07
+^^^^^^^^^^^^^^^^^^^^
+
 Added
 -----
 - increased test coverage to avoid regressions (ongoing)
