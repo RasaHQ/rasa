@@ -37,10 +37,46 @@ Fixed
 -----
 - properly update coveralls coverage report from travis
 - persistence of duckling dimensions
-- changed default response of untrained ``intent_classifier_sklearn`` from ``"intent": None`` to
-``"intent": {"name": None, "confidence": 0.0}``
-- /status endpoint showing all available models instead of only those whose name starts with *model*
+- changed default response of untrained ``intent_classifier_sklearn`` from ``"intent": None`` to ``"intent": {"name": None, "confidence": 0.0}``
+- ``/status`` endpoint showing all available models instead of only those whose name starts with *model*
 - properly return training process ids #391
+
+[0.8.12] - 2017-06-29
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed missing argument attribute error
+
+
+[0.8.11] - 2017-06-07
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- updated mitie installation documentation
+
+[0.8.10] - 2017-05-31
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed documentation about training data format
+
+
+[0.8.9] - 2017-05-26
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----^
+- properly handle response_log configuration variable being set to ``null``
+
+[0.8.8] - 2017-05-26
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- /status endpoint showing all available models instead of only those whose name starts with *model*
 
 [0.8.7] - 2017-05-24
 ^^^^^^^^^^^^^^^^^^^^
