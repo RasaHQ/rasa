@@ -1,0 +1,5 @@
+{
+  "source": "data/test/wit_converted_to_rasa.json.json",
+  "pending_file": "data/test/wit_converted_to_rasa.json_pending.json",
+  "threshold": 0.7
+}

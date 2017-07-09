@@ -17,6 +17,8 @@ from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.data_router import DataRouter, InvalidModelError
 from rasa_nlu.version import __version__
 
+from rasa_nlu.utils.trainer_utils import TrainerUtils
+
 logger = logging.getLogger(__name__)
 
 
@@ -72,6 +74,7 @@ def create_app(config, component_builder=None):
             try:
                 data = current_app.data_router.extract(request_params)
                 response = current_app.data_router.parse(data)
+                trainer.process_response(response)
                 return jsonify(response)
             except InvalidModelError as e:
                 return jsonify({"error": "{}".format(e)}), 404
@@ -105,6 +108,7 @@ def create_app(config, component_builder=None):
     logging.basicConfig(filename=config['log_file'], level=config['log_level'])
     logging.captureWarnings(True)
     logger.info("Configuration: " + config.view())
+    trainer = TrainerUtils(logger)
 
     logger.debug("Creating a new data router")
     rasa_nlu_app.data_router = DataRouter(config, component_builder)
