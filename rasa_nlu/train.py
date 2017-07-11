@@ -29,13 +29,13 @@ def create_argparser():
 
     parser.add_argument('-p', '--pipeline', default=None,
                         help="Pipeline to use for the message processing.")
-    parser.add_argument('-o', '--path', default=None, 
+    parser.add_argument('-o', '--path', default=None,
                         help="Path where model files will be saved")
-    parser.add_argument('-d', '--data', default=None, 
+    parser.add_argument('-d', '--data', default=None,
                         help="File containing training data")
-    parser.add_argument('-c', '--config', required=True, 
+    parser.add_argument('-c', '--config', required=True,
                         help="Rasa NLU configuration file")
-    parser.add_argument('-l', '--language', default=None, choices=['de', 'en'], 
+    parser.add_argument('-l', '--language', default=None, choices=['de', 'en'],
                         help="Model and data language")
     parser.add_argument('-t', '--num_threads', default=None, type=int,
                         help="Number of threads to use during model training")
