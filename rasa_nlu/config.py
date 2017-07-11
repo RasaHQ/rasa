@@ -87,6 +87,12 @@ class RasaNLUConfig(object):
         for key, value in self.items():
             setattr(self, key, value)
 
+    @classmethod
+    def from_dict(cls, dict):
+        config = cls.__new__(cls)
+        config.override(dict)
+        return config
+
     def __getitem__(self, key):
         return self.__dict__[key]
 
