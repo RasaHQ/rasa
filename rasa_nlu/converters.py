@@ -14,7 +14,8 @@ from typing import Optional
 from typing import Text
 
 from rasa_nlu import utils
-from rasa_nlu.training_data import TrainingData
+from rasa_nlu.tokenizers import Tokenizer
+from rasa_nlu.training_data import TrainingData, Message
 
 logger = logging.getLogger(__name__)
 
@@ -54,12 +55,12 @@ def load_api_data(files):
                                 "end": end
                             }
                     )
-                data = {"text": text}
+                data = {}
                 if intent:
                     data["intent"] = intent
-                if entities:
+                if entities is not None:
                     data["entities"] = entities
-                training_examples.append(data)
+                training_examples.append(Message(text, data))
 
         # create synonyms dictionary
         if "name" in data and "entries" in data:
@@ -75,6 +76,7 @@ def load_luis_data(filename):
     """Loads training data stored in the LUIS.ai data format."""
 
     training_examples = []
+    regex_features = []
 
     with io.open(filename, encoding="utf-8-sig") as f:
         data = json.loads(f.read())
@@ -83,6 +85,10 @@ def load_luis_data(filename):
     if not data["luis_schema_version"].startswith("2"):
         raise Exception("Invalid luis data schema version {}, should be 2.x.x. ".format(data["luis_schema_version"]) +
                         "Make sure to use the latest luis version (e.g. by downloading your data again).")
+
+    for r in data.get("regex_features", []):
+        if r.get("activated", False):
+            regex_features.append({"name": r.get("name"), "pattern": r.get("pattern")})
 
     for s in data["utterances"]:
         text = s.get("text")
@@ -93,13 +99,11 @@ def load_luis_data(filename):
             val = text[start:end]
             entities.append({"entity": e["entity"], "value": val, "start": start, "end": end})
 
-        data = {"text": text}
+        data = {"entities": entities}
         if intent:
             data["intent"] = intent
-        if entities:
-            data["entities"] = entities
-        training_examples.append(data)
-    return TrainingData(training_examples)
+        training_examples.append(Message(text, data))
+    return TrainingData(training_examples, regex_features=regex_features)
 
 
 def load_wit_data(filename):
@@ -122,12 +126,12 @@ def load_wit_data(filename):
         for e in entities:
             e["value"] = e["value"].strip("\"")    # for some reason wit adds additional quotes around entity values
 
-        data = {"text": text}
+        data = {}
         if intent:
             data["intent"] = intent
-        if entities:
+        if entities is not None:
             data["entities"] = entities
-        training_examples.append(data)
+        training_examples.append(Message(text, data))
     return TrainingData(training_examples)
 
 
@@ -154,12 +158,24 @@ def rasa_nlu_data_schema():
         "required": ["text"]
     }
 
+    regex_feature_schema = {
+        "type": "object",
+        "properties": {
+            "name": {"type": "string"},
+            "pattern": {"type": "string"},
+        }
+    }
+
     return {
         "type": "object",
         "properties": {
             "rasa_nlu_data": {
                 "type": "object",
                 "properties": {
+                    "regex_features": {
+                        "type": "array",
+                        "items": regex_feature_schema
+                    },
                     "common_examples": {
                         "type": "array",
                         "items": training_example_schema
@@ -206,13 +222,31 @@ def load_rasa_data(filename):
     common = data['rasa_nlu_data'].get("common_examples", list())
     intent = data['rasa_nlu_data'].get("intent_examples", list())
     entity = data['rasa_nlu_data'].get("entity_examples", list())
+    regex_features = data['rasa_nlu_data'].get("regex_features", list())
+    synonyms = data['rasa_nlu_data'].get("entity_synonyms", list())
+
+    # build entity_synonyms dictionary
+    entity_synonyms = {}
+    for s in synonyms:
+        if "value" in s and "synonyms" in s:
+            for synonym in s["synonyms"]:
+                entity_synonyms[synonym] = s["value"]
 
     if intent or entity:
         logger.warn("DEPRECATION warning: Data file contains 'intent_examples' or 'entity_examples' which will be " +
                     "removed in the future. Consider putting all your examples into the 'common_examples' section.")
 
     all_examples = common + intent + entity
-    return TrainingData(all_examples)
+    training_examples = []
+    for e in all_examples:
+        data = {}
+        if e.get("intent"):
+            data["intent"] = e["intent"]
+        if e.get("entities") is not None:
+            data["entities"] = e["entities"]
+        training_examples.append(Message(e["text"], data))
+
+    return TrainingData(training_examples, entity_synonyms, regex_features)
 
 
 def guess_format(files):

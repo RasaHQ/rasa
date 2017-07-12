@@ -9,9 +9,13 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 .. note:: This version is not yet released and is under active development.
 
+[0.9.0] - 2017-07-07
+^^^^^^^^^^^^^^^^^^^^
+
 Added
 -----
 - increased test coverage to avoid regressions (ongoing)
+- added regex featurization to support intent classification and entity extraction (``intent_entity_featurizer_regex``)
 
 Changed
 -------
@@ -22,6 +26,8 @@ Changed
 - output format of the duckling extractor changed. the ``value`` field now includes the complete value from duckling instead of just text (so this is an property is an object now instead of just text). includes granularity information now.
 - deprecated ``intent_examples`` and ``entity_examples`` sections in training data. all examples should go into the ``common_examples`` section
 - weight training samples based on class distribution during ner_crf cross validation and sklearn intent classification training
+- large refactoring of the internal training data structure and pipeline architecture
+- numpy is now a required dependency
 
 Removed
 -------
@@ -31,10 +37,46 @@ Fixed
 -----
 - properly update coveralls coverage report from travis
 - persistence of duckling dimensions
-- changed default response of untrained ``intent_classifier_sklearn`` from ``"intent": None`` to
-``"intent": {"name": None, "confidence": 0.0}``
-- /status endpoint showing all available models instead of only those whose name starts with *model*
+- changed default response of untrained ``intent_classifier_sklearn`` from ``"intent": None`` to ``"intent": {"name": None, "confidence": 0.0}``
+- ``/status`` endpoint showing all available models instead of only those whose name starts with *model*
 - properly return training process ids #391
+
+[0.8.12] - 2017-06-29
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed missing argument attribute error
+
+
+[0.8.11] - 2017-06-07
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- updated mitie installation documentation
+
+[0.8.10] - 2017-05-31
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed documentation about training data format
+
+
+[0.8.9] - 2017-05-26
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----^
+- properly handle response_log configuration variable being set to ``null``
+
+[0.8.8] - 2017-05-26
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- /status endpoint showing all available models instead of only those whose name starts with *model*
 
 [0.8.7] - 2017-05-24
 ^^^^^^^^^^^^^^^^^^^^
@@ -93,6 +135,7 @@ Added
 - replaced pre-wired backends with more flexible pipeline definitions
 - return top 10 intents with sklearn classifier `#199 <https://github.com/RasaHQ/rasa_nlu/pull/199>`_
 - python type annotations for nearly all public functions
+- added alternative method of defining entity synonyms
 - support for arbitrary spacy language model names
 - duckling components to provide normalized output for structured entities
 - Conditional random field entity extraction (Markov model for entity tagging, better named entity recognition with low and medium data and similarly well at big data level)
