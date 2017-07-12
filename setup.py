@@ -20,7 +20,10 @@ install_requires = [
     "typing",
     "future",
     "six",
-    "jsonschema"
+    "tqdm",
+    "requests",
+    "jsonschema",
+    "matplotlib"
 ]
 
 extras_requires = {

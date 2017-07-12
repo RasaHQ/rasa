@@ -3,9 +3,13 @@ Migration Guide
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
-0.8.x to master
+0.9.x to master
 ---------------
 
+
+0.8.x to 0.9.x
+---------------
+- add ``tokenizer_spacy`` to trained spacy_sklearn models metadata (right after the ``nlp_spacy``). alternative is to retrain the model
 
 0.7.x to 0.8.x
 ---------------

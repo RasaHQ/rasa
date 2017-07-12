@@ -7,13 +7,15 @@ import logging
 
 import typing
 from typing import Any
-from typing import ClassVar
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Text
 
 from rasa_nlu.components import Component
+from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu.training_data import Message
+from rasa_nlu.training_data import TrainingData
 
 logger = logging.getLogger(__name__)
 
@@ -25,10 +27,7 @@ if typing.TYPE_CHECKING:
 class SpacyNLP(Component):
     name = "nlp_spacy"
 
-    context_provides = {
-        "pipeline_init": ["spacy_nlp"],
-        "process": ["spacy_doc"],
-    }
+    provides = ["spacy_doc", "spacy_nlp"]
 
     def __init__(self, nlp, language, spacy_model_name):
         # type: (Language, Text, Text) -> None
@@ -43,17 +42,16 @@ class SpacyNLP(Component):
         return ["spacy"]
 
     @classmethod
-    def create(cls, language, spacy_model_name):
-        # type: (Text, Text) -> SpacyNLP
+    def create(cls, config):
+        # type: (RasaNLUConfig) -> SpacyNLP
         import spacy
-
+        spacy_model_name = config["spacy_model_name"]
         if spacy_model_name is None:
-            spacy_model_name = language
+            spacy_model_name = config["language"]
         logger.info("Trying to load spacy model with name '{}'".format(spacy_model_name))
         nlp = spacy.load(spacy_model_name, parser=False)
-        spacy_model_name = spacy_model_name
         cls.ensure_proper_language_model(nlp)
-        return SpacyNLP(nlp, language, spacy_model_name)
+        return SpacyNLP(nlp, config["language"], spacy_model_name)
 
     @classmethod
     def cache_key(cls, model_metadata):
@@ -65,17 +63,21 @@ class SpacyNLP(Component):
             spacy_model_name = model_metadata.language
         return cls.name + "-" + spacy_model_name
 
-    def pipeline_init(self):
+    def provide_context(self):
         # type: () -> Dict[Text, Any]
 
         return {"spacy_nlp": self.nlp}
 
-    def process(self, text):
-        # type: (Text) -> Dict[Text, Any]
+    def train(self, training_data, config, **kwargs):
+        # type: (TrainingData) -> Dict[Text, Any]
 
-        return {
-            "spacy_doc": self.nlp(text, entity=False)  # need to set entity=false, otherwise it interferes with our NER
-        }
+        for example in training_data.training_examples:
+            example.set("spacy_doc", self.nlp(example.text))
+
+    def process(self, message, **kwargs):
+        # type: (Message, **Any) -> None
+
+        message.set("spacy_doc", self.nlp(message.text))
 
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]
@@ -86,10 +88,16 @@ class SpacyNLP(Component):
         }
 
     @classmethod
-    def load(cls, language, spacy_model_name):
-        # type: (Text, Text) -> SpacyNLP
+    def load(cls, model_dir=None, model_metadata=None, cached_component=None, **kwargs):
+        # type: (Text, Metadata, Optional[SpacyNLP], **Any) -> SpacyNLP
+        import spacy
 
-        return cls.create(language, spacy_model_name)
+        if cached_component:
+            return cached_component
+
+        nlp = spacy.load(model_metadata.get("spacy_model_name"), parser=False)
+        cls.ensure_proper_language_model(nlp)
+        return SpacyNLP(nlp, model_metadata.get("language"), model_metadata.get("spacy_model_name"))
 
     @staticmethod
     def ensure_proper_language_model(nlp):

@@ -9,13 +9,14 @@ from builtins import zip
 import os
 import io
 from future.utils import PY3
-from typing import Any
+from typing import Any, Optional
 from typing import Dict
 from typing import List
 from typing import Text
 from typing import Tuple
 
 from rasa_nlu.components import Component
+from rasa_nlu.model import Metadata
 from rasa_nlu.training_data import TrainingData
 
 if typing.TYPE_CHECKING:
@@ -31,11 +32,7 @@ class FAQClassifierSklearn(Component):
 
     name = "faq_classifier_sklearn"
 
-    context_provides = {
-        "process": ["faq", "faq_ranking"],
-    }
-
-    output_provides = ["faq", "faq_ranking"]
+    provides = ["faq", "faq_ranking"]
 
     def __init__(self, clf=None, le=None, vectorizer=None):
         # type: (sklearn.neighbors.KNeighborsClassifier, sklearn.preprocessing.LabelEncoder) -> None
@@ -71,8 +68,7 @@ class FAQClassifierSklearn(Component):
 
         return self.le.inverse_transform(y)
 
-    def train(self, training_data, num_threads):
-        # type: (TrainingData, spacy.language.Language, int) -> None
+    def train(self, training_data, config, **kwargs):
         """Train the intent classifier on a data set.
 
         :param num_threads: number of threads used during training time"""
@@ -81,8 +77,8 @@ class FAQClassifierSklearn(Component):
         from sklearn.model_selection import GridSearchCV
         from sklearn.linear_model import SGDClassifier
 
-        labels = [e["refinement"] for e in training_data.intent_examples if "refinement" in e]
-        texts = [e["text"] for e in training_data.intent_examples if "refinement" in e]
+        labels = [e.get("refinement") for e in training_data.intent_examples if e.get("refinement") is not None]
+        texts = [e.text for e in training_data.intent_examples if e.get("refinement") is not None]
 
         if labels:
             y = self.transform_labels_str2num(labels)
@@ -98,37 +94,34 @@ class FAQClassifierSklearn(Component):
             cv_splits = max(2, min(5, np.min(np.bincount(y)) // 5))  # aim for 5 examples in each fold
 
             self.clf = GridSearchCV(SGDClassifier(class_weight='balanced'),
-                                    param_grid=tuned_parameters, n_jobs=num_threads,
+                                    param_grid=tuned_parameters, n_jobs=config["num_threads"],
                                     cv=cv_splits, scoring='f1_weighted', verbose=1)
 
             self.clf.fit(X, y)
         else:
             logger.info("Skipped training of 'faq_classifier_sklearn', since there are no labeled refinement examples.")
 
-    def process(self, text):
-        # type: (np.ndarray) -> Dict[Text, Any]
+    def process(self, message, **kwargs):
         """Returns the most likely intent and its probability for the input text."""
 
         if not self.clf:
             # The classifier wasn't trained - e.g. due to no examples being present
             return {"faq": None, "faq_ranking": []}
 
-        X = self.vectorizer.transform([text])
+        X = self.vectorizer.transform([message.text])
         intent_ids, probabilities = self.predict(X)
         faqs = self.transform_labels_num2str(intent_ids)
         # `predict` returns a matrix as it is supposed to work for multiple examples as well, hence we need to flatten
         faqs, probabilities = faqs.flatten(), probabilities.flatten()
         if faqs.size > 0 and probabilities.size > 0:
             ranking = list(zip(list(faqs), list(probabilities)))
-            return {
-                "faq": {
-                    "name": faqs[0],
-                    "confidence": probabilities[0],
-                },
-                "faq_ranking": [{"name": intent, "confidence": score} for intent, score in ranking]
-            }
+            message.set("faq", {"name": faqs[0], "confidence": probabilities[0]},
+                        add_to_output=True)
+            message.set("faq_ranking", [{"name": intent, "confidence": score} for intent, score in ranking],
+                        add_to_output=True)
         else:
-            return {"faq": None, "faq_ranking": []}
+            message.set("faq", None, add_to_output=True)
+            message.set("faq_ranking", [], add_to_output=True)
 
     def predict_prob(self, X):
         # type: (np.ndarray) -> np.ndarray
@@ -154,12 +147,12 @@ class FAQClassifierSklearn(Component):
         return sorted_indices, pred_result[:, sorted_indices]
 
     @classmethod
-    def load(cls, model_dir, faq_classifier_sklearn):
-        # type: (Text, Text) -> SklearnIntentClassifier
+    def load(cls, model_dir=None, model_metadata=None, cached_component=None, **kwargs):
+        # type: (Text, Metadata, Optional[FAQClassifierSklearn], **Any) -> FAQClassifierSklearn
         import cloudpickle
 
-        if model_dir and faq_classifier_sklearn:
-            classifier_file = os.path.join(model_dir, faq_classifier_sklearn)
+        if model_dir and model_metadata.get("faq_classifier_sklearn"):
+            classifier_file = os.path.join(model_dir, model_metadata.get("faq_classifier_sklearn"))
             with io.open(classifier_file, 'rb') as f:
                 if PY3:
                     return cloudpickle.load(f, encoding="latin-1")

@@ -11,6 +11,7 @@ from typing import Text
 
 from rasa_nlu.featurizers import Featurizer
 from rasa_nlu.components import Component
+from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
 
 if typing.TYPE_CHECKING:
@@ -25,18 +26,9 @@ def ndim(spacy_nlp):
     return spacy_nlp.vocab.vectors_length
 
 
-def features_for_doc(doc, nlp):
-    # type: (Doc, Language) -> np.ndarray
-    import numpy as np
-
-    vec = []
-    for token in doc:
-        if token.has_vector:
-            vec.append(token.vector)
-    if vec:
-        return np.sum(vec, axis=0) / len(vec)
-    else:
-        return np.zeros(ndim(nlp))
+def features_for_doc(doc):
+    # type: (Doc) -> np.ndarray
+    return doc.vector
 
 
 def features_for_sentences(sentences, nlp):
@@ -46,36 +38,26 @@ def features_for_sentences(sentences, nlp):
     X = np.zeros((len(sentences), ndim(nlp)))
     for idx, sentence in enumerate(sentences):
         doc = nlp(sentence)
-        X[idx, :] = features_for_doc(doc, nlp)
+        X[idx, :] = features_for_doc(doc)
     return X
 
 
-class SpacyFeaturizer(Featurizer, Component):
+class SpacyFeaturizer(Featurizer):
     name = "intent_featurizer_spacy"
 
-    context_provides = {
-        "train": ["intent_features"],
-        "process": ["intent_features"],
-    }
+    provides = ["text_features"]
 
-    @classmethod
-    def required_packages(cls):
-        # type: () -> List[Text]
-        return ["numpy"]
+    requires = ["spacy_doc"]
 
-    def train(self, spacy_nlp, training_data):
-        # type: (Language, TrainingData) -> Dict[Text, Any]
+    def train(self, training_data, config, **kwargs):
+        # type: (TrainingData) -> None
 
-        sentences = [e["text"] for e in training_data.intent_examples]
-        features = features_for_sentences(sentences, spacy_nlp)
-        return {
-            "intent_features": features
-        }
+        for example in training_data.intent_examples:
+            features = features_for_doc(example.get("spacy_doc"))
+            example.set("text_features", self._combine_with_existing_text_features(example, features))
 
-    def process(self, spacy_doc, spacy_nlp):
-        # type: (Doc, Language) -> Dict[Text, Any]
+    def process(self, message, **kwargs):
+        # type: (Message, **Any) -> None
 
-        features = features_for_doc(spacy_doc, spacy_nlp)
-        return {
-            "intent_features": features
-        }
+        features = features_for_doc(message.get("spacy_doc"))
+        message.set("text_features", self._combine_with_existing_text_features(message, features))

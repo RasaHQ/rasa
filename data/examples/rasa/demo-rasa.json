@@ -1,5 +1,17 @@
 {
   "rasa_nlu_data": {
+    "regex_features": [
+      {
+        "name": "zipcode",
+        "pattern": "[0-9]{5}"
+      }
+    ],
+    "entity_synonyms": [
+      {
+        "value": "chinese",
+        "synonyms": ["Chinese", "Chines", "chines"]
+      }
+    ],
     "common_examples": [
       {
         "text": "hey", 
@@ -194,6 +206,18 @@
         ]
       },
       {
+        "text": "anywhere near 18328",
+        "intent": "restaurant_search",
+        "entities": [
+          {
+            "start": 14,
+            "end": 19,
+            "value": "18328",
+            "entity": "location"
+          }
+        ]
+      },
+      {
         "text": "I am looking for asian fusion food",
         "intent": "restaurant_search",
         "entities": [
@@ -202,6 +226,18 @@
             "end": 29,
             "value": "asian fusion",
             "entity": "cuisine"
+          }
+        ]
+      },
+      {
+        "text": "I am looking a restaurant in 29432",
+        "intent": "restaurant_search",
+        "entities": [
+          {
+            "start": 29,
+            "end": 34,
+            "value": "29432",
+            "entity": "location"
           }
         ]
       },

@@ -22,6 +22,9 @@ from future.utils import PY3
 from typing import Text
 
 from rasa_nlu.components import Component
+from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu.featurizers import Featurizer
+from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
 
 logger = logging.getLogger(__name__)
@@ -29,15 +32,15 @@ logger = logging.getLogger(__name__)
 if typing.TYPE_CHECKING:
     from spacy.language import Language
     import numpy as np
+    from rasa_nlu.model import Metadata
 
 
-class NGramFeaturizer(Component):
+class NGramFeaturizer(Featurizer):
     name = "intent_featurizer_ngrams"
 
-    context_provides = {
-        "train": ["intent_features"],
-        "process": ["intent_features"],
-    }
+    provides = ["text_features"]
+
+    requires = ["spacy_doc"]
 
     n_gram_min_length = 3
 
@@ -56,38 +59,42 @@ class NGramFeaturizer(Component):
         # type: () -> List[Text]
         return ["spacy", "numpy", "sklearn", "cloudpickle"]
 
-    def train(self, training_data, intent_features, spacy_nlp, max_number_of_ngrams):
-        # type: (TrainingData, List[float], Language, Optional[int]) -> Dict[Text, Any]
+    def train(self, training_data, config, **kwargs):
+        # type: (TrainingData, RasaNLUConfig, **Any) -> None
 
         start = time.time()
-        labels = [e['intent'] for e in training_data.intent_examples]
-        sentences = [e['text'] for e in training_data.intent_examples]
-        self.train_on_sentences(sentences, labels, spacy_nlp, max_number_of_ngrams, intent_features)
+        self.train_on_sentences(training_data.intent_examples, config["max_number_of_ngrams"])
         logger.debug("Ngram collection took {} seconds".format(time.time() - start))
-        stacked = self._create_bow_vecs(intent_features, sentences, spacy_nlp, max_ngrams=self.best_num_ngrams)
-        return {"intent_features": stacked}
 
-    def process(self, intent_features, text, spacy_nlp):
-        # type: (List[float], Text, Language) -> Dict[Text, Any]
+        for example in training_data.training_examples:
+            updated = self._text_features_with_ngrams(example, self.best_num_ngrams)
+            example.set("text_features", updated)
+
+    def process(self, message, **kwargs):
+        # type: (Message, **Any) -> None
+
+        updated = self._text_features_with_ngrams(message, self.best_num_ngrams)
+        message.set("text_features", updated)
+
+    def _text_features_with_ngrams(self, message, max_ngrams):
         import numpy as np
 
-        ngrams_to_use = self._ngrams_to_use(self.best_num_ngrams)
+        ngrams_to_use = self._ngrams_to_use(max_ngrams)
 
         if ngrams_to_use is not None:
-            extras = np.array(self._ngrams_in_sentence(text, spacy_nlp, ngrams_to_use))
-            total = np.hstack((intent_features, extras))
-            return {"intent_features": total}
+            extras = np.array(self._ngrams_in_sentence(message, ngrams_to_use))
+            return self._combine_with_existing_text_features(message, extras)
         else:
-            return {"intent_features": intent_features}
+            return message.get("text_features")
 
     @classmethod
-    def load(cls, model_dir, ngram_featurizer):
-        # type: (Text, Text) -> NGramFeaturizer
+    def load(cls, model_dir=None, model_metadata=None, cached_component=None, **kwargs):
+        # type: (Text, Metadata, Optional[Component], **Any) -> NGramFeaturizer
         import cloudpickle
 
-        if model_dir and ngram_featurizer:
-            classifier_file = os.path.join(model_dir, ngram_featurizer)
-            with io.open(classifier_file, 'rb') as f:  # pramga: no cover
+        if model_dir and model_metadata.get("ngram_featurizer"):
+            classifier_file = os.path.join(model_dir, model_metadata.get("ngram_featurizer"))
+            with io.open(classifier_file, 'rb') as f:   # pramga: no cover
                 if PY3:
                     return cloudpickle.load(f, encoding="latin-1")
                 else:
@@ -108,49 +115,46 @@ class NGramFeaturizer(Component):
             "ngram_featurizer": "ngram_featurizer.pkl"
         }
 
-    def train_on_sentences(self, sentences, labels, spacy_nlp, max_number_of_ngrams, intent_features=None):
-        self.all_ngrams = self._get_best_ngrams(sentences, labels, spacy_nlp)
-        self.best_num_ngrams = self._cross_validation(
-                sentences, labels, intent_features, spacy_nlp, max_number_of_ngrams)
+    def train_on_sentences(self, examples, max_number_of_ngrams):
+        labels = [e.get("intent") for e in examples]
+        self.all_ngrams = self._get_best_ngrams(examples, labels)
+        self.best_num_ngrams = self._cross_validation(examples, labels, max_number_of_ngrams)
 
     def _ngrams_to_use(self, num_ngrams):
         if num_ngrams == 0 or self.all_ngrams is None:
-            return None
+            return []
         elif num_ngrams is not None:
             return self.all_ngrams[:num_ngrams]
         else:
             return self.all_ngrams
 
-    def _get_best_ngrams(self, sentences, labels, spacy_nlp):
+    def _get_best_ngrams(self, examples, labels):
         """Returns an ordered list of the best character ngrams for an intent classification problem"""
 
-        oov_strings = self._remove_in_vocab_words(sentences, spacy_nlp)
+        oov_strings = self._remove_in_vocab_words(examples)
         ngrams = self._generate_all_ngrams(oov_strings)
-        return self._sort_applicable_ngrams(ngrams, sentences, labels, spacy_nlp)
+        return self._sort_applicable_ngrams(ngrams, examples, labels)
 
-    def _remove_in_vocab_words(self, sentences, spacy_nlp):
+    def _remove_in_vocab_words(self, examples):
         """Automatically removes words with digits in them, that may be a
         hyperlink or that _are_ in vocabulary for the nlp"""
 
         new_sents = []
-        for sentence in sentences:
-            new_sents.append(self._remove_in_vocab_words_from_sentence(sentence, spacy_nlp))
+        for example in examples:
+            new_sents.append(self._remove_in_vocab_words_from_sentence(example))
         return new_sents
 
-    def _remove_hyperlinks(self, sentence):
-        return re.sub(r'^https?:\/\/.*[\r\n]*', '', sentence, flags=re.MULTILINE)
-
-    def _remove_punctuation(self, sentence):
-        return ''.join([letter for letter in sentence if letter not in punctuation])
-
-    def _remove_in_vocab_words_from_sentence(self, sentence, spacy_nlp):
+    def _remove_in_vocab_words_from_sentence(self, example):
         """Automatically removes words with digits in them, hyperlink and in-vocab-words."""
 
-        cleaned_sentence = self._remove_hyperlinks(self._remove_punctuation(sentence))
+        cleaned_tokens = []
+        for token in example.get("spacy_doc"):
+            if not token.has_vector and not token.like_url and \
+                    not token.like_num and not token.like_email and not token.is_punct:
+                cleaned_tokens.append(token)
 
         # keep only out-of-vocab 'non_word' words
-        doc = spacy_nlp(cleaned_sentence)
-        non_words = ' '.join([q.lower_ for q in doc if not q.has_vector])
+        non_words = ' '.join([t.text for t in cleaned_tokens])
 
         # remove digits and extra spaces
         non_words = ''.join([letter for letter in non_words if not letter.isdigit()])
@@ -159,7 +163,7 @@ class NGramFeaturizer(Component):
         # add cleaned sentence to list of these sentences
         return non_words
 
-    def _sort_applicable_ngrams(self, list_of_ngrams, sentences, labels, spacy_nlp):
+    def _sort_applicable_ngrams(self, list_of_ngrams, examples, labels):
         """Given an intent classification problem and a list of ngrams, creates ordered list of most useful ngrams."""
 
         if list_of_ngrams:
@@ -169,7 +173,7 @@ class NGramFeaturizer(Component):
             # filter examples where we do not have enough labeled instances for cv
             usable_labels = []
             for label in np.unique(labels):
-                lab_sents = np.array(sentences)[np.array(labels) == label]
+                lab_sents = np.array(examples)[np.array(labels) == label]
                 if len(lab_sents) < self.min_intent_examples_for_ngram_classification:
                     continue
                 usable_labels.append(label)
@@ -177,10 +181,10 @@ class NGramFeaturizer(Component):
             mask = [label in usable_labels for label in labels]
             if any(mask) and len(usable_labels) >= 2:
                 try:
-                    sentences = np.array(sentences)[mask]
+                    examples = np.array(examples)[mask]
                     labels = np.array(labels)[mask]
 
-                    X = np.array(self._ngrams_in_sentences(sentences, spacy_nlp, list_of_ngrams))
+                    X = np.array(self._ngrams_in_sentences(examples, list_of_ngrams))
                     intent_encoder = preprocessing.LabelEncoder()
                     intent_encoder.fit(labels)
                     y = intent_encoder.transform(labels)
@@ -203,21 +207,24 @@ class NGramFeaturizer(Component):
         else:
             return []
 
-    def _ngrams_in_sentences(self, sentences, spacy_nlp, ngrams):
-        """Given a set of sentences, returns a vector of {1,0} values indicating ngram presence"""
+    def _ngrams_in_sentences(self, examples, ngrams):
+        """Given a set of sentences, returns a feature vector for each sentence.
+
+        The first $k$ elements are from the `intent_features`,
+        the rest are {1,0} elements denoting whether an ngram is in sentence."""
 
         all_vectors = []
-        for sentence in sentences:
-            presence_vector = self._ngrams_in_sentence(sentence, spacy_nlp, ngrams)
+        for example in examples:
+            presence_vector = self._ngrams_in_sentence(example, ngrams)
             all_vectors.append(presence_vector)
         return all_vectors
 
-    def _ngrams_in_sentence(self, sentence, spacy_nlp, ngrams):
+    def _ngrams_in_sentence(self, example, ngrams):
         """Given a set of sentences, returns a vector of {1,0} values indicating ngram presence"""
 
         import numpy as np
 
-        cleaned_sentence = self._remove_in_vocab_words_from_sentence(sentence, spacy_nlp)
+        cleaned_sentence = self._remove_in_vocab_words_from_sentence(example)
         presence_vector = np.zeros(len(ngrams))
         idx_array = [idx for idx in range(len(ngrams)) if ngrams[idx] in cleaned_sentence]
         presence_vector[idx_array] = 1
@@ -261,23 +268,7 @@ class NGramFeaturizer(Component):
 
         return [item for sublist in list(features.values()) for item in sublist]
 
-    def _create_bow_vecs(self, intent_features, sentences, spacy_nlp, max_ngrams=None):
-        """Given a set of sentences, returns a feature vector for each sentence.
-
-        The first $k$ elements are from the `intent_features`,
-        the rest are {1,0} elements denoting whether an ngram is in sentence."""
-
-        import numpy as np
-
-        ngrams_to_use = self._ngrams_to_use(max_ngrams)
-        if ngrams_to_use is None or len(ngrams_to_use) == 0:
-            return intent_features
-        else:
-            extras = np.array(self._ngrams_in_sentences(sentences, spacy_nlp, ngrams=ngrams_to_use))
-            total = np.hstack((intent_features, extras))
-            return total
-
-    def _cross_validation(self, sentences, labels, intent_features, spacy_nlp, max_ngrams):
+    def _cross_validation(self, examples, labels, max_ngrams):
         """choose the best number of ngrams to include in bow.
 
         Given an intent classification problem and a set of ordered ngrams (ordered in terms
@@ -289,6 +280,21 @@ class NGramFeaturizer(Component):
         from sklearn.model_selection import cross_val_score
         import numpy as np
 
+        if examples:
+            collected_features = [e.get("text_features") for e in examples if e.get("text_features") is not None]
+        else:
+            collected_features = []
+
+        existing_text_features = np.stack(collected_features) if collected_features else None
+
+        def features_with_ngrams(max_ngrams):
+            ngrams_to_use = self._ngrams_to_use(max_ngrams)
+            extras = np.array(self._ngrams_in_sentences(examples, ngrams_to_use))
+            if existing_text_features is not None:
+                return np.hstack((existing_text_features, extras))
+            else:
+                return extras
+
         clf2 = LogisticRegression(class_weight='balanced')
         intent_encoder = preprocessing.LabelEncoder()
         intent_encoder.fit(labels)
@@ -297,11 +303,14 @@ class NGramFeaturizer(Component):
         if cv_splits >= 3:
             logger.debug("Started ngram cross-validation to find best number of ngrams to use...")
             num_ngrams = np.unique(list(map(int, np.floor(np.linspace(1, max_ngrams, 8)))))
-            no_ngrams_X = self._create_bow_vecs(intent_features, sentences, spacy_nlp, max_ngrams=0)
-            no_ngrams_score = np.mean(cross_val_score(clf2, no_ngrams_X, y, cv=cv_splits))
+            if existing_text_features is not None:
+                no_ngrams_X = features_with_ngrams(max_ngrams=0)
+                no_ngrams_score = np.mean(cross_val_score(clf2, no_ngrams_X, y, cv=cv_splits))
+            else:
+                no_ngrams_score = 0.0
             scores = []
             for n in num_ngrams:
-                X = self._create_bow_vecs(intent_features, sentences, spacy_nlp, max_ngrams=n)
+                X = features_with_ngrams(max_ngrams=n)
                 score = np.mean(cross_val_score(clf2, X, y, cv=cv_splits))
                 scores.append(score)
                 logger.debug("Evaluating usage of {} ngrams. Score: {}".format(n, score))

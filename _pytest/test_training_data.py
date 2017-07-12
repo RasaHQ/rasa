@@ -16,6 +16,7 @@ from jsonschema import ValidationError
 from rasa_nlu.convert import convert_training_data
 from rasa_nlu.converters import load_data, validate_rasa_nlu_data
 from rasa_nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
+from rasa_nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
 
 def test_example_training_data_is_valid():
@@ -57,9 +58,9 @@ def test_rasa_data():
     td = load_data('data/examples/rasa/demo-rasa.json')
     assert td.entity_examples != []
     assert td.intent_examples != []
-    assert len(td.sorted_entity_examples()) >= len([e for e in td.entity_examples if e["entities"]])
+    assert len(td.sorted_entity_examples()) >= len([e for e in td.entity_examples if e.get("entities")])
     assert len(td.sorted_intent_examples()) == len(td.intent_examples)
-    assert td.entity_synonyms == {}
+    assert td.entity_synonyms == {u'Chines': u'chinese', u'Chinese': u'chinese', u'chines': u'chinese'}
 
 
 def test_api_data():
@@ -95,9 +96,10 @@ def test_repeated_entities():
         td = load_data(f.name)
         assert len(td.entity_examples) == 1
         example = td.entity_examples[0]
-        entities = example["entities"]
+        entities = example.get("entities")
         assert len(entities) == 1
-        start, end = MitieEntityExtractor.find_entity(entities[0], example["text"])
+        tokens = WhitespaceTokenizer().tokenize(example.text)
+        start, end = MitieEntityExtractor.find_entity(entities[0], example.text, tokens)
         assert start == 9
         assert end == 10
 
@@ -128,9 +130,10 @@ def test_multiword_entities():
         td = load_data(f.name)
         assert len(td.entity_examples) == 1
         example = td.entity_examples[0]
-        entities = example["entities"]
+        entities = example.get("entities")
         assert len(entities) == 1
-        start, end = MitieEntityExtractor.find_entity(entities[0], example["text"])
+        tokens = WhitespaceTokenizer().tokenize(example.text)
+        start, end = MitieEntityExtractor.find_entity(entities[0], example.text, tokens)
         assert start == 4
         assert end == 7
 
@@ -159,7 +162,7 @@ def test_nonascii_entities():
         td = load_data(f.name)
         assert len(td.entity_examples) == 1
         example = td.entity_examples[0]
-        entities = example["entities"]
+        entities = example.get("entities")
         assert len(entities) == 1
         entity = entities[0]
         assert entity["value"] == "ßäæ ?€ö)"
@@ -168,17 +171,66 @@ def test_nonascii_entities():
         assert entity["entity"] == "description"
 
 
+def test_entities_synonyms():
+    data = u"""
+{
+  "rasa_nlu_data": {
+    "entity_synonyms": [
+      {
+        "value": "nyc",
+        "synonyms": ["New York City", "nyc", "the big apple"]
+      }
+    ],
+    "common_examples" : [
+      {
+        "text": "show me flights to New York City",
+        "intent": "unk",
+        "entities": [
+          {
+            "entity": "destination",
+            "start": 19,
+            "end": 32,
+            "value": "NYC"
+          }
+        ]
+      },
+      {
+        "text": "show me flights to nyc",
+        "intent": "unk",
+        "entities": [
+          {
+            "entity": "destination",
+            "start": 19,
+            "end": 22,
+            "value": "nyc"
+          }
+        ]
+      }
+    ]
+  }
+}"""
+    with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
+        f.write(data.encode("utf-8"))
+        f.flush()
+        td = load_data(f.name)
+        assert td.entity_synonyms["New York City"] == "nyc"
+
+
+def cmp_message_list(firsts, seconds):
+    assert len(firsts) == len(seconds), "Message lists have unequal length"
+
+
 def cmp_dict_list(firsts, seconds):
     if len(firsts) != len(seconds):
         return False
 
     for a in firsts:
         for idx, b in enumerate(seconds):
-            if a == b:
+            if hash(a) == hash(b):
                 del seconds[idx]
                 break
         else:
-            return False
+            assert False, "Failed to find message {} in {}".format(a.text, ", ".join([e.text for e in seconds]))
     return not seconds
 
 
@@ -194,8 +246,8 @@ def test_training_data_conversion(tmpdir, data_file, gold_standard_file):
     assert td.intent_examples != []
 
     gold_standard = load_data(gold_standard_file)
-    assert cmp_dict_list(td.entity_examples, gold_standard.entity_examples)
-    assert cmp_dict_list(td.intent_examples, gold_standard.intent_examples)
+    cmp_message_list(td.entity_examples, gold_standard.entity_examples)
+    cmp_message_list(td.intent_examples, gold_standard.intent_examples)
     assert td.entity_synonyms == gold_standard.entity_synonyms
 
     # If the above assert fails - this can be used to dump to the file and diff using git

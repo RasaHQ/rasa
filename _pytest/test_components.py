@@ -7,8 +7,8 @@ import pytest
 from rasa_nlu.model import Metadata
 
 from rasa_nlu import registry
-from rasa_nlu.components import fill_args, load_component, create_component, MissingArgumentError, \
-    find_unavailable_packages, _read_dev_requirements
+from rasa_nlu.components import MissingArgumentError, find_unavailable_packages, _read_dev_requirements, \
+    _requirements_from_lines
 from rasa_nlu.extractors import EntityExtractor
 
 
@@ -42,63 +42,15 @@ def test_all_components_are_in_all_components_template():
 
 
 @pytest.mark.parametrize("component_class", registry.component_classes)
-def test_all_arguments_can_be_satisfied_during_train(component_class, default_config):
+def test_all_arguments_can_be_satisfied(component_class):
     """Check that `train` method parameters can be filled filled from the context. Similar to `pipeline_init` test."""
 
     # All available context arguments that will ever be generated during train
     # it might still happen, that in a certain pipeline configuration arguments can not be satisfied!
-    context_arguments = {"training_data": None}
-    for clz in registry.component_classes:
-        for ctx_arg in clz.context_provides.get("pipeline_init", []):
-            context_arguments[ctx_arg] = None
-        for ctx_arg in clz.context_provides.get("train", []):
-            context_arguments[ctx_arg] = None
+    provided_properties = {provided for c in registry.component_classes for provided in c.provides}
 
-    filled_args = fill_args(component_class.train_args(), context_arguments, default_config.as_dict())
-    assert len(filled_args) == len(component_class.train_args())
-
-
-@pytest.mark.parametrize("component_class", registry.component_classes)
-def test_all_arguments_can_be_satisfied_during_parse(component_class, default_config):
-    """Check that `parse` method parameters can be filled filled from the context. Similar to `pipeline_init` test."""
-
-    # All available context arguments that will ever be generated during parse
-    context_arguments = {"text": None, "time": None}
-    for clz in registry.component_classes:
-        for ctx_arg in clz.context_provides.get("pipeline_init", []):
-            context_arguments[ctx_arg] = None
-        for ctx_arg in clz.context_provides.get("process", []):
-            context_arguments[ctx_arg] = None
-
-    filled_args = fill_args(component_class.process_args(), context_arguments, default_config.as_dict())
-    assert len(filled_args) == len(component_class.process_args())
-
-
-def test_all_extractors_use_previous_entities():
-    extractors = [c for c in registry.component_classes if isinstance(c, EntityExtractor)]
-    assert all(["entities" in ex.process_args() for ex in extractors])
-
-
-def test_load_can_handle_none():
-    assert load_component(None, {}, {}) is None
-
-
-def test_create_can_handle_none():
-    assert create_component(None, {}) is None
-
-
-def test_fill_args_with_unsatisfiable_param_from_context():
-    with pytest.raises(MissingArgumentError) as excinfo:
-        fill_args(["good_one", "bad_one"], {"good_one": 1}, {})
-    assert "bad_one" in str(excinfo.value)
-    assert "good_one" not in str(excinfo.value)
-
-
-def test_fill_args_with_unsatisfiable_param_from_config():
-    with pytest.raises(MissingArgumentError) as excinfo:
-        fill_args(["good_one", "bad_one"], {}, {"good_one": 1})
-    assert "bad_one" in str(excinfo.value)
-    assert "good_one" not in str(excinfo.value)
+    for req in component_class.requires:
+        assert req in provided_properties, "No component provides required property."
 
 
 def test_find_unavailable_packages():
@@ -114,5 +66,19 @@ def test_builder_create_unknown(component_builder, default_config):
 
 def test_builder_load_unknown(component_builder):
     with pytest.raises(Exception) as excinfo:
-        component_builder.load_component("my_made_up_componment", {}, {}, Metadata({}, None))
+        component_builder.load_component("my_made_up_componment", "", Metadata({}, None))
     assert "Unknown component name" in str(excinfo.value)
+
+
+def test_requirement_parsing():
+    lines = [
+        "rasa_nlu==1.0.0",
+        "#spacy",
+        "spacy==2.0.0",
+        "#noreq",
+        "#other",
+        "pytest==2.0.3",
+        "pytest-xdist==2.0.3",
+    ]
+    assert _requirements_from_lines(lines) == {'spacy': ['spacy==2.0.0'],
+                                               'other': ['pytest==2.0.3', 'pytest-xdist==2.0.3']}
