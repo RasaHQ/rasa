@@ -10,6 +10,7 @@ backend        supported languages
 spacy-sklearn  english (``en``),
                german (``de``)
 MITIE          english (``en``)
+Jieba-MITIE    chinese (``zh``)
 =============  ==============================
 
 These languages can be set as part of the :ref:`section_configuration`.
