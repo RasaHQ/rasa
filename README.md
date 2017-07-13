@@ -44,22 +44,55 @@ curl 'http://localhost:5000/parse?q=hello'
 ### B. Install with Docker
 Before you start, ensure you have the latest version of docker engine on your machine. You can check if you have docker installed by typing ```docker -v``` in your terminal.
 
-#### 1. Build the image:
+#### B.1 Install with Docker manually
+##### 1. Build the image:
 ```
 docker build -t rasa_nlu .
 ``` 
 
-#### 2. Start the web server:
+##### 2. Start the web server:
 ```
 docker run -p 5000:5000 rasa_nlu start
 ```
 
 Caveat for Docker for Windows users: please share your C: in docker settings, and add ```-v C:\path\to\rasa_nlu:/app``` to your docker run commands for download and training to work correctly.
 
-#### 3. Test it!
+##### 3. Test it!
 ```
 curl 'http://localhost:5000/parse?q=hello'
 ```
+
+#### B.2 Install with Docker automatically
+Automatically installation uses spacy english model and configure trained model as default if there is only one trained model.
+If you want to use another model read the Dockerfile, comment spacy english model lines and uncomment the lines for your selected model.
+
+##### 1. Create container
+
+Execute as root:
+```
+./manage_container build
+```
+##### 2. Training system
+Create your training intents and save it as trainingFile.json, then execute:
+```
+curl -XPOST localhost:5000/train -d @trainingFile.json
+```
+
+##### 3. Load your model
+Rasa must be restarted in order to load new models, so execute as root:
+```
+./manage_container reload
+```
+
+##### 4. Test it!
+Try it with any phrase suitable for your intents, using %20 as spaces in the URL. For example, for "hello machine" phrase use:
+```
+curl 'http://localhost:5000/parse?q=hello%20machine'
+```
+
+##### 5. Change configuration
+
+
 
 ### C. (Experimental) Deploying to Docker Cloud
 [![Deploy to Docker Cloud](https://files.cloud.docker.com/images/deploy-to-dockercloud.svg)](https://cloud.docker.com/stack/deploy/)

@@ -24,7 +24,21 @@ RUN pip install $(tail -n +2 requirements.txt)
 
 COPY . ${RASA_NLU_HOME}
 
-RUN python setup.py install
+RUN python setup.py install 
+
+
+#Uncomment these lines for using spacy (and comment the lines of the other models)
+COPY config_spacy.json /app/config.json 
+#Uncomment the language you want to use for spacy
+RUN bash entrypoint.sh download spacy en
+#RUN bash entrypoint.sh download spacy de
+
+#Uncomment these lines for using mittie (and comment the lines of the other models)
+#COPY config_mitie.json /app/config.json
+#RUN bash entrypoint.sh download mitie
+
+#Uncomment this line using mitie and sklearn (and comment the lines of the other models)
+#COPY config_mitie_sklearn.json /app/config.json 
 
 RUN ls /app
 

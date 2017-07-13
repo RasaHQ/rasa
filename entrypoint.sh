@@ -39,8 +39,36 @@ function download_package {
     esac
 }
 
+# If there is only a model, set it as default model
+function set_default_model {
+   if [ -d "/app/models" ]
+     echo "Models directory exists"
+     then
+     if [ ! -d "/app/models/default" ]
+       then
+       echo "Default model doesn't exist"
+       if [ "x1" == x`ls -ld /app/models/* | wc -l` ]
+          then
+          echo "Renaming existing model to default"
+          mv `ls -d /app/models/*` /app/models/default
+          if [ -d "/app/models/default" ]
+          then
+              echo "Model renamed to default"
+          else
+              echo "Model couldn't be renamed to default"
+          fi
+       else
+          echo "There are no models or more than one"
+       fi
+     fi
+   fi
+}
+
+
+
 case ${1} in
     start)
+        set_default_model
         exec python -m rasa_nlu.server "${@:2}" 
         ;;
     run)
