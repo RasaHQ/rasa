@@ -6,6 +6,7 @@
         "intent_entity_featurizer_regex",
         "intent_featurizer_mitie",
         "intent_classifier_sklearn"],
+  "language": "zh",
   "mitie_file": "./data/total_word_feature_extractor_zh.dat",
   "path" : "./models",
   "data" : "./data/examples/rasa/demo-rasa_zh.json"

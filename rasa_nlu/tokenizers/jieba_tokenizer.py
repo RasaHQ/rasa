@@ -16,13 +16,23 @@ from rasa_nlu.training_data import TrainingData
 
 
 class JiebaTokenizer(Tokenizer, Component):
+    
     name = "tokenizer_jieba"
 
     provides = ["tokens"]
+    
+    def __init__(self):
+        pass
+    
+    @classmethod
+    def required_packages(cls):
+        # type: () -> List[Text]
+        return ["jieba"]
 
     def train(self, training_data, config, **kwargs):
         # type: (TrainingData, RasaNLUConfig, **Any) -> None
-
+        if config['language'] != 'zh':
+            raise Exception("tokenizer_jieba is only used for Chinese. Check your configure json file.")
         for example in training_data.training_examples:
             example.set("tokens", self.tokenize(example.text))
 

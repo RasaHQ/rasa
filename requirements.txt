@@ -10,4 +10,3 @@ matplotlib==1.5.3
 requests==2.14.2
 tqdm==4.11.2
 numpy==1.12.1
-jieba==0.38
