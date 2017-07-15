@@ -35,13 +35,20 @@ class CRFEntityExtractor(EntityExtractor):
 
     provides = ["entities"]
 
-    requires = ["spacy_doc"]
+    requires = ["spacy_doc", "tokens"]
 
-    function_dict = {'low': lambda doc: doc[0].lower(), 'title': lambda doc: str(doc[0].istitle()),
-                     'word3': lambda doc: doc[0][-3:], 'word2': lambda doc: doc[0][-2:],
-                     'pos': lambda doc: doc[1], 'pos2': lambda doc: doc[1][:2],
-                     'bias': lambda doc: 'bias', 'upper': lambda doc: str(doc[0].isupper()),
-                     'digit': lambda doc: str(doc[0].isdigit())}
+    function_dict = {
+        'low': lambda doc: doc[0].lower(),
+        'title': lambda doc: doc[0].istitle(),
+        'word3': lambda doc: doc[0][-3:],
+        'word2': lambda doc: doc[0][-2:],
+        'pos': lambda doc: doc[1],
+        'pos2': lambda doc: doc[1][:2],
+        'bias': lambda doc: 'bias',
+        'upper': lambda doc: doc[0].isupper(),
+        'digit': lambda doc: doc[0].isdigit(),
+        'pattern': lambda doc: str(doc[3]) if doc[3] is not None else 'N/A',
+    }
 
     def __init__(self, ent_tagger=None, entity_crf_features=None, entity_crf_BILOU_flag=True):
         # type: (sklearn_crfsuite.CRF, List[List[Text]], bool) -> None
@@ -57,9 +64,11 @@ class CRFEntityExtractor(EntityExtractor):
             # crf_features is [before, word, after] array with before, word, after holding keys about which
             # features to use for each word, for example, 'title' in array before will have the feature
             # "is the preceding word in title case?"
-            self.crf_features = [['low', 'title', 'upper', 'pos', 'pos2'],
-                                 ['bias', 'low', 'word3', 'word2', 'upper', 'title', 'digit', 'pos', 'pos2'],
-                                 ['low', 'title', 'upper', 'pos', 'pos2']]
+            self.crf_features = [
+                ['low', 'title', 'upper', 'pos', 'pos2'],
+                ['bias', 'low', 'word3', 'word2', 'upper', 'title', 'digit', 'pos', 'pos2', 'pattern'],
+                ['low', 'title', 'upper', 'pos', 'pos2']
+            ]
         else:
             self.crf_features = entity_crf_features
 
@@ -79,7 +88,7 @@ class CRFEntityExtractor(EntityExtractor):
             self._train_model(dataset)
 
     def _create_dataset(self, examples):
-        # type: (List[Message]) -> List[List[Tuple[Text, Text, Text]]]
+        # type: (List[Message]) -> List[List[Tuple[Text, Text, Text, Text]]]
         dataset = []
         for example in examples:
             entity_offsets = self._convert_example(example)
@@ -208,20 +217,20 @@ class CRFEntityExtractor(EntityExtractor):
             return {"entity_extractor_crf": None}
 
     def _sentence_to_features(self, sentence):
-        # type: (List[Tuple[Text, Text, Text]]) -> List[List[Text]]
+        # type: (List[Tuple[Text, Text, Text, Text]]) -> List[Dict[Text, Any]]
         """Convert a word into discrete features in self.crf_features, including word before and word after."""
 
         sentence_features = []
         for word_idx in range(len(sentence)):
             # word before(-1), current word(0), next word(+1)
             prefixes = ['-1', '0', '+1']
-            word_features = []
+            word_features = {}
             for i in range(3):
                 if word_idx == len(sentence) - 1 and i == 2:
-                    word_features.append('EOS')
+                    word_features['EOS'] = True
                     # End Of Sentence
                 elif word_idx == 0 and i == 0:
-                    word_features.append('BOS')
+                    word_features['BOS'] = True
                     # Beginning Of Sentence
                 else:
                     word = sentence[word_idx - 1 + i]
@@ -230,21 +239,21 @@ class CRFEntityExtractor(EntityExtractor):
                     for feature in features:
                         # append each feature to a feature vector
                         # word_features.append(prefix + feature + ':' + self.function_dict[feature](word))
-                        word_features.append(':'.join((prefix, feature, self.function_dict[feature](word))))
+                        word_features[prefix + ":" + feature] = self.function_dict[feature](word)
             sentence_features.append(word_features)
         return sentence_features
 
     def _sentence_to_labels(self, sentence):
-        # type: (List[Tuple[Text, Text, Text]]) -> List[Text]
+        # type: (List[Tuple[Text, Text, Text, Text]]) -> List[Text]
 
-        return [label for token, postag, label in sentence]
+        return [label for _, _, label, _ in sentence]
 
-    def _from_json_to_crf(self, example, entity_offsets):
-        # type: (Message, List[Tuple[int, int, Text]]) -> List[Tuple[Text, Text, Text]]
+    def _from_json_to_crf(self, message, entity_offsets):
+        # type: (Message, List[Tuple[int, int, Text]]) -> List[Tuple[Text, Text, Text, Text]]
         """Takes the json examples and switches them to a format which crfsuite likes."""
         from spacy.gold import GoldParse
 
-        doc = example.get("spacy_doc")
+        doc = message.get("spacy_doc")
         gold = GoldParse(doc, entities=entity_offsets)
         ents = [l[5] for l in gold.orig_annot]
         if '-' in ents:
@@ -252,28 +261,34 @@ class CRFEntityExtractor(EntityExtractor):
                         "Make sure the start and end values of the annotated training " +
                         "examples end at token boundaries (e.g. don't include trailing whitespaces).")
         if not self.BILOU_flag:
-            def ent_clean(entity):
-                if entity.startswith('B-') or entity.startswith('I-') or entity.startswith('U-') or entity.startswith(
-                        'L-'):
-                    return entity[2:]
-                else:
-                    return entity
+            for i, entity in enumerate(ents):
+                if entity.startswith('B-') or \
+                        entity.startswith('I-') or \
+                        entity.startswith('U-') or \
+                        entity.startswith('L-'):
+                    ents[i] = entity[2:]        # removes the BILOU tags
+
+        return self._from_text_to_crf(message, ents)
+
+    def __pattern_of_token(self, message, i):
+        if message.get("tokens"):
+            return message.get("tokens")[i].get("pattern")
         else:
-            def ent_clean(entity):
-                return entity
+            return None
 
-        crf_format = [(doc[i].text, doc[i].tag_, ent_clean(ents[i])) for i in range(len(doc))]
-        return crf_format
-
-    def _from_text_to_crf(self, message):
-        # type: (Message) -> List[Tuple[Text, Text, Text]]
+    def _from_text_to_crf(self, message, entities=None):
+        # type: (Message, List[Text]) -> List[Tuple[Text, Text, Text, Text]]
         """Takes a sentence and switches it to crfsuite format."""
 
-        crf_format = [(token.text, token.tag_, 'N/A') for token in message.get("spacy_doc")]
+        crf_format = []
+        for i, token in enumerate(message.get("spacy_doc")):
+            pattern = self.__pattern_of_token(message, i)
+            entity = entities[i] if entities else "N/A"
+            crf_format.append((token.text, token.tag_, entity, pattern))
         return crf_format
 
     def _train_model(self, df_train):
-        # type: (List[List[Tuple[Text, Text, Text]]]) -> None
+        # type: (List[List[Tuple[Text, Text, Text, Text]]]) -> None
         """Train the crf tagger based on the training data."""
         import sklearn_crfsuite
 
@@ -289,7 +304,7 @@ class CRFEntityExtractor(EntityExtractor):
         self.ent_tagger.fit(X_train, y_train)
 
     def _test_model(self, df_test):
-        # type: (List[List[Tuple[Text, Text, Text]]]) -> None
+        # type: (List[List[Tuple[Text, Text, Text, Text]]]) -> None
 
         X_test = [self._sentence_to_features(sent) for sent in df_test]
         y_test = [self._sentence_to_labels(sent) for sent in df_test]

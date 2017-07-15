@@ -23,6 +23,7 @@ from typing import Text
 
 from rasa_nlu.components import Component
 from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu.featurizers import Featurizer
 from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
 
@@ -34,12 +35,12 @@ if typing.TYPE_CHECKING:
     from rasa_nlu.model import Metadata
 
 
-class NGramFeaturizer(Component):
+class NGramFeaturizer(Featurizer):
     name = "intent_featurizer_ngrams"
 
     provides = ["text_features"]
 
-    requires = ["text_features", "spacy_doc"]
+    requires = ["spacy_doc"]
 
     n_gram_min_length = 3
 
@@ -82,13 +83,13 @@ class NGramFeaturizer(Component):
 
         if ngrams_to_use is not None:
             extras = np.array(self._ngrams_in_sentence(message, ngrams_to_use))
-            return np.hstack((message.get("text_features"), extras))
+            return self._combine_with_existing_text_features(message, extras)
         else:
             return message.get("text_features")
 
     @classmethod
-    def load(cls, model_dir, model_metadata, cached_component, **kwargs):
-        # type: (Text, Metadata, Optional[NGramFeaturizer], **Any) -> NGramFeaturizer
+    def load(cls, model_dir=None, model_metadata=None, cached_component=None, **kwargs):
+        # type: (Text, Metadata, Optional[Component], **Any) -> NGramFeaturizer
         import cloudpickle
 
         if model_dir and model_metadata.get("ngram_featurizer"):
@@ -280,14 +281,19 @@ class NGramFeaturizer(Component):
         import numpy as np
 
         if examples:
-            existing_text_features = np.stack([example.get("text_features") for example in examples])
+            collected_features = [e.get("text_features") for e in examples if e.get("text_features") is not None]
         else:
-            existing_text_features = np.empty(shape=(0, 0))
+            collected_features = []
+
+        existing_text_features = np.stack(collected_features) if collected_features else None
 
         def features_with_ngrams(max_ngrams):
             ngrams_to_use = self._ngrams_to_use(max_ngrams)
             extras = np.array(self._ngrams_in_sentences(examples, ngrams_to_use))
-            return np.hstack((existing_text_features, extras))
+            if existing_text_features is not None:
+                return np.hstack((existing_text_features, extras))
+            else:
+                return extras
 
         clf2 = LogisticRegression(class_weight='balanced')
         intent_encoder = preprocessing.LabelEncoder()
@@ -297,8 +303,11 @@ class NGramFeaturizer(Component):
         if cv_splits >= 3:
             logger.debug("Started ngram cross-validation to find best number of ngrams to use...")
             num_ngrams = np.unique(list(map(int, np.floor(np.linspace(1, max_ngrams, 8)))))
-            no_ngrams_X = features_with_ngrams(max_ngrams=0)
-            no_ngrams_score = np.mean(cross_val_score(clf2, no_ngrams_X, y, cv=cv_splits))
+            if existing_text_features is not None:
+                no_ngrams_X = features_with_ngrams(max_ngrams=0)
+                no_ngrams_score = np.mean(cross_val_score(clf2, no_ngrams_X, y, cv=cv_splits))
+            else:
+                no_ngrams_score = 0.0
             scores = []
             for n in num_ngrams:
                 X = features_with_ngrams(max_ngrams=n)

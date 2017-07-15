@@ -64,11 +64,12 @@ class TrainingData(object):
     MIN_EXAMPLES_PER_INTENT = 2
     MIN_EXAMPLES_PER_ENTITY = 2
 
-    def __init__(self, training_examples=None, entity_synonyms=None):
+    def __init__(self, training_examples=None, entity_synonyms=None, regex_features=None):
         # type: (Optional[List[Message]], Optional[Dict[Text, Text]]) -> None
 
         self.training_examples = self.sanitice_examples(training_examples) if training_examples else []
         self.entity_synonyms = entity_synonyms if entity_synonyms else {}
+        self.regex_features = regex_features if regex_features else []
 
         self.validate()
 
@@ -112,6 +113,7 @@ class TrainingData(object):
         return str(json.dumps({
             "rasa_nlu_data": {
                 "common_examples": [example.as_dict() for example in self.training_examples],
+                "regex_features": self.regex_features
             }
         }, **kwargs))
 
@@ -154,9 +156,8 @@ class TrainingData(object):
                 template = "Intent '{}' has only {} training examples! minimum is {}, training may fail."
                 warnings.warn(template.format(intent, size, self.MIN_EXAMPLES_PER_INTENT))
 
-        sorted_entity_examples = self.sorted_entity_examples()
         different_entities = []
-        for entity, group in groupby(sorted_entity_examples, lambda e: e["entity"]):
+        for entity, group in groupby(self.sorted_entity_examples(), lambda e: e["entity"]):
             size = len(list(group))
             different_entities.append(entity)
             if size < self.MIN_EXAMPLES_PER_ENTITY:

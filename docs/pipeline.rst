@@ -34,17 +34,17 @@ To ease the burden of coming up with your own processing pipelines, we provide a
 which can be used by settings the ``pipeline`` configuration value to the name of the template you want to use.
 Here is a list of the existing templates:
 
-+---------------+----------------------------------------------------------------------------------------------------------------------------+
-| template name | corresponding pipeline                                                                                                     |
-+===============+============================================================================================================================+
-| spacy_sklearn | ``["nlp_spacy", "ner_crf", "ner_synonyms", "intent_featurizer_spacy", "intent_classifier_sklearn"]``                       |
-+---------------+----------------------------------------------------------------------------------------------------------------------------+
-| mitie         | ``["nlp_mitie", "tokenizer_mitie", "ner_mitie", "ner_synonyms", "intent_classifier_mitie"]``                               |
-+---------------+----------------------------------------------------------------------------------------------------------------------------+
-| mitie_sklearn | ``["nlp_mitie", "tokenizer_mitie", "ner_mitie", "ner_synonyms", "intent_featurizer_mitie", "intent_classifier_sklearn"]``  |
-+---------------+----------------------------------------------------------------------------------------------------------------------------+
-| keyword       | ``["intent_classifier_keyword"]``                                                                                          |
-+---------------+----------------------------------------------------------------------------------------------------------------------------+
++---------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| template name | corresponding pipeline                                                                                                                                            |
++===============+===================================================================================================================================================================+
+| spacy_sklearn | ``["nlp_spacy", "tokenizer_spacy", "intent_entity_featurizer_regex", "intent_featurizer_spacy", "ner_crf", "ner_synonyms",  "intent_classifier_sklearn"]``        |
++---------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| mitie         | ``["nlp_mitie", "tokenizer_mitie", "ner_mitie", "ner_synonyms", "intent_entity_featurizer_regex", "intent_classifier_mitie"]``                                    |
++---------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| mitie_sklearn | ``["nlp_mitie", "tokenizer_mitie", "ner_mitie", "ner_synonyms", "intent_entity_featurizer_regex", "intent_featurizer_mitie", "intent_classifier_sklearn"]``       |
++---------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| keyword       | ``["intent_classifier_keyword"]``                                                                                                                                 |
++---------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
 Creating your own pipelines is possible by directly passing the names of the components to rasa NLU in the ``pipeline``
 configuration variable, e.g. ``"pipeline": ["nlp_spacy", "ner_crf", "ner_synonyms"]``. This creates a pipeline
@@ -172,6 +172,18 @@ intent_classifier_sklearn
     The sklearn intent classifier trains a linear SVM which gets optimized using a grid search. In addition
     to other classifiers it also provides rankings of the labels that did not "win". The spacy intent classifier
     needs to be preceded by a featurizer in the pipeline. This featurizer creates the features used for the classification.
+
+intent_entity_featurizer_regex
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Short: regex feature creation to support intent and entity classification
+:Outputs: ``text_features`` and ``tokens.pattern``
+:Description:
+    During training, the regex intent featurizer creates a list of `regular expressions` defined in the training data format.
+    If an expression is found in the input, a feature will be set, that will later be fed into intent classifier / entity
+    extractor to simplify classifcation (assuming the classifier has learned during the training phase, that this set
+    feature indicates a certain intent). Regex features for entity extraction are currently only supported by the
+    ``ner_crf`` component!
 
 tokenizer_whitespace
 ~~~~~~~~~~~~~~~~~~~~
@@ -308,7 +320,7 @@ ner_crf
 ner_duckling
 ~~~~~~~~~~~~
 :Short: Adds duckling support to the pipeline to unify entity types (e.g. to retrieve common date / number formats)
-:Outputs: appends entities
+:Outputs: appends ``entities``
 :Output-Example:
 
     .. code-block:: json
@@ -331,7 +343,6 @@ ner_duckling
     for the duckling component, the component will extract two entities: ``10`` as a number and
     ``in 10 minutes`` as a time from the text ``I will be there in 10 minutes``. In such a
     situation, your application would have to decide which entity type is be the correct one.
-
 
 Creating new Components
 -----------------------

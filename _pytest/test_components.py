@@ -7,7 +7,8 @@ import pytest
 from rasa_nlu.model import Metadata
 
 from rasa_nlu import registry
-from rasa_nlu.components import MissingArgumentError, find_unavailable_packages, _read_dev_requirements
+from rasa_nlu.components import MissingArgumentError, find_unavailable_packages, _read_dev_requirements, \
+    _requirements_from_lines
 from rasa_nlu.extractors import EntityExtractor
 
 
@@ -67,3 +68,17 @@ def test_builder_load_unknown(component_builder):
     with pytest.raises(Exception) as excinfo:
         component_builder.load_component("my_made_up_componment", "", Metadata({}, None))
     assert "Unknown component name" in str(excinfo.value)
+
+
+def test_requirement_parsing():
+    lines = [
+        "rasa_nlu==1.0.0",
+        "#spacy",
+        "spacy==2.0.0",
+        "#noreq",
+        "#other",
+        "pytest==2.0.3",
+        "pytest-xdist==2.0.3",
+    ]
+    assert _requirements_from_lines(lines) == {'spacy': ['spacy==2.0.0'],
+                                               'other': ['pytest==2.0.3', 'pytest-xdist==2.0.3']}

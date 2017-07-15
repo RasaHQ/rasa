@@ -28,15 +28,19 @@ def create_argparser():
     parser = argparse.ArgumentParser(description='train a custom language parser')
 
     parser.add_argument('-p', '--pipeline', default=None,
-                        help='pipeline to use for the message processing.')
-    parser.add_argument('-o', '--output', default=None, help="path where model files will be saved")
-    parser.add_argument('-d', '--data', default=None, help="file containing training data")
-    parser.add_argument('-c', '--config', required=True, help="config file")
-    parser.add_argument('-l', '--language', default=None, choices=['de', 'en'], help="model and data language")
+                        help="Pipeline to use for the message processing.")
+    parser.add_argument('-o', '--path', default=None,
+                        help="Path where model files will be saved")
+    parser.add_argument('-d', '--data', default=None,
+                        help="File containing training data")
+    parser.add_argument('-c', '--config', required=True,
+                        help="Rasa NLU configuration file")
+    parser.add_argument('-l', '--language', default=None, choices=['de', 'en'],
+                        help="Model and data language")
     parser.add_argument('-t', '--num_threads', default=None, type=int,
-                        help="number of threads to use during model training")
+                        help="Number of threads to use during model training")
     parser.add_argument('-m', '--mitie_file', default=None,
-                        help='file with mitie total_word_feature_extractor')
+                        help='File with mitie total_word_feature_extractor')
     return parser
 
 
