@@ -25,11 +25,11 @@ def test_crf_extractor(spacy_nlp):
     ext.train(TrainingData(training_examples=examples), config)
     sentence = 'anywhere in the west'
     crf_format = ext._from_text_to_crf(Message(sentence, {"spacy_doc": spacy_nlp(sentence)}))
-    assert ([word[0] for word in crf_format] == ['anywhere', 'in', 'the', 'west'])
+    assert [word[0] for word in crf_format] == ['anywhere', 'in', 'the', 'west']
     feats = ext._sentence_to_features(crf_format)
-    assert ('BOS' in feats[0])
-    assert ('EOS' in feats[-1])
-    assert ('0:low:in' in feats[1])
+    assert 'BOS' in feats[0]
+    assert 'EOS' in feats[-1]
+    assert feats[1]['0:low'] == "in"
     sentence = 'anywhere in the west'
     ext.extract_entities(Message(sentence, {"spacy_doc": spacy_nlp(sentence)}))
 
@@ -69,3 +69,11 @@ def test_duckling_entity_extractor(component_builder):
     duckling.process(message)
     entities = message.get("entities")
     assert len(entities) == 3
+
+    # Test duckling with a defined date
+    message = Message("Let us meet tomorrow.", time="1381536182000")  # 1381536182000 == 2013/10/12 02:03:02
+    duckling.process(message)
+    entities = message.get("entities")
+    assert len(entities) == 1
+    assert entities[0]["text"] == "tomorrow"
+    assert entities[0]["value"] == "2013-10-13T00:00:00.000Z"

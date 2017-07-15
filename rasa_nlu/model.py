@@ -140,8 +140,9 @@ class Trainer(object):
         if not self.skip_validation:
             components.validate_arguments(self.pipeline, context)
 
-        for component in self.pipeline:
+        for i, component in enumerate(self.pipeline):
             logger.info("Starting to train component {}".format(component.name))
+            component.prepare_partial_processing(self.pipeline[:i], context)
             updates = component.train(data, self.config, **context)
             logger.info("Finished training component.")
             if updates:

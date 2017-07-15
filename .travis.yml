@@ -1,8 +1,6 @@
 language: python
 sudo: required
 group: deprecated-2017Q2
-services:
-  - docker
 cache:
   directories:
   - "$HOME/.cache/pip"
@@ -40,7 +38,6 @@ install:
 script: py.test _pytest --cov rasa_nlu --pep8 -v
 after_success:
 - coveralls
-- ./build_push_docker.sh
 deploy:
   provider: pypi
   user: amn41

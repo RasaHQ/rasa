@@ -38,12 +38,17 @@ def _read_dev_requirements(file_name):
     the name of the requirement, e.g. `# sklearn`. All following lines till the next line starting with `#` will be
     required to be installed if the name `sklearn` is requested to be available."""
 
+    # pragma: no cover
     try:
         import pkg_resources
         req_lines = pkg_resources.resource_string("rasa_nlu", "../" + file_name).split("\n")
     except Exception as e:
         logger.info("Couldn't read dev-requirements.txt. Error: {}".format(e))
         req_lines = []
+    return _requirements_from_lines(req_lines)
+
+
+def _requirements_from_lines(req_lines):
     requirements = defaultdict(list)
     current_name = None
     for req_line in req_lines:
@@ -155,6 +160,19 @@ class Component(object):
     # previous component in the pipeline needs to have "tokens" within the above described `provides` property.
     requires = []
 
+    def __init__(self):
+        self.partial_processing_pipeline = None
+        self.partial_processing_context = None
+
+    def __getstate__(self):
+        d = self.__dict__.copy()
+        # these properties should not be pickled
+        if "partial_processing_context" in d:
+            del d["partial_processing_context"]
+        if "partial_processing_pipeline" in d:
+            del d["partial_processing_pipeline"]
+        return d
+
     @classmethod
     def required_packages(cls):
         # type: () -> List[Text]
@@ -228,6 +246,27 @@ class Component(object):
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
+
+    def prepare_partial_processing(self, pipeline, context):
+        """Sets the pipeline and context used for partial processing.
+
+        The pipeline should be a list of components that are previous to this one in the pipeline and
+        have already finished their training (and can therefore be safely used to process messages)."""
+
+        self.partial_processing_pipeline = pipeline
+        self.partial_processing_context = context
+
+    def partially_process(self, message):
+        """Allows the component to process messages during training (e.g. external training data).
+
+        The passed message will be processed by all components previous to this one in the pipeline."""
+
+        if self.partial_processing_context is not None:
+            for component in self.partial_processing_pipeline:
+                component.process(message, **self.partial_processing_context)
+        else:
+            logger.info("Failed to run partial processing due to missing pipeline.")
+        return message
 
 
 class ComponentBuilder(object):
