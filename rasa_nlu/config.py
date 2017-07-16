@@ -38,8 +38,7 @@ DEFAULT_CONFIG = {
     "entity_crf_features": [
         ["low", "title", "upper", "pos", "pos2"],
         ["bias", "low", "word3", "word2", "upper", "title", "digit", "pos", "pos2", "pattern"],
-        ["low", "title", "upper", "pos", "pos2"]],
-    "intent_threshold" : 0.65
+        ["low", "title", "upper", "pos", "pos2"]]
 }
 
 
