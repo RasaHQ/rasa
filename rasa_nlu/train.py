@@ -70,14 +70,7 @@ def do_train_in_worker(config):
     # type: (RasaNLUConfig) -> Text
     """Loads the trainer and the data and runs the training of the specified model in a subprocess."""
 
-    # Ensure we are training a model that we can save in the end
-    # WARN: there is still a race condition if a model with the same name is trained in another subprocess
-    trainer = Trainer(config)
-    persistor = create_persistor(config)
-    training_data = load_data(config['data'])
-    interpreter = trainer.train(training_data)
-    persisted_path = trainer.persist(config['path'], persistor, model_name=config['name'])
-
+    _, _, persisted_path = do_train(config)
     return persisted_path
 
 

@@ -135,14 +135,14 @@ class RasaNLU(object):
 
         data_string = request.content.read().decode('utf-8', 'strict')
 
-        test = self.data_router.start_train_process(data_string,
+        async_training = self.data_router.start_train_process(data_string,
                                                     {key.decode('utf-8', 'strict'): value[0].decode('utf-8', 'strict')
                                                      for key, value in request.args.items()})
-        test.addCallback(logger.debug)
-        test.addErrback(errback)
+        async_training.addCallback(logger.debug)
+        async_training.addErrback(errback)
 
         request.setHeader('Content-Type', 'application/json')
-        return json.dumps({"info": "training started.", "training_process_ids": self.data_router.train_proc_ids()})
+        return json.dumps({"info": "training started."})
 
 
 if __name__ == '__main__':

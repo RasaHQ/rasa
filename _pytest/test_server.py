@@ -5,15 +5,16 @@ from __future__ import division
 from __future__ import absolute_import
 
 import os
+import sys
 import signal
 import tempfile
+
 import requests
 
 import pytest
 import time
 from multiprocessing import Semaphore
 
-import utilities
 from rasa_nlu.config import RasaNLUConfig
 import json
 import io
@@ -24,6 +25,12 @@ from rasa_nlu.server import RasaNLU
 
 @pytest.fixture(scope="module")
 def http_test_server(tmpdir_factory):
+    """
+    Launches a Rasa HTTP server instance on a subprocess for testing.
+    This is necessary as Klein HTTP application's endpoints cannot by tested directly.
+    The twisted/treq library could do that but it is not compatible with pytest
+    and pytest's plugins related to treq are no more maintained.
+    """
     sem = Semaphore(1)
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
     _config = {
@@ -40,12 +47,13 @@ def http_test_server(tmpdir_factory):
     pid = os.fork()
     if pid == 0:
         sem.acquire()
+
         config = RasaNLUConfig(cmdline_args=_config)
         rasa = RasaNLU(config)
         sem.release()
         rasa.app.run(url, port)
         rasa.data_router.shutdown()
-        os._exit(0)
+        sys.exit(0)
 
     else:
         time.sleep(3)
@@ -53,9 +61,7 @@ def http_test_server(tmpdir_factory):
         sem.release()
 
     def with_base_url(method):
-        """
-        Save some typing and ensure we always use our own pool.
-        """
+        """Save some typing and ensure we always use our own pool."""
 
         def request(path, *args, **kwargs):
             return method("http://{}:{}".format(url, port) + path, *args, **kwargs)
@@ -84,7 +90,8 @@ def test_root(http_test_server):
 def test_status(http_test_server):
     response = http_test_server(requests.get)("/status")
     rjs = response.json()
-    assert response.status_code == 200 and ("trainings_under_this_process" in rjs and "available_models" in rjs)
+    assert response.status_code == 200 and ('training_queued' in rjs and 'training_workers' in rjs)
+    assert rjs['training_workers'] > 0
 
 
 def test_config(http_test_server):
@@ -145,7 +152,6 @@ def test_post_train(http_test_server, rasa_default_train_data):
     response = http_test_server(requests.post)("/train", json=rasa_default_train_data)
     rjs = response.json()
     assert response.status_code == 200
-    assert len(rjs["training_process_ids"]) == 0
     assert rjs["info"] == "training started."
 
 

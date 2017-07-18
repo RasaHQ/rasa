@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 import os
+import sys
 import signal
 import tempfile
 import requests
@@ -21,6 +22,12 @@ from utilities import ResponseTest
 
 @pytest.fixture(scope="module")
 def http_test_server(component_builder):
+    """
+    Launches a Rasa HTTP server instance on a subprocess for testing.
+    This is necessary as Klein HTTP application's endpoints cannot by tested directly.
+    The twisted/treq library could do that but it is not compatible with pytest
+    and pytest's plugins related to treq are no more maintained.
+    """
     sem = Semaphore(1)
     if "TRAVIS_BUILD_DIR" in os.environ:
         root_dir = os.environ["TRAVIS_BUILD_DIR"]
@@ -50,7 +57,7 @@ def http_test_server(component_builder):
         sem.release()
         rasa.app.run(url, port)
         rasa.data_router.shutdown()
-        os._exit(0)
+        sys.exit(0)
     else:
         time.sleep(3)
         sem.acquire()
@@ -167,6 +174,7 @@ if __name__ == '__main__':
         trainer.train(training_data)
         persistor = create_persistor(config)
         trainer.persist("test_models", persistor, model_name=model_name)
+
 
     train("config_mitie.json", "test_model_mitie")
     train("config_spacy.json", "test_model_spacy_sklearn")

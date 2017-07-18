@@ -29,6 +29,9 @@ logger = logging.getLogger(__name__)
 
 
 def deferred_from_future(future):
+    """Converts a concurrent.futures.Future object to a twisted.internet.defer.Deferred obejct.
+    See: https://twistedmatrix.com/pipermail/twisted-python/2011-January/023296.html
+    """
     d = defer.Deferred()
 
     def callback(future):
@@ -46,15 +49,16 @@ class DataRouter(object):
     DEFAULT_MODEL_NAME = "default"
 
     def __init__(self, config, component_builder):
+        self._training_processes = config['max_training_processes'] if config['max_training_processes'] > 0 else 1
         self.config = config
         self.responses = DataRouter._create_query_logger(config['response_log'])
-        self._train_procs = []
+        self._trainings_queued = 0
         self.model_dir = config['path']
         self.token = config['token']
         self.emulator = self.__create_emulator()
         self.component_builder = component_builder if component_builder else ComponentBuilder(use_cache=True)
         self.model_store = self.__create_model_store()
-        self.pool = ProcessPool(config['max_training_processes'] or 1)
+        self.pool = ProcessPool(self._training_processes)
 
     def __del__(self):
         """Terminates workers pool processes"""
@@ -86,25 +90,13 @@ class DataRouter(object):
             logger.info("Logging of requests is disabled. (No 'request_log' directory configured)")
             return None
 
-    def _remove_finished_procs(self):
-        """Remove finished training processes from the list of running training processes."""
-        self._train_procs = [p for p in self._train_procs if p.is_alive()]
-
-    def _add_train_proc(self, p):
+    def _add_training_to_queue(self):
         """Adds a new training process to the list of running processes."""
-        self._train_procs.append(p)
+        self._trainings_queued += 1
 
-    @property
-    def train_procs(self):
-        """Instead of accessing the `_train_procs` property directly, this method will ensure that trainings that
-        are finished will be removed from the list."""
-
-        self._remove_finished_procs()
-        return self._train_procs
-
-    def train_proc_ids(self):
-        """Returns the ids of the running trainings processes."""
-        return [p.ident for p in self.train_procs]
+    def _remove_training_from_queue(self):
+        """Decreases the ongoing trainings count by one"""
+        self._trainings_queued -= 1
 
     def __search_for_models(self):
         models = {}
@@ -215,13 +207,12 @@ class DataRouter(object):
     def get_status(self):
         # This will only count the trainings started from this process, if run in multi worker mode, there might
         # be other trainings run in different processes we don't know about.
-        num_trainings = len(self.train_procs)
         models = glob.glob(os.path.join(self.model_dir, '*'))
         models = [model for model in models if os.path.isfile(os.path.join(model, "metadata.json"))]
         return {
-            "trainings_under_this_process": num_trainings,
             "available_models": models,
-            "training_process_ids": self.train_proc_ids()
+            "trainings_queued": self._trainings_queued,
+            "training_workers": self._training_processes
         }
 
     def start_train_process(self, data, config_values):
@@ -235,9 +226,11 @@ class DataRouter(object):
             _config[key] = val
         _config["data"] = f.name
         train_config = RasaNLUConfig(cmdline_args=_config)
-        logger.info("Training process started")
+        logger.info("New training queued")
 
+        self._add_training_to_queue()
         result = self.pool.submit(do_train_in_worker, train_config)
         result = deferred_from_future(result)
+        result.addCallback(self._remove_training_from_queue())
 
         return result
