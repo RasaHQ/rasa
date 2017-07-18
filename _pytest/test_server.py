@@ -19,6 +19,7 @@ from rasa_nlu.config import RasaNLUConfig
 import json
 import io
 
+import utilities
 from utilities import ResponseTest
 from rasa_nlu.server import RasaNLU
 
