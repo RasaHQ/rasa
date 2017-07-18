@@ -39,7 +39,10 @@ DEFAULT_CONFIG = {
         ["low", "title", "upper", "pos", "pos2"],
         ["bias", "low", "word3", "word2", "upper", "title", "digit", "pos", "pos2", "pattern"],
         ["low", "title", "upper", "pos", "pos2"]],
-    "intent_threshold" : 0.65
+    "intent_threshold" : 0.65,
+    "training_split" : 0.20,
+    "testing_split" : 0.5,
+    "negative_data_path": "/home/sarenne/"
 }
 
 

@@ -29,6 +29,11 @@ from rasa_nlu.components import Component
 MAX_CV_FOLDS = 5
 
 class Intent2Stage(Component):
+    """
+    Out-of-scope intent classification component.  Add to a processing pipeline after intent 
+    classification to detect OOS intents.  Uses a binary SVC trained on a set of negative 
+    data (oos) and all of the positive data (all relevant intents).
+    """
 
     name = "intent_2_stage"
 
@@ -37,34 +42,35 @@ class Intent2Stage(Component):
     requires = ["intent"]
 
     def __init__(self, clf=None):
-        #self.neg_train_data = neg_train_data
         self.clf = clf
 
-    def neg_format(self, file_path):
+    def fb_format(self, file_path):
         """
         Clean data from fb-page-comment-scraper and return it as a list of sentences.  
         """
-        # import sys  
-        # reload(sys)  
-        # sys.setdefaultencoding('utf8')
-        
-        # Need this to direct prints to jupyter notebook rather than the terminal (lines above work too but with strange printing)
+    
+        # Need this to direct prints to jupyter notebook rather than the terminal
         import sys
         stdout = sys.stdout
         reload(sys)
         sys.setdefaultencoding('utf-8')
         sys.stdout = stdout
         
-        dic = {'\n': '', '\[\[[a-zA-Z]+\]\]': '', '[^a-zA-Z0-9]{4,}': ' ', 'http\S+': ''}
-        # this dictionary removes (line breaks, [[something (eg. PHOTO)]], strings of 4 or more non-alphanumeric characters, links)
-
         def replace_all(text, dic):
             for i, j in dic.iteritems():
                 text = re.sub(i, j, text)
             return(text)
 
+        # This dictionary removes: line breaks, [[something (eg. PHOTO)]], strings of 4 or more non-alphanumeric characters, links
+        dic =   {
+                '\n': '',
+                '\[\[[a-zA-Z]+\]\]': '',
+                '[^a-zA-Z0-9]{4,}': ' ',
+                'http\S+': ''
+                }
+
         with open(file_path, 'rU') as infile:
-        # read the file as a dictionary for each row ({header : value})
+        # Read file as a dictionary for each row ({header : value})
             reader = csv.DictReader(infile)
             data = {}
             for row in reader:
@@ -78,99 +84,133 @@ class Intent2Stage(Component):
         neg_train_data = []
         for comment in raw:
             comment = replace_all(comment, dic)
-            sents = [sent for sent in re.split('[.?!]+', comment) if re.match('.*[a-zA-Z]+', sent)]
+            # Ignore istitle() as a coarse filter for just @tag comments
+            sents = [sent for sent in re.split('[.?!]+', comment) if (not(sent.decode('unicode_escape').encode('ascii','ignore').istitle()) and re.match('.*[a-zA-Z]+', sent))]
             if (len(sents) > 0 & len(sents) < 3):
-                #if type(comment) != "<type 'unicode'>":
-                #    unicode(comment, "utf-8")
                 if not(isinstance(comment, unicode)):
                     comment = unicode(comment, "utf-8")
                 neg_train_data.append(comment)
         return neg_train_data
 
+    def twitter_format(self, file_path):
+        """
+        Clean data from twitter-dumper and return it as a list of coarsly-cleaned sentences.  
+        """
+    
+        # Need this to direct prints to jupyter notebook rather than the terminal
+        import sys
+        stdout = sys.stdout
+        reload(sys)
+        sys.setdefaultencoding('utf-8')
+        sys.stdout = stdout
+        
+        def replace_all(text, dic):
+            for i, j in dic.iteritems():
+                text = re.sub(i, j, text)
+            return(text)
 
-    def neg_featurize(self, neg_train_data):
+        # This dictionary removes: hashtag symbols, whole tags, strings of 4 or more non-alphanumeric characters, links
+        dic =   {
+                '#': '',
+                '@[a-zA-Z]+\]\]': '',
+                '[^a-zA-Z0-9]{4,}': ' ',
+                'http\S+': ''
+                }
+
+        with open(file_path, 'rU') as infile:
+        # Read file as a dictionary for each row ({header : value})
+            reader = csv.DictReader(infile)
+            data = {}
+            for row in reader:
+                for header, value in row.items():
+                    try:
+                        data[header].append(value)
+                    except KeyError:
+                        data[header] = [value]
+
+        raw = data['text']
+        data = []
+        for comment in raw:
+            comment = replace_all(comment, dic)
+            # Ignore istitle() as a coarse filter for just @tag comments
+            sents = [sent for sent in re.split('[.?!]+', comment) if (not(sent.decode('unicode_escape').encode('ascii','ignore').istitle()) and re.match('.*[a-zA-Z]+', sent))]
+            if (len(sents) > 0 & len(sents) < 3):
+                if not(isinstance(comment, unicode)):
+                    comment = unicode(comment, "utf-8")
+                data.append(comment)
+        return data
+
+    def neg_featurize(self, data):
         """
         Use the previously trained featurizers in the pipeline to featurize the negative training data (a set of sentences)
         """
 
         X_neg = []
-        for example in neg_train_data:
+        for example in data:
             m = Message(example)
             self.partially_process(m)
-            #print("message: {}; intent: {}".format(example, m.get("intent")))
             X_neg.append(m.get("text_features"))
-
         X_neg = np.array(X_neg)
         return X_neg 
 
     def train(self, training_data, config, **kwargs):
-        #def train(self, training_data, intent_features, num_threads, max_number_of_ngrams):
         """ 
         Train an SVC on both +/- training sets. intent_features is the positive class training set. Currently, 
         the negative training set is explicitly created inside this function
         """
 
         intent_features = np.stack([example.get("text_features") for example in training_data.intent_examples])
-        raw_data = self.neg_format('/home/sarenne/facebook-page-post-scraper/unnutzeswissen_facebook_comments.csv')
-        neg_train_data = self.neg_featurize(raw_data)
-        split = 0.5
+        raw_data = self.twitter_format(config["negative_data_path"])
+        split = config["training_split"]
+        idx = np.random.randint(len(raw_data), size=int(intent_features.shape[0] * split))
 
-        print("positive raw data shape: {}".format(intent_features.shape))
-        print("negative raw data shape: {}".format(neg_train_data.shape))
-
-        idx = np.random.randint(neg_train_data.shape[0], size=int(intent_features.shape[0] * split)) # pick the number of positive training samples that you have (ie. intent_features.shape[0])
-        # Shuffle +/- training data and corresponding labels to get final training set (X, y)
-        #train_neg = np.concatenate((neg_train_data, np.array([np.zeros(neg_train_data.shape[0])]).T), axis=1) -- this line works with manual dataset
-        train_neg = np.concatenate((neg_train_data[idx, :], np.array([np.zeros(idx.shape[0])]).T), axis=1) 
+        # Pick a random set of negative examples (size specified by 'split') for training
+        neg_train_data = self.neg_featurize([raw_data[i] for i in idx])
+        train_neg = np.concatenate((neg_train_data, np.array([np.zeros(len(idx))]).T), axis=1)
         train_pos = np.concatenate((intent_features, np.array([np.ones(intent_features.shape[0])]).T), axis=1)
-        print("shape of negative training data: {}\nshape of positive training data: {}".format(train_neg.shape, train_pos.shape))
-        print("pos example intent: {}".format(training_data.intent_examples[0].get("intent")))
         train = np.concatenate((train_neg, train_pos), axis=0)
+
+        # Shuffle +/- training data and corresponding labels to get final training set (X, y)
         np.take(train, np.random.permutation(train.shape[0]), axis=0, out=train)
         X = train[:,:-1]
         y = train[:, -1]
-        print("X shape: {}\ny shape: {}".format(X.shape, y.shape))
 
         tuned_parameters = [{'C': [1, 2, 5, 10, 20, 100], 'kernel': [str('linear')]}]
-        #cv_splits = max(2, min(MAX_CV_FOLDS, np.min(np.bincount(y)) // 5))  # aim for 5 examples in each fold
-
         self.clf = GridSearchCV(SVC(C=1, probability=True),
                                     param_grid=tuned_parameters, n_jobs=config["num_threads"],
                                     scoring='f1_weighted', verbose=1)
-        # self.clf = GridSearchCV(SVC(C=1, probability=True), scoring='f1_weighted',
-        #                             n_jobs=num_threads, verbose=1)
         self.clf.fit(X, y)
 
-    def make_test_set(self, path, split):
+    def make_test_set(self, path, config):
         """
-        create a test set by appending a random set of negative examples to an existing json file os positive examples. 
+        Create a test set by appending a random set of negative examples to an existing json file of positive examples. 
         `split` indicates the proportion of negative examples in the test set (ie 0.5 = 50% negative examples).
         """
-
+        split = config["testing_split"]
+        neg_path = config["negative_data_path"]
+        
         test_examples = []
-        # load positive examples from json path
         with open(path, "r") as outfile:
              pos_examples = json.load(outfile)["rasa_nlu_data"]["common_examples"]
-
         test_examples.extend(pos_examples)
 
-        # pick random set of negative examples (size from `split`) and append to the positive examples to create test_examples
+        # Pick random set of negative examples (size from `split`) from the list of scraped fb comments
         neg_examples = []
-        raw_data = self.neg_format('/home/sarenne/facebook-page-post-scraper/unnutzeswissen_facebook_comments.csv')
-        for sentence in raw_data:
+        neg_num = int((len(pos_examples)/(1 - split)) - len(pos_examples))
+        raw_data = self.twitter_format(neg_path)
+        idx = np.random.randint(len(raw_data), size=neg_num)
+        neg_random = [raw_data[i] for i in idx]
+
+        # Convert selected examples to rasa_format and append all to test_examples
+        for sentence in neg_random:
             example = {
                 "text": sentence,
                 "intent": "out_of_scope",
                 "entities": []
                 }
-            neg_examples.append(example)
-        neg_num = int((len(pos_examples)/(1 - split)) - len(pos_examples))
-        print("# neg examples: {}\n# pos examples: {}".format(neg_num, len(pos_examples)))
-        idx = np.random.randint(len(neg_examples), size=neg_num)
-        neg_random = [neg_examples[i] for i in idx]
-        test_examples.extend(neg_random)
-        #print("pos examples: {}\n------\nneg examples: {}\n----------\ntest_examples: {}".format(pos_examples, neg_random, test_examples))
-
+            neg_examples.append(example) 
+        test_examples.extend(neg_examples)
+        
         # overwrite the json path with new set of test examples
         with open(path, "w") as outfile: 
             json.dump({"rasa_nlu_data": {"common_examples":test_examples}}, outfile, indent=4)
@@ -195,7 +235,6 @@ class Intent2Stage(Component):
         pred_result = self.predict_prob(X)
         # sort the probabilities retrieving the indices of the elements in sorted order
         sorted_indices = np.fliplr(np.argsort(pred_result, axis=1))
-        #print("pred result: {}\nsorted indices: {}".format(pred_result[:, sorted_indices], sorted_indices))
         return sorted_indices, pred_result[:, sorted_indices]
 
     def process(self, message, **kwargs):
