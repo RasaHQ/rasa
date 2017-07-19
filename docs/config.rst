@@ -170,7 +170,7 @@ duckling_dimensions
 ~~~~~~~~~~~~~~~~~~~
 
 :Type: ``list``
-:Examples: ``["time", "number", "money", "distance"]``
+:Examples: ``["time", "number", "amount-of-money", "distance"]``
 :Description:
     Defines which dimensions, i.e. entity types, the :ref:`duckling component <section_pipeline_duckling>` will extract.
     A full list of available dimensions can be found in the `duckling documentation <https://duckling.wit.ai/>`_.
