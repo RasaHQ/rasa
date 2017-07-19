@@ -152,21 +152,4 @@ if __name__ == '__main__':
     rasa_nlu_config = RasaNLUConfig(cmdline_args.get("config"), os.environ, cmdline_args)
     rasa = RasaNLU(rasa_nlu_config)
     logger.info('Started http server on port %s' % rasa_nlu_config['port'])
-    # rasa.app.run('0.0.0.0', rasa_nlu_config['port'])
-
-    from treq.testing import StubTreq
-
-    stub = StubTreq(rasa.app.resource())
-
-    training_data = '{"rasa_nlu_data":{"entity_examples":[{"text":"hey","intent":"greet","entities":[]},{"text":"howdy","intent":"greet","entities":[]},{"text":"hey there","intent":"greet","entities":[]},{"text":"hello","intent":"greet","entities":[]},{"text":"hi","intent":"greet","entities":[]},{"text":"i\'m looking for a place to eat","intent":"restaurant_search","entities":[]},{"text":"i\'m looking for a place in the north of town","intent":"restaurant_search","entities":[]},{"text":"show me chinese restaurants","intent":"restaurant_search","entities":[]},{"text":"yes","intent":"affirm","entities":[]},{"text":"yep","intent":"affirm","entities":[]},{"text":"yeah","intent":"affirm","entities":[]},{"text":"show me a mexican place in the centre","intent":"restaurant_search","entities":[]},{"text":"bye","intent":"goodbye","entities":[]},{"text":"goodbye","intent":"goodbye","entities":[]},{"text":"good bye","intent":"goodbye","entities":[]},{"text":"stop","intent":"goodbye","entities":[]},{"text":"end","intent":"goodbye","entities":[]},{"text":"i am looking for an indian spot","intent":"restaurant_search","entities":[]},{"text":"search for restaurants","intent":"restaurant_search","entities":[]},{"text":"anywhere in the west","intent":"restaurant_search","entities":[]},{"text":"central indian restaurant","intent":"restaurant_search","entities":[]},{"text":"indeed","intent":"affirm","entities":[]},{"text":"that\'s right","intent":"affirm","entities":[]},{"text":"ok","intent":"affirm","entities":[]},{"text":"great","intent":"affirm","entities":[]}],"intent_examples":[{"text":"hey","intent":"greet"},{"text":"howdy","intent":"greet"},{"text":"hey there","intent":"greet"},{"text":"hello","intent":"greet"},{"text":"hi","intent":"greet"},{"text":"i\'m looking for a place to eat","intent":"restaurant_search"},{"text":"i\'m looking for a place in the north of town","intent":"restaurant_search"},{"text":"show me chinese restaurants","intent":"restaurant_search"},{"text":"yes","intent":"affirm"},{"text":"yep","intent":"affirm"},{"text":"yeah","intent":"affirm"},{"text":"show me a mexican place in the centre","intent":"restaurant_search"},{"text":"bye","intent":"goodbye"},{"text":"goodbye","intent":"goodbye"},{"text":"good bye","intent":"goodbye"},{"text":"stop","intent":"goodbye"},{"text":"end","intent":"goodbye"},{"text":"i am looking for an indian spot","intent":"restaurant_search"},{"text":"search for restaurants","intent":"restaurant_search"},{"text":"anywhere in the west","intent":"restaurant_search"},{"text":"central indian restaurant","intent":"restaurant_search"},{"text":"indeed","intent":"affirm"},{"text":"that\'s right","intent":"affirm"},{"text":"ok","intent":"affirm"},{"text":"great","intent":"affirm"}]}}'
-
-
-    @inlineCallbacks
-    def test_get():
-        response = yield stub.get('http://localhost/parse', params={'q': 'hello'},
-                                   data=training_data)
-        result = yield response.text()
-        print(result)
-
-
-    test_get()
+    rasa.app.run('0.0.0.0', rasa_nlu_config['port'])

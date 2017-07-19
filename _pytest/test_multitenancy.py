@@ -4,31 +4,29 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+import json
+
 import os
-import sys
-import signal
 import tempfile
-import requests
 
 import pytest
-from multiprocessing import Semaphore
 
-import time
+from treq.testing import StubTreq
 
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.model import Trainer
 from rasa_nlu.server import RasaNLU
 from utilities import ResponseTest
 
+
 @pytest.fixture(scope="module")
-def http_test_server(component_builder):
+def app(component_builder):
     """
-    Launches a Rasa HTTP server instance on a subprocess for testing.
-    This is necessary as Klein HTTP application's endpoints cannot by tested directly.
-    The twisted/treq library could do that but it is not compatible with pytest
-    and pytest's plugins related to treq are no more maintained.
+    This fixture makes use of the IResource interface of the Klein application to mock Rasa HTTP server.
+    :param component_builder:
+    :return:
     """
-    sem = Semaphore(1)
+
     if "TRAVIS_BUILD_DIR" in os.environ:
         root_dir = os.environ["TRAVIS_BUILD_DIR"]
     else:
@@ -47,116 +45,97 @@ def http_test_server(component_builder):
             "three": "test_model_spacy_sklearn",
         }
     }
-    url = '127.0.0.1'
-    port = 5000
-    pid = os.fork()
-    if pid == 0:
-        sem.acquire()
-        config = RasaNLUConfig(cmdline_args=_config)
-        rasa = RasaNLU(config, component_builder)
-        sem.release()
-        rasa.app.run(url, port)
-        os._exit(0)
-    else:
-        time.sleep(3)
-        sem.acquire()
-        sem.release()
 
-    def with_base_url(method):
-        """
-        Save some typing and ensure we always use our own pool.
-        """
-
-        def request(path, *args, **kwargs):
-            return method("http://{}:{}".format(url, port) + path, *args, **kwargs)
-
-        return request
-
-    yield with_base_url
-
-    if pid != 0:
-        os.kill(pid, signal.SIGTERM)
+    config = RasaNLUConfig(cmdline_args=_config)
+    rasa = RasaNLU(config, component_builder, True)
+    return StubTreq(rasa.app.resource())
 
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-        "/parse?q=food&model=one",
+        "http://dummy_uri/parse?q=food&model=one",
         {"entities": [], "intent": "affirm", "text": "food"}
     ),
     ResponseTest(
-        "/parse?q=food&model=two",
+        "http://dummy_uri/parse?q=food&model=two",
         {"entities": [], "intent": "restaurant_search", "text": "food"}
     ),
     ResponseTest(
-        "/parse?q=food&model=three",
+        "http://dummy_uri/parse?q=food&model=three",
         {"entities": [], "intent": "restaurant_search", "text": "food"}
     ),
 ])
-def test_get_parse(http_test_server, response_test):
-    response = http_test_server(requests.get)(response_test.endpoint)
-    rjs = response.json()
+@pytest.inlineCallbacks
+def test_get_parse(app, response_test):
+    response = yield app.get(response_test.endpoint)
+    rjs = yield response.json()
 
-    assert response.status_code == 200
+    assert response.code == 200
     assert all(prop in rjs for prop in ['entities', 'intent', 'text'])
 
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-        "/parse?q=food",
+        "http://dummy_uri/parse?q=food",
         {"error": "No model found with alias 'default'. Error: Failed to load model metadata. "}
     ),
     ResponseTest(
-        "/parse?q=food&model=umpalumpa",
+        "http://dummy_uri/parse?q=food&model=umpalumpa",
         {"error": "No model found with alias 'umpalumpa'. Error: Failed to load model metadata. "}
     )
 ])
-def test_get_parse_invalid_model(http_test_server, response_test):
-    response = http_test_server(requests.get)(response_test.endpoint)
-    rjs = response.json()
-    assert response.status_code == 404
+@pytest.inlineCallbacks
+def test_get_parse_invalid_model(app, response_test):
+    response = yield app.get(response_test.endpoint)
+    rjs = yield response.json()
+    assert response.code == 404
     assert rjs.get("error").startswith(response_test.expected_response["error"])
 
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-        "/parse",
+        "http://dummy_uri/parse",
         {"entities": [], "intent": "affirm", "text": "food"},
         payload={"q": "food", "model": "one"}
     ),
     ResponseTest(
-        "/parse",
+        "http://dummy_uri/parse",
         {"entities": [], "intent": "restaurant_search", "text": "food"},
         payload={"q": "food", "model": "two"}
     ),
     ResponseTest(
-        "/parse",
+        "http://dummy_uri/parse",
         {"entities": [], "intent": "restaurant_search", "text": "food"},
         payload={"q": "food", "model": "three"}
     ),
 ])
-def test_post_parse(http_test_server, response_test):
-    response = http_test_server(requests.post)(response_test.endpoint, json=response_test.payload)
-    rjs = response.json()
-    assert response.status_code == 200
+@pytest.inlineCallbacks
+def test_post_parse(app, response_test):
+    response = yield app.post(response_test.endpoint, data=json.dumps(response_test.payload),
+                              content_type='application/json')
+    rjs = yield response.json()
+    assert response.code == 200
     assert all(prop in rjs for prop in ['entities', 'intent', 'text'])
 
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-        "/parse",
+        "http://dummy_uri/parse",
         {"error": "No model found with alias 'default'. Error: Failed to load model metadata. "},
         payload={"q": "food"}
     ),
     ResponseTest(
-        "/parse",
+        "http://dummy_uri/parse",
         {"error": "No model found with alias 'umpalumpa'. Error: Failed to load model metadata. "},
         payload={"q": "food", "model": "umpalumpa"}
     ),
 ])
-def test_post_parse_invalid_model(http_test_server, response_test):
-    response = http_test_server(requests.post)(response_test.endpoint, json=response_test.payload)
-    rjs = response.json()
-    assert response.status_code == 404
+@pytest.inlineCallbacks
+def test_post_parse_invalid_model(app, response_test):
+    response = yield app.post(response_test.endpoint, data=json.dumps(response_test.payload),
+                              content_type='application/json')
+    rjs = yield response.json()
+    assert response.code == 404
     assert rjs.get("error").startswith(response_test.expected_response["error"])
 
 
