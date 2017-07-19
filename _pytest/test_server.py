@@ -55,7 +55,7 @@ def rasa_default_train_data():
 def test_root(app):
     response = yield app.get("http://dummy_uri/")
     content = yield response.text()
-    assert response.code == 200 and content.startswith(b"hello")
+    assert response.code == 200 and content.startswith("hello")
 
 
 @pytest.inlineCallbacks
