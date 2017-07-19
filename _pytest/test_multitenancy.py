@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
+
 import os
 import sys
 import signal
@@ -18,7 +19,6 @@ from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.model import Trainer
 from rasa_nlu.server import RasaNLU
 from utilities import ResponseTest
-
 
 @pytest.fixture(scope="module")
 def http_test_server(component_builder):
@@ -56,8 +56,7 @@ def http_test_server(component_builder):
         rasa = RasaNLU(config, component_builder)
         sem.release()
         rasa.app.run(url, port)
-        rasa.data_router.shutdown()
-        sys.exit(0)
+        os._exit(0)
     else:
         time.sleep(3)
         sem.acquire()
@@ -174,7 +173,6 @@ if __name__ == '__main__':
         trainer.train(training_data)
         persistor = create_persistor(config)
         trainer.persist("test_models", persistor, model_name=model_name)
-
 
     train("config_mitie.json", "test_model_mitie")
     train("config_spacy.json", "test_model_spacy_sklearn")

@@ -54,7 +54,7 @@ def http_test_server(tmpdir_factory):
         sem.release()
         rasa.app.run(url, port)
         rasa.data_router.shutdown()
-        sys.exit(0)
+        os._exit(0)
 
     else:
         time.sleep(3)

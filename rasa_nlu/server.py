@@ -10,6 +10,7 @@ from functools import wraps
 
 from klein import Klein
 from twisted.internet import reactor, threads
+from twisted.internet.defer import inlineCallbacks, returnValue, maybeDeferred
 
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.data_router import DataRouter, InvalidModelError
@@ -61,7 +62,7 @@ class RasaNLU(object):
 
     app = Klein()
 
-    def __init__(self, config, component_builder=None):
+    def __init__(self, config, component_builder=None, testing=False):
         logging.basicConfig(filename=config['log_file'], level=config['log_level'])
         logging.captureWarnings(True)
         logger.debug("Configuration: " + config.view())
@@ -69,6 +70,7 @@ class RasaNLU(object):
         logger.debug("Creating a new data router")
         self.config = config
         self.data_router = DataRouter(config, component_builder)
+        self.testing = testing
         reactor.suggestThreadPoolSize(config['num_threads'] * 5)
 
     @app.route("/", methods=['GET'])
@@ -79,7 +81,9 @@ class RasaNLU(object):
 
     @app.route("/parse", methods=['GET', 'POST'])
     @requires_auth
+    @inlineCallbacks
     def parse_get(self, request):
+        request.setHeader('Content-Type', 'application/json')
         if request.method.decode('utf-8', 'strict') == 'GET':
             request_params = {key.decode('utf-8', 'strict'): value[0].decode('utf-8', 'strict') for key, value in
                               request.args.items()}
@@ -87,22 +91,18 @@ class RasaNLU(object):
             request_params = json.loads(request.content.read().decode('utf-8', 'strict'))
         if 'q' not in request_params:
             request.setResponseCode(404)
-            request.setHeader('Content-Type', 'application/json')
-            return json.dumps({"error": "Invalid parse parameter specified"})
+            returnValue(json.dumps({"error": "Invalid parse parameter specified"}))
         else:
-            def errback(f):
-                f.trap(InvalidModelError)
-
-                request.setResponseCode(404)
-                request.setHeader('Content-Type', 'application/json')
-                return json.dumps({"error": "{}".format(f.getErrorMessage())})
-
             data = self.data_router.extract(request_params)
-            response = threads.deferToThread(self.data_router.parse, data)
-            request.setHeader('Content-Type', 'application/json')
-            response.addCallback(json.dumps)
-            response.addErrback(errback)
-            return response
+            try:
+                request.setResponseCode(200)
+                response = yield (maybeDeferred(self.data_router.parse, data)
+                                  if self.testing
+                                  else threads.deferToThread(self.data_router.parse, data))
+                returnValue(json.dumps(response))
+            except InvalidModelError as e:
+                request.setResponseCode(404)
+                returnValue(json.dumps({"error": "{}".format(e)}))
 
     @app.route("/version", methods=['GET'])
     @requires_auth
@@ -134,14 +134,14 @@ class RasaNLU(object):
             logger.debug("error: {}".format(f.getErrorMessage()))
 
         data_string = request.content.read().decode('utf-8', 'strict')
+        kwargs = {key.decode('utf-8', 'strict'): value[0].decode('utf-8', 'strict') for key, value in
+                  request.args.items()}
+        request.setHeader('Content-Type', 'application/json')
+        request.setResponseCode(200)
 
-        async_training = self.data_router.start_train_process(data_string,
-                                                    {key.decode('utf-8', 'strict'): value[0].decode('utf-8', 'strict')
-                                                     for key, value in request.args.items()})
-        async_training.addCallback(logger.debug)
+        async_training = self.data_router.start_train_process(data_string, kwargs)
         async_training.addErrback(errback)
 
-        request.setHeader('Content-Type', 'application/json')
         return json.dumps({"info": "training started."})
 
 
@@ -152,4 +152,21 @@ if __name__ == '__main__':
     rasa_nlu_config = RasaNLUConfig(cmdline_args.get("config"), os.environ, cmdline_args)
     rasa = RasaNLU(rasa_nlu_config)
     logger.info('Started http server on port %s' % rasa_nlu_config['port'])
-    rasa.app.run('0.0.0.0', rasa_nlu_config['port'])
+    # rasa.app.run('0.0.0.0', rasa_nlu_config['port'])
+
+    from treq.testing import StubTreq
+
+    stub = StubTreq(rasa.app.resource())
+
+    training_data = '{"rasa_nlu_data":{"entity_examples":[{"text":"hey","intent":"greet","entities":[]},{"text":"howdy","intent":"greet","entities":[]},{"text":"hey there","intent":"greet","entities":[]},{"text":"hello","intent":"greet","entities":[]},{"text":"hi","intent":"greet","entities":[]},{"text":"i\'m looking for a place to eat","intent":"restaurant_search","entities":[]},{"text":"i\'m looking for a place in the north of town","intent":"restaurant_search","entities":[]},{"text":"show me chinese restaurants","intent":"restaurant_search","entities":[]},{"text":"yes","intent":"affirm","entities":[]},{"text":"yep","intent":"affirm","entities":[]},{"text":"yeah","intent":"affirm","entities":[]},{"text":"show me a mexican place in the centre","intent":"restaurant_search","entities":[]},{"text":"bye","intent":"goodbye","entities":[]},{"text":"goodbye","intent":"goodbye","entities":[]},{"text":"good bye","intent":"goodbye","entities":[]},{"text":"stop","intent":"goodbye","entities":[]},{"text":"end","intent":"goodbye","entities":[]},{"text":"i am looking for an indian spot","intent":"restaurant_search","entities":[]},{"text":"search for restaurants","intent":"restaurant_search","entities":[]},{"text":"anywhere in the west","intent":"restaurant_search","entities":[]},{"text":"central indian restaurant","intent":"restaurant_search","entities":[]},{"text":"indeed","intent":"affirm","entities":[]},{"text":"that\'s right","intent":"affirm","entities":[]},{"text":"ok","intent":"affirm","entities":[]},{"text":"great","intent":"affirm","entities":[]}],"intent_examples":[{"text":"hey","intent":"greet"},{"text":"howdy","intent":"greet"},{"text":"hey there","intent":"greet"},{"text":"hello","intent":"greet"},{"text":"hi","intent":"greet"},{"text":"i\'m looking for a place to eat","intent":"restaurant_search"},{"text":"i\'m looking for a place in the north of town","intent":"restaurant_search"},{"text":"show me chinese restaurants","intent":"restaurant_search"},{"text":"yes","intent":"affirm"},{"text":"yep","intent":"affirm"},{"text":"yeah","intent":"affirm"},{"text":"show me a mexican place in the centre","intent":"restaurant_search"},{"text":"bye","intent":"goodbye"},{"text":"goodbye","intent":"goodbye"},{"text":"good bye","intent":"goodbye"},{"text":"stop","intent":"goodbye"},{"text":"end","intent":"goodbye"},{"text":"i am looking for an indian spot","intent":"restaurant_search"},{"text":"search for restaurants","intent":"restaurant_search"},{"text":"anywhere in the west","intent":"restaurant_search"},{"text":"central indian restaurant","intent":"restaurant_search"},{"text":"indeed","intent":"affirm"},{"text":"that\'s right","intent":"affirm"},{"text":"ok","intent":"affirm"},{"text":"great","intent":"affirm"}]}}'
+
+
+    @inlineCallbacks
+    def test_get():
+        response = yield stub.get('http://localhost/parse', params={'q': 'hello'},
+                                   data=training_data)
+        result = yield response.text()
+        print(result)
+
+
+    test_get()

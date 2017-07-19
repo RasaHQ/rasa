@@ -231,6 +231,6 @@ class DataRouter(object):
         self._add_training_to_queue()
         result = self.pool.submit(do_train_in_worker, train_config)
         result = deferred_from_future(result)
-        result.addCallback(self._remove_training_from_queue())
+        result.addCallback(lambda _: self._remove_training_from_queue())
 
         return result
