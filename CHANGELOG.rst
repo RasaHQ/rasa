@@ -9,6 +9,10 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 .. note:: This version is not yet released and is under active development.
 
+Added
+-----
+- Support for training data in Markdown format
+
 [0.9.0] - 2017-07-07
 ^^^^^^^^^^^^^^^^^^^^
 

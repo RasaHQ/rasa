@@ -25,6 +25,7 @@ API_FILE_FORMAT = "api"
 LUIS_FILE_FORMAT = "luis"
 RASA_FILE_FORMAT = "rasa_nlu"
 UNK_FILE_FORMAT = "unk"
+MARKDOWN_FILE_FORMAT = "md"
 
 
 def load_api_data(files):
@@ -133,6 +134,14 @@ def load_wit_data(filename):
             data["entities"] = entities
         training_examples.append(Message(text, data))
     return TrainingData(training_examples)
+
+
+def load_markdown_data(filename):
+    # type: (Text) -> TrainingData
+    """Loads training data stored in markdown data format."""
+    from rasa_nlu.utils.md_to_rasa import MarkdownToRasa
+    data = MarkdownToRasa(filename)
+    return TrainingData(data.get_common_examples(), data.get_entity_synonyms())
 
 
 def rasa_nlu_data_schema():
@@ -255,15 +264,21 @@ def guess_format(files):
 
     for filename in files:
         with io.open(filename, encoding="utf-8-sig") as f:
-            file_data = json.loads(f.read())
-        if "data" in file_data and type(file_data.get("data")) is list:
-            return WIT_FILE_FORMAT
-        elif "luis_schema_version" in file_data:
-            return LUIS_FILE_FORMAT
-        elif "userSays" in file_data:
-            return API_FILE_FORMAT
-        elif "rasa_nlu_data" in file_data:
-            return RASA_FILE_FORMAT
+            try:
+                raw_data = f.read()
+                file_data = json.loads(raw_data)
+                if "data" in file_data and type(file_data.get("data")) is list:
+                    return WIT_FILE_FORMAT
+                elif "luis_schema_version" in file_data:
+                    return LUIS_FILE_FORMAT
+                elif "userSays" in file_data:
+                    return API_FILE_FORMAT
+                elif "rasa_nlu_data" in file_data:
+                    return RASA_FILE_FORMAT
+
+            except ValueError:
+                if "## intent:" in raw_data:
+                    return MARKDOWN_FILE_FORMAT
 
     return UNK_FILE_FORMAT
 
@@ -297,5 +312,7 @@ def load_data(resource_name, fformat=None):
         return load_api_data(files)
     elif fformat == RASA_FILE_FORMAT:
         return load_rasa_data(files[0])
+    elif fformat == MARKDOWN_FILE_FORMAT:
+        return load_markdown_data(files[0])
     else:
         raise ValueError("unknown training file format : {} for file {}".format(fformat, resource_name))

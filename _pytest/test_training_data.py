@@ -70,6 +70,14 @@ def test_api_data():
     assert td.entity_synonyms != {}
 
 
+def test_markdown_data():
+    td = load_data('data/examples/markdown/')
+    assert td.entity_examples != []
+    assert td.intent_examples != []
+    assert td.entity_synonyms != {u'pink pig': u'savings', u'my checking account': u'checking', u'my savings account': \
+        u'savings', u'my checking': u'checking'} 
+
+
 def test_repeated_entities():
     data = """
 {
