@@ -96,8 +96,7 @@ class RasaNLU(object):
             data = self.data_router.extract(request_params)
             try:
                 request.setResponseCode(200)
-                response = yield (maybeDeferred(self.data_router.parse, data)
-                                  if self.testing
+                response = yield (self.data_router.parse(data) if self.testing
                                   else threads.deferToThread(self.data_router.parse, data))
                 returnValue(json.dumps(response))
             except InvalidModelError as e:
