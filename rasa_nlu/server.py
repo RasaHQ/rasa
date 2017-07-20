@@ -11,6 +11,7 @@ from flask import Flask
 from flask import current_app
 from flask import jsonify
 from flask import request
+from flask_cors import CORS, cross_origin
 from gevent.wsgi import WSGIServer
 
 from rasa_nlu.config import RasaNLUConfig
@@ -58,6 +59,8 @@ def requires_auth(f):
 
 def create_app(config, component_builder=None):
     rasa_nlu_app = Flask(__name__)
+    if 'cors' in config and config['cors'] == True:
+        CORS(rasa_nlu_app)
 
     @rasa_nlu_app.route("/parse", methods=['GET', 'POST'])
     @requires_auth
