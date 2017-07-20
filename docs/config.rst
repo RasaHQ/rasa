@@ -170,7 +170,7 @@ duckling_dimensions
 ~~~~~~~~~~~~~~~~~~~
 
 :Type: ``list``
-:Examples: ``["time", "number", "money", "distance"]``
+:Examples: ``["time", "number", "amount-of-money", "distance"]``
 :Description:
     Defines which dimensions, i.e. entity types, the :ref:`duckling component <section_pipeline_duckling>` will extract.
     A full list of available dimensions can be found in the `duckling documentation <https://duckling.wit.ai/>`_.
@@ -199,6 +199,15 @@ aws_region
 :Examples: ``"us-east-1"``
 :Description:
     Name of the aws region to use. This is used only when ``"storage"`` is selected as ``"aws"``.
+    See :ref:`section_persistence` for more details.
+
+aws_endpoint_url
+~~~~~~~~~~
+
+:Type: ``str``
+:Examples: ``"http://10.0.0.1:9000"``
+:Description:
+    Optional endpoint of the custom S3 compatible storage provider. This is used only when ``"storage"`` is selected as ``"aws"``.
     See :ref:`section_persistence` for more details.
 
 entity_crf_features

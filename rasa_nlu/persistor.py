@@ -23,7 +23,7 @@ def get_persistor(config):
         raise KeyError("No persistent storage specified. Supported values are {}".format(", ".join(['aws', 'gcs'])))
 
     if config['storage'] == 'aws':
-        return AWSPersistor(config['path'], config['aws_region'], config['bucket_name'])
+        return AWSPersistor(config['path'], config['aws_region'], config['bucket_name'], config['aws_endpoint_url'])
     elif config['storage'] == 'gcs':
         return GCSPersistor(config['path'], config['bucket_name'])
     else:
@@ -47,11 +47,11 @@ class Persistor(object):
 class AWSPersistor(Persistor):
     """Store models on S3 and fetch them when needed instead of storing them on the local disk."""
 
-    def __init__(self, data_dir, aws_region, bucket_name):
+    def __init__(self, data_dir, aws_region, bucket_name, endpoint_url):
         # type: (Text, Text, Text) -> None
         Persistor.__init__(self)
         self.data_dir = data_dir
-        self.s3 = boto3.resource('s3', region_name=aws_region)
+        self.s3 = boto3.resource('s3', region_name=aws_region, endpoint_url=endpoint_url)
         self.bucket_name = bucket_name
         try:
             self.s3.create_bucket(Bucket=bucket_name, CreateBucketConfiguration={'LocationConstraint': aws_region})
