@@ -1,0 +1,131 @@
+{
+  "rasa_nlu_data": {
+    "common_examples": [
+      {
+        "text": "what is my balance", 
+        "intent": "check_balance"
+      }, 
+      {
+        "text": "how much do I have", 
+        "intent": "check_balance"
+      }, 
+      {
+        "entities": [
+          {
+            "start": 25, 
+            "end": 32, 
+            "value": "savings", 
+            "entity": "source_account"
+          }
+        ], 
+        "intent": "check_balance", 
+        "text": "how much do I have on my savings"
+      }, 
+      {
+        "entities": [
+          {
+            "start": 25, 
+            "end": 43, 
+            "value": "savings", 
+            "entity": "source_account"
+          }
+        ], 
+        "intent": "check_balance", 
+        "text": "how much do I have on my my savings account"
+      }, 
+      {
+        "entities": [
+          {
+            "start": 12, 
+            "end": 20, 
+            "value": "checking", 
+            "entity": "source_account"
+          }
+        ], 
+        "intent": "check_balance", 
+        "text": "how much on checking"
+      }, 
+      {
+        "entities": [
+          {
+            "start": 12, 
+            "end": 23, 
+            "value": "checking", 
+            "entity": "source_account"
+          }
+        ], 
+        "intent": "check_balance", 
+        "text": "how much on my checking"
+      }, 
+      {
+        "entities": [
+          {
+            "start": 21, 
+            "end": 40, 
+            "value": "my checking account", 
+            "entity": "source_account"
+          }
+        ], 
+        "intent": "check_balance", 
+        "text": "how much is there on my checking account"
+      }, 
+      {
+        "entities": [
+          {
+            "start": 12, 
+            "end": 19, 
+            "value": "savings", 
+            "entity": "source_account"
+          }
+        ], 
+        "intent": "check_balance", 
+        "text": "how much on savings"
+      }, 
+      {
+        "entities": [
+          {
+            "start": 12, 
+            "end": 30, 
+            "value": "savings", 
+            "entity": "source_account"
+          }
+        ], 
+        "intent": "check_balance", 
+        "text": "how much on my savings account"
+      }, 
+      {
+        "entities": [
+          {
+            "start": 12, 
+            "end": 31, 
+            "value": "checking", 
+            "entity": "source_account"
+          }
+        ], 
+        "intent": "check_balance", 
+        "text": "how much on my checking account"
+      }, 
+      {
+        "text": "hey", 
+        "intent": "greet"
+      }, 
+      {
+        "text": "hello", 
+        "intent": "greet"
+      }, 
+      {
+        "text": "hi", 
+        "intent": "greet"
+      }, 
+      {
+        "text": "howdy", 
+        "intent": "greet"
+      }, 
+      {
+        "text": "how are you", 
+        "intent": "greet"
+      }
+    ], 
+    "regex_features": []
+  }
+}

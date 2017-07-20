@@ -245,7 +245,8 @@ def cmp_dict_list(firsts, seconds):
 @pytest.mark.parametrize("data_file,gold_standard_file", [
     ("data/examples/wit/demo-flights.json", "data/test/wit_converted_to_rasa.json"),
     ("data/examples/luis/demo-restaurants.json", "data/test/luis_converted_to_rasa.json"),
-    ("data/examples/api/", "data/test/api_converted_to_rasa.json")])
+    ("data/examples/api/", "data/test/api_converted_to_rasa.json"),
+    ("data/examples/markdown/", "data/test/md_converted_to_rasa.json")])
 def test_training_data_conversion(tmpdir, data_file, gold_standard_file):
     out_path = tmpdir.join("rasa_nlu_data.json")
     convert_training_data(data_file, out_path.strpath)
