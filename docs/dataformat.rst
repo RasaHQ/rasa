@@ -154,7 +154,7 @@ Alternatively training data can be used in the following markdown format (Regex 
     ## intent:check_balance
     - what is my balance <!-- no entity -->
     - how much do I have on my [savings](source_account) <!-- entity "source_account" has value "savings" -->
-    - how much do I have on my [my savings account](source_account:savings) <!-- synonyms, method 1 —>
+    - how much do I have on my [my savings account](source_account:savings) <!-- synonyms, method 1-->
 
     ## intent:greet
     - hey

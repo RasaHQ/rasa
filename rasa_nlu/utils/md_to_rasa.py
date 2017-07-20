@@ -1,6 +1,8 @@
-import codecs
-import json
-import sys
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import re
 import io
 from rasa_nlu.training_data import Message
@@ -22,26 +24,29 @@ class MarkdownToRasa:
         self.entity_synonyms = {}
         self.load()
 
-    def get_example(self, utter):
-        example = {'intent': self.current_intent}
+    def get_example(self, example_in_md):
         entities = []
-        example['text'] = utter
+        utter = example_in_md
         for regex in [ent_regex, ent_regex_with_value]:
-            example['text'] = re.sub(regex, r"\1", example['text'])
-            ent_matches = re.finditer(regex, utter)
+            utter = re.sub(regex, r"\1", example_in_md)  # [text](entity) -> text
+            ent_matches = re.finditer(regex, example_in_md)
             for matchNum, match in enumerate(ent_matches):
-                entity_value_in_utter = match.groupdict()['synonym'] if 'synonym' in match.groupdict() \
-                    else match.groupdict()['value']
+                if 'synonym' in match.groupdict():
+                    entity_value_in_utter = match.groupdict()['synonym']
+                else:
+                    entity_value_in_utter = match.groupdict()['value']
+
                 entities.append({
                     'entity': match.groupdict()['entity'],
                     'value': match.groupdict()['value'],
-                    'start': example['text'].index(entity_value_in_utter),
-                    'end': (example['text'].index(entity_value_in_utter) + len(entity_value_in_utter))
+                    'start': utter.index(entity_value_in_utter),
+                    'end': (utter.index(entity_value_in_utter) + len(entity_value_in_utter))
                 })
+
+        message = Message(utter, {'intent': self.current_intent})
         if len(entities) > 0:
-            example['entities'] = entities
-            return Message(example['text'], {'intent': example['intent'], 'entities': example['entities']})
-        return Message(example['text'], {'intent':example['intent']})
+            message.set('entities', entities)
+        return message
 
     def set_current_state(self, state, value):
         """ switch between 'intent' and 'synonyms' mode """
@@ -52,7 +57,7 @@ class MarkdownToRasa:
             self.current_intent = None
             self.current_word = value
         else:
-            raise ValueError('State must be either \'intent\' or \'synonym\'')
+            raise ValueError("State must be either 'intent' or 'synonym'")
 
     def get_current_state(self):
         """ informs whether whether we are currently loading intents or synonyms """
@@ -62,20 +67,20 @@ class MarkdownToRasa:
             return 'intent'
         else:
             raise ValueError(
-                'Inconsistent state: one and only one of \'current_intent\' or \'current_word\' should be None')
+                "Inconsistent state: one and only one of 'current_intent' or 'current_word' should be None")
 
     def load(self):
         """ parse the content of the actual .md file """
         with io.open(self.file_name, 'rU', encoding="utf-8-sig") as f:
             for row in f:
-                intent_match = re.findall(intent_regex, row)
-                if len(intent_match) > 0:
-                    self.set_current_state('intent', intent_match[0])
+                intent_match = re.search(intent_regex, row)
+                if intent_match is not None:
+                    self.set_current_state('intent', intent_match.group(1))
                     continue
 
-                synonym_match = re.findall(synonym_regex, row)
-                if len(synonym_match) > 0:
-                    self.set_current_state('synonym', synonym_match[0])
+                synonym_match = re.search(synonym_regex, row)
+                if synonym_match is not None:
+                    self.set_current_state('synonym', synonym_match.group(1))
                     continue
 
                 example_match = re.finditer(example_regex, row)
