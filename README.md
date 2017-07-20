@@ -112,7 +112,7 @@ Releasing a new version is quite simple, as the packages are build and distribut
     git push origin 0.7.x
     ```
 ## License
-Licensed under the Apache License, Version 2.0. Copyright 2017 Lastmile Technologies GmbH. [Copy of the license](LICENSE.txt).
+Licensed under the Apache License, Version 2.0. Copyright 2017 Rasa Technologies GmbH. [Copy of the license](LICENSE.txt).
 
 As a reference, the following contains a listing of the licenses of the different dependencies as of this writing. 
 Licenses of minimal dependencies:
