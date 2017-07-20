@@ -83,7 +83,7 @@ also returns a list of available models the server can use to fulfill ``/parse``
     }
     
 ``GET /version``
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^
 
 This will return the current version of the Rasa NLU instance.
 
