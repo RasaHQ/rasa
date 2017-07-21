@@ -12,6 +12,7 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 Added
 -----
 - Cors support. You can now specify allowed cors origins within your configuration file.
+- The HTTP server is now backed by Klein (Twisted) instead of Flask. The server is now asynchronous but is no more WSGI compatible
 
 [0.9.0] - 2017-07-07
 ^^^^^^^^^^^^^^^^^^^^

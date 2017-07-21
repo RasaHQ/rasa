@@ -8,7 +8,6 @@ tests_requires = [
     "pytest-services",
     "pytest-cov",
     "pytest-twisted",
-    "requests",
     "treq"
 ]
 
