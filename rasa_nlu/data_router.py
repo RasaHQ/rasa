@@ -49,7 +49,7 @@ class DataRouter(object):
     DEFAULT_MODEL_NAME = "default"
 
     def __init__(self, config, component_builder):
-        self._training_processes = config['max_training_processes'] if config['max_training_processes'] >= 0 else 1
+        self._training_processes = config['max_training_processes'] if config['max_training_processes'] > 0 else 1
         self.config = config
         self.responses = DataRouter._create_query_logger(config['response_log'])
         self._trainings_queued = 0
@@ -58,8 +58,7 @@ class DataRouter(object):
         self.emulator = self.__create_emulator()
         self.component_builder = component_builder if component_builder else ComponentBuilder(use_cache=True)
         self.model_store = self.__create_model_store()
-        if self._training_processes > 0:
-            self.pool = ProcessPool(self._training_processes)
+        self.pool = ProcessPool(self._training_processes)
 
     def __del__(self):
         """Terminates workers pool processes"""
@@ -234,12 +233,8 @@ class DataRouter(object):
 
         self._add_training_to_queue()
 
-        if self._training_processes > 0:
-            result = self.pool.submit(do_train_in_worker, train_config)
-            result = deferred_from_future(result)
-        else:
-            result = maybeDeferred(do_train_in_worker, train_config)
-
+        result = self.pool.submit(do_train_in_worker, train_config)
+        result = deferred_from_future(result)
         result.addCallback(training_callback)
 
         return result

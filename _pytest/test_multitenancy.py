@@ -44,7 +44,7 @@ def app(component_builder):
             "two": "test_model_mitie_sklearn",
             "three": "test_model_spacy_sklearn",
         },
-        "max_training_processes": 0
+        "max_training_processes": 1
     }
 
     config = RasaNLUConfig(cmdline_args=_config)

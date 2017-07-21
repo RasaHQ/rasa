@@ -7,6 +7,7 @@ from __future__ import absolute_import
 import tempfile
 
 import pytest
+import time
 
 from treq.testing import StubTreq
 
@@ -36,7 +37,7 @@ def app(tmpdir_factory):
         "server_model_dirs": {},
         "data": "./data/demo-restaurants.json",
         "emulate": "wit",
-        "max_training_processes": 0
+        "max_training_processes": 1
     }
 
     config = RasaNLUConfig(cmdline_args=_config)
@@ -63,7 +64,7 @@ def test_status(app):
     response = yield app.get("http://dummy_uri/status")
     rjs = yield response.json()
     assert response.code == 200 and ('trainings_queued' in rjs and 'training_workers' in rjs)
-    assert rjs['training_workers'] == 0
+    assert rjs['training_workers'] == 1
 
 
 @pytest.inlineCallbacks
@@ -129,6 +130,8 @@ def test_post_parse(app, response_test):
 def test_post_train(app, rasa_default_train_data):
     response = app.post("http://dummy_uri/train", data=json.dumps(rasa_default_train_data),
                         content_type='application/json')
+    time.sleep(3)
+    app.flush()
     response = yield response
     rjs = yield response.json()
     assert response.code == 200
@@ -143,6 +146,8 @@ def test_model_hot_reloading(app, rasa_default_train_data):
 
     response = app.post("http://dummy_uri/train?name=my_keyword_model&pipeline=keyword",
                         data=json.dumps(rasa_default_train_data), content_type='application/json')
+    time.sleep(3)
+    app.flush()
     response = yield response
     assert response.code == 200, "Training should end successfully"
 

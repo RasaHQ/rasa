@@ -70,7 +70,7 @@ max_training_processes
 :Examples: ``1``
 :Description:
     Number of processes used to handle training requests. Increasing this value will have a great impact on memory usage.
-    It is recommended to keep the default value. Setting to 0 is only used for testing: it will make the whole server block until a training is done.
+    It is recommended to keep the default value.
 
 path
 ~~~~
