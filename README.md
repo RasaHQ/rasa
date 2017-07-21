@@ -129,7 +129,7 @@ Licenses of minimal dependencies:
 | jsonschema 	   | MIT                	|
 | matplotlib       | PSF                    |
 
-Licenses of optional dependencies (only required for certain components of Rasa NLU. Hence, they are optional):
+Licenses of optional dependencies (only required for certain components of Rasa NLU. Hence, they are optional): 
 
 | optional package     | License            	    |
 |----------------------|----------------------------|
