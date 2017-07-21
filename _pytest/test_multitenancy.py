@@ -36,14 +36,15 @@ def app(component_builder):
     _config = {
         'write': nlu_log_file,
         'port': -1,  # unused in test app
-        "backend": "mitie",
+        "pipeline": "keyword",
         "path": os.path.join(root_dir, "test_models"),
         "data": os.path.join(root_dir, "data/demo-restaurants.json"),
         "server_model_dirs": {
             "one": "test_model_mitie",
             "two": "test_model_mitie_sklearn",
             "three": "test_model_spacy_sklearn",
-        }
+        },
+        "max_training_processes": 0
     }
 
     config = RasaNLUConfig(cmdline_args=_config)

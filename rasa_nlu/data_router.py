@@ -16,7 +16,7 @@ from builtins import object
 from typing import Text
 
 from concurrent.futures import ProcessPoolExecutor as ProcessPool
-from twisted.internet import defer
+from twisted.internet.defer import Deferred, maybeDeferred
 from twisted.logger import jsonFileLogObserver, Logger
 
 from rasa_nlu import utils
@@ -32,7 +32,7 @@ def deferred_from_future(future):
     """Converts a concurrent.futures.Future object to a twisted.internet.defer.Deferred obejct.
     See: https://twistedmatrix.com/pipermail/twisted-python/2011-January/023296.html
     """
-    d = defer.Deferred()
+    d = Deferred()
 
     def callback(future):
         e = future.exception()
@@ -49,7 +49,7 @@ class DataRouter(object):
     DEFAULT_MODEL_NAME = "default"
 
     def __init__(self, config, component_builder):
-        self._training_processes = config['max_training_processes'] if config['max_training_processes'] > 0 else 1
+        self._training_processes = config['max_training_processes'] if config['max_training_processes'] >= 0 else 1
         self.config = config
         self.responses = DataRouter._create_query_logger(config['response_log'])
         self._trainings_queued = 0
@@ -58,7 +58,8 @@ class DataRouter(object):
         self.emulator = self.__create_emulator()
         self.component_builder = component_builder if component_builder else ComponentBuilder(use_cache=True)
         self.model_store = self.__create_model_store()
-        self.pool = ProcessPool(self._training_processes)
+        if self._training_processes > 0:
+            self.pool = ProcessPool(self._training_processes)
 
     def __del__(self):
         """Terminates workers pool processes"""
@@ -216,7 +217,6 @@ class DataRouter(object):
         }
 
     def start_train_process(self, data, config_values):
-        logger.info("Starting model training")
         f = tempfile.NamedTemporaryFile("w+", suffix="_training_data.json", delete=False)
         f.write(data)
         f.close()
@@ -228,9 +228,18 @@ class DataRouter(object):
         train_config = RasaNLUConfig(cmdline_args=_config)
         logger.info("New training queued")
 
+        def training_callback(model_path):
+            self._remove_training_from_queue()
+            return os.path.basename(os.path.normpath(model_path))
+
         self._add_training_to_queue()
-        result = self.pool.submit(do_train_in_worker, train_config)
-        result = deferred_from_future(result)
-        result.addCallback(lambda _: self._remove_training_from_queue())
+
+        if self._training_processes > 0:
+            result = self.pool.submit(do_train_in_worker, train_config)
+            result = deferred_from_future(result)
+        else:
+            result = maybeDeferred(do_train_in_worker, train_config)
+
+        result.addCallback(training_callback)
 
         return result

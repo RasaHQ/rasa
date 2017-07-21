@@ -70,7 +70,7 @@ max_training_processes
 :Examples: ``1``
 :Description:
     Number of processes used to handle training requests. Increasing this value will have a great impact on memory usage.
-    It is recommended to keep the default value.
+    It is recommended to keep the default value. Setting to 0 is only used for testing: it will make the whole server block until a training is done.
 
 path
 ~~~~
@@ -127,7 +127,7 @@ cors_origins
 :Type: ``list``
 :Examples: ``['*']``, ``['*.mydomain.com', 'api.domain2.net']``
 :Description:
-    List of domain patterns from where CORS (cross-origin resource sharing) calls are allowed. 
+    List of domain patterns from where CORS (cross-origin resource sharing) calls are allowed.
     The default value is ``[]`` which forbids all CORS requests.
 
 emulate

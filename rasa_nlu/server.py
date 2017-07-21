@@ -43,17 +43,15 @@ def create_argparser():
     return parser
 
 
-def requires_auth(f):
-    """Wraps a request handler with token authentication."""
+def check_cors(f):
+    """Wraps a request handler with CORS headers checking."""
 
     @wraps(f)
     def decorated(*args, **kwargs):
         self = args[0]
         request = args[1]
-        token = request.args.get('token', [''])[0]
-
-        # Add CORS support
         origin = request.getHeader('Origin')
+
         if origin:
             if '*' in self.config['cors_origins']:
                 request.setHeader('Access-Control-Allow-Origin', '*')
@@ -62,6 +60,20 @@ def requires_auth(f):
             else:
                 request.setResponseCode(403)
                 return 'forbidden'
+
+        return f(*args, **kwargs)
+
+    return decorated
+
+
+def requires_auth(f):
+    """Wraps a request handler with token authentication."""
+
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        self = args[0]
+        request = args[1]
+        token = request.args.get('token', [''])[0]
 
         if self.data_router.token is None or token == self.data_router.token:
             return f(*args, **kwargs)
@@ -84,16 +96,18 @@ class RasaNLU(object):
         logger.debug("Creating a new data router")
         self.config = config
         self.data_router = DataRouter(config, component_builder)
-        self.testing = testing
+        self._testing = testing
         reactor.suggestThreadPoolSize(config['num_threads'] * 5)
 
     @app.route("/", methods=['GET'])
+    @check_cors
     def hello(self, request):
         """Main Rasa route to check if the server is online"""
         return "hello from Rasa NLU: " + __version__
 
     @app.route("/parse", methods=['GET', 'POST'])
     @requires_auth
+    @check_cors
     @inlineCallbacks
     def parse_get(self, request):
         request.setHeader('Content-Type', 'application/json')
@@ -109,7 +123,7 @@ class RasaNLU(object):
             data = self.data_router.extract(request_params)
             try:
                 request.setResponseCode(200)
-                response = yield (self.data_router.parse(data) if self.testing
+                response = yield (self.data_router.parse(data) if self._testing
                                   else threads.deferToThread(self.data_router.parse, data))
                 returnValue(json.dumps(response))
             except InvalidModelError as e:
@@ -118,6 +132,7 @@ class RasaNLU(object):
 
     @app.route("/version", methods=['GET'])
     @requires_auth
+    @check_cors
     def version(self, request):
         """Returns the Rasa server's version"""
 
@@ -126,6 +141,7 @@ class RasaNLU(object):
 
     @app.route("/config", methods=['GET'])
     @requires_auth
+    @check_cors
     def rasaconfig(self, request):
         """Returns the in-memory configuration of the Rasa server"""
 
@@ -134,27 +150,28 @@ class RasaNLU(object):
 
     @app.route("/status", methods=['GET'])
     @requires_auth
+    @check_cors
     def status(self, request):
         request.setHeader('Content-Type', 'application/json')
         return json.dumps(self.data_router.get_status())
 
     @app.route("/train", methods=['POST'])
     @requires_auth
+    @check_cors
+    @inlineCallbacks
     def train(self, request):
-        def errback(f):
-            f.trap(ValueError)
-            logger.debug("error: {}".format(f.getErrorMessage()))
-
         data_string = request.content.read().decode('utf-8', 'strict')
         kwargs = {key.decode('utf-8', 'strict'): value[0].decode('utf-8', 'strict') for key, value in
                   request.args.items()}
         request.setHeader('Content-Type', 'application/json')
-        request.setResponseCode(200)
 
-        async_training = self.data_router.start_train_process(data_string, kwargs)
-        async_training.addErrback(errback)
-
-        return json.dumps({"info": "training started."})
+        try:
+            request.setResponseCode(200)
+            response = yield self.data_router.start_train_process(data_string, kwargs)
+            returnValue(json.dumps({'info': 'new model trained: {}'.format(response)}))
+        except ValueError as e:
+            request.setResponseCode(500)
+            returnValue(json.dumps({"error": "{}".format(e)}))
 
 
 if __name__ == '__main__':

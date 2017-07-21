@@ -48,10 +48,11 @@ You must POST data in this format ``'{"q":"<your text to parse>"}'``, you can do
 ^^^^^^^^^^^^^^^
 
 You can post your training data to this endpoint to train a new model.
-this starts a separate process which you can monitor with the ``/status`` endpoint. If you want to name your model
-to be able to use it during parse requests later on, you should pass the name ``/train?name=my_model``. Any parameter
-passed with the query string will be treated as a configuration parameter of the model, hence you can change all
-the configuration values listed in the configuration section by passing in their name and the adjusted value.
+This request will wait for the server answer: either the model was trained successfully or the training errored.
+If you want to name your model to be able to use it during parse requests later on,
+you should pass the name ``/train?name=my_model``. Any parameter passed with the query string will be treated as a
+configuration parameter of the model, hence you can change all the configuration values listed in the
+configuration section by passing in their name and the adjusted value.
 
 .. code-block:: bash
 
@@ -125,7 +126,7 @@ So if you are serving multiple models in production, you want to serve these
 from the same process & avoid duplicating the memory load.
 
 .. note::
-    Although this saves the backend from loading the same backend twice, it still needs to load one set of
+Although this saves the backend from loading the same backend twice, it still needs to load one set of
     word vectors (which make up most of the memory consumption) per language and backend.
 
 You can use the multi-tenancy mode by replacing the ``server_model_dirs`` config

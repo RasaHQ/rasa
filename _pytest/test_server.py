@@ -7,7 +7,6 @@ from __future__ import absolute_import
 import tempfile
 
 import pytest
-import time
 
 from treq.testing import StubTreq
 
@@ -32,11 +31,12 @@ def app(tmpdir_factory):
     _config = {
         'write': nlu_log_file,
         'port': -1,  # unused in test app
-        "backend": "mitie",
+        "pipeline": "keyword",
         "path": tmpdir_factory.mktemp("models").strpath,
         "server_model_dirs": {},
         "data": "./data/demo-restaurants.json",
         "emulate": "wit",
+        "max_training_processes": 0
     }
 
     config = RasaNLUConfig(cmdline_args=_config)
@@ -63,7 +63,7 @@ def test_status(app):
     response = yield app.get("http://dummy_uri/status")
     rjs = yield response.json()
     assert response.code == 200 and ('trainings_queued' in rjs and 'training_workers' in rjs)
-    assert rjs['training_workers'] > 0
+    assert rjs['training_workers'] == 0
 
 
 @pytest.inlineCallbacks
@@ -127,11 +127,12 @@ def test_post_parse(app, response_test):
 @utilities.slowtest
 @pytest.inlineCallbacks
 def test_post_train(app, rasa_default_train_data):
-    response = yield app.post("http://dummy_uri/train", data=json.dumps(rasa_default_train_data),
-                              content_type='application/json')
+    response = app.post("http://dummy_uri/train", data=json.dumps(rasa_default_train_data),
+                        content_type='application/json')
+    response = yield response
     rjs = yield response.json()
     assert response.code == 200
-    assert rjs["info"] == "training started."
+    assert rjs["info"].startswith("new model trained: ")
 
 
 @pytest.inlineCallbacks
@@ -139,9 +140,11 @@ def test_model_hot_reloading(app, rasa_default_train_data):
     query = "http://dummy_uri/parse?q=hello&model=my_keyword_model"
     response = yield app.get(query)
     assert response.code == 404, "Model should not exist yet"
-    response = yield app.post("http://dummy_uri/train?name=my_keyword_model&pipeline=keyword",
-                              data=json.dumps(rasa_default_train_data), content_type='application/json')
-    assert response.code == 200, "Training should start successfully"
-    time.sleep(5)  # training should be quick as the keyword model doesn't do any training
+
+    response = app.post("http://dummy_uri/train?name=my_keyword_model&pipeline=keyword",
+                        data=json.dumps(rasa_default_train_data), content_type='application/json')
+    response = yield response
+    assert response.code == 200, "Training should end successfully"
+
     response = yield app.get(query)
     assert response.code == 200, "Model should now exist after it got trained"
