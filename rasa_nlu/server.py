@@ -59,8 +59,8 @@ def requires_auth(f):
 
 def create_app(config, component_builder=None):
     rasa_nlu_app = Flask(__name__)
-    if 'cors' in config and config['cors'] == True:
-        CORS(rasa_nlu_app)
+    if 'cors_origins' in config:
+        CORS(rasa_nlu_app, resources={r"/*": {"origins": config['cors_origins']}})
 
     @rasa_nlu_app.route("/parse", methods=['GET', 'POST'])
     @requires_auth
