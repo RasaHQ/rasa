@@ -122,6 +122,9 @@ If set, this token must be passed as a query parameter in all requests, e.g. :
 
     $ curl localhost:5000/status?token=12345
 
+On default CORS (cross-origin resource sharing) calls are not allowed. If you want to call your rasa NLU server from another domain (for example from a training web UI) then you can whitelist that domain by adding it to the config value ``cors_origin``.
+
+
 .. _section_http_config:
 
 Serving Multiple Apps
