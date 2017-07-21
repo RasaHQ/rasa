@@ -28,7 +28,7 @@ class MarkdownToRasa:
         entities = []
         utter = example_in_md
         for regex in [ent_regex, ent_regex_with_value]:
-            utter = re.sub(regex, r"\1", example_in_md)  # [text](entity) -> text
+            utter = re.sub(regex, r"\1", utter)  # [text](entity) -> text
             ent_matches = re.finditer(regex, example_in_md)
             for matchNum, match in enumerate(ent_matches):
                 if 'synonym' in match.groupdict():
