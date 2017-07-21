@@ -15,16 +15,6 @@ You can run a simple http server that handles requests using your models with (s
 
     $ python -m rasa_nlu.server -c config_spacy.json --server_model_dirs=./model_YYYYMMDD-HHMMSS
 
-If your server needs to handle more than one request at a time, you can use any WSGI server to run the rasa NLU server. Using gunicorn this looks like this:
-
-.. code-block:: bash
-
-    $ gunicorn -w 4 --threads 12 -k gevent -b 127.0.0.1:5000 rasa_nlu.wsgi
-
-This will start a server with four processes and 12 threads. Since there is no standard way to pass command line arguments to the server, all your configuration
-options need to be placed in your configuration file (including the ``server_model_dirs``!). You can set the location of the configuration file using environment
-variables, otherwise the default configuration from ``config.json`` will be loaded.
-
 
 Emulation
 ---------
@@ -121,6 +111,9 @@ If set, this token must be passed as a query parameter in all requests, e.g. :
 .. code-block:: bash
 
     $ curl localhost:5000/status?token=12345
+
+On default CORS (cross-origin resource sharing) calls are not allowed. If you want to call your rasa NLU server from another domain (for example from a training web UI) then you can whitelist that domain by adding it to the config value ``cors_origin``.
+
 
 .. _section_http_config:
 

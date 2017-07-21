@@ -63,6 +63,15 @@ num_threads
     Number of threads used during training (not supported by all components, though.
     Some of them might still be single threaded!).
 
+max_training_processes
+~~~~~~~~~~~
+
+:Type: ``int``
+:Examples: ``1``
+:Description:
+    Number of processes used to handle training requests. Increasing this value will have a great impact on memory usage.
+    It is recommended to keep the default value.
+
 path
 ~~~~
 
@@ -111,6 +120,15 @@ data
 :Examples: ``"data/example.json"``
 :Description:
     Location of the training data.
+
+cors_origins
+~~~~
+
+:Type: ``list``
+:Examples: ``['*']``, ``['*.mydomain.com', 'api.domain2.net']``
+:Description:
+    List of domain patterns from where CORS (cross-origin resource sharing) calls are allowed. 
+    The default value is ``[]`` which forbids all CORS requests.
 
 emulate
 ~~~~~~~

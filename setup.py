@@ -7,11 +7,12 @@ tests_requires = [
     "pytest-pep8",
     "pytest-services",
     "pytest-cov",
-    "requests"
+    "pytest-twisted",
+    "requests",
+    "treq"
 ]
 
 install_requires = [
-    "requests",
     "pathlib",
     "cloudpickle",
     "gevent",

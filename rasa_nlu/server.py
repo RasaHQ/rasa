@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
+
 import argparse
 import json
 import logging
@@ -50,9 +51,22 @@ def requires_auth(f):
         self = args[0]
         request = args[1]
         token = request.args.get('token', [''])[0]
+
+        # Add CORS support
+        origin = request.getHeader('Origin')
+        if origin:
+            if '*' in self.config['cors_origins']:
+                request.setHeader('Access-Control-Allow-Origin', '*')
+            elif origin in self.config['cors_origins']:
+                request.setHeader('Access-Control-Allow-Origin', origin)
+            else:
+                request.setResponseCode(403)
+                return 'forbidden'
+
         if self.data_router.token is None or token == self.data_router.token:
             return f(*args, **kwargs)
-        return "unauthorized", 401
+        request.setResponseCode(401)
+        return 'unauthorized'
 
     return decorated
 
@@ -76,7 +90,6 @@ class RasaNLU(object):
     @app.route("/", methods=['GET'])
     def hello(self, request):
         """Main Rasa route to check if the server is online"""
-
         return "hello from Rasa NLU: " + __version__
 
     @app.route("/parse", methods=['GET', 'POST'])
