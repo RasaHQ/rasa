@@ -43,9 +43,12 @@ class Agent(object):
             return self._models[self._default_model].parse(text, time)
 
     def update(self):
+        last_model = self._default_model
+
         self._search_for_models()
         self._default_model = self._latest_agent_model()
-        self.status = 0
+        if (last_model != self._default_model):
+            self.status = 0
 
     def _latest_agent_model(self):
         """Retrieves the latest trained model for an agent"""

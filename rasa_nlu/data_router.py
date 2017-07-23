@@ -162,6 +162,13 @@ class DataRouter(object):
             _config[key] = val
         _config["data"] = f.name
         train_config = RasaNLUConfig(cmdline_args=_config)
+
+        agent = _config.get("name", False)
+        if agent:
+            self.agent_store[agent].status = 1
+        else:
+            self.agent_store[self.DEFAULT_AGENT_NAME].status = 1
+
         process = multiprocessing.Process(target=do_train, args=(train_config, self.component_builder))
         self._add_train_proc(process)
         process.start()
