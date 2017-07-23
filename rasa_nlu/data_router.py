@@ -14,9 +14,10 @@ from builtins import object
 from typing import Text
 
 from rasa_nlu import utils
+from rasa_nlu.agent import Agent
 from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.config import RasaNLUConfig
-from rasa_nlu.model import Metadata, InvalidModelError, Interpreter
+from rasa_nlu.model import InvalidModelError
 from rasa_nlu.train import do_train
 
 logger = logging.getLogger(__name__)
@@ -31,17 +32,9 @@ class DataRouter(object):
         self._train_procs = []
         self.model_dir = config['path']
         self.token = config['token']
-        self.emulator = self.__create_emulator()
+        self.emulator = self._create_emulator()
         self.component_builder = component_builder if component_builder else ComponentBuilder(use_cache=True)
-        self.agent_store = self.__create_agent_store()
-
-    @staticmethod
-    def _latest_agent_model(agent_path):
-        """Retrieves the latest trained model for an agent"""
-        agent_models = {model[6:]: model for model in os.listdir(agent_path)}
-        time_list = [datetime.datetime.strptime(time, '%Y%m%d-%H%M%S') for time, model in agent_models.items()]
-
-        return agent_models[max(time_list).strftime('%Y%m%d-%H%M%S')]
+        self.agent_store = self._create_agent_store()
 
     @staticmethod
     def _create_query_logger(response_log_dir):
@@ -89,77 +82,19 @@ class DataRouter(object):
         """Returns the ids of the running trainings processes."""
         return [p.ident for p in self.train_procs]
 
-    def __search_for_models(self):
-        models = {}
-        if os.path.isdir(self.config.path):
-            for agent_dirname in os.listdir(self.config.path):
-                agent_path = os.path.join(self.config['path'], agent_dirname)
-                models[agent_dirname] = DataRouter._latest_agent_model(agent_path)
-
-        return models
-
-    def __interpreter_for_model(self, latest_model_path):
-        metadata = DataRouter.read_model_metadata(latest_model_path, self.config)
-        return Interpreter.load(metadata, self.config, self.component_builder)
-
-    def __create_agent_store(self):
-        # Fallback for users that specified the model path as a string and hence only want a single default model.
-        if type(self.config.server_model_dirs) is Text:
-            model_dict = {self.DEFAULT_AGENT_NAME: self.config.server_model_dirs}
-        elif self.config.server_model_dirs is None:
-            model_dict = self.__search_for_models()
-        else:
-            model_dict = self.config.server_model_dirs
+    def _create_agent_store(self):
+        agents = os.listdir(self.config['path'])
 
         agent_store = {}
 
-        for agent, model_dirname in list(model_dict.items()):
-            try:
-                model_path = os.path.join(self.config['path'], agent, model_dirname)
-                logger.info("Loading model '{}' for agent '{}'...".format(model_dirname, agent))
-                agent_store[agent] = self.__interpreter_for_model(model_path)
-            except Exception as e:
-                logger.exception("Failed to load model '{}' for agent '{}'. Error: {}".format(model_dirname, agent, e))
+        for agent in agents:
+            agent_store[agent] = Agent(self.config, self.component_builder, agent)
+
         if not agent_store:
-            meta = Metadata({"pipeline": ["intent_classifier_keyword"]}, "")
-            interpreter = Interpreter.load(meta, self.config, self.component_builder)
-            agent_store[self.DEFAULT_AGENT_NAME] = interpreter
+            agent_store[self.DEFAULT_AGENT_NAME] = Agent()
         return agent_store
 
-    @staticmethod
-    def default_model_metadata():
-        return {
-            "language": None,
-        }
-
-    @staticmethod
-    def load_model_from_cloud(model_dir, config):
-        try:
-            from rasa_nlu.persistor import get_persistor
-            p = get_persistor(config)
-            if p is not None:
-                p.fetch_and_extract('{0}.tar.gz'.format(os.path.basename(model_dir)))
-            else:
-                raise RuntimeError("Unable to initialize persistor")
-        except Exception as e:
-            logger.warn("Using default interpreter, couldn't fetch model: {}".format(e))
-
-    @staticmethod
-    def read_model_metadata(model_dir, config):
-        if model_dir is None:
-            data = DataRouter.default_model_metadata()
-            return Metadata(data, model_dir)
-        else:
-            if not os.path.isabs(model_dir):
-                model_dir = os.path.join(config['path'], model_dir)
-
-            # download model from S3 if needed
-            if not os.path.isdir(model_dir):
-                DataRouter.load_model_from_cloud(model_dir, config)
-
-            return Metadata.load(model_dir)
-
-    def __create_emulator(self):
+    def _create_emulator(self):
         mode = self.config['emulate']
         if mode is None:
             from rasa_nlu.emulators import NoEmulator
@@ -180,20 +115,23 @@ class DataRouter(object):
         return self.emulator.normalise_request_json(data)
 
     def parse(self, data):
-        agent = data.get("model") or self.DEFAULT_AGENT_NAME
+        agent = data.get("agent") or self.DEFAULT_AGENT_NAME
+
         if agent not in self.agent_store:
-            model_dict = self.__search_for_models()
-            try:
-                model_path = os.path.join(self.config['path'], agent, model_dict[agent])
-                self.agent_store[agent] = self.__interpreter_for_model(latest_model_path=model_path)
-            except KeyError as e:
+            agents = os.listdir(self.config['path'])
+            if agent not in agents:
                 raise InvalidModelError(
                     "No agent found with name '{}'.".format(agent))
-            except Exception as e:
-                raise InvalidModelError("No agent found with name '{}'. Error: {}".format(agent, e))
+            else:
+                try:
+                    self.agent_store[agent] = Agent(self.config, self.component_builder, agent)
+                except Exception as e:
+                    raise InvalidModelError("No agent found with name '{}'. Error: {}".format(agent, e))
 
-        model = self.agent_store[agent]
-        response = model.parse(data['text'], data.get('time', None))
+        if self.agent_store[agent].status == 1:
+            self.agent_store[agent].update()
+
+        response = self.agent_store[agent].parse(data['text'], data.get('time', None))
         if self.responses:
             log = {"user_input": response, "model": agent, "time": datetime.datetime.now().isoformat()}
             self.responses.info(json.dumps(log, sort_keys=True))
