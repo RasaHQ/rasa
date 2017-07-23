@@ -30,6 +30,7 @@ DEFAULT_CONFIG = {
     "port": 5000,
     "server_model_dirs": None,
     "token": None,
+    "cors_origins": [],
     "max_number_of_ngrams": 7,
     "pipeline": [],
     "response_log": "logs",

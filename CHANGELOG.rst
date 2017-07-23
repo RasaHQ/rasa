@@ -9,6 +9,10 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 .. note:: This version is not yet released and is under active development.
 
+Added
+-----
+- Cors support. You can now specify allowed cors origins within your configuration file.
+
 [0.9.0] - 2017-07-07
 ^^^^^^^^^^^^^^^^^^^^
 
