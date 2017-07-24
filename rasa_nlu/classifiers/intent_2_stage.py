@@ -15,9 +15,6 @@ from builtins import map
 from typing import Any
 from typing import Dict
 from typing import Text
-from sklearn.model_selection import GridSearchCV
-from sklearn.svm import SVC
-
 
 import rasa_nlu.converters as converters
 from rasa_nlu.training_data import TrainingData, Message
@@ -28,11 +25,11 @@ from rasa_nlu.components import Component
 
 MAX_CV_FOLDS = 5
 
-class Intent2Stage(Component):
+class IntentOutOfScope2Stage(Component):
     """
-    Out-of-scope intent classification component.  Add to a processing pipeline after intent 
-    classification to detect OOS intents.  Uses a binary SVC trained on a set of negative 
-    data (oos) and all of the positive data (all relevant intents).
+    Out-of-scope intent classification component.  Add to a processing pipeline after intent classification to 
+    detect OOS intents.  Uses a binary SVC trained on a set of negative data (oos) and all of the positive data 
+    (all relevant intents).
     """
 
     name = "intent_2_stage"
@@ -44,10 +41,13 @@ class Intent2Stage(Component):
     def __init__(self, clf=None):
         self.clf = clf
 
+    @classmethod
+    def required_packages(cls):
+        # type: () -> List[Text]
+        return ["sklearn"]
+
     def fb_format(self, file_path):
-        """
-        Clean data from fb-page-comment-scraper and return it as a list of sentences.  
-        """
+        """Clean data from fb-page-comment-scraper and return it as a list of sentences"""
     
         # Need this to direct prints to jupyter notebook rather than the terminal
         import sys
@@ -61,7 +61,8 @@ class Intent2Stage(Component):
                 text = re.sub(i, j, text)
             return(text)
 
-        # This dictionary removes: line breaks, [[something (eg. PHOTO)]], strings of 4 or more non-alphanumeric characters, links
+        # This dictionary removes: line breaks, [[something (eg. PHOTO)]], strings of 4 or more non-alphanumeric 
+        # characters, links
         dic =   {
                 '\n': '',
                 '\[\[[a-zA-Z]+\]\]': '',
@@ -70,7 +71,6 @@ class Intent2Stage(Component):
                 }
 
         with open(file_path, 'rU') as infile:
-        # Read file as a dictionary for each row ({header : value})
             reader = csv.DictReader(infile)
             data = {}
             for row in reader:
@@ -84,7 +84,6 @@ class Intent2Stage(Component):
         neg_train_data = []
         for comment in raw:
             comment = replace_all(comment, dic)
-            # Ignore istitle() as a coarse filter for just @tag comments
             sents = [sent for sent in re.split('[.?!]+', comment) if (not(sent.decode('unicode_escape').encode('ascii','ignore').istitle()) and re.match('.*[a-zA-Z]+', sent))]
             if (len(sents) > 0 & len(sents) < 3):
                 if not(isinstance(comment, unicode)):
@@ -93,9 +92,7 @@ class Intent2Stage(Component):
         return neg_train_data
 
     def twitter_format(self, file_path):
-        """
-        Clean data from twitter-dumper and return it as a list of coarsly-cleaned sentences.  
-        """
+        """Clean data from twitter-dumper and return it as a list of coarsly-cleaned sentences"""
     
         # Need this to direct prints to jupyter notebook rather than the terminal
         import sys
@@ -118,7 +115,6 @@ class Intent2Stage(Component):
                 }
 
         with open(file_path, 'rU') as infile:
-        # Read file as a dictionary for each row ({header : value})
             reader = csv.DictReader(infile)
             data = {}
             for row in reader:
@@ -132,7 +128,6 @@ class Intent2Stage(Component):
         data = []
         for comment in raw:
             comment = replace_all(comment, dic)
-            # Ignore istitle() as a coarse filter for just @tag comments
             sents = [sent for sent in re.split('[.?!]+', comment) if (not(sent.decode('unicode_escape').encode('ascii','ignore').istitle()) and re.match('.*[a-zA-Z]+', sent))]
             if (len(sents) > 0 & len(sents) < 3):
                 if not(isinstance(comment, unicode)):
@@ -141,9 +136,8 @@ class Intent2Stage(Component):
         return data
 
     def neg_featurize(self, data):
-        """
-        Use the previously trained featurizers in the pipeline to featurize the negative training data (a set of sentences)
-        """
+        """Use the previously trained featurizers in the pipeline to featurize the negative training data (a 
+        set of sentences) """
 
         X_neg = []
         for example in data:
@@ -154,13 +148,15 @@ class Intent2Stage(Component):
         return X_neg 
 
     def train(self, training_data, config, **kwargs):
-        """ 
-        Train an SVC on both +/- training sets. intent_features is the positive class training set. Currently, 
-        the negative training set is explicitly created inside this function
-        """
+        """ Train a binary SVC on both +/- training sets. 
+
+        Only positive training data is passed to the function, negative data is appended inside from 
+        config['negative _data_path']"""
+        from sklearn.model_selection import GridSearchCV
+        from sklearn.svm import SVC
 
         intent_features = np.stack([example.get("text_features") for example in training_data.intent_examples])
-        raw_data = self.twitter_format(config["negative_data_path"])
+        raw_data = self.fb_format(config["negative_data_path"])
         split = config["training_split"]
         idx = np.random.randint(len(raw_data), size=int(intent_features.shape[0] * split))
 
@@ -182,10 +178,9 @@ class Intent2Stage(Component):
         self.clf.fit(X, y)
 
     def make_test_set(self, path, config):
-        """
-        Create a test set by appending a random set of negative examples to an existing json file of positive examples. 
-        `split` indicates the proportion of negative examples in the test set (ie 0.5 = 50% negative examples).
-        """
+        """ Create a test set by appending a random set of negative examples to an existing json file of positive examples. 
+        
+        `split` indicates the proportion of negative examples in the test set (ie 0.5 = 50% negative examples)"""
         split = config["testing_split"]
         neg_path = config["negative_data_path"]
         
@@ -197,7 +192,7 @@ class Intent2Stage(Component):
         # Pick random set of negative examples (size from `split`) from the list of scraped fb comments
         neg_examples = []
         neg_num = int((len(pos_examples)/(1 - split)) - len(pos_examples))
-        raw_data = self.twitter_format(neg_path)
+        raw_data = self.fb_format(neg_path)
         idx = np.random.randint(len(raw_data), size=neg_num)
         neg_random = [raw_data[i] for i in idx]
 
@@ -211,7 +206,6 @@ class Intent2Stage(Component):
             neg_examples.append(example) 
         test_examples.extend(neg_examples)
         
-        # overwrite the json path with new set of test examples
         with open(path, "w") as outfile: 
             json.dump({"rasa_nlu_data": {"common_examples":test_examples}}, outfile, indent=4)
 
@@ -238,17 +232,16 @@ class Intent2Stage(Component):
         return sorted_indices, pred_result[:, sorted_indices]
 
     def process(self, message, **kwargs):
-        # def process(self, intent_features, intent):
-        # type: (Text) -> Dict[Text, Any]
+        # type: (Text, **Any) -> None
         if self.clf:
             X = message.get("text_features").reshape(1, -1)
             intents, probabilities = self.predict(X)
             # `predict` returns a matrix as it is supposed to work for multiple examples as well, hence we need to flatten
-            intents, probabilities = intents.flatten(), probabilities.flatten()
+            intents = intents.flatten()
+            probabilities = probabilities.flatten()
 
             if intents.size > 0 and probabilities.size > 0:
-                ranking = list(zip(list(intents), list(probabilities)))
-                if intents[0] == 0:
+                if intents[0] != 1:
                     message.set("intent", {
                             "name": "out_of_scope",
                             "confidence": probabilities[0],
@@ -256,7 +249,6 @@ class Intent2Stage(Component):
 
     @classmethod
     def load(cls, model_dir=None, model_metadata=None, cached_component=None, **kwargs):
-        #def load(cls, model_dir, intent_2_stage):
         # type: (Text, Text) -> SklearnIntentClassifier
         import cloudpickle
 
@@ -268,7 +260,7 @@ class Intent2Stage(Component):
                 else:
                     return cloudpickle.load(f)
         else:
-            return Intent2Stage()
+            return IntentOutOfScope2Stage()
 
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]
