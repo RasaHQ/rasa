@@ -83,7 +83,10 @@ class DataRouter(object):
         return [p.ident for p in self.train_procs]
 
     def _create_agent_store(self):
-        agents = os.listdir(self.config['path'])
+        agents = []
+
+        if os.path.isdir(self.config['path']):
+            agents = os.listdir(self.config['path'])
 
         agent_store = {}
 
