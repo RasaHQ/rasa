@@ -102,7 +102,10 @@ def create_app(config, component_builder=None):
     @requires_auth
     def train():
         data_string = request.get_data(as_text=True)
-        current_app.data_router.start_train_process(data_string, request.args)
+        try:
+            current_app.data_router.start_train_process(data_string, request.args)
+        except InvalidModelError as e:
+            return jsonify({"error": "{}".format(e)}), 404
         return jsonify(info="training started.", training_process_ids=current_app.data_router.train_proc_ids())
 
     logging.basicConfig(filename=config['log_file'], level=config['log_level'])

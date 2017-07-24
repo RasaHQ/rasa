@@ -25,7 +25,7 @@ def app(tmpdir_factory):
     _config = {
         'write': nlu_log_file,
         'port': -1,                 # unused in test app
-        "backend": "mitie",
+        "pipeline": "keyword",
         "path": tmpdir_factory.mktemp("models").strpath,
         "server_model_dirs": {},
         "data": "./data/demo-restaurants.json",
@@ -111,22 +111,22 @@ def test_post_parse(client, response_test):
 @utilities.slowtest
 def test_post_train(client, rasa_default_train_data):
     response = client.post("/train", data=json.dumps(rasa_default_train_data), content_type='application/json')
-    assert response.status_code == 200
-    assert len(response.json["training_process_ids"]) == 1
-    assert response.json["info"] == "training started."
+    assert response.status_code == 404
+    assert "error" in response.json
 
 
 def test_model_hot_reloading(client, rasa_default_train_data):
-    query = "/parse?q=hello&model=my_keyword_model"
+    query = "/parse?q=hello&agent=my_keyword_agent"
     response = client.get(query)
-    assert response.status_code == 404, "Model should not exist yet"
-    response = client.post("/train?name=my_keyword_model&pipeline=keyword",
+    assert response.status_code == 404, "Agent should not exist yet"
+    response = client.post("/train?name=my_keyword_agent&pipeline=keyword",
                            data=json.dumps(rasa_default_train_data),
                            content_type='application/json')
     assert response.status_code == 200, "Training should start successfully"
+    assert len(response.json["training_process_ids"]) == 1
     time.sleep(3)    # training should be quick as the keyword model doesn't do any training
     response = client.get(query)
-    assert response.status_code == 200, "Model should now exist after it got trained"
+    assert response.status_code == 200, "Agent should now exist after it got trained"
 
 
 def test_wsgi():

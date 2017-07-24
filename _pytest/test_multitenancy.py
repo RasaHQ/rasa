@@ -15,7 +15,7 @@ from rasa_nlu.server import create_app
 from utilities import ResponseTest
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def app(component_builder):
     if "TRAVIS_BUILD_DIR" in os.environ:
         root_dir = os.environ["TRAVIS_BUILD_DIR"]
@@ -30,7 +30,7 @@ def app(component_builder):
         "path": os.path.join(root_dir, "test_models"),
         "data": os.path.join(root_dir, "data/demo-restaurants.json")
     }
-    train_models(component_builder)
+    # train_models(component_builder)
     config = RasaNLUConfig(cmdline_args=_config)
     application = create_app(config, component_builder)
     return application
@@ -38,15 +38,15 @@ def app(component_builder):
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-        "/parse?q=food&model=test_model_mitie",
+        "/parse?q=food&agent=test_model_mitie",
         {"entities": [], "intent": "affirm", "text": "food"}
     ),
     ResponseTest(
-        "/parse?q=food&model=test_model_mitie_sklearn",
+        "/parse?q=food&agent=test_model_mitie_sklearn",
         {"entities": [], "intent": "restaurant_search", "text": "food"}
     ),
     ResponseTest(
-        "/parse?q=food&model=test_model_spacy_sklearn",
+        "/parse?q=food&agent=test_model_spacy_sklearn",
         {"entities": [], "intent": "restaurant_search", "text": "food"}
     ),
 ])
@@ -62,7 +62,7 @@ def test_get_parse(client, response_test):
         {"error": "No agent found with name 'default'."}
     ),
     ResponseTest(
-        "/parse?q=food&model=umpalumpa",
+        "/parse?q=food&agent=umpalumpa",
         {"error": "No agent found with name 'umpalumpa'."}
     )
 ])
@@ -76,22 +76,22 @@ def test_get_parse_invalid_model(client, response_test):
     ResponseTest(
         "/parse",
         {"entities": [], "intent": "affirm", "text": "food"},
-        payload={"q": "food", "model": "test_model_mitie"}
+        payload={"q": "food", "agent": "test_model_mitie"}
     ),
     ResponseTest(
         "/parse",
         {"entities": [], "intent": "restaurant_search", "text": "food"},
-        payload={"q": "food", "model": "test_model_mitie_sklearn"}
+        payload={"q": "food", "agent": "test_model_mitie_sklearn"}
     ),
     ResponseTest(
         "/parse",
         {"entities": [], "intent": "restaurant_search", "text": "food"},
-        payload={"q": "food", "model": "test_model_spacy_sklearn"}
+        payload={"q": "food", "agent": "test_model_spacy_sklearn"}
     ),
 ])
 def test_post_parse(client, response_test):
-    response = client.post(response_test.endpoint,
-                           data=json.dumps(response_test.payload), content_type='application/json')
+    response = client.post(response_test.endpoint, data=json.dumps(response_test.payload),
+                           content_type='application/json')
     assert response.status_code == 200
     assert all(prop in response.json for prop in ['entities', 'intent', 'text'])
 
@@ -105,12 +105,12 @@ def test_post_parse(client, response_test):
     ResponseTest(
         "/parse",
         {"error": "No agent found with name 'umpalumpa'."},
-        payload={"q": "food", "model": "umpalumpa"}
+        payload={"q": "food", "agent": "umpalumpa"}
     ),
 ])
 def test_post_parse_invalid_model(client, response_test):
-    response = client.post(response_test.endpoint,
-                           data=json.dumps(response_test.payload), content_type='application/json')
+    response = client.post(response_test.endpoint, data=json.dumps(response_test.payload),
+                           content_type='application/json')
     assert response.status_code == 404
     assert response.json.get("error").startswith(response_test.expected_response["error"])
 

@@ -4,12 +4,15 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import datetime
+
+import errno
 import os
 import logging
 
 from builtins import object
 
 from rasa_nlu.model import Metadata, Interpreter
+from rasa_nlu.utils import create_dir
 
 logger = logging.getLogger(__name__)
 
@@ -33,21 +36,24 @@ class Agent(object):
 
     def parse(self, text, time=None, model=None):
         # Lazy model loading
-        if model:
-            if self._models[model]:
-                return self._models[model].parse(text, time)
-            else:
-                self._models[model] = self._interpreter_for_model(model)
-                return self._models[model].parse(text, time)
+        if not model:
+            model = self._default_model
+        if self._models[model]:
+            return self._models[model].parse(text, time)
         else:
-            return self._models[self._default_model].parse(text, time)
+            try:
+                self._models[model] = self._interpreter_for_model(model)
+            except Exception as e:
+                logger.warn("Using default interpreter, couldn't fetch model: {}".format(e))
+                return self._models[self._default_model].parse(text, time)
+            return self._models[model].parse(text, time)
 
     def update(self):
         last_model = self._default_model
 
         self._search_for_models()
         self._default_model = self._latest_agent_model()
-        if (last_model != self._default_model):
+        if last_model != self._default_model:
             self.status = 0
 
     def _latest_agent_model(self):
@@ -55,7 +61,7 @@ class Agent(object):
         prefix = 'model_'
         models = {model[len(prefix):]: model for model in self._models.keys()}
         if models:
-            time_list = [datetime.datetime.strptime(time, '%Y%m%d-%H%M%S') for time, model in self._models.items()]
+            time_list = [datetime.datetime.strptime(time, '%Y%m%d-%H%M%S') for time, model in models.items()]
             return models[max(time_list).strftime('%Y%m%d-%H%M%S')]
         else:
             return None
@@ -67,22 +73,21 @@ class Agent(object):
         models.update(self._models)
         self._models = models
 
-    def _interpreter_for_model(self, latest_model_path):
-        metadata = self._read_model_metadata(latest_model_path, self._config)
+    def _interpreter_for_model(self, model):
+        metadata = self._read_model_metadata(model)
         return Interpreter.load(metadata, self._config, self._component_builder)
 
-    @staticmethod
-    def _read_model_metadata(model_dir, config):
+    def _read_model_metadata(self, model_dir):
         if model_dir is None:
             data = Agent._default_model_metadata()
             return Metadata(data, model_dir)
         else:
             if not os.path.isabs(model_dir):
-                model_dir = os.path.join(config['path'], model_dir)
+                model_dir = os.path.join(self._path, model_dir)
 
             # download model from S3 if needed
             if not os.path.isdir(model_dir):
-                Agent._load_model_from_cloud(model_dir, config)
+                Agent._load_model_from_cloud(model_dir, self._config)
 
             return Metadata.load(model_dir)
 

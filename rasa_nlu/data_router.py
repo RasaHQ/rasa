@@ -120,8 +120,7 @@ class DataRouter(object):
         if agent not in self.agent_store:
             agents = os.listdir(self.config['path'])
             if agent not in agents:
-                raise InvalidModelError(
-                    "No agent found with name '{}'.".format(agent))
+                raise InvalidModelError("No agent found with name '{}'.".format(agent))
             else:
                 try:
                     self.agent_store[agent] = Agent(self.config, self.component_builder, agent)
@@ -163,11 +162,11 @@ class DataRouter(object):
         _config["data"] = f.name
         train_config = RasaNLUConfig(cmdline_args=_config)
 
-        agent = _config.get("name", False)
-        if agent:
+        agent = _config.get("name")
+        if not agent:
+            raise InvalidModelError("No agent found with name '{}'".format(agent))
+        if agent in self.agent_store:
             self.agent_store[agent].status = 1
-        else:
-            self.agent_store[self.DEFAULT_AGENT_NAME].status = 1
 
         process = multiprocessing.Process(target=do_train, args=(train_config, self.component_builder))
         self._add_train_proc(process)
