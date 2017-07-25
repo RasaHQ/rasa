@@ -2,15 +2,19 @@ from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
+
+import os
+
 from builtins import object
 import tempfile
 import pytest
 import json
 
 from rasa_nlu import registry
+from rasa_nlu.agent import Agent
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.data_router import DataRouter
-from rasa_nlu.model import Interpreter
+from rasa_nlu.model import Interpreter, Metadata
 from rasa_nlu.train import do_train
 
 slowtest = pytest.mark.slowtest
@@ -49,7 +53,20 @@ def run_train(config, component_builder):
 
 
 def load_interpreter_for_model(config, persisted_path, component_builder):
-    metadata = DataRouter.read_model_metadata(persisted_path, config)
+    def read_model_metadata(model_dir, config):
+        if model_dir is None:
+            data = Agent._default_model_metadata()
+            return Metadata(data, model_dir)
+        else:
+            if not os.path.isabs(model_dir):
+                model_dir = os.path.join(config['path'], model_dir)
+
+            # download model from S3 if needed
+            if not os.path.isdir(model_dir):
+                Agent._load_model_from_cloud(model_dir, config)
+
+            return Metadata.load(model_dir)
+    metadata = read_model_metadata(persisted_path, config)
     return Interpreter.load(metadata, config, component_builder)
 
 
