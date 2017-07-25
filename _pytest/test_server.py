@@ -144,12 +144,6 @@ def test_model_hot_reloading(client, rasa_default_train_data):
                            data=json.dumps(rasa_default_train_data),
                            content_type='application/json')
     assert response.status_code == 200, "Training should start successfully"
-    assert len(response.json["training_process_ids"]) == 1
-
-    response = client.post("/train?name=my_keyword_agent&pipeline=keyword",
-                           data=json.dumps(rasa_default_train_data),
-                           content_type='application/json')
-    assert response.status_code == 403, "Training for this agent should already be ongoing"
 
     time.sleep(3)  # training should be quick as the keyword model doesn't do any training
     response = client.get(query)

@@ -7,6 +7,7 @@ import datetime
 
 import os
 import logging
+import threading
 
 from builtins import object
 
@@ -22,6 +23,7 @@ class Agent(object):
         self._default_model = ''
         self._models = {}
         self.status = 0
+        self._lock = threading.Lock
 
         if agent:
             self._path = os.path.join(self._config['path'], agent)
@@ -33,14 +35,21 @@ class Agent(object):
             self._models['fallback'] = interpreter
 
     def parse(self, text, time=None, model=None):
+        self._lock.acquire()
         if self.status == 1:
             self.update()
+        self._lock.release()
+
         # Lazy model loading
         if not model or model not in self._models:
             model = self._default_model
             logger.warn("Invalid model requested. Using default")
+
+        self._lock.acquire()
         if not self._models[model]:
             self._models[model] = self._interpreter_for_model(model)
+        self._lock.release()
+
         return self._models[model].parse(text, time)
 
     def update(self):
