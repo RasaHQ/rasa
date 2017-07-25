@@ -159,7 +159,7 @@ class DataRouter(object):
         # This will only count the trainings started from this process, if run in multi worker mode, there might
         # be other trainings run in different processes we don't know about.
         num_trainings = len(self.train_procs)
-        agents = {name: agent.as_dict() for name, agent in self.agent_store}
+        agents = {name: agent.as_dict() for name, agent in self.agent_store.items()}
         return {
             "available_agents": agents,
             "trainings_under_this_process": num_trainings,
