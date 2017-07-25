@@ -114,7 +114,8 @@ class TrainingData(object):
         return str(json.dumps({
             "rasa_nlu_data": {
                 "common_examples": [example.as_dict() for example in self.training_examples],
-                "regex_features": self.regex_features
+                "regex_features": self.regex_features,
+                "entity_synonyms": self.entity_synonyms
             }
         }, **kwargs))
 
