@@ -99,7 +99,7 @@ def test_post_parse(client, response_test):
 def test_post_parse_specific_model(client):
     status = client.get("/status")
     sjs = status.json
-    model = sjs["test_agent_mitie"]["available_models"][0]
+    model = sjs["available_agents"]["test_agent_mitie"]["available_models"][0]
     query = ResponseTest("/parse", {"entities": [], "intent": "affirm", "text": "food"},
                          payload={"q": "food", "agent": "test_agent_mitie", "model": model})
     response = client.post(query.endpoint, data=json.dumps(query.payload), content_type='application/json')

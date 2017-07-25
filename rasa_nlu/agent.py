@@ -5,7 +5,6 @@ from __future__ import unicode_literals
 
 import datetime
 
-import json
 import os
 import logging
 
