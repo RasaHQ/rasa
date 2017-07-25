@@ -7,9 +7,9 @@ import datetime
 
 import os
 import logging
-import threading
 
 from builtins import object
+from threading import Lock
 
 from rasa_nlu.model import Metadata, Interpreter
 
@@ -23,7 +23,7 @@ class Agent(object):
         self._default_model = ''
         self._models = {}
         self.status = 0
-        self._lock = threading.Lock
+        self._lock = Lock()
 
         if agent:
             self._path = os.path.join(self._config['path'], agent)

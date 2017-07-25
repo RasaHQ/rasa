@@ -51,8 +51,8 @@ def test_root(client):
 def test_status(client):
     response = client.get("/status")
     rjs = response.json
-    assert response.status_code == 200 and \
-           ("training_process_ids" in rjs and "trainings_under_this_process" in rjs and "available_agents" in rjs)
+    assert response.status_code == 200 and (
+        "training_process_ids" in rjs and "trainings_under_this_process" in rjs and "available_agents" in rjs)
     assert "default" in rjs["available_agents"]
 
 
@@ -64,8 +64,7 @@ def test_config(client):
 def test_version(client):
     response = client.get("/version")
     rjs = response.json
-    assert response.status_code == 200 and \
-           ("version" in rjs)
+    assert response.status_code == 200 and "version" in rjs
 
 
 @pytest.mark.parametrize("response_test", [
@@ -107,6 +106,7 @@ def test_post_parse(client, response_test):
     assert response.status_code == 200
     assert len(response.json) == 1
     assert all(prop in response.json[0] for prop in ['entities', 'intent', '_text', 'confidence'])
+
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
