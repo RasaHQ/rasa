@@ -96,7 +96,7 @@ class Agent(object):
             return Metadata.load(model_dir)
 
     def as_dict(self):
-        return {'status': 'training' if self.status else 'ready', 'available_models': self._models.keys()}
+        return {'status': 'training' if self.status else 'ready', 'available_models': list(self._models.keys())}
 
     @staticmethod
     def _default_model_metadata():
