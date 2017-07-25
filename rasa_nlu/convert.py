@@ -19,10 +19,10 @@ def create_argparser():
     return parser
 
 
-def convert_training_data(data_file, out_file , format):
+def convert_training_data(data_file, out_file, output_format):
     td = load_data(data_file)
     with io.open(out_file, "w") as f:
-        if format == 'md':
+        if output_format == 'md':
             f.write(td.as_markdown())
         else:
             f.write(td.as_json(indent=2))
