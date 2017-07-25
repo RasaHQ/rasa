@@ -8,7 +8,7 @@ def test_luis_request():
     from rasa_nlu.emulators.luis import LUISEmulator
     em = LUISEmulator()
     norm = em.normalise_request_json({"q": ["arb text"]})
-    assert norm == {"text": "arb text", "model": "default", "time": None}
+    assert norm == {"text": "arb text", "agent": "default", "time": None}
 
 
 def test_luis_response():
