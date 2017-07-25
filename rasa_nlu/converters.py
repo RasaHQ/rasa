@@ -139,9 +139,9 @@ def load_wit_data(filename):
 def load_markdown_data(filename):
     # type: (Text) -> TrainingData
     """Loads training data stored in markdown data format."""
-    from rasa_nlu.utils.md_to_rasa import MarkdownToRasa
-    data = MarkdownToRasa(filename)
-    return TrainingData(data.get_common_examples(), data.get_entity_synonyms())
+    from rasa_nlu.utils.md_to_json import MarkdownToJson
+    data = MarkdownToJson(filename)
+    return TrainingData(data.get_common_examples(), get_entity_synonyms_dict(data.get_entity_synonyms()))
 
 
 def rasa_nlu_data_schema():
@@ -234,12 +234,7 @@ def load_rasa_data(filename):
     regex_features = data['rasa_nlu_data'].get("regex_features", list())
     synonyms = data['rasa_nlu_data'].get("entity_synonyms", list())
 
-    # build entity_synonyms dictionary
-    entity_synonyms = {}
-    for s in synonyms:
-        if "value" in s and "synonyms" in s:
-            for synonym in s["synonyms"]:
-                entity_synonyms[synonym] = s["value"]
+    entity_synonyms = get_entity_synonyms_dict(synonyms)
 
     if intent or entity:
         logger.warn("DEPRECATION warning: Data file contains 'intent_examples' or 'entity_examples' which will be " +
@@ -256,6 +251,17 @@ def load_rasa_data(filename):
         training_examples.append(Message(e["text"], data))
 
     return TrainingData(training_examples, entity_synonyms, regex_features)
+
+
+def get_entity_synonyms_dict(synonyms):
+    # type: (List[Dict]) -> Dict
+    """build entity_synonyms dictionary"""
+    entity_synonyms = {}
+    for s in synonyms:
+        if "value" in s and "synonyms" in s:
+            for synonym in s["synonyms"]:
+                entity_synonyms[synonym] = s["value"]
+    return entity_synonyms
 
 
 def guess_format(files):

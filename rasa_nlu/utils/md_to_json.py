@@ -14,14 +14,13 @@ synonym_regex = re.compile('##\s*synonym:(.+)')
 example_regex = re.compile('\s*-\s*(.+)')
 
 
-class MarkdownToRasa:
+class MarkdownToJson:
     """ Converts training examples written in markdown to standard rasa json format """
     def __init__(self, file_name):
         self.file_name = file_name
         self.current_intent = None  # set when parsing examples from a given intent
-        self.current_word = None  # set when parsing synonyms
         self.common_examples = []
-        self.entity_synonyms = {}
+        self.entity_synonyms = []
         self.load()
 
     def get_example(self, example_in_md):
@@ -52,22 +51,18 @@ class MarkdownToRasa:
         """ switch between 'intent' and 'synonyms' mode """
         if state == 'intent':
             self.current_intent = value
-            self.current_word = None
         elif state == 'synonym':
             self.current_intent = None
-            self.current_word = value
+            self.entity_synonyms.append({'value': value, 'synonyms': []})
         else:
             raise ValueError("State must be either 'intent' or 'synonym'")
 
     def get_current_state(self):
         """ informs whether whether we are currently loading intents or synonyms """
-        if self.current_intent is None and self.current_word is not None:
-            return 'synonym'
-        elif self.current_word is None and self.current_intent is not None:
+        if self.current_intent is not None:
             return 'intent'
         else:
-            raise ValueError(
-                "Inconsistent state: one and only one of 'current_intent' or 'current_word' should be None")
+            return 'synonym'
 
     def load(self):
         """ parse the content of the actual .md file """
@@ -88,7 +83,7 @@ class MarkdownToRasa:
                     if self.get_current_state() == 'intent':
                         self.common_examples.append(self.get_example(match.group(1)))
                     else:
-                        self.entity_synonyms[match.group(1)] = self.current_word
+                        self.entity_synonyms[-1]['synonyms'].append(match.group(1))
         return {
             "rasa_nlu_data": {
                 "common_examples": self.common_examples,

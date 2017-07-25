@@ -13,6 +13,7 @@ import warnings
 from itertools import groupby
 
 from builtins import object, str
+from rasa_nlu.utils.json_to_md import JsonToMd
 from typing import Any
 from typing import Dict
 from typing import List
@@ -116,6 +117,12 @@ class TrainingData(object):
                 "regex_features": self.regex_features
             }
         }, **kwargs))
+
+    def as_markdown(self, **kwargs):
+        # type: (**Any) -> str
+        """Represent this set of training examples as markdown adding the passed meta information."""
+
+        return JsonToMd(self.training_examples, self.entity_synonyms).to_markdown()
 
     def persist(self, dir_name):
         # type: (Text) -> Dict[Text, Any]
