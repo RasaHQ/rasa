@@ -23,6 +23,20 @@ from rasa_nlu.train import do_train
 logger = logging.getLogger(__name__)
 
 
+class AlreadyTrainingError(Exception):
+    """Raised when a training request is received for an Agent already being trained.
+
+    Attributes:
+        message -- explanation of why the request is invalid
+    """
+
+    def __init__(self):
+        self.message = 'The agent is already being trained!'
+
+    def __str__(self):
+        return self.message
+
+
 class DataRouter(object):
     DEFAULT_AGENT_NAME = "default"
 
@@ -38,7 +52,7 @@ class DataRouter(object):
 
     @staticmethod
     def _create_query_logger(response_log_dir):
-        """Creates a logger that will persist incomming queries and their results."""
+        """Creates a logger that will persist incoming queries and their results."""
 
         # Ensures different log files for different processes in multi worker mode
         if response_log_dir:
@@ -119,6 +133,7 @@ class DataRouter(object):
 
     def parse(self, data):
         agent = data.get("agent") or self.DEFAULT_AGENT_NAME
+        model = data.get("model")
 
         if agent not in self.agent_store:
             agents = os.listdir(self.config['path'])
@@ -130,10 +145,8 @@ class DataRouter(object):
                 except Exception as e:
                     raise InvalidModelError("No agent found with name '{}'. Error: {}".format(agent, e))
 
-        if self.agent_store[agent].status == 1:
-            self.agent_store[agent].update()
+        response = self.agent_store[agent].parse(data['text'], data.get('time', None), model)
 
-        response = self.agent_store[agent].parse(data['text'], data.get('time', None))
         if self.responses:
             log = {"user_input": response, "model": agent, "time": datetime.datetime.now().isoformat()}
             self.responses.info(json.dumps(log, sort_keys=True))
@@ -146,10 +159,10 @@ class DataRouter(object):
         # This will only count the trainings started from this process, if run in multi worker mode, there might
         # be other trainings run in different processes we don't know about.
         num_trainings = len(self.train_procs)
-        agents = list(self.agent_store.keys())
+        agents = {name: agent.as_dict() for name, agent in self.agent_store}
         return {
+            "available_agents": agents,
             "trainings_under_this_process": num_trainings,
-            "available_models": agents,
             "training_process_ids": self.train_proc_ids()
         }
 
@@ -169,7 +182,10 @@ class DataRouter(object):
         if not agent:
             raise InvalidModelError("No agent found with name '{}'".format(agent))
         if agent in self.agent_store:
-            self.agent_store[agent].status = 1
+            if self.agent_store[agent].status == 1:
+                raise AlreadyTrainingError
+            else:
+                self.agent_store[agent].status = 1
 
         process = multiprocessing.Process(target=do_train, args=(train_config, self.component_builder))
         self._add_train_proc(process)

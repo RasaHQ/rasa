@@ -26,8 +26,8 @@ def app(component_builder):
     _config = {
         'write': nlu_log_file,
         'port': -1,  # unused in test app
-        "backend": "mitie",
-        "path": os.path.join(root_dir, "test_models"),
+        "pipeline": "keyword",
+        "path": os.path.join(root_dir, "test_agents"),
         "data": os.path.join(root_dir, "data/demo-restaurants.json")
     }
     train_models(component_builder)
@@ -38,15 +38,15 @@ def app(component_builder):
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-        "/parse?q=food&agent=test_model_mitie",
+        "/parse?q=food&agent=test_agent_mitie",
         {"entities": [], "intent": "affirm", "text": "food"}
     ),
     ResponseTest(
-        "/parse?q=food&agent=test_model_mitie_sklearn",
+        "/parse?q=food&agent=test_agent_mitie_sklearn",
         {"entities": [], "intent": "restaurant_search", "text": "food"}
     ),
     ResponseTest(
-        "/parse?q=food&agent=test_model_spacy_sklearn",
+        "/parse?q=food&agent=test_agent_spacy_sklearn",
         {"entities": [], "intent": "restaurant_search", "text": "food"}
     ),
 ])
@@ -76,22 +76,33 @@ def test_get_parse_invalid_model(client, response_test):
     ResponseTest(
         "/parse",
         {"entities": [], "intent": "affirm", "text": "food"},
-        payload={"q": "food", "agent": "test_model_mitie"}
+        payload={"q": "food", "agent": "test_agent_mitie"}
     ),
     ResponseTest(
         "/parse",
         {"entities": [], "intent": "restaurant_search", "text": "food"},
-        payload={"q": "food", "agent": "test_model_mitie_sklearn"}
+        payload={"q": "food", "agent": "test_agent_mitie_sklearn"}
     ),
     ResponseTest(
         "/parse",
         {"entities": [], "intent": "restaurant_search", "text": "food"},
-        payload={"q": "food", "agent": "test_model_spacy_sklearn"}
+        payload={"q": "food", "agent": "test_agent_spacy_sklearn"}
     ),
 ])
 def test_post_parse(client, response_test):
     response = client.post(response_test.endpoint, data=json.dumps(response_test.payload),
                            content_type='application/json')
+    assert response.status_code == 200
+    assert all(prop in response.json for prop in ['entities', 'intent', 'text'])
+
+
+def test_post_parse_specific_model(client):
+    status = client.get("/status")
+    sjs = status.json
+    model = sjs["test_agent_mitie"]["available_models"][0]
+    query = ResponseTest("/parse", {"entities": [], "intent": "affirm", "text": "food"},
+                         payload={"q": "food", "agent": "test_agent_mitie", "model": model})
+    response = client.post(query.endpoint, data=json.dumps(query.payload), content_type='application/json')
     assert response.status_code == 200
     assert all(prop in response.json for prop in ['entities', 'intent', 'text'])
 
@@ -108,7 +119,7 @@ def test_post_parse(client, response_test):
         payload={"q": "food", "agent": "umpalumpa"}
     ),
 ])
-def test_post_parse_invalid_model(client, response_test):
+def test_post_parse_invalid_agent(client, response_test):
     response = client.post(response_test.endpoint, data=json.dumps(response_test.payload),
                            content_type='application/json')
     assert response.status_code == 404
@@ -117,7 +128,7 @@ def test_post_parse_invalid_model(client, response_test):
 
 def train_models(component_builder):
     # Retrain different multitenancy models
-    def train(cfg_name, model_name):
+    def train(cfg_name, agent_name):
         from rasa_nlu.train import create_persistor
         from rasa_nlu.converters import load_data
 
@@ -127,8 +138,8 @@ def train_models(component_builder):
 
         trainer.train(training_data)
         persistor = create_persistor(config)
-        trainer.persist("test_models", persistor, agent_name=model_name)
+        trainer.persist("test_agents", persistor, agent_name)
 
-    train("config_mitie.json", "test_model_mitie")
-    train("config_spacy.json", "test_model_spacy_sklearn")
-    train("config_mitie_sklearn.json", "test_model_mitie_sklearn")
+    train("config_mitie.json", "test_agent_mitie")
+    train("config_spacy.json", "test_agent_spacy_sklearn")
+    train("config_mitie_sklearn.json", "test_agent_mitie_sklearn")

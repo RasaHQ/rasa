@@ -5,14 +5,13 @@ from __future__ import unicode_literals
 
 import datetime
 
-import errno
+import json
 import os
 import logging
 
 from builtins import object
 
 from rasa_nlu.model import Metadata, Interpreter
-from rasa_nlu.utils import create_dir
 
 logger = logging.getLogger(__name__)
 
@@ -35,18 +34,15 @@ class Agent(object):
             self._models['fallback'] = interpreter
 
     def parse(self, text, time=None, model=None):
+        if self.status == 1:
+            self.update()
         # Lazy model loading
-        if not model:
+        if not model or model not in self._models:
             model = self._default_model
-        if self._models[model]:
-            return self._models[model].parse(text, time)
-        else:
-            try:
-                self._models[model] = self._interpreter_for_model(model)
-            except Exception as e:
-                logger.warn("Using default interpreter, couldn't fetch model: {}".format(e))
-                return self._models[self._default_model].parse(text, time)
-            return self._models[model].parse(text, time)
+            logger.warn("Invalid model requested. Using default")
+        if not self._models[model]:
+            self._models[model] = self._interpreter_for_model(model)
+        return self._models[model].parse(text, time)
 
     def update(self):
         last_model = self._default_model
@@ -90,6 +86,9 @@ class Agent(object):
                 Agent._load_model_from_cloud(model_dir, self._config)
 
             return Metadata.load(model_dir)
+
+    def as_dict(self):
+        return {'status': 'training' if self.status else 'ready', 'available_models': self._models.keys()}
 
     @staticmethod
     def _default_model_metadata():

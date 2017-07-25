@@ -15,7 +15,7 @@ from flask_cors import CORS, cross_origin
 from gevent.wsgi import WSGIServer
 
 from rasa_nlu.config import RasaNLUConfig
-from rasa_nlu.data_router import DataRouter, InvalidModelError
+from rasa_nlu.data_router import DataRouter, InvalidModelError, AlreadyTrainingError
 from rasa_nlu.version import __version__
 
 logger = logging.getLogger(__name__)
@@ -78,6 +78,8 @@ def create_app(config, component_builder=None):
                 return jsonify(response)
             except InvalidModelError as e:
                 return jsonify({"error": "{}".format(e)}), 404
+            except Exception as e:
+                return jsonify({"error": "{}".format(e)}), 500
 
     @rasa_nlu_app.route("/version", methods=['GET'])
     @requires_auth
@@ -106,6 +108,8 @@ def create_app(config, component_builder=None):
             current_app.data_router.start_train_process(data_string, request.args)
         except InvalidModelError as e:
             return jsonify({"error": "{}".format(e)}), 404
+        except AlreadyTrainingError as e:
+            return jsonify({"error": "{}".format(e)}), 403
         return jsonify(info="training started.", training_process_ids=current_app.data_router.train_proc_ids())
 
     logging.basicConfig(filename=config['log_file'], level=config['log_level'])

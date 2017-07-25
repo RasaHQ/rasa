@@ -24,7 +24,7 @@ def app(tmpdir_factory):
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
     _config = {
         'write': nlu_log_file,
-        'port': -1,                 # unused in test app
+        'port': -1,  # unused in test app
         "pipeline": "keyword",
         "path": tmpdir_factory.mktemp("models").strpath,
         "server_model_dirs": {},
@@ -52,7 +52,8 @@ def test_status(client):
     response = client.get("/status")
     rjs = response.json
     assert response.status_code == 200 and \
-        ("trainings_under_this_process" in rjs and "available_models" in rjs)
+           ("training_process_ids" in rjs and "trainings_under_this_process" in rjs and "available_agents" in rjs)
+    assert "default" in rjs["available_agents"]
 
 
 def test_config(client):
@@ -64,7 +65,7 @@ def test_version(client):
     response = client.get("/version")
     rjs = response.json
     assert response.status_code == 200 and \
-        ("version" in rjs)
+           ("version" in rjs)
 
 
 @pytest.mark.parametrize("response_test", [
@@ -107,6 +108,25 @@ def test_post_parse(client, response_test):
     assert len(response.json) == 1
     assert all(prop in response.json[0] for prop in ['entities', 'intent', '_text', 'confidence'])
 
+@pytest.mark.parametrize("response_test", [
+    ResponseTest(
+        "/parse",
+        [{"entities": {}, "confidence": 1.0, "intent": "greet", "_text": "hello"}],
+        payload={"q": "hello"}
+    ),
+    ResponseTest(
+        "/parse",
+        [{"entities": {}, "confidence": 1.0, "intent": "greet", "_text": "hello ńöñàśçií"}],
+        payload={"q": "hello ńöñàśçií"}
+    ),
+])
+def test_post_parse_specific_model(client, response_test):
+    response = client.post(response_test.endpoint,
+                           data=json.dumps(response_test.payload), content_type='application/json')
+    assert response.status_code == 200
+    assert len(response.json) == 1
+    assert all(prop in response.json[0] for prop in ['entities', 'intent', '_text', 'confidence'])
+
 
 @utilities.slowtest
 def test_post_train(client, rasa_default_train_data):
@@ -119,12 +139,19 @@ def test_model_hot_reloading(client, rasa_default_train_data):
     query = "/parse?q=hello&agent=my_keyword_agent"
     response = client.get(query)
     assert response.status_code == 404, "Agent should not exist yet"
+
     response = client.post("/train?name=my_keyword_agent&pipeline=keyword",
                            data=json.dumps(rasa_default_train_data),
                            content_type='application/json')
     assert response.status_code == 200, "Training should start successfully"
     assert len(response.json["training_process_ids"]) == 1
-    time.sleep(3)    # training should be quick as the keyword model doesn't do any training
+
+    response = client.post("/train?name=my_keyword_agent&pipeline=keyword",
+                           data=json.dumps(rasa_default_train_data),
+                           content_type='application/json')
+    assert response.status_code == 403, "Training for this agent should already be ongoing"
+
+    time.sleep(3)  # training should be quick as the keyword model doesn't do any training
     response = client.get(query)
     assert response.status_code == 200, "Agent should now exist after it got trained"
 
