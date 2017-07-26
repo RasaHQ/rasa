@@ -12,14 +12,12 @@ from builtins import object
 import inspect
 
 from typing import Any
-from typing import ClassVar
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Set
 from typing import Text
 from typing import Tuple
-from typing import Type
 
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.training_data import Message
