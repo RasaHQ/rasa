@@ -54,5 +54,5 @@
 - Chinese
 
 ## synonym:vegetarian
-- veggie
 - vegg
+- veggie

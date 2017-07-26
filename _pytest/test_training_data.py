@@ -60,7 +60,8 @@ def test_rasa_data():
     assert td.intent_examples != []
     assert len(td.sorted_entity_examples()) >= len([e for e in td.entity_examples if e.get("entities")])
     assert len(td.sorted_intent_examples()) == len(td.intent_examples)
-    assert td.entity_synonyms == {u'Chines': u'chinese', u'Chinese': u'chinese', u'chines': u'chinese'}
+    assert td.entity_synonyms == {u'Chines': u'chinese', u'Chinese': u'chinese', u'chines': u'chinese',
+                                  u'vegg': u'vegetarian', u'veggie': u'vegetarian'}
 
 
 def test_api_data():
@@ -246,11 +247,11 @@ def cmp_dict_list(firsts, seconds):
     ("data/examples/wit/demo-flights.json", "data/test/wit_converted_to_rasa.json", "json"),
     ("data/examples/luis/demo-restaurants.json", "data/test/luis_converted_to_rasa.json", "json"),
     ("data/examples/api/", "data/test/api_converted_to_rasa.json", "json"),
-    ("data/examples/markdown/banking.md", "data/test/md_converted_to_rasa.json", "json"),
-    ("data/examples/rasa/demo-rasa.md", "data/test/demo-rasa-converted-from-json.md", "md")])
+    ("data/examples/markdown/banking.md", "data/test/md_converted_to_json.json", "json"),
+    ("data/examples/rasa/demo-rasa.json", "data/test/json_converted_to_md.md", "md")])
 def test_training_data_conversion(tmpdir, data_file, gold_standard_file, output_format):
     out_path = tmpdir.join("rasa_nlu_data.json")
-    convert_training_data(data_file, out_path.strpat, output_format)
+    convert_training_data(data_file, out_path.strpath, output_format)
     td = load_data(out_path.strpath)
     assert td.entity_examples != []
     assert td.intent_examples != []

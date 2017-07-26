@@ -126,6 +126,9 @@
         "intent": "greet"
       }
     ], 
+    "entity_synonyms": {
+      "pink pig": "savings"
+    }, 
     "regex_features": []
   }
 }
