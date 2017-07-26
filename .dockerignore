@@ -1,1 +1,4 @@
-Dockerfile
+docker*
+test_models
+docs
+.git*

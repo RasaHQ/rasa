@@ -63,7 +63,7 @@ curl 'http://localhost:5000/parse?q=hello'
 ```
 
 ### C. (Experimental) Deploying to Docker Cloud
-[![Deploy to Docker Cloud](https://files.cloud.docker.com/images/deploy-to-dockercloud.svg)](https://cloud.docker.com/stack/deploy/)
+[![Deploy to Docker Cloud](https://files.cloud.docker.com/images/deploy-to-dockercloud.svg)](https://cloud.docker.com/stack/deploy/?repo=https://github.com/RasaHQ/rasa_nlu/tree/master/docker)
 
 ## FAQ
 
