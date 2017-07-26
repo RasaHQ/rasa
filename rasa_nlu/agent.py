@@ -24,22 +24,14 @@ class Agent(object):
         self._models = {}
         self.status = 0
         self._lock = Lock()
+        self._path = None
 
         if agent:
             self._path = os.path.join(self._config['path'], agent)
-            self.update()
-        else:
-            meta = Metadata({"pipeline": ["intent_classifier_keyword"]}, "")
-            interpreter = Interpreter.load(meta, self._config, self._component_builder)
-            self._default_model = 'fallback'
-            self._models['fallback'] = interpreter
+        self._search_for_models()
+        self._default_model = self._latest_agent_model() or 'fallback'
 
     def parse(self, text, time=None, model=None):
-        self._lock.acquire()
-        if self.status == 1:
-            self.update()
-        self._lock.release()
-
         # Lazy model loading
         if not model or model not in self._models:
             model = self._default_model
@@ -52,18 +44,17 @@ class Agent(object):
 
         return self._models[model].parse(text, time), model
 
-    def update(self):
-        last_model = self._default_model
-
-        self._search_for_models()
-        self._default_model = self._latest_agent_model()
-        if last_model != self._default_model:
-            self.status = 0
+    def update(self, model_dirname):
+        self._lock.acquire()
+        self._models[model_dirname] = None
+        self._default_model = model_dirname
+        self._lock.release()
+        self.status = 0
 
     def _latest_agent_model(self):
         """Retrieves the latest trained model for an agent"""
         prefix = 'model_'
-        models = {model[len(prefix):]: model for model in self._models.keys()}
+        models = {model[len(prefix):]: model for model in self._models.keys() if model.startswith(prefix)}
         if models:
             time_list = [datetime.datetime.strptime(time, '%Y%m%d-%H%M%S') for time, model in models.items()]
             return models[max(time_list).strftime('%Y%m%d-%H%M%S')]
@@ -73,7 +64,12 @@ class Agent(object):
     def _search_for_models(self):
         prefix = 'model_'
 
-        models = {model: None for model in os.listdir(self._path) if model.startswith(prefix)}
+        if not self._path or not os.path.isdir(self._path):
+            meta = Metadata({"pipeline": ["intent_classifier_keyword"]}, "")
+            interpreter = Interpreter.load(meta, self._config, self._component_builder)
+            models = {'fallback': interpreter}
+        else:
+            models = {model: None for model in os.listdir(self._path) if model.startswith(prefix)}
         models.update(self._models)
         self._models = models
 

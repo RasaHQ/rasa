@@ -65,7 +65,6 @@ class DataRouter(object):
         self._training_processes = config['max_training_processes'] if config['max_training_processes'] > 0 else 1
         self.config = config
         self.responses = DataRouter._create_query_logger(config['response_log'])
-        self._trainings_queued = 0
         self.model_dir = config['path']
         self.token = config['token']
         self.emulator = self._create_emulator()
@@ -98,14 +97,6 @@ class DataRouter(object):
             # If the user didn't provide a logging directory, we wont log!
             logger.info("Logging of requests is disabled. (No 'request_log' directory configured)")
             return None
-
-    def _add_training_to_queue(self):
-        """Adds a new training process to the list of running processes."""
-        self._trainings_queued += 1
-
-    def _remove_training_from_queue(self):
-        """Decreases the ongoing trainings count by one"""
-        self._trainings_queued -= 1
 
     def _create_agent_store(self):
         agents = []
@@ -176,6 +167,7 @@ class DataRouter(object):
         }
 
     def start_train_process(self, data, config_values):
+
         f = tempfile.NamedTemporaryFile("w+", suffix="_training_data.json", delete=False)
         f.write(data)
         f.close()
@@ -189,19 +181,21 @@ class DataRouter(object):
         agent = _config.get("name")
         if not agent:
             raise InvalidModelError("Missing agent name to train")
-        if agent in self.agent_store:
+        elif agent in self.agent_store:
             if self.agent_store[agent].status == 1:
                 raise AlreadyTrainingError
             else:
                 self.agent_store[agent].status = 1
+        elif agent not in self.agent_store:
+            self.agent_store[agent] = Agent(self.config, self.component_builder, agent)
+            self.agent_store[agent].status = 1
+
+        def training_callback(model_path):
+            model_dir = os.path.basename(os.path.normpath(model_path))
+            self.agent_store[agent].update(model_dir)
+            return model_dir
 
         logger.info("New training queued")
-
-        def training_callback(model_dir):
-            self._remove_training_from_queue()
-            return os.path.basename(os.path.normpath(model_dir))
-
-        self._add_training_to_queue()
 
         result = self.pool.submit(do_train_in_worker, train_config)
         result = deferred_from_future(result)
