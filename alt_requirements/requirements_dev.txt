@@ -22,3 +22,4 @@ requests==2.18.1
 treq==17.3.1
 # other
 google-cloud-storage==1.0.0
+-e .

@@ -2,3 +2,6 @@ docker*
 test_models
 docs
 .git*
+**/*.pyc
+**/__pycache__
+
