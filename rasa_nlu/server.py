@@ -2,17 +2,16 @@ from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
+
 import argparse
+import json
 import logging
 import os
 from functools import wraps
 
-from flask import Flask
-from flask import current_app
-from flask import jsonify
-from flask import request
-from flask_cors import CORS, cross_origin
-from gevent.wsgi import WSGIServer
+from klein import Klein
+from twisted.internet import reactor, threads
+from twisted.internet.defer import inlineCallbacks, returnValue, maybeDeferred
 
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.data_router import DataRouter, InvalidModelError
@@ -44,74 +43,135 @@ def create_argparser():
     return parser
 
 
+def check_cors(f):
+    """Wraps a request handler with CORS headers checking."""
+
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        self = args[0]
+        request = args[1]
+        origin = request.getHeader('Origin')
+
+        if origin:
+            if '*' in self.config['cors_origins']:
+                request.setHeader('Access-Control-Allow-Origin', '*')
+            elif origin in self.config['cors_origins']:
+                request.setHeader('Access-Control-Allow-Origin', origin)
+            else:
+                request.setResponseCode(403)
+                return 'forbidden'
+
+        return f(*args, **kwargs)
+
+    return decorated
+
+
 def requires_auth(f):
     """Wraps a request handler with token authentication."""
 
     @wraps(f)
     def decorated(*args, **kwargs):
-        token = request.args.get('token', '')
-        if current_app.data_router.token is None or token == current_app.data_router.token:
+        self = args[0]
+        request = args[1]
+        token = request.args.get('token', [''])[0]
+
+        if self.data_router.token is None or token == self.data_router.token:
             return f(*args, **kwargs)
-        return "unauthorized", 401
+        request.setResponseCode(401)
+        return 'unauthorized'
 
     return decorated
 
 
-def create_app(config, component_builder=None):
-    rasa_nlu_app = Flask(__name__)
-    if 'cors_origins' in config:
-        CORS(rasa_nlu_app, resources={r"/*": {"origins": config['cors_origins']}})
+class RasaNLU(object):
+    """Class representing Rasa NLU http server"""
 
-    @rasa_nlu_app.route("/parse", methods=['GET', 'POST'])
-    @requires_auth
-    def parse_get():
-        if request.method == 'GET':
-            request_params = request.args
-        else:
-            request_params = request.get_json(force=True)
-        if 'q' not in request_params:
-            return jsonify(error="Invalid parse parameter specified"), 404
-        else:
-            try:
-                data = current_app.data_router.extract(request_params)
-                response = current_app.data_router.parse(data)
-                return jsonify(response)
-            except InvalidModelError as e:
-                return jsonify({"error": "{}".format(e)}), 404
+    app = Klein()
 
-    @rasa_nlu_app.route("/version", methods=['GET'])
-    @requires_auth
-    def version():
-        return jsonify({'version': __version__})
+    def __init__(self, config, component_builder=None, testing=False):
+        logging.basicConfig(filename=config['log_file'], level=config['log_level'])
+        logging.captureWarnings(True)
+        logger.debug("Configuration: " + config.view())
 
-    @rasa_nlu_app.route("/config", methods=['GET'])
-    @requires_auth
-    def rasaconfig():
-        return jsonify(config.as_dict())
+        logger.debug("Creating a new data router")
+        self.config = config
+        self.data_router = DataRouter(config, component_builder)
+        self._testing = testing
+        reactor.suggestThreadPoolSize(config['num_threads'] * 5)
 
-    @rasa_nlu_app.route("/status", methods=['GET'])
-    @requires_auth
-    def status():
-        return jsonify(current_app.data_router.get_status())
-
-    @rasa_nlu_app.route("/", methods=['GET'])
-    def hello():
+    @app.route("/", methods=['GET'])
+    @check_cors
+    def hello(self, request):
+        """Main Rasa route to check if the server is online"""
         return "hello from Rasa NLU: " + __version__
 
-    @rasa_nlu_app.route("/train", methods=['POST'])
+    @app.route("/parse", methods=['GET', 'POST'])
     @requires_auth
-    def train():
-        data_string = request.get_data(as_text=True)
-        current_app.data_router.start_train_process(data_string, request.args)
-        return jsonify(info="training started.", training_process_ids=current_app.data_router.train_proc_ids())
+    @check_cors
+    @inlineCallbacks
+    def parse_get(self, request):
+        request.setHeader('Content-Type', 'application/json')
+        if request.method.decode('utf-8', 'strict') == 'GET':
+            request_params = {key.decode('utf-8', 'strict'): value[0].decode('utf-8', 'strict') for key, value in
+                              request.args.items()}
+        else:
+            request_params = json.loads(request.content.read().decode('utf-8', 'strict'))
+        if 'q' not in request_params:
+            request.setResponseCode(404)
+            returnValue(json.dumps({"error": "Invalid parse parameter specified"}))
+        else:
+            data = self.data_router.extract(request_params)
+            try:
+                request.setResponseCode(200)
+                response = yield (self.data_router.parse(data) if self._testing
+                                  else threads.deferToThread(self.data_router.parse, data))
+                returnValue(json.dumps(response))
+            except InvalidModelError as e:
+                request.setResponseCode(404)
+                returnValue(json.dumps({"error": "{}".format(e)}))
 
-    logging.basicConfig(filename=config['log_file'], level=config['log_level'])
-    logging.captureWarnings(True)
-    logger.info("Configuration: " + config.view())
+    @app.route("/version", methods=['GET'])
+    @requires_auth
+    @check_cors
+    def version(self, request):
+        """Returns the Rasa server's version"""
 
-    logger.debug("Creating a new data router")
-    rasa_nlu_app.data_router = DataRouter(config, component_builder)
-    return rasa_nlu_app
+        request.setHeader('Content-Type', 'application/json')
+        return json.dumps({'version': __version__})
+
+    @app.route("/config", methods=['GET'])
+    @requires_auth
+    @check_cors
+    def rasaconfig(self, request):
+        """Returns the in-memory configuration of the Rasa server"""
+
+        request.setHeader('Content-Type', 'application/json')
+        return json.dumps(self.config.as_dict())
+
+    @app.route("/status", methods=['GET'])
+    @requires_auth
+    @check_cors
+    def status(self, request):
+        request.setHeader('Content-Type', 'application/json')
+        return json.dumps(self.data_router.get_status())
+
+    @app.route("/train", methods=['POST'])
+    @requires_auth
+    @check_cors
+    @inlineCallbacks
+    def train(self, request):
+        data_string = request.content.read().decode('utf-8', 'strict')
+        kwargs = {key.decode('utf-8', 'strict'): value[0].decode('utf-8', 'strict') for key, value in
+                  request.args.items()}
+        request.setHeader('Content-Type', 'application/json')
+
+        try:
+            request.setResponseCode(200)
+            response = yield self.data_router.start_train_process(data_string, kwargs)
+            returnValue(json.dumps({'info': 'new model trained: {}'.format(response)}))
+        except ValueError as e:
+            request.setResponseCode(500)
+            returnValue(json.dumps({"error": "{}".format(e)}))
 
 
 if __name__ == '__main__':
@@ -119,6 +179,6 @@ if __name__ == '__main__':
     arg_parser = create_argparser()
     cmdline_args = {key: val for key, val in list(vars(arg_parser.parse_args()).items()) if val is not None}
     rasa_nlu_config = RasaNLUConfig(cmdline_args.get("config"), os.environ, cmdline_args)
-    app = WSGIServer(('0.0.0.0', rasa_nlu_config['port']), create_app(rasa_nlu_config))
+    rasa = RasaNLU(rasa_nlu_config)
     logger.info('Started http server on port %s' % rasa_nlu_config['port'])
-    app.serve_forever()
+    rasa.app.run('0.0.0.0', rasa_nlu_config['port'])

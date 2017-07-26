@@ -8,12 +8,10 @@ import json
 import os
 import six
 
-
 # Describes where to search for the configuration file if the location is not set by the user
 from typing import Text
 
 DEFAULT_CONFIG_LOCATION = "config.json"
-
 
 DEFAULT_CONFIG = {
     "name": None,
@@ -26,6 +24,7 @@ DEFAULT_CONFIG = {
     "mitie_file": os.path.join("data", "total_word_feature_extractor.dat"),
     "spacy_model_name": None,
     "num_threads": 1,
+    "max_training_processes": 1,
     "path": "models",
     "port": 5000,
     "server_model_dirs": None,
@@ -53,7 +52,6 @@ class InvalidConfigError(ValueError):
 
 
 class RasaNLUConfig(object):
-
     def __init__(self, filename=None, env_vars=None, cmdline_args=None):
 
         if filename is None and os.path.isfile(DEFAULT_CONFIG_LOCATION):
@@ -103,6 +101,12 @@ class RasaNLUConfig(object):
 
     def __len__(self):
         return len(self.__dict__)
+
+    def __getstate__(self):
+        return self.as_dict()
+
+    def __setstate__(self, state):
+        self.override(state)
 
     def items(self):
         return list(self.__dict__.items())

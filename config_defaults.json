@@ -3,6 +3,7 @@
   "pipeline": [],
   "language": "en",
   "num_threads": 1,
+  "max_training_processes": 1,
   "path": "models",
   "response_log": "logs",
   "config": "config.json",
