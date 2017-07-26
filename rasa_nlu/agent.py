@@ -50,7 +50,7 @@ class Agent(object):
             self._models[model] = self._interpreter_for_model(model)
         self._lock.release()
 
-        return self._models[model].parse(text, time)
+        return self._models[model].parse(text, time), model
 
     def update(self):
         last_model = self._default_model

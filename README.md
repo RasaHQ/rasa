@@ -118,27 +118,28 @@ Licensed under the Apache License, Version 2.0. Copyright 2017 Rasa Technologies
 As a reference, the following contains a listing of the licenses of the different dependencies as of this writing. 
 Licenses of minimal dependencies:
 
-| required package | License            	|
-|------------------|------------------------|
-| gevent     	   | MIT                	|
-| flask      	   | BSD 3-clause       	|
-| boto3      	   | Apache License 2.0 	|
-| typing     	   | PSF                	|
-| future     	   | MIT                	|
-| six        	   | MIT                	|
-| jsonschema 	   | MIT                	|
-| matplotlib       | PSF                    |
+| required package | License              |
+|------------------|----------------------|
+| gevent           | MIT                  |
+| klein            | MIT                  |
+| boto3            | Apache License 2.0   |
+| typing           | PSF                  |
+| future           | MIT                  |
+| six              | MIT                  |
+| jsonschema       | MIT                  |
+| matplotlib       | PSF                  |
+| requests         | Apache Licence 2.0   |
 
-Licenses of optional dependencies (only required for certain components of Rasa NLU. Hence, they are optional):
+Licenses of optional dependencies (only required for certain components of Rasa NLU. Hence, they are optional): 
 
-| optional package     | License            	    |
+| optional package     | License                    |
 |----------------------|----------------------------|
-| MITIE     	       | Boost Software License 1.0 |
-| spacy      	       | MIT       	                |
-| scikit-learn         | BSD 3-clause             	|
-| scipy                | BSD 3-clause             	|
-| numpy                | BSD 3-clause             	|
-| duckling     	       | Apache License 2.0         |
-| sklearn-crfsuite     | MIT                     	|
-| cloudpickle          | BSD 3-clause             	|
-| google-cloud-storage | Apache License 2.0    	    |
+| MITIE                | Boost Software License 1.0 |
+| spacy                | MIT                        |
+| scikit-learn         | BSD 3-clause               |
+| scipy                | BSD 3-clause               |
+| numpy                | BSD 3-clause               |
+| duckling             | Apache License 2.0         |
+| sklearn-crfsuite     | MIT                        |
+| cloudpickle          | BSD 3-clause               |
+| google-cloud-storage | Apache License 2.0         |

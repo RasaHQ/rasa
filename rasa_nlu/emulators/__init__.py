@@ -13,7 +13,7 @@ class NoEmulator(object):
     def __init__(self):
         # type: () -> None
 
-        self.name = None    # type: Optional[Text]
+        self.name = None  # type: Optional[Text]
 
     def normalise_request_json(self, data):
         # type: (Dict[Text, Any]) -> Dict[Text, Any]
