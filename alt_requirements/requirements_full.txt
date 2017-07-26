@@ -1,5 +1,5 @@
 # Minimum Instal Requirements
--r requirements_min.txt
+-r requirements_bare.txt
 
 # Spacy Requirements
 -r requirements_spacy_sklearn.txt

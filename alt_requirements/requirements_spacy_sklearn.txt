@@ -1,5 +1,5 @@
 # Minimum Instal Requirements
--r requirements_min.txt
+-r requirements_bare.txt
 
 spacy==1.8.2
 scikit-learn==0.18.1
