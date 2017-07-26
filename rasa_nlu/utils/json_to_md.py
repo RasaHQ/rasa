@@ -3,7 +3,6 @@ class JsonToMd:
     def __init__(self, common_examples, entity_synonyms=None):
         self.common_examples = sorted([e.as_dict() for e in common_examples], key=lambda k: k['intent'])
         self.entity_synonyms = sorted(entity_synonyms.items(), key=lambda x: x[1])
-        print self.to_markdown()
 
     def to_markdown(self):
         output = u''
