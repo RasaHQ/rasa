@@ -9,8 +9,8 @@
 Rasa NLU (Natural Language Understanding) is a tool for intent classification and entity extraction. You can think of Rasa NLU as a set of high level APIs for building your own language parser using existing NLP and ML libraries. Find out more on the [homepage of the project](https://rasa.ai/), where you can also sign up for the mailing list.
 
 **Extended documentation:**
-- [stable](https://rasa-nlu.readthedocs.io/en/stable/) (if you install from versioned image or **pypi**)
-- [latest](https://rasa-nlu.readthedocs.io/en/latest/)&nbsp; (if you install from "latest" image or **github**)
+- [stable](https://rasa-nlu.readthedocs.io/en/stable/) (if you install from **X.X.X** [docker](https://hub.docker.com/r/rasa/rasa_nlu/tags/) image or **pypi**)
+- [latest](https://rasa-nlu.readthedocs.io/en/latest/)&nbsp; (if you install from **latest** [docker](https://hub.docker.com/r/rasa/rasa_nlu/tags/() image or **github**)
 
 If you are new to Rasa NLU and want to create a bot, you should start with the [**tutorial**](http://rasa-nlu.readthedocs.io/en/stable/tutorial.html).
 
@@ -37,6 +37,15 @@ curl 'http://localhost:5000/parse?q=hello'
 
 # Example use
 
+```
+% docker run -d -p 5000:5000 rasa/rasa_nlu:0.9.1-full
+%
+% curl 'https://raw.githubusercontent.com/RasaHQ/rasa_nlu/master/data/examples/rasa/demo-rasa.json' | curl --request POST --header 'content-type: application/json' -d@- --url localhost:5000/train
+%
+% curl 'http://locahost:5000/status'
+%
+% curl 'http://localhost:5000/parse?q=hello'
+```
 _put a good example here_
 
 _put a good example here_
@@ -137,26 +146,26 @@ Licenses of minimal dependencies:
 
 | required package | License              |
 |------------------|----------------------|
-| gevent     	   | MIT                  |
+| gevent           | MIT                  |
 | klein            | MIT                  |
-| boto3      	   | Apache License 2.0   |
-| typing     	   | PSF                  |
-| future     	   | MIT                  |
-| six        	   | MIT                  |
-| jsonschema 	   | MIT                  |
+| boto3            | Apache License 2.0   |
+| typing           | PSF                  |
+| future           | MIT                  |
+| six              | MIT                  |
+| jsonschema       | MIT                  |
 | matplotlib       | PSF                  |
 | requests         | Apache Licence 2.0   |
 
 Licenses of optional dependencies (only required for certain components of Rasa NLU. Hence, they are optional): 
 
-| optional package     | License            	    |
+| optional package     | License                    |
 |----------------------|----------------------------|
-| MITIE     	       | Boost Software License 1.0 |
-| spacy      	       | MIT       	            |
+| MITIE                | Boost Software License 1.0 |
+| spacy                | MIT                        |
 | scikit-learn         | BSD 3-clause               |
 | scipy                | BSD 3-clause               |
 | numpy                | BSD 3-clause               |
-| duckling     	       | Apache License 2.0         |
+| duckling             | Apache License 2.0         |
 | sklearn-crfsuite     | MIT                        |
 | cloudpickle          | BSD 3-clause               |
-| google-cloud-storage | Apache License 2.0    	    |
+| google-cloud-storage | Apache License 2.0         |
