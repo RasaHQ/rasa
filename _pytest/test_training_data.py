@@ -249,8 +249,9 @@ def cmp_dict_list(firsts, seconds):
     ("data/examples/wit/demo-flights.json", "data/test/wit_converted_to_rasa.json", "json"),
     ("data/examples/luis/demo-restaurants.json", "data/test/luis_converted_to_rasa.json", "json"),
     ("data/examples/api/", "data/test/api_converted_to_rasa.json", "json"),
-    ("data/examples/markdown/banking.md", "data/test/md_converted_to_json.json", "json"),
-    ("data/examples/rasa/demo-rasa.json", "data/test/json_converted_to_md.md", "md")])
+    ("data/examples/rasa/demo-rasa.md", "data/test/md_converted_to_json.json", "json"),
+    ("data/examples/rasa/demo-rasa.json", "data/test/json_converted_to_md.md", "md")
+])
 def test_training_data_conversion(tmpdir, data_file, gold_standard_file, output_format):
     out_path = tmpdir.join("rasa_nlu_data.json")
     convert_training_data(data_file, out_path.strpath, output_format)
@@ -262,6 +263,14 @@ def test_training_data_conversion(tmpdir, data_file, gold_standard_file, output_
     cmp_message_list(td.entity_examples, gold_standard.entity_examples)
     cmp_message_list(td.intent_examples, gold_standard.intent_examples)
     assert td.entity_synonyms == gold_standard.entity_synonyms
+
+    # converting the converted file back to original file format and performing the same tests
+    rto_path = tmpdir.join("data_in_original_format.txt")
+    convert_training_data(out_path.strpath, rto_path.strpath, 'json')
+    rto = load_data(rto_path.strpath)
+    cmp_message_list(gold_standard.entity_examples, rto.entity_examples)
+    cmp_message_list(gold_standard.intent_examples, rto.intent_examples)
+    assert gold_standard.entity_synonyms == rto.entity_synonyms
 
     # If the above assert fails - this can be used to dump to the file and diff using git
     # with io.open(gold_standard_file) as f:

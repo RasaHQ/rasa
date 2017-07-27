@@ -2,111 +2,91 @@
   "rasa_nlu_data": {
     "common_examples": [
       {
-        "text": "what is my balance", 
-        "intent": "check_balance"
+        "text": "yes", 
+        "intent": "affirm"
       }, 
       {
-        "text": "how much do I have", 
-        "intent": "check_balance"
+        "text": "yep", 
+        "intent": "affirm"
       }, 
       {
-        "entities": [
-          {
-            "start": 25, 
-            "end": 32, 
-            "value": "savings", 
-            "entity": "source_account"
-          }
-        ], 
-        "intent": "check_balance", 
-        "text": "how much do I have on my savings"
+        "text": "yeah", 
+        "intent": "affirm"
       }, 
       {
-        "entities": [
-          {
-            "start": 25, 
-            "end": 43, 
-            "value": "savings", 
-            "entity": "source_account"
-          }
-        ], 
-        "intent": "check_balance", 
-        "text": "how much do I have on my my savings account"
+        "text": "indeed", 
+        "intent": "affirm"
       }, 
       {
-        "entities": [
-          {
-            "start": 12, 
-            "end": 20, 
-            "value": "checking", 
-            "entity": "source_account"
-          }
-        ], 
-        "intent": "check_balance", 
-        "text": "how much on checking"
+        "text": "that's right", 
+        "intent": "affirm"
       }, 
       {
-        "entities": [
-          {
-            "start": 12, 
-            "end": 23, 
-            "value": "checking", 
-            "entity": "source_account"
-          }
-        ], 
-        "intent": "check_balance", 
-        "text": "how much on my checking"
+        "text": "ok", 
+        "intent": "affirm"
       }, 
       {
-        "entities": [
-          {
-            "start": 21, 
-            "end": 40, 
-            "value": "my checking account", 
-            "entity": "source_account"
-          }
-        ], 
-        "intent": "check_balance", 
-        "text": "how much is there on my checking account"
+        "text": "great", 
+        "intent": "affirm"
       }, 
       {
-        "entities": [
-          {
-            "start": 12, 
-            "end": 19, 
-            "value": "savings", 
-            "entity": "source_account"
-          }
-        ], 
-        "intent": "check_balance", 
-        "text": "how much on savings"
+        "text": "right, thank you", 
+        "intent": "affirm"
       }, 
       {
-        "entities": [
-          {
-            "start": 12, 
-            "end": 30, 
-            "value": "savings", 
-            "entity": "source_account"
-          }
-        ], 
-        "intent": "check_balance", 
-        "text": "how much on my savings account"
+        "text": "correct", 
+        "intent": "affirm"
       }, 
       {
-        "entities": [
-          {
-            "start": 12, 
-            "end": 31, 
-            "value": "checking", 
-            "entity": "source_account"
-          }
-        ], 
-        "intent": "check_balance", 
-        "text": "how much on my checking account"
+        "text": "great choice", 
+        "intent": "affirm"
+      }, 
+      {
+        "text": "sounds really good", 
+        "intent": "affirm"
+      }, 
+      {
+        "text": "bye", 
+        "intent": "goodbye"
+      }, 
+      {
+        "text": "goodbye", 
+        "intent": "goodbye"
+      }, 
+      {
+        "text": "good bye", 
+        "intent": "goodbye"
+      }, 
+      {
+        "text": "stop", 
+        "intent": "goodbye"
+      }, 
+      {
+        "text": "end", 
+        "intent": "goodbye"
+      }, 
+      {
+        "text": "farewell", 
+        "intent": "goodbye"
+      }, 
+      {
+        "text": "Bye bye", 
+        "intent": "goodbye"
+      }, 
+      {
+        "text": "have a good one", 
+        "intent": "goodbye"
       }, 
       {
         "text": "hey", 
+        "intent": "greet"
+      }, 
+      {
+        "text": "howdy", 
+        "intent": "greet"
+      }, 
+      {
+        "text": "hey there", 
         "intent": "greet"
       }, 
       {
@@ -118,17 +98,195 @@
         "intent": "greet"
       }, 
       {
-        "text": "howdy", 
+        "text": "good morning", 
         "intent": "greet"
       }, 
       {
-        "text": "how are you", 
+        "text": "good evening", 
         "intent": "greet"
+      }, 
+      {
+        "text": "dear sir", 
+        "intent": "greet"
+      }, 
+      {
+        "text": "i'm looking for a place to eat", 
+        "intent": "restaurant_search"
+      }, 
+      {
+        "text": "I want to grab lunch", 
+        "intent": "restaurant_search"
+      }, 
+      {
+        "text": "I am searching for a dinner spot", 
+        "intent": "restaurant_search"
+      }, 
+      {
+        "entities": [
+          {
+            "start": 31, 
+            "end": 36, 
+            "value": "north", 
+            "entity": "location"
+          }
+        ], 
+        "intent": "restaurant_search", 
+        "text": "i'm looking for a place in the north of town"
+      }, 
+      {
+        "entities": [
+          {
+            "start": 8, 
+            "end": 15, 
+            "value": "chinese", 
+            "entity": "cuisine"
+          }
+        ], 
+        "intent": "restaurant_search", 
+        "text": "show me chinese restaurants"
+      }, 
+      {
+        "entities": [
+          {
+            "start": 8, 
+            "end": 14, 
+            "value": "chinese", 
+            "entity": "cuisine"
+          }
+        ], 
+        "intent": "restaurant_search", 
+        "text": "show me chines restaurants"
+      }, 
+      {
+        "entities": [
+          {
+            "start": 10, 
+            "end": 17, 
+            "value": "mexican", 
+            "entity": "cuisine"
+          }, 
+          {
+            "start": 31, 
+            "end": 37, 
+            "value": "centre", 
+            "entity": "location"
+          }
+        ], 
+        "intent": "restaurant_search", 
+        "text": "show me a mexican place in the centre"
+      }, 
+      {
+        "entities": [
+          {
+            "start": 20, 
+            "end": 26, 
+            "value": "indian", 
+            "entity": "cuisine"
+          }
+        ], 
+        "intent": "restaurant_search", 
+        "text": "i am looking for an indian spot called olaolaolaolaolaola"
+      }, 
+      {
+        "text": "search for restaurants", 
+        "intent": "restaurant_search"
+      }, 
+      {
+        "entities": [
+          {
+            "start": 16, 
+            "end": 20, 
+            "value": "west", 
+            "entity": "location"
+          }
+        ], 
+        "intent": "restaurant_search", 
+        "text": "anywhere in the west"
+      }, 
+      {
+        "entities": [
+          {
+            "start": 14, 
+            "end": 19, 
+            "value": "18328", 
+            "entity": "location"
+          }
+        ], 
+        "intent": "restaurant_search", 
+        "text": "anywhere near 18328"
+      }, 
+      {
+        "entities": [
+          {
+            "start": 17, 
+            "end": 29, 
+            "value": "asian fusion", 
+            "entity": "cuisine"
+          }
+        ], 
+        "intent": "restaurant_search", 
+        "text": "I am looking for asian fusion food"
+      }, 
+      {
+        "entities": [
+          {
+            "start": 29, 
+            "end": 34, 
+            "value": "29432", 
+            "entity": "location"
+          }
+        ], 
+        "intent": "restaurant_search", 
+        "text": "I am looking a restaurant in 29432"
+      }, 
+      {
+        "entities": [
+          {
+            "start": 17, 
+            "end": 38, 
+            "value": "mexican indian fusion", 
+            "entity": "cuisine"
+          }
+        ], 
+        "intent": "restaurant_search", 
+        "text": "I am looking for mexican indian fusion"
+      }, 
+      {
+        "entities": [
+          {
+            "start": 0, 
+            "end": 7, 
+            "value": "central", 
+            "entity": "location"
+          }, 
+          {
+            "start": 8, 
+            "end": 14, 
+            "value": "indian", 
+            "entity": "cuisine"
+          }
+        ], 
+        "intent": "restaurant_search", 
+        "text": "central indian restaurant"
       }
     ], 
-    "entity_synonyms": {
-      "pink pig": "savings"
-    }, 
+    "entity_synonyms": [
+      {
+        "synonyms": [
+          "Chines", 
+          "chines", 
+          "Chinese"
+        ], 
+        "value": "chinese"
+      }, 
+      {
+        "synonyms": [
+          "veggie", 
+          "vegg"
+        ], 
+        "value": "vegetarian"
+      }
+    ], 
     "regex_features": []
   }
 }
