@@ -63,6 +63,15 @@ num_threads
     Number of threads used during training (not supported by all components, though.
     Some of them might still be single threaded!).
 
+max_training_processes
+~~~~~~~~~~~
+
+:Type: ``int``
+:Examples: ``1``
+:Description:
+    Number of processes used to handle training requests. Increasing this value will have a great impact on memory usage.
+    It is recommended to keep the default value.
+
 path
 ~~~~
 
@@ -112,6 +121,15 @@ data
 :Description:
     Location of the training data.
 
+cors_origins
+~~~~
+
+:Type: ``list``
+:Examples: ``['*']``, ``['*.mydomain.com', 'api.domain2.net']``
+:Description:
+    List of domain patterns from where CORS (cross-origin resource sharing) calls are allowed.
+    The default value is ``[]`` which forbids all CORS requests.
+
 emulate
 ~~~~~~~
 
@@ -137,14 +155,6 @@ spacy_model_name
 :Description:
     If the spacy model to be used has a name that is different from the language tag (``"en"``, ``"de"``, etc.),
     the model name can be specified using this configuration variable. The name will be passed to ``spacy.load(name)``.
-
-fine_tune_spacy_ner
-~~~~~~~~~~~~~~~~~~~
-
-:Type: ``bool``
-:Examples: ``true``
-:Description:
-    Fine tune existing spacy NER models vs training from scratch. (``ner_spacy`` component only)
 
 server_model_dirs
 ~~~~~~~~~~~~~~~~~
@@ -172,29 +182,16 @@ max_number_of_ngrams
     Maximum number of ngrams to use when augmenting feature vectors with character ngrams
     (``intent_featurizer_ngrams`` component only)
 
-duckling_processing_mode
-~~~~~~~~~~~~~~~~~~~~~~~~
+.. _section_configuration_duckling_dimensions:
 
-:Type: ``string``
-:Examples: ``"append"``
-:Description:
-    Defines whether the duckling component will ``"append"`` (hence, modify already found entities and add all entities
-    found by the duckling processor) or ``"replace"`` (which will only replace already found entities by other components.
-    Additional entities found by the duckling component will be ignored).
-
-
-luis_data_tokenizer
+duckling_dimensions
 ~~~~~~~~~~~~~~~~~~~
 
-:Type: ``str``
-:Examples: ``"tokenizer_mitie"``
+:Type: ``list``
+:Examples: ``["time", "number", "amount-of-money", "distance"]``
 :Description:
-    Name of the tokenization component used to process luis data (Luis data annotates entities using token offset
-    instead of character offsets, to convert the token offsets to character positions a tokenizer is required.)
-    see :ref:`section_migration`
-
-If you want to persist your trained models to S3, there are additional configuration options,
-see :ref:`section_persistence`
+    Defines which dimensions, i.e. entity types, the :ref:`duckling component <section_pipeline_duckling>` will extract.
+    A full list of available dimensions can be found in the `duckling documentation <https://duckling.wit.ai/>`_.
 
 storage
 ~~~~~~~
@@ -220,6 +217,15 @@ aws_region
 :Examples: ``"us-east-1"``
 :Description:
     Name of the aws region to use. This is used only when ``"storage"`` is selected as ``"aws"``.
+    See :ref:`section_persistence` for more details.
+
+aws_endpoint_url
+~~~~~~~~~~
+
+:Type: ``str``
+:Examples: ``"http://10.0.0.1:9000"``
+:Description:
+    Optional endpoint of the custom S3 compatible storage provider. This is used only when ``"storage"`` is selected as ``"aws"``.
     See :ref:`section_persistence` for more details.
 
 entity_crf_features

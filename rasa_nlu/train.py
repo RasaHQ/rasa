@@ -18,6 +18,7 @@ from rasa_nlu.model import Trainer
 from rasa_nlu.config import RasaNLUConfig
 from typing import Optional
 
+logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from rasa_nlu.persistor import Persistor
@@ -27,15 +28,19 @@ def create_argparser():
     parser = argparse.ArgumentParser(description='train a custom language parser')
 
     parser.add_argument('-p', '--pipeline', default=None,
-                        help='pipeline to use for the message processing.')
-    parser.add_argument('-o', '--output', default=None, help="path where model files will be saved")
-    parser.add_argument('-d', '--data', default=None, help="file containing training data")
-    parser.add_argument('-c', '--config', required=True, help="config file")
-    parser.add_argument('-l', '--language', default=None, choices=['de', 'en'], help="model and data language")
+                        help="Pipeline to use for the message processing.")
+    parser.add_argument('-o', '--path', default=None,
+                        help="Path where model files will be saved")
+    parser.add_argument('-d', '--data', default=None,
+                        help="File containing training data")
+    parser.add_argument('-c', '--config', required=True,
+                        help="Rasa NLU configuration file")
+    parser.add_argument('-l', '--language', default=None, choices=['de', 'en'],
+                        help="Model and data language")
     parser.add_argument('-t', '--num_threads', default=None, type=int,
-                        help="number of threads to use during model training")
+                        help="Number of threads to use during model training")
     parser.add_argument('-m', '--mitie_file', default=None,
-                        help='file with mitie total_word_feature_extractor')
+                        help='File with mitie total_word_feature_extractor')
     return parser
 
 
@@ -51,7 +56,7 @@ def create_persistor(config):
     return persistor
 
 
-def init():
+def init():  # pragma: no cover
     # type: () -> RasaNLUConfig
     """Combines passed arguments to create rasa NLU config."""
 
@@ -59,6 +64,14 @@ def init():
     args = parser.parse_args()
     config = RasaNLUConfig(args.config, os.environ, vars(args))
     return config
+
+
+def do_train_in_worker(config):
+    # type: (RasaNLUConfig) -> Text
+    """Loads the trainer and the data and runs the training of the specified model in a subprocess."""
+
+    _, _, persisted_path = do_train(config)
+    return persisted_path
 
 
 def do_train(config, component_builder=None):
@@ -72,13 +85,13 @@ def do_train(config, component_builder=None):
     training_data = load_data(config['data'])
     interpreter = trainer.train(training_data)
     persisted_path = trainer.persist(config['path'], persistor, model_name=config['name'])
+
     return trainer, interpreter, persisted_path
 
 
 if __name__ == '__main__':
-
     config = init()
     logging.basicConfig(level=config['log_level'])
 
     do_train(config)
-    logging.info("done")
+    logger.info("Finished training")

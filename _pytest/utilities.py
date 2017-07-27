@@ -22,7 +22,7 @@ def base_test_conf(pipeline_template):
         'port': 5022,
         "pipeline": registry.registered_pipeline_templates.get(pipeline_template, []),
         "path": tempfile.mkdtemp(),
-        "data": "./data/examples/rasa/demo-rasa.json"
+        "data": "./data/test/demo-rasa-small.json"
     })
 
 

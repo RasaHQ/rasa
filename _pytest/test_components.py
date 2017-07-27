@@ -4,9 +4,12 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import pytest
+from rasa_nlu.model import Metadata
 
 from rasa_nlu import registry
-from rasa_nlu.components import fill_args
+from rasa_nlu.components import MissingArgumentError, find_unavailable_packages, _read_dev_requirements, \
+    _requirements_from_lines
+from rasa_nlu.extractors import EntityExtractor
 
 
 @pytest.mark.parametrize("component_class", registry.component_classes)
@@ -29,56 +32,53 @@ def test_all_components_in_model_templates_exist(pipeline_template):
         assert component in registry.registered_components, "Model template contains unknown component."
 
 
-@pytest.mark.parametrize("component_class", registry.component_classes)
-def test_all_arguments_can_be_satisfied_during_init(component_class, default_config, component_builder):
-    """Check that `pipeline_init` method parameters can be filled filled from the context.
+def test_all_components_are_in_all_components_template():
+    """There is a template that includes all components to test the train-persist-load-use cycle. Ensures that really
+    all Components are in there."""
 
-    The parameters declared on the `pipeline_init` are not filled directly, rather the method is called via reflection.
-    During the reflection, the parameters are filled from a so called context that is created when creating the
-    pipeline and gets initialized with the configuration values. To make sure all arguments `pipeline_init` declares
-    can be provided during the reflection, we do a 'dry run' where we check all parameters are part of the context."""
-
-    # All available context arguments that will ever be generated during init
-    component = component_builder.create_component(component_class.name, default_config)
-    context_arguments = {}
-    for clz in registry.component_classes:
-        for ctx_arg in clz.context_provides.get("pipeline_init", []):
-            context_arguments[ctx_arg] = None
-
-    filled_args = fill_args(component.pipeline_init_args(), context_arguments, default_config.as_dict())
-    assert len(filled_args) == len(component.pipeline_init_args())
+    template_with_all_components = registry.registered_pipeline_templates["all_components"]
+    for cls in registry.component_classes:
+        assert cls.name in template_with_all_components, "`all_components` template is missing component."
 
 
 @pytest.mark.parametrize("component_class", registry.component_classes)
-def test_all_arguments_can_be_satisfied_during_train(component_class, default_config, component_builder):
+def test_all_arguments_can_be_satisfied(component_class):
     """Check that `train` method parameters can be filled filled from the context. Similar to `pipeline_init` test."""
 
     # All available context arguments that will ever be generated during train
     # it might still happen, that in a certain pipeline configuration arguments can not be satisfied!
-    component = component_builder.create_component(component_class.name, default_config)
-    context_arguments = {"training_data": None}
-    for clz in registry.component_classes:
-        for ctx_arg in clz.context_provides.get("pipeline_init", []):
-            context_arguments[ctx_arg] = None
-        for ctx_arg in clz.context_provides.get("train", []):
-            context_arguments[ctx_arg] = None
+    provided_properties = {provided for c in registry.component_classes for provided in c.provides}
 
-    filled_args = fill_args(component.train_args(), context_arguments, default_config.as_dict())
-    assert len(filled_args) == len(component.train_args())
+    for req in component_class.requires:
+        assert req in provided_properties, "No component provides required property."
 
 
-@pytest.mark.parametrize("component_class", registry.component_classes)
-def test_all_arguments_can_be_satisfied_during_parse(component_class, default_config, component_builder):
-    """Check that `parse` method parameters can be filled filled from the context. Similar to `pipeline_init` test."""
+def test_find_unavailable_packages():
+    unavailable = find_unavailable_packages(["my_made_up_package_name", "io", "foo_bar", "foo_bar"])
+    assert unavailable == {"my_made_up_package_name", "foo_bar"}
 
-    # All available context arguments that will ever be generated during parse
-    component = component_builder.create_component(component_class.name, default_config)
-    context_arguments = {"text": None}
-    for clz in registry.component_classes:
-        for ctx_arg in clz.context_provides.get("pipeline_init", []):
-            context_arguments[ctx_arg] = None
-        for ctx_arg in clz.context_provides.get("process", []):
-            context_arguments[ctx_arg] = None
 
-    filled_args = fill_args(component.process_args(), context_arguments, default_config.as_dict())
-    assert len(filled_args) == len(component.process_args())
+def test_builder_create_unknown(component_builder, default_config):
+    with pytest.raises(Exception) as excinfo:
+        component_builder.create_component("my_made_up_componment", default_config)
+    assert "Unknown component name" in str(excinfo.value)
+
+
+def test_builder_load_unknown(component_builder):
+    with pytest.raises(Exception) as excinfo:
+        component_builder.load_component("my_made_up_componment", "", Metadata({}, None))
+    assert "Unknown component name" in str(excinfo.value)
+
+
+def test_requirement_parsing():
+    lines = [
+        "rasa_nlu==1.0.0",
+        "#spacy",
+        "spacy==2.0.0",
+        "#noreq",
+        "#other",
+        "pytest==2.0.3",
+        "pytest-xdist==2.0.3",
+    ]
+    assert _requirements_from_lines(lines) == {'spacy': ['spacy==2.0.0'],
+                                               'other': ['pytest==2.0.3', 'pytest-xdist==2.0.3']}

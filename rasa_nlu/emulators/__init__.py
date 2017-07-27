@@ -13,7 +13,7 @@ class NoEmulator(object):
     def __init__(self):
         # type: () -> None
 
-        self.name = None    # type: Optional[Text]
+        self.name = None  # type: Optional[Text]
 
     def normalise_request_json(self, data):
         # type: (Dict[Text, Any]) -> Dict[Text, Any]
@@ -26,6 +26,7 @@ class NoEmulator(object):
             _data["model"] = data["model"][0]
         else:
             _data["model"] = data["model"]
+        _data['time'] = data["time"] if "time" in data else None
         return _data
 
     def normalise_response_json(self, data):

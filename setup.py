@@ -1,26 +1,33 @@
 from setuptools import setup
 
-__version__ = None   # Avoids IDE errors, but actual version is read from version.py
-exec(open('rasa_nlu/version.py').read())
+__version__ = None  # Avoids IDE errors, but actual version is read from version.py
+exec (open('rasa_nlu/version.py').read())
 
 tests_requires = [
     "pytest-pep8",
-    "pytest-xdist",
     "pytest-services",
-    "pytest-flask",
+    "pytest-cov",
+    "pytest-twisted",
+    "treq"
 ]
 
 install_requires = [
-    "requests",
     "pathlib",
     "cloudpickle",
+    "gevent",
+    "klein",
     "boto3",
     "typing",
+    "future",
+    "six",
+    "tqdm",
+    "requests",
+    "jsonschema",
+    "matplotlib"
 ]
 
 extras_requires = {
     'test': tests_requires,
-    'http': ["flask", "gevent"],
     'spacy': ["sklearn", "scipy", "numpy"],
     'mitie': ["mitie", "numpy"],
 }
@@ -46,10 +53,11 @@ setup(
     install_requires=install_requires,
     tests_require=tests_requires,
     extras_require=extras_requires,
+    include_package_data=True,
     description="rasa NLU a natural language parser for bots",
     author='Alan Nichol',
-    author_email='alan@golastmile.com',
+    author_email='alan@rasa.ai',
     url="https://rasa.ai",
     keywords=["NLP", "bots"],
-    download_url="https://github.com/golastmile/rasa_nlu/archive/{}.tar.gz".format(__version__)
+    download_url="https://github.com/RasaHQ/rasa_nlu/archive/{}.tar.gz".format(__version__)
 )

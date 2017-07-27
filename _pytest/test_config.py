@@ -13,7 +13,7 @@ from typing import Text
 import rasa_nlu
 from utilities import write_file_config
 from conftest import CONFIG_DEFAULTS_PATH
-from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu.config import RasaNLUConfig, InvalidConfigError
 from rasa_nlu.registry import registered_pipeline_templates
 
 
@@ -104,6 +104,16 @@ def test_pipeline_splits_list():
     assert final_config['pipeline'] == ["nlp_spacy", "ner_spacy"]
 
 
+def test_invalid_pipeline_template():
+    file_config = {}
+    cmdline_args = {"pipeline": "my_made_up_name"}
+    env_vars = {}
+    f = write_file_config(file_config)
+    with pytest.raises(InvalidConfigError) as execinfo:
+        RasaNLUConfig(f.name, env_vars, cmdline_args)
+    assert "unknown pipeline template" in str(execinfo.value)
+
+
 def test_pipeline_looksup_registry():
     pipeline_template = list(registered_pipeline_templates)[0]
     file_config = {}
@@ -112,3 +122,8 @@ def test_pipeline_looksup_registry():
     f = write_file_config(file_config)
     final_config = RasaNLUConfig(f.name, env_vars, cmdline_args)
     assert final_config['pipeline'] == registered_pipeline_templates[pipeline_template]
+
+
+def test_default_config_file():
+    final_config = RasaNLUConfig()
+    assert len(final_config) > 1

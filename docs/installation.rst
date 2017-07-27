@@ -18,7 +18,7 @@ If you want to use the bleeding edge version use github + setup.py:
 
 .. code-block:: bash
 
-    git clone git@github.com:golastmile/rasa_nlu.git
+    git clone https://github.com/RasaHQ/rasa_nlu.git
     cd rasa_nlu
     pip install -r requirements.txt
     python setup.py install
@@ -54,13 +54,13 @@ The `MITIE <https://github.com/mit-nlp/MITIE>`_ backend is all-inclusive, in the
     pip install git+https://github.com/mit-nlp/MITIE.git
 
 
-and then download the `MITIE models <https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2>`_ . 
+and then download the `MITIE models <https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2>`_. 
 The file you need is ``total_word_feature_extractor.dat``. Save this somewhere and in your ``config.json`` add ``'mitie_file' : '/path/to/total_word_feature_extractor.dat'``.
 
 .. note::
     Training MITIE can be quite slow on datasets with more than a few intents. You can try
         - to use the sklearn + MITIE backend instead (which uses sklearn for the training) or
-        - you can install `our mitie fork <https://github.com/amn41/mitie>`_ which should reduce the training time as well.
+        - you can install `our mitie fork <https://github.com/tmbo/mitie>`_ which should reduce the training time as well.
 
 Option 2 : spaCy + sklearn
 --------------------------
@@ -74,13 +74,21 @@ installing spacy just requires (for more information visit the `spacy docu <http
     pip install -U spacy
     python -m spacy download en
 
-If you haven't used ``numpy/scipy`` before, it is highly recommended that you use conda.
-steps are
+If you haven't used ``numpy/scipy`` before, it is highly recommended that you install and use `Anaconda <https://www.continuum.io/downloads>`_.
 
-- install `anaconda <https://www.continuum.io/downloads>`_
-- ``conda install scikit-learn``
+Using Anaconda:
 
-otherwise if you know what you're doing, you can also just ``pip install -U scikit-learn``
+.. code-block:: bash
+
+    conda install scikit-learn
+    pip install -U sklearn-crfsuite
+
+Using pip:
+
+.. code-block:: bash
+
+    pip install -U scikit-learn scipy sklearn-crfsuite
+
 
 Option 3 : sklearn + MITIE
 --------------------------

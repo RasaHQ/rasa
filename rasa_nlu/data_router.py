@@ -4,35 +4,69 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import datetime
+
 import glob
 import json
 import logging
-import multiprocessing
 import os
 import tempfile
+import io
 
 from builtins import object
 from typing import Text
+
+from concurrent.futures import ProcessPoolExecutor as ProcessPool
+from twisted.internet.defer import Deferred, maybeDeferred
+from twisted.logger import jsonFileLogObserver, Logger
 
 from rasa_nlu import utils
 from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.model import Metadata, InvalidModelError, Interpreter
-from rasa_nlu.train import do_train
+from rasa_nlu.train import do_train_in_worker
+
+logger = logging.getLogger(__name__)
+
+
+def deferred_from_future(future):
+    """Converts a concurrent.futures.Future object to a twisted.internet.defer.Deferred obejct.
+    See: https://twistedmatrix.com/pipermail/twisted-python/2011-January/023296.html
+    """
+    d = Deferred()
+
+    def callback(future):
+        e = future.exception()
+        if e:
+            d.errback(e)
+            return
+        d.callback(future.result())
+
+    future.add_done_callback(callback)
+    return d
 
 
 class DataRouter(object):
     DEFAULT_MODEL_NAME = "default"
 
     def __init__(self, config, component_builder):
+        self._training_processes = config['max_training_processes'] if config['max_training_processes'] > 0 else 1
         self.config = config
         self.responses = DataRouter._create_query_logger(config['response_log'])
-        self.train_procs = []
+        self._trainings_queued = 0
         self.model_dir = config['path']
         self.token = config['token']
         self.emulator = self.__create_emulator()
         self.component_builder = component_builder if component_builder else ComponentBuilder(use_cache=True)
         self.model_store = self.__create_model_store()
+        self.pool = ProcessPool(self._training_processes)
+
+    def __del__(self):
+        """Terminates workers pool processes"""
+        self.pool.shutdown()
+
+    def shutdown(self):
+        """Public wrapper over the internal __del__ function"""
+        self.__del__()
 
     @staticmethod
     def _create_query_logger(response_log_dir):
@@ -45,19 +79,24 @@ class DataRouter(object):
             log_file_name = "rasa_nlu_log-{}-{}.log".format(timestamp, os.getpid())
             response_logfile = os.path.join(response_log_dir, log_file_name)
             # Instantiate a standard python logger, which we are going to use to log requests
-            logger = logging.getLogger('query-logger')
-            logger.setLevel(logging.INFO)
             utils.create_dir_for_file(response_logfile)
-            ch = logging.FileHandler(response_logfile)
-            ch.setFormatter(logging.Formatter('%(message)s'))
-            logger.propagate = False  # Prevents queries getting logged with parent logger --> might log them to stdout
-            logger.addHandler(ch)
-            logging.info("Logging requests to '{}'.".format(response_logfile))
-            return logger
+            query_logger = Logger(observer=jsonFileLogObserver(io.open(response_logfile, 'a', encoding='utf8')),
+                                  namespace='query-logger')
+            # Prevents queries getting logged with parent logger --> might log them to stdout
+            logger.info("Logging requests to '{}'.".format(response_logfile))
+            return query_logger
         else:
             # If the user didn't provide a logging directory, we wont log!
-            logging.info("Logging of requests is disabled. (No 'request_log' directory configured)")
+            logger.info("Logging of requests is disabled. (No 'request_log' directory configured)")
             return None
+
+    def _add_training_to_queue(self):
+        """Adds a new training process to the list of running processes."""
+        self._trainings_queued += 1
+
+    def _remove_training_from_queue(self):
+        """Decreases the ongoing trainings count by one"""
+        self._trainings_queued -= 1
 
     def __search_for_models(self):
         models = {}
@@ -83,10 +122,10 @@ class DataRouter(object):
 
         for alias, model_path in list(model_dict.items()):
             try:
-                logging.info("Loading model '{}'...".format(model_path))
+                logger.info("Loading model '{}'...".format(model_path))
                 model_store[alias] = self.__interpreter_for_model(model_path)
             except Exception as e:
-                logging.exception("Failed to load model '{}'. Error: {}".format(model_path, e))
+                logger.exception("Failed to load model '{}'. Error: {}".format(model_path, e))
         if not model_store:
             meta = Metadata({"pipeline": ["intent_classifier_keyword"]}, "")
             interpreter = Interpreter.load(meta, self.config, self.component_builder)
@@ -109,7 +148,7 @@ class DataRouter(object):
             else:
                 raise RuntimeError("Unable to initialize persistor")
         except Exception as e:
-            logging.warn("Using default interpreter, couldn't fetch model: {}".format(e))
+            logger.warning("Using default interpreter, couldn't fetch model: {}".format(e))
 
     @staticmethod
     def read_model_metadata(model_dir, config):
@@ -127,6 +166,8 @@ class DataRouter(object):
             return Metadata.load(model_dir)
 
     def __create_emulator(self):
+        """Sets which NLU webservice to emulate among those supported by Rasa"""
+
         mode = self.config['emulate']
         if mode is None:
             from rasa_nlu.emulators import NoEmulator
@@ -155,9 +196,9 @@ class DataRouter(object):
                 raise InvalidModelError("No model found with alias '{}'. Error: {}".format(alias, e))
 
         model = self.model_store[alias]
-        response = model.parse(data['text'])
+        response = model.parse(data['text'], data.get('time', None))
         if self.responses:
-            self.responses.info(json.dumps(response, sort_keys=True))
+            self.responses.info(user_input=response, model=alias)
         return self.format_response(response)
 
     def format_response(self, data):
@@ -166,15 +207,15 @@ class DataRouter(object):
     def get_status(self):
         # This will only count the trainings started from this process, if run in multi worker mode, there might
         # be other trainings run in different processes we don't know about.
-        num_trainings = len([p for p in self.train_procs if p.is_alive()])
-        models = glob.glob(os.path.join(self.model_dir, 'model*'))
+        models = glob.glob(os.path.join(self.model_dir, '*'))
+        models = [model for model in models if os.path.isfile(os.path.join(model, "metadata.json"))]
         return {
-            "trainings_under_this_process": num_trainings,
-            "available_models": models
+            "available_models": models,
+            "trainings_queued": self._trainings_queued,
+            "training_workers": self._training_processes
         }
 
     def start_train_process(self, data, config_values):
-        logging.info("Starting model training")
         f = tempfile.NamedTemporaryFile("w+", suffix="_training_data.json", delete=False)
         f.write(data)
         f.close()
@@ -184,7 +225,16 @@ class DataRouter(object):
             _config[key] = val
         _config["data"] = f.name
         train_config = RasaNLUConfig(cmdline_args=_config)
-        process = multiprocessing.Process(target=do_train, args=(train_config, self.component_builder))
-        self.train_procs.append(process)
-        process.start()
-        logging.info("Training process {} started".format(process))
+        logger.info("New training queued")
+
+        def training_callback(model_path):
+            self._remove_training_from_queue()
+            return os.path.basename(os.path.normpath(model_path))
+
+        self._add_training_to_queue()
+
+        result = self.pool.submit(do_train_in_worker, train_config)
+        result = deferred_from_future(result)
+        result.addCallback(training_callback)
+
+        return result

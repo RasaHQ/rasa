@@ -36,7 +36,7 @@ In this tutorial we'll build a model which does exactly that.
 Preparing the Training Data
 ---------------------------
 
-The best way to get training data is from *real users*, and the best way to do that is to `pretend to be the bot yourself <https://conversations.golastmile.com/put-on-your-robot-costume-and-be-the-minimum-viable-bot-yourself-3e48a5a59308#.d4tmdan68>`_. But to help get you started we have some data saved `here <https://github.com/golastmile/rasa_nlu/blob/master/data/examples/rasa/demo-rasa.json>`_
+The best way to get training data is from *real users*, and the best way to do that is to `pretend to be the bot yourself <https://conversations.golastmile.com/put-on-your-robot-costume-and-be-the-minimum-viable-bot-yourself-3e48a5a59308#.d4tmdan68>`_. But to help get you started we have some `data saved <https://github.com/RasaHQ/rasa_nlu/blob/master/data/examples/rasa/demo-rasa.json>`_
 
 Download the file and open it, and you'll see a list of training examples like these:
 
@@ -74,7 +74,7 @@ Visualizing the Training Data
 -----------------------------
 
 It's always a good idea to `look` at your data before, during, and after training a model. 
-There's a great tool for creating training data in rasa's format `here <https://github.com/golastmile/rasa-nlu-trainer>`_
+Luckily, there's a `great tool <https://github.com/RasaHQ/rasa-nlu-trainer>`__ for creating training data in rasa's format.
 - created by `@azazdeaz <https://github.com/azazdeaz>`_ - and it's also extremely helpful for inspecting existing data. 
 
 
@@ -91,7 +91,7 @@ Training Your Model
 -------------------
 
 Now we're going to create a configuration file. Make sure first that you've set up a backend, see :ref:`section_backends` .
-Create a file called ``config.json`` in your working directory which looks like this
+Create a file called ``config_spacy.json`` or ``config_mitie.json``, depending on the pipeline selected, in your working directory which looks like this
 
  
 .. literalinclude:: ../config_spacy.json
@@ -142,7 +142,8 @@ which should return
               "start": 8,
               "end": 15,
               "value": "chinese",
-              "entity": "cuisine"
+              "entity": "cuisine",
+              "extractor": "ner_spacy"
             }
         ],
         "intent": {
@@ -190,7 +191,8 @@ With very little data, rasa NLU can in certain cases already generalise concepts
               "end": 19,
               "entity": "cuisine",
               "start": 12,
-              "value": "italian"
+              "value": "italian",
+              "extrator": "ner_mitie"
             }
         ],
         "intent": {

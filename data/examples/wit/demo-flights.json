@@ -11,6 +11,12 @@
           "end" : 24
         },
         {
+          "entity" : "intent",
+          "value" : "\"flight_booking\"",
+          "start" : 0,
+          "end" : 42
+        },
+        {
           "entity" : "location",
           "value" : "\"tokyo\"",
           "role" : "to",

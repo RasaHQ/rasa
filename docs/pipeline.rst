@@ -9,14 +9,14 @@ pre-processing and there will be many more in the future.
 Each component processes the input and creates an output. The ouput can be used by any component that comes after
 this component in the pipeline. There are components which only produce information that is used by other components
 in the pipeline and there are other components that produce ``Output`` attributes which will be returned after
-the processing has finished. E.g. for the sentence ``"I am looking for Chinese food"`` the output
+the processing has finished. For example, for the sentence ``"I am looking for Chinese food"`` the output
 
 .. code-block:: json
 
     {
         "text": "I am looking for Chinese food",
         "entities": [
-            {"start": 8, "end": 15, "value": "chinese", "entity": "cuisine"}
+            {"start": 8, "end": 15, "value": "chinese", "entity": "cuisine", "extractor": "ner_crf"}
         ],
         "intent": {"confidence": 0.6485910906220309, "name": "restaurant_search"},
         "intent_ranking": [
@@ -26,7 +26,7 @@ the processing has finished. E.g. for the sentence ``"I am looking for Chinese f
     }
 
 is created as a combination of the results of the different components in the pre-configured pipeline ``spacy_sklearn``.
-For example, the ``entities`` attribute is created by the ``ner_spacy`` component.
+For example, the ``entities`` attribute is created by the ``ner_crf`` component.
 
 Pre-configured Pipelines
 ------------------------
@@ -34,20 +34,20 @@ To ease the burden of coming up with your own processing pipelines, we provide a
 which can be used by settings the ``pipeline`` configuration value to the name of the template you want to use.
 Here is a list of the existing templates:
 
-+---------------+----------------------------------------------------------------------------------------------------------------------------+
-| template name | corresponding pipeline                                                                                                     |
-+===============+============================================================================================================================+
-| spacy_sklearn | ``["nlp_spacy", "ner_spacy", "ner_synonyms", "intent_featurizer_spacy", "intent_classifier_sklearn"]``                    |
-+---------------+----------------------------------------------------------------------------------------------------------------------------+
-| mitie         | ``["nlp_mitie", "tokenizer_mitie", "ner_mitie", "ner_synonyms", "intent_classifier_mitie"]``                              |
-+---------------+----------------------------------------------------------------------------------------------------------------------------+
-| mitie_sklearn | ``["nlp_mitie", "tokenizer_mitie", "ner_mitie", "ner_synonyms", "intent_featurizer_mitie", "intent_classifier_sklearn"]`` |
-+---------------+----------------------------------------------------------------------------------------------------------------------------+
-| keyword       | ``["intent_classifier_keyword"]``                                                                                          |
-+---------------+----------------------------------------------------------------------------------------------------------------------------+
++---------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| template name | corresponding pipeline                                                                                                                                            |
++===============+===================================================================================================================================================================+
+| spacy_sklearn | ``["nlp_spacy", "tokenizer_spacy", "intent_entity_featurizer_regex", "intent_featurizer_spacy", "ner_crf", "ner_synonyms",  "intent_classifier_sklearn"]``        |
++---------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| mitie         | ``["nlp_mitie", "tokenizer_mitie", "ner_mitie", "ner_synonyms", "intent_entity_featurizer_regex", "intent_classifier_mitie"]``                                    |
++---------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| mitie_sklearn | ``["nlp_mitie", "tokenizer_mitie", "ner_mitie", "ner_synonyms", "intent_entity_featurizer_regex", "intent_featurizer_mitie", "intent_classifier_sklearn"]``       |
++---------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| keyword       | ``["intent_classifier_keyword"]``                                                                                                                                 |
++---------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
 Creating your own pipelines is possible by directly passing the names of the components to rasa NLU in the ``pipeline``
-configuration variable, e.g. ``"pipeline": ["nlp_spacy", "ner_spacy", "ner_synonyms"]``. This creates a pipeline
+configuration variable, e.g. ``"pipeline": ["nlp_spacy", "ner_crf", "ner_synonyms"]``. This creates a pipeline
 that only does entity recognition, but no intent classification. Hence, the output will not contain any useful intents.
 
 Built-in Components
@@ -173,6 +173,18 @@ intent_classifier_sklearn
     to other classifiers it also provides rankings of the labels that did not "win". The spacy intent classifier
     needs to be preceded by a featurizer in the pipeline. This featurizer creates the features used for the classification.
 
+intent_entity_featurizer_regex
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Short: regex feature creation to support intent and entity classification
+:Outputs: ``text_features`` and ``tokens.pattern``
+:Description:
+    During training, the regex intent featurizer creates a list of `regular expressions` defined in the training data format.
+    If an expression is found in the input, a feature will be set, that will later be fed into intent classifier / entity
+    extractor to simplify classification (assuming the classifier has learned during the training phase, that this set
+    feature indicates a certain intent). Regex features for entity extraction are currently only supported by the
+    ``ner_crf`` component!
+
 tokenizer_whitespace
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -203,13 +215,17 @@ ner_mitie
 ~~~~~~~~~
 
 :Short: MITIE entity extraction (using a `mitie ner trainer <https://github.com/mit-nlp/MITIE/blob/master/mitielib/src/ner_trainer.cpp>`_)
-:Outputs: ``entities``
+:Outputs: appends ``entities``
 :Output-Example:
 
     .. code-block:: json
 
         {
-            "entities": [{"value": "New York City", "start": 20, "end": 33, "entity": "city"}]
+            "entities": [{"value": "New York City",
+                          "start": 20,
+                          "end": 33,
+                          "entity": "city",
+                          "extractor": "ner_mitie"}]
         }
 
 :Description:
@@ -220,24 +236,28 @@ ner_spacy
 ~~~~~~~~~
 
 :Short: spacy entity extraction
-:Outputs: ``entities``
+:Outputs: appends ``entities``
 :Output-Example:
 
     .. code-block:: json
 
         {
-            "entities": [{"value": "New York City", "start": 20, "end": 33, "entity": "city"}]
+            "entities": [{"value": "New York City",
+                          "start": 20,
+                          "end": 33,
+                          "entity": "city",
+                          "extractor": "ner_spacy"}]
         }
 
 :Description:
     Using spacy this component predicts the entities of a message. spacy uses a statistical BILUO transition model.
-    The entity extractor expects around 5000 training examples per entity to perform good.
+    As of now, this component can only use the spacy builtin entity extraction models and can not be retrained.
 
 ner_synonyms
 ~~~~~~~~~~~~
 
 :Short: Maps synonymous entity values to the same value.
-:Outputs: modifies existing output of a previous entity extraction component
+:Outputs: modifies existing entities that previous entity extraction components found
 
 :Description:
     If the training data contains defined synonyms (by using the ``value`` attribute on the entity examples).
@@ -249,59 +269,80 @@ ner_synonyms
         [{
           "text": "I moved to New York City",
           "intent": "inform_relocation",
-          "entities": [{"value": "nyc", "start": 11, "end": 24, "entity": "city"}]
+          "entities": [{"value": "nyc",
+                        "start": 11,
+                        "end": 24,
+                        "entity": "city",
+                        "extractor" "ner_mitie",
+                        "processor": ["ner_synonyms"]}]
         },
         {
           "text": "I got a new flat in NYC.",
           "intent": "inform_relocation",
-          "entities": [{"value": "nyc", "start": 20, "end": 23, "entity": "city"}]
+          "entities": [{"value": "nyc",
+                        "start": 20,
+                        "end": 23,
+                        "entity": "city",
+                        "extractor" "ner_mitie",
+                        "processor": ["ner_synonyms"]}]
         }]
 
     this component will allow you to map the entities ``New York City`` and ``NYC`` to ``nyc``. The entitiy
-    extraction will return ``nyc`` even though the message contains ``NYC``.
+    extraction will return ``nyc`` even though the message contains ``NYC``. When this component changes an
+    exisiting entity, it appends itself to the processor list of this entity.
 
 ner_crf
 ~~~~~~~
 
 :Short: conditional random field entity extraction
-:Outputs: ``entities``
+:Outputs: appends ``entities``
 :Output-Example:
 
     .. code-block:: json
 
         {
-            "entities": [{"value": "New York City", "start": 20, "end": 33, "entity": "city"}]
+            "entities": [{"value":"New York City",
+                          "start": 20,
+                          "end": 33,
+                          "entity": "city",
+                          "extractor": "ner_crf"}]
         }
 
 :Description:
-    This component implements conditional random fields to do named entity recognition. CRFs can be thought of as an undirected Markov chain where the time steps are words and the states are entity classes. Features of the words (capitalisation, POS tagging, etc.) give probabilities to certain entity classes, as are transitions between neighbouring entity tags: the most likely set of tags is then calculated and returned.
+    This component implements conditional random fields to do named entity recognition.
+    CRFs can be thought of as an undirected Markov chain where the time steps are words
+    and the states are entity classes. Features of the words (capitalisation, POS tagging,
+    etc.) give probabilities to certain entity classes, as are transitions between
+    neighbouring entity tags: the most likely set of tags is then calculated and returned.
+
+.. _section_pipeline_duckling:
 
 ner_duckling
 ~~~~~~~~~~~~
-
 :Short: Adds duckling support to the pipeline to unify entity types (e.g. to retrieve common date / number formats)
-:Outputs: modifies / appends existing output
+:Outputs: appends ``entities``
 :Output-Example:
 
     .. code-block:: json
 
         {
-            "duckling": "time",
-            "end": 53,
-            "entity": "time",
-            "start": 48,
-            "value": "2017-04-10T00:00:00.000+02:00"
+            "entities": [{"end": 53,
+                          "entity": "time",
+                          "start": 48,
+                          "value": "2017-04-10T00:00:00.000+02:00",
+                          "extractor": "ner_duckling"}]
         }
 
 :Description:
-    Duckling allows to recognize dates, numbers and other structured entities (for a reference of all available
-    entities see `the duckling documentation <https://duckling.wit.ai/#getting-started>`_). The component has two modes
-    either ``append`` (adds all entities found by the duckling processing to the output) and ``replace`` (analyse only
-    previously found entities and normalize their format). The mode can be configured using the
-    ``duckling_processing_mode`` configuration variable. Additionally to modifying the value replacing it with the
-    normalized representation, the component also adds the ``duckling`` attribute to the output representing the kind
-    of the found entity.
-
+    Duckling allows to recognize dates, numbers, distances and other structured entities
+    and normalizes them (for a reference of all available entities
+    see `the duckling documentation <https://duckling.wit.ai/#getting-started>`_).
+    The component recognizes the entity types defined by the :ref:`duckling dimensions configuration variable <section_configuration_duckling_dimensions>`.
+    Please be aware that duckling tries to extract as many entity types as possible without
+    providing a ranking. For example, if you specify both ``number`` and ``time`` as dimensions
+    for the duckling component, the component will extract two entities: ``10`` as a number and
+    ``in 10 minutes`` as a time from the text ``I will be there in 10 minutes``. In such a
+    situation, your application would have to decide which entity type is be the correct one.
 
 Creating new Components
 -----------------------

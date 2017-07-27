@@ -46,20 +46,36 @@ which returns the same ``dict`` as the HTTP api would (without emulation).
 If multiple models are created, it is reasonable to share components between the different models. E.g.
 the ``'nlp_spacy'`` component, which is used by every pipeline that wants to have access to the spacy word vectors,
 can be cached to avoid storing the large word vectors more than once in main memory. To use the caching,
-a ``ComponentBuilder`` should be passed when loading and training models, e.g.:
+a ``ComponentBuilder`` should be passed when loading and training models.
+
+Here is a short example on how to create a component builder, that can be reused to train and run multiple models, to train a model:
+
+.. testcode::
+
+    from rasa_nlu.converters import load_data
+    from rasa_nlu.config import RasaNLUConfig
+    from rasa_nlu.components import ComponentBuilder
+    from rasa_nlu.model import Trainer
+
+    builder = ComponentBuilder(use_cache=True)      # will cache components between pipelines (where possible)
+
+    training_data = load_data('data/examples/rasa/demo-rasa.json')
+    trainer = Trainer(RasaNLUConfig("config_spacy.json"), builder)
+    trainer.train(training_data)
+    model_directory = trainer.persist('./models/')  # Returns the directory the model is stored in
+
+The same builder can be used to load a model (can be a totally different one). The builder only caches components that are safe to be shared between models. Here is a short example on how to use the builder when loading models:
 
 .. testcode::
 
     from rasa_nlu.model import Metadata, Interpreter
-    from rasa_nlu.components import ComponentBuilder
     config = RasaNLUConfig("config_spacy.json")
 
     # For simplicity we will load the same model twice, usually you would want to use the metadata of
-    # different models
-    builder = ComponentBuilder(use_cache=True)      # will cache components between pipelines (where possible)
+    # different models      
     metadata_model = Metadata.load(model_directory)
 
-    interpreter = Interpreter.load(metadata_model, config, builder)
+    interpreter = Interpreter.load(metadata_model, config, builder)     # to use the builder, pass it as an arg when loading the model
     # the clone will share resources with the first model, as long as the same builder is passed!
     interpreter_clone = Interpreter.load(metadata_model, config, builder)
 

@@ -4,7 +4,7 @@ Contributing
 Contributions are very much encouraged! Please create an issue before doing any work to avoid disappointment.
 
 We created a tag that should get you started quickly if you are searching for
-`interesting topics to get started <https://github.com/golastmile/rasa_nlu/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22>`_.
+`interesting topics to get started <https://github.com/RasaHQ/rasa_nlu/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22>`_.
 
 
 Python Conventions
@@ -49,6 +49,7 @@ After that, you can compile and view the documentation using:
     make html
     cd _build/html
     python -m SimpleHTTPServer 8000 .
+    # python 3: python -m http.server
 
 The documentation will be running on http://localhost:8000/.
 

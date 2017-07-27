@@ -28,9 +28,10 @@ class LUISEmulator(NoEmulator):
 
     def _ranking(self, data):
         if data.get("intent_ranking"):
-            return [{"intent": el["intent"], "score": el["confidence"]} for el in data["intent_ranking"]]
+            return [{"intent": el["name"], "score": el["confidence"]} for el in data["intent_ranking"]]
         else:
-            return [self._top_intent(data)]
+            top = self._top_intent(data)
+            return [top] if top else []
 
     def normalise_response_json(self, data):
         # type: (Dict[Text, Any]) -> Dict[Text, Any]
@@ -50,5 +51,5 @@ class LUISEmulator(NoEmulator):
                     "endIndex": None,
                     "score": None
                 } for e in data["entities"]
-                ]
+                ] if "entities" in data else []
         }

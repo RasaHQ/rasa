@@ -14,6 +14,8 @@ from rasa_nlu.config import RasaNLUConfig
 from tqdm import tqdm
 import requests
 
+logger = logging.getLogger(__name__)
+
 
 def create_argparser():
     parser = argparse.ArgumentParser(description='parse download commands')
@@ -28,24 +30,24 @@ def create_argparser():
     return parser
 
 
-def download_mitie_fe_file(fe_file):
+def download_mitie_fe_file(fe_file):    # pragma: no cover
     # type: (Text) -> None
     """Download the mitie feature extractor needed to run & train mitie classifiers.
 
     See https://github.com/mit-nlp/MITIE#initial-setup """
 
-    logging.info("Downloading MITIE feature extractor files")
+    logger.info("Downloading MITIE feature extractor files")
     _fe_file_url = "https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat"
-    logging.info("Downloading from {}".format(_fe_file_url))
+    logger.info("Downloading from {}".format(_fe_file_url))
     response = requests.get(_fe_file_url, stream=True)
 
     with io.open(fe_file, "wb") as output:
         for data in tqdm(response.iter_content(chunk_size=1024*1024), unit='MB', unit_scale=True):
             output.write(data)
-    logging.debug("file written! {0}, {1}".format(fe_file, os.path.exists(fe_file)))
+    logger.debug("file written! {0}, {1}".format(fe_file, os.path.exists(fe_file)))
 
 
-def download(config, pkg="mitie"):
+def download(config, pkg="mitie"):  # pragma: no cover
     # type: (RasaNLUConfig, Text) -> None
     if pkg == "mitie":
         download_mitie_fe_file(config.mitie_file)

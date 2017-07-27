@@ -12,7 +12,10 @@ from rasa_nlu import registry
 @slowtest
 @pytest.mark.parametrize("pipeline_template", list(registry.registered_pipeline_templates.keys()))
 def test_samples(pipeline_template, component_builder):
-    interpreter = utilities.interpreter_for(component_builder, utilities.base_test_conf(pipeline_template))
+    _conf = utilities.base_test_conf(pipeline_template)
+    _conf["data"] = "./data/examples/rasa/demo-rasa.json"
+
+    interpreter = utilities.interpreter_for(component_builder, _conf)
     available_intents = ["greet", "restaurant_search", "affirm", "goodbye", "None"]
     samples = [
         (
@@ -32,7 +35,7 @@ def test_samples(pipeline_template, component_builder):
     ]
 
     for text, gold in samples:
-        result = interpreter.parse(text)
+        result = interpreter.parse(text, time=None)
         assert result['text'] == text, \
             "Wrong text for sample '{}'".format(text)
         assert result['intent']['name'] in available_intents, \
@@ -43,5 +46,6 @@ def test_samples(pipeline_template, component_builder):
         # This ensures the model doesn't detect entities that are not present
         # Models on our test data set are not stable enough to require the entities to be found
         for entity in result['entities']:
+            del entity["extractor"]
             assert entity in gold['entities'], \
                 "Wrong entities for sample '{}'".format(text)
