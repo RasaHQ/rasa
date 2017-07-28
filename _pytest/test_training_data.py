@@ -78,6 +78,7 @@ def test_markdown_data():
     assert td.entity_synonyms == {u'Chines': u'chinese', u'Chinese': u'chinese', u'chines': u'chinese',
                                   u'vegg': u'vegetarian', u'veggie': u'vegetarian'}
 
+
 def test_repeated_entities():
     data = """
 {
