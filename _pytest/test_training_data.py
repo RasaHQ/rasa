@@ -72,14 +72,11 @@ def test_api_data():
 
 
 def test_markdown_data():
-    td = load_data('data/examples/markdown/')
-    assert td.entity_examples != []
-    assert td.intent_examples != []
-    assert td.entity_synonyms != {
-        u'pink pig': u'savings', u'my checking account': u'checking', u'my savings account':
-        u'savings', u'my checking': u'checking'
-    }
-
+    td = load_data('data/examples/rasa/demo-rasa.md')
+    assert len(td.sorted_entity_examples()) >= len([e for e in td.entity_examples if e.get("entities")])
+    assert len(td.sorted_intent_examples()) == len(td.intent_examples)
+    assert td.entity_synonyms == {u'Chines': u'chinese', u'Chinese': u'chinese', u'chines': u'chinese',
+                                  u'vegg': u'vegetarian', u'veggie': u'vegetarian'}
 
 def test_repeated_entities():
     data = """
