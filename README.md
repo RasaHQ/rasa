@@ -103,7 +103,6 @@ From github:
 git clone git@github.com:RasaHQ/rasa_nlu.git
 cd rasa_nlu
 pip install -r requirements.txt
-pip install -e .
 ```
 
 To test the installation use (this will run a very stupid default model. you need to [train your own model](http://rasa-nlu.readthedocs.io/en/stable/tutorial.html) to do something useful!):
