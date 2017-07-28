@@ -17,6 +17,7 @@ If you are new to Rasa NLU and want to create a bot, you should start with the [
 # Install
 
 **Via Docker Image**
+From docker hub:
 ```
 docker run -p 5000:5000 rasa/rasa_nlu:0.9.1-full
 ```
@@ -30,35 +31,41 @@ python -m rasa_nlu.server &
 ```
 (for more python installation options see [Advanced Python Installation](#advanced-python))
 
-###Basic test
+### Basic test
+The below command can be executed for either method used above.
 ```
 curl 'http://localhost:5000/parse?q=hello'
 ```
 
 # Example use
 
+### Get the Server Status
 ```
-% docker run -d -p 5000:5000 rasa/rasa_nlu:0.9.1-full
-%
-% curl 'https://raw.githubusercontent.com/RasaHQ/rasa_nlu/master/data/examples/rasa/demo-rasa.json' | curl --request POST --header 'content-type: application/json' -d@- --url localhost:5000/train
-%
-% curl 'http://locahost:5000/status'
-%
-% curl 'http://localhost:5000/parse?q=hello'
+curl 'http://locahost:5000/status'
 ```
-_put a good example here_
 
-_put a good example here_
+### Check the Server Version
+```
+curl 'http://locahost:5000/version'
+```
 
-_put a good example here_
+### Training New Models
+[Examples](https://github.com/RasaHQ/rasa_nlu/tree/master/data/examples/rasa) and [Documentation](http://rasa-nlu.readthedocs.io/en/latest/dataformat.html) of the training data format are provided. But as a quick start execute the below command to train a new model
 
-_put a good example here_
+```
+curl 'https://raw.githubusercontent.com/RasaHQ/rasa_nlu/master/data/examples/rasa/demo-rasa.json' | \
+curl --request POST --header 'content-type: application/json' -d@- --url localhost:5000/train?name=test_model
+```
 
-_put a good example here_
+The above command does the following:
+1. It Fetches some of the example data in the repo
+2. It `POSTS` that data to the `/train` endpoint and names the model `/name=test_model`
 
-_put a good example here_
-
-_put a good example here_
+### Parsing New Requests
+Make sure the above command has finished before executing the below. You can check with the `/status` command above.
+```
+curl 'http://localhost:5000/parse?q=hello&model=test_model'
+```
 
 # FAQ
 
@@ -105,10 +112,11 @@ To test the installation use (this will run a very stupid default model. you nee
 Before you start, ensure you have the latest version of docker engine on your machine. You can check if you have docker installed by typing ```docker -v``` in your terminal.
 
 To see all available builds go to the [Rasa docker hub](https://hub.docker.com/r/rasa/rasa_nlu/), but to get up and going the quickest just run:
-
 ```
 docker run -p 5000:5000 rasa/rasa_nlu:latest-full
 ```
+
+There are also three volumes, which you may want to map: `/app/models`, `/app/logs`, and `/app/data`. It is also possible to override the config file used by the server by mapping a new config file to the volume `/app/config.json`. For complete docker usage instructions go to the official [docker hub readme](https://hub.docker.com/r/rasa/rasa_nlu/).
 
 To test run the below command after the container has started. For more info on using the HTTP API see [here](http://rasa-nlu.readthedocs.io/en/latest/http.html#endpoints)
 ```
