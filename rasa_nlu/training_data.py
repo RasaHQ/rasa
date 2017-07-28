@@ -111,7 +111,7 @@ class TrainingData(object):
         # type: (**Any) -> str
         """Represent this set of training examples as json adding the passed meta information."""
 
-        syns_as_tuples = sorted(self.entity_synonyms.items(), key=lambda x: x[1])
+        syns_as_tuples = sorted([i for i in self.entity_synonyms.items() if i[0] != i[1]], key=lambda x: x[1])
         self.entity_synonyms = []
         for i, s in enumerate(syns_as_tuples):
             if i == 0 or s[1] != syns_as_tuples[i-1][1]:
