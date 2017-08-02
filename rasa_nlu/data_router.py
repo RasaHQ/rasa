@@ -217,7 +217,7 @@ class DataRouter(object):
 
     def start_train_process(self, data, config_values):
         f = tempfile.NamedTemporaryFile("w+", suffix="_training_data.json", delete=False)
-        f.write(data)
+        f.write(data.encode("utf-8"))
         f.close()
         # TODO: fix config handling
         _config = self.config.as_dict()
