@@ -10,6 +10,10 @@
       {
         "value": "chinese",
         "synonyms": ["Chinese", "Chines", "chines"]
+      },
+      {
+        "value": "vegetarian",
+        "synonyms": ["veggie", "vegg"]
       }
     ],
     "common_examples": [

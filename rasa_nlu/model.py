@@ -107,8 +107,8 @@ class Trainer(object):
 
         self.config = config
         self.skip_validation = skip_validation
-        self.training_data = None       # type: Optional[TrainingData]
-        self.pipeline = []              # type: List[Component]
+        self.training_data = None  # type: Optional[TrainingData]
+        self.pipeline = []  # type: List[Component]
         if component_builder is None:
             # If no builder is passed, every interpreter creation will result in a new builder.
             # hence, no components are reused.
@@ -129,7 +129,7 @@ class Trainer(object):
 
         self.training_data = copy.deepcopy(data)
 
-        context = {}        # type: Dict[Text, Any]
+        context = {}  # type: Dict[Text, Any]
 
         for component in self.pipeline:
             updates = component.provide_context()
@@ -152,7 +152,7 @@ class Trainer(object):
 
     def persist(self, path, persistor=None, model_name=None):
         # type: (Text, Optional[Persistor], Text) -> Text
-        """Persist all components of the pipeline to the passed path. Returns the directory of the persited model."""
+        """Persist all components of the pipeline to the passed path. Returns the directory of the persisted model."""
 
         timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
         metadata = {

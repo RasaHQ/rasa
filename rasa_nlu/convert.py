@@ -14,16 +14,21 @@ def create_argparser():
                         help='file or dir containing training data')
     parser.add_argument('-o', '--out_file',
                         help='file where to save training data in rasa format')
+    parser.add_argument('-f', '--format',
+                        help="output format. 'json' or 'md'")
     return parser
 
 
-def convert_training_data(data_file, out_file):
+def convert_training_data(data_file, out_file, output_format):
     td = load_data(data_file)
     with io.open(out_file, "w") as f:
-        f.write(td.as_json(indent=2))
+        if output_format == 'md':
+            f.write(td.as_markdown())
+        else:
+            f.write(td.as_json(indent=2))
 
 
 if __name__ == "__main__":
     parser = create_argparser()
     args = parser.parse_args()
-    convert_training_data(args.data_file, args.out_file)
+    convert_training_data(args.data_file, args.out_file, args.format)

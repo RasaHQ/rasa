@@ -4,6 +4,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/RasaHQ/rasa_nlu/badge.svg?branch=master)](https://coveralls.io/github/RasaHQ/rasa_nlu?branch=master)
 [![PyPI version](https://badge.fury.io/py/rasa_nlu.svg)](https://badge.fury.io/py/rasa_nlu)
 [![Documentation Status](https://readthedocs.org/projects/rasa-nlu/badge/)](https://rasa-nlu.readthedocs.io/en/stable/)
+[![roadmap badge](https://img.shields.io/badge/visit%20the-roadmap-blue.svg)](https://github.com/RasaHQ/rasa_nlu/projects/2)
 
 Rasa NLU (Natural Language Understanding) is a tool for intent classification and entity extraction. You can think of Rasa NLU as a set of high level APIs for building your own language parser using existing NLP and ML libraries. Find out more on the [homepage of the project](https://rasa.ai/), where you can also sign up for the mailing list.
 
@@ -112,32 +113,33 @@ Releasing a new version is quite simple, as the packages are build and distribut
     git push origin 0.7.x
     ```
 ## License
-Licensed under the Apache License, Version 2.0. Copyright 2017 Lastmile Technologies GmbH. [Copy of the license](LICENSE.txt).
+Licensed under the Apache License, Version 2.0. Copyright 2017 Rasa Technologies GmbH. [Copy of the license](LICENSE.txt).
 
 As a reference, the following contains a listing of the licenses of the different dependencies as of this writing. 
 Licenses of minimal dependencies:
 
-| required package | License            	|
-|------------------|------------------------|
-| gevent     	   | MIT                	|
-| flask      	   | BSD 3-clause       	|
-| boto3      	   | Apache License 2.0 	|
-| typing     	   | PSF                	|
-| future     	   | MIT                	|
-| six        	   | MIT                	|
-| jsonschema 	   | MIT                	|
-| matplotlib       | PSF                    |
+| required package | License              |
+|------------------|----------------------|
+| gevent           | MIT                  |
+| klein            | MIT                  |
+| boto3            | Apache License 2.0   |
+| typing           | PSF                  |
+| future           | MIT                  |
+| six              | MIT                  |
+| jsonschema       | MIT                  |
+| matplotlib       | PSF                  |
+| requests         | Apache Licence 2.0   |
 
-Licenses of optional dependencies (only required for certain components of Rasa NLU. Hence, they are optional):
+Licenses of optional dependencies (only required for certain components of Rasa NLU. Hence, they are optional): 
 
-| optional package     | License            	    |
+| optional package     | License                    |
 |----------------------|----------------------------|
-| MITIE     	       | Boost Software License 1.0 |
-| spacy      	       | MIT       	                |
-| scikit-learn         | BSD 3-clause             	|
-| scipy                | BSD 3-clause             	|
-| numpy                | BSD 3-clause             	|
-| duckling     	       | Apache License 2.0         |
-| sklearn-crfsuite     | MIT                     	|
-| cloudpickle          | BSD 3-clause             	|
-| google-cloud-storage | Apache License 2.0    	    |
+| MITIE                | Boost Software License 1.0 |
+| spacy                | MIT                        |
+| scikit-learn         | BSD 3-clause               |
+| scipy                | BSD 3-clause               |
+| numpy                | BSD 3-clause               |
+| duckling             | Apache License 2.0         |
+| sklearn-crfsuite     | MIT                        |
+| cloudpickle          | BSD 3-clause               |
+| google-cloud-storage | Apache License 2.0         |
