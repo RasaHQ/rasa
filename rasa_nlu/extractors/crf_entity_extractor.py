@@ -79,13 +79,15 @@ class CRFEntityExtractor(EntityExtractor):
     def train(self, training_data, config, **kwargs):
         # type: (TrainingData, RasaNLUConfig) -> None
 
-        self.BILOU_flag = config["entity_crf_BILOU_flag"]
-        self.crf_features = config["entity_crf_features"]
+        train_config = config.get("entity_crf_train", {})
 
-        config_dict = config.as_dict()
-        self.max_iterations = config_dict.get("crf_entitity_extractor_max_iterations", 50)
-        self.L1_C = config_dict.get("crf_entitity_extractor_l1_c", 1)
-        self.L2_C = config_dict.get("crf_entitity_extractor_l2_c", 1e-3)
+        # These two are expected to be in the config so not using .get
+        self.BILOU_flag = train_config["BILOU_flag"]
+        self.crf_features = train_config["features"]
+
+        self.max_iterations = train_config.get("max_iterations", 50)
+        self.L1_C = config.get("L1_c", 1)
+        self.L2_C = config.get("L2_c", 1e-3)
 
         if training_data.entity_examples:
             # convert the dataset into features

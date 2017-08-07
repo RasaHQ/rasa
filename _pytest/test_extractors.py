@@ -5,7 +5,6 @@ from __future__ import unicode_literals
 
 import utilities
 from rasa_nlu.training_data import TrainingData, Message
-from rasa_nlu.config import RasaNLUConfig
 
 
 def test_crf_extractor(spacy_nlp):
@@ -22,7 +21,7 @@ def test_crf_extractor(spacy_nlp):
             "entities": [{"start": 0, "end": 7, "value": "central", "entity": "location"}],
             "spacy_doc": spacy_nlp("central indian restaurant")
         })]
-    config = RasaNLUConfig.from_dict({"entity_crf_BILOU_flag": True, "entity_crf_features": ext.crf_features})
+    config = {"entity_crf_train": {"BILOU_flag": True, "features": ext.crf_features}}
     ext.train(TrainingData(training_examples=examples), config)
     sentence = 'anywhere in the west'
     crf_format = ext._from_text_to_crf(Message(sentence, {"spacy_doc": spacy_nlp(sentence)}))
