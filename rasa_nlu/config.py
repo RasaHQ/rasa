@@ -35,7 +35,7 @@ DEFAULT_CONFIG = {
     "response_log": "logs",
     "aws_endpoint_url": None,
     "duckling_dimensions": None,
-    "entity_crf_train": {
+    "ner_crf": {
         "BILOU_flag": True,
         "features": [
         ["low", "title", "upper", "pos", "pos2"],
@@ -45,7 +45,7 @@ DEFAULT_CONFIG = {
         "L1_c": 1,
         "L2_c": 1e-3
     },
-    "sklearn_train": {
+    "intent_classifier_sklearn": {
         "C": [1, 2, 5, 10, 20, 100],
         "kernel": "linear"
   }

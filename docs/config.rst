@@ -228,8 +228,8 @@ aws_endpoint_url
     Optional endpoint of the custom S3 compatible storage provider. This is used only when ``"storage"`` is selected as ``"aws"``.
     See :ref:`section_persistence` for more details.
 
-entity_crf_train
-~~~~~~~~~~~~~~~~
+ner_crf
+~~~~~~~
 
 features
 ++++++++
@@ -278,8 +278,8 @@ L2_C
     This is the value given to sklearn_crfcuite.CRF tagger before training.
     Specifies the L2 regularization coefficient.
 
-sklearn_train
-~~~~~~~~~~~~~
+intent_classifier_sklearn
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 C
 +

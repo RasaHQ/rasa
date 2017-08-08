@@ -21,7 +21,7 @@
   "max_number_of_ngrams": 7,
   "duckling_dimensions": null,
 
-  "entity_crf_train": {
+  "ner_crf": {
     "BILOU_flag": true,
     "features": [
       ["low", "title", "upper", "pos", "pos2"],
@@ -32,7 +32,7 @@
     "L2_c": 1e-3
   },
 
-  "sklearn_train": {
+  "intent_classifier_sklearn": {
     "C": [1, 2, 5, 10, 20, 100],
     "kernel": "linear"
   }

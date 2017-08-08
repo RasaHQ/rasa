@@ -79,7 +79,7 @@ class CRFEntityExtractor(EntityExtractor):
     def train(self, training_data, config, **kwargs):
         # type: (TrainingData, RasaNLUConfig) -> None
 
-        train_config = config.get("entity_crf_train", {})
+        train_config = config.get("ner_crf", {})
 
         # These two are expected to be in the config so not using .get
         self.BILOU_flag = train_config["BILOU_flag"]

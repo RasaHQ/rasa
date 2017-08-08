@@ -93,7 +93,7 @@ class SklearnIntentClassifier(Component):
             y = self.transform_labels_str2num(labels)
             X = np.stack([example.get("text_features") for example in training_data.intent_examples])
 
-            sklearn_config = config.get("sklearn_train")
+            sklearn_config = config.get("intent_classifier_sklearn")
             C = sklearn_config.get("C", [1, 2, 5, 10, 20, 100])
             kernel = sklearn_config.get("kernel", "linear")
             # dirty str fix because sklearn is expecting str not instance of basestr...
