@@ -38,9 +38,9 @@ DEFAULT_CONFIG = {
     "ner_crf": {
         "BILOU_flag": True,
         "features": [
-        ["low", "title", "upper", "pos", "pos2"],
-        ["bias", "low", "word3", "word2", "upper", "title", "digit", "pos", "pos2", "pattern"],
-        ["low", "title", "upper", "pos", "pos2"]],
+            ["low", "title", "upper", "pos", "pos2"],
+            ["bias", "low", "word3", "word2", "upper", "title", "digit", "pos", "pos2", "pattern"],
+            ["low", "title", "upper", "pos", "pos2"]],
         "max_iterations": 50,
         "L1_c": 1,
         "L2_c": 1e-3
@@ -48,7 +48,7 @@ DEFAULT_CONFIG = {
     "intent_classifier_sklearn": {
         "C": [1, 2, 5, 10, 20, 100],
         "kernel": "linear"
-  }
+    }
 }
 
 
@@ -90,8 +90,8 @@ class RasaNLUConfig(object):
             else:
                 raise InvalidConfigError("No pipeline specified and unknown pipeline template " +
                                          "'{}' passed. Known pipeline templates: {}".format(
-                                             self.__dict__['pipeline'],
-                                             ", ".join(registry.registered_pipeline_templates.keys())))
+                                                 self.__dict__['pipeline'],
+                                                 ", ".join(registry.registered_pipeline_templates.keys())))
 
         for key, value in self.items():
             setattr(self, key, value)
