@@ -35,11 +35,20 @@ DEFAULT_CONFIG = {
     "response_log": "logs",
     "aws_endpoint_url": None,
     "duckling_dimensions": None,
-    "entity_crf_BILOU_flag": True,
-    "entity_crf_features": [
+    "ner_crf": {
+        "BILOU_flag": True,
+        "features": [
         ["low", "title", "upper", "pos", "pos2"],
         ["bias", "low", "word3", "word2", "upper", "title", "digit", "pos", "pos2", "pattern"],
-        ["low", "title", "upper", "pos", "pos2"]]
+        ["low", "title", "upper", "pos", "pos2"]],
+        "max_iterations": 50,
+        "L1_c": 1,
+        "L2_c": 1e-3
+    },
+    "intent_classifier_sklearn": {
+        "C": [1, 2, 5, 10, 20, 100],
+        "kernel": "linear"
+  }
 }
 
 
@@ -89,6 +98,9 @@ class RasaNLUConfig(object):
 
     def __getitem__(self, key):
         return self.__dict__[key]
+
+    def get(self, key, default=None):
+        return self.__dict__.get(key, default)
 
     def __setitem__(self, key, value):
         self.__dict__[key] = value

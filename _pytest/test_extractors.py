@@ -21,7 +21,7 @@ def test_crf_extractor(spacy_nlp):
             "entities": [{"start": 0, "end": 7, "value": "central", "entity": "location"}],
             "spacy_doc": spacy_nlp("central indian restaurant")
         })]
-    config = {"entity_crf_BILOU_flag": True, "entity_crf_features": ext.crf_features}
+    config = {"ner_crf": {"BILOU_flag": True, "features": ext.crf_features}}
     ext.train(TrainingData(training_examples=examples), config)
     sentence = 'anywhere in the west'
     crf_format = ext._from_text_to_crf(Message(sentence, {"spacy_doc": spacy_nlp(sentence)}))
