@@ -10,7 +10,7 @@ Rasa NLU (Natural Language Understanding) is a tool for intent classification an
 
 **Extended documentation:**
 - [stable](https://rasa-nlu.readthedocs.io/en/stable/) (if you install from **X.X.X** [docker](https://hub.docker.com/r/rasa/rasa_nlu/tags/) image or **pypi**)
-- [latest](https://rasa-nlu.readthedocs.io/en/latest/)&nbsp; (if you install from **latest** [docker](https://hub.docker.com/r/rasa/rasa_nlu/tags/() image or **github**)
+- [latest](https://rasa-nlu.readthedocs.io/en/latest/)&nbsp; (if you install from **latest** [docker](https://hub.docker.com/r/rasa/rasa_nlu/tags/) image or **github**)
 
 If you are new to Rasa NLU and want to create a bot, you should start with the [**tutorial**](http://rasa-nlu.readthedocs.io/en/stable/tutorial.html).
 
