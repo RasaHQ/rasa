@@ -15,6 +15,11 @@ Added
 - Cors support. You can now specify allowed cors origins within your configuration file.
 - The HTTP server is now backed by Klein (Twisted) instead of Flask. The server is now asynchronous but is no more WSGI compatible
 
+Fixed
+-----
+- Fixed training data persistence. Fixes #510
+- Fixed UTF-8 character handling when training through HTTP interface
+
 [0.9.0] - 2017-07-07
 ^^^^^^^^^^^^^^^^^^^^
 
