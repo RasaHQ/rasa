@@ -1,3 +1,4 @@
+# coding=utf-8
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -77,3 +78,14 @@ def test_duckling_entity_extractor(component_builder):
     assert len(entities) == 1
     assert entities[0]["text"] == "tomorrow"
     assert entities[0]["value"] == "2013-10-13T00:00:00.000Z"
+
+
+def test_duckling_entity_extractor_and_synonyms(component_builder):
+    _config = utilities.base_test_conf("all_components")
+    _config["duckling_dimensions"] = ["number"]
+    duckling = component_builder.create_component("ner_duckling", _config)
+    synonyms = component_builder.create_component("ner_synonyms", _config)
+    message = Message("He was 6 feet away")
+    duckling.process(message)
+    synonyms.process(message)   # checks that the synonym processor can handle entities that have int values
+    assert message.data["entities"][0]["value"] == 6

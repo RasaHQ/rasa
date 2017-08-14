@@ -19,6 +19,7 @@ Fixed
 -----
 - Fixed training data persistence. Fixes #510
 - Fixed UTF-8 character handling when training through HTTP interface
+- Invalid handling of numbers extracted from duckling during synonym handling. Fixes #517
 
 [0.9.0] - 2017-07-07
 ^^^^^^^^^^^^^^^^^^^^
