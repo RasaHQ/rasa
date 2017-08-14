@@ -13,6 +13,8 @@ import warnings
 from itertools import groupby
 
 from builtins import object, str
+from collections import defaultdict
+
 from rasa_nlu.utils.json_to_md import JsonToMd
 from typing import Any
 from typing import Dict
@@ -111,18 +113,16 @@ class TrainingData(object):
         # type: (**Any) -> str
         """Represent this set of training examples as json adding the passed meta information."""
 
-        syns_as_tuples = sorted([i for i in self.entity_synonyms.items() if i[0] != i[1]], key=lambda x: x[1])
-        self.entity_synonyms = []
-        for i, s in enumerate(syns_as_tuples):
-            if i == 0 or s[1] != syns_as_tuples[i-1][1]:
-                self.entity_synonyms.append({'value': s[1], 'synonyms': []})
-            self.entity_synonyms[-1]['synonyms'].append(s[0])
+        js_entity_synonyms = defaultdict(list)
+        for k, v in self.entity_synonyms.items():
+            if k != v:
+                js_entity_synonyms[v].append(k)
 
         return str(json.dumps({
             "rasa_nlu_data": {
                 "common_examples": [example.as_dict() for example in self.training_examples],
                 "regex_features": self.regex_features,
-                "entity_synonyms": self.entity_synonyms
+                "entity_synonyms": [{'value': value, 'synonyms': syns} for value, syns in js_entity_synonyms.items()]
             }
         }, **kwargs))
 
