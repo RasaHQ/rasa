@@ -87,7 +87,18 @@ response_log
 :Examples: ``"logs/"``
 :Description:
     Directory where logs will be saved (containing queries and responses).
-    If set to ``null`` logging will be disabled.
+    If all response_log response_log_mongo_uri set to ``null`` logging will be disabled.
+
+response_log_mongo_uri
+~~~~~~~~~~~~
+
+:Type: ``str`` or ``null``
+:Examples: ``"mongodb://user:password@host:port/db"``
+:Description:
+    Mongo DB where logs will be saved (containing queries and responses).
+    A collection named ``rasa_nlu_logs`` will be created.
+    If all response_log response_log_mongo_uri set to ``null`` logging will be disabled.
+    Note: ``txmongo`` must be installed from the `Github repo <https://github.com/twisted/txmongo/>`_ as 16.3.0 (available on PiPy) won't work.
 
 config
 ~~~~~~
