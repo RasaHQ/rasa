@@ -3,6 +3,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import re
+
 """
 Mongo log observer.
 """
@@ -16,8 +18,10 @@ from txmongo.connection import ConnectionPool
 from txmongo.collection import Collection
 from twisted.logger._file import ILogObserver
 from twisted.logger._json import eventAsJSON
+from twisted.internet import ssl
 
 logger = logging.getLogger(__name__)
+
 
 @implementer(ILogObserver)
 class MongoLogObserver(object):
@@ -38,20 +42,30 @@ class MongoLogObserver(object):
             returns a formatted event as L{unicode}.
         """
         assert isinstance(mongo_uri, StringType)
-        # assert len(mongo_uri.rsplit('/', 1)) > 1 # make sure db name is appended to uri
 
         self._encoding = "utf-8"
-        self.tls_ctx = tls_ctx
         self.formatEvent = format_event
-        self.mongoUri = mongo_uri.rsplit('/', 1)[0]
-        self.dbname = mongo_uri.rsplit('/', 1)[1]
+        self.mongo_uri = mongo_uri
+        self.dbname = self.get_db_name(mongo_uri)
         self.logs_collection = None
         self.collection_name = u'rasa_nlu_logs'
         self.db = None
+        if tls_ctx is None and 'ssl=true' in mongo_uri:
+            # this will only work with username:password authentication.
+            self.tls_ctx = ssl.ClientContextFactory()
+        else:
+            self.tls_ctx = tls_ctx
+
+    @staticmethod
+    def get_db_name(mongo_uri):
+        regex = r"mongodb:\/\/(?P<hosts>[^\/]+)\/(?P<dbname>[^\?]+)\?(?P<options>.+)"
+        regex = re.compile(regex)
+        match = regex.search(mongo_uri)
+        return match.groupdict()['dbname']
 
     @inlineCallbacks
     def connect(self):
-        connection = yield ConnectionPool(self.mongoUri)
+        connection = yield ConnectionPool(self.mongo_uri, ssl_context_factory=self.tls_ctx)
         self.db = getattr(connection, self.dbname)
         collection_names = yield self.db.command("listCollections")
         values = collection_names['cursor']['firstBatch']
@@ -75,10 +89,6 @@ class MongoLogObserver(object):
         collection.insert_one(event)
 
 
-def print_error(failure):
-    print (str(failure))
-
-
 def mongoLogObserver(mongo_uri, tls_ctx=None):
     """
     Create a L{MongoLogObserver} that emits text to a specified (writable)
@@ -90,8 +100,8 @@ def mongoLogObserver(mongo_uri, tls_ctx=None):
     @param tls_ctx: An SSL context. See http://txmongo.readthedocs.io/en/latest/index.html
     @type tls_ctx: L{object}
 
-    @return: A file log observer.
-    @rtype: L{FileLogObserver}
+    @return: A Mongo log observer.
+    @rtype: L{MongoLogObserver}
     """
     observer = MongoLogObserver(
         mongo_uri,
