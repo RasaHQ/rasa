@@ -127,7 +127,7 @@ class Trainer(object):
         # type: (TrainingData) -> Interpreter
         """Trains the underlying pipeline by using the provided training data."""
 
-        self.training_data = copy.deepcopy(data)
+        self.training_data = data
 
         context = {}  # type: Dict[Text, Any]
 
@@ -140,10 +140,12 @@ class Trainer(object):
         if not self.skip_validation:
             components.validate_arguments(self.pipeline, context)
 
+        working_data = copy.deepcopy(data)  # data gets modified internally during the training - hence the copy
+
         for i, component in enumerate(self.pipeline):
             logger.info("Starting to train component {}".format(component.name))
             component.prepare_partial_processing(self.pipeline[:i], context)
-            updates = component.train(data, self.config, **context)
+            updates = component.train(working_data, self.config, **context)
             logger.info("Finished training component.")
             if updates:
                 context.update(updates)

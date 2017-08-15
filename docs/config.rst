@@ -228,8 +228,11 @@ aws_endpoint_url
     Optional endpoint of the custom S3 compatible storage provider. This is used only when ``"storage"`` is selected as ``"aws"``.
     See :ref:`section_persistence` for more details.
 
-entity_crf_features
-~~~~~~~~~~~~~~~~~~~
+ner_crf
+~~~~~~~
+
+features
+++++++++
 
 :Type: ``[[str]]``
 :Examples: ``[["low", "title"], ["bias", "word3"], ["upper", "pos", "pos2"]]``
@@ -240,11 +243,58 @@ entity_crf_features
     Available features are:
     ``low``, ``title``, ``word3``, ``word2``, ``pos``, ``pos2``, ``bias``, ``upper`` and ``digit``
 
-entitiy_crf_BILOU_flag
-~~~~~~~~~~~~~~~~~~~~~~
+BILOU_flag
+++++++++++
 
 :Type: ``bool``
 :Examples: ``true``
 :Description:
      The flag determines whether to use BILOU tagging or not. BILOU tagging is more rigorous however
      requires more examples per entity. Rule of thumb: use only if more than 100 examples per entity.
+
+max_iterations
+++++++++++++++
+
+:Type: ``int``
+:Examples: ``50``
+:Description:
+    This is the value given to sklearn_crfcuite.CRF tagger before training.
+
+L1_C
+++++
+
+:Type: ``float``
+:Examples: ``1.0``
+:Description:
+    This is the value given to sklearn_crfcuite.CRF tagger before training.
+    Specifies the L1 regularization coefficient.
+
+L2_C
+++++
+
+:Type: ``float``
+:Examples: ``1e-3``
+:Description:
+    This is the value given to sklearn_crfcuite.CRF tagger before training.
+    Specifies the L2 regularization coefficient.
+
+intent_classifier_sklearn
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+C
++
+
+:Type: ``[float]``
+:Examples: ``[1, 2, 5, 10, 20, 100]``
+:Description:
+    Specifies the list of regularization values to cross-validate over for C-SVM.
+    This is used with the ``kernel`` hyperparameter in GridSearchCV.
+
+kernel
+++++++
+
+:Type: ``string``
+:Examples: ``"linear"``
+:Description:
+    Specifies the kernel to use with C-SVM.
+    This is used with the ``C`` hyperparameter in GridSearchCV.
