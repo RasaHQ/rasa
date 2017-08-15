@@ -14,7 +14,6 @@ from typing import Optional
 from typing import Text
 from typing import Type
 
-from rasa_nlu.classifiers.faq_classifier import FAQClassifierSklearn
 from rasa_nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
 from rasa_nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
 from rasa_nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
@@ -46,7 +45,6 @@ component_classes = [
     SpacyFeaturizer, MitieFeaturizer, NGramFeaturizer, RegexFeaturizer,
     MitieTokenizer, SpacyTokenizer, WhitespaceTokenizer,
     SklearnIntentClassifier, MitieIntentClassifier, KeywordIntentClassifier,
-    FAQClassifierSklearn,
 ]
 
 # Mapping from a components name to its class to allow name based lookup.
@@ -106,7 +104,6 @@ registered_pipeline_templates = {
         "intent_classifier_keyword",
         "intent_classifier_sklearn",
         "intent_classifier_mitie",
-        "faq_classifier_sklearn",
     ]
 }
 
