@@ -12,7 +12,6 @@ from builtins import object
 import inspect
 
 from typing import Any
-from typing import ClassVar
 from typing import Dict
 from typing import List
 from typing import Optional
