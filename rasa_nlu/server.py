@@ -191,3 +191,5 @@ if __name__ == '__main__':
     rasa = RasaNLU(rasa_nlu_config)
     logger.info('Started http server on port %s' % rasa_nlu_config['port'])
     rasa.app.run('0.0.0.0', rasa_nlu_config['port'])
+    
+    
