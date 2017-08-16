@@ -18,6 +18,8 @@ DEFAULT_CONFIG_LOCATION = "config.json"
 DEFAULT_CONFIG = {
     "name": None,
     "config": DEFAULT_CONFIG_LOCATION,
+    "compound_dict": None,
+    "synonym_dict": None,
     "data": None,
     "emulate": None,
     "language": "en",

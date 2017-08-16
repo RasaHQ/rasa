@@ -11,6 +11,8 @@
   "data": null,
   "emulate": null,
   "log_file": null,
+  "compound_dict": null,
+  "synonym_dict": null,
   "mitie_file": "data/total_word_feature_extractor.dat",
   "spacy_model_name": null,
   "server_model_dirs": null,

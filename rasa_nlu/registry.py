@@ -22,6 +22,7 @@ from rasa_nlu.extractors.entity_synonyms import EntitySynonymMapper
 from rasa_nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa_nlu.extractors.crf_entity_extractor import CRFEntityExtractor
+from rasa_nlu.featurizers.compund_featurizer import SpacyCompoundFeaturizer
 from rasa_nlu.featurizers.mitie_featurizer import MitieFeaturizer
 from rasa_nlu.featurizers.ngram_featurizer import NGramFeaturizer
 from rasa_nlu.featurizers.regex_featurizer import RegexFeaturizer
@@ -42,7 +43,7 @@ component_classes = [
     SpacyNLP, MitieNLP,
     SpacyEntityExtractor, MitieEntityExtractor, DucklingExtractor, CRFEntityExtractor,
     EntitySynonymMapper,
-    SpacyFeaturizer, MitieFeaturizer, NGramFeaturizer, RegexFeaturizer,
+    SpacyFeaturizer, MitieFeaturizer, NGramFeaturizer, RegexFeaturizer, SpacyCompoundFeaturizer,
     MitieTokenizer, SpacyTokenizer, WhitespaceTokenizer,
     SklearnIntentClassifier, MitieIntentClassifier, KeywordIntentClassifier,
 ]
@@ -95,6 +96,7 @@ registered_pipeline_templates = {
         "intent_featurizer_mitie",
         "intent_featurizer_spacy",
         "intent_featurizer_ngrams",
+        "intent_featurizer_compounds",
         "intent_entity_featurizer_regex",
         "ner_mitie",
         "ner_crf",
