@@ -9,6 +9,13 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 .. note:: This version is not yet released and is under active development.
 
+[0.9.2] - 2017-08-16
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- removed unnecessary `ClassVar` import
+
 [0.9.1] - 2017-07-11
 ^^^^^^^^^^^^^^^^^^^^
 
