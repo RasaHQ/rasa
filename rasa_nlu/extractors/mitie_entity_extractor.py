@@ -3,10 +3,11 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
-import typing
 from builtins import range
+import logging
 import os
 
+import typing
 from typing import Any
 from typing import Dict
 from typing import List
@@ -19,6 +20,7 @@ from rasa_nlu.model import Metadata
 from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
 
+logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     import mitie
@@ -86,7 +88,11 @@ class MitieEntityExtractor(EntityExtractor):
             tokens = example.get("tokens")
             sample = mitie.ner_training_instance([t.text for t in tokens])
             for ent in example.get("entities", []):
-                start, end = MitieEntityExtractor.find_entity(ent, text, tokens)
+                try:
+                    start, end = MitieEntityExtractor.find_entity(ent, text, tokens)
+                except ValueError as e:
+                    logger.warning("Example skipped: %s"%str(e))
+                    continue
                 sample.add_entity(list(range(start, end)), ent["entity"])
                 found_one_entity = True
 
