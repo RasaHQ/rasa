@@ -57,10 +57,16 @@ class DataRouter(object):
         if 'response_log' in config:
             self.responses.append(DataRouter._create_query_file_logger(config['response_log']))
         if 'response_log_mongo_uri' in config:
-            self.responses.append(DataRouter._create_query_mongo_logger(config['response_log_mongo_uri']))
+            if 'response_log_mongo_collection' in config:
+                self.responses.append(DataRouter._create_query_mongo_logger(config['response_log_mongo_uri'],
+                                                                            config['response_log_mongo_collection']))
+            else:
+                self.responses.append(DataRouter._create_query_mongo_logger(config['response_log_mongo_uri']))
+
         if len(self.responses) == 0:
             # If the user didn't provide a logging method, we wont log!
             logger.info("Logging of requests is disabled. (No 'request_log' directory configured)")
+
         self._trainings_queued = 0
         self.model_dir = config['path']
         self.token = config['token']
@@ -94,12 +100,11 @@ class DataRouter(object):
         return query_logger
 
     @staticmethod
-    def _create_query_mongo_logger(mongo_uri, tls_context=None):
+    def _create_query_mongo_logger(mongo_uri, collection_name='rasa_nlu_logs', tls_context=None):
         """Creates a logger that will persist incomming queries and their results."""
-        query_logger = Logger(observer=mongoLogObserver(mongo_uri, tls_context))
+        query_logger = Logger(observer=mongoLogObserver(mongo_uri, collection_name, tls_context))
         logger.info("Logging requests to '{}'.".format(mongo_uri))
         return query_logger
-        # Ensures different log files for different processes in multi worker mode
 
     def _add_training_to_queue(self):
         """Adds a new training process to the list of running processes."""

@@ -29,7 +29,7 @@ class MongoLogObserver(object):
     Log observer that writes to a Mongo DB.
     """
 
-    def __init__(self, mongo_uri, tls_ctx, format_event):
+    def __init__(self, mongo_uri, collection_name, tls_ctx, format_event):
         """
         @param mongo_uri: A Mongo Uri
         @type mongo_uri: L{unicode}
@@ -43,12 +43,11 @@ class MongoLogObserver(object):
         """
         assert isinstance(mongo_uri, StringType)
 
-        self._encoding = "utf-8"
         self.formatEvent = format_event
         self.mongo_uri = mongo_uri
         self.dbname = self.get_db_name(mongo_uri)
         self.logs_collection = None
-        self.collection_name = u'rasa_nlu_logs'
+        self.collection_name = collection_name
         self.db = None
         if tls_ctx is None and 'ssl=true' in mongo_uri:
             # this will only work with username:password authentication.
@@ -89,13 +88,16 @@ class MongoLogObserver(object):
         collection.insert_one(event)
 
 
-def mongoLogObserver(mongo_uri, tls_ctx=None):
+def mongoLogObserver(mongo_uri, collection_name, tls_ctx=None):
     """
     Create a L{MongoLogObserver} that emits text to a specified (writable)
     Mongo DB.
 
     @param mongo_uri: A Mongo Uri
     @type mongo_uri: L{unicode}
+
+    @param collection_name: A collection name
+    @type collection_name: L{unicode}
 
     @param tls_ctx: An SSL context. See http://txmongo.readthedocs.io/en/latest/index.html
     @type tls_ctx: L{object}
@@ -105,6 +107,7 @@ def mongoLogObserver(mongo_uri, tls_ctx=None):
     """
     observer = MongoLogObserver(
         mongo_uri,
+        collection_name,
         tls_ctx,
         lambda event: eventAsJSON(event)
     )
