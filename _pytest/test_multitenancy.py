@@ -154,6 +154,6 @@ if __name__ == '__main__':
         persistor = create_persistor(config)
         trainer.persist("test_models", persistor, model_name=model_name)
 
-    train("config_mitie.json", "test_model_mitie")
-    train("config_spacy.json", "test_model_spacy_sklearn")
-    train("config_mitie_sklearn.json", "test_model_mitie_sklearn")
+    train("sample_configs/config_mitie.json", "test_model_mitie")
+    train("sample_configs/config_spacy.json", "test_model_spacy_sklearn")
+    train("sample_configs/config_mitie_sklearn.json", "test_model_mitie_sklearn")

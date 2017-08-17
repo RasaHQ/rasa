@@ -18,7 +18,7 @@ Default
 -------
 Here is the default configuration including all available parameters:
 
-.. literalinclude:: ../config_defaults.json
+.. literalinclude:: ../sample_configs/config_defaults.json
     :language: json
 
 Options
@@ -93,7 +93,7 @@ config
 ~~~~~~
 
 :Type: ``str``
-:Examples: ``"config_spacy.json"``
+:Examples: ``"sample_configs/config_spacy.json"``
 :Description:
     Location of the configuration file (can only be set as env var or command line option).
 

@@ -5,6 +5,7 @@ spacy==1.8.2
 # sklearn
 scikit-learn==0.18.1
 scipy==0.19.0
+matplotlib==1.5.3
 # duckling
 duckling==1.7.1
 # sklearn_crfsuite
@@ -22,3 +23,4 @@ requests==2.18.1
 treq==17.3.1
 # other
 google-cloud-storage==1.0.0
+-e .
