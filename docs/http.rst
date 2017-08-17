@@ -13,7 +13,7 @@ You can run a simple http server that handles requests using your models with (s
 
 .. code-block:: bash
 
-    $ python -m rasa_nlu.server -c config_spacy.json --server_model_dirs=./model_YYYYMMDD-HHMMSS
+    $ python -m rasa_nlu.server -c sample_configs/config_spacy.json --server_model_dirs=./model_YYYYMMDD-HHMMSS
 
 
 Emulation
