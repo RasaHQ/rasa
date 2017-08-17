@@ -7,6 +7,7 @@ import os
 import numpy as np
 import pytest
 
+from rasa_nlu.featurizers.spacy_featurizer import features_for_doc
 from rasa_nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa_nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa_nlu.training_data import Message
@@ -16,10 +17,8 @@ from rasa_nlu.training_data import Message
     ("hey how are you today", [-0.19649599, 0.32493639, -0.37408298, -0.10622784, 0.062756])
 ])
 def test_spacy_featurizer(sentence, expected, spacy_nlp):
-    from rasa_nlu.featurizers.spacy_featurizer import SpacyFeaturizer
-    ftr = SpacyFeaturizer()
     doc = spacy_nlp(sentence)
-    vecs = ftr.features_for_doc(doc)
+    vecs = features_for_doc(doc)
     assert np.allclose(doc.vector[:5], expected, atol=1e-5)
     assert np.allclose(vecs, doc.vector, atol=1e-5)
 
