@@ -20,9 +20,20 @@
   "aws_endpoint_url": null,
   "max_number_of_ngrams": 7,
   "duckling_dimensions": null,
-  "entity_crf_BILOU_flag": true,
-  "entity_crf_features": [
-    ["low", "title", "upper", "pos", "pos2"],
-    ["bias", "low", "word3", "word2", "upper", "title", "digit", "pos", "pos2", "pattern"],
-    ["low", "title", "upper", "pos", "pos2"]]
+
+  "ner_crf": {
+    "BILOU_flag": true,
+    "features": [
+      ["low", "title", "upper", "pos", "pos2"],
+      ["bias", "low", "word3", "word2", "upper", "title", "digit", "pos", "pos2", "pattern"],
+      ["low", "title", "upper", "pos", "pos2"]],
+    "max_iterations": 50,
+    "L1_c": 1,
+    "L2_c": 1e-3
+  },
+
+  "intent_classifier_sklearn": {
+    "C": [1, 2, 5, 10, 20, 100],
+    "kernel": "linear"
+  }
 }

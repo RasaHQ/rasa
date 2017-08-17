@@ -11,6 +11,7 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 Added
 -----
+- Support for training data in Markdown format
 - Cors support. You can now specify allowed cors origins within your configuration file.
 - The HTTP server is now backed by Klein (Twisted) instead of Flask. The server is now asynchronous but is no more WSGI compatible
 - Improved Docker automated builds
@@ -18,6 +19,13 @@ Added
 Changed
 -------
 - Root project directories have been slightly rearranged to clean up new docker support
+
+Fixed
+-----
+- Fixed training data persistence. Fixes #510
+- Fixed UTF-8 character handling when training through HTTP interface
+- Invalid handling of numbers extracted from duckling during synonym handling. Fixes #517
+- Only log a warning (instead of throwing an exception) on misaligned entities during mitie NER
 
 [0.9.0] - 2017-07-07
 ^^^^^^^^^^^^^^^^^^^^

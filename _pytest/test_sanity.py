@@ -4,6 +4,7 @@ from __future__ import division
 from __future__ import absolute_import
 
 import importlib
+import logging
 import pkgutil
 from collections import defaultdict
 
@@ -33,24 +34,27 @@ def import_submodules(package_name, skip_list):
     return results
 
 
-@pytest.mark.parametrize("banned_package", ["spacy", "mitie", "sklearn", "duckling"])
-def test_no_global_imports_of_banned_package(banned_package):
+@pytest.mark.parallel
+def test_no_global_imports_of_banned_package():
     """This test ensures that neither of the banned packages are imported module wise in any of our code files.
 
      If one of the dependencies is needed, they should be imported within a function."""
 
+    banned_packages = ["spacy", "mitie", "sklearn", "duckling"]
+
     q = Queue()
+    # Import tracking needs to be run in a separate process to ensure the environment is clean...
     p = Process(target=get_tracked_imports, args=(q,))
     p.start()
-    tracked_imports = q.get()
-    p.join()
+    tracked_imports = q.get(block=True)   # import tracking function will put its results in the queue once it finished
 
     def find_modules_importing(name):
         return {v for k, vs in tracked_imports.items() if k.startswith(name) for v in vs}
 
-    assert not find_modules_importing(banned_package), \
-        "No module should import {} globally. Found in {}".format(
-            banned_package, ", ".join(find_modules_importing(banned_package)))
+    for banned_package in banned_packages:
+        assert not find_modules_importing(banned_package), \
+            "No module should import {} globally. Found in {}".format(
+                banned_package, ", ".join(find_modules_importing(banned_package)))
 
 
 def get_tracked_imports(q):

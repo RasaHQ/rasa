@@ -13,6 +13,9 @@ import warnings
 from itertools import groupby
 
 from builtins import object, str
+from collections import defaultdict
+
+from rasa_nlu.utils.json_to_md import JsonToMd
 from typing import Any
 from typing import Dict
 from typing import List
@@ -110,12 +113,24 @@ class TrainingData(object):
         # type: (**Any) -> str
         """Represent this set of training examples as json adding the passed meta information."""
 
+        js_entity_synonyms = defaultdict(list)
+        for k, v in self.entity_synonyms.items():
+            if k != v:
+                js_entity_synonyms[v].append(k)
+
         return str(json.dumps({
             "rasa_nlu_data": {
                 "common_examples": [example.as_dict() for example in self.training_examples],
-                "regex_features": self.regex_features
+                "regex_features": self.regex_features,
+                "entity_synonyms": [{'value': value, 'synonyms': syns} for value, syns in js_entity_synonyms.items()]
             }
         }, **kwargs))
+
+    def as_markdown(self, **kwargs):
+        # type: (**Any) -> str
+        """Represent this set of training examples as markdown adding the passed meta information."""
+
+        return JsonToMd(self.training_examples, self.entity_synonyms).to_markdown()
 
     def persist(self, dir_name):
         # type: (Text) -> Dict[Text, Any]

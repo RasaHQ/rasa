@@ -14,6 +14,7 @@ import io
 
 from builtins import object
 from typing import Text
+from future.utils import PY3
 
 from concurrent.futures import ProcessPoolExecutor as ProcessPool
 from twisted.internet.defer import Deferred, maybeDeferred
@@ -216,8 +217,12 @@ class DataRouter(object):
         }
 
     def start_train_process(self, data, config_values):
-        f = tempfile.NamedTemporaryFile("w+", suffix="_training_data.json", delete=False)
-        f.write(data)
+        if PY3:
+            f = tempfile.NamedTemporaryFile("w+", suffix="_training_data.json", delete=False, encoding="utf-8")
+            f.write(data)
+        else:
+            f = tempfile.NamedTemporaryFile("w+", suffix="_training_data.json", delete=False)
+            f.write(data.encode("utf-8"))
         f.close()
         # TODO: fix config handling
         _config = self.config.as_dict()

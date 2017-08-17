@@ -69,8 +69,9 @@ also returns a list of available models the server can use to fulfill ``/parse``
 
     $ curl localhost:5000/status | python -mjson.tool
     {
-      "training" : False
-      "models" : []
+      "trainings_queued" : 0,
+      "training_workers" : 1,
+      "available_models" : []
     }
     
 ``GET /version``

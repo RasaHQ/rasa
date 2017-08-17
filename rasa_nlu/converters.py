@@ -25,6 +25,7 @@ API_FILE_FORMAT = "api"
 LUIS_FILE_FORMAT = "luis"
 RASA_FILE_FORMAT = "rasa_nlu"
 UNK_FILE_FORMAT = "unk"
+MARKDOWN_FILE_FORMAT = "md"
 
 
 def load_api_data(files):
@@ -135,6 +136,14 @@ def load_wit_data(filename):
     return TrainingData(training_examples)
 
 
+def load_markdown_data(filename):
+    # type: (Text) -> TrainingData
+    """Loads training data stored in markdown data format."""
+    from rasa_nlu.utils.md_to_json import MarkdownToJson
+    data = MarkdownToJson(filename)
+    return TrainingData(data.get_common_examples(), get_entity_synonyms_dict(data.get_entity_synonyms()))
+
+
 def rasa_nlu_data_schema():
     training_example_schema = {
         "type": "object",
@@ -225,12 +234,7 @@ def load_rasa_data(filename):
     regex_features = data['rasa_nlu_data'].get("regex_features", list())
     synonyms = data['rasa_nlu_data'].get("entity_synonyms", list())
 
-    # build entity_synonyms dictionary
-    entity_synonyms = {}
-    for s in synonyms:
-        if "value" in s and "synonyms" in s:
-            for synonym in s["synonyms"]:
-                entity_synonyms[synonym] = s["value"]
+    entity_synonyms = get_entity_synonyms_dict(synonyms)
 
     if intent or entity:
         logger.warn("DEPRECATION warning: Data file contains 'intent_examples' or 'entity_examples' which will be " +
@@ -249,21 +253,38 @@ def load_rasa_data(filename):
     return TrainingData(training_examples, entity_synonyms, regex_features)
 
 
+def get_entity_synonyms_dict(synonyms):
+    # type: (List[Dict]) -> Dict
+    """build entity_synonyms dictionary"""
+    entity_synonyms = {}
+    for s in synonyms:
+        if "value" in s and "synonyms" in s:
+            for synonym in s["synonyms"]:
+                entity_synonyms[synonym] = s["value"]
+    return entity_synonyms
+
+
 def guess_format(files):
     # type: (List[Text]) -> Text
     """Given a set of files, tries to guess which data format is used."""
 
     for filename in files:
         with io.open(filename, encoding="utf-8-sig") as f:
-            file_data = json.loads(f.read())
-        if "data" in file_data and type(file_data.get("data")) is list:
-            return WIT_FILE_FORMAT
-        elif "luis_schema_version" in file_data:
-            return LUIS_FILE_FORMAT
-        elif "userSays" in file_data:
-            return API_FILE_FORMAT
-        elif "rasa_nlu_data" in file_data:
-            return RASA_FILE_FORMAT
+            try:
+                raw_data = f.read()
+                file_data = json.loads(raw_data)
+                if "data" in file_data and type(file_data.get("data")) is list:
+                    return WIT_FILE_FORMAT
+                elif "luis_schema_version" in file_data:
+                    return LUIS_FILE_FORMAT
+                elif "userSays" in file_data:
+                    return API_FILE_FORMAT
+                elif "rasa_nlu_data" in file_data:
+                    return RASA_FILE_FORMAT
+
+            except ValueError:
+                if "## intent:" in raw_data:
+                    return MARKDOWN_FILE_FORMAT
 
     return UNK_FILE_FORMAT
 
@@ -297,5 +318,7 @@ def load_data(resource_name, fformat=None):
         return load_api_data(files)
     elif fformat == RASA_FILE_FORMAT:
         return load_rasa_data(files[0])
+    elif fformat == MARKDOWN_FILE_FORMAT:
+        return load_markdown_data(files[0])
     else:
         raise ValueError("unknown training file format : {} for file {}".format(fformat, resource_name))
