@@ -78,11 +78,11 @@ def test_get_parse(app, response_test):
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
         "http://dummy_uri/parse?q=food",
-        {"error": "No model found with alias 'default'. Error: Failed to load model metadata. "}
+        {"error": "No model found with alias 'default'."}
     ),
     ResponseTest(
         "http://dummy_uri/parse?q=food&model=umpalumpa",
-        {"error": "No model found with alias 'umpalumpa'. Error: Failed to load model metadata. "}
+        {"error": "No model found with alias 'umpalumpa'."}
     )
 ])
 @pytest.inlineCallbacks
@@ -122,12 +122,12 @@ def test_post_parse(app, response_test):
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
         "http://dummy_uri/parse",
-        {"error": "No model found with alias 'default'. Error: Failed to load model metadata. "},
+        {"error": "No model found with alias 'default'."},
         payload={"q": "food"}
     ),
     ResponseTest(
         "http://dummy_uri/parse",
-        {"error": "No model found with alias 'umpalumpa'. Error: Failed to load model metadata. "},
+        {"error": "No model found with alias 'umpalumpa'."},
         payload={"q": "food", "model": "umpalumpa"}
     ),
 ])
