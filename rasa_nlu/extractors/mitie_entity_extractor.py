@@ -3,7 +3,7 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
-from builtins import range
+from builtins import range, str
 import logging
 import os
 
@@ -91,7 +91,7 @@ class MitieEntityExtractor(EntityExtractor):
                 try:
                     start, end = MitieEntityExtractor.find_entity(ent, text, tokens)
                 except ValueError as e:
-                    logger.warning("Example skipped: %s"%str(e))
+                    logger.warning("Example skipped: {}".format(str(e)))
                     continue
                 sample.add_entity(list(range(start, end)), ent["entity"])
                 found_one_entity = True
