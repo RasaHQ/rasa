@@ -24,8 +24,7 @@ install:
 - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION scipy=0.19.0 numpy=1.12.1
   scikit-learn=0.18.1
 - source activate test-environment
-- pip install -r dev-requirements.txt
-- pip install -r requirements.txt
+- pip install -r alt_requirements/requirements_dev.txt
 - pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-1.2.0/en_core_web_sm-1.2.0.tar.gz
   --no-cache-dir > jnk
 - python -m spacy link en_core_web_sm en

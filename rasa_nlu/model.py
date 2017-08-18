@@ -56,7 +56,8 @@ class Metadata(object):
                 data = json.loads(f.read())
             return Metadata(data, model_dir)
         except Exception as e:
-            raise InvalidModelError("Failed to load model metadata. {}".format(e))
+            raise InvalidModelError("Failed to load model metadata from '{}'. {}".format(
+                    os.path.abspath(os.path.join(model_dir, 'metadata.json')), e))
 
     def __init__(self, metadata, model_dir):
         # type: (Dict[Text, Any], Optional[Text]) -> None

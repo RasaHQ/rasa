@@ -1,5 +1,10 @@
-class JsonToMd:
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
+
+class JsonToMd(object):
     def __init__(self, common_examples, entity_synonyms=None):
         self.common_examples = sorted([e.as_dict() for e in common_examples], key=lambda k: k['intent'])
         self.entity_synonyms = sorted(entity_synonyms.items(), key=lambda x: x[1])
@@ -16,7 +21,7 @@ class JsonToMd:
             output += '- {}\n'.format(self.example_to_md(example))
 
         for i, synonym in enumerate(self.entity_synonyms):
-            if i == 0 or self.entity_synonyms[i-1][1] != synonym[1]:
+            if i == 0 or self.entity_synonyms[i - 1][1] != synonym[1]:
                 output += '\n## synonym:{}\n'.format(synonym[1])
 
             output += '- {}\n'.format(synonym[0])

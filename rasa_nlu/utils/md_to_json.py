@@ -14,7 +14,7 @@ synonym_regex = re.compile('##\s*synonym:(.+)')
 example_regex = re.compile('\s*-\s*(.+)')
 
 
-class MarkdownToJson:
+class MarkdownToJson(object):
     """ Converts training examples written in markdown to standard rasa json format """
     def __init__(self, file_name):
         self.file_name = file_name

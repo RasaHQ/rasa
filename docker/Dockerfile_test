@@ -1,0 +1,47 @@
+# Dockerfile to build a whole instance of rasa and run the rasa `pytest`
+#  (created to test the changes needed for docker automation)
+#
+#  (so far) only used manually, via:
+#         `docker build -f docker/Dockerfile_test .` (from project root)
+#         `docker run -it [id-output-from-above]`
+
+FROM python:2.7-slim
+
+ENV RASA_NLU_DOCKER="YES" \
+    RASA_NLU_HOME=/app \
+    RASA_NLU_PYTHON_PACKAGES=/usr/local/lib/python2.7/dist-packages
+
+# Run updates, install basics and cleanup
+# - build-essential: Compile specific dependencies
+# - git-core: Checkout git repos
+RUN apt-get update -qq \
+    && apt-get install -y --no-install-recommends build-essential git-core default-jre vim\
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+RUN apt-get update -qq \
+    && apt-get install -y --no-install-recommends wget
+
+RUN pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-1.2.0/en_core_web_sm-1.2.0.tar.gz --no-cache-dir > /dev/null \
+    && python -m spacy link en_core_web_sm en \
+    && pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_md-1.0.0/de_core_news_md-1.0.0.tar.gz --no-cache-dir > /dev/null \
+    && python -m spacy link de_core_news_md de
+
+
+WORKDIR ${RASA_NLU_HOME}
+
+COPY . ${RASA_NLU_HOME}
+
+RUN  wget -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat
+
+RUN pip install -r alt_requirements/requirements_dev.txt
+
+RUN  sed -i -e 's/backend      : tkagg/backend      : PDF/' /usr/local/lib/python2.7/site-packages/matplotlib/mpl-data/matplotlibrc
+
+VOLUME ["/app/models", "/app/logs", "/app/data"]
+
+EXPOSE 5000
+
+ENTRYPOINT ["/usr/local/bin/py.test"]
+CMD ["_pytest", "--cov", "rasa_nlu", "--pep8", "-v"]
+

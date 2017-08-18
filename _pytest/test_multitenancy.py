@@ -162,6 +162,6 @@ def train_models(component_builder):
         persistor = create_persistor(config)
         trainer.persist("test_agents", persistor, agent_name)
 
-    train("config_mitie.json", "test_agent_mitie")
-    train("config_spacy.json", "test_agent_spacy_sklearn")
-    train("config_mitie_sklearn.json", "test_agent_mitie_sklearn")
+    train("sample_configs/config_mitie.json", "test_agent_mitie")
+    train("sample_configs/config_spacy.json", "test_agent_spacy_sklearn")
+    train("sample_configs/config_mitie_sklearn.json", "test_agent_mitie_sklearn")

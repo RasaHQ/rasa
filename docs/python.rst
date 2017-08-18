@@ -17,7 +17,7 @@ Or, you can train directly in python with a script like the following (using spa
     from rasa_nlu.model import Trainer
 
     training_data = load_data('data/examples/rasa/demo-rasa.json')
-    trainer = Trainer(RasaNLUConfig("config_spacy.json"))
+    trainer = Trainer(RasaNLUConfig("sample_configs/config_spacy.json"))
     trainer.train(training_data)
     model_directory = trainer.persist('./models/')  # Returns the directory the model is stored in
 
@@ -33,7 +33,7 @@ necessary info to recover your model:
     from rasa_nlu.model import Metadata, Interpreter
 
     metadata = Metadata.load(model_directory)   # where model_directory points to the folder the model is persisted in
-    interpreter = Interpreter.load(metadata, RasaNLUConfig("config_spacy.json"))
+    interpreter = Interpreter.load(metadata, RasaNLUConfig("sample_configs/config_spacy.json"))
 
 You can then use the loaded interpreter to parse text:
 
@@ -60,7 +60,7 @@ Here is a short example on how to create a component builder, that can be reused
     builder = ComponentBuilder(use_cache=True)      # will cache components between pipelines (where possible)
 
     training_data = load_data('data/examples/rasa/demo-rasa.json')
-    trainer = Trainer(RasaNLUConfig("config_spacy.json"), builder)
+    trainer = Trainer(RasaNLUConfig("sample_configs/config_spacy.json"), builder)
     trainer.train(training_data)
     model_directory = trainer.persist('./models/')  # Returns the directory the model is stored in
 
@@ -69,7 +69,7 @@ The same builder can be used to load a model (can be a totally different one). T
 .. testcode::
 
     from rasa_nlu.model import Metadata, Interpreter
-    config = RasaNLUConfig("config_spacy.json")
+    config = RasaNLUConfig("sample_configs/config_spacy.json")
 
     # For simplicity we will load the same model twice, usually you would want to use the metadata of
     # different models      
