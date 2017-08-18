@@ -98,7 +98,6 @@ response_log_mongo_uri
     Mongo DB where logs will be saved (containing queries and responses).
     A collection named  after ``response_log_mongo_collection`` will be created.
     If all response_log response_log_mongo_uri set to ``null`` logging will be disabled.
-    Note: ``txmongo`` must be installed from the `Github repo <https://github.com/twisted/txmongo/>`_ as 16.3.0 (available on PiPy) won't work.
 
 response_log_mongo_collection
 ~~~~~~~~~~~~
