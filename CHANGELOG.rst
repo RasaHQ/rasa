@@ -14,6 +14,11 @@ Added
 - Support for training data in Markdown format
 - Cors support. You can now specify allowed cors origins within your configuration file.
 - The HTTP server is now backed by Klein (Twisted) instead of Flask. The server is now asynchronous but is no more WSGI compatible
+- Improved Docker automated builds
+
+Changed
+-------
+- Root project directories have been slightly rearranged to clean up new docker support
 
 Fixed
 -----
