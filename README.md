@@ -9,63 +9,65 @@
 Rasa NLU (Natural Language Understanding) is a tool for intent classification and entity extraction. You can think of Rasa NLU as a set of high level APIs for building your own language parser using existing NLP and ML libraries. Find out more on the [homepage of the project](https://rasa.ai/), where you can also sign up for the mailing list.
 
 **Extended documentation:**
-- [latest](https://rasa-nlu.readthedocs.io/en/latest/)&nbsp; (if you install from **github**) or 
-- [stable](https://rasa-nlu.readthedocs.io/en/stable/) (if you install from **pypi**)
+- [stable](https://rasa-nlu.readthedocs.io/en/stable/) (if you install from **X.X.X** [docker](https://hub.docker.com/r/rasa/rasa_nlu/tags/) image or **pypi**)
+- [latest](https://rasa-nlu.readthedocs.io/en/latest/)&nbsp; (if you install from **latest** [docker](https://hub.docker.com/r/rasa/rasa_nlu/tags/) image or **github**)
 
 If you are new to Rasa NLU and want to create a bot, you should start with the [**tutorial**](http://rasa-nlu.readthedocs.io/en/stable/tutorial.html).
 
-**Contents:**
-- [Setup](#setup) 
-- [FAQ](#faq)
-- [How to contribute](#how-to-contribute)
-- [Development Internals](#development-internals)
-- [License](#license)
+# Install
 
+**Via Docker Image**
+From docker hub:
+```
+docker run -p 5000:5000 rasa/rasa_nlu:0.9.1-full
+```
+(for more docker installation options see [Advanced Docker Installation](#advanced-docker))
 
-## Setup
-### A. Install Locally
+**Via Python Library**
 From pypi:
 ```
 pip install rasa_nlu
-```
-From github:
-```
-git clone git@github.com:RasaHQ/rasa_nlu.git
-cd rasa_nlu
-pip install -r requirements.txt
-pip install -e .
-```
-
-To test the installation use (this will run a very stupid default model. you need to [train your own model](http://rasa-nlu.readthedocs.io/en/stable/tutorial.html) to do something useful!):
-```
 python -m rasa_nlu.server &
-curl 'http://localhost:5000/parse?q=hello'
 ```
+(for more python installation options see [Advanced Python Installation](#advanced-python))
 
-### B. Install with Docker
-Before you start, ensure you have the latest version of docker engine on your machine. You can check if you have docker installed by typing ```docker -v``` in your terminal.
-
-#### 1. Build the image:
-```
-docker build -t rasa_nlu .
-``` 
-
-#### 2. Start the web server:
-```
-docker run -p 5000:5000 rasa_nlu start
-```
-
-Caveat for Docker for Windows users: please share your C: in docker settings, and add ```-v C:\path\to\rasa_nlu:/app``` to your docker run commands for download and training to work correctly.
-
-#### 3. Test it!
+### Basic test
+The below command can be executed for either method used above.
 ```
 curl 'http://localhost:5000/parse?q=hello'
 ```
 
-### C. (Experimental) Deploying to Docker Cloud
-[![Deploy to Docker Cloud](https://files.cloud.docker.com/images/deploy-to-dockercloud.svg)](https://cloud.docker.com/stack/deploy/)
+# Example use
 
-## FAQ
+### Get the Server Status
+```
+curl 'http://locahost:5000/status'
+```
+
+### Check the Server Version
+```
+curl 'http://locahost:5000/version'
+```
+
+### Training New Models
+[Examples](https://github.com/RasaHQ/rasa_nlu/tree/master/data/examples/rasa) and [Documentation](http://rasa-nlu.readthedocs.io/en/latest/dataformat.html) of the training data format are provided. But as a quick start execute the below command to train a new model
+
+```
+curl 'https://raw.githubusercontent.com/RasaHQ/rasa_nlu/master/data/examples/rasa/demo-rasa.json' | \
+curl --request POST --header 'content-type: application/json' -d@- --url localhost:5000/train?name=test_model
+```
+
+The above command does the following:
+1. It Fetches some of the example data in the repo
+2. It `POSTS` that data to the `/train` endpoint and names the model `/name=test_model`
+
+### Parsing New Requests
+Make sure the above command has finished before executing the below. You can check with the `/status` command above.
+```
+curl 'http://localhost:5000/parse?q=hello&model=test_model'
+```
+
+# FAQ
 
 ### Who is it for?
 The intended audience is mainly __people developing bots__, starting from scratch or looking to find a a drop-in replacement for [wit](https://wit.ai), [LUIS](https://luis.ai), or [api.ai](https://api.ai). The setup process is designed to be as simple as possible. Rasa NLU is written in Python, but you can use it from any language through a [HTTP API](http://rasa-nlu.readthedocs.io/en/stable/http.html). If your project is written in Python you can [simply import the relevant classes](http://rasa-nlu.readthedocs.io/en/stable/python.html). If you're currently using wit/LUIS/api.ai, you just:
@@ -84,7 +86,7 @@ These points are laid out in more detail in a [blog post](https://medium.com/las
 Short answer: English, German, and Spanish currently. 
 Longer answer: If you want to add a new language, the key things you need are a tokenizer and a set of word vectors. More information can be found in the [language documentation](https://rasa-nlu.readthedocs.io/en/stable/languages.html).
 
-## How to contribute
+### How to contribute
 We are very happy to receive and merge your contributions. There is some more information about the style of the code and docs in the [documentation](http://rasa-nlu.readthedocs.io/en/stable/contribute.html).
 
 In general the process is rather simple:
@@ -94,7 +96,38 @@ In general the process is rather simple:
 
 You pull request will be reviewed by a maintainer, who might get back to you about any necessary changes or questions.
 
-## Development Internals
+# Advanced installation
+### Advanced Python
+From github:
+```
+git clone git@github.com:RasaHQ/rasa_nlu.git
+cd rasa_nlu
+pip install -r requirements.txt
+```
+
+To test the installation use (this will run a very stupid default model. you need to [train your own model](http://rasa-nlu.readthedocs.io/en/stable/tutorial.html) to do something useful!):
+
+### Advanced Docker
+Before you start, ensure you have the latest version of docker engine on your machine. You can check if you have docker installed by typing ```docker -v``` in your terminal.
+
+To see all available builds go to the [Rasa docker hub](https://hub.docker.com/r/rasa/rasa_nlu/), but to get up and going the quickest just run:
+```
+docker run -p 5000:5000 rasa/rasa_nlu:latest-full
+```
+
+There are also three volumes, which you may want to map: `/app/models`, `/app/logs`, and `/app/data`. It is also possible to override the config file used by the server by mapping a new config file to the volume `/app/config.json`. For complete docker usage instructions go to the official [docker hub readme](https://hub.docker.com/r/rasa/rasa_nlu/).
+
+To test run the below command after the container has started. For more info on using the HTTP API see [here](http://rasa-nlu.readthedocs.io/en/latest/http.html#endpoints)
+```
+curl 'http://localhost:5000/parse?q=hello'
+```
+
+### Docker Cloud
+Warning! setting up Docker Cloud is quite involved - this method isn't recommended unless you've already configured Docker Cloud Nodes (or swarms)
+
+[![Deploy to Docker Cloud](https://files.cloud.docker.com/images/deploy-to-dockercloud.svg)](https://cloud.docker.com/stack/deploy/?repo=https://github.com/RasaHQ/rasa_nlu/tree/master/docker)
+
+# Development Internals
 
 ### Steps to release a new version
 Releasing a new version is quite simple, as the packages are build and distributed by travis. The following things need to be done to release a new version

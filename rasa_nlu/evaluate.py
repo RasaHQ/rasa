@@ -40,7 +40,7 @@ def plot_intent_confusion_matrix(cm, classes,
     plt.title(title)
     plt.colorbar()
     tick_marks = np.arange(len(classes))
-    plt.xticks(tick_marks, classes, rotation=45)
+    plt.xticks(tick_marks, classes, rotation=90)
     plt.yticks(tick_marks, classes)
 
     if normalize:

@@ -14,7 +14,7 @@ pytest_plugins = str("pytest_twisted")
 
 logging.basicConfig(level="DEBUG")
 
-CONFIG_DEFAULTS_PATH = "config_defaults.json"
+CONFIG_DEFAULTS_PATH = "sample_configs/config_defaults.json"
 
 
 @pytest.fixture(scope="session")
