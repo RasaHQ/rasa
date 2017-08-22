@@ -56,7 +56,7 @@ class EntitySynonymMapper(EntityExtractor):
         if self.synonyms:
             entity_synonyms_file = os.path.join(model_dir, "entity_synonyms.json")
             with io.open(entity_synonyms_file, 'w') as f:
-                f.write(str(json.dumps(self.synonyms)))
+                f.write(str(json.dumps(self.synonyms,indent=2,separators=(',', ': '))))
             return {"entity_synonyms": "entity_synonyms.json"}
         else:
             return {"entity_synonyms": None}
