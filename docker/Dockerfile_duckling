@@ -1,0 +1,73 @@
+FROM python:2.7-slim
+
+########## JAVA (NEEDED BY DUCKLING) ##############
+# source: https://github.com/docker-library/openjdk/blob/master/7-jre/slim/Dockerfile
+
+# add a simple script that can auto-detect the appropriate JAVA_HOME value
+# based on whether the JDK or only the JRE is installed
+RUN { \
+		echo '#!/bin/sh'; \
+		echo 'set -e'; \
+		echo; \
+		echo 'dirname "$(dirname "$(readlink -f "$(which javac || which java)")")"'; \
+	} > /usr/local/bin/docker-java-home \
+	&& chmod +x /usr/local/bin/docker-java-home
+
+# do some fancy footwork to create a JAVA_HOME that's cross-architecture-safe
+RUN ln -svT "/usr/lib/jvm/java-7-openjdk-$(dpkg --print-architecture)" /docker-java-home
+ENV JAVA_HOME /docker-java-home/jre
+
+ENV JAVA_VERSION 7u131
+ENV JAVA_DEBIAN_VERSION 7u131-2.6.9-2~deb8u1
+
+RUN set -ex; \
+	\
+# deal with slim variants not having man page directories (which causes "update-alternatives" to fail)
+	if [ ! -d /usr/share/man/man1 ]; then \
+		mkdir -p /usr/share/man/man1; \
+	fi; \
+	\
+	apt-get update; \
+	apt-get install -y \
+		openjdk-7-jre-headless="$JAVA_DEBIAN_VERSION" \
+	; \
+	rm -rf /var/lib/apt/lists/*; \
+	\
+# verify that "docker-java-home" returns what we expect
+	[ "$(readlink -f "$JAVA_HOME")" = "$(docker-java-home)" ]; \
+	\
+# update-alternatives so that future installs of other OpenJDK versions don't change /usr/bin/java
+	update-alternatives --get-selections | awk -v home="$(readlink -f "$JAVA_HOME")" 'index($3, home) == 1 { $2 = "manual"; print | "update-alternatives --set-selections" }'; \
+# ... and verify that it actually worked for one of the alternatives we care about
+	update-alternatives --query java | grep -q 'Status: manual'
+
+########## END OF JAVA (NEEDED BY DUCKLING ) ##############
+
+
+ENV RASA_NLU_DOCKER="YES" \
+    RASA_NLU_HOME=/app \
+    RASA_NLU_PYTHON_PACKAGES=/usr/local/lib/python2.7/dist-packages
+
+# Run updates, install basics and cleanup
+# - build-essential: Compile specific dependencies
+# - git-core: Checkout git repos
+RUN apt-get update -qq \
+    && apt-get install -y --no-install-recommends build-essential git-core \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+WORKDIR ${RASA_NLU_HOME}
+
+COPY . ${RASA_NLU_HOME}
+
+RUN pip install -r alt_requirements/requirements_bare.txt
+RUN pip install duckling
+
+RUN pip install -e .
+
+VOLUME ["/app/models", "/app/logs", "/app/data"]
+
+EXPOSE 5000
+
+ENTRYPOINT ["./entrypoint.sh"]
+CMD ["help"]
