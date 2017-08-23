@@ -5,6 +5,7 @@ spacy==1.8.2
 # sklearn
 scikit-learn==0.18.1
 scipy==0.19.0
+matplotlib==1.5.3
 # duckling
 duckling==1.7.1
 # sklearn_crfsuite
@@ -15,8 +16,11 @@ cloudpickle==0.2.2
 python-coveralls==2.9.1
 pytest-pep8==1.0.6
 pytest-services==1.1.14
-pytest-flask==0.10.0
 pytest-cov==2.5.1
+pytest-twisted==1.5
 pytest==3.0.7
+requests==2.18.1
+treq==17.3.1
 # other
 google-cloud-storage==1.0.0
+-e .

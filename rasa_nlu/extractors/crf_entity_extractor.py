@@ -79,8 +79,16 @@ class CRFEntityExtractor(EntityExtractor):
     def train(self, training_data, config, **kwargs):
         # type: (TrainingData, RasaNLUConfig) -> None
 
-        self.BILOU_flag = config["entity_crf_BILOU_flag"]
-        self.crf_features = config["entity_crf_features"]
+        train_config = config.get("ner_crf", {})
+
+        # These two are expected to be in the config so not using .get
+        self.BILOU_flag = train_config["BILOU_flag"]
+        self.crf_features = train_config["features"]
+
+        self.max_iterations = train_config.get("max_iterations", 50)
+        self.L1_C = config.get("L1_c", 1)
+        self.L2_C = config.get("L2_c", 1e-3)
+
         if training_data.entity_examples:
             # convert the dataset into features
             dataset = self._create_dataset(training_data.entity_examples)
@@ -296,9 +304,9 @@ class CRFEntityExtractor(EntityExtractor):
         y_train = [self._sentence_to_labels(sent) for sent in df_train]
         self.ent_tagger = sklearn_crfsuite.CRF(
                 algorithm='lbfgs',
-                c1=1.0,  # coefficient for L1 penalty
-                c2=1e-3,  # coefficient for L2 penalty
-                max_iterations=50,  # stop earlier
+                c1=self.L1_C,  # coefficient for L1 penalty
+                c2=self.L2_C,  # coefficient for L2 penalty
+                max_iterations=self.max_iterations,  # stop earlier
                 all_possible_transitions=True  # include transitions that are possible, but not observed
         )
         self.ent_tagger.fit(X_train, y_train)

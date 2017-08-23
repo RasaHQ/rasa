@@ -1,0 +1,10 @@
+# Minimum Instal Requirements
+-r requirements_bare.txt
+
+# Spacy Requirements
+-r requirements_spacy_sklearn.txt
+
+# MITIE Requirements
+-r requirements_mitie.txt
+
+duckling==1.7.2

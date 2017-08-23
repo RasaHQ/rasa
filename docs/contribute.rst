@@ -49,6 +49,7 @@ After that, you can compile and view the documentation using:
     make html
     cd _build/html
     python -m SimpleHTTPServer 8000 .
+    # python 3: python -m http.server
 
 The documentation will be running on http://localhost:8000/.
 

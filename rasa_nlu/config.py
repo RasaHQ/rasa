@@ -8,12 +8,10 @@ import json
 import os
 import six
 
-
 # Describes where to search for the configuration file if the location is not set by the user
 from typing import Text
 
 DEFAULT_CONFIG_LOCATION = "config.json"
-
 
 DEFAULT_CONFIG = {
     "name": None,
@@ -28,19 +26,31 @@ DEFAULT_CONFIG = {
     "mitie_file": os.path.join("data", "total_word_feature_extractor.dat"),
     "spacy_model_name": None,
     "num_threads": 1,
+    "max_training_processes": 1,
     "path": "models",
     "port": 5000,
     "server_model_dirs": None,
     "token": None,
+    "cors_origins": [],
     "max_number_of_ngrams": 7,
     "pipeline": [],
     "response_log": "logs",
+    "aws_endpoint_url": None,
     "duckling_dimensions": None,
-    "entity_crf_BILOU_flag": True,
-    "entity_crf_features": [
-        ["low", "title", "upper", "pos", "pos2"],
-        ["bias", "low", "word3", "word2", "upper", "title", "digit", "pos", "pos2", "pattern"],
-        ["low", "title", "upper", "pos", "pos2"]]
+    "ner_crf": {
+        "BILOU_flag": True,
+        "features": [
+            ["low", "title", "upper", "pos", "pos2"],
+            ["bias", "low", "word3", "word2", "upper", "title", "digit", "pos", "pos2", "pattern"],
+            ["low", "title", "upper", "pos", "pos2"]],
+        "max_iterations": 50,
+        "L1_c": 1,
+        "L2_c": 1e-3
+    },
+    "intent_classifier_sklearn": {
+        "C": [1, 2, 5, 10, 20, 100],
+        "kernel": "linear"
+    }
 }
 
 
@@ -53,7 +63,6 @@ class InvalidConfigError(ValueError):
 
 
 class RasaNLUConfig(object):
-
     def __init__(self, filename=None, env_vars=None, cmdline_args=None):
 
         if filename is None and os.path.isfile(DEFAULT_CONFIG_LOCATION):
@@ -83,14 +92,17 @@ class RasaNLUConfig(object):
             else:
                 raise InvalidConfigError("No pipeline specified and unknown pipeline template " +
                                          "'{}' passed. Known pipeline templates: {}".format(
-                                             self.__dict__['pipeline'],
-                                             ", ".join(registry.registered_pipeline_templates.keys())))
+                                                 self.__dict__['pipeline'],
+                                                 ", ".join(registry.registered_pipeline_templates.keys())))
 
         for key, value in self.items():
             setattr(self, key, value)
 
     def __getitem__(self, key):
         return self.__dict__[key]
+
+    def get(self, key, default=None):
+        return self.__dict__.get(key, default)
 
     def __setitem__(self, key, value):
         self.__dict__[key] = value
@@ -103,6 +115,12 @@ class RasaNLUConfig(object):
 
     def __len__(self):
         return len(self.__dict__)
+
+    def __getstate__(self):
+        return self.as_dict()
+
+    def __setstate__(self, state):
+        self.override(state)
 
     def items(self):
         return list(self.__dict__.items())

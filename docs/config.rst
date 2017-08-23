@@ -18,7 +18,7 @@ Default
 -------
 Here is the default configuration including all available parameters:
 
-.. literalinclude:: ../config_defaults.json
+.. literalinclude:: ../sample_configs/config_defaults.json
     :language: json
 
 Options
@@ -63,6 +63,15 @@ num_threads
     Number of threads used during training (not supported by all components, though.
     Some of them might still be single threaded!).
 
+max_training_processes
+~~~~~~~~~~~
+
+:Type: ``int``
+:Examples: ``1``
+:Description:
+    Number of processes used to handle training requests. Increasing this value will have a great impact on memory usage.
+    It is recommended to keep the default value.
+
 path
 ~~~~
 
@@ -84,7 +93,7 @@ config
 ~~~~~~
 
 :Type: ``str``
-:Examples: ``"config_spacy.json"``
+:Examples: ``"sample_configs/config_spacy.json"``
 :Description:
     Location of the configuration file (can only be set as env var or command line option).
 
@@ -111,6 +120,15 @@ data
 :Examples: ``"data/example.json"``
 :Description:
     Location of the training data.
+
+cors_origins
+~~~~
+
+:Type: ``list``
+:Examples: ``['*']``, ``['*.mydomain.com', 'api.domain2.net']``
+:Description:
+    List of domain patterns from where CORS (cross-origin resource sharing) calls are allowed.
+    The default value is ``[]`` which forbids all CORS requests.
 
 emulate
 ~~~~~~~
@@ -170,7 +188,7 @@ duckling_dimensions
 ~~~~~~~~~~~~~~~~~~~
 
 :Type: ``list``
-:Examples: ``["time", "number", "money", "distance"]``
+:Examples: ``["time", "number", "amount-of-money", "distance"]``
 :Description:
     Defines which dimensions, i.e. entity types, the :ref:`duckling component <section_pipeline_duckling>` will extract.
     A full list of available dimensions can be found in the `duckling documentation <https://duckling.wit.ai/>`_.
@@ -201,8 +219,20 @@ aws_region
     Name of the aws region to use. This is used only when ``"storage"`` is selected as ``"aws"``.
     See :ref:`section_persistence` for more details.
 
-entity_crf_features
-~~~~~~~~~~~~~~~~~~~
+aws_endpoint_url
+~~~~~~~~~~
+
+:Type: ``str``
+:Examples: ``"http://10.0.0.1:9000"``
+:Description:
+    Optional endpoint of the custom S3 compatible storage provider. This is used only when ``"storage"`` is selected as ``"aws"``.
+    See :ref:`section_persistence` for more details.
+
+ner_crf
+~~~~~~~
+
+features
+++++++++
 
 :Type: ``[[str]]``
 :Examples: ``[["low", "title"], ["bias", "word3"], ["upper", "pos", "pos2"]]``
@@ -213,11 +243,58 @@ entity_crf_features
     Available features are:
     ``low``, ``title``, ``word3``, ``word2``, ``pos``, ``pos2``, ``bias``, ``upper`` and ``digit``
 
-entitiy_crf_BILOU_flag
-~~~~~~~~~~~~~~~~~~~~~~
+BILOU_flag
+++++++++++
 
 :Type: ``bool``
 :Examples: ``true``
 :Description:
      The flag determines whether to use BILOU tagging or not. BILOU tagging is more rigorous however
      requires more examples per entity. Rule of thumb: use only if more than 100 examples per entity.
+
+max_iterations
+++++++++++++++
+
+:Type: ``int``
+:Examples: ``50``
+:Description:
+    This is the value given to sklearn_crfcuite.CRF tagger before training.
+
+L1_C
+++++
+
+:Type: ``float``
+:Examples: ``1.0``
+:Description:
+    This is the value given to sklearn_crfcuite.CRF tagger before training.
+    Specifies the L1 regularization coefficient.
+
+L2_C
+++++
+
+:Type: ``float``
+:Examples: ``1e-3``
+:Description:
+    This is the value given to sklearn_crfcuite.CRF tagger before training.
+    Specifies the L2 regularization coefficient.
+
+intent_classifier_sklearn
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+C
++
+
+:Type: ``[float]``
+:Examples: ``[1, 2, 5, 10, 20, 100]``
+:Description:
+    Specifies the list of regularization values to cross-validate over for C-SVM.
+    This is used with the ``kernel`` hyperparameter in GridSearchCV.
+
+kernel
+++++++
+
+:Type: ``string``
+:Examples: ``"linear"``
+:Description:
+    Specifies the kernel to use with C-SVM.
+    This is used with the ``C`` hyperparameter in GridSearchCV.
