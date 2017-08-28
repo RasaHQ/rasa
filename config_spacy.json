@@ -1,7 +1,0 @@
-{
-  "pipeline": "spacy_sklearn",
-  "path" : "./models",
-  "data" : "./data/examples/rasa/demo-rasa.json",
-  "port": 4545,
-  "server_model_dirs": "/Users/tmbo/lastmile/bot-ai/rasa_nlu/models/model_20170710-121340"
-}

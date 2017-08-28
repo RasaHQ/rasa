@@ -12,14 +12,12 @@ from builtins import object
 import inspect
 
 from typing import Any
-from typing import ClassVar
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Set
 from typing import Text
 from typing import Tuple
-from typing import Type
 
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.training_data import Message
@@ -107,13 +105,14 @@ def validate_arguments(pipeline, context, allow_empty_pipeline=False):
         raise ValueError("Can not train an empty pipeline. " +
                          "Make sure to specify a proper pipeline in the configuration using the `pipeline` key." +
                          "The `backend` configuration key is NOT supported anymore.")
+
     provided_properties = set(context.keys())
 
     for component in pipeline:
         for r in component.requires:
             if r not in provided_properties:
                 raise Exception("Failed to validate at component '{}'. Missing property: '{}'".format(
-                        component.name, r))
+                    component.name, r))
         provided_properties.update(component.provides)
 
 
@@ -313,7 +312,7 @@ class ComponentBuilder(object):
                 # If the component wasn't in the cache, let us add it if possible
                 self.__add_to_cache(component, cache_key)
             return component
-        except MissingArgumentError as e:   # pragma: no cover
+        except MissingArgumentError as e:  # pragma: no cover
             raise Exception("Failed to load component '{}'. {}".format(component_name, e))
 
     def create_component(self, component_name, config):
@@ -328,5 +327,5 @@ class ComponentBuilder(object):
                 component = registry.create_component_by_name(component_name, config)
                 self.__add_to_cache(component, cache_key)
             return component
-        except MissingArgumentError as e:   # pragma: no cover
+        except MissingArgumentError as e:  # pragma: no cover
             raise Exception("Failed to create component '{}'. {}".format(component_name, e))

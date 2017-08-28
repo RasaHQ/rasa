@@ -18,7 +18,7 @@ If you want to use the bleeding edge version use github + setup.py:
 
 .. code-block:: bash
 
-    git clone git@github.com:RasaHQ/rasa_nlu.git
+    git clone https://github.com/RasaHQ/rasa_nlu.git
     cd rasa_nlu
     pip install -r requirements.txt
     python setup.py install
@@ -54,7 +54,7 @@ The `MITIE <https://github.com/mit-nlp/MITIE>`_ backend is all-inclusive, in the
     pip install git+https://github.com/mit-nlp/MITIE.git
 
 
-and then download the `MITIE models <https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2>`_ . 
+and then download the `MITIE models <https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2>`_. 
 The file you need is ``total_word_feature_extractor.dat``. Save this somewhere and in your ``config.json`` add ``'mitie_file' : '/path/to/total_word_feature_extractor.dat'``.
 
 .. note::
@@ -74,7 +74,7 @@ installing spacy just requires (for more information visit the `spacy docu <http
     pip install -U spacy
     python -m spacy download en
 
-If you haven't used ``numpy/scipy`` before, it is highly recommended that you install and use `Anaconda <https://www.continuum.io/downloads>`_ .
+If you haven't used ``numpy/scipy`` before, it is highly recommended that you install and use `Anaconda <https://www.continuum.io/downloads>`_.
 
 Using Anaconda:
 

@@ -1,5 +1,19 @@
 {
   "rasa_nlu_data": {
+    "entity_synonyms": [
+      {
+        "value": "mexican",
+        "synonyms": ["mexico"]
+      },
+      {
+        "value": "chinese",
+        "synonyms": ["china"]
+      },
+      {
+        "value": "indian",
+        "synonyms": ["india"]
+      }
+    ],
     "common_examples": [
       {
         "text": "central indian restaurant",
