@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import io
 import json
 import logging
+from pymongo import MongoClient
 
 from typing import Any
 from typing import Dict
@@ -322,3 +323,26 @@ def load_data(resource_name, fformat=None):
         return load_markdown_data(files[0])
     else:
         raise ValueError("unknown training file format : {} for file {}".format(fformat, resource_name))
+
+
+def load_db_data(db_name):
+    """ Load data from your mongo database"""
+
+    db = MongoClient()[str(db_name)]
+    reg_cur = db.regex_features.find({}, {'_id': 0})
+    entsyn_cur = db.entity_synonyms.find({}, {'_id': 0})
+    commonex_cur = db.common_examples.find({}, {'_id': 0, 'ans': 0})
+
+    regex_features = [doc for doc in reg_cur]
+    entity_synonyms = [doc for doc in entsyn_cur]
+
+    training_examples = []
+    for e in commonex_cur:
+        data = {}
+        if e.get("intent"):
+            data["intent"] = e["intent"]
+        if e.get("entities") is not None:
+            data["entities"] = e["entities"]
+        training_examples.append(Message(e["text"], data))
+
+    return TrainingData(training_examples, entity_synonyms, regex_features)
