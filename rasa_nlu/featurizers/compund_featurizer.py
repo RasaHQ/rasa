@@ -185,28 +185,35 @@ class SpacyCompoundFeaturizer(Featurizer):
 
     @classmethod
     def load(cls, model_dir=None, model_metadata=None, cached_component=None, **kwargs):
-        # type: (Text, Metadata, Optional[Component], **Any) -> SpacyAdvancedGermanFeaturizer
+        # type: (Text, Metadata, Optional[Component], **Any) -> SpacyCompoundFeaturizer
 
-        if model_dir and model_metadata.get("compound_featurizer"):
-            compound_file = os.path.join(model_dir, model_metadata.get("compound_featurizer"))
-            if os.path.isfile(compound_file):
-                with io.open(compound_file, encoding='utf-8') as f:
-                    dict_infos = json.loads(f.read())
-                featurizer = SpacyCompoundFeaturizer()
-                featurizer.load_from_dicts(dict_infos["dict"], dict_infos["synonyms"])
-                return featurizer
-            else:
-                warnings.warn("Failed to load regex pattern file '{}'".format(compound_file))
-        return SpacyCompoundFeaturizer()
+        if model_dir and model_metadata.get("compound_dict"):
+            compound_file = os.path.join(model_dir, model_metadata.get("compound_dict"))
+            synonyms_file = os.path.join(model_dir, model_metadata.get("compound_synonyms"))
+            featurizer = SpacyCompoundFeaturizer()
+            featurizer.load_from_dicts(compound_file, synonyms_file)
+            return featurizer
+        else:
+            return SpacyCompoundFeaturizer()
 
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]
         """Persist this model into the passed directory. Returns the metadata necessary to load the model again."""
+        from shutil import copyfile
 
         classifier_file = os.path.join(model_dir, "compound_featurizer.json")
-        with io.open(classifier_file, 'w') as f:
-            f.write(str(json.dumps({
-                "dict": self.splitter.dict_filename if self.splitter else None,
-                "synonyms": self.synonym_mapper.dict_filename if self.synonym_mapper else None
-            }, indent=4)))
-        return {"compound_featurizer": "compound_featurizer.json"}
+        if self.splitter:
+            splitter_file_name = "splitter.dict"
+            copyfile(self.splitter.dict_filename, os.path.join(model_dir, splitter_file_name))
+        else:
+            splitter_file_name = None
+
+        if self.synonym_mapper:
+            syonyms_file_name = "synonyms.dict"
+            copyfile(self.synonym_mapper.dict_filename, os.path.join(model_dir, syonyms_file_name))
+        else:
+            syonyms_file_name = None
+        return {
+                "compound_dict": splitter_file_name,
+                "compound_synonyms": syonyms_file_name
+            }
