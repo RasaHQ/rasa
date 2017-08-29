@@ -61,3 +61,7 @@ setup(
     keywords=["NLP", "bots"],
     download_url="https://github.com/RasaHQ/rasa_nlu/archive/{}.tar.gz".format(__version__)
 )
+
+print("Welcome to rasa!\n")
+print("If any questions please visit documentation page http://rasa-nlu.readthedocs.io/en/latest/\n")
+print("or join community chat on https://gitter.im/RasaHQ/rasa_nlu\n")

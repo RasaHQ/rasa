@@ -56,7 +56,7 @@ class EntitySynonymMapper(EntityExtractor):
         if self.synonyms:
             entity_synonyms_file = os.path.join(model_dir, "entity_synonyms.json")
             with io.open(entity_synonyms_file, 'w') as f:
-                f.write(str(json.dumps(self.synonyms,indent=2,separators=(',', ': '))))
+                f.write(str(json.dumps(self.synonyms, indent=2, separators=(',', ': '))))
             return {"entity_synonyms": "entity_synonyms.json"}
         else:
             return {"entity_synonyms": None}
@@ -77,7 +77,7 @@ class EntitySynonymMapper(EntityExtractor):
 
     def replace_synonyms(self, entities):
         for entity in entities:
-            entity_value = str(entity["value"])     # need to wrap in `str` to handle e.g. entity values of type int
+            entity_value = str(entity["value"])  # need to wrap in `str` to handle e.g. entity values of type int
             if entity_value.lower() in self.synonyms:
                 entity["value"] = self.synonyms[entity_value.lower()]
                 self.add_processor_name(entity)
