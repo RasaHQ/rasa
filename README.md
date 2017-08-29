@@ -19,7 +19,7 @@ If you are new to Rasa NLU and want to create a bot, you should start with the [
 **Via Docker Image**
 From docker hub:
 ```
-docker run -p 5000:5000 rasa/rasa_nlu:0.9.1-full
+docker run -p 5000:5000 rasa/rasa_nlu:latest-full
 ```
 (for more docker installation options see [Advanced Docker Installation](#advanced-docker))
 
