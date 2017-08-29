@@ -32,7 +32,7 @@ DEFAULT_CONFIG = {
     "server_model_dirs": None,
     "token": None,
     "cors_origins": [],
-    "max_number_of_ngrams": 7,
+    "max_number_of_ngrams": 40,
     "pipeline": [],
     "response_log": "logs",
     "aws_endpoint_url": None,
