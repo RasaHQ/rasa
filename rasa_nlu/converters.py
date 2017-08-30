@@ -325,10 +325,10 @@ def load_data(resource_name, fformat=None):
         raise ValueError("unknown training file format : {} for file {}".format(fformat, resource_name))
 
 
-def load_db_data(db_name):
+def load_db_data(db_name, uri=None):
     """ Load data from your mongo database"""
 
-    db = MongoClient()[str(db_name)]
+    db = MongoClient(uri)[str(db_name)]
     reg_cur = db.regex_features.find({}, {'_id': 0})
     entsyn_cur = db.entity_synonyms.find({}, {'_id': 0})
     commonex_cur = db.common_examples.find({}, {'_id': 0, 'ans': 0})
@@ -348,7 +348,7 @@ def load_db_data(db_name):
     return TrainingData(training_examples, entity_synonyms, regex_features)
 
 
-def json_to_db(db_name, file_path):
+def json_to_db(db_name, file_path, uri=None):
     """ Inserts data from your rasa-nlu formatted json file into mongodb"""
 
     with open(file_path) as json_data:
@@ -358,7 +358,7 @@ def json_to_db(db_name, file_path):
     entity_synonyms = d['rasa_nlu_data']['entity_synonyms']
     common_examples = d['rasa_nlu_data']['common_examples']
 
-    db = MongoClient()[str(db_name)]
+    db = MongoClient(uri)[str(db_name)]
     db.regex_features.insert_many(regex_features)
     db.entity_synonyms.insert_many(entity_synonyms)
     db.common_examples.insert_many(common_examples)
