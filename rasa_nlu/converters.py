@@ -346,3 +346,22 @@ def load_db_data(db_name):
         training_examples.append(Message(e["text"], data))
 
     return TrainingData(training_examples, entity_synonyms, regex_features)
+
+
+def json_to_db(db_name, file_path):
+    """ Inserts data from your rasa-nlu formatted json file into mongodb"""
+
+    with open(file_path) as json_data:
+        d = json.load(json_data)
+
+    regex_features = d['rasa_nlu_data']['regex_features']
+    entity_synonyms = d['rasa_nlu_data']['entity_synonyms']
+    common_examples = d['rasa_nlu_data']['common_examples']
+
+    db = MongoClient()[str(db_name)]
+    db.regex_features.insert_many(regex_features)
+    db.entity_synonyms.insert_many(entity_synonyms)
+    db.common_examples.insert_many(common_examples)
+
+    logging.info("Conversion of {0} into {1} db successful".format(
+                 file_path, db_name))
