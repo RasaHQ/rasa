@@ -50,7 +50,7 @@ def run_train(config, component_builder):
 
 def load_interpreter_for_model(config, persisted_path, component_builder):
     metadata = DataRouter.read_model_metadata(persisted_path, config)
-    return Interpreter.load(metadata, config, component_builder)
+    return Interpreter.create(metadata, config, component_builder)
 
 
 class ResponseTest(object):
