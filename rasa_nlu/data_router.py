@@ -4,21 +4,19 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import datetime
-
 import glob
-import json
+import io
 import logging
 import os
 import tempfile
-import io
 
 from builtins import object
-from typing import Text
-from future.utils import PY3
-
 from concurrent.futures import ProcessPoolExecutor as ProcessPool
-from twisted.internet.defer import Deferred, maybeDeferred
+from future.utils import PY3
+from twisted.internet import reactor
+from twisted.internet.defer import Deferred
 from twisted.logger import jsonFileLogObserver, Logger
+from typing import Text
 
 from rasa_nlu import utils
 from rasa_nlu.components import ComponentBuilder
@@ -38,9 +36,9 @@ def deferred_from_future(future):
     def callback(future):
         e = future.exception()
         if e:
-            d.errback(e)
+            reactor.callFromThread(d.errback, e)
             return
-        d.callback(future.result())
+        reactor.callFromThread(d.callback, future.result())
 
     future.add_done_callback(callback)
     return d
