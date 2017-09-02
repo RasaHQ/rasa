@@ -13,7 +13,6 @@ import json
 from rasa_nlu import registry
 from rasa_nlu.agent import Agent
 from rasa_nlu.config import RasaNLUConfig
-from rasa_nlu.data_router import DataRouter
 from rasa_nlu.model import Interpreter, Metadata
 from rasa_nlu.train import do_train
 

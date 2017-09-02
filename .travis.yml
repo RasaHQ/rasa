@@ -1,6 +1,5 @@
 language: python
 sudo: required
-group: deprecated-2017Q2
 cache:
   directories:
   - "$HOME/.cache/pip"
@@ -34,6 +33,9 @@ install:
 - if [[ ! -f data/total_word_feature_extractor.dat ]]; then wget -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat;
   fi
 - pip list
+before_script:
+- mkdir $HOME/tmp
+- export TMPDIR=$HOME/tmp
 script: py.test _pytest --cov rasa_nlu --pep8 -v
 after_success:
 - coveralls
