@@ -66,7 +66,7 @@ class Agent(object):
 
         if not self._path or not os.path.isdir(self._path):
             meta = Metadata({"pipeline": ["intent_classifier_keyword"]}, "")
-            interpreter = Interpreter.load(meta, self._config, self._component_builder)
+            interpreter = Interpreter.create(meta, self._config, self._component_builder)
             models = {'fallback': interpreter}
         else:
             models = {model: None for model in os.listdir(self._path) if model.startswith(prefix)}
@@ -75,7 +75,7 @@ class Agent(object):
 
     def _interpreter_for_model(self, model):
         metadata = self._read_model_metadata(model)
-        return Interpreter.load(metadata, self._config, self._component_builder)
+        return Interpreter.create(metadata, self._config, self._component_builder)
 
     def _read_model_metadata(self, model_dir):
         if model_dir is None:

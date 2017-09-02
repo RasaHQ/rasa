@@ -168,7 +168,7 @@ class DataRouter(object):
         }
 
     def start_train_process(self, data, config_values):
-      
+
         if PY3:
             f = tempfile.NamedTemporaryFile("w+", suffix="_training_data.json", delete=False, encoding="utf-8")
             f.write(data)

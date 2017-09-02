@@ -66,8 +66,9 @@ def load_interpreter_for_model(config, persisted_path, component_builder):
                 Agent._load_model_from_cloud(model_dir, config)
 
             return Metadata.load(model_dir)
+
     metadata = read_model_metadata(persisted_path, config)
-    return Interpreter.load(metadata, config, component_builder)
+    return Interpreter.create(metadata, config, component_builder)
 
 
 class ResponseTest(object):
