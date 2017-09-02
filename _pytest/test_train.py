@@ -43,6 +43,7 @@ def test_train_model_noents(component_builder):
 
 
 @slowtest
+@pytest.mark.first
 def test_train_model_multithread(component_builder):
     _config = utilities.base_test_conf("all_components")
     _config['num_threads'] = 2
