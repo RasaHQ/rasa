@@ -4,7 +4,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import utilities
+from __pytest import utilities
 from rasa_nlu.training_data import TrainingData, Message
 
 
@@ -87,5 +87,5 @@ def test_duckling_entity_extractor_and_synonyms(component_builder):
     synonyms = component_builder.create_component("ner_synonyms", _config)
     message = Message("He was 6 feet away")
     duckling.process(message)
-    synonyms.process(message)   # checks that the synonym processor can handle entities that have int values
+    synonyms.process(message)  # checks that the synonym processor can handle entities that have int values
     assert message is not None

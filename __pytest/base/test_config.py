@@ -11,8 +11,8 @@ import tempfile
 from typing import Text
 
 import rasa_nlu
-from utilities import write_file_config
-from conftest import CONFIG_DEFAULTS_PATH
+from __pytest.utilities import write_file_config
+from __pytest.conftest import CONFIG_DEFAULTS_PATH
 from rasa_nlu.config import RasaNLUConfig, InvalidConfigError
 from rasa_nlu.registry import registered_pipeline_templates
 

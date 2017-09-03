@@ -1,24 +1,21 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 import os
 import pytest
 
-from rasa_nlu.training_data import TrainingData
-from rasa_nlu.converters import load_data
-from rasa_nlu.train import create_persistor
-from rasa_nlu.model import Trainer
-
-import utilities
-from utilities import slowtest
 from rasa_nlu import registry
+from rasa_nlu.model import Trainer
+from rasa_nlu.train import create_persistor
+from rasa_nlu.training_data import TrainingData
+from __pytest import utilities
 
 
-@slowtest
+@utilities.slowtest
 @pytest.mark.parametrize("pipeline_template", list(registry.registered_pipeline_templates.keys()))
 def test_train_model(pipeline_template, component_builder):
     _config = utilities.base_test_conf(pipeline_template)
@@ -30,7 +27,7 @@ def test_train_model(pipeline_template, component_builder):
     assert loaded.parse("Hello today is Monday, again!") is not None
 
 
-@slowtest
+@utilities.slowtest
 def test_train_model_noents(component_builder):
     _config = utilities.base_test_conf("all_components")
     _config['data'] = "./data/examples/rasa/demo-rasa-noents.json"
@@ -42,7 +39,7 @@ def test_train_model_noents(component_builder):
     assert loaded.parse("Hello today is Monday, again!") is not None
 
 
-@slowtest
+@utilities.slowtest
 def test_train_model_multithread(component_builder):
     _config = utilities.base_test_conf("all_components")
     _config['num_threads'] = 2

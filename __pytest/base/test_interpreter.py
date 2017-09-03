@@ -4,12 +4,11 @@ from __future__ import division
 from __future__ import absolute_import
 import pytest
 
-import utilities
-from utilities import slowtest
+from __pytest import utilities
 from rasa_nlu import registry
 
 
-@slowtest
+@utilities.slowtest
 @pytest.mark.parametrize("pipeline_template", list(registry.registered_pipeline_templates.keys()))
 def test_samples(pipeline_template, component_builder):
     _conf = utilities.base_test_conf(pipeline_template)

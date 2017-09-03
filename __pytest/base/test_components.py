@@ -4,12 +4,10 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import pytest
-from rasa_nlu.model import Metadata
 
 from rasa_nlu import registry
-from rasa_nlu.components import MissingArgumentError, find_unavailable_packages, _read_dev_requirements, \
-    _requirements_from_lines
-from rasa_nlu.extractors import EntityExtractor
+from rasa_nlu.components import find_unavailable_packages, _requirements_from_lines
+from rasa_nlu.model import Metadata
 
 
 @pytest.mark.parametrize("component_class", registry.component_classes)

@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
 from __future__ import absolute_import
-
-import json
-import tempfile
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 import io
-from collections import Counter
+import json
+import tempfile
 
 import pytest
 from jsonschema import ValidationError
