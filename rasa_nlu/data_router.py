@@ -108,7 +108,7 @@ class DataRouter(object):
 
     def __interpreter_for_model(self, model_path):
         metadata = DataRouter.read_model_metadata(model_path, self.config)
-        return Interpreter.load(metadata, self.config, self.component_builder)
+        return Interpreter.create(metadata, self.config, self.component_builder)
 
     def __create_model_store(self):
         # Fallback for users that specified the model path as a string and hence only want a single default model.
@@ -129,7 +129,7 @@ class DataRouter(object):
                 logger.exception("Failed to load model '{}'. Error: {}".format(model_path, e))
         if not model_store:
             meta = Metadata({"pipeline": ["intent_classifier_keyword"]}, "")
-            interpreter = Interpreter.load(meta, self.config, self.component_builder)
+            interpreter = Interpreter.create(meta, self.config, self.component_builder)
             model_store[self.DEFAULT_MODEL_NAME] = interpreter
         return model_store
 
