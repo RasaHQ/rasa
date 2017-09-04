@@ -41,12 +41,12 @@ curl 'http://localhost:5000/parse?q=hello'
 
 ### Get the Server Status
 ```
-curl 'http://locahost:5000/status'
+curl 'http://localhost:5000/status'
 ```
 
 ### Check the Server Version
 ```
-curl 'http://locahost:5000/version'
+curl 'http://localhost:5000/version'
 ```
 
 ### Training New Models
