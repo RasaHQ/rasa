@@ -22,7 +22,7 @@ And returning structured data like:
 
 Rasa NLU is primarily used to build chatbots and voice apps, where this is called intent classification and entity extraction.
 To use Rasa, *you have to provide some training data*.
-That is, a set of messages which you've already labelled the intent and entities.
+That is, a set of messages which you've already labelled with their intents and entities.
 Rasa then uses machine learning to pick up patterns and generalise to unseen sentences. 
 
 You can think of Rasa NLU as a set of high level APIs for building your own language parser using existing NLP and ML libraries. Find out more on the [homepage of the project](https://rasa.ai/), where you can also sign up for the mailing list.
