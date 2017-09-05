@@ -245,7 +245,7 @@ class Interpreter(object):
         self.context = context if context is not None else {}
         self.model_metadata = model_metadata
 
-    def parse(self, text, time=None):
+    def parse(self, text,threshold, time=None):
         # type: (Text) -> Dict[Text, Any]
         """Parse the input text, classify it and return an object containing its intent and entities."""
 
@@ -264,4 +264,6 @@ class Interpreter(object):
 
         output = self.default_output_attributes()
         output.update(message.as_dict(only_output_properties=True))
+        if (output['intent']['confidence']<threshold) == True:
+            output['intent']['name']='fallback'
         return output
