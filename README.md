@@ -6,7 +6,26 @@
 [![Documentation Status](https://readthedocs.org/projects/rasa-nlu/badge/)](https://rasa-nlu.readthedocs.io/en/stable/)
 [![roadmap badge](https://img.shields.io/badge/visit%20the-roadmap-blue.svg)](https://github.com/RasaHQ/rasa_nlu/projects/2)
 
-Rasa NLU (Natural Language Understanding) is a tool for intent classification and entity extraction. You can think of Rasa NLU as a set of high level APIs for building your own language parser using existing NLP and ML libraries. Find out more on the [homepage of the project](https://rasa.ai/), where you can also sign up for the mailing list.
+Rasa NLU (Natural Language Understanding) is a tool for understanding what is being said in short pieces of text.
+For example, taking a short message like:
+
+> *"I'm looking for a Mexican restaurant in the center of town"*
+
+And returning structured data like:
+
+```
+  intent: search_restaurant
+  entities: 
+    - cuisine : Mexican
+    - location : center
+```
+
+Rasa NLU is primarily used to build chatbots and voice apps, where this is called intent classification and entity extraction.
+To use Rasa, *you have to provide some training data*.
+That is, a set of messages which you've already labelled with their intents and entities.
+Rasa then uses machine learning to pick up patterns and generalise to unseen sentences. 
+
+You can think of Rasa NLU as a set of high level APIs for building your own language parser using existing NLP and ML libraries. Find out more on the [homepage of the project](https://rasa.ai/), where you can also sign up for the mailing list.
 
 **Extended documentation:**
 - [stable](https://rasa-nlu.readthedocs.io/en/stable/) (if you install from **X.X.X** [docker](https://hub.docker.com/r/rasa/rasa_nlu/tags/) image or **pypi**)
