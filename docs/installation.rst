@@ -44,26 +44,8 @@ Setting up a backend
 ~~~~~~~~~~~~~~~~~~~~
 Most of the processing pipeline you can use with rasa NLU either require MITIE, spaCy or sklearn to be installed.
 
-Option 1 : MITIE
-----------------
-
-The `MITIE <https://github.com/mit-nlp/MITIE>`_ backend is all-inclusive, in the sense that it provides both the NLP and the ML parts.
-
-.. code-block:: bash
-
-    pip install git+https://github.com/mit-nlp/MITIE.git
-
-
-and then download the `MITIE models <https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2>`_. 
-The file you need is ``total_word_feature_extractor.dat``. Save this somewhere and in your ``config.json`` add ``'mitie_file' : '/path/to/total_word_feature_extractor.dat'``.
-
-.. note::
-    Training MITIE can be quite slow on datasets with more than a few intents. You can try
-        - to use the sklearn + MITIE backend instead (which uses sklearn for the training) or
-        - you can install `our mitie fork <https://github.com/tmbo/mitie>`_ which should reduce the training time as well.
-
-Option 2 : spaCy + sklearn
---------------------------
+Best for most: spaCy + sklearn
+------------------------------
 
 You can also run using these two in combination. 
 
@@ -89,9 +71,30 @@ Using pip:
 
     pip install -U scikit-learn scipy sklearn-crfsuite
 
+.. note::
+    Using spaCy as the backend for Rasa is the **preferred option**. For most domains the performance is better or equally
+    good as results achieved with MITIE. Additionally, it is easier to setup and faster to train.
 
-Option 3 : sklearn + MITIE
---------------------------
+First Alternative: MITIE
+-------------------------
+
+The `MITIE <https://github.com/mit-nlp/MITIE>`_ backend is all-inclusive, in the sense that it provides both the NLP and the ML parts.
+
+.. code-block:: bash
+
+    pip install git+https://github.com/mit-nlp/MITIE.git
+
+
+and then download the `MITIE models <https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2>`_.
+The file you need is ``total_word_feature_extractor.dat``. Save this somewhere and in your ``config.json`` add ``'mitie_file' : '/path/to/total_word_feature_extractor.dat'``.
+
+.. warning::
+    Training MITIE can be quite slow on datasets with more than a few intents. You can try
+        - to use the sklearn + MITIE backend instead (which uses sklearn for the training) or
+        - you can install `our mitie fork <https://github.com/tmbo/mitie>`_ which should reduce the training time as well.
+
+Another Alternative: sklearn + MITIE
+------------------------------------
 There is a third backend that combines the advantages of the two previous ones:
 
 1. the fast and good intent classification from sklearn and

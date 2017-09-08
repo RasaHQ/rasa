@@ -12,12 +12,13 @@ import os
 import tempfile
 import io
 
+import twisted
 from builtins import object
-from typing import Text
+from typing import Text, Dict, Any
 from future.utils import PY3
 
 from concurrent.futures import ProcessPoolExecutor as ProcessPool
-from twisted.internet.defer import Deferred, maybeDeferred
+from twisted.internet.defer import Deferred
 from twisted.logger import jsonFileLogObserver, Logger
 
 from rasa_nlu import utils
@@ -217,11 +218,14 @@ class DataRouter(object):
         }
 
     def start_train_process(self, data, config_values):
+        # type: (Text, Dict[Text, Any]) -> Deferred
+        """Start a model training."""
+
         if PY3:
-            f = tempfile.NamedTemporaryFile("w+", suffix="_training_data.json", delete=False, encoding="utf-8")
+            f = tempfile.NamedTemporaryFile("w+", suffix="_training_data", delete=False, encoding="utf-8")
             f.write(data)
         else:
-            f = tempfile.NamedTemporaryFile("w+", suffix="_training_data.json", delete=False)
+            f = tempfile.NamedTemporaryFile("w+", suffix="_training_data", delete=False)
             f.write(data.encode("utf-8"))
         f.close()
         # TODO: fix config handling
