@@ -118,8 +118,7 @@ class RasaNLU(object):
             request_params = json.loads(request.content.read().decode('utf-8', 'strict'))
         
         if 'query' in request_params:
-            request_params['q'] = request_params['query']
-            request_params.pop('q', None)
+            request_params['q'] = request_params.pop('q')
         
         if 'q' not in request_params:
             request.setResponseCode(404)
