@@ -45,7 +45,7 @@ docker run -p 5000:5000 rasa/rasa_nlu:latest-full
 **Via Python Library**
 From pypi:
 ```
-pip install rasa_nlu
+pip install rasa_nlu #(--user for macOsX el-capitan)
 python -m rasa_nlu.server &
 ```
 (for more python installation options see [Advanced Python Installation](#advanced-python))
