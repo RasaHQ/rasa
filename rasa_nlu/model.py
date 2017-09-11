@@ -198,7 +198,7 @@ class Interpreter(object):
     def load(model_dir, config=RasaNLUConfig(), component_builder=None, skip_valdation=False):
         """Loads model metadata from file and creates an interpreter from the loaded model."""
 
-        if isinstance(model_dir, dict):
+        if isinstance(model_dir, Metadata):
             model_metadata = model_dir      # this is for backwards compatibilities (where metadata is passed as a dict)
             logger.warn("Deprecated use of `Interpreter.load` with a metadata object. " +
                         "If you want to directly pass the metadata, use `Interpreter.create(metadata, ...)`." +

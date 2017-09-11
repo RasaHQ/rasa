@@ -89,11 +89,18 @@ class MitieEntityExtractor(EntityExtractor):
             sample = mitie.ner_training_instance([t.text for t in tokens])
             for ent in example.get("entities", []):
                 try:
+                    # if the token is not aligned an exception will be raised
                     start, end = MitieEntityExtractor.find_entity(ent, text, tokens)
                 except ValueError as e:
                     logger.warning("Example skipped: {}".format(str(e)))
                     continue
-                sample.add_entity(list(range(start, end)), ent["entity"])
+                try:
+                    # mitie will raise an exception on malicious input - e.g. on overlapping entities
+                    sample.add_entity(list(range(start, end)), ent["entity"])
+                except Exception as e:
+                    logger.warning("Failed to add entity example '{}' of sentence '{}'. Reason: {}".format(
+                            str(e), str(text), e))
+                    continue
                 found_one_entity = True
 
             trainer.add(sample)

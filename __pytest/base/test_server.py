@@ -86,6 +86,10 @@ def test_version(app):
         [{"entities": {}, "confidence": 1.0, "intent": "greet", "_text": "hello"}]
     ),
     ResponseTest(
+        "http://dummy_uri/parse?query=hello",
+        [{"entities": {}, "confidence": 1.0, "intent": "greet", "_text": "hello"}]
+    ),
+    ResponseTest(
         "http://dummy_uri/parse?q=hello ńöñàśçií",
         [{"entities": {}, "confidence": 1.0, "intent": "greet", "_text": "hello ńöñàśçií"}]
     ),
@@ -108,6 +112,11 @@ def test_get_parse(app, response_test):
         "http://dummy_uri/parse",
         [{"entities": {}, "confidence": 1.0, "intent": "greet", "_text": "hello"}],
         payload={"q": "hello"}
+    ),
+    ResponseTest(
+        "http://dummy_uri/parse",
+        [{"entities": {}, "confidence": 1.0, "intent": "greet", "_text": "hello"}],
+        payload={"query": "hello"}
     ),
     ResponseTest(
         "http://dummy_uri/parse",

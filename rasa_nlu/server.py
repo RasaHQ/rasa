@@ -9,6 +9,8 @@ import logging
 import os
 from functools import wraps
 
+from builtins import str
+
 from klein import Klein
 from twisted.internet import reactor, threads
 from twisted.internet.defer import inlineCallbacks, returnValue, maybeDeferred
@@ -73,7 +75,7 @@ def requires_auth(f):
     def decorated(*args, **kwargs):
         self = args[0]
         request = args[1]
-        token = request.args.get('token', [''])[0]
+        token = str(request.args.get('token', [''])[0])
 
         if self.data_router.token is None or token == self.data_router.token:
             return f(*args, **kwargs)
@@ -116,6 +118,10 @@ class RasaNLU(object):
                               request.args.items()}
         else:
             request_params = json.loads(request.content.read().decode('utf-8', 'strict'))
+        
+        if 'query' in request_params:
+            request_params['q'] = request_params.pop('query')
+        
         if 'q' not in request_params:
             request.setResponseCode(404)
             returnValue(json.dumps({"error": "Invalid parse parameter specified"}))

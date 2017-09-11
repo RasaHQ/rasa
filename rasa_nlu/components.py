@@ -71,7 +71,7 @@ def find_unavailable_packages(package_names):
     return failed_imports
 
 
-def validate_requirements(component_names, dev_requirements_file="dev-requirements.txt"):
+def validate_requirements(component_names, dev_requirements_file="alt_requirements/requirements_dev.txt"):
     # type: (List[Text], Text) -> None
     """Ensures that all required python packages are installed to instantiate and used the passed components."""
     from rasa_nlu import registry
