@@ -161,8 +161,8 @@ def test_dummy_request():
     norm = em.normalise_request_json({"q": ["arb text"]})
     assert norm == {"text": "arb text", "project": "default", "time": None}
 
-    norm = em.normalise_request_json({"q": ["arb text"], "agent": "specific", "time": "1499279161658"})
-    assert norm == {"text": "arb text", "agent": "specific", "time": "1499279161658"}
+    norm = em.normalise_request_json({"q": ["arb text"], "project": "specific", "time": "1499279161658"})
+    assert norm == {"text": "arb text", "project": "specific", "time": "1499279161658"}
 
 
 def test_dummy_response():

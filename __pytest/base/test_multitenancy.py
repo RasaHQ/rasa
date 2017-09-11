@@ -38,7 +38,7 @@ def app(component_builder):
         'port': -1,  # unused in test app
         "pipeline": "keyword",
 
-        "path": os.path.join(root_dir, "test_agents"),
+        "path": os.path.join(root_dir, "test_projects"),
         "data": os.path.join(root_dir, "data/demo-restaurants.json"),
         "max_training_processes": 1
     }
@@ -51,15 +51,15 @@ def app(component_builder):
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-        "http://dummy_uri/parse?q=food&agent=test_agent_mitie",
+        "http://dummy_uri/parse?q=food&project=test_project_mitie",
         {"entities": [], "intent": "affirm", "text": "food"}
     ),
     ResponseTest(
-        "http://dummy_uri/parse?q=food&agent=test_agent_mitie_sklearn",
+        "http://dummy_uri/parse?q=food&project=test_project_mitie_sklearn",
         {"entities": [], "intent": "restaurant_search", "text": "food"}
     ),
     ResponseTest(
-        "http://dummy_uri/parse?q=food&agent=test_agent_spacy_sklearn",
+        "http://dummy_uri/parse?q=food&project=test_project_spacy_sklearn",
         {"entities": [], "intent": "restaurant_search", "text": "food"}
     ),
 ])
@@ -75,11 +75,11 @@ def test_get_parse(app, response_test):
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
         "http://dummy_uri/parse?q=food",
-        {"error": "No agent found with name 'default'."}
+        {"error": "No project found with name 'default'."}
     ),
     ResponseTest(
-        "http://dummy_uri/parse?q=food&agent=umpalumpa",
-        {"error": "No agent found with name 'umpalumpa'."}
+        "http://dummy_uri/parse?q=food&project=umpalumpa",
+        {"error": "No project found with name 'umpalumpa'."}
     )
 ])
 @pytest.inlineCallbacks
@@ -94,17 +94,17 @@ def test_get_parse_invalid_model(app, response_test):
     ResponseTest(
         "http://dummy_uri/parse",
         {"entities": [], "intent": "affirm", "text": "food"},
-        payload={"q": "food", "agent": "test_agent_mitie"}
+        payload={"q": "food", "project": "test_project_mitie"}
     ),
     ResponseTest(
         "http://dummy_uri/parse",
         {"entities": [], "intent": "restaurant_search", "text": "food"},
-        payload={"q": "food", "agent": "test_agent_mitie_sklearn"}
+        payload={"q": "food", "project": "test_project_mitie_sklearn"}
     ),
     ResponseTest(
         "http://dummy_uri/parse",
         {"entities": [], "intent": "restaurant_search", "text": "food"},
-        payload={"q": "food", "agent": "test_agent_spacy_sklearn"}
+        payload={"q": "food", "project": "test_project_spacy_sklearn"}
     ),
 ])
 @pytest.inlineCallbacks
@@ -120,9 +120,9 @@ def test_post_parse(app, response_test):
 def test_post_parse_specific_model(app):
     status = yield app.get("http://dummy_uri/status")
     sjs = yield status.json()
-    model = sjs["available_agents"]["test_agent_mitie"]["available_models"][0]
+    model = sjs["available_projects"]["test_project_mitie"]["available_models"][0]
     query = ResponseTest("http://dummy_uri/parse", {"entities": [], "intent": "affirm", "text": "food"},
-                         payload={"q": "food", "agent": "test_agent_mitie", "model": model})
+                         payload={"q": "food", "project": "test_project_mitie", "model": model})
     response = yield app.post(query.endpoint, data=json.dumps(query.payload), content_type='application/json')
     assert response.code == 200
 
@@ -130,13 +130,13 @@ def test_post_parse_specific_model(app):
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
         "http://dummy_uri/parse",
-        {"error": "No agent found with name 'default'."},
+        {"error": "No project found with name 'default'."},
         payload={"q": "food"}
     ),
     ResponseTest(
         "http://dummy_uri/parse",
-        {"error": "No agent found with name 'umpalumpa'."},
-        payload={"q": "food", "agent": "umpalumpa"}
+        {"error": "No project found with name 'umpalumpa'."},
+        payload={"q": "food", "project": "umpalumpa"}
     ),
 ])
 @pytest.inlineCallbacks
@@ -150,7 +150,7 @@ def test_post_parse_invalid_model(app, response_test):
 
 def train_models(component_builder):
     # Retrain different multitenancy models
-    def train(cfg_name, agent_name):
+    def train(cfg_name, project_name):
         from rasa_nlu.train import create_persistor
         from rasa_nlu.converters import load_data
 
@@ -160,8 +160,8 @@ def train_models(component_builder):
 
         trainer.train(training_data)
         persistor = create_persistor(config)
-        trainer.persist("test_agents", persistor, agent_name)
+        trainer.persist("test_projects", persistor, project_name)
 
-    train("sample_configs/config_mitie.json", "test_agent_mitie")
-    train("sample_configs/config_spacy.json", "test_agent_spacy_sklearn")
-    train("sample_configs/config_mitie_sklearn.json", "test_agent_mitie_sklearn")
+    train("sample_configs/config_mitie.json", "test_project_mitie")
+    train("sample_configs/config_spacy.json", "test_project_spacy_sklearn")
+    train("sample_configs/config_mitie_sklearn.json", "test_project_mitie_sklearn")

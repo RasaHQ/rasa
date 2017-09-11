@@ -63,8 +63,8 @@ def test_root(app):
 def test_status(app):
     response = yield app.get("http://dummy_uri/status")
     rjs = yield response.json()
-    assert response.code == 200 and "available_agents" in rjs
-    assert "default" in rjs["available_agents"]
+    assert response.code == 200 and "available_projects" in rjs
+    assert "default" in rjs["available_projects"]
 
 
 @pytest.inlineCallbacks
@@ -143,13 +143,13 @@ def test_post_train(app, rasa_default_train_data):
     app.flush()
     response = yield response
     rjs = yield response.json()
-    assert response.code == 404, "An agent name to train must be specified"
+    assert response.code == 404, "A project name to train must be specified"
     assert "error" in rjs
 
 
 @pytest.inlineCallbacks
 def test_model_hot_reloading(app, rasa_default_train_data):
-    query = "http://dummy_uri/parse?q=hello&agent=my_keyword_model"
+    query = "http://dummy_uri/parse?q=hello&project=my_keyword_model"
     response = yield app.get(query)
     assert response.code == 404, "Project should not exist yet"
 
