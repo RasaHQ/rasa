@@ -16,7 +16,7 @@ from twisted.internet import reactor, threads
 from twisted.internet.defer import inlineCallbacks, returnValue, maybeDeferred
 
 from rasa_nlu.config import RasaNLUConfig
-from rasa_nlu.data_router import DataRouter, InvalidModelError, AlreadyTrainingError
+from rasa_nlu.data_router import DataRouter, InvalidProjectError, AlreadyTrainingError
 from rasa_nlu.version import __version__
 
 logger = logging.getLogger(__name__)
@@ -132,7 +132,7 @@ class RasaNLU(object):
                 response = yield (self.data_router.parse(data) if self._testing
                                   else threads.deferToThread(self.data_router.parse, data))
                 returnValue(json.dumps(response))
-            except InvalidModelError as e:
+            except InvalidProjectError as e:
                 request.setResponseCode(404)
                 returnValue(json.dumps({"error": "{}".format(e)}))
             except Exception as e:
@@ -181,7 +181,7 @@ class RasaNLU(object):
         except AlreadyTrainingError as e:
             request.setResponseCode(403)
             returnValue(json.dumps({"error": "{}".format(e)}))
-        except InvalidModelError as e:
+        except InvalidProjectError as e:
             request.setResponseCode(404)
             returnValue(json.dumps({"error": "{}".format(e)}))
         except ValueError as e:

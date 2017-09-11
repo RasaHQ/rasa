@@ -20,24 +20,24 @@ from twisted.internet.defer import Deferred
 from twisted.logger import jsonFileLogObserver, Logger
 
 from rasa_nlu import utils
-from rasa_nlu.agent import Agent
+from rasa_nlu.project import Project
 from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.config import RasaNLUConfig
-from rasa_nlu.model import Metadata, InvalidModelError, Interpreter
+from rasa_nlu.model import Metadata, InvalidProjectError, Interpreter
 from rasa_nlu.train import do_train_in_worker
 
 logger = logging.getLogger(__name__)
 
 
 class AlreadyTrainingError(Exception):
-    """Raised when a training request is received for an Agent already being trained.
+    """Raised when a training request is received for an Project already being trained.
 
     Attributes:
         message -- explanation of why the request is invalid
     """
 
     def __init__(self):
-        self.message = 'The agent is already being trained!'
+        self.message = 'The project is already being trained!'
 
     def __str__(self):
         return self.message
@@ -61,7 +61,7 @@ def deferred_from_future(future):
 
 
 class DataRouter(object):
-    DEFAULT_AGENT_NAME = "default"
+    DEFAULT_PROJECT_NAME = "default"
 
     def __init__(self, config, component_builder):
         self._training_processes = config['max_training_processes'] if config['max_training_processes'] > 0 else 1
@@ -71,7 +71,7 @@ class DataRouter(object):
         self.token = config['token']
         self.emulator = self._create_emulator()
         self.component_builder = component_builder if component_builder else ComponentBuilder(use_cache=True)
-        self.agent_store = self._create_agent_store()
+        self.project_store = self._create_project_store()
         self.pool = ProcessPool(self._training_processes)
 
     def __del__(self):
@@ -100,20 +100,20 @@ class DataRouter(object):
             logger.info("Logging of requests is disabled. (No 'request_log' directory configured)")
             return None
 
-    def _create_agent_store(self):
-        agents = []
+    def _create_project_store(self):
+        projects = []
 
         if os.path.isdir(self.config['path']):
-            agents = os.listdir(self.config['path'])
+            projects = os.listdir(self.config['path'])
 
-        agent_store = {}
+        project_store = {}
 
-        for agent in agents:
-            agent_store[agent] = Agent(self.config, self.component_builder, agent)
+        for project in projects:
+            project_store[project] = Project(self.config, self.component_builder, project)
 
-        if not agent_store:
-            agent_store[self.DEFAULT_AGENT_NAME] = Agent()
-        return agent_store
+        if not project_store:
+            project_store[self.DEFAULT_PROJECT_NAME] = Project()
+        return project_store
 
     def _create_emulator(self):
         """Sets which NLU webservice to emulate among those supported by Rasa"""
@@ -138,23 +138,23 @@ class DataRouter(object):
         return self.emulator.normalise_request_json(data)
 
     def parse(self, data):
-        agent = data.get("agent") or self.DEFAULT_AGENT_NAME
+        project = data.get("project") or self.DEFAULT_PROJECT_NAME
         model = data.get("model")
 
-        if agent not in self.agent_store:
-            agents = os.listdir(self.config['path'])
-            if agent not in agents:
-                raise InvalidModelError("No agent found with name '{}'.".format(agent))
+        if project not in self.project_store:
+            projects = os.listdir(self.config['path'])
+            if project not in projects:
+                raise InvalidProjectError("No project found with name '{}'.".format(project))
             else:
                 try:
-                    self.agent_store[agent] = Agent(self.config, self.component_builder, agent)
+                    self.project_store[project] = Project(self.config, self.component_builder, project)
                 except Exception as e:
-                    raise InvalidModelError("No agent found with name '{}'. Error: {}".format(agent, e))
+                    raise InvalidProjectError("Unable to load project '{}'. Error: {}".format(project, e))
 
-        response, used_model = self.agent_store[agent].parse(data['text'], data.get('time', None), model)
+        response, used_model = self.project_store[project].parse(data['text'], data.get('time', None), model)
 
         if self.responses:
-            self.responses.info(user_input=response, agent=agent, model=used_model)
+            self.responses.info(user_input=response, project=project, model=used_model)
         return self.format_response(response)
 
     def format_response(self, data):
@@ -165,7 +165,7 @@ class DataRouter(object):
         # be other trainings run in different processes we don't know about.
 
         return {
-            "available_agents": {name: agent.as_dict() for name, agent in self.agent_store.items()}
+            "available_projects": {name: project.as_dict() for name, project in self.project_store.items()}
         }
 
     def start_train_process(self, data, config_values):
@@ -186,21 +186,21 @@ class DataRouter(object):
         _config["data"] = f.name
         train_config = RasaNLUConfig(cmdline_args=_config)
 
-        agent = _config.get("name")
-        if not agent:
-            raise InvalidModelError("Missing agent name to train")
-        elif agent in self.agent_store:
-            if self.agent_store[agent].status == 1:
+        project = _config.get("name")
+        if not project:
+            raise InvalidProjectError("Missing project name to train")
+        elif project in self.project_store:
+            if self.project_store[project].status == 1:
                 raise AlreadyTrainingError
             else:
-                self.agent_store[agent].status = 1
-        elif agent not in self.agent_store:
-            self.agent_store[agent] = Agent(self.config, self.component_builder, agent)
-            self.agent_store[agent].status = 1
+                self.project_store[project].status = 1
+        elif project not in self.project_store:
+            self.project_store[project] = Project(self.config, self.component_builder, project)
+            self.project_store[project].status = 1
 
         def training_callback(model_path):
             model_dir = os.path.basename(os.path.normpath(model_path))
-            self.agent_store[agent].update(model_dir)
+            self.project_store[project].update(model_dir)
             return model_dir
 
         logger.info("New training queued")

@@ -11,7 +11,7 @@ import pytest
 import json
 
 from rasa_nlu import registry
-from rasa_nlu.agent import Agent
+from rasa_nlu.project import Project
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.model import Interpreter, Metadata
 from rasa_nlu.train import do_train
@@ -54,7 +54,7 @@ def run_train(config, component_builder):
 def load_interpreter_for_model(config, persisted_path, component_builder):
     def read_model_metadata(model_dir, config):
         if model_dir is None:
-            data = Agent._default_model_metadata()
+            data = Project._default_model_metadata()
             return Metadata(data, model_dir)
         else:
             if not os.path.isabs(model_dir):
@@ -62,7 +62,7 @@ def load_interpreter_for_model(config, persisted_path, component_builder):
 
             # download model from S3 if needed
             if not os.path.isdir(model_dir):
-                Agent._load_model_from_cloud(model_dir, config)
+                Project._load_model_from_cloud(model_dir, config)
 
             return Metadata.load(model_dir)
 

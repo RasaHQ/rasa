@@ -16,8 +16,8 @@ from rasa_nlu.model import Metadata, Interpreter
 logger = logging.getLogger(__name__)
 
 
-class Agent(object):
-    def __init__(self, config=None, component_builder=None, agent=None):
+class Project(object):
+    def __init__(self, config=None, component_builder=None, project=None):
         self._config = config
         self._component_builder = component_builder
         self._default_model = ''
@@ -26,10 +26,10 @@ class Agent(object):
         self._lock = Lock()
         self._path = None
 
-        if agent:
-            self._path = os.path.join(self._config['path'], agent)
+        if project:
+            self._path = os.path.join(self._config['path'], project)
         self._search_for_models()
-        self._default_model = self._latest_agent_model() or 'fallback'
+        self._default_model = self._latest_project_model() or 'fallback'
 
     def parse(self, text, time=None, model=None):
         # Lazy model loading
@@ -51,8 +51,8 @@ class Agent(object):
         self._lock.release()
         self.status = 0
 
-    def _latest_agent_model(self):
-        """Retrieves the latest trained model for an agent"""
+    def _latest_project_model(self):
+        """Retrieves the latest trained model for an project"""
         prefix = 'model_'
         models = {model[len(prefix):]: model for model in self._models.keys() if model.startswith(prefix)}
         if models:
@@ -79,7 +79,7 @@ class Agent(object):
 
     def _read_model_metadata(self, model_dir):
         if model_dir is None:
-            data = Agent._default_model_metadata()
+            data = Project._default_model_metadata()
             return Metadata(data, model_dir)
         else:
             if not os.path.isabs(model_dir):
@@ -87,7 +87,7 @@ class Agent(object):
 
             # download model from S3 if needed
             if not os.path.isdir(model_dir):
-                Agent._load_model_from_cloud(model_dir, self._config)
+                Project._load_model_from_cloud(model_dir, self._config)
 
             return Metadata.load(model_dir)
 

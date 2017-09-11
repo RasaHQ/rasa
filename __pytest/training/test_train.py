@@ -62,7 +62,7 @@ def test_train_named_model(component_builder):
     _config['name'] = "my_keyword_model"
     (trained, persisted_path) = utilities.run_train(_config, component_builder)
     assert trained.pipeline
-    # should be saved in a dir named after an agent
+    # should be saved in a dir named after a agent
     assert os.path.basename(os.path.dirname(os.path.normpath(persisted_path))) == "my_keyword_model"
 
 

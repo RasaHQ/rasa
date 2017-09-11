@@ -151,7 +151,7 @@ def test_post_train(app, rasa_default_train_data):
 def test_model_hot_reloading(app, rasa_default_train_data):
     query = "http://dummy_uri/parse?q=hello&agent=my_keyword_model"
     response = yield app.get(query)
-    assert response.code == 404, "Agent should not exist yet"
+    assert response.code == 404, "Project should not exist yet"
 
     response = app.post("http://dummy_uri/train?name=my_keyword_model&pipeline=keyword",
                         data=json.dumps(rasa_default_train_data), content_type='application/json')
@@ -161,4 +161,4 @@ def test_model_hot_reloading(app, rasa_default_train_data):
     assert response.code == 200, "Training should end successfully"
 
     response = yield app.get(query)
-    assert response.code == 200, "Agent should now exist after it got trained"
+    assert response.code == 200, "Project should now exist after it got trained"
