@@ -82,8 +82,7 @@ def run_intent_evaluation(config, model_path, component_builder=None):
 
     # get the metadata config from the package data
     test_data = load_data(config['data'])
-    metadata = Metadata.load(model_path)
-    interpreter = Interpreter.load(metadata, config, component_builder)
+    interpreter = Interpreter.load(model_path, config, component_builder)
 
     test_y = [e.get("intent") for e in test_data.training_examples]
 

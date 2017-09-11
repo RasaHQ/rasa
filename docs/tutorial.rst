@@ -10,7 +10,7 @@ Tutorial: A simple restaurant search bot
 As an example we'll use the domain of searching for restaurants. 
 We'll start with an extremely simple model of those conversations. You can build up from there.
 
-Let's assume that `anything` our bot's users say can be categorized into one of the following intents:
+Let's assume that `anything` our bot's users say can be categorized into one of the following **intents**:
 
 - ``greet``
 - ``restaurant_search``
@@ -28,18 +28,17 @@ And even more ways to say that you want to look for restaurants:
 - `I'm in the North of town and I want chinese food`
 - `I'm hungry`
 
-The first job of rasa NLU is to assign any given sentence to one of the categories: ``greet``, ``restaurant_search``, or ``thankyou``. 
+The first job of rasa NLU is to assign any given sentence to one of the **intent** categories: ``greet``, ``restaurant_search``, or ``thankyou``.
 
-The second job is to label words like "Mexican" and "center" as ``cuisine`` and ``location`` entities, respectively. 
+The second job is to label words like "Mexican" and "center" as ``cuisine`` and ``location`` **entities**, respectively. 
 In this tutorial we'll build a model which does exactly that.
 
 Preparing the Training Data
 ---------------------------
 
-The best way to get training data is from *real users*, and the best way to do that is to `pretend to be the bot yourself <https://conversations.golastmile.com/put-on-your-robot-costume-and-be-the-minimum-viable-bot-yourself-3e48a5a59308#.d4tmdan68>`_. But to help get you started we have some `data saved <https://github.com/RasaHQ/rasa_nlu/blob/master/data/examples/rasa/demo-rasa.json>`_
+The training data is essential to develop chatbots. It should include texts to be interpreted and the structured data (intent/entities) we expect chatbots to convert the texts into. The best way to get training texts is from *real users*, and the best way to get the structured data is to `pretend to be the bot yourself <https://conversations.golastmile.com/put-on-your-robot-costume-and-be-the-minimum-viable-bot-yourself-3e48a5a59308#.d4tmdan68>`_. But to help get you started, we have some `data saved <https://github.com/RasaHQ/rasa_nlu/blob/master/data/examples/rasa/demo-rasa.json>`_.
 
-Download the file and open it, and you'll see a list of training examples like these:
-
+Download the file (json format) and open it, and you'll see a list of training examples, each composed of ``"text"``, ``"intent"`` and ``"entities"``, as shown below. In your working directory, create a ``data`` folder, and copy this ``demo-rasa.json`` file there.
 
 .. code-block:: json
 
@@ -64,9 +63,7 @@ Download the file and open it, and you'll see a list of training examples like t
       ]
     }
 
-hopefully the format is intuitive if you've read this far into the tutorial, for details see :ref:`section_dataformat`.
-
-In your working directory, create a ``data`` folder, and copy the ``demo-rasa.json`` file there.
+Hopefully the format is intuitive if you've read this far into the tutorial, for details see :ref:`section_dataformat`. Otherwise, the next section 'visualizing the training data' can help you better read, verify and/or modify the training data.
 
 .. _visualizing-the-training-data:
 
@@ -75,7 +72,7 @@ Visualizing the Training Data
 
 It's always a good idea to `look` at your data before, during, and after training a model. 
 Luckily, there's a `great tool <https://github.com/RasaHQ/rasa-nlu-trainer>`__ for creating training data in rasa's format.
-- created by `@azazdeaz <https://github.com/azazdeaz>`_ - and it's also extremely helpful for inspecting existing data. 
+- created by `@azazdeaz <https://github.com/azazdeaz>`_ - and it's also extremely helpful for inspecting and modifying existing data. 
 
 
 For the demo data the output should look like this:
@@ -110,7 +107,7 @@ Now we can train a spacy model by running:
     $ python -m rasa_nlu.train -c sample_configs/config_spacy.json
 
 If you want to know more about the parameters, there is an overview of the :ref:`section_configuration`. After a few minutes,
-rasa NLU will finish training, and you'll see a new dir called something like
+rasa NLU will finish training, and you'll see a new folder named as 
 ``models/model_YYYYMMDD-HHMMSS`` with the timestamp when training finished.
 
 
@@ -169,7 +166,7 @@ rasa NLU will also print a ``confidence`` value for the intent classification. F
 intent classification this will be a probability. For MITIE models this is just a score, which **might be
 greater than 1**.
 
-You can use this to do some error handling in your bot (maybe asking the user again if the confidence is low)
+You can use this to do some error handling in your chatbot (ex: asking the user again if the confidence is low)
 and it's also helpful for prioritising which intents need more training data.
 
 .. note::
@@ -212,4 +209,4 @@ With very little data, rasa NLU can in certain cases already generalise concepts
     }
 
 even though there's nothing quite like this sentence in the examples used to train the model. 
-To build a more robust app you will obviously want to use a lot more data, so go and collect it!
+To build a more robust app you will obviously want to use a lot more training data, so go and collect it!
