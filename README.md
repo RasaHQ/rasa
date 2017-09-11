@@ -71,9 +71,16 @@ curl 'http://localhost:5000/version'
 ### Training New Models
 [Examples](https://github.com/RasaHQ/rasa_nlu/tree/master/data/examples/rasa) and [Documentation](http://rasa-nlu.readthedocs.io/en/latest/dataformat.html) of the training data format are provided. But as a quick start execute the below command to train a new model
 
+#### Json format
 ```
 curl 'https://raw.githubusercontent.com/RasaHQ/rasa_nlu/master/data/examples/rasa/demo-rasa.json' | \
 curl --request POST --header 'content-type: application/json' -d@- --url localhost:5000/train?name=test_model
+```
+
+#### Markdown format
+```
+wget 'https://raw.githubusercontent.com/RasaHQ/rasa_nlu/master/data/examples/rasa/demo-rasa.md'
+curl --request POST --data-binary @demo-rasa.md --url localhost:5000/train?name=test_model
 ```
 
 The above command does the following:
