@@ -58,6 +58,7 @@ def deferred_from_future(future):
     future.add_done_callback(callback)
     return d
 
+        
 
 class DataRouter(object):
     DEFAULT_MODEL_NAME = "default"
@@ -65,7 +66,7 @@ class DataRouter(object):
     def __init__(self, config, component_builder):
         self._training_processes = config['max_training_processes'] if config['max_training_processes'] > 0 else 1
         self.config = config
-        self.responses = DataRouter._create_query_logger(config['response_log'])
+        self.responses = DataRouter._create_query_logger(config)
         self._trainings_queued = 0
         self.model_dir = config['path']
         self.token = config['token']
@@ -83,9 +84,9 @@ class DataRouter(object):
         self.__del__()
 
     @staticmethod
-    def _create_query_logger(response_log_dir):
+    def _create_query_logger(config):
         """Creates a logger that will persist incomming queries and their results."""
-
+        response_log_dir = config['response_log']
         # Ensures different log files for different processes in multi worker mode
         if response_log_dir:
             # We need to generate a unique file name, even in multiprocess environments

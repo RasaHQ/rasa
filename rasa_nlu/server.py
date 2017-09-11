@@ -97,9 +97,12 @@ class RasaNLU(object):
 
         logger.debug("Creating a new data router")
         self.config = config
-        self.data_router = DataRouter(config, component_builder)
+        self.data_router = self._create_data_router(config, component_builder)
         self._testing = testing
         reactor.suggestThreadPoolSize(config['num_threads'] * 5)
+
+    def _create_data_router(self, config, component_builder):
+        return DataRouter(config, component_builder)
 
     @app.route("/", methods=['GET'])
     @check_cors
