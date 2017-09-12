@@ -119,10 +119,10 @@ class RasaNLU(object):
                               request.args.items()}
         else:
             request_params = json.loads(request.content.read().decode('utf-8', 'strict'))
-        
+
         if 'query' in request_params:
             request_params['q'] = request_params.pop('query')
-        
+
         if 'q' not in request_params:
             request.setResponseCode(404)
             returnValue(json.dumps({"error": "Invalid parse parameter specified"}))
@@ -198,5 +198,3 @@ if __name__ == '__main__':
     rasa = RasaNLU(rasa_nlu_config)
     logger.info('Started http server on port %s' % rasa_nlu_config['port'])
     rasa.app.run('0.0.0.0', rasa_nlu_config['port'])
-    
-    

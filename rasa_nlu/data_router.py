@@ -71,7 +71,6 @@ def deferred_from_future(future):
     future.add_done_callback(callback)
     return d
 
-        
 
 class DataRouter(object):
     DEFAULT_PROJECT_NAME = "default"
