@@ -27,7 +27,6 @@ DEFAULT_CONFIG = {
     "max_training_processes": 1,
     "path": "models",
     "port": 5000,
-    "server_model_dirs": None,
     "token": None,
     "cors_origins": [],
     "max_number_of_ngrams": 7,
