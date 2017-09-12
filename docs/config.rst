@@ -87,7 +87,25 @@ response_log
 :Examples: ``"logs/"``
 :Description:
     Directory where logs will be saved (containing queries and responses).
-    If set to ``null`` logging will be disabled.
+    If all response_log response_log_mongo_uri set to ``null`` logging will be disabled.
+
+response_log_mongo_uri
+~~~~~~~~~~~~
+
+:Type: ``str`` or ``null``
+:Examples: ``"mongodb://user:password@host:port/db"``
+:Description:
+    Mongo DB where logs will be saved (containing queries and responses).
+    A collection named  after ``response_log_mongo_collection`` will be created.
+    If all response_log response_log_mongo_uri set to ``null`` logging will be disabled.
+
+response_log_mongo_collection
+~~~~~~~~~~~~
+
+:Type: ``str`` or ``null``
+:Examples: ``"rasa_nlu_logs"``
+:Description:
+    Mongo collection where logs will be inserted if ``response_log_mongo_uri`` is set. Defaults to ``rasa_nlu_logs``
 
 config
 ~~~~~~

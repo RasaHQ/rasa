@@ -23,4 +23,5 @@ requests==2.18.1
 treq==17.3.1
 # other
 google-cloud-storage==1.0.0
+txmongo==17.1.0
 -e .

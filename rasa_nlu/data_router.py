@@ -25,6 +25,7 @@ from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.model import Metadata, InvalidModelError, Interpreter
 from rasa_nlu.train import do_train_in_worker
+from rasa_nlu.utils.mongo_log_observer import mongoLogObserver
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +66,20 @@ class DataRouter(object):
     def __init__(self, config, component_builder):
         self._training_processes = config['max_training_processes'] if config['max_training_processes'] > 0 else 1
         self.config = config
-        self.responses = DataRouter._create_query_logger(config['response_log'])
+        self.responses = []
+        if 'response_log' in config:
+            self.responses.append(DataRouter._create_query_file_logger(config['response_log']))
+        if 'response_log_mongo_uri' in config:
+            if 'response_log_mongo_collection' in config:
+                self.responses.append(DataRouter._create_query_mongo_logger(config['response_log_mongo_uri'],
+                                                                            config['response_log_mongo_collection']))
+            else:
+                self.responses.append(DataRouter._create_query_mongo_logger(config['response_log_mongo_uri']))
+
+        if len(self.responses) == 0:
+            # If the user didn't provide a logging method, we wont log!
+            logger.info("Logging of requests is disabled. (No 'request_log' directory configured)")
+
         self._trainings_queued = 0
         self.model_dir = config['path']
         self.token = config['token']
@@ -83,26 +97,27 @@ class DataRouter(object):
         self.__del__()
 
     @staticmethod
-    def _create_query_logger(response_log_dir):
+    def _create_query_file_logger(response_log_dir):
         """Creates a logger that will persist incomming queries and their results."""
 
-        # Ensures different log files for different processes in multi worker mode
-        if response_log_dir:
-            # We need to generate a unique file name, even in multiprocess environments
-            timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
-            log_file_name = "rasa_nlu_log-{}-{}.log".format(timestamp, os.getpid())
-            response_logfile = os.path.join(response_log_dir, log_file_name)
-            # Instantiate a standard python logger, which we are going to use to log requests
-            utils.create_dir_for_file(response_logfile)
-            query_logger = Logger(observer=jsonFileLogObserver(io.open(response_logfile, 'a', encoding='utf8')),
-                                  namespace='query-logger')
-            # Prevents queries getting logged with parent logger --> might log them to stdout
-            logger.info("Logging requests to '{}'.".format(response_logfile))
-            return query_logger
-        else:
-            # If the user didn't provide a logging directory, we wont log!
-            logger.info("Logging of requests is disabled. (No 'request_log' directory configured)")
-            return None
+        # We need to generate a unique file name, even in multiprocess environments
+        timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+        log_file_name = "rasa_nlu_log-{}-{}.log".format(timestamp, os.getpid())
+        response_logfile = os.path.join(response_log_dir, log_file_name)
+        # Instantiate a standard python logger, which we are going to use to log requests
+        utils.create_dir_for_file(response_logfile)
+        query_logger = Logger(observer=jsonFileLogObserver(io.open(response_logfile, 'a', encoding='utf8')),
+                              namespace='query-logger')
+        # Prevents queries getting logged with parent logger --> might log them to stdout
+        logger.info("Logging requests to '{}'.".format(response_logfile))
+        return query_logger
+
+    @staticmethod
+    def _create_query_mongo_logger(mongo_uri, collection_name='rasa_nlu_logs', tls_context=None):
+        """Creates a logger that will persist incomming queries and their results."""
+        query_logger = Logger(observer=mongoLogObserver(mongo_uri, collection_name, tls_context))
+        logger.info("Logging requests to '{}'.".format(mongo_uri))
+        return query_logger
 
     def _add_training_to_queue(self):
         """Adds a new training process to the list of running processes."""
@@ -211,8 +226,8 @@ class DataRouter(object):
 
         model = self.model_store[alias]
         response = model.parse(data['text'], data.get('time', None))
-        if self.responses:
-            self.responses.info(user_input=response, model=alias)
+        for r in self.responses:
+            r.info(user_input=response, model=alias)
         return self.format_response(response)
 
     def format_response(self, data):
