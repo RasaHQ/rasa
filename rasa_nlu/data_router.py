@@ -10,7 +10,6 @@ import os
 import tempfile
 import io
 
-import twisted
 from builtins import object
 from typing import Text, Dict, Any
 from future.utils import PY3

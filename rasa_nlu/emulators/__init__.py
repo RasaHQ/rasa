@@ -20,12 +20,17 @@ class NoEmulator(object):
 
         _data = {}
         _data["text"] = data["q"][0] if type(data["q"]) == list else data["q"]
+
         if not data.get("project"):
             _data["project"] = "default"
         elif type(data["project"]) == list:
             _data["project"] = data["project"][0]
         else:
             _data["project"] = data["project"]
+
+        if data.get("model"):
+            _data["model"] = data["model"][0] if type(data["model"]) == list else data["model"]
+
         _data['time'] = data["time"] if "time" in data else None
         return _data
 

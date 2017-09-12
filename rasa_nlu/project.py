@@ -23,7 +23,9 @@ class Project(object):
         self._default_model = ''
         self._models = {}
         self.status = 0
-        self._lock = Lock()
+        self._reader_lock = Lock()
+        self._writer_lock = Lock()
+        self._readers_count = 0
         self._path = None
 
         if project:
@@ -32,23 +34,32 @@ class Project(object):
         self._default_model = self._latest_project_model() or 'fallback'
 
     def parse(self, text, time=None, model=None):
-        # Lazy model loading
+        # Readers-writer lock simple double mutex implementation
+        self._reader_lock.acquire()
+        self._readers_count += 1
+        if self._readers_count == 1:
+            self._writer_lock.acquire()
+        self._reader_lock.release()
+
         if not model or model not in self._models:
             model = self._default_model
             logger.warn("Invalid model requested. Using default")
 
-        self._lock.acquire()
-        if not self._models[model]:
-            self._models[model] = self._interpreter_for_model(model)
-        self._lock.release()
+        response = self._models[model].parse(text, time)
 
-        return self._models[model].parse(text, time), model
+        self._reader_lock.acquire()
+        self._readers_count -= 1
+        if self._readers_count == 0:
+            self._writer_lock.release()
+        self._reader_lock.release()
+
+        return response, model
 
     def update(self, model_dirname):
-        self._lock.acquire()
-        self._models[model_dirname] = None
+        self._writer_lock.acquire()
+        self._models[model_dirname] = self._interpreter_for_model(model_dirname)
         self._default_model = model_dirname
-        self._lock.release()
+        self._writer_lock.release()
         self.status = 0
 
     def _latest_project_model(self):
