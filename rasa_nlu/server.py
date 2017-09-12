@@ -27,14 +27,12 @@ def create_argparser():
     parser.add_argument('-c', '--config',
                         help="config file, all the command line options can also be passed via a (json-formatted) " +
                              "config file. NB command line args take precedence")
-    parser.add_argument('-d', '--server_model_dirs',
-                        help='directory containing model to for parser to use')
     parser.add_argument('-e', '--emulate', choices=['wit', 'luis', 'api'],
                         help='which service to emulate (default: None i.e. use simple built in format)')
     parser.add_argument('-l', '--language', choices=['de', 'en'], help="model and data language")
     parser.add_argument('-m', '--mitie_file',
                         help='file with mitie total_word_feature_extractor')
-    parser.add_argument('-p', '--path', help="path where model files will be saved")
+    parser.add_argument('-p', '--path', help="path where project files will be saved")
     parser.add_argument('--pipeline', help="The pipeline to use. Either a pipeline template name or a list of " +
                                            "components separated by comma")
     parser.add_argument('-P', '--port', type=int, help='port on which to run server')

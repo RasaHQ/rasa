@@ -4,7 +4,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from __pytest import utilities
+from tests import utilities
 from rasa_nlu.training_data import TrainingData, Message
 
 

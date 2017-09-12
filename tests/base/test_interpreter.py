@@ -4,7 +4,7 @@ from __future__ import division
 from __future__ import absolute_import
 import pytest
 
-from __pytest import utilities
+from tests import utilities
 from rasa_nlu import registry
 
 

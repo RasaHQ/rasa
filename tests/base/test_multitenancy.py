@@ -16,7 +16,7 @@ from treq.testing import StubTreq
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.model import Trainer
 from rasa_nlu.server import RasaNLU
-from __pytest.utilities import ResponseTest
+from tests.utilities import ResponseTest
 
 
 @pytest.fixture(scope="module")

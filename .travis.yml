@@ -37,8 +37,8 @@ before_script:
 - mkdir $HOME/tmp
 - export TMPDIR=$HOME/tmp
 script:
-- py.test __pytest/base --cov rasa_nlu --pep8 -v --cov-append
-- py.test __pytest/training --cov rasa_nlu --pep8 -v --cov-append
+- py.test tests/base --cov rasa_nlu --pep8 -v --cov-append
+- py.test tests/training --cov rasa_nlu --pep8 -v --cov-append
 after_success:
 - coveralls
 deploy:

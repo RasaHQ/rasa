@@ -15,8 +15,8 @@ from rasa_nlu.config import RasaNLUConfig
 import json
 import io
 
-from __pytest import utilities
-from __pytest.utilities import ResponseTest
+from tests import utilities
+from tests.utilities import ResponseTest
 from rasa_nlu.server import RasaNLU
 
 

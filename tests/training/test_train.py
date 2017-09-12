@@ -12,7 +12,7 @@ from rasa_nlu import registry
 from rasa_nlu.model import Trainer
 from rasa_nlu.train import create_persistor
 from rasa_nlu.training_data import TrainingData
-from __pytest import utilities
+from tests import utilities
 
 
 @utilities.slowtest

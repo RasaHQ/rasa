@@ -34,13 +34,23 @@ class Project(object):
         self._search_for_models()
         self._default_model = self._latest_project_model() or 'fallback'
 
-    def parse(self, text, time=None, model=None):
-        # Readers-writer lock simple double mutex implementation
+    def _begin_read(self):
+        # Readers-writer lock basic double mutex implementation
         self._reader_lock.acquire()
         self._readers_count += 1
         if self._readers_count == 1:
             self._writer_lock.acquire()
         self._reader_lock.release()
+
+    def _end_read(self):
+        self._reader_lock.acquire()
+        self._readers_count -= 1
+        if self._readers_count == 0:
+            self._writer_lock.release()
+        self._reader_lock.release()
+
+    def parse(self, text, time=None, model=None):
+        self._begin_read()
 
         # Lazy model loading
         if not model or model not in self._models:
@@ -54,11 +64,7 @@ class Project(object):
 
         response = self._models[model].parse(text, time)
 
-        self._reader_lock.acquire()
-        self._readers_count -= 1
-        if self._readers_count == 0:
-            self._writer_lock.release()
-        self._reader_lock.release()
+        self._end_read()
 
         return response, model
 
