@@ -4,13 +4,11 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import datetime
-import glob
 import io
 import logging
 import os
 import tempfile
 
-import twisted
 from builtins import object
 from typing import Text, Dict, Any
 from future.utils import PY3
@@ -21,9 +19,10 @@ from twisted.internet.defer import Deferred
 from twisted.logger import jsonFileLogObserver, Logger
 
 from rasa_nlu import utils
+from rasa_nlu.project import Project
 from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.config import RasaNLUConfig
-from rasa_nlu.model import Metadata, InvalidModelError, Interpreter
+from rasa_nlu.model import Metadata, InvalidProjectError, Interpreter
 from rasa_nlu.train import do_train_in_worker
 
 logger = logging.getLogger(__name__)
@@ -34,6 +33,20 @@ logger = logging.getLogger(__name__)
 # respond and change the status of the Deferred on which the client is yielding. Solution: during tests we will set
 # this Flag to `False` to directly run the calls instead of wrapping them in `callFromThread`.
 DEFERRED_RUN_IN_REACTOR_THREAD = True
+
+
+class AlreadyTrainingError(Exception):
+    """Raised when a training request is received for an Project already being trained.
+
+    Attributes:
+        message -- explanation of why the request is invalid
+    """
+
+    def __init__(self):
+        self.message = 'The project is already being trained!'
+
+    def __str__(self):
+        return self.message
 
 
 def deferred_from_future(future):
@@ -60,31 +73,26 @@ def deferred_from_future(future):
 
 
 class DataRouter(object):
-    DEFAULT_MODEL_NAME = "default"
+    DEFAULT_PROJECT_NAME = "default"
 
     def __init__(self, config, component_builder):
         self._training_processes = config['max_training_processes'] if config['max_training_processes'] > 0 else 1
         self.config = config
         self.responses = DataRouter._create_query_logger(config['response_log'])
-        self._trainings_queued = 0
         self.model_dir = config['path']
         self.token = config['token']
-        self.emulator = self.__create_emulator()
+        self.emulator = self._create_emulator()
         self.component_builder = component_builder if component_builder else ComponentBuilder(use_cache=True)
-        self.model_store = self.__create_model_store()
+        self.project_store = self._create_project_store()
         self.pool = ProcessPool(self._training_processes)
 
     def __del__(self):
         """Terminates workers pool processes"""
         self.pool.shutdown()
 
-    def shutdown(self):
-        """Public wrapper over the internal __del__ function"""
-        self.__del__()
-
     @staticmethod
     def _create_query_logger(response_log_dir):
-        """Creates a logger that will persist incomming queries and their results."""
+        """Creates a logger that will persist incoming queries and their results."""
 
         # Ensures different log files for different processes in multi worker mode
         if response_log_dir:
@@ -104,82 +112,22 @@ class DataRouter(object):
             logger.info("Logging of requests is disabled. (No 'request_log' directory configured)")
             return None
 
-    def _add_training_to_queue(self):
-        """Adds a new training process to the list of running processes."""
-        self._trainings_queued += 1
+    def _create_project_store(self):
+        projects = []
 
-    def _remove_training_from_queue(self):
-        """Decreases the ongoing trainings count by one"""
-        self._trainings_queued -= 1
+        if os.path.isdir(self.config['path']):
+            projects = os.listdir(self.config['path'])
 
-    def __search_for_models(self):
-        models = {}
-        for metadata_path in glob.glob(os.path.join(self.config.path, '*/metadata.json')):
-            model_name = os.path.basename(os.path.dirname(metadata_path))
-            models[model_name] = model_name
-        return models
+        project_store = {}
 
-    def __interpreter_for_model(self, model_path):
-        metadata = DataRouter.read_model_metadata(model_path, self.config)
-        return Interpreter.create(metadata, self.config, self.component_builder)
+        for project in projects:
+            project_store[project] = Project(self.config, self.component_builder, project)
 
-    def __create_model_store(self):
-        # Fallback for users that specified the model path as a string and hence only want a single default model.
-        if type(self.config.server_model_dirs) is Text:
-            model_dict = {self.DEFAULT_MODEL_NAME: self.config.server_model_dirs}
-        elif self.config.server_model_dirs is None:
-            model_dict = self.__search_for_models()
-        else:
-            model_dict = self.config.server_model_dirs
+        if not project_store:
+            project_store[self.DEFAULT_PROJECT_NAME] = Project()
+        return project_store
 
-        model_store = {}
-
-        for alias, model_path in list(model_dict.items()):
-            try:
-                logger.info("Loading model '{}'...".format(model_path))
-                model_store[alias] = self.__interpreter_for_model(model_path)
-            except Exception as e:
-                logger.exception("Failed to load model '{}'. Error: {}".format(model_path, e))
-        if not model_store:
-            meta = Metadata({"pipeline": ["intent_classifier_keyword"]}, "")
-            interpreter = Interpreter.create(meta, self.config, self.component_builder)
-            model_store[self.DEFAULT_MODEL_NAME] = interpreter
-        return model_store
-
-    @staticmethod
-    def default_model_metadata():
-        return {
-            "language": None,
-        }
-
-    @staticmethod
-    def load_model_from_cloud(model_dir, config):
-        try:
-            from rasa_nlu.persistor import get_persistor
-            p = get_persistor(config)
-            if p is not None:
-                p.fetch_and_extract('{0}.tar.gz'.format(os.path.basename(model_dir)))
-            else:
-                raise RuntimeError("Unable to initialize persistor")
-        except Exception as e:
-            logger.warning("Using default interpreter, couldn't fetch model: {}".format(e))
-
-    @staticmethod
-    def read_model_metadata(model_dir, config):
-        if model_dir is None:
-            data = DataRouter.default_model_metadata()
-            return Metadata(data, model_dir)
-        else:
-            if not os.path.isabs(model_dir):
-                model_dir = os.path.join(config['path'], model_dir)
-
-            # download model from S3 if needed
-            if not os.path.isdir(model_dir):
-                DataRouter.load_model_from_cloud(model_dir, config)
-
-            return Metadata.load(model_dir)
-
-    def __create_emulator(self):
+    def _create_emulator(self):
         """Sets which NLU webservice to emulate among those supported by Rasa"""
 
         mode = self.config['emulate']
@@ -202,17 +150,23 @@ class DataRouter(object):
         return self.emulator.normalise_request_json(data)
 
     def parse(self, data):
-        alias = data.get("model") or self.DEFAULT_MODEL_NAME
-        if alias not in self.model_store:
-            try:
-                self.model_store[alias] = self.__interpreter_for_model(model_path=alias)
-            except Exception as e:
-                raise InvalidModelError("No model found with alias '{}'. Error: {}".format(alias, e))
+        project = data.get("project") or self.DEFAULT_PROJECT_NAME
+        model = data.get("model")
 
-        model = self.model_store[alias]
-        response = model.parse(data['text'], data.get('time', None))
+        if project not in self.project_store:
+            projects = os.listdir(self.config['path'])
+            if project not in projects:
+                raise InvalidProjectError("No project found with name '{}'.".format(project))
+            else:
+                try:
+                    self.project_store[project] = Project(self.config, self.component_builder, project)
+                except Exception as e:
+                    raise InvalidProjectError("Unable to load project '{}'. Error: {}".format(project, e))
+
+        response, used_model = self.project_store[project].parse(data['text'], data.get('time', None), model)
+
         if self.responses:
-            self.responses.info(user_input=response, model=alias)
+            self.responses.info(user_input=response, project=project, model=used_model)
         return self.format_response(response)
 
     def format_response(self, data):
@@ -221,12 +175,9 @@ class DataRouter(object):
     def get_status(self):
         # This will only count the trainings started from this process, if run in multi worker mode, there might
         # be other trainings run in different processes we don't know about.
-        models = glob.glob(os.path.join(self.model_dir, '*'))
-        models = [model for model in models if os.path.isfile(os.path.join(model, "metadata.json"))]
+
         return {
-            "available_models": models,
-            "trainings_queued": self._trainings_queued,
-            "training_workers": self._training_processes
+            "available_projects": {name: project.as_dict() for name, project in self.project_store.items()}
         }
 
     def start_train_process(self, data, config_values):
@@ -246,13 +197,25 @@ class DataRouter(object):
             _config[key] = val
         _config["data"] = f.name
         train_config = RasaNLUConfig(cmdline_args=_config)
-        logger.info("New training queued")
+
+        project = _config.get("name")
+        if not project:
+            raise InvalidProjectError("Missing project name to train")
+        elif project in self.project_store:
+            if self.project_store[project].status == 1:
+                raise AlreadyTrainingError
+            else:
+                self.project_store[project].status = 1
+        elif project not in self.project_store:
+            self.project_store[project] = Project(self.config, self.component_builder, project)
+            self.project_store[project].status = 1
 
         def training_callback(model_path):
-            self._remove_training_from_queue()
-            return os.path.basename(os.path.normpath(model_path))
+            model_dir = os.path.basename(os.path.normpath(model_path))
+            self.project_store[project].update(model_dir)
+            return model_dir
 
-        self._add_training_to_queue()
+        logger.info("New training queued")
 
         result = self.pool.submit(do_train_in_worker, train_config)
         result = deferred_from_future(result)

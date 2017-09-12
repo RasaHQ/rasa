@@ -16,7 +16,7 @@ from twisted.internet import reactor, threads
 from twisted.internet.defer import inlineCallbacks, returnValue, maybeDeferred
 
 from rasa_nlu.config import RasaNLUConfig
-from rasa_nlu.data_router import DataRouter, InvalidModelError
+from rasa_nlu.data_router import DataRouter, InvalidProjectError, AlreadyTrainingError
 from rasa_nlu.version import __version__
 
 logger = logging.getLogger(__name__)
@@ -27,14 +27,12 @@ def create_argparser():
     parser.add_argument('-c', '--config',
                         help="config file, all the command line options can also be passed via a (json-formatted) " +
                              "config file. NB command line args take precedence")
-    parser.add_argument('-d', '--server_model_dirs',
-                        help='directory containing model to for parser to use')
     parser.add_argument('-e', '--emulate', choices=['wit', 'luis', 'api'],
                         help='which service to emulate (default: None i.e. use simple built in format)')
     parser.add_argument('-l', '--language', choices=['de', 'en'], help="model and data language")
     parser.add_argument('-m', '--mitie_file',
                         help='file with mitie total_word_feature_extractor')
-    parser.add_argument('-p', '--path', help="path where model files will be saved")
+    parser.add_argument('-p', '--path', help="path where project files will be saved")
     parser.add_argument('--pipeline', help="The pipeline to use. Either a pipeline template name or a list of " +
                                            "components separated by comma")
     parser.add_argument('-P', '--port', type=int, help='port on which to run server')
@@ -132,8 +130,11 @@ class RasaNLU(object):
                 response = yield (self.data_router.parse(data) if self._testing
                                   else threads.deferToThread(self.data_router.parse, data))
                 returnValue(json.dumps(response))
-            except InvalidModelError as e:
+            except InvalidProjectError as e:
                 request.setResponseCode(404)
+                returnValue(json.dumps({"error": "{}".format(e)}))
+            except Exception as e:
+                request.setResponseCode(500)
                 returnValue(json.dumps({"error": "{}".format(e)}))
 
     @app.route("/version", methods=['GET'])
@@ -175,6 +176,12 @@ class RasaNLU(object):
             request.setResponseCode(200)
             response = yield self.data_router.start_train_process(data_string, kwargs)
             returnValue(json.dumps({'info': 'new model trained: {}'.format(response)}))
+        except AlreadyTrainingError as e:
+            request.setResponseCode(403)
+            returnValue(json.dumps({"error": "{}".format(e)}))
+        except InvalidProjectError as e:
+            request.setResponseCode(404)
+            returnValue(json.dumps({"error": "{}".format(e)}))
         except ValueError as e:
             request.setResponseCode(500)
             returnValue(json.dumps({"error": "{}".format(e)}))
@@ -188,3 +195,5 @@ if __name__ == '__main__':
     rasa = RasaNLU(rasa_nlu_config)
     logger.info('Started http server on port %s' % rasa_nlu_config['port'])
     rasa.app.run('0.0.0.0', rasa_nlu_config['port'])
+    
+    

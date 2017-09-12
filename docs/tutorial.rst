@@ -7,7 +7,7 @@ Tutorial: A simple restaurant search bot
 
 .. note:: See :ref:`section_migration` for how to clone your existing wit/LUIS/api.ai app.
 
-As an example we'll use the domain of searching for restaurants. 
+As an example we'll start a new project covering the domain of searching for restaurants.
 We'll start with an extremely simple model of those conversations. You can build up from there.
 
 Let's assume that `anything` our bot's users say can be categorized into one of the following **intents**:
@@ -84,8 +84,8 @@ It is **strongly** recommended that you view your training data in the GUI befor
 
 .. _training_your_model:
 
-Training Your Model
--------------------
+Training a New Model for your Project
+-------------------------------------
 
 Now we're going to create a configuration file. Make sure first that you've set up a backend, see :ref:`section_backends` .
 Create a file called ``config_spacy.json`` or ``config_mitie.json``, depending on the pipeline selected, in your working directory which looks like this
@@ -96,7 +96,7 @@ Create a file called ``config_spacy.json`` or ``config_mitie.json``, depending o
 
 or if you've installed the MITIE backend instead:
 
- 
+
 .. literalinclude:: ../sample_configs/config_mitie.json
     :language: json
 
@@ -108,21 +108,22 @@ Now we can train a spacy model by running:
 
 If you want to know more about the parameters, there is an overview of the :ref:`section_configuration`. After a few minutes,
 rasa NLU will finish training, and you'll see a new folder named as 
-``models/model_YYYYMMDD-HHMMSS`` with the timestamp when training finished.
+``models/default/model_YYYYMMDD-HHMMSS`` with the timestamp when training finished.
 
 
 Using Your Model
 ----------------
 
-To run your trained model, pass the configuration value ``server_model_dirs`` when running the server:
+By default, the server will look for all projects folders under the ``path`` directory specified in the configuration.
+When no project is specified, as in this example, a "default" one will be used, itself using the latest trained model.
 
 .. code-block:: console
 
-    $ python -m rasa_nlu.server -c sample_configs/config_spacy.json --server_model_dirs=./model_YYYYMMDD-HHMMSS
+    $ python -m rasa_nlu.server -c sample_configs/config_spacy.json
 
-The passed model path is relative to the ``path`` configured in the configuration. More information about starting the server can be found in :ref:`section_http`.
+More information about starting the server can be found in :ref:`section_http`.
 
-You can then test our your new model by sending a request. Open a new tab/window on your terminal and run
+You can then test your new model by sending a request. Open a new tab/window on your terminal and run
 
 .. code-block:: console
 
