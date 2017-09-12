@@ -90,10 +90,6 @@ class DataRouter(object):
         """Terminates workers pool processes"""
         self.pool.shutdown()
 
-    def shutdown(self):
-        """Public wrapper over the internal __del__ function"""
-        self.__del__()
-
     def _create_query_logger(self, config):
         """Creates a logger that will persist incoming queries and their results."""
 
@@ -219,7 +215,7 @@ class DataRouter(object):
             self.project_store[project].update(model_dir)
             return model_dir
 
-        logger.info("New training queued")
+        logger.debug("New training queued")
 
         result = self.pool.submit(do_train_in_worker, train_config)
         result = deferred_from_future(result)
