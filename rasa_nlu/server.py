@@ -95,9 +95,12 @@ class RasaNLU(object):
 
         logger.debug("Creating a new data router")
         self.config = config
-        self.data_router = DataRouter(config, component_builder)
+        self.data_router = self._create_data_router(config, component_builder)
         self._testing = testing
         reactor.suggestThreadPoolSize(config['num_threads'] * 5)
+
+    def _create_data_router(self, config, component_builder):
+        return DataRouter(config, component_builder)
 
     @app.route("/", methods=['GET'])
     @check_cors
@@ -116,10 +119,10 @@ class RasaNLU(object):
                               request.args.items()}
         else:
             request_params = json.loads(request.content.read().decode('utf-8', 'strict'))
-        
+
         if 'query' in request_params:
             request_params['q'] = request_params.pop('query')
-        
+
         if 'q' not in request_params:
             request.setResponseCode(404)
             returnValue(json.dumps({"error": "Invalid parse parameter specified"}))
@@ -195,5 +198,3 @@ if __name__ == '__main__':
     rasa = RasaNLU(rasa_nlu_config)
     logger.info('Started http server on port %s' % rasa_nlu_config['port'])
     rasa.app.run('0.0.0.0', rasa_nlu_config['port'])
-    
-    

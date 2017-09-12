@@ -78,7 +78,7 @@ class DataRouter(object):
     def __init__(self, config, component_builder):
         self._training_processes = config['max_training_processes'] if config['max_training_processes'] > 0 else 1
         self.config = config
-        self.responses = DataRouter._create_query_logger(config['response_log'])
+        self.responses = self._create_query_logger(config)
         self.model_dir = config['path']
         self.token = config['token']
         self.emulator = self._create_emulator()
@@ -90,10 +90,10 @@ class DataRouter(object):
         """Terminates workers pool processes"""
         self.pool.shutdown()
 
-    @staticmethod
-    def _create_query_logger(response_log_dir):
+    def _create_query_logger(self, config):
         """Creates a logger that will persist incoming queries and their results."""
 
+        response_log_dir = config['response_log']
         # Ensures different log files for different processes in multi worker mode
         if response_log_dir:
             # We need to generate a unique file name, even in multiprocess environments
@@ -215,7 +215,7 @@ class DataRouter(object):
             self.project_store[project].update(model_dir)
             return model_dir
 
-        logger.info("New training queued")
+        logger.debug("New training queued")
 
         result = self.pool.submit(do_train_in_worker, train_config)
         result = deferred_from_future(result)
