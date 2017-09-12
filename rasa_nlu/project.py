@@ -24,6 +24,7 @@ class Project(object):
         self._models = {}
         self.status = 0
         self._reader_lock = Lock()
+        self._loader_lock = Lock()
         self._writer_lock = Lock()
         self._readers_count = 0
         self._path = None
@@ -41,9 +42,15 @@ class Project(object):
             self._writer_lock.acquire()
         self._reader_lock.release()
 
+        # Lazy model loading
         if not model or model not in self._models:
             model = self._default_model
             logger.warn("Invalid model requested. Using default")
+
+        self._loader_lock.acquire()
+        if not self._models.get(model):
+            self._models[model] = self._interpreter_for_model(model)
+        self._loader_lock.release()
 
         response = self._models[model].parse(text, time)
 
@@ -57,10 +64,16 @@ class Project(object):
 
     def update(self, model_dirname):
         self._writer_lock.acquire()
-        self._models[model_dirname] = self._interpreter_for_model(model_dirname)
+        self._models[model_dirname] = None
         self._default_model = model_dirname
         self._writer_lock.release()
         self.status = 0
+
+    def unload(self, model):
+        self._writer_lock.acquire()
+        unloaded_model = self._models.pop(model)
+        self._writer_lock.release()
+        return unloaded_model
 
     def _latest_project_model(self):
         """Retrieves the latest trained model for an project"""
