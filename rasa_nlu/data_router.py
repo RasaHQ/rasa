@@ -4,17 +4,17 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import datetime
-import json
+import io
 import logging
 import os
 import tempfile
-import io
 
 from builtins import object
 from typing import Text, Dict, Any
 from future.utils import PY3
 
 from concurrent.futures import ProcessPoolExecutor as ProcessPool
+from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from twisted.logger import jsonFileLogObserver, Logger
 
@@ -26,6 +26,13 @@ from rasa_nlu.model import Metadata, InvalidProjectError, Interpreter
 from rasa_nlu.train import do_train_in_worker
 
 logger = logging.getLogger(__name__)
+
+# in some execution environments `reactor.callFromThread` can not be called as it will result in a deadlock as
+# the `callFromThread` queues the function to be called by the reactor which only happens after the call to `yield`.
+# Unfortunately, the test is blocked there because `app.flush()` needs to be called to allow the fake server to
+# respond and change the status of the Deferred on which the client is yielding. Solution: during tests we will set
+# this Flag to `False` to directly run the calls instead of wrapping them in `callFromThread`.
+DEFERRED_RUN_IN_REACTOR_THREAD = True
 
 
 class AlreadyTrainingError(Exception):
@@ -51,9 +58,15 @@ def deferred_from_future(future):
     def callback(future):
         e = future.exception()
         if e:
-            d.errback(e)
-            return
-        d.callback(future.result())
+            if DEFERRED_RUN_IN_REACTOR_THREAD:
+                reactor.callFromThread(d.errback, e)
+            else:
+                d.errback(e)
+        else:
+            if DEFERRED_RUN_IN_REACTOR_THREAD:
+                reactor.callFromThread(d.callback, future.result())
+            else:
+                d.callback(future.result())
 
     future.add_done_callback(callback)
     return d
