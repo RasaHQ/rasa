@@ -20,7 +20,7 @@ install:
 - conda config --set always_yes yes --set changeps1 no
 - conda update -q conda
 - conda info -a
-- conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION scipy=0.19.0 numpy=1.12.1
+- conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION scipy=0.19.0 numpy=1.13.1
   scikit-learn=0.18.1
 - source activate test-environment
 - pip install -r alt_requirements/requirements_dev.txt
