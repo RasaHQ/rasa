@@ -15,6 +15,7 @@ Added
 - Cors support. You can now specify allowed cors origins within your configuration file.
 - The HTTP server is now backed by Klein (Twisted) instead of Flask. The server is now asynchronous but is no more WSGI compatible
 - Improved Docker automated builds
+- Rasa NLU now works with projects instead of models. A project can be the basis for a restaurant search bot in German or a customer service bot in English. A model can be seen as a snapshot of a project.
 
 Changed
 -------
