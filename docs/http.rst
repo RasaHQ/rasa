@@ -173,18 +173,18 @@ So you can specify which one to use in your ``/parse`` requests:
 
 .. code-block:: console
 
-    $ curl 'localhost:5000/parse?q=hello&projects=my_restaurant_search_bot'
+    $ curl 'localhost:5000/parse?q=hello&project=my_restaurant_search_bot'
 
 or
 
 .. code-block:: console
 
-    $ curl -XPOST localhost:5000/parse -d '{"q":"I am looking for Chinese food", "projects":"my_restaurant_search_bot"}'
+    $ curl -XPOST localhost:5000/parse -d '{"q":"I am looking for Chinese food", "project":"my_restaurant_search_bot"}'
 
 You can also specify the model you want to use for a given project, the default used being the latest trained :
 
 .. code-block:: console
 
-    $ curl -XPOST localhost:5000/parse -d '{"q":"I am looking for Chinese food", "projects":"my_restaurant_search_bot", "model":<model_XXXXXX>}'
+    $ curl -XPOST localhost:5000/parse -d '{"q":"I am looking for Chinese food", "project":"my_restaurant_search_bot", "model":<model_XXXXXX>}'
 
 If no project is to be found by the server under the ``path`` directory, a ``"default"`` one will be used, using a simple fallback model.
