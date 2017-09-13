@@ -23,13 +23,14 @@ install_requires = [
     "tqdm",
     "requests",
     "jsonschema",
-    "matplotlib"
+    "matplotlib",
+    "numpy>=1.13",
 ]
 
 extras_requires = {
     'test': tests_requires,
-    'spacy': ["sklearn", "scipy", "numpy"],
-    'mitie': ["mitie", "numpy"],
+    'spacy': ["sklearn", "scipy"],
+    'mitie': ["mitie"],
 }
 
 setup(
