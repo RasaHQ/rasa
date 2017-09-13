@@ -85,9 +85,8 @@ also returns a list of available projects the server can use to fulfill ``/parse
 
 .. code-block:: bash
 
-{'status': 'training' if self.status else 'ready', 'available_models': list(self._models.keys())}
-
     $ curl localhost:5000/status | python -mjson.tool
+    
     {
       "available_projects": {
         "my_restaurant_search_bot" : {
@@ -99,7 +98,7 @@ also returns a list of available projects the server can use to fulfill ``/parse
         }
       }
     }
-    
+
 ``GET /version``
 ^^^^^^^^^^^^^^^^
 
@@ -160,15 +159,14 @@ As stated previously, Rasa NLU naturally handles serving multiple apps : by defa
 under the ``path`` directory defined in the configuration. The file structure under ``path directory`` is as follows :
 
 - <path>
-  - <project_A>
-    - <model_XXXXXX>
-    - <model_XXXXXX>
-    ...
-  - <project_B>
-    - <model_XXXXXX>
-    ...
+ - <project_A>
+  - <model_XXXXXX>
+  - <model_XXXXXX>
+   ...
+ - <project_B>
+  - <model_XXXXXX>
+   ...
   ...
-
 
 
 So you can specify which one to use in your ``/parse`` requests:
