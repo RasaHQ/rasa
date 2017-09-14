@@ -102,13 +102,13 @@ class RasaNLU(object):
     def _create_data_router(self, config, component_builder):
         return DataRouter(config, component_builder)
 
-    @app.route("/", methods=['GET'])
+    @app.route("/", methods=['GET', 'OPTIONS'])
     @check_cors
     def hello(self, request):
         """Main Rasa route to check if the server is online"""
         return "hello from Rasa NLU: " + __version__
 
-    @app.route("/parse", methods=['GET', 'POST'])
+    @app.route("/parse", methods=['GET', 'POST', 'OPTIONS'])
     @requires_auth
     @check_cors
     @inlineCallbacks
@@ -140,7 +140,7 @@ class RasaNLU(object):
                 request.setResponseCode(500)
                 returnValue(json.dumps({"error": "{}".format(e)}))
 
-    @app.route("/version", methods=['GET'])
+    @app.route("/version", methods=['GET', 'OPTIONS'])
     @requires_auth
     @check_cors
     def version(self, request):
@@ -149,7 +149,7 @@ class RasaNLU(object):
         request.setHeader('Content-Type', 'application/json')
         return json.dumps({'version': __version__})
 
-    @app.route("/config", methods=['GET'])
+    @app.route("/config", methods=['GET', 'OPTIONS'])
     @requires_auth
     @check_cors
     def rasaconfig(self, request):
@@ -158,14 +158,14 @@ class RasaNLU(object):
         request.setHeader('Content-Type', 'application/json')
         return json.dumps(self.config.as_dict())
 
-    @app.route("/status", methods=['GET'])
+    @app.route("/status", methods=['GET', 'OPTIONS'])
     @requires_auth
     @check_cors
     def status(self, request):
         request.setHeader('Content-Type', 'application/json')
         return json.dumps(self.data_router.get_status())
 
-    @app.route("/train", methods=['POST'])
+    @app.route("/train", methods=['POST', 'OPTIONS'])
     @requires_auth
     @check_cors
     @inlineCallbacks
