@@ -39,6 +39,7 @@ def plot_confusion_matrix(cm, classes,
     import numpy as np
 
     zmax = cm.max()
+    plt.clf()
     plt.imshow(cm, interpolation='nearest', cmap=cmap if cmap else plt.cm.Blues, aspect='auto',
                norm=LogNorm(vmin=zmin, vmax=zmax))
     plt.title(title)
