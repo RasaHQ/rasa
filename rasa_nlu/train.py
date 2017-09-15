@@ -53,9 +53,10 @@ class TrainingException(Exception):
           message -- explanation of why the request is invalid
       """
 
-    def __init__(self, failed_target_project, exception):
+    def __init__(self, failed_target_project=None, exception=None):
         self.failed_target_project = failed_target_project
-        self.message = exception.args[0]
+        if exception:
+            self.message = exception.args[0]
 
     def __str__(self):
         return self.message
