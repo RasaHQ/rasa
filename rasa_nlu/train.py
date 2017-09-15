@@ -44,6 +44,22 @@ def create_argparser():
     return parser
 
 
+class TrainingException(Exception):
+    """Exception wrapping all lower level exception that may happen during the training of a specific project.
+
+      Attributes:
+          failed_target_project -- name of the failed project
+          message -- explanation of why the request is invalid
+      """
+
+    def __init__(self, failed_target_project, exception):
+        self.failed_target_project = failed_target_project
+        self.message = str(exception)
+
+    def __str__(self):
+        return self.message
+
+
 def create_persistor(config):
     # type: (RasaNLUConfig) -> Optional[Persistor]
     """Create a remote persistor to store the model if the configuration requests it."""
@@ -70,8 +86,11 @@ def do_train_in_worker(config):
     # type: (RasaNLUConfig) -> Text
     """Loads the trainer and the data and runs the training of the specified model in a subprocess."""
 
-    _, _, persisted_path = do_train(config)
-    return persisted_path
+    try:
+        _, _, persisted_path = do_train(config)
+        return persisted_path
+    except Exception as e:
+        raise TrainingException(config.get("name"), e)
 
 
 def do_train(config, component_builder=None):
