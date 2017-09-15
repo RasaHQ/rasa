@@ -147,6 +147,20 @@ def test_post_train(app, rasa_default_train_data):
     assert "error" in rjs
 
 
+@utilities.slowtest
+@pytest.inlineCallbacks
+def test_post_train_internal_error(app, rasa_default_train_data):
+    response = app.post("http://dummy_uri/train?name=test",
+                        data=json.dumps({"data": "dummy_data_for_triggering_an_error"}),
+                        content_type='application/json')
+    time.sleep(3)
+    app.flush()
+    response = yield response
+    rjs = yield response.json()
+    assert response.code == 500, "The training data format is not valid"
+    assert "error" in rjs
+
+
 @pytest.inlineCallbacks
 def test_model_hot_reloading(app, rasa_default_train_data):
     query = "http://dummy_uri/parse?q=hello&project=my_keyword_model"
