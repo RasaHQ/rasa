@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
+
 import argparse
 import logging
 import os
@@ -9,6 +10,9 @@ import os
 import typing
 from typing import Text
 from typing import Tuple
+from typing import Optional
+
+from builtins import str
 
 from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.converters import load_data
@@ -16,7 +20,6 @@ from rasa_nlu.model import Interpreter
 from rasa_nlu.model import Trainer
 
 from rasa_nlu.config import RasaNLUConfig
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
