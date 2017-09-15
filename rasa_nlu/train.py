@@ -12,8 +12,6 @@ from typing import Text
 from typing import Tuple
 from typing import Optional
 
-from builtins import str
-
 from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.converters import load_data
 from rasa_nlu.model import Interpreter
@@ -57,7 +55,7 @@ class TrainingException(Exception):
 
     def __init__(self, failed_target_project, exception):
         self.failed_target_project = failed_target_project
-        self.message = str(exception)
+        self.message = exception.args[0]
 
     def __str__(self):
         return self.message
