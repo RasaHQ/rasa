@@ -13,10 +13,11 @@ from builtins import str
 
 from klein import Klein
 from twisted.internet import reactor, threads
-from twisted.internet.defer import inlineCallbacks, returnValue, maybeDeferred
+from twisted.internet.defer import inlineCallbacks, returnValue
 
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.data_router import DataRouter, InvalidProjectError, AlreadyTrainingError
+from rasa_nlu.train import TrainingException
 from rasa_nlu.version import __version__
 
 logger = logging.getLogger(__name__)
@@ -185,7 +186,7 @@ class RasaNLU(object):
         except InvalidProjectError as e:
             request.setResponseCode(404)
             returnValue(json.dumps({"error": "{}".format(e)}))
-        except ValueError as e:
+        except TrainingException as e:
             request.setResponseCode(500)
             returnValue(json.dumps({"error": "{}".format(e)}))
 

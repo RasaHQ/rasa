@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
+
 import argparse
 import logging
 import os
@@ -9,6 +10,7 @@ import os
 import typing
 from typing import Text
 from typing import Tuple
+from typing import Optional
 
 from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.converters import load_data
@@ -16,7 +18,6 @@ from rasa_nlu.model import Interpreter
 from rasa_nlu.model import Trainer
 
 from rasa_nlu.config import RasaNLUConfig
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +43,23 @@ def create_argparser():
     parser.add_argument('-m', '--mitie_file', default=None,
                         help='File with mitie total_word_feature_extractor')
     return parser
+
+
+class TrainingException(Exception):
+    """Exception wrapping all lower level exception that may happen during the training of a specific project.
+
+      Attributes:
+          failed_target_project -- name of the failed project
+          message -- explanation of why the request is invalid
+      """
+
+    def __init__(self, failed_target_project=None, exception=None):
+        self.failed_target_project = failed_target_project
+        if exception:
+            self.message = exception.args[0]
+
+    def __str__(self):
+        return self.message
 
 
 def create_persistor(config):
@@ -70,8 +88,11 @@ def do_train_in_worker(config):
     # type: (RasaNLUConfig) -> Text
     """Loads the trainer and the data and runs the training of the specified model in a subprocess."""
 
-    _, _, persisted_path = do_train(config)
-    return persisted_path
+    try:
+        _, _, persisted_path = do_train(config)
+        return persisted_path
+    except Exception as e:
+        raise TrainingException(config.get("name"), e)
 
 
 def do_train(config, component_builder=None):
