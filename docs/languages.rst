@@ -8,8 +8,10 @@ Currently rasa NLU is tested and readily available for the following languages:
 backend        supported languages
 =============  ==============================
 spacy-sklearn  english (``en``),
-               german (``de``)
-MITIE          english (``en``)
+               german (``de``),
+               spanish (``es``),
+               french (``fr``)
+MITIE          english (``en``)
 =============  ==============================
 
 These languages can be set as part of the :ref:`section_configuration`.
@@ -22,13 +24,6 @@ you need to train that presentation on your own using a large corpus of text dat
 
 These are the steps necessary to add a new language:
 
-MITIE
-^^^^^
-
-1. Get a ~clean language corpus (a wikipedia dump works) as a set of text files
-2. Build and run `MITIE wordrep tool <https://github.com/mit-nlp/MITIE>`_ on your corpus. This can take several hours/days depending on your dataset and your workstation. You'll need something like 128GB of RAM for wordrep to run - yes that's alot: try to extend your swap.
-3. Set the path of your new ``total_word_feature_extractor.dat`` as value of the *mitie_file* parameter in ``config_mitie.json``
-
 spacy-sklearn
 ^^^^^^^^^^^^^
 
@@ -37,3 +32,12 @@ This will help you train a tokenizer and vocabulary for a new language in spacy.
 
 As described in the documentation, you need to register your language using ``set_lang_class()`` which will
 allow rasa NLU to load and use your new languge by passing in your language identifier as the ``language`` :ref:`section_configuration` option.
+
+MITIE
+^^^^^
+
+1. Get a ~clean language corpus (a wikipedia dump works) as a set of text files
+2. Build and run `MITIE wordrep tool <https://github.com/mit-nlp/MITIE>`_ on your corpus. This can take several hours/days depending on your dataset and your workstation. You'll need something like 128GB of RAM for wordrep to run - yes that's alot: try to extend your swap.
+3. Set the path of your new ``total_word_feature_extractor.dat`` as value of the *mitie_file* parameter in ``config_mitie.json``
+
+
