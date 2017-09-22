@@ -47,4 +47,4 @@ jobs:
         - git config --global user.name "Travis CI"
         - git remote set-url --push origin "git@github.com:$TRAVIS_REPO_SLUG"
         - export ${!TRAVIS*}  # Optional, for commit messages.
-        - sphinx-versioning -e .gitignore -e .nojekyll -e README.rst push docs gh-pages .
+        - sphinx-versioning push -e .gitignore -e .nojekyll -e README.rst docs gh-pages .
