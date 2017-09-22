@@ -1,0 +1,751 @@
+﻿{
+  "rasa_nlu_data": {
+    "common_examples": [
+      {
+        "text": "hello",
+        "intent": "greet",
+        "entities": []
+      },
+      {
+        "text": "good morning",
+        "intent": "greet",
+        "entities": []
+      },
+      {
+        "text": "hi",
+        "intent": "greet",
+        "entities": []
+      },
+      {
+        "text": "no",
+        "intent": "deny",
+        "entities": []
+      },
+      {
+        "text": "no thank you",
+        "intent": "deny",
+        "entities": []
+      },
+      {
+        "text": "can you make a restaurant reservation with italian food for eight in bombay in a expensive price range",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 43,
+            "end": 50,
+            "value": "italian",
+            "entity": "cuisine"
+          },
+          {
+            "start": 60,
+            "end": 65,
+            "value": "8",
+            "entity": "people"
+          },
+          {
+            "start": 69,
+            "end": 75,
+            "value": "bombay",
+            "entity": "location"
+          },
+          {
+            "start": 81,
+            "end": 90,
+            "value": "expensive",
+            "entity": "price"
+          }
+        ]
+      },
+      {
+        "text": "instead could it be with indian cuisine",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 25,
+            "end": 31,
+            "value": "indian",
+            "entity": "cuisine"
+          }
+        ]
+      },
+      {
+        "text": "actually i would prefer for six people",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 28,
+            "end": 31,
+            "value": "six",
+            "entity": "people"
+          }
+        ]
+      },
+      {
+        "text": "for two people would be great",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 4,
+            "end": 7,
+            "value": "two",
+            "entity": "people"
+          }
+        ]
+      },
+      {
+        "text": "actually i would prefer in madrid",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 27,
+            "end": 33,
+            "value": "madrid",
+            "entity": "location"
+          }
+        ]
+      },
+      {
+        "text": "may i have a table in a moderate price range with spanish food in bombay for two people",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 24,
+            "end": 32,
+            "value": "mid",
+            "entity": "price"
+          },
+          {
+            "start": 50,
+            "end": 57,
+            "value": "spanish",
+            "entity": "cuisine"
+          },
+          {
+            "start": 66,
+            "end": 72,
+            "value": "bombay",
+            "entity": "location"
+          },
+          {
+            "start": 77,
+            "end": 80,
+            "value": "2",
+            "entity": "people"
+          }
+        ]
+      },
+      {
+        "text": "i'd like to book a table in a cheap price range for six people with spanish cuisine in madrid",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 30,
+            "end": 35,
+            "value": "lo",
+            "entity": "price"
+          },
+          {
+            "start": 52,
+            "end": 55,
+            "value": "6",
+            "entity": "people"
+          },
+          {
+            "start": 68,
+            "end": 75,
+            "value": "spanish",
+            "entity": "cuisine"
+          },
+          {
+            "start": 87,
+            "end": 93,
+            "value": "madrid",
+            "entity": "location"
+          }
+        ]
+      },
+      {
+        "text": "can you make a restaurant reservation in a cheap price range in london with spanish food for eight people",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 43,
+            "end": 48,
+            "value": "lo",
+            "entity": "price"
+          },
+          {
+            "start": 64,
+            "end": 70,
+            "value": "london",
+            "entity": "location"
+          },
+          {
+            "start": 76,
+            "end": 83,
+            "value": "spanish",
+            "entity": "cuisine"
+          },
+          {
+            "start": 93,
+            "end": 98,
+            "value": "8",
+            "entity": "people"
+          }
+        ]
+      },
+      {
+        "text": "can you book a table in rome in a moderate price range with british food for four people",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 24,
+            "end": 28,
+            "value": "rome",
+            "entity": "location"
+          },
+          {
+            "start": 34,
+            "end": 42,
+            "value": "mid",
+            "entity": "price"
+          },
+          {
+            "start": 60,
+            "end": 67,
+            "value": "british",
+            "entity": "cuisine"
+          },
+          {
+            "start": 77,
+            "end": 81,
+            "value": "4",
+            "entity": "people"
+          }
+        ]
+      },
+      {
+        "text": "i'd like to book a table for two in madrid with spanish cuisine in a moderate price range",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 29,
+            "end": 32,
+            "value": "2",
+            "entity": "people"
+          },
+          {
+            "start": 36,
+            "end": 42,
+            "value": "madrid",
+            "entity": "location"
+          },
+          {
+            "start": 48,
+            "end": 55,
+            "value": "spanish",
+            "entity": "cuisine"
+          },
+          {
+            "start": 69,
+            "end": 77,
+            "value": "mid",
+            "entity": "price"
+          }
+        ]
+      },
+      {
+        "text": "can you book a table in london in a expensive price range with spanish cuisine for two",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 24,
+            "end": 30,
+            "value": "london",
+            "entity": "location"
+          },
+          {
+            "start": 36,
+            "end": 45,
+            "value": "hi",
+            "entity": "price"
+          },
+          {
+            "start": 63,
+            "end": 70,
+            "value": "spanish",
+            "entity": "cuisine"
+          },
+          {
+            "start": 83,
+            "end": 86,
+            "value": "2",
+            "entity": "people"
+          }
+        ]
+      },
+      {
+        "text": "actually i would prefer for eight people",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 28,
+            "end": 33,
+            "value": "8",
+            "entity": "people"
+          }
+        ]
+      },
+      {
+        "text": "i love indian food",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 7,
+            "end": 13,
+            "value": "indian",
+            "entity": "cuisine"
+          }
+        ]
+      },
+      {
+        "text": "in a moderate price range please",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 5,
+            "end": 13,
+            "value": "mid",
+            "entity": "price"
+          }
+        ]
+      },
+      {
+        "text": "instead could it be with french food",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 25,
+            "end": 31,
+            "value": "french",
+            "entity": "cuisine"
+          }
+        ]
+      },
+      {
+        "text": "no thanks",
+        "intent": "deny",
+        "entities": []
+      },
+      {
+        "text": "thanks",
+        "intent": "thankyou",
+        "entities": []
+      },
+      {
+        "text": "do you have its address",
+        "intent": "request_info",
+        "entities": [
+          {
+            "start": 16,
+            "end": 23,
+            "value": "address",
+            "entity": "info"
+          }
+        ]
+      },
+      {
+        "text": "do you have the phone number",
+        "intent": "request_info",
+        "entities": [
+          {
+            "start": 16,
+            "end": 21,
+            "value": "phone",
+            "entity": "info"
+          }
+        ]
+      },
+      {
+        "text": "let's do it",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
+        "text": "yes",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
+        "text": "i love that",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
+        "text": "do you have its phone number",
+        "intent": "request_info",
+        "entities": [
+          {
+            "start": 16,
+            "end": 28,
+            "value": "phone number",
+            "entity": "info"
+          }
+        ]
+      },
+      {
+        "text": "with french cuisine",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 5,
+            "end": 11,
+            "value": "french",
+            "entity": "cuisine"
+          }
+        ]
+      },
+      {
+        "text": "for six please",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 4,
+            "end": 7,
+            "value": "6",
+            "entity": "people"
+          }
+        ]
+      },
+      {
+        "text": "actually i would prefer in bombay",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 27,
+            "end": 33,
+            "value": "bombay",
+            "entity": "location"
+          }
+        ]
+      },
+      {
+        "text": "instead could it be for four people",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 24,
+            "end": 28,
+            "value": "4",
+            "entity": "people"
+          }
+        ]
+      },
+      {
+        "text": "no this does not work for me",
+        "intent": "deny",
+        "entities": []
+      },
+      {
+        "text": "do you have something else",
+        "intent": "deny",
+        "entities": []
+      },
+      {
+        "text": "you rock",
+        "intent": "thankyou",
+        "entities": []
+      },
+      {
+        "text": "may i have the phone number of the restaurant",
+        "intent": "request_info",
+        "entities": [
+          {
+            "start": 15,
+            "end": 27,
+            "value": "phone number",
+            "entity": "info"
+          }
+        ]
+      },
+      {
+        "text": "with british food",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 5,
+            "end": 12,
+            "value": "british",
+            "entity": "cuisine"
+          }
+        ]
+      },
+      {
+        "text": "we will be eight",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 11,
+            "end": 16,
+            "value": "8",
+            "entity": "people"
+          }
+        ]
+      },
+      {
+        "text": "may i have a table for two in london",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 23,
+            "end": 26,
+            "value": "2",
+            "entity": "people"
+          },
+          {
+            "start": 30,
+            "end": 36,
+            "value": "london",
+            "entity": "location"
+          }
+        ]
+      },
+      {
+        "text": "i'd like to book a table in a moderate price range with french food for eight",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 30,
+            "end": 38,
+            "value": "mid",
+            "entity": "price"
+          },
+          {
+            "start": 56,
+            "end": 62,
+            "value": "french",
+            "entity": "cuisine"
+          },
+          {
+            "start": 72,
+            "end": 77,
+            "value": "8",
+            "entity": "people"
+          }
+        ]
+      },
+      {
+        "text": "actually i would prefer for six",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 28,
+            "end": 31,
+            "value": "6",
+            "entity": "people"
+          }
+        ]
+      },
+      {
+        "text": "what is the phone number of the restaurant",
+        "intent": "request_info",
+        "entities": [
+          {
+            "start": 12,
+            "end": 24,
+            "value": "phone number",
+            "entity": "info"
+          }
+        ]
+      },
+      {
+        "text": "may i have a table for two",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 23,
+            "end": 26,
+            "value": "2",
+            "entity": "people"
+          }
+        ]
+      },
+      {
+        "text": "we will be four",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 11,
+            "end": 15,
+            "value": "4",
+            "entity": "people"
+          }
+        ]
+      },
+      {
+        "text": "can you book a table with british food in madrid in a cheap price range",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 54,
+            "end": 59,
+            "value": "cheap",
+            "entity": "price"
+          },
+          {
+            "start": 42,
+            "end": 48,
+            "value": "madrid",
+            "entity": "location"
+          },
+          {
+            "start": 26,
+            "end": 33,
+            "value": "british",
+            "entity": "cuisine"
+          }
+        ]
+      },
+      {
+        "text": "with italian food",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 5,
+            "end": 12,
+            "value": "italian",
+            "entity": "cuisine"
+          }
+        ]
+      },
+      {
+        "text": "i'd like to book a table with indian cuisine in a cheap price range",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 30,
+            "end": 36,
+            "value": "indian",
+            "entity": "cuisine"
+          },
+          {
+            "start": 50,
+            "end": 55,
+            "value": "lo",
+            "entity": "price"
+          }
+        ]
+      },
+      {
+        "text": "bombay please",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 0,
+            "end": 6,
+            "value": "bombay",
+            "entity": "location"
+          }
+        ]
+      },
+      {
+        "text": "may i have a table with french food",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 24,
+            "end": 30,
+            "value": "french",
+            "entity": "cuisine"
+          }
+        ]
+      },
+      {
+        "text": "instead could it be in bombay",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 23,
+            "end": 29,
+            "value": "bombay",
+            "entity": "location"
+          }
+        ]
+      },
+      {
+        "text": "actually i would prefer with indian food",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 29,
+            "end": 35,
+            "value": "indian",
+            "entity": "cuisine"
+          }
+        ]
+      },
+      {
+        "text": "can you book a table in madrid for two",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 24,
+            "end": 30,
+            "value": "madrid",
+            "entity": "location"
+          },
+          {
+            "start": 35,
+            "end": 38,
+            "value": "2",
+            "entity": "people"
+          }
+        ]
+      },
+      {
+        "text": "in paris",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 3,
+            "end": 8,
+            "value": "paris",
+            "entity": "location"
+          }
+        ]
+      },
+      {
+        "text": "i'd like to book a table for four in madrid",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 37,
+            "end": 43,
+            "value": "madrid",
+            "entity": "location"
+          },
+          {
+            "start": 29,
+            "end": 33,
+            "value": "4",
+            "entity": "people"
+          }
+        ]
+      },
+      {
+        "text": "i am looking for a cheap restaurant",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 19,
+            "end": 24,
+            "value": "lo",
+            "entity": "price"
+          }
+        ]
+      }
+    ],
+    "intent_examples": [],
+    "entity_examples": []
+  }
+}

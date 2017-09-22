@@ -1,0 +1,28 @@
+slots:
+  concerts:
+    type: list
+  venues:
+    type: list
+
+intents:
+  - greet
+  - thankyou
+  - goodbye
+  - search_concerts
+  - search_venues
+  - compare_reviews
+
+entities:
+  - name
+
+action_factory: remote
+
+actions:
+  - default
+  - greet
+  - goodbye
+  - youarewelcome
+  - search_concerts
+  - search_venues
+  - show_concert_reviews
+  - show_venue_reviews

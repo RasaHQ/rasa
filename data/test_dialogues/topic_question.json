@@ -1,0 +1,24 @@
+{
+  "py/object": "rasa_core.conversation.Dialogue",
+  "events": [
+    {
+      "py/object": "rasa_core.events.UserUttered",
+      "entities": [],
+      "intent": {
+        "name": "ask_question",
+        "confidence": 1.0
+      },
+      "text": "_ask_question"
+    },
+    {
+      "py/object": "rasa_core.events.ActionExecuted",
+      "action_name": "utter_answer_question",
+      "unpredictable": false
+    },
+    {
+      "py/object": "rasa_core.events.TopicSet",
+      "topic": "question"
+    }
+  ],
+  "name": "topic_question"
+}

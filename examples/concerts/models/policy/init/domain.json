@@ -1,0 +1,23 @@
+{
+  "features": [
+    "intent_greet", 
+    "intent_thankyou", 
+    "intent_goodbye", 
+    "intent_search_concerts", 
+    "intent_search_venues", 
+    "intent_compare_reviews", 
+    "entity_name", 
+    "slot_concerts_0", 
+    "slot_venues_0", 
+    "prev_action_listen", 
+    "prev_action_restart", 
+    "prev_utter_default", 
+    "prev_utter_greet", 
+    "prev_utter_goodbye", 
+    "prev_utter_youarewelcome", 
+    "prev_action_search_concerts", 
+    "prev_action_search_venues", 
+    "prev_action_show_concert_reviews", 
+    "prev_action_show_venue_reviews"
+  ]
+}

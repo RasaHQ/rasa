@@ -1,0 +1,4 @@
+{
+  "pipeline": "spacy_sklearn",
+  "name": "nlu"
+}
