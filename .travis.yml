@@ -1,16 +1,16 @@
 language: python
 dist: trusty
 sudo: required
-cache:
-  directories:
-  - $HOME/.cache/pip
-  - $HOME/build/amn41/rasa_core/data
 python:
   - '2.7'
   - '3.6'
 jobs:
   include:
     - stage: test
+      cache:
+        directories:
+          - $HOME/.cache/pip
+          - $HOME/build/amn41/rasa_core/data
       install:
         - sudo apt-get update
         - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
