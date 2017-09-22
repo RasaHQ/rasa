@@ -319,3 +319,11 @@ logging.basicConfig(level="ERROR")
 
 os.chdir(os.path.abspath(os.path.join('%s', '..')))
 ''' % os.path.dirname(__file__)
+
+# Sphinxcontrib configuration
+scv_priority = 'tags'
+scv_show_banner = True
+scv_banner_greatest_tag = True
+scv_sort = ('semver',)
+scv_whitelist_branches = ('master', 'latest')
+scv_grm_exclude = ('README.md', '.gitignore', '.nojekyll')
