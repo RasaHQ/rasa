@@ -61,7 +61,7 @@ information about the style of the code and docs in the documentation.
 
 In general the process is rather simple:
 1. create an issue describing the feature you want to work on (or have a look 
-at issues with the label [good first issue](https://github.com/RasaHQ/rasa_core/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22))
+at issues labeled [good first issue](https://github.com/RasaHQ/rasa_core/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22))
 2. write your code, tests, and documentation
 3. create a pull request describing your changes
 
