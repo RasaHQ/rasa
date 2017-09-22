@@ -23,4 +23,9 @@ requests==2.18.1
 treq==17.3.1
 # other
 google-cloud-storage==1.0.0
+# docs
+sphinx-autobuild==0.6.0
+sphinxcontrib-versioning==2.2.1
+nbsphinx==0.2.13
+-e git://github.com/RasaHQ/sphinx_rtd_theme.git#egg=sphinx_rtd_theme
 -e .
