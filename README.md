@@ -1,6 +1,6 @@
 # Rasa Core
 [![Join the chat at https://gitter.im/RasaHQ/rasa_core](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/RasaHQ/rasa_core?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Build Status](https://travis-ci.com/RasaHQ/rasa_dm.svg?token=EvwqtzR3SyKxFaNKbxau&branch=master)](https://travis-ci.com/RasaHQ/rasa_dm)
+[![Build Status](https://travis-ci.com/RasaHQ/rasa_core.svg?token=EvwqtzR3SyKxFaNKbxau&branch=master)](https://travis-ci.com/RasaHQ/rasa_core)
 [![Documentation Status](https://readthedocs.com/projects/lastmile-rasa-dm/badge/?version=latest)](https://lastmile-rasa-dm.readthedocs-hosted.com/en/latest/?badge=master)
 
 
@@ -45,8 +45,8 @@ of the docs.
 
 To install, run:
 ```bash
-git clone https://github.com/RasaHQ/rasa_dm.git
-cd rasa_dm
+git clone https://github.com/RasaHQ/rasa_core.git
+cd rasa_core
 pip install -r requirements.txt
 pip install -e .
 ```
@@ -61,7 +61,7 @@ information about the style of the code and docs in the documentation.
 
 In general the process is rather simple:
 1. create an issue describing the feature you want to work on (or have a look 
-at issues with the label [help wanted](https://github.com/RasaHQ/rasa_dm/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22))
+at issues with the label [help wanted](https://github.com/RasaHQ/rasa_core/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22))
 2. write your code, tests, and documentation
 3. create a pull request describing your changes
 

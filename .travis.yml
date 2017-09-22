@@ -4,7 +4,7 @@ sudo: required
 cache:
   directories:
   - $HOME/.cache/pip
-  - $HOME/build/amn41/rasa_dm/data
+  - $HOME/build/amn41/rasa_core/data
 python:
   - '2.7'
   - '3.6'

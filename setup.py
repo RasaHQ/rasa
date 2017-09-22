@@ -51,5 +51,5 @@ setup(
     description="Rasa dialogue manager",
     author='Rasa Technologies GmbH',
     author_email='hi@rasa.ai',
-    url='https://github.com/RasaHQ/rasa_dm'
+    url='https://github.com/RasaHQ/rasa_core'
 )

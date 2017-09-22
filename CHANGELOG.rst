@@ -78,6 +78,6 @@ Fixed
 First released version.
 
 
-.. _`master`: https://github.com/RasaHQ/rasa_dm/
+.. _`master`: https://github.com/RasaHQ/rasa_core/
 
 .. _`Semantic Versioning`: http://semver.org/

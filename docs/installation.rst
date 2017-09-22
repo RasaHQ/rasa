@@ -10,8 +10,8 @@ To install, run:
 
 .. code-block:: bash
    
-   git clone https://github.com/rasahq/rasa_dm.git
-   cd rasa_dm
+   git clone https://github.com/rasahq/rasa_core.git
+   cd rasa_core
    pip install -r requirements.txt
    pip install -e .
 
