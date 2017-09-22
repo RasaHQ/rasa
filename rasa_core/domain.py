@@ -121,7 +121,10 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         # type: (Text) -> Optional[Action]
         """Looks up which action corresponds to this action name."""
 
-        return self.action_map.get(action_name)[1]
+        if action_name in self.action_map:
+            return self.action_map.get(action_name)[1]
+        else:
+            self._raise_action_not_found_exception(action_name)
 
     def action_for_index(self, index):
         """Integer index corresponding to an actions index in the action list.
@@ -141,12 +144,15 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         if action_name in self.action_map:
             return self.action_map.get(action_name)[0]
         else:
-            actions = "\n".join(["\t - {}".format(a)
-                                 for a in sorted(self.action_map)])
-            raise Exception(
-                    "Can not access action '{}', "
-                    "as that name is not a registered action for this domain. "
-                    "Available actions are: \n{}".format(action_name, actions))
+            self._raise_action_not_found_exception(action_name)
+
+    def _raise_action_not_found_exception(self, action_name):
+        actions = "\n".join(["\t - {}".format(a)
+                             for a in sorted(self.action_map)])
+        raise Exception(
+                "Can not access action '{}', "
+                "as that name is not a registered action for this domain. "
+                "Available actions are: \n{}".format(action_name, actions))
 
     @staticmethod
     def _is_predictable_event(event):
