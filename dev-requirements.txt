@@ -14,5 +14,7 @@ matplotlib==1.5.3
 pygraphviz==1.3.1
 
 # docs
-sphinx_rtd_theme==0.1.9
 sphinx-autobuild==0.6.0
+travis-sphinx==1.4.4
+nbsphinx==0.2.13
+-e git://github.com/RasaHQ/sphinx_rtd_theme.git#egg=sphinx_rtd_theme

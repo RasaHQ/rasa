@@ -71,10 +71,10 @@ Fixed
 - ``RedisTrackerStore`` checks if tracker is stored before accessing it (otherwise a ``None`` access exception is thrown)
 - ``RegexInterpreter`` checks if the regex actually matches the message instead of assuming it always does
 - ``str`` implementation for all events
-- ``Controler`` can be started without an input channel (e.g. messages need to be fed into the queue manually)
+- ``Controler`` can be started wi^thout an input channel (e.g. messages need to be fed into the queue manually)
 
 [0.2.0a1] - 2017-05-18
-^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^
 First released version.
 
 
