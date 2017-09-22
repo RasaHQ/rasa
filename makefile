@@ -23,3 +23,6 @@ lint:
 
 test: clean
 	py.test tests --verbose --pep8 --color=yes $(TEST_PATH)
+
+livedocs:
+	cd docs && sphinx-apidoc -o . ../rasa_core && make livehtml

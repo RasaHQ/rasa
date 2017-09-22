@@ -74,19 +74,18 @@ To build & edit the docs, first install all necessary dependencies:
 
 ```
 brew install sphinx
-pip install sphinx_rtd_theme
-pip install sphinx-autobuild
+pip install -r dev-requirements.txt
 ```
 
 After the installation has finished, you can run and view the documentation 
 locally using
 ```
-cd docs
-sphinx-apidoc -o . ../rasa_core
-make livehtml
+make livedocs
 ```
 
-Visit the local version of the docs at http://localhost:8000 in your browser.
+Visit the local version of the docs at http://localhost:8000 in your browser. 
+You can now change the docs locally and the web page will automatically reload
+and apply your changes.
 
 ## License
 Licensed under the Apache License, Version 2.0. Copyright 2017 

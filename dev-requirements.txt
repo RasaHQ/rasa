@@ -12,3 +12,7 @@ pytest-xdist==1.15.0
 rasa_nlu==0.9.0
 matplotlib==1.5.3
 pygraphviz==1.3.1
+
+# docs
+sphinx_rtd_theme==0.1.9
+sphinx-autobuild==0.6.0
