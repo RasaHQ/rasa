@@ -34,7 +34,3 @@ install:
   - pip list   # for debugging
 script:
   - travis_wait py.test tests --cov rasa_core --pep8 -v
-  - travis-sphinx -n -b build_docs --source=docs build
-
-after_success:
-  - travis-sphinx deploy
