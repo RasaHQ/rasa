@@ -2,9 +2,9 @@ language: python
 sudo: required
 cache:
   directories:
-  - "$HOME/.cache/pip"
-  - "$HOME/build/RasaHQ/rasa_nlu/data"
-  - "$HOME/google-cloud-sdk/"
+  - $HOME/.cache/pip
+  - $HOME/build/RasaHQ/rasa_nlu/data
+  - $HOME/google-cloud-sdk/
 python:
 - '2.7'
 - '3.5'
@@ -43,29 +43,27 @@ after_success:
 - coveralls
 jobs:
   include:
-    - stage: docs
-      install:
-        - sudo apt-get update
-        - pip install sphinx==1.5.2 sphinx-autobuild==0.6.0 sphinxcontrib-versioning==2.2.1 nbsphinx==0.2.13
-        - pip install -e git://github.com/RasaHQ/sphinx_rtd_theme.git#egg=sphinx_rtd_theme
-      script:
-        - eval "$(ssh-agent -s)"; touch docs/key; chmod 0600 docs/key
-        - openssl aes-256-cbc -K $encrypted_050c822e99ef_key -iv $encrypted_050c822e99ef_iv
-          -in docs/key.enc -out docs/key -d && ssh-add docs/key
-        - git config --global user.email "builds@travis-ci.com"
-        - git config --global user.name "Travis CI"
-        - git remote set-url --push origin "git@github.com:$TRAVIS_REPO_SLUG"
-        - export ${!TRAVIS*}  # Optional, for commit messages.
-        - sphinx-versioning push docs gh-pages .
-    - stage: deploy
-      script: skip
-      deploy:
-        provider: pypi
-        user: amn41
-        on:
-          branch: master
-          tags: true
-        password:
-          secure: K3JhIpxBBfu8SC8voAsIvgU9pdND9PayQi8Ep4Whg+RPKgnLWMzbFe2FfSTyxuEIkJGx4S6h0qORGz4ro6b/tCy72ruEYxLrx3vt8uNtWdYXSRnW+Knqk4QKn2q+WehmfSxhkvu2PQ3LACGWN13Nnc4OdlY9u843d0dSjD9INlAs/+m6X3Me0zdACmwd0V0l4U2hNMjJyvOPznrQj4HrMIGWfuags4NLySVkpnYMMzz5lnamUZKUUfyChAKTUPXuoO8s9U0Zxj2duOy+2yu9hcJwomFwBLiWR6nKZmEtzYrfgHFDkRtNyuJtmQn3pR4BzbMV5L6Td7DAey3fRYss8JxVZ+3mwjsRzbbMDRpqqI8b7L0KBFnWfS5qOecB6T9hT2SVQuGHqj4Y/CAHqzscBhiOlhKev65JXIc1JIJACKWaHVYASKeU24zprlcalkRsqXmUv/rvSgP1UQSEsE726hxr0gs/gyJVRSmg7dxm/BrFTVa4Pucpy0QW3ABfc7miaz9LuNzsY+7OBxmsOhPDZpQVez9TNr4agdh6enRTK2cg0zDqjSfzjXBPwXRlcsR67u1JZPqjN0cpT44xKUvuwzDFgcZjK74tDx9A7cV6yS325cKIz8KQ08saBIyrbDtbv/i9ry1Dvkxj+k3t+i7kyuzjzMdhj2yDF9WTAGTdOhY=
-
-
+  - stage: docs
+    install:
+    - sudo apt-get update
+    - pip install sphinx==1.5.2 sphinx-autobuild==0.6.0 sphinxcontrib-versioning==2.2.1
+      nbsphinx==0.2.13
+    - pip install -e git://github.com/RasaHQ/sphinx_rtd_theme.git#egg=sphinx_rtd_theme
+    script:
+    - eval "$(ssh-agent -s)"; touch docs/key; chmod 0600 docs/key
+    - openssl aes-256-cbc -K $encrypted_4a8a3f4b9c17_key -iv $encrypted_4a8a3f4b9c17_iv -in docs/key.enc -out docs/key -d && ssh-add docs/key
+    - git config --global user.email "builds@travis-ci.com"
+    - git config --global user.name "Travis CI"
+    - git remote set-url --push origin "git@github.com:$TRAVIS_REPO_SLUG"
+    - export ${!TRAVIS*}
+    - sphinx-versioning push docs gh-pages .
+  - stage: deploy
+    script: skip
+    deploy:
+      provider: pypi
+      user: amn41
+      on:
+        branch: master
+        tags: true
+      password:
+        secure: K3JhIpxBBfu8SC8voAsIvgU9pdND9PayQi8Ep4Whg+RPKgnLWMzbFe2FfSTyxuEIkJGx4S6h0qORGz4ro6b/tCy72ruEYxLrx3vt8uNtWdYXSRnW+Knqk4QKn2q+WehmfSxhkvu2PQ3LACGWN13Nnc4OdlY9u843d0dSjD9INlAs/+m6X3Me0zdACmwd0V0l4U2hNMjJyvOPznrQj4HrMIGWfuags4NLySVkpnYMMzz5lnamUZKUUfyChAKTUPXuoO8s9U0Zxj2duOy+2yu9hcJwomFwBLiWR6nKZmEtzYrfgHFDkRtNyuJtmQn3pR4BzbMV5L6Td7DAey3fRYss8JxVZ+3mwjsRzbbMDRpqqI8b7L0KBFnWfS5qOecB6T9hT2SVQuGHqj4Y/CAHqzscBhiOlhKev65JXIc1JIJACKWaHVYASKeU24zprlcalkRsqXmUv/rvSgP1UQSEsE726hxr0gs/gyJVRSmg7dxm/BrFTVa4Pucpy0QW3ABfc7miaz9LuNzsY+7OBxmsOhPDZpQVez9TNr4agdh6enRTK2cg0zDqjSfzjXBPwXRlcsR67u1JZPqjN0cpT44xKUvuwzDFgcZjK74tDx9A7cV6yS325cKIz8KQ08saBIyrbDtbv/i9ry1Dvkxj+k3t+i7kyuzjzMdhj2yDF9WTAGTdOhY=
