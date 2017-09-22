@@ -32,4 +32,9 @@ install:
   - python -m spacy link en_core_web_sm en
   - pip install -e .
   - pip list   # for debugging
-script: travis_wait py.test tests --cov rasa_core --pep8 -v
+script:
+  - travis_wait py.test tests --cov rasa_core --pep8 -v
+  - travis-sphinx -n -b build_docs --source=docs build
+
+after_success:
+  - travis-sphinx deploy
