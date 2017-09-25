@@ -4,31 +4,23 @@
 [![Documentation Status](https://readthedocs.com/projects/lastmile-rasa-dm/badge/?version=latest)](https://lastmile-rasa-dm.readthedocs-hosted.com/en/latest/?badge=master)
 
 
-## EARLY ACCESS
-Please use [gitter](https://gitter.im/RasaHQ/rasa_core) for quick answers to 
-questions. Please also fill out the [survey](https://alan328.typeform.com/to/KUf7Zw). 
-This feedback will help us make the framework **much** better.
+## Introduction
 
-The idea behind Rasa Core is that conversational software is not like normal 
-software. Rather than writing a bunch of if-else statements, you provide training 
-conversations which are used to create a probabilistic model of what should happen 
-next. Why would you want to do this?
+Rasa Core is a framework for building conversational software: bots on Messenger, Slack, etc, voice apps for Amazon Echo, Google Home, etc. 
+Its primary purpose is to help you build contextual, layered conversations with lots of back-and-forth, in a scalable way. 
+There's a lot more background information in this [blog post](https://medium.com/rasa-blog/a-new-approach-to-conversational-software-2e64a5d05f2a)
 
-- debugging is easier
-- greater flexibility
-- can improve automatically over time
+## Where to get help
 
-[Rasa](https://rasa.ai/) is designed to be composable and hackable, with loosely 
-coupled pieces interacting through simple APIs. This means that you can use it if 
-you don't know anything about machine learning, but if you do it's easy to experiment.
+There is extensive documentation:
 
-#### Extended documentation:
 - [master](https://lastmile-rasa-dm.readthedocs-hosted.com/en/latest/)&nbsp; (if you install from **github**) or 
 - [stable](https://lastmile-rasa-dm.readthedocs-hosted.com/en/stable/)&nbsp;&nbsp; (if you install from **pypi**)
 
-If you are new to Rasa and want to create a bot, you should start with 
-the [**installation**](https://lastmile-rasa-dm.readthedocs-hosted.com/en/latest/intro.html) 
-and head to the [**basic tutorial**](https://lastmile-rasa-dm.readthedocs-hosted.com/en/latest/tutorial.html).
+
+Please use [gitter](https://gitter.im/RasaHQ/rasa_core) for quick answers to 
+questions.
+
 
 
 #### README Contents:
@@ -40,7 +32,7 @@ and head to the [**basic tutorial**](https://lastmile-rasa-dm.readthedocs-hosted
 ## Setup
 There isn't a released pypi package yet. Hence, you need to clone and install 
 the package from the github repository. For a more detailed description, please 
-visit the [**Installation page**](https://lastmile-rasa-dm.readthedocs-hosted.com/en/latest/intro.html) 
+visit the [**Installation page**](https://rasahq.github.io/rasa_core/installation.html) 
 of the docs.
 
 To install, run:
@@ -51,9 +43,6 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
-This will install the application and necessary requirements. We use rasa NLU 
-for intent classification & entity extraction, but you are free to use other 
-NLU services like wit.ai, api.ai, or LUIS.ai.
 
 ## How to contribute
 We are very happy to receive and merge your contributions. There is some more 
