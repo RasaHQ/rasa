@@ -33,7 +33,7 @@ def app(tmpdir_factory):
         'write': nlu_log_file,
         'port': -1,  # unused in test app
         "pipeline": "keyword",
-        "path": tmpdir_factory.mktemp("models").strpath,
+        "path": tmpdir_factory.mktemp("projects").strpath,
         "server_model_dirs": {},
         "data": "./data/demo-restaurants.json",
         "emulate": "wit",
@@ -147,14 +147,29 @@ def test_post_train(app, rasa_default_train_data):
     assert "error" in rjs
 
 
+@utilities.slowtest
+@pytest.inlineCallbacks
+def test_post_train_internal_error(app, rasa_default_train_data):
+    response = app.post("http://dummy_uri/train?project=test",
+                        data=json.dumps({"data": "dummy_data_for_triggering_an_error"}),
+                        content_type='application/json')
+    time.sleep(3)
+    app.flush()
+    response = yield response
+    rjs = yield response.json()
+    assert response.code == 500, "The training data format is not valid"
+    assert "error" in rjs
+
+
 @pytest.inlineCallbacks
 def test_model_hot_reloading(app, rasa_default_train_data):
     query = "http://dummy_uri/parse?q=hello&project=my_keyword_model"
     response = yield app.get(query)
     assert response.code == 404, "Project should not exist yet"
-
-    response = app.post("http://dummy_uri/train?name=my_keyword_model&pipeline=keyword",
-                        data=json.dumps(rasa_default_train_data), content_type='application/json')
+    train_u = "http://dummy_uri/train?project=my_keyword_model&pipeline=keyword"
+    response = app.post(train_u,
+                        data=json.dumps(rasa_default_train_data),
+                        content_type='application/json')
     time.sleep(3)
     app.flush()
     response = yield response

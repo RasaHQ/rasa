@@ -198,7 +198,7 @@ class DataRouter(object):
         _config["data"] = f.name
         train_config = RasaNLUConfig(cmdline_args=_config)
 
-        project = _config.get("name")
+        project = _config.get("project")
         if not project:
             raise InvalidProjectError("Missing project name to train")
         elif project in self.project_store:
@@ -215,10 +215,17 @@ class DataRouter(object):
             self.project_store[project].update(model_dir)
             return model_dir
 
+        def training_errback(failure):
+            target_project = self.project_store.get(failure.value.failed_target_project)
+            if target_project:
+                target_project.status = 0
+            return failure
+
         logger.debug("New training queued")
 
         result = self.pool.submit(do_train_in_worker, train_config)
         result = deferred_from_future(result)
         result.addCallback(training_callback)
+        result.addErrback(training_errback)
 
         return result

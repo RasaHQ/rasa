@@ -25,6 +25,7 @@ install_requires = [
     "jsonschema",
     "matplotlib",
     "numpy>=1.13",
+    "simplejson",
 ]
 
 extras_requires = {
@@ -64,5 +65,5 @@ setup(
 )
 
 print("Welcome to rasa!\n")
-print("If any questions please visit documentation page http://rasa-nlu.readthedocs.io/en/latest/\n")
+print("If any questions please visit documentation page https://rasahq.github.io/rasa_nlu\n")
 print("or join community chat on https://gitter.im/RasaHQ/rasa_nlu\n")

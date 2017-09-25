@@ -25,8 +25,8 @@ Options
 -------
 A short explanation and examples for each configuration value.
 
-name
-~~~~
+project
+~~~~~~~
 
 :Type: ``str``
 :Examples: ``"my_project_name"``
@@ -77,9 +77,10 @@ path
 ~~~~
 
 :Type: ``str``
-:Examples: ``"models/"``
+:Examples: ``"projects/"``
 :Description:
-    Directory where trained models will be saved to (training) and loaded from (http server).
+    Projects directory where trained models will be saved to (training) and
+    loaded from (http server).
 
 response_log
 ~~~~~~~~~~~~

@@ -28,7 +28,7 @@ RUN apt-get update -qq \
 
 COPY sample_configs/config_mitie.json ${RASA_NLU_HOME}/config.json
 
-VOLUME ["/app/models", "/app/logs", "/app/data"]
+VOLUME ["/app/projects", "/app/logs", "/app/data"]
 
 EXPOSE 5000
 
