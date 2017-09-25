@@ -6,8 +6,18 @@
 
 ## Introduction
 
-Rasa Core is a framework for building conversational software: bots on Messenger, Slack, etc, voice apps for Amazon Echo, Google Home, etc. 
-Its primary purpose is to help you build contextual, layered conversations with lots of back-and-forth, in a scalable way. 
+Rasa Core is a framework for building conversational software, which includes:
+- chatbots on Messenger
+- Slack bots
+- Alexa Skills
+- Google Home Actions
+
+etc. 
+
+Rasa Core's primary purpose is to help you build contextual, layered conversations with lots of back-and-forth.
+To have a real conversation, you need to have some memory and build on things that were said earlier.
+Rasa Core lets you do that in a scalable way. 
+
 There's a lot more background information in this [blog post](https://medium.com/rasa-blog/a-new-approach-to-conversational-software-2e64a5d05f2a)
 
 ## Where to get help
