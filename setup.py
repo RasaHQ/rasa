@@ -25,6 +25,7 @@ install_requires = [
     "jsonschema",
     "matplotlib",
     "numpy>=1.13",
+    "simplejson",
 ]
 
 extras_requires = {
