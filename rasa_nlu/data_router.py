@@ -198,7 +198,7 @@ class DataRouter(object):
         _config["data"] = f.name
         train_config = RasaNLUConfig(cmdline_args=_config)
 
-        project = _config.get("name")
+        project = _config.get("project")
         if not project:
             raise InvalidProjectError("Missing project name to train")
         elif project in self.project_store:

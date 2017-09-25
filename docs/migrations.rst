@@ -12,11 +12,14 @@ how you can migrate from one version to another.
   the latest model version from the http server and makes the model handling
   more structured.
 - If you want to reuse trained models you need to move them in a directory named
-  after the project. E.g. if you already got a trained model in directory `my_root/model_20170628-002704`
-  you need to move that to `my_root/my_project/model_20170628-002704`. Your
-  new projects name will be `my_project` and you can query the model using the
-  http server using `curl http://localhost:5000/parse?q=hello%20there&project=my_project`
+  after the project. E.g. if you already got a trained model in directory ``my_root/model_20170628-002704``
+  you need to move that to ``my_root/my_project/model_20170628-002704``. Your
+  new projects name will be ``my_project`` and you can query the model using the
+  http server using ``curl http://localhost:5000/parse?q=hello%20there&project=my_project``
 - Docs moved to http://nlu.rasa.ai
+- Renamed ``name`` parameter to ``project``. This means for training requests you now need to pass the ``project parameter
+  instead of ``name``, e.g. ``POST /train?project=my_project_name`` with the body of the
+  request containing the training data
 
 0.8.x to 0.9.x
 ---------------

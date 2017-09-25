@@ -20,7 +20,8 @@ Added
 Changed
 -------
 - Root project directories have been slightly rearranged to clean up new docker support
-- use `Interpreter.create(metadata, ...)` to create interpreter from dict and `Interpreter.load(file_name, ...)` to create interpreter with metadata from a file
+- use ``Interpreter.create(metadata, ...)`` to create interpreter from dict and ``Interpreter.load(file_name, ...)`` to create interpreter with metadata from a file
+- Renamed ``name`` parameter to ``project``
 
 Fixed
 -----

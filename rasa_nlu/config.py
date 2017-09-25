@@ -14,7 +14,7 @@ from typing import Text
 DEFAULT_CONFIG_LOCATION = "config.json"
 
 DEFAULT_CONFIG = {
-    "name": None,
+    "project": None,
     "config": DEFAULT_CONFIG_LOCATION,
     "data": None,
     "emulate": None,

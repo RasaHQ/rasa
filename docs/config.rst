@@ -25,8 +25,8 @@ Options
 -------
 A short explanation and examples for each configuration value.
 
-name
-~~~~
+project
+~~~~~~~
 
 :Type: ``str``
 :Examples: ``"my_project_name"``

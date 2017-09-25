@@ -105,7 +105,8 @@ def do_train(config, component_builder=None):
     persistor = create_persistor(config)
     training_data = load_data(config['data'])
     interpreter = trainer.train(training_data)
-    persisted_path = trainer.persist(config['path'], persistor, project_name=config['name'])
+    persisted_path = trainer.persist(config['path'], persistor,
+                                     project_name=config['project'])
     return trainer, interpreter, persisted_path
 
 

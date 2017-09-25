@@ -59,11 +59,12 @@ def test_train_model_empty_pipeline(component_builder):
 
 def test_train_named_model(component_builder):
     _config = utilities.base_test_conf("keyword")
-    _config['name'] = "my_keyword_model"
+    _config['project'] = "my_keyword_model"
     (trained, persisted_path) = utilities.run_train(_config, component_builder)
     assert trained.pipeline
+    normalized_path = os.path.dirname(os.path.normpath(persisted_path))
     # should be saved in a dir named after a project
-    assert os.path.basename(os.path.dirname(os.path.normpath(persisted_path))) == "my_keyword_model"
+    assert os.path.basename(normalized_path) == "my_keyword_model"
 
 
 def test_handles_pipeline_with_non_existing_component(component_builder):
@@ -78,7 +79,8 @@ def test_load_and_persist_without_train(component_builder):
     _config = utilities.base_test_conf("all_components")
     trainer = Trainer(_config, component_builder)
     persistor = create_persistor(_config)
-    persisted_path = trainer.persist(_config['path'], persistor, project_name=_config['name'])
+    persisted_path = trainer.persist(_config['path'], persistor,
+                                     project_name=_config['project'])
     loaded = utilities.load_interpreter_for_model(_config, persisted_path, component_builder)
     assert loaded.pipeline
     assert loaded.parse("hello") is not None
@@ -90,7 +92,8 @@ def test_train_with_empty_data(component_builder):
     trainer = Trainer(_config, component_builder)
     trainer.train(TrainingData())
     persistor = create_persistor(_config)
-    persisted_path = trainer.persist(_config['path'], persistor, project_name=_config['name'])
+    persisted_path = trainer.persist(_config['path'], persistor,
+                                     project_name=_config['project'])
     loaded = utilities.load_interpreter_for_model(_config, persisted_path, component_builder)
     assert loaded.pipeline
     assert loaded.parse("hello") is not None
