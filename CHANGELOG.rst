@@ -22,6 +22,7 @@ Changed
 - Root project directories have been slightly rearranged to clean up new docker support
 - use ``Interpreter.create(metadata, ...)`` to create interpreter from dict and ``Interpreter.load(file_name, ...)`` to create interpreter with metadata from a file
 - Renamed ``name`` parameter to ``project``
+- Docs hosted on GitHub pages now: `Documentation <https://rasahq.github.io/rasa_nlu>`_
 
 Fixed
 -----
@@ -232,7 +233,7 @@ Fixed
 
 [0.7.0] - 2017-03-10
 ^^^^^^^^^^^^^^^^^^^^
-This is a major version update. Please also have a look at the `Migration Guide <https://rasa-nlu.readthedocs.io/en/latest/migrations.html>`_.
+This is a major version update. Please also have a look at the `Migration Guide <https://rasahq.github.io/rasa_nlu/migrations.html>`_.
 
 Added
 -----

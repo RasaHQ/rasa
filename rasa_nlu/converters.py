@@ -217,7 +217,7 @@ def validate_rasa_nlu_data(data):
         e.message += \
             ". Failed to validate training data, make sure your data is valid. " + \
             "For more information about the format visit " + \
-            "https://rasa-nlu.readthedocs.io/en/latest/dataformat.html"
+            "https://rasahq.github.io/rasa_nlu/dataformat.html"
         raise e
 
 

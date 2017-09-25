@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/RasaHQ/rasa_nlu.svg?branch=master)](https://travis-ci.org/RasaHQ/rasa_nlu)
 [![Coverage Status](https://coveralls.io/repos/github/RasaHQ/rasa_nlu/badge.svg?branch=master)](https://coveralls.io/github/RasaHQ/rasa_nlu?branch=master)
 [![PyPI version](https://badge.fury.io/py/rasa_nlu.svg)](https://badge.fury.io/py/rasa_nlu)
-[![Documentation Status](https://readthedocs.org/projects/rasa-nlu/badge/)](https://rasa-nlu.readthedocs.io/en/stable/)
+[![Documentation Status](https://img.shields.io/badge/docs-stable-brightgreen.svg)](https://rasahq.github.io/rasa_nlu/)
 [![roadmap badge](https://img.shields.io/badge/visit%20the-roadmap-blue.svg)](https://github.com/RasaHQ/rasa_nlu/projects/2)
 
 Rasa NLU (Natural Language Understanding) is a tool for understanding what is being said in short pieces of text.
@@ -28,10 +28,10 @@ Rasa then uses machine learning to pick up patterns and generalise to unseen sen
 You can think of Rasa NLU as a set of high level APIs for building your own language parser using existing NLP and ML libraries. Find out more on the [homepage of the project](https://rasa.ai/), where you can also sign up for the mailing list.
 
 **Extended documentation:**
-- [stable](https://rasa-nlu.readthedocs.io/en/stable/) (if you install from **X.X.X** [docker](https://hub.docker.com/r/rasa/rasa_nlu/tags/) image or **pypi**)
-- [latest](https://rasa-nlu.readthedocs.io/en/latest/)&nbsp; (if you install from **latest** [docker](https://hub.docker.com/r/rasa/rasa_nlu/tags/) image or **github**)
+- [stable](https://rasahq.github.io/rasa_nlu/) (if you install from **X.X.X** [docker](https://hub.docker.com/r/rasa/rasa_nlu/tags/) image or **pypi**)
+- [latest](https://rasahq.github.io/rasa_nlu/master/)&nbsp; (if you install from **latest** [docker](https://hub.docker.com/r/rasa/rasa_nlu/tags/) image or **github**)
 
-If you are new to Rasa NLU and want to create a bot, you should start with the [**tutorial**](http://rasa-nlu.readthedocs.io/en/stable/tutorial.html).
+If you are new to Rasa NLU and want to create a bot, you should start with the [**tutorial**](https://rasahq.github.io/rasa_nlu/tutorial.html).
 
 # Install
 
@@ -69,7 +69,7 @@ curl 'http://localhost:5000/version'
 ```
 
 ### Training New Models
-[Examples](https://github.com/RasaHQ/rasa_nlu/tree/master/data/examples/rasa) and [Documentation](http://rasa-nlu.readthedocs.io/en/latest/dataformat.html) of the training data format are provided. But as a quick start execute the below command to train a new model
+[Examples](https://github.com/RasaHQ/rasa_nlu/tree/master/data/examples/rasa) and [Documentation](https://rasahq.github.io/rasa_nlu/dataformat.html) of the training data format are provided. But as a quick start execute the below command to train a new model
 
 #### Json format
 ```
@@ -96,7 +96,7 @@ curl 'http://localhost:5000/parse?q=hello&model=test_model'
 # FAQ
 
 ### Who is it for?
-The intended audience is mainly __people developing bots__, starting from scratch or looking to find a a drop-in replacement for [wit](https://wit.ai), [LUIS](https://luis.ai), or [api.ai](https://api.ai). The setup process is designed to be as simple as possible. Rasa NLU is written in Python, but you can use it from any language through a [HTTP API](http://rasa-nlu.readthedocs.io/en/stable/http.html). If your project is written in Python you can [simply import the relevant classes](http://rasa-nlu.readthedocs.io/en/stable/python.html). If you're currently using wit/LUIS/api.ai, you just:
+The intended audience is mainly __people developing bots__, starting from scratch or looking to find a a drop-in replacement for [wit](https://wit.ai), [LUIS](https://luis.ai), or [api.ai](https://api.ai). The setup process is designed to be as simple as possible. Rasa NLU is written in Python, but you can use it from any language through a [HTTP API](https://rasahq.github.io/rasa_nlu/http.html). If your project is written in Python you can [simply import the relevant classes](https://rasahq.github.io/rasa_nlu/python.html). If you're currently using wit/LUIS/api.ai, you just:
 
 1. Download your app data from wit, LUIS, or api.ai and feed it into Rasa NLU
 2. Run Rasa NLU on your machine and switch the URL of your wit/LUIS api calls to `localhost:5000/parse`.
@@ -110,10 +110,10 @@ These points are laid out in more detail in a [blog post](https://medium.com/las
 
 ### What languages does it support?
 Short answer: English, German, and Spanish currently. 
-Longer answer: If you want to add a new language, the key things you need are a tokenizer and a set of word vectors. More information can be found in the [language documentation](https://rasa-nlu.readthedocs.io/en/stable/languages.html).
+Longer answer: If you want to add a new language, the key things you need are a tokenizer and a set of word vectors. More information can be found in the [language documentation](https://rasahq.github.io/rasa_nlu/languages.html).
 
 ### How to contribute
-We are very happy to receive and merge your contributions. There is some more information about the style of the code and docs in the [documentation](http://rasa-nlu.readthedocs.io/en/stable/contribute.html).
+We are very happy to receive and merge your contributions. There is some more information about the style of the code and docs in the [documentation](https://rasahq.github.io/rasa_nlu/contribute.html).
 
 In general the process is rather simple:
 1. create an issue describing the feature you want to work on (or have a look at issues with the label [help wanted](https://github.com/RasaHQ/rasa_nlu/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22))
@@ -131,7 +131,7 @@ cd rasa_nlu
 pip install -r requirements.txt
 ```
 
-To test the installation use (this will run a very stupid default model. you need to [train your own model](http://rasa-nlu.readthedocs.io/en/stable/tutorial.html) to do something useful!):
+To test the installation use (this will run a very stupid default model. you need to [train your own model](https://rasahq.github.io/rasa_nlu/tutorial.html) to do something useful!):
 
 ### Advanced Docker
 Before you start, ensure you have the latest version of docker engine on your machine. You can check if you have docker installed by typing ```docker -v``` in your terminal.
@@ -143,7 +143,7 @@ docker run -p 5000:5000 rasa/rasa_nlu:latest-full
 
 There are also three volumes, which you may want to map: `/app/models`, `/app/logs`, and `/app/data`. It is also possible to override the config file used by the server by mapping a new config file to the volume `/app/config.json`. For complete docker usage instructions go to the official [docker hub readme](https://hub.docker.com/r/rasa/rasa_nlu/).
 
-To test run the below command after the container has started. For more info on using the HTTP API see [here](http://rasa-nlu.readthedocs.io/en/latest/http.html#endpoints)
+To test run the below command after the container has started. For more info on using the HTTP API see [here](https://rasahq.github.io/rasa_nlu/http.html#endpoints)
 ```
 curl 'http://localhost:5000/parse?q=hello'
 ```
