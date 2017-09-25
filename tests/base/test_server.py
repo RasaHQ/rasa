@@ -33,7 +33,7 @@ def app(tmpdir_factory):
         'write': nlu_log_file,
         'port': -1,  # unused in test app
         "pipeline": "keyword",
-        "path": tmpdir_factory.mktemp("models").strpath,
+        "path": tmpdir_factory.mktemp("projects").strpath,
         "server_model_dirs": {},
         "data": "./data/demo-restaurants.json",
         "emulate": "wit",

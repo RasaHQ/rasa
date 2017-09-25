@@ -25,7 +25,7 @@ DEFAULT_CONFIG = {
     "spacy_model_name": None,
     "num_threads": 1,
     "max_training_processes": 1,
-    "path": "models",
+    "path": "projects",
     "port": 5000,
     "token": None,
     "cors_origins": [],

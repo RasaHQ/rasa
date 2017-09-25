@@ -38,7 +38,7 @@ RUN pip install -r alt_requirements/requirements_dev.txt
 
 RUN  sed -i -e 's/backend      : tkagg/backend      : PDF/' /usr/local/lib/python2.7/site-packages/matplotlib/mpl-data/matplotlibrc
 
-VOLUME ["/app/models", "/app/logs", "/app/data"]
+VOLUME ["/app/projects", "/app/logs", "/app/data"]
 
 EXPOSE 5000
 

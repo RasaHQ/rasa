@@ -108,7 +108,7 @@ Now we can train a spacy model by running:
 
 If you want to know more about the parameters, there is an overview of the :ref:`section_configuration`. After a few minutes,
 rasa NLU will finish training, and you'll see a new folder named as 
-``models/default/model_YYYYMMDD-HHMMSS`` with the timestamp when training finished.
+``projects/default/model_YYYYMMDD-HHMMSS`` with the timestamp when training finished.
 
 
 Using Your Model
