@@ -4,11 +4,11 @@ from __future__ import division
 from __future__ import absolute_import
 from builtins import object
 import io
-import json
+import simplejson
 import os
 import six
 
-# Describes where to search for the configuration file if the location is not set by the user
+# Describes where to search for the config file if no location is specified
 from typing import Text
 
 DEFAULT_CONFIG_LOCATION = "config.json"
@@ -69,7 +69,7 @@ class RasaNLUConfig(object):
         if filename is not None:
             try:
                 with io.open(filename, encoding='utf-8') as f:
-                    file_config = json.loads(f.read())
+                    file_config = simplejson.loads(f.read())
             except ValueError as e:
                 raise InvalidConfigError("Failed to read configuration file '{}'. Error: {}".format(filename, e))
             self.override(file_config)
@@ -126,7 +126,7 @@ class RasaNLUConfig(object):
         return dict(list(self.items()))
 
     def view(self):
-        return json.dumps(self.__dict__, indent=4)
+        return simplejson.dumps(self.__dict__, indent=4)
 
     def split_arg(self, config, arg_name):
         if arg_name in config and isinstance(config[arg_name], six.string_types):

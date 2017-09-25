@@ -5,7 +5,18 @@ how you can migrate from one version to another.
 
 0.9.x to master
 ---------------
-
+- We introduced a new concept called a ``project``. You can have multiple versions
+  of a model trained for a project. E.g. you can train an initial model and
+  add more training data and retrain that project. This will result in a new
+  model version for the same project. This allows you to, allways request
+  the latest model version from the http server and makes the model handling
+  more structured.
+- If you want to reuse trained models you need to move them in a directory named
+  after the project. E.g. if you already got a trained model in directory `my_root/model_20170628-002704`
+  you need to move that to `my_root/my_project/model_20170628-002704`. Your
+  new projects name will be `my_project` and you can query the model using the
+  http server using `curl http://localhost:5000/parse?q=hello%20there&project=my_project`
+- Docs moved to http://nlu.rasa.ai
 
 0.8.x to 0.9.x
 ---------------
