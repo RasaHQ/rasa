@@ -1,7 +1,6 @@
 # Rasa Core
 [![Join the chat at https://gitter.im/RasaHQ/rasa_core](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/RasaHQ/rasa_core?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.com/RasaHQ/rasa_core.svg?token=EvwqtzR3SyKxFaNKbxau&branch=master)](https://travis-ci.com/RasaHQ/rasa_core)
-[![Documentation Status](https://readthedocs.com/projects/lastmile-rasa-dm/badge/?version=latest)](https://lastmile-rasa-dm.readthedocs-hosted.com/en/latest/?badge=master)
 
 
 ## Introduction
@@ -24,8 +23,8 @@ There's a lot more background information in this [blog post](https://medium.com
 
 There is extensive documentation:
 
-- [master](https://lastmile-rasa-dm.readthedocs-hosted.com/en/latest/)&nbsp; (if you install from **github**) or 
-- [stable](https://lastmile-rasa-dm.readthedocs-hosted.com/en/stable/)&nbsp;&nbsp; (if you install from **pypi**)
+- [master](https://rasahq.github.io/rasa_core/master/)&nbsp; (if you install from **github**) or 
+- [stable](https://rasahq.github.io/rasa_core/)&nbsp;&nbsp; (if you install from **pypi**)
 
 
 Please use [gitter](https://gitter.im/RasaHQ/rasa_core) for quick answers to 
