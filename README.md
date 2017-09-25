@@ -141,7 +141,7 @@ To see all available builds go to the [Rasa docker hub](https://hub.docker.com/r
 docker run -p 5000:5000 rasa/rasa_nlu:latest-full
 ```
 
-There are also three volumes, which you may want to map: `/app/models`, `/app/logs`, and `/app/data`. It is also possible to override the config file used by the server by mapping a new config file to the volume `/app/config.json`. For complete docker usage instructions go to the official [docker hub readme](https://hub.docker.com/r/rasa/rasa_nlu/).
+There are also three volumes, which you may want to map: `/app/projects`, `/app/logs`, and `/app/data`. It is also possible to override the config file used by the server by mapping a new config file to the volume `/app/config.json`. For complete docker usage instructions go to the official [docker hub readme](https://hub.docker.com/r/rasa/rasa_nlu/).
 
 To test run the below command after the container has started. For more info on using the HTTP API see [here](http://rasa-nlu.readthedocs.io/en/latest/http.html#endpoints)
 ```

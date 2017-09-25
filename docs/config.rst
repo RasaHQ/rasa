@@ -77,9 +77,10 @@ path
 ~~~~
 
 :Type: ``str``
-:Examples: ``"models/"``
+:Examples: ``"projects/"``
 :Description:
-    Directory where trained models will be saved to (training) and loaded from (http server).
+    Projects directory where trained models will be saved to (training) and
+    loaded from (http server).
 
 response_log
 ~~~~~~~~~~~~

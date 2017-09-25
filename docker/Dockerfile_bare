@@ -20,7 +20,7 @@ RUN pip install -r alt_requirements/requirements_bare.txt
 
 RUN pip install -e .
 
-VOLUME ["/app/models", "/app/logs", "/app/data"]
+VOLUME ["/app/projects", "/app/logs", "/app/data"]
 
 EXPOSE 5000
 
