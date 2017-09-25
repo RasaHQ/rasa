@@ -326,5 +326,5 @@ scv_show_banner = True
 scv_banner_greatest_tag = True
 scv_sort = ('semver',)
 scv_whitelist_branches = ('master', 'latest')
-scv_grm_exclude = ('README.md', '.gitignore', '.nojekyll')
+scv_grm_exclude = ('README.md', '.gitignore', '.nojekyll', 'CNAME')
 scv_greatest_tag = True
