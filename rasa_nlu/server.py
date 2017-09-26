@@ -45,7 +45,7 @@ def create_argparser():
                         help="The pipeline to use. Either a pipeline template "
                              "name or a list of components separated by comma")
     parser.add_argument('--server_model_dirs',
-                        help="address of server_model_directory")
+                        help="Directory containing the model to be used by server or an object describing multiple models.")
     parser.add_argument('-P', '--port',
                         type=int,
                         help='port on which to run server')
