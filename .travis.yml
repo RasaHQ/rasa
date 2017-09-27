@@ -61,7 +61,6 @@ jobs:
   - stage: deploy
     install: skip
     script: skip
-    after_success: skip
     deploy:
       provider: pypi
       user: amn41
