@@ -15,7 +15,7 @@ from typing import List
 
 from rasa_core import utils
 from rasa_core.conversation import Dialogue
-from rasa_core.events import UserUttered, TopicSet, Restarted, ActionExecuted, \
+from rasa_core.events import UserUttered, TopicSet, ActionExecuted, \
     Event, SlotSet
 
 logger = logging.getLogger(__name__)
@@ -63,6 +63,7 @@ class DialogueStateTracker(object):
         self._topic_stack = None
         self.latest_action_name = None
         self.latest_message = None
+        self.latest_restart_event = None
         self._reset()
 
     ###
@@ -95,16 +96,23 @@ class DialogueStateTracker(object):
         """States whether the tracker is currently paused."""
         return self._paused
 
+    def _idx_after_latest_restart(self):
+        if self.latest_restart_event is not None:
+            return self.latest_restart_event
+        else:
+            return 0
+
+    def _events_after_latest_restart(self):
+        return list(self.events)[self._idx_after_latest_restart():]
+
     @property
     def previous_topic(self):
         # type: () -> Optional[Text]
         """Retrieves the topic that was set before the current one."""
 
-        for event in reversed(self.events):
+        for event in reversed(self._events_after_latest_restart()):
             if isinstance(event, TopicSet):
                 return event.topic
-            elif isinstance(event, Restarted):
-                break
         return None
 
     @property
@@ -126,7 +134,7 @@ class DialogueStateTracker(object):
                                        self.topics,
                                        self.default_topic)
 
-        for event in self.events:
+        for event in self._events_after_latest_restart():
             if isinstance(event, ActionExecuted):
                 yield tracker
             tracker.update(event)

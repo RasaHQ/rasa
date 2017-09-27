@@ -97,7 +97,7 @@ class ActionRestart(Action):
         return ACTION_RESTART_NAME
 
     def run(self, dispatcher, tracker, domain):
-        from rasa_core.trackers import Restarted
+        from rasa_core.events import Restarted
 
         # only utter the template if it is available
         if domain.random_template_for("utter_restart") is not None:

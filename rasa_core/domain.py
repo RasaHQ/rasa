@@ -161,17 +161,17 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
     def slice_feature_history(self,
                               featurizer,
                               tracker_history,
-                              slice_end,
                               slice_length):
-        # type: (Featurizer, List[Dict[Text, float]], int, int) -> np.ndarray
+        # type: (Featurizer, List[Dict[Text, float]], int) -> np.ndarray
         """Slices a featurization from the trackers history.
 
         If the slice is at the array borders, padding will be added to ensure
         he slice length."""
 
+        slice_end = len(tracker_history)
         slice_start = max(0, slice_end - slice_length)
         padding = [None] * max(0, slice_length - slice_end)
-        state_features = padding + tracker_history[slice_start:slice_end]
+        state_features = padding + tracker_history[slice_start:]
         encoded_features = [featurizer.encode(f, self.input_feature_map)
                             for f in state_features]
         return np.vstack(encoded_features)
@@ -191,8 +191,7 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         there are fewer than `max_history` states present."""
 
         all_features = self.features_for_tracker_history(tracker)
-        return self.slice_feature_history(featurizer, all_features,
-                                          len(all_features), max_history)
+        return self.slice_feature_history(featurizer, all_features, max_history)
 
     def random_template_for(self, utter_action):
         if utter_action in self.templates:

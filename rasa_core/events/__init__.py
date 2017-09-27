@@ -256,6 +256,7 @@ class Restarted(Event):
     def apply_to(self, tracker):
         tracker._reset()
         tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
+        tracker.latest_restart_event = len(tracker.events)
 
 
 # noinspection PyProtectedMember
