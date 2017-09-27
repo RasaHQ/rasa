@@ -2,7 +2,7 @@
 The Rasa dialogue engine
 ========================
 
-.. attention::
+.. note::
    This is the documentation for version |release| of Rasa Core. Make sure you select
    the appropriate version of the documentation for your local installation!
 
