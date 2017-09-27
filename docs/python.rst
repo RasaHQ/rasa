@@ -19,7 +19,7 @@ Or, you can train directly in python with a script like the following (using spa
     training_data = load_data('data/examples/rasa/demo-rasa.json')
     trainer = Trainer(RasaNLUConfig("sample_configs/config_spacy.json"))
     trainer.train(training_data)
-    model_directory = trainer.persist('./models/')  # Returns the directory the model is stored in
+    model_directory = trainer.persist('./projects/default/')  # Returns the directory the model is stored in
 
 Prediction Time
 ---------------
@@ -62,7 +62,7 @@ Here is a short example on how to create a component builder, that can be reused
     training_data = load_data('data/examples/rasa/demo-rasa.json')
     trainer = Trainer(RasaNLUConfig("sample_configs/config_spacy.json"), builder)
     trainer.train(training_data)
-    model_directory = trainer.persist('./models/')  # Returns the directory the model is stored in
+    model_directory = trainer.persist('./projects/default/')  # Returns the directory the model is stored in
 
 The same builder can be used to load a model (can be a totally different one). The builder only caches components that are safe to be shared between models. Here is a short example on how to use the builder when loading models:
 

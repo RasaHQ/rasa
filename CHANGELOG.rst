@@ -15,11 +15,14 @@ Added
 - Cors support. You can now specify allowed cors origins within your configuration file.
 - The HTTP server is now backed by Klein (Twisted) instead of Flask. The server is now asynchronous but is no more WSGI compatible
 - Improved Docker automated builds
+- Rasa NLU now works with projects instead of models. A project can be the basis for a restaurant search bot in German or a customer service bot in English. A model can be seen as a snapshot of a project.
 
 Changed
 -------
 - Root project directories have been slightly rearranged to clean up new docker support
-- use `Interpreter.create(metadata, ...)` to create interpreter from dict and `Interpreter.load(file_name, ...)` to create interpreter with metadata from a file
+- use ``Interpreter.create(metadata, ...)`` to create interpreter from dict and ``Interpreter.load(file_name, ...)`` to create interpreter with metadata from a file
+- Renamed ``name`` parameter to ``project``
+- Docs hosted on GitHub pages now: `Documentation <https://rasahq.github.io/rasa_nlu>`_
 
 Fixed
 -----
@@ -230,7 +233,7 @@ Fixed
 
 [0.7.0] - 2017-03-10
 ^^^^^^^^^^^^^^^^^^^^
-This is a major version update. Please also have a look at the `Migration Guide <https://rasa-nlu.readthedocs.io/en/latest/migrations.html>`_.
+This is a major version update. Please also have a look at the `Migration Guide <https://rasahq.github.io/rasa_nlu/migrations.html>`_.
 
 Added
 -----

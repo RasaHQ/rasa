@@ -30,7 +30,7 @@ from rasa_nlu.utils import create_dir
 logger = logging.getLogger(__name__)
 
 
-class InvalidModelError(Exception):
+class InvalidProjectError(Exception):
     """Raised when a model failed to load.
 
     Attributes:
@@ -56,7 +56,7 @@ class Metadata(object):
                 data = json.loads(f.read())
             return Metadata(data, model_dir)
         except Exception as e:
-            raise InvalidModelError("Failed to load model metadata from '{}'. {}".format(
+            raise InvalidProjectError("Failed to load model metadata from '{}'. {}".format(
                     os.path.abspath(os.path.join(model_dir, 'metadata.json')), e))
 
     def __init__(self, metadata, model_dir):
@@ -153,7 +153,7 @@ class Trainer(object):
 
         return Interpreter(self.pipeline, context)
 
-    def persist(self, path, persistor=None, model_name=None):
+    def persist(self, path, persistor=None, project_name=None):
         # type: (Text, Optional[Persistor], Text) -> Text
         """Persist all components of the pipeline to the passed path. Returns the directory of the persisted model."""
 
@@ -163,10 +163,10 @@ class Trainer(object):
             "pipeline": [component.name for component in self.pipeline],
         }
 
-        if model_name is None:
-            dir_name = os.path.join(path, "model_" + timestamp)
+        if project_name is None:
+            dir_name = os.path.join(path, "default", "model_" + timestamp)
         else:
-            dir_name = os.path.join(path, model_name)
+            dir_name = os.path.join(path, project_name, "model_" + timestamp)
 
         create_dir(dir_name)
 

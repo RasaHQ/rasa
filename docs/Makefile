@@ -4,6 +4,7 @@
 # You can set these variables from the command line.
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
+SPHINXABUILD  = sphinx-autobuild
 PAPER         =
 BUILDDIR      = _build
 
@@ -228,3 +229,7 @@ dummy:
 	$(SPHINXBUILD) -b dummy $(ALLSPHINXOPTS) $(BUILDDIR)/dummy
 	@echo
 	@echo "Build finished. Dummy builder generates no files."
+
+.PHONY: livehtml
+livehtml:
+	$(SPHINXABUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html

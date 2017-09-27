@@ -25,14 +25,15 @@ Options
 -------
 A short explanation and examples for each configuration value.
 
-name
-~~~~
+project
+~~~~~~~
 
 :Type: ``str``
-:Examples: ``"my_model_name"``
+:Examples: ``"my_project_name"``
 :Description:
-     Defines a models name used to store it and to refere to it when using the http server.
-     The default is ``null`` which will lead to a generated model name, e.g. ``"model_20170426-230305"``.
+     Defines a project name to train new models for and to refer to when using the http server.
+     The default value is ``null`` which will lead to using the default project ``"default"``.
+     All projects are stored under the ``path`` directory.
 
 pipeline
 ~~~~~~~~
@@ -76,9 +77,10 @@ path
 ~~~~
 
 :Type: ``str``
-:Examples: ``"models/"``
+:Examples: ``"projects/"``
 :Description:
-    Directory where trained models will be saved to (training) and loaded from (http server).
+    Projects directory where trained models will be saved to (training) and
+    loaded from (http server).
 
 response_log
 ~~~~~~~~~~~~
@@ -155,15 +157,6 @@ spacy_model_name
 :Description:
     If the spacy model to be used has a name that is different from the language tag (``"en"``, ``"de"``, etc.),
     the model name can be specified using this configuration variable. The name will be passed to ``spacy.load(name)``.
-
-server_model_dirs
-~~~~~~~~~~~~~~~~~
-
-:Type: ``str``
-:Examples: ``"models/"``
-:Description:
-    Directory containing the model to be used by server or an object describing multiple models.
-    see :ref:`HTTP server config<section_http_config>`
 
 token
 ~~~~~

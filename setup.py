@@ -23,13 +23,15 @@ install_requires = [
     "tqdm",
     "requests",
     "jsonschema",
-    "matplotlib"
+    "matplotlib",
+    "numpy>=1.13",
+    "simplejson",
 ]
 
 extras_requires = {
     'test': tests_requires,
-    'spacy': ["sklearn", "scipy", "numpy"],
-    'mitie': ["mitie", "numpy"],
+    'spacy': ["sklearn", "scipy"],
+    'mitie': ["mitie"],
 }
 
 setup(
@@ -63,5 +65,5 @@ setup(
 )
 
 print("Welcome to rasa!\n")
-print("If any questions please visit documentation page http://rasa-nlu.readthedocs.io/en/latest/\n")
+print("If any questions please visit documentation page https://rasahq.github.io/rasa_nlu\n")
 print("or join community chat on https://gitter.im/RasaHQ/rasa_nlu\n")
