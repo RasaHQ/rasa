@@ -11,6 +11,9 @@ import logging
 from builtins import object
 from threading import Lock
 
+from typing import Text, List
+
+from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.model import Metadata, Interpreter
 
 logger = logging.getLogger(__name__)
@@ -137,6 +140,8 @@ class Project(object):
                 'available_models': list(self._models.keys())}
 
     def _list_models_in_cloud(self, config):
+        # type: (RasaNLUConfig) -> List[Text]
+
         try:
             from rasa_nlu.persistor import get_persistor
             p = get_persistor(config)
@@ -147,6 +152,7 @@ class Project(object):
         except Exception as e:
             logger.warn("Failed to list models of project {}. "
                         "{}".format(self._project, e))
+            return []
 
     def _load_model_from_cloud(self, model_name, target_path, config):
         try:
