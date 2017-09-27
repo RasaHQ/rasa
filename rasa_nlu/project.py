@@ -17,12 +17,13 @@ logger = logging.getLogger(__name__)
 
 MODEL_NAME_PREFIX = "model_"
 
+FALLBACK_MODEL_NAME = "fallback"
+
 
 class Project(object):
     def __init__(self, config=None, component_builder=None, project=None):
         self._config = config
         self._component_builder = component_builder
-        self._default_model = ''
         self._models = {}
         self.status = 0
         self._reader_lock = Lock()
@@ -35,7 +36,6 @@ class Project(object):
         if project:
             self._path = os.path.join(self._config['path'], project)
         self._search_for_models()
-        self._default_model = self._latest_project_model() or 'fallback'
 
     def _begin_read(self):
         # Readers-writer lock basic double mutex implementation
@@ -57,7 +57,7 @@ class Project(object):
 
         # Lazy model loading
         if not model_name or model_name not in self._models:
-            model_name = self._default_model
+            model_name = self._latest_project_model()
             logger.warn("Invalid model requested. Using default")
 
         self._loader_lock.acquire()
@@ -74,7 +74,6 @@ class Project(object):
     def update(self, model_name):
         self._writer_lock.acquire()
         self._models[model_name] = None
-        self._default_model = model_name
         self._writer_lock.release()
         self.status = 0
 
@@ -95,20 +94,22 @@ class Project(object):
                          for time, model in models.items()]
             return models[max(time_list).strftime('%Y%m%d-%H%M%S')]
         else:
-            return None
+            return FALLBACK_MODEL_NAME
+
+    def _fallback_model(self):
+        meta = Metadata({"pipeline": ["intent_classifier_keyword"]}, "")
+        return Interpreter.create(meta, self._config, self._component_builder)
 
     def _search_for_models(self):
-        if not self._path or not os.path.isdir(self._path):
-            meta = Metadata({"pipeline": ["intent_classifier_keyword"]}, "")
-            interpreter = Interpreter.create(meta, self._config,
-                                             self._component_builder)
-            models = {'fallback': interpreter}
+        model_names = (self._list_models_in_dir(self._path) +
+                       self._list_models_in_cloud(self._config))
+        if not model_names:
+            if FALLBACK_MODEL_NAME not in self._models:
+                self._models[FALLBACK_MODEL_NAME] = self._fallback_model()
         else:
-            models = {model: None
-                      for model in os.listdir(self._path)
-                      if model.startswith(MODEL_NAME_PREFIX)}
-        models.update(self._models)
-        self._models = models
+            for model in set(model_names):
+                if model not in self._models:
+                    self._models[model] = None
 
     def _interpreter_for_model(self, model_name):
         metadata = self._read_model_metadata(model_name)
@@ -135,11 +136,17 @@ class Project(object):
         return {'status': 'training' if self.status else 'ready',
                 'available_models': list(self._models.keys())}
 
-    @staticmethod
-    def _default_model_metadata():
-        return {
-            "language": None,
-        }
+    def _list_models_in_cloud(self, config):
+        try:
+            from rasa_nlu.persistor import get_persistor
+            p = get_persistor(config)
+            if p is not None:
+                return p.list_models(self._project)
+            else:
+                return []
+        except Exception as e:
+            logger.warn("Failed to list models of project {}. "
+                        "{}".format(self._project, e))
 
     def _load_model_from_cloud(self, model_name, target_path, config):
         try:
@@ -152,3 +159,18 @@ class Project(object):
         except Exception as e:
             logger.warn("Using default interpreter, couldn't fetch "
                         "model: {}".format(e))
+
+    @staticmethod
+    def _default_model_metadata():
+        return {
+            "language": None,
+        }
+
+    @staticmethod
+    def _list_models_in_dir(path):
+        if not path or not os.path.isdir(path):
+            return []
+        else:
+            return [model
+                    for model in os.listdir(path)
+                    if model.startswith(MODEL_NAME_PREFIX)]
