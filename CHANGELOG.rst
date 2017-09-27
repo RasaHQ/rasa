@@ -23,6 +23,7 @@ Changed
 - use ``Interpreter.create(metadata, ...)`` to create interpreter from dict and ``Interpreter.load(file_name, ...)`` to create interpreter with metadata from a file
 - Renamed ``name`` parameter to ``project``
 - Docs hosted on GitHub pages now: `Documentation <https://rasahq.github.io/rasa_nlu>`_
+- Adapted remote cloud storages to support projects (backwards incompatible!)
 
 Fixed
 -----
