@@ -4,10 +4,14 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
-[Unreleased] - `master`_
+[Unreleased] - `master 0.11.0.aX`_
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. note:: This version is not yet released and is under active development.
+
+
+[0.10.0] - 2017-09-27
+^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
@@ -23,6 +27,7 @@ Changed
 - use ``Interpreter.create(metadata, ...)`` to create interpreter from dict and ``Interpreter.load(file_name, ...)`` to create interpreter with metadata from a file
 - Renamed ``name`` parameter to ``project``
 - Docs hosted on GitHub pages now: `Documentation <https://rasahq.github.io/rasa_nlu>`_
+- Adapted remote cloud storages to support projects (backwards incompatible!)
 
 Fixed
 -----
@@ -30,6 +35,20 @@ Fixed
 - Fixed UTF-8 character handling when training through HTTP interface
 - Invalid handling of numbers extracted from duckling during synonym handling. Fixes #517
 - Only log a warning (instead of throwing an exception) on misaligned entities during mitie NER
+
+[0.9.2] - 2017-08-16
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- removed unnecessary `ClassVar` import
+
+[0.9.1] - 2017-07-11
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- removed obsolete ``--output`` parameter of ``train.py``. use ``--path`` instead. fixes #473
 
 [0.9.0] - 2017-07-07
 ^^^^^^^^^^^^^^^^^^^^
