@@ -3,7 +3,7 @@ Migration Guide
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
-0.9.x to master
+0.9.x to 0.10.0
 ---------------
 - We introduced a new concept called a ``project``. You can have multiple versions
   of a model trained for a project. E.g. you can train an initial model and
@@ -16,10 +16,12 @@ how you can migrate from one version to another.
   you need to move that to ``my_root/my_project/model_20170628-002704``. Your
   new projects name will be ``my_project`` and you can query the model using the
   http server using ``curl http://localhost:5000/parse?q=hello%20there&project=my_project``
-- Docs moved to http://nlu.rasa.ai
+- Docs moved to https://rasahq.github.io/rasa_nlu/
 - Renamed ``name`` parameter to ``project``. This means for training requests you now need to pass the ``project parameter
   instead of ``name``, e.g. ``POST /train?project=my_project_name`` with the body of the
   request containing the training data
+- Adapted remote cloud storages to support projects. This is a backwards incompatible change,
+  and unfortunately you need to retrain uploaded models and reupload them.
 
 0.8.x to 0.9.x
 ---------------
