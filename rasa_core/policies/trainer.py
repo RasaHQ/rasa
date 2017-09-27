@@ -51,7 +51,6 @@ class PolicyTrainer(object):
 
     def _prepare_training_data(self, filename, max_history, augmentation_factor,
                                max_training_samples=None,
-                               should_remove_duplicates=True,
                                max_number_of_trackers=2000):
         """Reads training data from file and prepares it for the training."""
 
@@ -62,7 +61,7 @@ class PolicyTrainer(object):
                     filename,
                     augmentation_factor=augmentation_factor,
                     max_history=max_history,
-                    remove_duplicates=should_remove_duplicates,
+                    remove_duplicates=True,
                     domain=self.domain,
                     featurizer=self.featurizer,
                     interpreter=RegexInterpreter(),
