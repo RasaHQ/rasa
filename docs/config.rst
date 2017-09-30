@@ -64,6 +64,17 @@ num_threads
     Number of threads used during training (not supported by all components, though.
     Some of them might still be single threaded!).
 
+fixed_model_name
+~~~~~~~~~~~~~~~~
+
+:Type: ``str``
+:Examples: ``"my_model_name"``
+:Description:
+    Instead of generating model names (e.g. ``model_20170922-234435``) a fixed
+    model name will be used. The model will always be saved in the path
+    ``{project_path}/{project_name}/{model_name}``. If the model is assigned
+    a fixed name, it will possibly override previously trained models.
+
 max_training_processes
 ~~~~~~~~~~~
 

@@ -1,5 +1,6 @@
 {
   "project": null,
+  "fixed_model_name": null,
   "pipeline": [],
   "language": "en",
   "num_threads": 1,

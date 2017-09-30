@@ -15,6 +15,7 @@ DEFAULT_CONFIG_LOCATION = "config.json"
 
 DEFAULT_CONFIG = {
     "project": None,
+    "fixed_model_name": None,
     "config": DEFAULT_CONFIG_LOCATION,
     "data": None,
     "emulate": None,
