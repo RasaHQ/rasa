@@ -4,19 +4,17 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 
-import jsonpickle
 import logging
+
+import six.moves.cPickle as pickler
 
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.trackers import DialogueStateTracker, ActionExecuted
-import jsonpickle.ext.numpy as jsonpickle_numpy
 import redis
 import fakeredis
 
 
 logger = logging.getLogger(__name__)
-
-jsonpickle_numpy.register_handlers()
 
 
 class TrackerStore(object):
@@ -53,10 +51,11 @@ class TrackerStore(object):
 
     @staticmethod
     def serialise_tracker(tracker):
-        return jsonpickle.encode(tracker.as_dialogue())
+        dialogue = tracker.as_dialogue()
+        return pickler.dumps(dialogue)
 
     def deserialise_tracker(self, sender_id, _json):
-        dialogue = jsonpickle.decode(_json)
+        dialogue = pickler.loads(_json)
         tracker = self._init_tracker(sender_id)
         tracker.update_from_dialogue(dialogue)
         return tracker
@@ -69,8 +68,8 @@ class InMemoryTrackerStore(TrackerStore):
         super(InMemoryTrackerStore, self).__init__(domain)
 
     def save(self, tracker):
-        self.store[tracker.sender_id] = \
-            InMemoryTrackerStore.serialise_tracker(tracker)
+        serialised = InMemoryTrackerStore.serialise_tracker(tracker)
+        self.store[tracker.sender_id] = serialised
 
     def retrieve(self, sender_id):
         if sender_id in self.store:
