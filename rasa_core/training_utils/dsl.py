@@ -662,8 +662,7 @@ class TrainingsDataExtractor(object):
             if isinstance(event, ActionExecuted):
                 state_features = tracker.feauturize_current_state(self.domain)
                 feature_vector = self.domain.slice_feature_history(
-                        self.featurizer, state_features, len(state_features),
-                        max_history)
+                        self.featurizer, state_features, max_history)
                 hashed = utils.HashableNDArray(feature_vector)
 
                 # only continue with trackers that created a
