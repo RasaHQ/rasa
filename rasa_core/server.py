@@ -59,7 +59,7 @@ def convert_obj_2_tracker_events(serialized_events, domain):
 
 
 class RasaCoreServer(object):
-    """Class representing a Rasa Core HTTP server"""
+    """Class representing a Rasa Core HTTP server."""
 
     app = Klein()
 
@@ -77,7 +77,7 @@ class RasaCoreServer(object):
     @app.route("/", methods=['GET', 'OPTIONS'])
     @check_cors
     def hello(self, request):
-        """Main Rasa route to check if the server is online"""
+        """Check if the server is running and responds with the version."""
         return "hello from Rasa Core: " + __version__
 
     @app.route("/conversations/<cid>/continue", methods=['POST', 'OPTIONS'])
@@ -128,7 +128,7 @@ class RasaCoreServer(object):
     @app.route("/version", methods=['GET', 'OPTIONS'])
     @check_cors
     def version(self, request):
-        """Returns the Rasa server's version"""
+        """Respond with the version number of the installed Rasa Core."""
 
         request.setHeader('Content-Type', 'application/json')
         return json.dumps({'version': __version__})

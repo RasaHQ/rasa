@@ -50,6 +50,7 @@ Welcome to the Rasa Documentation!
    :caption: Deep Dives
 
    patterns
+   http
    slot_types
    plumbing
    connectors
@@ -66,7 +67,8 @@ Welcome to the Rasa Documentation!
    :maxdepth: 1
    :caption: API
 
-   library
+   api/agent
+   api/events
 
 .. toctree::
    :maxdepth: 1

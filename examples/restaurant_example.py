@@ -33,6 +33,7 @@ class ActionSuggest(Action):
         return []
 
 
+# NOTE:: Code block included in docs.
 class RestaurantPolicy(KerasPolicy):
     def _build_model(self, num_features, num_actions, max_history_len):
         """Build a keras model and return a compiled model.

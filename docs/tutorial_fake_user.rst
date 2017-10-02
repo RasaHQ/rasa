@@ -21,7 +21,7 @@ If you are interested in the practicalities of the model, then the bAbI
 example :ref:`tutorial_babi` is worth reading.
 
 Why Interactive Learning?
---------------------
+-------------------------
 
 There are some complications to chatbot training which makes them more
 tricky than most machine learning problems.

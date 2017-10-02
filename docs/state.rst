@@ -21,7 +21,7 @@ For example:
     {u'cuisine': <TextSlot(cuisine: Mexican)>}
 
 
-The full set of events is documented here: :ref:`events`
+The full set of events is documented in the :doc:`Events API documentation <api/events>`.
 
 
 Persisting Trackers:
@@ -36,7 +36,6 @@ For testing, the ``InMemoryTrackerStore`` is sufficient,
 but in production you would want to use the ``RedisTrackerStore`` to restore
 after restarting the application. It's straightforward to define a
 custom ``TrackerStore`` subclass for the persistence tool of your choice.
-See :ref:`tracker_store` for details.
 
 
 Serialisation

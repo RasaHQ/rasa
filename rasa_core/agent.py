@@ -60,22 +60,29 @@ class Agent(object):
             sender=None  # type: Optional[Text]
     ):
         # type: (...) -> Optional[List[Text]]
-        """Handle a single message.
+        """
+
+
+
+        Handle a single message.
 
         If a message preprocessor is passed, the message will be passed to that
         function first and the return value is then used as the
         input for the dialogue engine.
 
-        The return value of this function depends on the ``output_channel`. If
-        the output channel is not set (`None`) or set to
-        `CollectingOutputChannel` this function will return the messages
-        the bot wants to respond, e.g.:
+        The return value of this function depends on the `output_channel`. If
+        the output channel is not set, set to `None`, or set
+        to `CollectingOutputChannel` this function will return the messages
+        the bot wants to respond.
 
-        >>> from rasa_core.agent import Agent
-        >>> agent = Agent.load("examples/babi/models/policy/current",
-        ... interpreter="examples/babi/models/nlu/current_py2")
-        >>> agent.handle_message("hello")
-        [u'how can I help you?']
+        :Example:
+
+            >>> from rasa_core.agent import Agent
+            >>> agent = Agent.load("examples/babi/models/policy/current",
+            ... interpreter="examples/babi/models/nlu/current_py2")
+            >>> agent.handle_message("hello")
+            [u'how can I help you?']
+
         """
 
         processor = self._create_processor(message_preprocessor)
@@ -96,8 +103,8 @@ class Agent(object):
 
         processor = self._create_processor()
         return processor.continue_message_handling(sender_id,
-                                                    executed_action,
-                                                    events)
+                                                   executed_action,
+                                                   events)
 
     def handle_channel(self, input_channel,
                        message_preprocessor=None):

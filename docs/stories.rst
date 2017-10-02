@@ -5,7 +5,7 @@ Stories Data Format
 
 Here's an example from the bAbi data:
 
-.. code-block:: markdown
+.. code-block:: md
 
    ## story_07715946
    * _greet

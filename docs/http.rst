@@ -1,10 +1,13 @@
 .. _section_http:
 
 Using Rasa Core as a HTTP server
-===============================
+================================
 
-.. note:: Before you can use the server, you need to train a model, that can be
-used for remote code execution! See :ref:`training_your_model`
+.. note::
+
+    Before you can use the server, you need to define a domain, create training
+    data, and train a model. You can then use the trained model for remote code
+    execution! See :ref:`tour` for an introduction.
 
 The HTTP api exists to make it easy for non-python projects to use Rasa Core.
 
@@ -22,7 +25,7 @@ Endpoints
 ---------
 
 ``POST /conversation/<cid>/parse``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You must POST data in this format ``'{"query":"<your text to parse>"}'``,
 you can do this with
@@ -33,7 +36,7 @@ you can do this with
 
 
 ``POST /conversation/<cid>/continue``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You can post your training data to this endpoint to train a new model.
 This request will wait for the server answer: either the model was trained successfully or the training errored.
@@ -64,4 +67,5 @@ This will return the current version of the Rasa NLU instance.
 Events and Action Execution
 ---------------------------
 
-.. TODO:: WRITE
+Instead of writing the actions in python code, you can use the http API to write
+the code that should be run in an arbitrary language.

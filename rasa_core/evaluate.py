@@ -13,18 +13,16 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 from rasa_core.agent import Agent
-from rasa_core.domain import TemplateDomain
 from rasa_core.events import ActionExecuted, UserUttered
 from rasa_core.interpreter import RegexInterpreter, RasaNLUInterpreter
-from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training_utils import extract_stories_from_file
-from rasa_nlu.converters import load_data
 from rasa_nlu.evaluate import plot_confusion_matrix, log_evaluation_table
 
 logger = logging.getLogger(__name__)
 
 
 def create_argument_parser():
+    """Create argument parser for the evaluate script."""
     parser = argparse.ArgumentParser(
             description='evaluates a dialogue model')
     parser.add_argument(
@@ -59,6 +57,7 @@ def create_argument_parser():
 
 
 def _get_stories(story_file, domain, max_stories=None):
+    """Retrieve the stories from a file."""
     stories = extract_stories_from_file(story_file, domain)
     random.Random(42).shuffle(stories)
     if max_stories is not None:
@@ -68,6 +67,7 @@ def _get_stories(story_file, domain, max_stories=None):
 
 
 def _min_list_distance(pred, actual):
+    """Calculate the distance between the two lists."""
     padded_pred = []
     padded_actual = []
     s = SequenceMatcher(None, pred, actual)
@@ -82,8 +82,9 @@ def _min_list_distance(pred, actual):
     return padded_pred, padded_actual
 
 
-def test_stories(story_file, policy_model_path, nlu_model_path,
+def _test_stories(story_file, policy_model_path, nlu_model_path,
                  max_stories=None):
+    """Test the stories from a file, running them through the stored model."""
     def actions_since_last_utterance(tracker):
         actions = []
         for e in reversed(tracker.events):
@@ -144,10 +145,11 @@ def test_stories(story_file, policy_model_path, nlu_model_path,
 
 def run_story_evaluation(story_file, policy_model_path, nlu_model_path,
                          out_file, max_stories):
+    """Run the evaluation of the stories, plots the results."""
     from sklearn.metrics import confusion_matrix
     from sklearn.utils.multiclass import unique_labels
 
-    test_y, preds = test_stories(story_file, policy_model_path, nlu_model_path,
+    test_y, preds = _test_stories(story_file, policy_model_path, nlu_model_path,
                                  max_stories)
 
     log_evaluation_table(test_y, preds)
@@ -158,7 +160,6 @@ def run_story_evaluation(story_file, policy_model_path, nlu_model_path,
     fig = plt.gcf()
     fig.set_size_inches(int(20), int(20))
     fig.savefig(out_file, bbox_inches='tight')
-    return
 
 
 if __name__ == '__main__':

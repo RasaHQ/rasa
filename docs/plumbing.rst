@@ -28,4 +28,4 @@ In most cases, you shouldn't have to worry at all about this, but the details ar
 
 
 
-Now check out the :doc:`tutorial` and :doc:`tutorial_scratch`!
+Now check out the :doc:`tour` and :doc:`tutorial_scratch`!

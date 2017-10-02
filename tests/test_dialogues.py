@@ -10,7 +10,7 @@ import io
 import jsonpickle
 import pytest
 
-from rasa_core.actions import QuestionTopic
+from rasa_core.conversation import QuestionTopic
 from rasa_core.domain import TemplateDomain
 from rasa_core.tracker_store import InMemoryTrackerStore
 from utilities import tracker_from_dialogue_file

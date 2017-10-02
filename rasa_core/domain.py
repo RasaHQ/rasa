@@ -19,7 +19,7 @@ from typing import Optional
 from typing import Text
 
 from rasa_core.actions import Action
-from rasa_core.actions import DefaultTopic
+from rasa_core.conversation import DefaultTopic
 from rasa_core.actions.action import ActionListen, UtterAction, ActionRestart
 
 from rasa_core.actions.factories import action_factory_by_name
@@ -48,7 +48,9 @@ def check_domain_sanity(domain):
     def get_exception_message(duplicates):
         """Returns a message given a list of error locations.
 
-        Duplicates has the format of (duplicate_actions [List], name [Text])."""
+        Duplicates has the format of (duplicate_actions [List], name [Text]).
+        :param duplicates:
+        :return: """
 
         msg = ""
         for d, name in duplicates:

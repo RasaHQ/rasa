@@ -17,7 +17,7 @@ Added
 Changed
 -------
 - switched to max code line length 80
-- removed action id - use `action.name()` instead. if an action implementation overrides the name, it should include the ``action_`` prefix (as it is not automatically added anymore)
+- removed action id - use ``action.name()`` instead. if an action implementation overrides the name, it should include the ``action_`` prefix (as it is not automatically added anymore)
 - renamed ``rasa_dm.util`` to ``rasa_dm.utils``
 - renamed the whole package to ``rasa_core`` (so ``rasa_dm`` is gone!)
 - renamed ``Reminder`` attribute ``id`` to ``name``
@@ -33,17 +33,17 @@ Fixed
 
 Changed
 -------
-- use hashing when writing memorized turns into peristence - requires retraining of all models that are trained with a version prior to this
-- changed `agent.handle_message(...)` interface for easier usage
+- use hashing when writing memorized turns into persistence - requires retraining of all models that are trained with a version prior to this
+- changed ``agent.handle_message(...)`` interface for easier usage
 
 [0.6.0a1] - 2017-08-27
 ^^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
-- support for multiple policies (e.g. one memoizatuin and a keras policy at the same time)
+- support for multiple policies (e.g. one memoization and a Keras policy at the same time)
 - loading domains from yaml files instead of defining them with python code
-- added an api layer (called `Agent`) for you to use for 95% of the things you want to do (training, persistence, loading models)
+- added an api layer (called ``Agent``) for you to use for 95% of the things you want to do (training, persistence, loading models)
 - support for reminders
 
 Changed
@@ -71,10 +71,10 @@ Fixed
 - ``RedisTrackerStore`` checks if tracker is stored before accessing it (otherwise a ``None`` access exception is thrown)
 - ``RegexInterpreter`` checks if the regex actually matches the message instead of assuming it always does
 - ``str`` implementation for all events
-- ``Controler`` can be started wi^thout an input channel (e.g. messages need to be fed into the queue manually)
+- ``Controller`` can be started without an input channel (e.g. messages need to be fed into the queue manually)
 
 [0.2.0a1] - 2017-05-18
-^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^
 First released version.
 
 

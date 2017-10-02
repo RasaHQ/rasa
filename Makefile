@@ -17,6 +17,7 @@ clean:
 	rm -rf build/
 	rm -rf dist/
 	rm -rf *.egg-info
+	rm -rf docs/_build
 
 lint:
 	py.test --pep8 -m pep8
@@ -25,4 +26,4 @@ test: clean
 	py.test tests --verbose --pep8 --color=yes $(TEST_PATH)
 
 livedocs:
-	cd docs && sphinx-apidoc -o . ../rasa_core && make livehtml
+	cd docs && make livehtml

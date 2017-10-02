@@ -4,8 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from rasa_core import utils
-from rasa_core.actions import DefaultTopic
-from rasa_core.conversation import Topic
+from rasa_core.conversation import Topic, DefaultTopic
 
 dummy_topics = [Topic("topic_{0}".format(i)) for i in range(4)]
 

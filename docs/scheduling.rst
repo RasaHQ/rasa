@@ -11,7 +11,7 @@ To schedule an action for later execution, there is a special event called ``Rem
 Let's make our example a bit more specific: 
 We want a confirmation to book a restaurant table - without it the reservation won't be made.
 
-.. code-block:: markdown
+.. code-block:: md
 
     ## book a restaurant
     * _start_booking
@@ -78,7 +78,7 @@ After the action is triggered, the action execution continues as though the user
 empty message. 
 So in our stories we need to define what happens after the reminder was executed:
 
-.. code-block:: markdown
+.. code-block:: md
 
     ## book a restaurant
     * _start_booking

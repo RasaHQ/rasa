@@ -45,7 +45,7 @@ are both possible responses to the ``compare_reviews`` intent, but neither refer
 any context. That comes later.
  
 
-.. code-block:: markdown
+.. code-block:: md
 
    ## greet
    * _greet
@@ -86,7 +86,7 @@ You should be able to have a conversation similar to the one below
     can just swap the `Interpreter` class in `run.py`. 
 
 
-.. code-block:: bash
+.. code-block:: text
 
    Bot loaded. Type hello and press enter : 
    _greet
@@ -116,7 +116,7 @@ It then runs the bot so that you can provide feedback to train it:
 We can start talking to the bot as before, 
 directly entering the intents. For example, if we type ``_greet``, we get the following prompt:
 
-.. code-block:: bash
+.. code-block:: text
 
    _greet
    ------
@@ -147,7 +147,7 @@ We continue this loop until the bot chooses the wrong action.
 
 We've just asked the bot to search for concerts, and now we're asking it to compare reviews. The bot happens to choose the wrong one out of the two possibilities we wrote in the stories:
 
-.. code-block:: bash
+.. code-block:: text
 
    _compare_reviews
    ------
@@ -177,7 +177,7 @@ Now we type ``2``, because it chose the wrong action,
 and we get a new prompt asking for the correct one. 
 This also shows the probabilities the model has assigned to each of the actions.
 
-.. code-block:: bash
+.. code-block:: text
 
    ------
    what is the next action for the bot?

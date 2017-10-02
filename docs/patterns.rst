@@ -60,7 +60,7 @@ Rasa Core can use that information to distinguish between different situations -
 you have some training stories where the appropriate responses take place, e.g.:
 
 
-.. code-block:: markdown
+.. code-block:: md
 
    # story1
    ...

@@ -33,7 +33,7 @@ Lucky for us, this dataset is also in the restaurant domain.
 
 Here's an example conversation snippet: 
 
-.. code-block:: markdown
+.. code-block:: md
 
     ## story_07715946
     * _greet[]
@@ -63,7 +63,7 @@ Training your bot
 
 We can go directly from data to bot with only a few steps:
 
-1. train a Rasa NLU model to extract intents and entities. Read more about that `here <http://rasa-nlu.readthedocs.io/>`_ 
+1. train a Rasa NLU model to extract intents and entities. Read more about that in the `NLU docs <http://rasa-nlu.readthedocs.io/>`_.
 2. train a dialogue policy which will learn to choose the correct actions
 3. set up an agent which has both model 1 and model 2 working together to go directly from **user input** to **action**
 
@@ -77,9 +77,10 @@ Our ``train_nlu.py`` program looks like this:
 .. literalinclude:: ../examples/babi/train_nlu.py
    :pyobject: train_babi_nlu
 
-You can learn all about Rasa NLU `here <https://github.com/RasaHQ/rasa_nlu>`_,
-What you need to know is that ``interpreter.parse(user_message)`` returns a dictionary 
-with the intent and entities from a user message.
+You can learn all about Rasa NLU starting from the
+`github repository <https://github.com/RasaHQ/rasa_nlu>`_.
+What you need to know though is that ``interpreter.parse(user_message)`` returns
+a dictionary with the intent and entities from a user message.
 
 
 *This step takes approximately 18 seconds on a 2014 MacBook Pro.*
@@ -133,36 +134,13 @@ may involve api calls or internal bot dynamics.
 Policy
 ::::::
 
-From ``restaurant_domain.py`` again:
+From ``examples/restaurant_example.py`` again:
 
-.. testcode::
-
-    from rasa_core.policies.keras_policy import KerasPolicy
-
-    class RestaurantPolicy(KerasPolicy):
-        def _build_model(self, num_features, num_actions, max_history_len):
-            """Build a keras model and return a compiled model.
-            :param max_history_len: The maximum number of historical turns used to decide on next action"""
-            from keras.layers import LSTM, Activation, Masking, Dense
-            from keras.models import Sequential
-
-            n_hidden = 32  # size of hidden layer in LSTM
-            # Build Model
-            model = Sequential()
-            model.add(Masking(-1, batch_input_shape=(None, max_history_len, num_features)))
-            model.add(LSTM(n_hidden, batch_input_shape=(None, max_history_len, num_features)))
-            model.add(Dense(input_dim=n_hidden, output_dim=num_actions))
-            model.add(Activation('softmax'))
-
-            model.compile(loss='categorical_crossentropy',
-                          optimizer='adam',
-                          metrics=['accuracy'])
-
-            logger.debug(model.summary())
-            return model
+.. literalinclude:: ../examples/restaurant_example.py
+   :pyobject: RestaurantPolicy
 
 
-This policy builds an LSTM in Keras  which will then be taken by the trainer and trained. The parameters ``max_history_len``
+This policy builds an  LSTM in Keras  which will then be taken by the trainer and trained. The parameters ``max_history_len``
 and ``n_hidden`` may be altered dependent on the task complexity and the amount of data one has. ``max_history_len`` is
 important as it is the amount of story steps the network has access to to make a classification.
 
