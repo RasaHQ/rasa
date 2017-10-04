@@ -47,7 +47,7 @@ the package from the github repository. For a more detailed description, please
 visit the [**Installation page**](https://core.rasa.ai/installation.html) 
 of the docs.
 
-To install, run:
+If you want to install the latest master version from github, run:
 ```bash
 git clone https://github.com/RasaHQ/rasa_core.git
 cd rasa_core
