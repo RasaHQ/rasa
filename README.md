@@ -1,6 +1,6 @@
 # Rasa Core
 [![Join the chat at https://gitter.im/RasaHQ/rasa_core](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/RasaHQ/rasa_core?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Build Status](https://travis-ci.com/RasaHQ/rasa_core.svg?token=EvwqtzR3SyKxFaNKbxau&branch=master)](https://travis-ci.com/RasaHQ/rasa_core)
+[![Build Status](https://travis-ci.org/RasaHQ/rasa_core.svg?branch=master)](https://travis-ci.org/RasaHQ/rasa_core)
 
 ### [Go To Docs](https://core.rasa.ai)
 
