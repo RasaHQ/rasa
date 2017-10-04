@@ -1,7 +1,7 @@
 .. _stories:
 
-Stories Data Format
-===================
+Training Data Format
+====================
 
 Here's an example from the bAbi data:
 
@@ -19,7 +19,8 @@ Here's an example from the bAbi data:
       - action_ack_dosearch
 
 
-A story starts with a name preceeded by two hashes ``## story_03248462``, this is arbitrary but can be used for debugging.
+This is what we call a **story**. A story starts with a name preceeded by two
+hashes ``## story_03248462``, this is arbitrary but can be used for debugging.
 After this point, we have two types of events which sequentially happen when separated by a newline.
 
 An event such as ``* _inform[location=bombay]`` is a user utterance. These utterances are written like ``* _{intent}[{entities}]``.

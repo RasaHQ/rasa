@@ -1,7 +1,7 @@
 .. _section_http:
 
-Using Rasa Core as a HTTP server
-================================
+Rasa Core as a HTTP server
+==========================
 
 .. note::
 
@@ -9,7 +9,22 @@ Using Rasa Core as a HTTP server
     data, and train a model. You can then use the trained model for remote code
     execution! See :ref:`tour` for an introduction.
 
+.. warning::
+
+    The HTTP API is still experimental and we'd appreciate your feedback (e.g.
+    via `Gitter <https://gitter.im/RasaHQ/rasa_core>`_).
+
 The HTTP api exists to make it easy for non-python projects to use Rasa Core.
+
+Overview
+--------
+The general idea is to run the actions within your code (arbitrary language),
+instead of python. To do this, Rasa Core will startup a web server where you
+need to pass the user messages to. Rasa Core on the other side will tell you
+which actions you need to run. After running these actions, you need to notify
+the framework that you executed them, and tell the model about any update of the
+internal dialogue state for that user. All of these interactions are done using
+a HTTP REST interface.
 
 Running the server
 ------------------
@@ -19,6 +34,13 @@ models with
 .. code-block:: bash
 
     $ python -m rasa_core.server -d examples/babi/models/policy/current -u examples/babi/models/nlu/current_py2 -o out.log
+
+The different parameters are:
+
+- ``-d``, which is the path to the Rasa Core model.
+- ``-u``, which is the path to the Rasa NLU model.
+- ``-o``, which is the path to the log file.
+
 
 
 Endpoints
@@ -67,5 +89,5 @@ This will return the current version of the Rasa NLU instance.
 Events and Action Execution
 ---------------------------
 
-Instead of writing the actions in python code, you can use the http API to write
+Instead of writing the actions in python code, you can use the HTTP API to write
 the code that should be run in an arbitrary language.

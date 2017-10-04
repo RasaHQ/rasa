@@ -11,9 +11,6 @@ try:
 except (IOError, ImportError):
     readme = open('README.md').read()
 
-with io.open('CHANGELOG.rst', "r") as history_file:
-    history = history_file.read()
-
 tests_requires = [
     "pytest-pep8",
     "pytest-services",
@@ -59,8 +56,9 @@ setup(
     tests_require=tests_requires,
     extras_require=extras_requires,
     include_package_data=True,
-    description="Clever dialogue manager for chatbots and assistants.",
-    long_description=readme + '\n\n' + history,
+    description="Machine learning based dialogue engine "
+                "for conversational software.",
+    long_description=readme,
     author='Rasa Technologies GmbH',
     author_email='hi@rasa.ai',
     keywords=["nlp", "machine-learning", "machine-learning-library", "bot",

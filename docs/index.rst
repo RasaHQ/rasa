@@ -14,8 +14,10 @@ Welcome to the Rasa Documentation!
 
     Rasa is a framework for building conversational software:
     Messenger/Slack bots, Alexa skills, etc. We'll abbreviate this as a 'bot'
-    in this documentation. You can either write your code in python or use
-    Rasa Core as a webservice (see :ref:`section_http`).
+    in this documentation. You can
+
+    - write your bots logic in python code (recommended),
+    - or use Rasa Core as a webservice (experimental, see :ref:`section_http`).
 
 *what's cool about it?*
 
@@ -54,22 +56,16 @@ Welcome to the Rasa Documentation!
    :caption: Deep Dives
 
    patterns
-   http
-   slot_types
    plumbing
+   http
+   domains
    connectors
-   domains_actions
-   state
-   policies
    stories
    scheduling
-   featurisation
-   interpreters
-   message_handling
 
 .. toctree::
    :maxdepth: 1
-   :caption: API
+   :caption: Python API
 
    api/agent
    api/events
@@ -78,4 +74,8 @@ Welcome to the Rasa Documentation!
    :maxdepth: 1
    :caption: Developer Documentation
 
+   featurisation
+   interpreters
+   policies
+   state
    changelog
