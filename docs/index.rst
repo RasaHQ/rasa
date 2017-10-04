@@ -12,11 +12,15 @@ Welcome to the Rasa Documentation!
 
 *what am I looking at?*
 
-    Rasa is a python framework for building conversational software: Messenger/Slack bots, Alexa skills, etc. We'll abbreviate this as a 'bot' in this documentation.
+    Rasa is a framework for building conversational software:
+    Messenger/Slack bots, Alexa skills, etc. We'll abbreviate this as a 'bot'
+    in this documentation. You can either write your code in python or use
+    Rasa Core as a webservice (see :ref:`section_http`).
 
 *what's cool about it?*
 
-    Rather than a bunch of ``if/else`` statements, the logic of your bot is based on a probabilistic model trained on example conversations.
+    Rather than a bunch of ``if/else`` statements, the logic of your bot is
+    based on a probabilistic model trained on example conversations.
 
 *that sounds harder than writing a few if statements*
 

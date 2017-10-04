@@ -67,15 +67,16 @@ Questions
 *why python?*
 
     Because of its ecosystem of machine learning tools.
-    The machine learning happens inside the ``Policy`` subclasses, and you are free to use
-    whichever algorithm in whichever ML framework you like: an SVM from sklearn, 
-    an LSTM implemented with Keras, some funky thing you implemented with autograd, whatever.
+    The machine learning happens inside the ``Policy`` subclasses, Rasa Core
+    ships with an implementation that uses Keras to predict the bot actions.
 
 *is this only for ML experts?*
 
-    You can use Rasa if you don't know anything about machine learning, but if you do it's easy to experiment. 
+    You can use Rasa if you don't know anything about machine learning, but if
+    you do it's easy to experiment.
 
 
 *how much training data do I need?*
 
-    You can bootstrap from zero training data by using interactive learning. Try the tutorials!
+    You can bootstrap from zero training data by using interactive learning.
+    Try the tutorials!

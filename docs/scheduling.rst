@@ -3,6 +3,12 @@
 Scheduling Reminders
 ==================================
 
+.. note::
+
+    This is a python-only feature. For now, you can not use the scheduling
+    feature if you are running the framework as a http server.
+
+
 One of your users got halfway through a task and then stopped messaging your bot. 
 Now you want to remind them to get back to you. 
 Don't worry! Rasa has you covered.
