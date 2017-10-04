@@ -48,8 +48,19 @@ setup(
     install_requires=install_requires,
     tests_require=tests_requires,
     extras_require=extras_requires,
-    description="Rasa dialogue manager",
+    include_package_data=True,
+    description="Rasa Core Dialogue Manager",
     author='Rasa Technologies GmbH',
     author_email='hi@rasa.ai',
-    url='https://github.com/RasaHQ/rasa_core'
+    keywords=["nlp", "machine-learning", "machine-learning-library", "bot",
+              "bots",
+              "botkit", "rasa", "conversational-agents",
+              "conversational-ai",
+              "chatbot", "chatbot-framework", "bot-framework"],
+    url="https://rasa.ai",
+    download_url="https://github.com/RasaHQ/rasa_core/archive/{}.tar.gz".format(__version__)
 )
+
+print("\nWelcome to Rasa Core!")
+print("If any questions please visit documentation page https://rasahq.github.io/rasa_core")
+print("or join community chat on https://gitter.im/RasaHQ/rasa_core")
