@@ -36,17 +36,11 @@ Changed
 - renamed the whole package to ``rasa_core`` (so ``rasa_dm`` is gone!)
 - renamed ``Reminder`` attribute ``id`` to ``name``
 - a lot of documentation improvements. docs are now at https://core.rasa.ai
-
-[0.7.0a3] - 2017-09-20
-^^^^^^^^^^^^^^^^^^^^^^
-
-Changed
--------
 - use hashing when writing memorized turns into persistence - requires retraining of all models that are trained with a version prior to this
 - changed ``agent.handle_message(...)`` interface for easier usage
 
-[0.6.0a1] - 2017-08-27
-^^^^^^^^^^^^^^^^^^^^^^
+[0.6.0] - 2017-08-27
+^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
@@ -59,8 +53,8 @@ Changed
 -------
 - large refactoring of code base
 
-[0.5.0a1] - 2017-06-18
-^^^^^^^^^^^^^^^^^^^^^^
+[0.5.0] - 2017-06-18
+^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
@@ -82,8 +76,8 @@ Fixed
 - ``str`` implementation for all events
 - ``Controller`` can be started without an input channel (e.g. messages need to be fed into the queue manually)
 
-[0.2.0a1] - 2017-05-18
-^^^^^^^^^^^^^^^^^^^^^^
+[0.2.0] - 2017-05-18
+^^^^^^^^^^^^^^^^^^^^
 First released version.
 
 
