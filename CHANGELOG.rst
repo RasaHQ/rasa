@@ -9,6 +9,20 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 .. note:: This version is not yet released and is under active development.
 
+Added
+-----
+
+Changed
+-------
+
+Removed
+-------
+
+Fixed
+-----
+
+[0.7.0] - 2017-10-04
+^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
@@ -21,12 +35,7 @@ Changed
 - renamed ``rasa_dm.util`` to ``rasa_dm.utils``
 - renamed the whole package to ``rasa_core`` (so ``rasa_dm`` is gone!)
 - renamed ``Reminder`` attribute ``id`` to ``name``
-
-Removed
--------
-
-Fixed
------
+- a lot of documentation improvements. docs are now at https://core.rasa.ai
 
 [0.7.0a3] - 2017-09-20
 ^^^^^^^^^^^^^^^^^^^^^^
