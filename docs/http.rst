@@ -19,10 +19,10 @@ The HTTP api exists to make it easy for non-python projects to use Rasa Core.
 Overview
 --------
 The general idea is to run the actions within your code (arbitrary language),
-instead of python. To do this, Rasa Core will startup a web server where you
+instead of python. To do this, Rasa Core will start up a web server where you
 need to pass the user messages to. Rasa Core on the other side will tell you
 which actions you need to run. After running these actions, you need to notify
-the framework that you executed them, and tell the model about any update of the
+the framework that you executed them and tell the model about any update of the
 internal dialogue state for that user. All of these interactions are done using
 a HTTP REST interface.
 
@@ -238,7 +238,7 @@ your code should execute the mentioned next action. If you receive
 ``GET /version``
 ::::::::::::::::
 
-This will return the current version of the Rasa NLU instance.
+This will return the current version of the Rasa Core instance.
 
 .. code-block:: bash
 
