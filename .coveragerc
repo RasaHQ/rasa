@@ -5,3 +5,5 @@ exclude_lines =
     raise NotImplementedError
     if __name__ == .__main__.:
     if typing.TYPE_CHECKING
+[run]
+source = rasa_core
