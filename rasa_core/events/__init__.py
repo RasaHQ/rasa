@@ -283,24 +283,8 @@ class UserUtteranceReverted(Event):
     def apply_to(self, tracker):
         # type: (DialogueStateTracker) -> None
 
-        utterances_to_undo = 1
-        last_event_idx = 0
-        events = tracker.events
-        for i, event in enumerate(reversed(events)):
-            if isinstance(event, UserUttered):
-                if utterances_to_undo == 0:
-                    last_event_idx = len(tracker.events) - i
-                    break
-                else:
-                    utterances_to_undo -= 1
-            elif isinstance(event, UserUtteranceReverted):
-                utterances_to_undo += 1
-            elif isinstance(event, Restarted):
-                last_event_idx = len(tracker.events) - i
-                break
-
         tracker._reset()
-        tracker.update_from_events(list(events)[:last_event_idx])
+        tracker.replay_events()
 
 
 # noinspection PyProtectedMember
@@ -410,24 +394,8 @@ class ActionReverted(Event):
     def apply_to(self, tracker):
         # type: (DialogueStateTracker) -> None
 
-        actions_to_undo = 1
-        last_event_idx = 0
-        events = tracker.events
-        for i, event in enumerate(reversed(events)):
-            if isinstance(event, ActionExecuted):
-                if actions_to_undo == 0:
-                    last_event_idx = len(tracker.events) - i
-                    break
-                else:
-                    actions_to_undo -= 1
-            elif isinstance(event, ActionReverted):
-                actions_to_undo += 1
-            elif isinstance(event, Restarted):
-                last_event_idx = len(tracker.events) - i
-                break
-
         tracker._reset()
-        tracker.update_from_events(list(events)[:last_event_idx])
+        tracker.replay_events()
 
 
 # noinspection PyProtectedMember

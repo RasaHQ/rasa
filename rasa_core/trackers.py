@@ -16,7 +16,7 @@ from typing import List
 from rasa_core import utils
 from rasa_core.conversation import Dialogue
 from rasa_core.events import UserUttered, TopicSet, ActionExecuted, \
-    Event, SlotSet
+    Event, SlotSet, Restarted, ActionReverted, UserUtteranceReverted
 
 logger = logging.getLogger(__name__)
 
@@ -134,7 +134,7 @@ class DialogueStateTracker(object):
                                        self.topics,
                                        self.default_topic)
 
-        for event in self._events_after_latest_restart():
+        for event in self._applied_events():
             if isinstance(event, ActionExecuted):
                 yield tracker
             tracker.update(event)
@@ -147,6 +147,36 @@ class DialogueStateTracker(object):
 
         for e in events:
             self.update(e)
+
+    def _applied_events(self):
+        # type: () -> List[Event]
+        """Returns all actions that should be applied - w/o reverted events."""
+        def undo_till_previous(event_type, done_events):
+            """Removes events from `done_events` until `event_type` is found."""
+            # list gets modified - hence we need to copy events!
+            for e in reversed(done_events[:]):
+                del done_events[-1]
+                if isinstance(e, event_type):
+                    break
+
+        applied_events = []
+        for event in self.events:
+            if isinstance(event, Restarted):
+                applied_events = []
+            elif isinstance(event, ActionReverted):
+                undo_till_previous(ActionExecuted, applied_events)
+            elif isinstance(event, UserUtteranceReverted):
+                undo_till_previous(UserUttered, applied_events)
+            else:
+                applied_events.append(event)
+        return applied_events
+
+    def replay_events(self):
+        # type: (int) -> None
+        """Update the tracker based on a list of events."""
+        applied_events = self._applied_events()
+        for event in applied_events:
+            event.apply_to(self)
 
     def update_from_dialogue(self, dialogue):
         # type: (Dialogue) -> None
@@ -186,7 +216,7 @@ class DialogueStateTracker(object):
         from rasa_core.training_utils.dsl import StoryStep, Story
 
         story_step = StoryStep()
-        for event in self.events:
+        for event in self._applied_events():
             story_step.add_event(event)
         story = Story([story_step])
         return story.as_story_string(flat=True)
