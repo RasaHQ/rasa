@@ -1,7 +1,8 @@
 # Rasa Core
 [![Join the chat at https://gitter.im/RasaHQ/rasa_core](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/RasaHQ/rasa_core?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Build Status](https://travis-ci.com/RasaHQ/rasa_core.svg?token=EvwqtzR3SyKxFaNKbxau&branch=master)](https://travis-ci.com/RasaHQ/rasa_core)
+[![Build Status](https://travis-ci.org/RasaHQ/rasa_core.svg?branch=master)](https://travis-ci.org/RasaHQ/rasa_core)
 
+### [Go To Docs](https://core.rasa.ai)
 
 ## Introduction
 
@@ -23,8 +24,8 @@ There's a lot more background information in this [blog post](https://medium.com
 
 There is extensive documentation:
 
-- [master](https://rasahq.github.io/rasa_core/master/)&nbsp; (if you install from **github**) or 
-- [stable](https://rasahq.github.io/rasa_core/)&nbsp;&nbsp; (if you install from **pypi**)
+- [master](https://core.rasa.ai/master/)&nbsp; (if you install from **github**) or 
+- [stable](https://core.rasa.ai/)&nbsp;&nbsp; (if you install from **pypi**)
 
 
 Please use [gitter](https://gitter.im/RasaHQ/rasa_core) for quick answers to 
@@ -41,7 +42,7 @@ questions.
 ## Setup
 There isn't a released pypi package yet. Hence, you need to clone and install 
 the package from the github repository. For a more detailed description, please 
-visit the [**Installation page**](https://rasahq.github.io/rasa_core/installation.html) 
+visit the [**Installation page**](https://core.rasa.ai/installation.html) 
 of the docs.
 
 To install, run:
@@ -52,19 +53,6 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
-
-## How to contribute
-We are very happy to receive and merge your contributions. There is some more 
-information about the style of the code and docs in the documentation.
-
-In general the process is rather simple:
-1. create an issue describing the feature you want to work on (or have a look 
-at issues labeled [good first issue](https://github.com/RasaHQ/rasa_core/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22))
-2. write your code, tests, and documentation
-3. create a pull request describing your changes
-
-You pull request will be reviewed by a maintainer, who might get back to you 
-about any necessary changes or questions.
 
 ## Development Internals
 ### Running and changing the documentation
