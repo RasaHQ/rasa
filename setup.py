@@ -1,8 +1,18 @@
 from setuptools import setup, find_packages
+import io
 
 # Avoids IDE errors, but actual version is read from version.py
 __version__ = None
 exec(open('rasa_core/version.py').read())
+
+try:
+    import pypandoc
+    readme = pypandoc.convert_file('README.md', 'rst')
+except (IOError, ImportError):
+    readme = open('README.md').read()
+
+with io.open('CHANGELOG.rst', "r") as history_file:
+    history = history_file.read()
 
 tests_requires = [
     "pytest-pep8",
@@ -49,7 +59,8 @@ setup(
     tests_require=tests_requires,
     extras_require=extras_requires,
     include_package_data=True,
-    description="Rasa Core Dialogue Manager",
+    description="Clever dialogue manager for chatbots and assistants.",
+    long_description=readme + '\n\n' + history,
     author='Rasa Technologies GmbH',
     author_email='hi@rasa.ai',
     keywords=["nlp", "machine-learning", "machine-learning-library", "bot",
