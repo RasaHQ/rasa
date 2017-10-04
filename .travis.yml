@@ -1,5 +1,8 @@
 language: python
 sudo: required
+addons:
+  apt_packages:
+    - pandoc
 cache:
   directories:
   - "$HOME/.cache/pip"
@@ -21,6 +24,7 @@ install:
 - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION scipy=0.19.0 numpy=1.12.1
   scikit-learn=0.18.1
 - source activate test-environment
+- pip install pypandoc==1.4
 - pip install -r dev-requirements.txt
 - pip install spacy sklearn-crfsuite==0.3.5
 - pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-1.2.0/en_core_web_sm-1.2.0.tar.gz
@@ -53,7 +57,8 @@ jobs:
     - export ${!TRAVIS*}
     - sphinx-versioning push docs gh-pages .
   - stage: deploy
-    install: skip
+    install:
+    - pip install pypandoc==1.4
     script: skip
     deploy:
       provider: pypi
