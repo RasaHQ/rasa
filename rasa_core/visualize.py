@@ -6,6 +6,8 @@ from __future__ import unicode_literals
 import argparse
 import logging
 
+import os
+
 from rasa_core.domain import TemplateDomain
 from rasa_core.training_utils.dsl import StoryFileReader
 from rasa_core.training_utils.visualization import visualize_stories
@@ -44,7 +46,7 @@ if __name__ == '__main__':
     logging.basicConfig(level="DEBUG")
 
     domain = TemplateDomain.load(args.domain)
-    story_steps = StoryFileReader.read_from_file(args.data, domain)
+    story_steps = StoryFileReader.read_from_file(args.stories, domain)
 
     # this is optional, only needed if the `_greet` type of
     # messages in the stories should be replaced with actual
@@ -60,4 +62,5 @@ if __name__ == '__main__':
     visualize_stories(story_steps, args.output, args.max_history,
                       training_data=nlu_data)
 
-    logger.info("Finished graph creation")
+    logger.info("Finished graph creation. Saved into {}".format(
+            os.path.abspath(args.output)))

@@ -5,5 +5,5 @@
     "rasa_core.policies.keras_policy.KerasPolicy"
   ], 
   "max_history": 3, 
-  "rasa_core": "0.7.0a3"
+  "rasa_core": "0.7.0"
 }
