@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import logging
 import re
 
+import os
 import requests
 from builtins import str
 
@@ -131,7 +132,8 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
 
         if not lazy_init:
             self.interpreter = Interpreter.load(self.metadata,
-                                                RasaNLUConfig(config_file))
+                                                RasaNLUConfig(config_file,
+                                                              os.environ))
         else:
             self.interpreter = None
 
@@ -144,5 +146,6 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
             from rasa_nlu.model import Interpreter
             from rasa_nlu.config import RasaNLUConfig
             self.interpreter = Interpreter.load(self.metadata,
-                                                RasaNLUConfig(self.config_file))
+                                                RasaNLUConfig(self.config_file,
+                                                              os.environ))
         return self.interpreter.parse(text)
