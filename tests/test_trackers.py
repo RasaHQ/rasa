@@ -157,8 +157,8 @@ def test_restart_event(default_domain):
     dialogue = tracker.as_dialogue()
 
     recovered = DialogueStateTracker("default", default_domain.slots,
-                                   default_domain.topics,
-                                   default_domain.default_topic)
+                                     default_domain.topics,
+                                     default_domain.default_topic)
     recovered.recreate_from_dialogue(dialogue)
 
     assert recovered.current_state() == tracker.current_state()
