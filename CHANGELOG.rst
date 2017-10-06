@@ -21,6 +21,15 @@ Removed
 Fixed
 -----
 
+[0.7.1] - 2017-10-06
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- issues with restart events. They created wrong a messed up history leading to
+  wrong predictions
+
+
 [0.7.0] - 2017-10-04
 ^^^^^^^^^^^^^^^^^^^^
 
