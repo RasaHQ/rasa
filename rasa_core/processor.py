@@ -256,13 +256,14 @@ class MessageProcessor(object):
         Reminders with the same `id` property will overwrite one another
         (i.e. only one of them will eventually run)."""
 
-        for e in events:
-            if isinstance(e, ReminderScheduled):
-                scheduler.add_job(self.handle_reminder, "date",
-                                  run_date=e.trigger_date_time,
-                                  args=[e, dispatcher],
-                                  id=e.name,
-                                  replace_existing=True)
+        if events is not None:
+            for e in events:
+                if isinstance(e, ReminderScheduled):
+                    scheduler.add_job(self.handle_reminder, "date",
+                                      run_date=e.trigger_date_time,
+                                      args=[e, dispatcher],
+                                      id=e.name,
+                                      replace_existing=True)
 
     def _run_action(self, action, tracker, dispatcher):
         # events and return values are used to update
