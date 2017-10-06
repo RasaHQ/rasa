@@ -56,14 +56,18 @@ setup(
     tests_require=tests_requires,
     extras_require=extras_requires,
     include_package_data=True,
-    description="rasa NLU a natural language parser for bots",
+    description="Rasa NLU a natural language parser for bots",
     author='Alan Nichol',
     author_email='alan@rasa.ai',
     url="https://rasa.ai",
-    keywords=["NLP", "bots"],
+    keywords=["nlp", "machine-learning", "machine-learning-library", "bot",
+              "bots",
+              "botkit", "rasa", "conversational-agents",
+              "conversational-ai",
+              "chatbot", "chatbot-framework", "bot-framework"],
     download_url="https://github.com/RasaHQ/rasa_nlu/archive/{}.tar.gz".format(__version__)
 )
 
-print("Welcome to rasa!\n")
-print("If any questions please visit documentation page https://rasahq.github.io/rasa_nlu\n")
-print("or join community chat on https://gitter.im/RasaHQ/rasa_nlu\n")
+print("\nWelcome to Rasa NLU!")
+print("If any questions please visit documentation page https://rasahq.github.io/rasa_nlu")
+print("or join community chat on https://gitter.im/RasaHQ/rasa_nlu")
