@@ -8,11 +8,12 @@ import glob
 import pytest
 
 from examples.hello_world.run import SimplePolicy
-from rasa_core.actions.action import ActionListen
+from rasa_core.actions.action import ActionListen, ACTION_LISTEN_NAME
 from rasa_core.agent import Agent
 from rasa_core.conversation import Topic
 from rasa_core.domain import TemplateDomain
-from rasa_core.events import UserUttered, TopicSet, ActionExecuted, SlotSet
+from rasa_core.events import UserUttered, TopicSet, ActionExecuted, SlotSet, \
+    Restarted
 from rasa_core.featurizers import BinaryFeaturizer
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.tracker_store import InMemoryTrackerStore, RedisTrackerStore
@@ -42,7 +43,7 @@ def test_tracker_duplicate():
     domain.topics.extend(dialogue_topics)
     tracker = DialogueStateTracker(dialogue.name, domain.slots,
                                    domain.topics, domain.default_topic)
-    tracker.update_from_dialogue(dialogue)
+    tracker.recreate_from_dialogue(dialogue)
     num_actions = len([event
                        for event in dialogue.events
                        if isinstance(event, ActionExecuted)])
@@ -57,7 +58,7 @@ def test_tracker_duplicate():
                          ids=stores_to_be_tested_ids())
 def test_tracker_store_storage_and_retrieval(store):
     tracker = store.get_or_create_tracker("some-id")
-    # the retreived tracker should be empty
+    # the retrieved tracker should be empty
     assert tracker.sender_id == "some-id"
 
     # Action listen should be in there
@@ -128,3 +129,39 @@ def test_tracker_state_regression(default_domain):
                 "_greet;utter_greet;action_listen;"
                 "_greet;utter_greet;action_listen")
     assert ";".join([e.as_story_string() for e in tracker.events]) == expected
+
+
+def test_restart_event(default_domain):
+    tracker = DialogueStateTracker("default", default_domain.slots,
+                                   default_domain.topics,
+                                   default_domain.default_topic)
+    # the retrieved tracker should be empty
+    assert len(tracker.events) == 0
+
+    intent = {"name": "greet", "confidence": 1.0}
+    tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
+    tracker.update(UserUttered("_greet", intent, []))
+    tracker.update(ActionExecuted("my_action"))
+    tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
+
+    assert len(tracker.events) == 4
+    assert tracker.latest_message.text == "_greet"
+    assert len(list(tracker.generate_all_prior_states())) == 4
+
+    tracker.update(Restarted())
+
+    assert len(tracker.events) == 6
+    assert tracker.latest_message.text is None
+    assert len(list(tracker.generate_all_prior_states())) == 2
+
+    dialogue = tracker.as_dialogue()
+
+    recovered = DialogueStateTracker("default", default_domain.slots,
+                                     default_domain.topics,
+                                     default_domain.default_topic)
+    recovered.recreate_from_dialogue(dialogue)
+
+    assert recovered.current_state() == tracker.current_state()
+    assert len(recovered.events) == 6
+    assert recovered.latest_message.text is None
+    assert len(list(recovered.generate_all_prior_states())) == 2

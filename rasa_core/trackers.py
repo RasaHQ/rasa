@@ -141,13 +141,6 @@ class DialogueStateTracker(object):
 
         yield tracker  # yields the final state
 
-    def update_from_events(self, events):
-        # type: (List[Event]) -> None
-        """Update the tracker based on a list of events."""
-
-        for e in events:
-            self.update(e)
-
     def _applied_events(self):
         # type: () -> List[Event]
         """Returns all actions that should be applied - w/o reverted events."""
@@ -178,7 +171,7 @@ class DialogueStateTracker(object):
         for event in applied_events:
             event.apply_to(self)
 
-    def update_from_dialogue(self, dialogue):
+    def recreate_from_dialogue(self, dialogue):
         # type: (Dialogue) -> None
         """Use a serialised `Dialogue` to update the trackers state.
 
@@ -190,7 +183,9 @@ class DialogueStateTracker(object):
             raise ValueError("story {0} is not of type Dialogue. "
                              "Have you deserialized it?".format(dialogue))
 
-        self.update_from_events(dialogue.events)
+        self._reset()
+        self.events.extend(dialogue.events)
+        self.replay_events()
 
     def as_dialogue(self):
         # type: () -> Dialogue
@@ -238,7 +233,6 @@ class DialogueStateTracker(object):
         self._paused = False
         self.latest_action_name = []
         self.latest_message = UserUttered.empty()
-        self._past_user_utterances = []
         self.follow_up_action = None
         self._topic_stack = utils.TopicStack(self.topics, [],
                                              self.default_topic)

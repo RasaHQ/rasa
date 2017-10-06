@@ -25,7 +25,7 @@ def tracker_from_dialogue_file(filename, domain=None):
     domain.topics.extend(dialogue_topics)
     tracker = DialogueStateTracker(dialogue.name, domain.slots,
                                    domain.topics, domain.default_topic)
-    tracker.update_from_dialogue(dialogue)
+    tracker.recreate_from_dialogue(dialogue)
     return tracker
 
 

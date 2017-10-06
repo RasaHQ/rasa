@@ -61,7 +61,7 @@ class PolicyTestCollection(object):
         for story in stories:
             tracker = DialogueStateTracker("default", default_domain.slots)
             dialogue = story.as_dialogue("default", default_domain)
-            tracker.update_from_dialogue(dialogue)
+            tracker.recreate_from_dialogue(dialogue)
             predicted_probabilities = loaded.predict_action_probabilities(
                     tracker, default_domain)
             actual_probabilities = trained_policy.predict_action_probabilities(
