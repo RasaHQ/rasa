@@ -254,7 +254,7 @@ class Interpreter(object):
         for component_name in model_metadata.pipeline:
             component = component_builder.load_component(
                     component_name, model_metadata.model_dir,
-                    model_metadata, **context)
+                    model_metadata, config=config, **context)
             try:
                 updates = component.provide_context()
                 if updates:

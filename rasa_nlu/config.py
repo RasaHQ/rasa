@@ -37,6 +37,7 @@ DEFAULT_CONFIG = {
     "response_log": "logs",
     "aws_endpoint_url": None,
     "duckling_dimensions": None,
+    "duckling_http_url": None,
     "ner_crf": {
         "BILOU_flag": True,
         "features": [
