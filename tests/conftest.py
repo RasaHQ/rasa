@@ -13,10 +13,14 @@ from rasa_core.domain import TemplateDomain
 
 logging.basicConfig(level="DEBUG")
 
+DEFAULT_DOMAIN_PATH = "examples/default_domain.yml"
+
+DEFAULT_STORIES_FILE = "data/dsl_stories/stories.md"
+
 
 @pytest.fixture(scope="function")
 def default_domain():
-    return TemplateDomain.load("examples/default_domain.yml")
+    return TemplateDomain.load(DEFAULT_DOMAIN_PATH)
 
 
 @pytest.fixture

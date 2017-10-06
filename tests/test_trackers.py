@@ -19,7 +19,7 @@ from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.tracker_store import InMemoryTrackerStore, RedisTrackerStore
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training_utils import extract_stories_from_file, STORY_START
-from utilities import tracker_from_dialogue_file, read_dialogue_file
+from tests.utilities import tracker_from_dialogue_file, read_dialogue_file
 
 domain = TemplateDomain.load("data/test_domains/default_with_topic.yml")
 

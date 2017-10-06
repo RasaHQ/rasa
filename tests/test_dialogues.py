@@ -13,7 +13,7 @@ import pytest
 from rasa_core.conversation import QuestionTopic
 from rasa_core.domain import TemplateDomain
 from rasa_core.tracker_store import InMemoryTrackerStore
-from utilities import tracker_from_dialogue_file
+from tests.utilities import tracker_from_dialogue_file
 
 
 @pytest.mark.parametrize("filename", glob.glob('data/test_dialogues/*json'))
