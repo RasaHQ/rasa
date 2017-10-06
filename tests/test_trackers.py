@@ -42,7 +42,7 @@ def test_tracker_duplicate():
     domain.topics.extend(dialogue_topics)
     tracker = DialogueStateTracker(dialogue.name, domain.slots,
                                    domain.topics, domain.default_topic)
-    tracker.update_from_dialogue(dialogue)
+    tracker.recreate_from_dialogue(dialogue)
     num_actions = len([event
                        for event in dialogue.events
                        if isinstance(event, ActionExecuted)])
