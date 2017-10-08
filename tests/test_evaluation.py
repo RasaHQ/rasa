@@ -1,9 +1,12 @@
+import imghdr
 import os
+
+import matplotlib
 
 from rasa_core.evaluate import run_story_evaluation, \
     collect_story_predictions
-from tests.conftest import DEFAULT_STORIES_FILE
-import imghdr
+
+matplotlib.use('Agg')
 
 
 def test_evaluation_image_creation(tmpdir):
