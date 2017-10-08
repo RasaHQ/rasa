@@ -5,11 +5,14 @@ from __future__ import unicode_literals
 
 import logging
 
+import matplotlib
 import pytest
 
 from rasa_core.channels.console import ConsoleOutputChannel
 from rasa_core.dispatcher import Dispatcher
 from rasa_core.domain import TemplateDomain
+
+matplotlib.use('Agg')
 
 logging.basicConfig(level="DEBUG")
 

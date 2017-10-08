@@ -1,12 +1,13 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import imghdr
 import os
 
-import matplotlib
-
 from rasa_core.evaluate import run_story_evaluation, \
     collect_story_predictions
-
-matplotlib.use('Agg')
 
 
 def test_evaluation_image_creation(tmpdir):
