@@ -53,8 +53,7 @@ def subsample_array(arr, max_values, can_modify_incoming_array=True, rand=None):
 def is_int(value):
     """Checks if a value is an integer.
 
-    The type of the value is not important, it might be an int
-    a string or a float."""
+    The type of the value is not important, it might be an int or a float."""
 
     try:
         return value == int(value)

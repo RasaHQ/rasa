@@ -8,6 +8,7 @@ import io
 from rasa_core.events import SlotSet, ActionExecuted
 from rasa_core.training_utils import extract_stories_from_file, \
     extract_story_graph_from_file
+from rasa_core.training_utils.dsl import Story
 
 
 def test_can_read_test_story(default_domain):
@@ -29,12 +30,28 @@ def test_can_read_test_story(default_domain):
     assert story.story_steps[0].events[3] == SlotSet("nice_person", "")
 
 
-def test_persist_and_read_test_story(tmpdir, default_domain):
+def test_persist_and_read_test_story_graph(tmpdir, default_domain):
     graph = extract_story_graph_from_file("data/dsl_stories/stories.md",
                                           default_domain)
     out_path = tmpdir.join("persisted_story.md")
     with io.open(out_path.strpath, "w") as f:
         f.write(graph.as_story_string())
+
+    recovered_stories = extract_stories_from_file(out_path.strpath,
+                                                  default_domain)
+    existing_stories = {s.as_story_string()
+                        for s in graph.build_stories(default_domain)}
+    for r in recovered_stories:
+        story_str = r.as_story_string()
+        assert story_str in existing_stories
+        existing_stories.discard(story_str)
+
+
+def test_persist_and_read_test_story(tmpdir, default_domain):
+    graph = extract_story_graph_from_file("data/dsl_stories/stories.md",
+                                          default_domain)
+    out_path = tmpdir.join("persisted_story.md")
+    Story(graph.story_steps).dump_to_file(out_path.strpath)
 
     recovered_stories = extract_stories_from_file(out_path.strpath,
                                                   default_domain)
