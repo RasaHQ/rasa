@@ -56,10 +56,11 @@ def create_argument_parser():
     return parser
 
 
-def _get_stories(story_file, domain, max_stories=None):
+def _get_stories(story_file, domain, max_stories=None, shuffle_stories=True):
     """Retrieve the stories from a file."""
     stories = extract_stories_from_file(story_file, domain)
-    random.Random(42).shuffle(stories)
+    if shuffle_stories:
+        random.Random(42).shuffle(stories)
     if max_stories is not None:
         return stories[:max_stories]
     else:
@@ -82,9 +83,10 @@ def _min_list_distance(pred, actual):
     return padded_pred, padded_actual
 
 
-def _test_stories(story_file, policy_model_path, nlu_model_path,
-                 max_stories=None):
+def collect_story_predictions(story_file, policy_model_path, nlu_model_path,
+                              max_stories=None, shuffle_stories=True):
     """Test the stories from a file, running them through the stored model."""
+
     def actions_since_last_utterance(tracker):
         actions = []
         for e in reversed(tracker.events):
@@ -101,7 +103,9 @@ def _test_stories(story_file, policy_model_path, nlu_model_path,
         interpreter = RegexInterpreter()
 
     agent = Agent.load(policy_model_path, interpreter=interpreter)
-    stories = _get_stories(story_file, agent.domain, max_stories=max_stories)
+    stories = _get_stories(story_file, agent.domain,
+                           max_stories=max_stories,
+                           shuffle_stories=shuffle_stories)
     preds = []
     actual = []
 
@@ -149,8 +153,8 @@ def run_story_evaluation(story_file, policy_model_path, nlu_model_path,
     from sklearn.metrics import confusion_matrix
     from sklearn.utils.multiclass import unique_labels
 
-    test_y, preds = _test_stories(story_file, policy_model_path, nlu_model_path,
-                                 max_stories)
+    test_y, preds = collect_story_predictions(story_file, policy_model_path,
+                                              nlu_model_path, max_stories)
 
     log_evaluation_table(test_y, preds)
     cnf_matrix = confusion_matrix(test_y, preds)

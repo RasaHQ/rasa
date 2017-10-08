@@ -15,7 +15,7 @@ from rasa_core.training_utils.visualization import visualize_stories
 logger = logging.getLogger(__name__)
 
 
-def create_argparser():
+def create_argument_parser():
     parser = argparse.ArgumentParser(
             description='Visualize the stories in a dialogue training file')
 
@@ -41,7 +41,7 @@ def create_argparser():
 
 
 if __name__ == '__main__':
-    parser = create_argparser()
+    parser = create_argument_parser()
     args = parser.parse_args()
     logging.basicConfig(level="DEBUG")
 

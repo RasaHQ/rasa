@@ -13,13 +13,13 @@ from rasa_core.agent import Agent
 from rasa_core.conversation import Topic
 from rasa_core.domain import TemplateDomain
 from rasa_core.events import UserUttered, TopicSet, ActionExecuted, SlotSet, \
-    Restarted
+    Restarted, ActionReverted
 from rasa_core.featurizers import BinaryFeaturizer
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.tracker_store import InMemoryTrackerStore, RedisTrackerStore
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training_utils import extract_stories_from_file, STORY_START
-from utilities import tracker_from_dialogue_file, read_dialogue_file
+from tests.utilities import tracker_from_dialogue_file, read_dialogue_file
 
 domain = TemplateDomain.load("data/test_domains/default_with_topic.yml")
 
@@ -165,3 +165,36 @@ def test_restart_event(default_domain):
     assert len(recovered.events) == 6
     assert recovered.latest_message.text is None
     assert len(list(recovered.generate_all_prior_states())) == 2
+
+
+def test_revert_action_event(default_domain):
+    tracker = DialogueStateTracker("default", default_domain.slots,
+                                   default_domain.topics,
+                                   default_domain.default_topic)
+    # the retrieved tracker should be empty
+    assert len(tracker.events) == 0
+
+    intent = {"name": "greet", "confidence": 1.0}
+    tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
+    tracker.update(UserUttered("_greet", intent, []))
+    tracker.update(ActionExecuted("my_action"))
+    tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
+
+    assert tracker.latest_action_name == ACTION_LISTEN_NAME
+    assert len(list(tracker.generate_all_prior_states())) == 4
+
+    tracker.update(ActionReverted())
+
+    assert tracker.latest_action_name == "my_action"
+    assert len(list(tracker.generate_all_prior_states())) == 3
+
+    dialogue = tracker.as_dialogue()
+
+    recovered = DialogueStateTracker("default", default_domain.slots,
+                                     default_domain.topics,
+                                     default_domain.default_topic)
+    recovered.recreate_from_dialogue(dialogue)
+
+    assert recovered.current_state() == tracker.current_state()
+    assert tracker.latest_action_name == "my_action"
+    assert len(list(tracker.generate_all_prior_states())) == 3

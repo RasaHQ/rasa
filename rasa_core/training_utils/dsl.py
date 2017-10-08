@@ -76,9 +76,6 @@ class StoryStep(object):
         if not self._is_action_listen(event):
             self.events.append(event)
 
-    def num_actions(self):
-        return sum(1 for e in self.events if isinstance(e, ActionExecuted))
-
     def as_story_string(self, flat=False):
         # if the result should be flattened, we
         # will exclude the caption and any checkpoints.
@@ -215,18 +212,6 @@ class StoryStepBuilder(object):
 class Story(object):
     def __init__(self, story_steps=None):
         self.story_steps = story_steps if story_steps else []
-
-    def used_actions(self):
-        for step in self.story_steps:
-            for s in step.events:
-                if isinstance(s, ActionExecuted):
-                    yield s.action_name
-
-    def num_actions(self):
-        c = 0
-        for step in self.story_steps:
-            c += step.num_actions()
-        return c
 
     def as_dialogue(self, sender, domain, interpreter=RegexInterpreter()):
         events = []
@@ -697,42 +682,6 @@ class TrainingsDataExtractor(object):
         X_unique = t_data[:, :, :-1]
         y_unique = np.array(t_data[:, 0, -1], dtype=casted_y.dtype)
         return X_unique, y_unique
-
-    def _feature_vector_to_str(self, x):
-        # type: (ndarray) -> Text
-        """Transforms the feature vector into a string"""
-
-        decoded = self.featurizer.decode(x, self.domain.input_features,
-                                         ndigits=8)
-        return json.dumps(decoded).replace("\"", "")
-
-    def _prepare_events(self, step):
-        # type: (StoryStep) -> List[Event]
-        """Returns events contained in the story step inserting implicit events.
-
-        Not all events are always listed in the story dsl.
-        This includes listen actions as well as implicitly
-        set slots. This functions makes these events explicit
-        and returns them with the rest of the steps events."""
-
-        events = []
-
-        for e in step.events:
-            if isinstance(e, UserUttered):
-                parse_data = self.interpreter.parse(e.text)
-                updated_utterance = UserUttered(e.text, parse_data["intent"],
-                                                parse_data["entities"],
-                                                parse_data)
-                events.append(ActionExecuted(ActionListen().name()))
-                events.append(updated_utterance)
-                events.extend(
-                        self.domain.slots_for_entities(parse_data["entities"]))
-            else:
-                events.append(e)
-
-        if step.end_checkpoint is None:
-            events.append(ActionExecuted(ActionListen().name()))
-        return events
 
     def _mark_first_action_in_story_steps_as_unpredictable(self):
         # type: () -> None
