@@ -43,6 +43,7 @@ jobs:
   include:
   - stage: docs
     install:
+    - sudo rm /etc/apt/sources.list.d/mongodb-3.2.list  # temp mongo certificate fix
     - sudo apt-get update
     - pip install sphinx==1.5.2 sphinx-autobuild==0.6.0 sphinxcontrib-versioning==2.2.1
       nbsphinx==0.2.13
@@ -59,6 +60,7 @@ jobs:
     - sphinx-versioning push docs gh-pages .
   - stage: deploy
     install:
+    - sudo rm /etc/apt/sources.list.d/mongodb-3.2.list  # temp mongo certificate fix
     - pip install pypandoc==1.4
     script: skip
     deploy:
