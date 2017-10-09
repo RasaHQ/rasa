@@ -38,19 +38,11 @@ class JiebaTokenizer(Tokenizer, Component):
 
     def process(self, message, **kwargs):
         # type: (Message, **Any) -> None
-
         message.set("tokens", self.tokenize(message.text))
 
     def tokenize(self, text):
         # type: (Text) -> List[Token]
         import jieba
-
-        words = jieba.lcut(text.encode('utf-8'))
-        running_offset = 0
-        tokens = []
-        for word in words:
-            word_offset = text.index(word, running_offset)
-            word_len = len(word)
-            running_offset = word_offset + word_len
-            tokens.append(Token(word, word_offset))
+        tokenized = jieba.tokenize(text)
+        tokens = [Token(word, start) for (word, start, end) in tokenized]
         return tokens

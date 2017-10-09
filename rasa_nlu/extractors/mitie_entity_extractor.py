@@ -3,10 +3,11 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
-import typing
-from builtins import range
+from builtins import range, str
+import logging
 import os
 
+import typing
 from typing import Any
 from typing import Dict
 from typing import List
@@ -19,6 +20,7 @@ from rasa_nlu.model import Metadata
 from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
 
+logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     import mitie
@@ -86,8 +88,19 @@ class MitieEntityExtractor(EntityExtractor):
             tokens = example.get("tokens")
             sample = mitie.ner_training_instance([t.text for t in tokens])
             for ent in example.get("entities", []):
-                start, end = MitieEntityExtractor.find_entity(ent, text, tokens)
-                sample.add_entity(list(range(start, end)), ent["entity"])
+                try:
+                    # if the token is not aligned an exception will be raised
+                    start, end = MitieEntityExtractor.find_entity(ent, text, tokens)
+                except ValueError as e:
+                    logger.warning("Example skipped: {}".format(str(e)))
+                    continue
+                try:
+                    # mitie will raise an exception on malicious input - e.g. on overlapping entities
+                    sample.add_entity(list(range(start, end)), ent["entity"])
+                except Exception as e:
+                    logger.warning("Failed to add entity example '{}' of sentence '{}'. Reason: {}".format(
+                            str(e), str(text), e))
+                    continue
                 found_one_entity = True
 
             trainer.add(sample)

@@ -4,10 +4,59 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
-[Unreleased] - `master`_
+[Unreleased] - `master 0.11.0.aX`_
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. note:: This version is not yet released and is under active development.
+
+
+[0.10.1] - 2017-10-06
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- readme issues
+- improved setup py welcome message
+
+[0.10.0] - 2017-09-27
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- Support for training data in Markdown format
+- Cors support. You can now specify allowed cors origins within your configuration file.
+- The HTTP server is now backed by Klein (Twisted) instead of Flask. The server is now asynchronous but is no more WSGI compatible
+- Improved Docker automated builds
+- Rasa NLU now works with projects instead of models. A project can be the basis for a restaurant search bot in German or a customer service bot in English. A model can be seen as a snapshot of a project.
+
+Changed
+-------
+- Root project directories have been slightly rearranged to clean up new docker support
+- use ``Interpreter.create(metadata, ...)`` to create interpreter from dict and ``Interpreter.load(file_name, ...)`` to create interpreter with metadata from a file
+- Renamed ``name`` parameter to ``project``
+- Docs hosted on GitHub pages now: `Documentation <https://rasahq.github.io/rasa_nlu>`_
+- Adapted remote cloud storages to support projects (backwards incompatible!)
+
+Fixed
+-----
+- Fixed training data persistence. Fixes #510
+- Fixed UTF-8 character handling when training through HTTP interface
+- Invalid handling of numbers extracted from duckling during synonym handling. Fixes #517
+- Only log a warning (instead of throwing an exception) on misaligned entities during mitie NER
+
+[0.9.2] - 2017-08-16
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- removed unnecessary `ClassVar` import
+
+[0.9.1] - 2017-07-11
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- removed obsolete ``--output`` parameter of ``train.py``. use ``--path`` instead. fixes #473
 
 [0.9.0] - 2017-07-07
 ^^^^^^^^^^^^^^^^^^^^
@@ -211,7 +260,7 @@ Fixed
 
 [0.7.0] - 2017-03-10
 ^^^^^^^^^^^^^^^^^^^^
-This is a major version update. Please also have a look at the `Migration Guide <https://rasa-nlu.readthedocs.io/en/latest/migrations.html>`_.
+This is a major version update. Please also have a look at the `Migration Guide <https://rasahq.github.io/rasa_nlu/migrations.html>`_.
 
 Added
 -----

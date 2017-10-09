@@ -50,7 +50,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'rasa NLU'
-copyright = u'2016, Lastmile Technologies Ltd'
+copyright = u'2017, Rasa Technologies GmbH'
 author = u'Alan Nichol'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -301,3 +301,12 @@ doctest_global_setup = r'''
 import os
 os.chdir(os.path.abspath('..'))
 '''
+
+# Sphinxcontrib configuration
+scv_priority = 'tags'
+scv_show_banner = True
+scv_banner_greatest_tag = True
+scv_sort = ('semver',)
+scv_whitelist_branches = ('master', 'latest')
+scv_grm_exclude = ('README.md', '.gitignore', '.nojekyll', 'CNAME')
+scv_greatest_tag = True

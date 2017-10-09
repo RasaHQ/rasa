@@ -1,8 +1,8 @@
 **Proposed changes**:
 - ...
 
-**Status**:
-- [ ] ready for code review
-- [ ] there are tests for the functionality
-- [ ] documentation updated
-- [ ] changelog updated
+**Status (please check what you already did)**:
+- [ ] made PR ready for code review
+- [ ] added some tests for the functionality
+- [ ] updated the documentation
+- [ ] updated the changelog
