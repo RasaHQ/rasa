@@ -161,7 +161,8 @@ class Trainer(object):
 
         return Interpreter(self.pipeline, context)
 
-    def persist(self, path, persistor=None, project_name=None):
+    def persist(self, path, persistor=None, project_name=None,
+                fixed_model_name=None):
         # type: (Text, Optional[Persistor], Text) -> Text
         """Persist all components of the pipeline to the passed path.
 
@@ -176,7 +177,10 @@ class Trainer(object):
         if project_name is None:
             project_name = "default"
 
-        model_name = "model_" + timestamp
+        if fixed_model_name:
+            model_name = fixed_model_name
+        else:
+            model_name = "model_" + timestamp
         dir_name = os.path.join(path, project_name, model_name)
 
         create_dir(dir_name)

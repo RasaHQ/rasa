@@ -10,6 +10,14 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 .. note:: This version is not yet released and is under active development.
 
 
+[0.10.1] - 2017-10-06
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- readme issues
+- improved setup py welcome message
+
 [0.10.0] - 2017-09-27
 ^^^^^^^^^^^^^^^^^^^^^
 

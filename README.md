@@ -74,13 +74,16 @@ curl 'http://localhost:5000/version'
 #### Json format
 ```
 curl 'https://raw.githubusercontent.com/RasaHQ/rasa_nlu/master/data/examples/rasa/demo-rasa.json' | \
-curl --request POST --header 'content-type: application/json' -d@- --url localhost:5000/train?name=test_model
+curl --request POST --header 'content-type: application/json' -d@- --url 'localhost:5000/train?project=test_model&pipeline=keyword'
 ```
+
+This will train a simple keyword based models (not usable for anything but this demo). For better
+pipelines consult the documentation.
 
 #### Markdown format
 ```
 wget 'https://raw.githubusercontent.com/RasaHQ/rasa_nlu/master/data/examples/rasa/demo-rasa.md'
-curl --request POST --data-binary @demo-rasa.md --url localhost:5000/train?name=test_model
+curl --request POST --data-binary @demo-rasa.md --url 'localhost:5000/train?project=test_model&pipeline=keyword'
 ```
 
 The above command does the following:
