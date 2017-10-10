@@ -48,7 +48,6 @@ def load_api_data(files, language):
                     root_f_data = json.loads(root_synonyms_f.read())
                     intent = root_f_data.get("name")
 
-                    logger.info('intent: {}'.format(intent))
                     for s in data:
                         text = "".join([chunk["text"] for chunk in s.get("data")])
                         # add entities to each token, if available
@@ -73,7 +72,6 @@ def load_api_data(files, language):
                         training_examples.append(Message(text, data))
 
             elif filename.endswith(synonyms_language_file_extension):
-                logger.info('synonyms_language_file_extension:{}'.format(filename))
                 data = json.loads(f.read())
 
                 # create synonyms dictionary
