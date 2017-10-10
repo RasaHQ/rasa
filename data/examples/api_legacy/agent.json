@@ -1,0 +1,10 @@
+{
+  "language": "en",
+  "enabledDomainFeatures": [
+    "smalltalk-domain-on",
+    "smalltalk-fulfillment-on"
+  ],
+  "defaultTimezone": "Europe/San_Marino",
+  "customClassifierMode": "use.after",
+  "mlMinConfidence": 0.2
+}

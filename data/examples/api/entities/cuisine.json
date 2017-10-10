@@ -1,30 +1,7 @@
 {
-  "id": "29b4a755-74a5-4c18-8511-a609f7ef214c",
+  "id": "11c77228-4a02-4db8-a398-b286fe8098d2",
   "name": "cuisine",
   "isOverridable": true,
-  "entries": [
-    {
-      "value": "mexican",
-      "synonyms": [
-        "mexico",
-        "mexican"
-      ]
-    },
-    {
-      "value": "chinese",
-      "synonyms": [
-        "chinese",
-        "china"
-      ]
-    },
-    {
-      "value": "indian",
-      "synonyms": [
-        "indian",
-        "india"
-      ]
-    }
-  ],
   "isEnum": false,
   "automatedExpansion": false
 }

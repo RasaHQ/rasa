@@ -81,7 +81,7 @@ def run_intent_evaluation(config, model_path, component_builder=None):
     from sklearn.utils.multiclass import unique_labels
 
     # get the metadata config from the package data
-    test_data = load_data(config['data'])
+    test_data = load_data(config['data'], config['language'])
     interpreter = Interpreter.load(model_path, config, component_builder)
 
     test_y = [e.get("intent") for e in test_data.training_examples]

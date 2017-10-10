@@ -1,9 +1,8 @@
 {
-  "id": "2aabfa56-9dac-4968-8e8e-193e6e2e985a",
+  "id": "27b800fb-3b69-4723-932d-ca53eb849138",
   "name": "Default Fallback Intent",
   "auto": true,
   "contexts": [],
-  "userSays": [],
   "responses": [
     {
       "resetContexts": false,
@@ -13,22 +12,42 @@
       "messages": [
         {
           "type": 0,
+          "lang": "es",
           "speech": [
-            "I\u0027m sorry. I\u0027m having trouble understanding the question.",
-            "I think I may have misunderstood your last statement.",
-            "I\u0027m sorry. I didn\u0027t quite grasp what you just said.",
-            "I don\u0027t think I\u0027m qualified to answer that yet.",
-            "I\u0027m a bit confused by that last part.",
-            "I\u0027m not totally sure about that.",
-            "I\u0027m not sure I follow.",
-            "I\u0027m afraid I don\u0027t understand.",
-            "I\u0027m a bit confused."
+            "Ups, no he entendido a que te refieres.",
+            "¿Podrías repetirlo, por favor?",
+            "¿Disculpa?",
+            "¿Decías?",
+            "¿Cómo?"
+          ]
+        },
+        {
+          "type": 0,
+          "lang": "en",
+          "speech": [
+            "I didn\u0027t get that. Can you say it again?",
+            "I missed what you said. Say it again?",
+            "Sorry, could you say that again?",
+            "Sorry, can you say that again?",
+            "Can you say that again?",
+            "Sorry, I didn\u0027t get that.",
+            "Sorry, what was that?",
+            "One more time?",
+            "What was that?",
+            "Say that again?",
+            "I didn\u0027t get that.",
+            "I missed that."
           ]
         }
-      ]
+      ],
+      "defaultResponsePlatforms": {},
+      "speech": []
     }
   ],
   "priority": 500000,
   "webhookUsed": false,
-  "fallbackIntent": true
+  "webhookForSlotFilling": false,
+  "lastUpdate": 1507539905,
+  "fallbackIntent": true,
+  "events": []
 }

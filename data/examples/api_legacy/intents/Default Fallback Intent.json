@@ -1,0 +1,34 @@
+{
+  "id": "2aabfa56-9dac-4968-8e8e-193e6e2e985a",
+  "name": "Default Fallback Intent",
+  "auto": true,
+  "contexts": [],
+  "userSays": [],
+  "responses": [
+    {
+      "resetContexts": false,
+      "action": "input.unknown",
+      "affectedContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "type": 0,
+          "speech": [
+            "I\u0027m sorry. I\u0027m having trouble understanding the question.",
+            "I think I may have misunderstood your last statement.",
+            "I\u0027m sorry. I didn\u0027t quite grasp what you just said.",
+            "I don\u0027t think I\u0027m qualified to answer that yet.",
+            "I\u0027m a bit confused by that last part.",
+            "I\u0027m not totally sure about that.",
+            "I\u0027m not sure I follow.",
+            "I\u0027m afraid I don\u0027t understand.",
+            "I\u0027m a bit confused."
+          ]
+        }
+      ]
+    }
+  ],
+  "priority": 500000,
+  "webhookUsed": false,
+  "fallbackIntent": true
+}

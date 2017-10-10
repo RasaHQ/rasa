@@ -1,0 +1,96 @@
+{
+  "id": "3902b68a-ddc7-457c-9cad-7756f5cb4968",
+  "name": "affirm",
+  "auto": true,
+  "contexts": [
+    "inform"
+  ],
+  "userSays": [
+    {
+      "id": "d7b530d3-23d0-4e8c-bc75-5cec432a9070",
+      "data": [
+        {
+          "text": "great"
+        }
+      ],
+      "isTemplate": false,
+      "count": 0
+    },
+    {
+      "id": "b098d72c-e1e8-43cb-ae83-5024a4446fcd",
+      "data": [
+        {
+          "text": "ok"
+        }
+      ],
+      "isTemplate": false,
+      "count": 0
+    },
+    {
+      "id": "d6de9c1e-4545-453d-9291-701d6de1b826",
+      "data": [
+        {
+          "text": "that\u0027s right"
+        }
+      ],
+      "isTemplate": false,
+      "count": 0
+    },
+    {
+      "id": "c921a30e-dd6a-4838-be8f-d6be18079f54",
+      "data": [
+        {
+          "text": "indeed"
+        }
+      ],
+      "isTemplate": false,
+      "count": 0
+    },
+    {
+      "id": "82a1488c-652f-40aa-ae6e-3000d1d7b9d2",
+      "data": [
+        {
+          "text": "yeah"
+        }
+      ],
+      "isTemplate": false,
+      "count": 0
+    },
+    {
+      "id": "274af0bc-5461-4a46-a0d4-96408e6e5047",
+      "data": [
+        {
+          "text": "yep"
+        }
+      ],
+      "isTemplate": false,
+      "count": 0
+    },
+    {
+      "id": "1b437eea-30ef-4e96-aa05-a3dfb0226a8a",
+      "data": [
+        {
+          "text": "yes"
+        }
+      ],
+      "isTemplate": false,
+      "count": 0
+    }
+  ],
+  "responses": [
+    {
+      "resetContexts": false,
+      "affectedContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "type": 0,
+          "speech": "Glad I help you, mate :)"
+        }
+      ]
+    }
+  ],
+  "priority": 500000,
+  "webhookUsed": false,
+  "fallbackIntent": false
+}

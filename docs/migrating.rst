@@ -33,8 +33,11 @@ api.ai
 
 api app exports generate multiple files rather than just one. 
 Put them all in a directory (see ``data/examples/api`` in the repo)
-and pass that path to the trainer. 
+and pass that path to the trainer.
 
+Note: Since October 4, 2017, api.ai has added `Multi-language Agents <https://api.ai/docs/multi-language>`_, in which
+app exports now has an additional separate file per language. As such, please consider exporting your current
+api.ai data to the new format.
 
 
 Emulation

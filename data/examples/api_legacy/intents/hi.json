@@ -1,0 +1,75 @@
+{
+  "id": "3e7ea801-9d08-479c-ada2-27ce467ca326",
+  "name": "hi",
+  "auto": true,
+  "contexts": [],
+  "userSays": [
+    {
+      "id": "6a29da7f-3926-4b68-aa6d-dbbfe1c6b79d",
+      "data": [
+        {
+          "text": "hi"
+        }
+      ],
+      "isTemplate": false,
+      "count": 0
+    },
+    {
+      "id": "a83ef752-c2fe-4d45-abd4-35bc381f6d96",
+      "data": [
+        {
+          "text": "hello"
+        }
+      ],
+      "isTemplate": false,
+      "count": 0
+    },
+    {
+      "id": "91c4267d-5e30-4d45-9ce3-d0b21836c372",
+      "data": [
+        {
+          "text": "hey there"
+        }
+      ],
+      "isTemplate": false,
+      "count": 0
+    },
+    {
+      "id": "4b41d389-8bf7-4976-97ea-3b39a3e883ab",
+      "data": [
+        {
+          "text": "howdy"
+        }
+      ],
+      "isTemplate": false,
+      "count": 0
+    },
+    {
+      "id": "d819385a-a9c8-4dd0-9787-9a47c53156f3",
+      "data": [
+        {
+          "text": "hey"
+        }
+      ],
+      "isTemplate": false,
+      "count": 0
+    }
+  ],
+  "responses": [
+    {
+      "resetContexts": false,
+      "action": "greet",
+      "affectedContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "type": 0,
+          "speech": "hey! how can I help you?"
+        }
+      ]
+    }
+  ],
+  "priority": 500000,
+  "webhookUsed": false,
+  "fallbackIntent": false
+}

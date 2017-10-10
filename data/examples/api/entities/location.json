@@ -1,33 +1,7 @@
 {
-  "id": "1e3ed919-12f7-494f-9d97-74f591f7af94",
+  "id": "8ee88034-01d3-49d4-bb58-531a705b963b",
   "name": "location",
   "isOverridable": true,
-  "entries": [
-    {
-      "value": "centre",
-      "synonyms": [
-        "centre"
-      ]
-    },
-    {
-      "value": "west",
-      "synonyms": [
-        "west"
-      ]
-    },
-    {
-      "value": "central",
-      "synonyms": [
-        "central"
-      ]
-    },
-    {
-      "value": "north",
-      "synonyms": [
-        "north"
-      ]
-    }
-  ],
   "isEnum": false,
   "automatedExpansion": false
 }
