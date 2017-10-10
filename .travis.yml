@@ -11,7 +11,6 @@ python:
 - '2.7'
 - '3.6'
 install:
-- sudo rm /etc/apt/sources.list.d/mongodb-3.2.list  # temp mongo certificate fix
 - sudo apt-get update
 - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
   -O miniconda.sh; else wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
@@ -43,7 +42,6 @@ jobs:
   include:
   - stage: docs
     install:
-    - sudo rm /etc/apt/sources.list.d/mongodb-3.2.list  # temp mongo certificate fix
     - sudo apt-get update
     - pip install sphinx==1.5.2 sphinx-autobuild==0.6.0 sphinxcontrib-versioning==2.2.1
       nbsphinx==0.2.13
@@ -60,7 +58,6 @@ jobs:
     - sphinx-versioning push docs gh-pages .
   - stage: deploy
     install:
-    - sudo rm /etc/apt/sources.list.d/mongodb-3.2.list  # temp mongo certificate fix
     - pip install pypandoc==1.4
     script: skip
     deploy:
