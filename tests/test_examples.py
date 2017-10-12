@@ -45,7 +45,7 @@ def test_babi_online_example():
     # it looks like the user is always typing "2" if someone requests input.
     utils.input = lambda _=None: "2"  # simulates cmdline input
 
-    agent = run_babi_online()
+    agent = run_babi_online(max_messages=3)
     responses = agent.handle_message("_greet")
     assert responses[-1] in {"hey there!",
                              "how can I help you?",
@@ -83,14 +83,15 @@ def test_concerts_online_example():
 def test_fake_user_online_example():
     from rasa_core import utils
     # simulates cmdline input / detailed explanation above
-    utils.input = lambda _=None: "2"
+    x = [0]
 
-    input_channel = FileInputChannel(
-            'examples/babi/data/babi_task5_fu_rasa_fewer_actions.md',
-            message_line_pattern='^\s*\*\s(.*)$',
-            max_messages=3)
-    agent = run_fake_user(input_channel, serve_forever=False)
-    responses = agent.handle_message("_greet")
-    assert responses[-1] in {"how can I help you?",
-                             "hey there!",
-                             "default message"}
+    def online_learning_answers(_=None, counter=x):
+        counter[0] += 1
+        return "2" if(counter[0] < 5) else "0"
+
+    utils.input = online_learning_answers
+
+    try:
+        run_fake_user(serve_forever=False)
+    except SystemExit:
+        pass

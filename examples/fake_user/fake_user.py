@@ -3,9 +3,41 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import logging
+
 import numpy as np
+from rasa_core.events import Restarted
 
 from rasa_core.actions.action import ACTION_LISTEN_NAME
+from rasa_core.channels import UserMessage
+from rasa_core.channels.channel import InputChannel
+from rasa_core.channels.console import ConsoleOutputChannel
+
+logger = logging.getLogger(__name__)
+
+
+class FakeUserInputChannel(InputChannel):
+    """Input channel that reads the user messages from the command line."""
+
+    def __init__(self, tracker_store):
+        self.tracker_store = tracker_store
+        self.customer = Customer()
+
+    def _record_messages(self, on_message, max_message_limit=None):
+        logger.info("Bot loaded. Fake user will automatically respond!")
+        num_messages = 0
+
+        while max_message_limit is None or num_messages < max_message_limit:
+            tracker = self.tracker_store.retrieve('default')
+            text = self.customer.respond_to_action(tracker)
+            on_message(UserMessage(text, ConsoleOutputChannel()))
+            num_messages += 1
+
+    def start_async_listening(self, message_queue):
+        self._record_messages(message_queue.enqueue)
+
+    def start_sync_listening(self, message_handler):
+        self._record_messages(message_handler)
 
 
 class Customer:
@@ -103,8 +135,8 @@ class Customer:
             elif output == 'reset':
                 self.__init__(indecisiveness=self.indecisiveness,
                               informativeness=self.informativeness)
-                tracker._reset()
-                return 'reset'
+                tracker.update(Restarted())
+                return '_greet'
         self.rethink()
 
     def rethink(self):

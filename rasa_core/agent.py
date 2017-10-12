@@ -143,7 +143,7 @@ class Agent(object):
                      filename=None,
                      input_channel=None,
                      **kwargs):
-        # type: (Optional[Text], **Any) -> None
+        # type: (Optional[Text], Optional[InputChannel], **Any) -> None
         """Runs an online training session on the set policies / ensemble.
 
         The policies will be pretrained using the data from `filename`.
