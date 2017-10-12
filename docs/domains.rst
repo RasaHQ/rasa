@@ -126,7 +126,7 @@ you should choose a slot where the value influences the dialogue model.
 These are all of the predefined slot classes and what they're useful for.
 
 
-``type: boolean``
+``type: bool``
 :::::::::::::::::
 :Use For: True or False
 :Description:
