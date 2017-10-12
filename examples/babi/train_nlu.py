@@ -22,7 +22,7 @@ def train_babi_nlu():
     trainer = Trainer(RasaNLUConfig("examples/babi/data/config_nlu.json"))
     trainer.train(training_data)
     model_directory = trainer.persist('examples/babi/models/nlu/',
-                                      model_name=model_name)
+                                      fixed_model_name=model_name)
     return model_directory
 
 
