@@ -46,6 +46,7 @@ after_success:
 jobs:
   include:
   - stage: docs
+    if: fork = false
     install:
     - sudo rm /etc/apt/sources.list.d/mongodb-3.2.list  # temp mongo certificate fix
     - sudo apt-get update
