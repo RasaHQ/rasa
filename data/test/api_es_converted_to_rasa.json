@@ -113,6 +113,16 @@
         "entities": []
       },
       {
+        "text": "si",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
+        "text": "Sí",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
         "text": "de verdad",
         "intent": "affirm",
         "entities": []
