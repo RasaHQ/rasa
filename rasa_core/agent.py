@@ -50,7 +50,7 @@ class Agent(object):
         ensemble = PolicyEnsemble.load(path, featurizer)
         _interpreter = NaturalLanguageInterpreter.create(interpreter)
         _tracker_store = cls._create_tracker_store(tracker_store, domain)
-        return Agent(domain, ensemble, featurizer, _interpreter, _tracker_store)
+        return cls(domain, ensemble, featurizer, _interpreter, _tracker_store)
 
     def handle_message(
             self,
