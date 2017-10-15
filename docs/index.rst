@@ -40,6 +40,7 @@ Welcome to the Rasa Documentation!
    :caption: Getting Started
 
    read_first
+   no_python
    installation
    tour
    tutorial_scratch
