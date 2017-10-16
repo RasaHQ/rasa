@@ -1,8 +1,0 @@
-FROM rasa/rasa_nlu:latest-full
-
-RUN pip install -r alt_requirements/requirements_dev.txt
-
-RUN pip install -e .
-
-ENTRYPOINT ["pytest"]
-CMD["tests/"]

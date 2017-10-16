@@ -144,10 +144,8 @@ class AWSPersistor(Persistor):
         # type: (Text) -> List[Text]
         try:
             prefix = self._project_prefix(project)
-            model_objects = [str(b.key) for b in self.bucket.objects.all()
-                             if str(b.key).startswith(prefix)]
-            return [self._project_and_model_from_filename(obj)[1]
-                    for obj in model_objects]
+            return [self._project_and_model_from_filename(obj.key)[1]
+                    for obj in self.bucket.objects.filter(Prefix=prefix)]
         except Exception as e:
             logger.warn("Failed to list models for project {} in "
                         "AWS. {}".format(project, e))
