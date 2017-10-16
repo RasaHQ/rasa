@@ -1,3 +1,5 @@
+.. _domain:
+
 Domain, Slots, and Actions
 ==========================
 
