@@ -94,7 +94,7 @@ class Persistor(object):
     def _project_prefix(project):
         # type: (Text) -> Text
 
-        return '{}___'.format(project)
+        return '{}___'.format(project or RasaNLUConfig.DEFAULT_PROJECT_NAME)
 
     @staticmethod
     def _project_and_model_from_filename(filename):
@@ -143,10 +143,9 @@ class AWSPersistor(Persistor):
     def list_models(self, project):
         # type: (Text) -> List[Text]
         try:
-            blob_iterator = self.bucket.list(
-                    prefix=self._project_prefix(project))
-            return [self._project_and_model_from_filename(b.name)[1]
-                    for b in blob_iterator]
+            prefix = self._project_prefix(project)
+            return [self._project_and_model_from_filename(obj.key)[1]
+                    for obj in self.bucket.objects.filter(Prefix=prefix)]
         except Exception as e:
             logger.warn("Failed to list models for project {} in "
                         "AWS. {}".format(project, e))
