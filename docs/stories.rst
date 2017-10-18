@@ -33,6 +33,25 @@ see this step. However, something such as ``- action_ask_howcanhelp`` is the bot
 
 The end of a story is denoted by a newline, and then a new story starts again with ``##``.
 
+You can use ``> checkpoints`` to modularize and simplify your training data:
+
+.. code-block:: md
+
+    ## first story
+    * _hello
+       - action_ask_user_question
+    > check_asked_question
+
+    ## user affirms question
+    > check_asked_question
+    * _affirm
+      - action_handle_affirmation
+
+    ## user denies question
+    > check_asked_question
+    * _deny
+      - action_handle_denial
+
 .. _story-visualization:
 
 Visualization of story training data
