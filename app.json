@@ -23,7 +23,7 @@
       "value": "spacy_sklearn"
     },
     "RASA_PATH": {
-      "description": "where to save models",
+      "description": "where to save projects and their models",
       "value": "/app/data"
     },
     "RASA_LOGDIR": {

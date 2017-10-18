@@ -1,32 +1,37 @@
 from setuptools import setup
 
-__version__ = None   # Avoids IDE errors, but actual version is read from version.py
-exec(open('rasa_nlu/version.py').read())
+__version__ = None  # Avoids IDE errors, but actual version is read from version.py
+exec (open('rasa_nlu/version.py').read())
 
 tests_requires = [
     "pytest-pep8",
     "pytest-services",
-    "pytest-flask",
-    "pytest-cov"
+    "pytest-cov",
+    "pytest-twisted",
+    "treq"
 ]
 
 install_requires = [
-    "requests",
     "pathlib",
     "cloudpickle",
     "gevent",
-    "flask",
+    "klein",
     "boto3",
     "typing",
     "future",
     "six",
-    "jsonschema"
+    "tqdm",
+    "requests",
+    "jsonschema",
+    "matplotlib",
+    "numpy>=1.13",
+    "simplejson",
 ]
 
 extras_requires = {
     'test': tests_requires,
-    'spacy': ["sklearn", "scipy", "numpy"],
-    'mitie': ["mitie", "numpy"],
+    'spacy': ["sklearn", "scipy"],
+    'mitie': ["mitie"],
 }
 
 setup(
@@ -50,10 +55,19 @@ setup(
     install_requires=install_requires,
     tests_require=tests_requires,
     extras_require=extras_requires,
-    description="rasa NLU a natural language parser for bots",
+    include_package_data=True,
+    description="Rasa NLU a natural language parser for bots",
     author='Alan Nichol',
     author_email='alan@rasa.ai',
     url="https://rasa.ai",
-    keywords=["NLP", "bots"],
+    keywords=["nlp", "machine-learning", "machine-learning-library", "bot",
+              "bots",
+              "botkit", "rasa", "conversational-agents",
+              "conversational-ai",
+              "chatbot", "chatbot-framework", "bot-framework"],
     download_url="https://github.com/RasaHQ/rasa_nlu/archive/{}.tar.gz".format(__version__)
 )
+
+print("\nWelcome to Rasa NLU!")
+print("If any questions please visit documentation page https://rasahq.github.io/rasa_nlu")
+print("or join community chat on https://gitter.im/RasaHQ/rasa_nlu")

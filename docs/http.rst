@@ -9,21 +9,14 @@ The HTTP api exists to make it easy for non-python projects to use rasa NLU, and
 
 Running the server
 ------------------
-You can run a simple http server that handles requests using your models with (single threaded)
+You can run a simple http server that handles requests using your projects with :
 
 .. code-block:: bash
 
-    $ python -m rasa_nlu.server -c config_spacy.json --server_model_dirs=./model_YYYYMMDD-HHMMSS
+    $ python -m rasa_nlu.server -c sample_configs/config_spacy.json
 
-If your server needs to handle more than one request at a time, you can use any WSGI server to run the rasa NLU server. Using gunicorn this looks like this:
-
-.. code-block:: bash
-
-    $ gunicorn -w 4 --threads 12 -k gevent -b 127.0.0.1:5000 rasa_nlu.wsgi
-
-This will start a server with four processes and 12 threads. Since there is no standard way to pass command line arguments to the server, all your configuration
-options need to be placed in your configuration file (including the ``server_model_dirs``!). You can set the location of the configuration file using environment
-variables, otherwise the default configuration from ``config.json`` will be loaded.
+The server will look for existing projects under the folder defined by the ``path`` parameter in the configuration.
+By default a project will load the latest trained model.
 
 
 Emulation
@@ -53,37 +46,61 @@ You must POST data in this format ``'{"q":"<your text to parse>"}'``, you can do
 
     $ curl -XPOST localhost:5000/parse -d '{"q":"hello there"}'
 
+By default, when the project is not specified in the query, the ``"default"`` one will be used.
+You can (should) specify the project you want to use in your query :
+
+.. code-block:: bash
+
+    $ curl -XPOST localhost:5000/parse -d '{"q":"hello there", "project": "my_restaurant_search_bot"}
+
+By default the latest trained model for the project will be loaded. You can also query against a specific model for a project :
+
+.. code-block:: bash
+
+    $ curl -XPOST localhost:5000/parse -d '{"q":"hello there", "project": "my_restaurant_search_bot", "model": <model_XXXXXX>}
+
 
 ``POST /train``
 ^^^^^^^^^^^^^^^
 
-You can post your training data to this endpoint to train a new model.
-this starts a separate process which you can monitor with the ``/status`` endpoint. If you want to name your model
-to be able to use it during parse requests later on, you should pass the name ``/train?name=my_model``. Any parameter
-passed with the query string will be treated as a configuration parameter of the model, hence you can change all
-the configuration values listed in the configuration section by passing in their name and the adjusted value.
+You can post your training data to this endpoint to train a new model for a project.
+This request will wait for the server answer: either the model was trained successfully or the training errored.
+Using the HTTP server, you must specify the project you want to train a new model for to be able to use it during parse requests later on :
+``/train?project=my_project``. Any parameter passed with the query string will be treated as a
+configuration parameter of the model, hence you can change all the configuration values listed in the
+configuration section by passing in their name and the adjusted value.
 
 .. code-block:: bash
 
-    $ curl -XPOST localhost:5000/train -d @data/examples/rasa/demo-rasa.json
+    $ curl -XPOST localhost:5000/train?project=my_project -d @data/examples/rasa/demo-rasa.json
+
+You cannot send a training request for a project already training a new model (see below).
 
 
 ``GET /status``
 ^^^^^^^^^^^^^^^
 
-This checks if there is currently a training process running (you can only run one at a time).
-also returns a list of available models the server can use to fulfill ``/parse`` requests.
+This returns all the currently available projects, their status (``training`` or ``ready``) and their models loaded in memory.
+also returns a list of available projects the server can use to fulfill ``/parse`` requests.
 
 .. code-block:: bash
 
     $ curl localhost:5000/status | python -mjson.tool
-    {
-      "training" : False
-      "models" : []
-    }
     
+    {
+      "available_projects": {
+        "my_restaurant_search_bot" : {
+          "status" : "ready",
+          "available_models" : [
+            <model_XXXXXX>,
+            <model_XXXXXX>
+          ]
+        }
+      }
+    }
+
 ``GET /version``
-^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^
 
 This will return the current version of the Rasa NLU instance.
 
@@ -122,6 +139,9 @@ If set, this token must be passed as a query parameter in all requests, e.g. :
 
     $ curl localhost:5000/status?token=12345
 
+On default CORS (cross-origin resource sharing) calls are not allowed. If you want to call your rasa NLU server from another domain (for example from a training web UI) then you can whitelist that domain by adding it to the config value ``cors_origin``.
+
+
 .. _section_http_config:
 
 Serving Multiple Apps
@@ -132,36 +152,39 @@ So if you are serving multiple models in production, you want to serve these
 from the same process & avoid duplicating the memory load.
 
 .. note::
-    Although this saves the backend from loading the same backend twice, it still needs to load one set of
+Although this saves the backend from loading the same backend twice, it still needs to load one set of
     word vectors (which make up most of the memory consumption) per language and backend.
 
-You can use the multi-tenancy mode by replacing the ``server_model_dirs`` config
-variable with a json object describing the different models.
+As stated previously, Rasa NLU naturally handles serving multiple apps : by default the server will load all projects found
+under the ``path`` directory defined in the configuration. The file structure under ``path directory`` is as follows :
 
-For example, if you have a restaurant bot and a hotel bot, your configuration might look like this:
-
-
-.. code-block:: json
-
-    {
-      "server_model_dirs": {
-        "hotels" : "./model_XXXXXXX",
-        "restaurants" : "./model_YYYYYYY"
-      }
-    }
+- <path>
+ - <project_A>
+  - <model_XXXXXX>
+  - <model_XXXXXX>
+   ...
+ - <project_B>
+  - <model_XXXXXX>
+   ...
+  ...
 
 
-You then pass an extra ``model`` parameter in your calls to ``/parse`` to specify which one to use:
+So you can specify which one to use in your ``/parse`` requests:
 
 .. code-block:: console
 
-    $ curl 'localhost:5000/parse?q=hello&model=hotels'
+    $ curl 'localhost:5000/parse?q=hello&project=my_restaurant_search_bot'
 
 or
 
 .. code-block:: console
 
-    $ curl -XPOST localhost:5000/parse -d '{"q":"I am looking for Chinese food", "model": "restaurants"}'
+    $ curl -XPOST localhost:5000/parse -d '{"q":"I am looking for Chinese food", "project":"my_restaurant_search_bot"}'
 
-If one of the models is named ``default``, it will be used to serve requests missing a ``model`` parameter.
-If no model is named ``default`` requests without a model parameter will be rejected.
+You can also specify the model you want to use for a given project, the default used being the latest trained :
+
+.. code-block:: console
+
+    $ curl -XPOST localhost:5000/parse -d '{"q":"I am looking for Chinese food", "project":"my_restaurant_search_bot", "model":<model_XXXXXX>}'
+
+If no project is to be found by the server under the ``path`` directory, a ``"default"`` one will be used, using a simple fallback model.

@@ -3,33 +3,30 @@
 Training Data Format
 ====================
 
-The training data for rasa NLU has three arrays inside of a top level object ``common_examples``, ``intent_examples``, and ``entity_examples``. Not all three are required, you can use each of them as needed by the model you are trying to train.
+The training data for rasa NLU is structured into different parts, ``common_examples``, ``entity_synonyms`` and ``regex_features``. The most important one is ``common_examples``.
 
 .. code-block:: json
 
     {
         "rasa_nlu_data": {
             "common_examples": [],
-            "intent_examples": [],
-            "entity_examples": []
+            "regex_features" : [],
+            "entity_synonyms": []
         }
     }
 
-The ``common_examples`` are used to train both the entity and the intent models while the other arrays target intents and entities exclusively.
-
-In many cases it's fine to put all of your training examples in the ``common_examples`` array. 
-However, if you need lots and lots of examples to train a good entity recogniser, that can mess up 
-your intent model because your classes would become unbalanced. In that case it makes sense
-to split up these lists.
+The ``common_examples`` are used to train both the entity and the intent models. You should put all of your training
+examples in the ``common_examples`` array. The next section describes in detail how an example looks like.
+Regex features are a tool to help the classifier detect entities or intents and improve the performance.
 
 Common Examples
 ---------------
 
 Common examples have three components: ``text``, ``intent``, and ``entities``. The first two are strings while the last one is an array.
 
- - The *text* is the search query; An example of what would be submitted for parsing.
- - The *intent* is the intent that should be associated with the text.
- - The *entities* are specific parts of the text which need to be identified.
+ - The *text* is the search query; An example of what would be submitted for parsing. [required]
+ - The *intent* is the intent that should be associated with the text. [optional]
+ - The *entities* are specific parts of the text which need to be identified. [optional]
 
 Entities are specified with a ``start`` and  ``end`` value, which together make a python
 style range to apply to the string, e.g. in the example below, with ``text="show me chinese
@@ -42,35 +39,6 @@ That way you can map syonyms, or misspellings, to the same ``value``.
     {
       "text": "show me chinese restaurants", 
       "intent": "restaurant_search", 
-      "entities": [
-        {
-          "start": 8, 
-          "end": 15, 
-          "value": "chinese", 
-          "entity": "cuisine"
-        }
-      ]
-    }
-    
-Intent Examples
----------------
-Omit the entire entities array:
-
-.. code-block:: json
-
-    {
-      "text": "show me chinese restaurants", 
-      "intent": "restaurant_search"
-    }
-
-Entity Examples
----------------
-Simply omit the ``intent`` section:
-
-.. code-block:: json
-
-    {
-      "text": "show me chinese restaurants", 
       "entities": [
         {
           "start": 8, 
@@ -121,3 +89,76 @@ synonym instead of the actual text in the message.
 
 To use the synonyms defined in your training data, you need to make sure the pipeline contains the ``ner_synonyms``
 component (see :ref:`section_pipeline`).
+
+Alternatively, you can add an "entity_synonyms" array to define several synonyms to one entity value. Here is an example of that:
+
+.. code-block:: json
+
+  {
+    "rasa_nlu_data": {
+      "entity_synonyms": [
+        {
+          "value": "New York City",
+          "synonyms": ["NYC", "nyc", "the big apple"]
+        }
+      ]
+    }
+  }
+
+Regular Expression Features
+---------------------------
+Regular expressions can be used to support the intent classification and entity extraction. E.g. if your entity
+has a certain structure as in a zipcode, you can use a regular expression to ease detection of that entity. For
+the zipcode example it might look like this:
+
+.. code-block:: json
+
+    {
+        "rasa_nlu_data": {
+            "regex_features": [
+                {
+                    "name": "zipcode",
+                    "pattern": "[0-9]{5}"
+                },
+                {
+                    "name": "greet",
+                    "pattern": "hey[^\s]*"
+                },
+            ]
+        }
+    }
+
+The name doesn't define the entity nor the intent, it is just a human readable description for you to remember what
+this regex is used for. As you can see in the above example, you can also use the regex features to improve the intent
+classification performance.
+
+Try to create your regular expressions in a way that they match as few words as possible. E.g. using ``hey[^\s]*``
+instead of ``hey.*``, as the later one might match the whole message whereas the first one only matches a single word.
+
+Regex features for entity extraction are currently only supported by the ``ner_crf`` component! Hence, other entity
+extractors, like ``ner_mitie`` won't use the generated features and their presence will not improve entity recognition
+for these extractors. Currently, all intent classifiers make use of available regex features.
+
+.. note::
+    Regex features don't define entities nor intents! They simply provide patterns to help the classifier
+    recognize entities and related intents. Hence, you still need to provide intent & entity examples as part of your
+    training data!
+
+Markdown Format
+---------------------------
+
+Alternatively training data can be used in the following markdown format (Regex features not supported yet):
+
+.. code-block:: markdown
+
+    ## intent:check_balance
+    - what is my balance <!-- no entity -->
+    - how much do I have on my [savings](source_account) <!-- entity "source_account" has value "savings" -->
+    - how much do I have on my [my savings account](source_account:savings) <!-- synonyms, method 1-->
+
+    ## intent:greet
+    - hey
+    - hello
+
+    ## synonym:savings   <!-- synonyms, method 2 -->
+    - pink pig

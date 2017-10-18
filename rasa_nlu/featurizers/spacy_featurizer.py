@@ -11,6 +11,7 @@ from typing import Text
 
 from rasa_nlu.featurizers import Featurizer
 from rasa_nlu.components import Component
+from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
 
 
@@ -20,60 +21,27 @@ if typing.TYPE_CHECKING:
     import numpy as np
 
 
-class SpacyFeaturizer(Featurizer, Component):
+class SpacyFeaturizer(Featurizer):
     name = "intent_featurizer_spacy"
 
-    context_provides = {
-        "train": ["intent_features"],
-        "process": ["intent_features"],
-    }
+    provides = ["text_features"]
 
-    @classmethod
-    def required_packages(cls):
-        # type: () -> List[Text]
-        return ["numpy"]
+    requires = ["spacy_doc"]
 
-    def ndim(self, spacy_nlp):
-        # type: (Language) -> int
+    def train(self, training_data, config, **kwargs):
+        # type: (TrainingData) -> None
 
-        return spacy_nlp.vocab.vectors_length
+        for example in training_data.intent_examples:
+            features = self.features_for_doc(example.get("spacy_doc"))
+            example.set("text_features", self._combine_with_existing_text_features(example, features))
 
-    def train(self, spacy_nlp, training_data):
-        # type: (Language, TrainingData) -> Dict[Text, Any]
+    def process(self, message, **kwargs):
+        # type: (Message, **Any) -> None
 
-        sentences = [e["text"] for e in training_data.intent_examples]
-        features = self.features_for_sentences(sentences, spacy_nlp)
-        return {
-            "intent_features": features
-        }
+        features = self.features_for_doc(message.get("spacy_doc"))
+        message.set("text_features", self._combine_with_existing_text_features(message, features))
 
-    def process(self, spacy_doc, spacy_nlp):
-        # type: (Doc, Language) -> Dict[Text, Any]
+    def features_for_doc(self, doc):
+        # type: (Doc) -> np.ndarray
 
-        features = self.features_for_doc(spacy_doc, spacy_nlp)
-        return {
-            "intent_features": features
-        }
-
-    def features_for_doc(self, doc, nlp):
-        # type: (Doc, Language) -> np.ndarray
-        import numpy as np
-
-        vec = []
-        for token in doc:
-            if token.has_vector:
-                vec.append(token.vector)
-        if vec:
-            return np.sum(vec, axis=0) / len(vec)
-        else:
-            return np.zeros(self.ndim(nlp))
-
-    def features_for_sentences(self, sentences, nlp):
-        # type: (List[Text], Language) -> np.ndarray
-        import numpy as np
-
-        X = np.zeros((len(sentences), self.ndim(nlp)))
-        for idx, sentence in enumerate(sentences):
-            doc = nlp(sentence)
-            X[idx, :] = self.features_for_doc(doc, nlp)
-        return X
+        return doc.vector   # this will return the sentence embedding as calculated by spacy (currently averaged words)

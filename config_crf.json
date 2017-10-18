@@ -1,5 +1,0 @@
-{
-  "pipeline": ["nlp_spacy", "ner_crf"],
-  "path" : "./models",
-  "data" : "./data/examples/rasa/demo-rasa.json"
-}
