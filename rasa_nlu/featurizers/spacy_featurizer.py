@@ -31,14 +31,14 @@ def features_for_doc(doc):
     return doc.vector
 
 
-def features_for_sentences(sentences, nlp):
+def features_for_sentences(sentences, spacy_nlp):
     """Return a feature matrix where each row represents one sentence."""
     # type: (List[Text], Language, int) -> np.ndarray
     import numpy as np
 
-    X = np.zeros((len(sentences), ndim(nlp)))
+    X = np.zeros((len(sentences), ndim(spacy_nlp)))
     for idx, sentence in enumerate(sentences):
-        doc = nlp(sentence)
+        doc = spacy_nlp(sentence)
         X[idx, :] = features_for_doc(doc)
     return X
 
@@ -62,7 +62,7 @@ class SpacyFeaturizer(Featurizer):
         self._set_spacy_features(message)
 
     def _set_spacy_features(self, message):
-        """Adds the spacy word vectores to the messages text features."""
+        """Adds the spacy word vectors to the messages text features."""
 
         fs = features_for_doc(message.get("spacy_doc"))
         features = self._combine_with_existing_text_features(message, fs)
