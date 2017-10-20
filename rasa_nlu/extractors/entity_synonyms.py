@@ -85,8 +85,11 @@ class EntitySynonymMapper(EntityExtractor):
     def add_entities_if_synonyms(self, entity_a, entity_b):
         if entity_b is not None:
             original = entity_a if isinstance(entity_a, six.text_type) else six.text_type(entity_a)
-            original = original.lower()
             replacement = entity_b if isinstance(entity_b, six.text_type) else six.text_type(entity_b)
 
             if original != replacement:
+                original = original.lower()
+                if original in self.synonyms and self.synonyms[original] != replacement:
+                    warnings.warn("Overwriting existing synonym %s->%s with %s->%s" % 
+                                  (original, self.synonyms[original], original, replacement))
                 self.synonyms[original] = replacement
