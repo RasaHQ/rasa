@@ -45,6 +45,7 @@ after_success:
 jobs:
   include:
   - stage: docs
+    if: fork = false
     install:
     - sudo apt-get update
     - pip install sphinx==1.5.2 sphinx-autobuild==0.6.0 sphinxcontrib-versioning==2.2.1

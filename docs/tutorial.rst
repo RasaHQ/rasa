@@ -181,9 +181,9 @@ With very little data, rasa NLU can in certain cases already generalise concepts
 
 .. code-block:: console
 
-    $ curl -XPOST localhost:5000/parse -d '{"q":"I want some italian"}' | python -mjson.tool
+    $ curl -XPOST localhost:5000/parse -d '{"q":"I want some italian food"}' | python -mjson.tool
     {
-        "text": "I want some italian",
+        "text": "I want some italian food",
         "entities": [
             {
               "end": 19,
