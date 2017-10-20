@@ -244,11 +244,9 @@ def load_rasa_data(filename):
     all_examples = common + intent + entity
     training_examples = []
     for e in all_examples:
-        data = {}
-        if e.get("intent"):
-            data["intent"] = e["intent"]
-        if e.get("entities") is not None:
-            data["entities"] = e["entities"]
+        data = e.copy()
+        if "text" in data:
+            del data["text"]
         training_examples.append(Message(e["text"], data))
 
     return TrainingData(training_examples, entity_synonyms, regex_features)

@@ -48,7 +48,7 @@ class NGramFeaturizer(Featurizer):
 
     n_gram_min_occurrences = 5
 
-    min_intent_examples_for_ngram_classification = 10
+    min_intent_examples_for_ngram_classification = 4
 
     def __init__(self):
         self.best_num_ngrams = None
