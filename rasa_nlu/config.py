@@ -62,7 +62,7 @@ class InvalidConfigError(ValueError):
 
 class RasaNLUConfig(object):
     DEFAULT_PROJECT_NAME = "default"
-    
+
     def __init__(self, filename=None, env_vars=None, cmdline_args=None):
 
         if filename is None and os.path.isfile(DEFAULT_CONFIG_LOCATION):
