@@ -37,7 +37,7 @@ def plot_confusion_matrix(cm, classes,
                           title='Confusion matrix',
                           cmap=None,
                           zmin=1):
-    """Prints and plots the confusion matrix for the intent classification.
+    """Print and plot the confusion matrix for the intent classification.
 
     Normalization can be applied by setting `normalize=True`."""
     import numpy as np
