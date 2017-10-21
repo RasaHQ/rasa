@@ -61,4 +61,5 @@ def run_hello_world(serve_forever=True):
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level="DEBUG")
     run_hello_world()
