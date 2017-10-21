@@ -14,6 +14,7 @@ Added
 
 Changed
 -------
+- small dropout in standard keras model to decrease reliance on exact intents
 
 Removed
 -------
