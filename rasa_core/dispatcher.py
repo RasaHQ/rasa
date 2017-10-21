@@ -51,6 +51,9 @@ class Dispatcher(object):
             self.utter_text(message.get("text"))
 
     def utter_text(self, text):
+        # type: (Text) -> None
+        """"Send a text to the output channel"""
+
         if self.sender is not None and self.output_channel is not None:
             for message_part in text.split("\n\n"):
                 self.output_channel.send_text_message(self.sender, message_part)
@@ -72,7 +75,6 @@ class Dispatcher(object):
     def utter_attachment(self, attachment):
         # type: (Text) -> None
         """Send a message to the client with attachements."""
-
         self.output_channel.send_image_url(self.sender, attachment)
 
     def utter_button_template(self, template, buttons, **kwargs):
@@ -89,7 +91,6 @@ class Dispatcher(object):
     def utter_template(self, template, **kwargs):
         # type: (Text, **Any) -> None
         """"Send a message to the client based on a template."""
-
         self.utter_message(self.retrieve_template(template, **kwargs))
 
     def retrieve_template(self, template, **kwargs):

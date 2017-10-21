@@ -448,8 +448,9 @@ class TemplateDomain(Domain):
 
     @staticmethod
     def collect_templates(yml_templates):
-        # it is super important to sort the slots here!!!
-        # otherwise feature ordering is not consistent
+        # type: (Dict[Text, List[Any]]) -> Dict[Text, List[Dict[Text, Any]]]
+        """Go through the templates and make sure they are all in dict format"""
+
         templates = {}
         for template_key, template_variations in yml_templates.items():
             validated_variations = []
