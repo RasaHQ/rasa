@@ -19,7 +19,7 @@ def test_story_visualization(default_domain):
     story_steps = StoryFileReader.read_from_file(
             "data/dsl_stories/stories.md", default_domain)
     generated_graph = visualize_stories(story_steps)
-    assert len(generated_graph.nodes()) == 19
+    assert len(generated_graph.nodes()) == 21
 
 
 def test_training_script(tmpdir):
