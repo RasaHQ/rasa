@@ -60,8 +60,16 @@ class Project(object):
 
         # Lazy model loading
         if not model_name or model_name not in self._models:
-            model_name = self._latest_project_model()
-            logger.warn("Invalid model requested. Using default")
+            logger.warn("Model not loaded at the startup. Trying to load from cloud storage: {}".format(model_name))
+            # try to resolve it from cloud storage.
+            try:
+                self._load_model_from_cloud(model_name, os.path.join(self._path, model_name), self._config)
+                if model_name not in self._models:
+                    raise RuntimeError("Unable to Load model from Cloud Storage.")
+            except Exception as e:
+                logger.warn("Error while trying to fetch model :{} from Cloud Storage.".format(model_name))
+                model_name = self._latest_project_model()
+                logger.warn("Will use latest one:{} for project to parse the request.".format(model_name))
 
         self._loader_lock.acquire()
         try:
@@ -106,8 +114,13 @@ class Project(object):
         return Interpreter.create(meta, self._config, self._component_builder)
 
     def _search_for_models(self):
-        model_names = (self._list_models_in_dir(self._path) +
-                       self._list_models_in_cloud(self._config))
+        #Lookup in Cloud Storage for models with Project in Config.
+        cloud_models = self._list_models_in_cloud(self._config)
+        #download the cloud models into the disk.
+        for model in set(cloud_models):
+            self._load_model_from_cloud(model, os.path.join(self._path, model), self._config)
+        # all the models from the cloud must have been written to the disk.
+        model_names = self._list_models_in_dir(self._path)
         if not model_names:
             if FALLBACK_MODEL_NAME not in self._models:
                 self._models[FALLBACK_MODEL_NAME] = self._fallback_model()

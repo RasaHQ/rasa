@@ -116,6 +116,7 @@ class DataRouter(object):
         if os.path.isdir(self.config['path']):
             projects = os.listdir(self.config['path'])
 
+        projects.append(self.config['project'])
         project_store = {}
 
         for project in projects:
