@@ -101,7 +101,7 @@ def test_tracker_write_to_story(tmpdir, default_domain):
     assert len(stories) == 1
     assert len(stories[0].story_steps) == 1
     assert len(stories[0].story_steps[0].events) == 4
-    assert stories[0].story_steps[0].start_checkpoint == STORY_START
+    assert stories[0].story_steps[0].start_checkpoint_name() == STORY_START
     assert stories[0].story_steps[0].events[3] == SlotSet("location", "central")
 
 

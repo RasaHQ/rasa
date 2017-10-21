@@ -256,39 +256,46 @@ def visualize_stories(story_steps,
     G.add_node(-1, label="END", fillcolor="red", style="filled")
 
     checkpoint_indices = defaultdict(list)
-    checkpoint_indices[STORY_START] = [0]
+    checkpoint_indices[STORY_START] = [(0, None)]
 
     for step in story_graph.ordered_steps():
-        current_nodes = checkpoint_indices[step.start_checkpoint]
+        current_nodes = checkpoint_indices[step.start_checkpoint_name()]
         message = None
         for el in step.events:
             if isinstance(el, UserUttered):
                 message = interpreter.parse(el.text)
             elif isinstance(el, ActionExecuted):
-                if message:
-                    message_key = message.get("intent", {}).get("name", None)
-                    message_label = message.get("text", None)
-                else:
-                    message_key = None
-                    message_label = None
-
                 next_node_idx += 1
                 G.add_node(next_node_idx, label=el.action_name)
-                for current_node in current_nodes:
+
+                for current_node, tailing_message in current_nodes:
+                    msg = message if message else tailing_message
+                    if msg:
+                        message_key = msg.get("intent", {}).get("name", None)
+                        message_label = msg.get("text", None)
+                    else:
+                        message_key = None
+                        message_label = None
+
                     _add_edge(G, current_node, next_node_idx, message_key,
                               message_label)
 
-                current_nodes = [next_node_idx]
+                current_nodes = [(next_node_idx, None)]
                 message = None
-        if not step.end_checkpoint:
-            for current_node in current_nodes:
-                G.add_edge(current_node, -1, key=EDGE_NONE_LABEL)
+        if not step.end_checkpoint_name():
+            for current_node, _ in current_nodes:
+                if message:
+                    G.add_edge(current_node, -1,
+                               key=EDGE_NONE_LABEL, label=message)
+                else:
+                    G.add_edge(current_node, -1, key=EDGE_NONE_LABEL)
         else:
-            checkpoint_indices[step.end_checkpoint].extend(current_nodes)
+            updated_nodes = [(c, message) for c, _ in current_nodes]
+            checkpoint_indices[step.end_checkpoint_name()].extend(updated_nodes)
 
     _merge_equivalent_nodes(G, max_history)
     _replace_edge_labels_with_nodes(
-            G, next_node_idx, interpreter, training_data)
+             G, next_node_idx, interpreter, training_data)
 
     if output_file:
         _persist_graph(G, output_file)
