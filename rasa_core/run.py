@@ -6,6 +6,8 @@ from __future__ import unicode_literals
 import argparse
 import logging
 
+from builtins import str
+
 from rasa_core.agent import Agent
 from rasa_core.channels.console import ConsoleInputChannel
 from rasa_core.channels.facebook import FacebookInput
@@ -104,8 +106,8 @@ if __name__ == '__main__':
 
     logging.basicConfig(level="DEBUG" if cmdline_args.verbose else "INFO")
 
-    main("{}".format(cmdline_args.core),
-         "{}".format(cmdline_args.nlu),
+    main(cmdline_args.core,
+         cmdline_args.nlu,
          cmdline_args.connector,
          cmdline_args.port,
          cmdline_args.credentials)
