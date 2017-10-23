@@ -103,7 +103,7 @@ class MessageProcessor(object):
 
         # action loop. predicts actions until we hit action listen
         if self._should_handle_message(tracker):
-            self._predict_next_and_return_state(tracker)
+            return self._predict_next_and_return_state(tracker)
         else:
             return {"next_action": None,
                     "info": "Bot is currently paused and no restart was "
@@ -117,7 +117,7 @@ class MessageProcessor(object):
         if executed_action != ACTION_LISTEN_NAME:
             self._log_action_on_tracker(tracker, executed_action, events)
         if self._should_predict_another_action(executed_action, events):
-            self._predict_next_and_return_state(tracker)
+            return self._predict_next_and_return_state(tracker)
         else:
             return {"next_action": None,
                     "info": "You do not need to call continue after action "
