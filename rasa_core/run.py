@@ -4,10 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import argparse
-import io
 import logging
-
-import yaml
 
 from rasa_core.agent import Agent
 from rasa_core.channels.console import ConsoleInputChannel
@@ -55,7 +52,8 @@ def create_argument_parser():
             help="authentication credentials for the connector as a yml file")
     parser.add_argument(
             '-c', '--connector',
-            default="facebook",
+            default="cmdline",
+            choices=["facebook", "cmdline"],
             help="service to connect to")
 
     return parser
