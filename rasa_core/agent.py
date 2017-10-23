@@ -43,6 +43,9 @@ class Agent(object):
     @classmethod
     def load(cls, path, interpreter=None, tracker_store=None):
         # type: (Text, Any, Optional[TrackerStore]) -> Agent
+
+        if path is None:
+            raise ValueError("No domain path specified.")
         domain = TemplateDomain.load(os.path.join(path, "domain.yml"))
         # ensures the domain hasn't changed between test and train
         domain.compare_with_specification(path)
