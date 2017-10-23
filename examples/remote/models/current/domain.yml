@@ -24,5 +24,5 @@ slots:
     type: list
   venues:
     type: list
-templates: []
+templates: {}
 topics: []

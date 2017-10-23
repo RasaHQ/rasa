@@ -7,6 +7,7 @@ import numpy as np
 
 from rasa_core.domain import TemplateDomain
 from rasa_core.featurizers import BinaryFeaturizer
+from rasa_core.policies.ensemble import PolicyEnsemble
 from rasa_core.training_utils import extract_training_data_from_file
 
 
@@ -97,3 +98,8 @@ def test_utter_templates():
                     {"title": "expensive", "payload": "expensive"}]
     }
     assert domain.random_template_for("utter_ask_price") == expected_template
+
+
+def test_restaurant_domain_is_valid():
+    # should raise no exception
+    TemplateDomain.validate_domain_yaml('examples/restaurant_domain.yml')

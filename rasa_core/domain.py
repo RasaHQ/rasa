@@ -14,6 +14,7 @@ import numpy as np
 import six
 import yaml
 from builtins import str
+from pykwalify.errors import SchemaError
 from six import string_types
 from six import with_metaclass
 from typing import Dict, Tuple, Any
@@ -416,6 +417,7 @@ class TemplateDomain(Domain):
                     "Failed to load domain specification from '{}'. "
                     "File not found!".format(os.path.abspath(file_name)))
 
+        cls.validate_domain_yaml(file_name)
         with io.open(file_name, encoding="utf-8") as f:
             data = yaml.load(f.read())
             utter_templates = cls.collect_templates(data.get("templates", {}))
@@ -433,6 +435,25 @@ class TemplateDomain(Domain):
                     topics,
                     **additional_arguments
             )
+
+    @classmethod
+    def validate_domain_yaml(cls, file_name):
+        """Validate domain yaml."""
+        from pykwalify.core import Core
+
+        log = logging.getLogger('pykwalify')
+        log.setLevel(logging.WARN)
+
+        c = Core(source_file=file_name,
+                 schema_files=["data/validation/domain_schema.yml"])
+        try:
+            c.validate(raise_exception=True)
+        except SchemaError:
+            raise ValueError("Failed to validate your domain yaml '{}'. "
+                             "Make sure the file is correct, to do so"
+                             "take a look at the errors logged during "
+                             "validation previous to this exception. "
+                             "".format(os.path.abspath(file_name)))
 
     @staticmethod
     def collect_slots(slot_dict):

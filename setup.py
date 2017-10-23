@@ -38,6 +38,7 @@ install_requires = [
     'ConfigArgParse',
     'networkx',
     'pymessenger',
+    'pykwalify',
 ]
 
 extras_requires = {
