@@ -29,6 +29,7 @@ from rasa_core.featurizers import Featurizer
 from rasa_core.slots import Slot
 from rasa_core.trackers import DialogueStateTracker, SlotSet
 from rasa_core import utils
+from rasa_core.utils import read_yaml_file
 
 logger = logging.getLogger(__name__)
 
@@ -410,26 +411,23 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
 class TemplateDomain(Domain):
     @classmethod
     def load(cls, file_name):
-        import yaml
-        import io
         if os.path.isfile(file_name):
-            with io.open(file_name, encoding="utf-8") as f:
-                data = yaml.load(f.read())
-                templates = data.get("templates", [])
-                action_factory = data.get("action_factory", None)
-                topics = [Topic(name) for name in data.get("topics", [])]
-                slots = TemplateDomain.collect_slots(data.get("slots", {}))
-                additional_arguments = data.get("config", {})
-                return TemplateDomain(
-                        data.get("intents", []),
-                        data.get("entities", []),
-                        slots,
-                        templates,
-                        data.get("actions", []),
-                        action_factory,
-                        topics,
-                        **additional_arguments
-                )
+            data = read_yaml_file(file_name)
+            templates = data.get("templates", [])
+            action_factory = data.get("action_factory", None)
+            topics = [Topic(name) for name in data.get("topics", [])]
+            slots = TemplateDomain.collect_slots(data.get("slots", {}))
+            additional_arguments = data.get("config", {})
+            return TemplateDomain(
+                    data.get("intents", []),
+                    data.get("entities", []),
+                    slots,
+                    templates,
+                    data.get("actions", []),
+                    action_factory,
+                    topics,
+                    **additional_arguments
+            )
         else:
             raise Exception(
                     "Failed to load domain specification from '{}'. "

@@ -13,6 +13,7 @@ from rasa_core.agent import Agent
 from rasa_core.channels.console import ConsoleInputChannel
 from rasa_core.channels.facebook import FacebookInput
 from rasa_core.channels.rest import HttpInputChannel
+from rasa_core.utils import read_yaml_file
 
 logger = logging.getLogger()  # get the root logger
 
@@ -41,6 +42,7 @@ def create_argument_parser():
     parser.add_argument(
             '-v', '--verbose',
             default=True,
+            action="store_true",
             help="use verbose logging")
     parser.add_argument(
             '-o', '--log_file',
@@ -59,13 +61,6 @@ def create_argument_parser():
     return parser
 
 
-def load_credentials(credentials_file):
-    """Load the credentials file."""
-
-    with io.open(credentials_file, encoding="utf-8") as f:
-        return yaml.load(f.read())
-
-
 def create_input_channel(channel, port, credentials_file):
     """Instantiate the chosen input channel."""
 
@@ -77,11 +72,11 @@ def create_input_channel(channel, port, credentials_file):
                             "a yml file containing the facebook authentication"
                             "information. Details in the docs: "
                             "https://core.rasa.ai/facebook.html")
-        credentials = load_credentials(credentials_file)
+        credentials = read_yaml_file(credentials_file)
         input_blueprint = FacebookInput(
                 credentials.get("verify"),
                 credentials.get("secret"),
-                credentials.get("page_tokens"),
+                credentials.get("page-tokens"),
                 True
         )
         return HttpInputChannel(port, None, input_blueprint)

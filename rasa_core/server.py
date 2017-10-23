@@ -36,6 +36,7 @@ def create_argument_parser():
     parser.add_argument(
             '-v', '--verbose',
             default=True,
+            action="store_true",
             help="use verbose logging")
     parser.add_argument(
             '-o', '--log_file',
