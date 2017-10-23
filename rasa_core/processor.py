@@ -103,31 +103,39 @@ class MessageProcessor(object):
 
         # action loop. predicts actions until we hit action listen
         if self._should_handle_message(tracker):
-            # this actually just calls the policy's method by the same name
-            action = self._get_next_action(tracker)
-
-            # save tracker state to continue conversation from this state
-            self._save_tracker(tracker)
-            return {"next_action": action.name(),
-                    "tracker": tracker.current_state()}
+            return self._predict_next_and_return_state(tracker)
         else:
             return {"next_action": None,
+                    "info": "Bot is currently paused and no restart was "
+                            "received yet.",
                     "tracker": tracker.current_state()}
 
     def continue_message_handling(self, sender_id, executed_action, events):
         # type: (Text, Text, List[Event]) -> Dict[Text, Any]
 
         tracker = self._get_tracker(sender_id)
-        self._log_action_on_tracker(tracker, executed_action, events)
+        if executed_action != ACTION_LISTEN_NAME:
+            self._log_action_on_tracker(tracker, executed_action, events)
         if self._should_predict_another_action(executed_action, events):
-            action = self._get_next_action(tracker)
-            # save tracker state to continue conversation from this state
-            self._save_tracker(tracker)
-            return {"next_action": action.name(),
-                    "tracker": tracker.current_state()}
+            return self._predict_next_and_return_state(tracker)
         else:
             return {"next_action": None,
+                    "info": "You do not need to call continue after action "
+                            "listen got returned for the previous continue "
+                            "call. You are expected to call 'parse' with the "
+                            "next user message.",
                     "tracker": tracker.current_state()}
+
+    def _predict_next_and_return_state(self, tracker):
+        action = self._get_next_action(tracker)
+        # save tracker state to continue conversation from this state
+        if action.name() == ACTION_LISTEN_NAME:
+            # action listen always get logged automatically - no need to
+            # call continue
+            self._log_action_on_tracker(tracker, action.name(), [])
+        self._save_tracker(tracker)
+        return {"next_action": action.name(),
+                "tracker": tracker.current_state()}
 
     def _log_slots(self, tracker):
         # Log currently set slots

@@ -11,15 +11,18 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+- ``run`` script to load models and handle messages from an input channel
 
 Changed
 -------
+- small dropout in standard keras model to decrease reliance on exact intents
 
 Removed
 -------
 
 Fixed
 -----
+- fixed http error if action listen is not confirmed. #42
 
 [0.7.1] - 2017-10-06
 ^^^^^^^^^^^^^^^^^^^^

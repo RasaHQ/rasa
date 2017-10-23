@@ -70,7 +70,7 @@ class KerasPolicy(Policy):
         # Build Model
         model = Sequential()
         model.add(Masking(-1, batch_input_shape=batch_shape))
-        model.add(LSTM(n_hidden, batch_input_shape=batch_shape))
+        model.add(LSTM(n_hidden, batch_input_shape=batch_shape, dropout=0.2))
         model.add(Dense(input_dim=n_hidden, units=num_actions))
         model.add(Activation('softmax'))
 
