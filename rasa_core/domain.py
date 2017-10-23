@@ -14,6 +14,7 @@ import numpy as np
 import six
 import yaml
 from builtins import str
+from six import string_types
 from six import with_metaclass
 from typing import Dict, Tuple, Any
 from typing import List
@@ -417,7 +418,7 @@ class TemplateDomain(Domain):
 
         with io.open(file_name, encoding="utf-8") as f:
             data = yaml.load(f.read())
-            utter_templates = cls.collect_templates(data.get("templates", []))
+            utter_templates = cls.collect_templates(data.get("templates", {}))
             action_factory = data.get("action_factory", None)
             topics = [Topic(name) for name in data.get("topics", [])]
             slots = cls.collect_slots(data.get("slots", {}))
@@ -457,7 +458,7 @@ class TemplateDomain(Domain):
             for t in template_variations:
                 # templates can either directly be strings or a dict with
                 # options we will always create a dict out of them
-                if isinstance(t, six.text_type):
+                if isinstance(t, string_types):
                     validated_variations.append({"text": t})
                 elif "text" not in t:
                     raise Exception("Utter template '{}' needs to contain"

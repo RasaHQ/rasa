@@ -82,7 +82,18 @@ def test_create_train_data_with_history(default_domain):
 
 
 def test_domain_from_template():
-    file = "examples/restaurant_domain.yml"
-    domain = TemplateDomain.load(file)
+    domain_file = "examples/restaurant_domain.yml"
+    domain = TemplateDomain.load(domain_file)
     assert len(domain.intents) == 6
     assert len(domain.actions) == 18
+
+
+def test_utter_templates():
+    domain_file = "examples/restaurant_domain.yml"
+    domain = TemplateDomain.load(domain_file)
+    expected_template = {
+        "text": "in which price range?",
+        "buttons": [{"title": "cheap", "payload": "cheap"},
+                    {"title": "expensive", "payload": "expensive"}]
+    }
+    assert domain.random_template_for("utter_ask_price") == expected_template

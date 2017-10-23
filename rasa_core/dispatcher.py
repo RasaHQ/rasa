@@ -37,7 +37,7 @@ class Dispatcher(object):
         self.domain = domain
         self.send_messages = []
 
-    def utter_message(self, message):
+    def utter_response(self, message):
         # type: (Dict[Text, Any]) -> None
         """Send a message to the client."""
 
@@ -45,12 +45,12 @@ class Dispatcher(object):
             self.utter_button_message(message.get("text"),
                                       message.get("buttons"))
         elif message.get("image"):
-            self.utter_text(message.get("text"))
+            self.utter_message(message.get("text"))
             self.utter_attachment(message.get("image"))
         else:
-            self.utter_text(message.get("text"))
+            self.utter_message(message.get("text"))
 
-    def utter_text(self, text):
+    def utter_message(self, text):
         # type: (Text) -> None
         """"Send a text to the output channel"""
 
@@ -86,12 +86,12 @@ class Dispatcher(object):
             t["buttons"] = buttons
         else:
             t["buttons"].extend(buttons)
-        self.utter_message(t)
+        self.utter_response(t)
 
     def utter_template(self, template, **kwargs):
         # type: (Text, **Any) -> None
         """"Send a message to the client based on a template."""
-        self.utter_message(self.retrieve_template(template, **kwargs))
+        self.utter_response(self.retrieve_template(template, **kwargs))
 
     def retrieve_template(self, template, **kwargs):
         # type: (Text, **Any) -> Dict[Text, Any]

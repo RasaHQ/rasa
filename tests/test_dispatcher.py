@@ -3,7 +3,10 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from rasa_core.dispatcher import Button, Element
+from rasa_core.channels.console import ConsoleOutputChannel
+from rasa_core.channels.direct import CollectingOutputChannel
+from rasa_core.dispatcher import Button, Element, Dispatcher
+from rasa_core.domain import TemplateDomain
 
 
 def test_dispatcher_utter_attachment(default_dispatcher, capsys):
@@ -34,6 +37,17 @@ def test_dispatcher_utter_buttons(default_dispatcher, capsys):
     assert "my message" in out
     assert "Btn1" in out
     assert "Btn2" in out
+
+
+def test_dispatcher_utter_buttons_from_domain_templ(capsys):
+    domain_file = "examples/restaurant_domain.yml"
+    domain = TemplateDomain.load(domain_file)
+    bot = CollectingOutputChannel()
+    dispatcher = Dispatcher("my-sender", bot, domain)
+    dispatcher.utter_template("utter_ask_price")
+    assert bot.messages[0][1] == "in which price range?"
+    assert bot.messages[1][1] == "1: cheap (cheap)"
+    assert bot.messages[2][1] == "2: expensive (expensive)"
 
 
 def test_dispatcher_utter_custom_message(default_dispatcher, capsys):
