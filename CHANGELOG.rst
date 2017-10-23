@@ -11,6 +11,7 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+- ``run`` script to load models and handle messages from an input channel
 
 Changed
 -------
