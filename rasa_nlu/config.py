@@ -144,7 +144,9 @@ class RasaNLUConfig(object):
         return config
 
     def create_cmdline_config(self, cmdline_args):
-        cmdline_config = {k: v for k, v in list(cmdline_args.items()) if v is not None}
+        cmdline_config = {k: v
+                          for k, v in list(cmdline_args.items())
+                          if v is not None}
         cmdline_config = self.split_pipeline(cmdline_config)
         cmdline_config = self.split_arg(cmdline_config, "duckling_dimensions")
         return cmdline_config

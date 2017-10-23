@@ -41,6 +41,10 @@ def create_argparser():
                         help="Model and data language")
     parser.add_argument('-t', '--num_threads', default=None, type=int,
                         help="Number of threads to use during model training")
+    parser.add_argument('--fixed_model_name',
+                        help="If present, a model will always be persisted "
+                             "in the specified directory instead of creating "
+                             "a folder like 'model_20171020-160213'")
     parser.add_argument('-m', '--mitie_file', default=None,
                         help='File with mitie total_word_feature_extractor')
     return parser
