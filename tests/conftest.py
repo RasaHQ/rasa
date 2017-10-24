@@ -11,6 +11,7 @@ import pytest
 from rasa_core.channels.console import ConsoleOutputChannel
 from rasa_core.dispatcher import Dispatcher
 from rasa_core.domain import TemplateDomain
+from rasa_core.slots import Slot
 
 matplotlib.use('Agg')
 
@@ -19,6 +20,10 @@ logging.basicConfig(level="DEBUG")
 DEFAULT_DOMAIN_PATH = "examples/default_domain.yml"
 
 DEFAULT_STORIES_FILE = "data/dsl_stories/stories.md"
+
+
+class CustomSlot(Slot):
+    pass
 
 
 @pytest.fixture(scope="function")
