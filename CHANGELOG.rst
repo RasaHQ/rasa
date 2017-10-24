@@ -15,15 +15,18 @@ Added
   only allow one to use it if certain slots are set. see docs for details
 - utterance templates in domain yaml support buttons and images
 - validate domain yaml and raise exception on invalid file
+- ``run`` script to load models and handle messages from an input channel
 
 Changed
 -------
+- small dropout in standard keras model to decrease reliance on exact intents
 
 Removed
 -------
 
 Fixed
 -----
+- fixed http error if action listen is not confirmed. #42
 
 [0.7.1] - 2017-10-06
 ^^^^^^^^^^^^^^^^^^^^

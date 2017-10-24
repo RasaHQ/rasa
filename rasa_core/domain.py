@@ -11,8 +11,6 @@ import logging
 import os
 
 import numpy as np
-import six
-import yaml
 from builtins import str
 from pykwalify.errors import SchemaError
 from six import string_types
@@ -32,6 +30,7 @@ from rasa_core.events import ActionExecuted
 from rasa_core.featurizers import Featurizer
 from rasa_core.slots import Slot
 from rasa_core.trackers import DialogueStateTracker, SlotSet
+from rasa_core.utils import read_yaml_file
 
 logger = logging.getLogger(__name__)
 
@@ -418,23 +417,22 @@ class TemplateDomain(Domain):
                     "File not found!".format(os.path.abspath(file_name)))
 
         cls.validate_domain_yaml(file_name)
-        with io.open(file_name, encoding="utf-8") as f:
-            data = yaml.load(f.read())
-            utter_templates = cls.collect_templates(data.get("templates", {}))
-            action_factory = data.get("action_factory", None)
-            topics = [Topic(name) for name in data.get("topics", [])]
-            slots = cls.collect_slots(data.get("slots", {}))
-            additional_arguments = data.get("config", {})
-            return TemplateDomain(
-                    data.get("intents", []),
-                    data.get("entities", []),
-                    slots,
-                    utter_templates,
-                    data.get("actions", []),
-                    action_factory,
-                    topics,
-                    **additional_arguments
-            )
+        data = read_yaml_file(file_name)
+        utter_templates = cls.collect_templates(data.get("templates", {}))
+        action_factory = data.get("action_factory", None)
+        topics = [Topic(name) for name in data.get("topics", [])]
+        slots = cls.collect_slots(data.get("slots", {}))
+        additional_arguments = data.get("config", {})
+        return TemplateDomain(
+                data.get("intents", []),
+                data.get("entities", []),
+                slots,
+                utter_templates,
+                data.get("actions", []),
+                action_factory,
+                topics,
+                **additional_arguments
+        )
 
     @classmethod
     def validate_domain_yaml(cls, file_name):
