@@ -11,6 +11,7 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+- added facebook bot example
 - added support for conditional checkpoints. a checkpoint can be restricted to
   only allow one to use it if certain slots are set. see docs for details
 - utterance templates in domain yaml support buttons and images
