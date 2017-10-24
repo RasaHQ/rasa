@@ -79,7 +79,8 @@ def train_dialogue_model(domain_file, stories_file, output_path,
         agent.train_online(
                 stories_file,
                 input_channel=ConsoleInputChannel(),
-                epochs=10)
+                epochs=10,
+                model_path=output_path)
     else:
         agent.train(
                 stories_file,
