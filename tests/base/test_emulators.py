@@ -105,16 +105,16 @@ def test_wit_response():
     }]
 
 
-def test_api_request():
-    from rasa_nlu.emulators.api import ApiEmulator
-    em = ApiEmulator()
+def test_dialogflow_request():
+    from rasa_nlu.emulators.dialogflow import DialogflowEmulator
+    em = DialogflowEmulator()
     norm = em.normalise_request_json({"q": ["arb text"]})
     assert norm == {"text": "arb text", "project": "default", "time": None}
 
 
-def test_api_response():
-    from rasa_nlu.emulators.api import ApiEmulator
-    em = ApiEmulator()
+def test_dialogflow_response():
+    from rasa_nlu.emulators.dialogflow import DialogflowEmulator
+    em = DialogflowEmulator()
     data = {
         "text": "I want italian food",
         "intent": {"name": "inform", "confidence": 0.4794813722432127},

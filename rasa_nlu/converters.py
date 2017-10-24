@@ -21,55 +21,65 @@ logger = logging.getLogger(__name__)
 
 # Different supported file formats and their identifier
 WIT_FILE_FORMAT = "wit"
-API_FILE_FORMAT = "api"
+DIALOGFLOW_FILE_FORMAT = "dialogflow"
 LUIS_FILE_FORMAT = "luis"
 RASA_FILE_FORMAT = "rasa_nlu"
 UNK_FILE_FORMAT = "unk"
 MARKDOWN_FILE_FORMAT = "md"
 
 
-def load_api_data(files):
+def load_dialogflow_data(files, language):
     # type: (List[Text]) -> TrainingData
-    """Loads training data stored in the API.ai data format."""
+    """Loads training data stored in the Dialogflow data format."""
 
     training_examples = []
     entity_synonyms = {}
     for filename in files:
         with io.open(filename, encoding="utf-8-sig") as f:
-            data = json.loads(f.read())
-        # get only intents, skip the rest. The property name is the target class
-        if "userSays" in data:
-            intent = data.get("name")
-            for s in data["userSays"]:
-                text = "".join([chunk["text"] for chunk in s.get("data")])
-                # add entities to each token, if available
-                entities = []
-                for e in [chunk for chunk in s.get("data") if "alias" in chunk or "meta" in chunk]:
-                    start = text.find(e["text"])
-                    end = start + len(e["text"])
-                    val = text[start:end]
-                    entities.append(
-                            {
-                                "entity": e["alias"] if "alias" in e else e["meta"],
-                                "value": val,
-                                "start": start,
-                                "end": end
-                            }
-                    )
-                data = {}
-                if intent:
-                    data["intent"] = intent
-                if entities is not None:
-                    data["entities"] = entities
-                training_examples.append(Message(text, data))
+            # Language specific extensions
+            usersays_language_file_extension = '_usersays_{}.json'.format(language)
+            synonyms_language_file_extension = '_entries_{}.json'.format(language)
+            if filename.endswith(usersays_language_file_extension):
+                data = json.loads(f.read())
 
-        # create synonyms dictionary
-        if "name" in data and "entries" in data:
-            for entry in data["entries"]:
-                if "value" in entry and "synonyms" in entry:
-                    for synonym in entry["synonyms"]:
-                        entity_synonyms[synonym] = entry["value"]
+                root_synonyms_filename = filename.replace(usersays_language_file_extension, '.json')
+                with io.open(root_synonyms_filename, encoding="utf-8-sig") as root_synonyms_f:
+                    root_f_data = json.loads(root_synonyms_f.read())
+                    intent = root_f_data.get("name")
+
+                    for s in data:
+                        text = "".join([chunk["text"] for chunk in s.get("data")])
+                        # add entities to each token, if available
+                        entities = []
+                        for e in [chunk for chunk in s.get("data") if "alias" in chunk or "meta" in chunk]:
+                            start = text.find(e["text"])
+                            end = start + len(e["text"])
+                            val = text[start:end]
+                            entities.append(
+                                {
+                                    "entity": e["alias"] if "alias" in e else e["meta"],
+                                    "value": val,
+                                    "start": start,
+                                    "end": end
+                                }
+                            )
+                        data = {}
+                        if intent:
+                            data["intent"] = intent
+                        if entities is not None:
+                            data["entities"] = entities
+                        training_examples.append(Message(text, data))
+
+            elif filename.endswith(synonyms_language_file_extension):
+                data = json.loads(f.read())
+
+                # create synonyms dictionary
+                for entry in data:
+                    if "value" in entry and "synonyms" in entry:
+                        for synonym in entry["synonyms"]:
+                            entity_synonyms[synonym] = entry["value"]
     return TrainingData(training_examples, entity_synonyms)
+
 
 
 def load_luis_data(filename):
@@ -125,7 +135,7 @@ def load_wit_data(filename):
 
         entities = [e for e in entities if ("start" in e and "end" in e and e["entity"] != 'intent')]
         for e in entities:
-            e["value"] = e["value"].strip("\"")    # for some reason wit adds additional quotes around entity values
+            e["value"] = e["value"].strip("\"")  # for some reason wit adds additional quotes around entity values
 
         data = {}
         if intent:
@@ -276,8 +286,8 @@ def guess_format(files):
                     return WIT_FILE_FORMAT
                 elif "luis_schema_version" in file_data:
                     return LUIS_FILE_FORMAT
-                elif "userSays" in file_data:
-                    return API_FILE_FORMAT
+                elif "supportedLanguages" in file_data:
+                    return DIALOGFLOW_FILE_FORMAT
                 elif "rasa_nlu_data" in file_data:
                     return RASA_FILE_FORMAT
 
@@ -298,7 +308,7 @@ def resolve_data_files(resource_name):
         raise ValueError("Invalid training data file / folder specified. {}".format(e))
 
 
-def load_data(resource_name, fformat=None):
+def load_data(resource_name, language='en', fformat=None):
     # type: (Text, Optional[Text]) -> TrainingData
     """Loads training data from disk. If no format is provided, the format will be guessed based on the files."""
 
@@ -313,8 +323,8 @@ def load_data(resource_name, fformat=None):
         return load_luis_data(files[0])
     elif fformat == WIT_FILE_FORMAT:
         return load_wit_data(files[0])
-    elif fformat == API_FILE_FORMAT:
-        return load_api_data(files)
+    elif fformat == DIALOGFLOW_FILE_FORMAT:
+        return load_dialogflow_data(files, language)
     elif fformat == RASA_FILE_FORMAT:
         return load_rasa_data(files[0])
     elif fformat == MARKDOWN_FILE_FORMAT:

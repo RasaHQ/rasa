@@ -27,7 +27,7 @@ and returning structured data like
 
 
 The intended audience is mainly people developing bots. 
-You can use rasa as a drop-in replacement for `wit <https://wit.ai>`_ , `LUIS <https://www.luis.ai>`_ , or `api.ai <https://api.ai>`_, the only change in your code is to send requests to ``localhost`` instead (see :ref:`section_migration` for details).
+You can use rasa as a drop-in replacement for `wit <https://wit.ai>`_ , `LUIS <https://www.luis.ai>`_ , or `Dialogflow <https://dialogflow.com>`_, the only change in your code is to send requests to ``localhost`` instead (see :ref:`section_migration` for details).
 
 Why might you use rasa instead of one of those services?
 
@@ -58,10 +58,10 @@ About
 -----
 
 You can think of rasa NLU as a set of high level APIs for building your own language parser using existing NLP and ML libraries.
-The setup process is designed to be as simple as possible. If you're currently using wit, LUIS, or api.ai, you just:
+The setup process is designed to be as simple as possible. If you're currently using wit, LUIS, or Dialogflow, you just:
 
 1. download your app data from wit or LUIS and feed it into rasa NLU
-2. run rasa NLU on your machine and switch the URL of your wit/LUIS api calls to ``localhost:5000/parse``.
+2. run rasa NLU on your machine and switch the URL of your wit/LUIS/Dialogflow api calls to ``localhost:5000/parse``.
 
 rasa NLU is written in Python, but it you can use it from any language through :ref:`section_http`.
 If your project *is* written in Python you can simply import the relevant classes.
