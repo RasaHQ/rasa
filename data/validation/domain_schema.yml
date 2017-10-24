@@ -1,0 +1,27 @@
+allowempty: True
+mapping:
+  intents:
+    type: seq
+    sequence:
+    - type: str
+  action_factory:
+    type: str
+  topics:
+    type: seq
+    sequence:
+    - type: str
+  entities:
+    type: seq
+    sequence:
+    - type: str
+  actions:
+    type: seq
+    sequence:
+    - type: str
+      required: True
+  templates:
+    type: map
+    allowempty: True
+  slots:
+    type: map
+    allowempty: True

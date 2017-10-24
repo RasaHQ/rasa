@@ -37,12 +37,26 @@ class Dispatcher(object):
         self.domain = domain
         self.send_messages = []
 
-    def utter_message(self, message):
-        # type: (Text) -> None
+    def utter_response(self, message):
+        # type: (Dict[Text, Any]) -> None
         """Send a message to the client."""
 
+        if message.get("buttons"):
+            self.utter_button_message(message.get("text"),
+                                      message.get("buttons"))
+        else:
+            self.utter_message(message.get("text"))
+
+        # if there is an image we handle it separately as an attachment
+        if message.get("image"):
+            self.utter_attachment(message.get("image"))
+
+    def utter_message(self, text):
+        # type: (Text) -> None
+        """"Send a text to the output channel"""
+
         if self.sender is not None and self.output_channel is not None:
-            for message_part in message.split("\n\n"):
+            for message_part in text.split("\n\n"):
                 self.output_channel.send_text_message(self.sender, message_part)
                 self.send_messages.append(message_part)
 
@@ -59,34 +73,35 @@ class Dispatcher(object):
         self.output_channel.send_text_with_buttons(self.sender, text, buttons,
                                                    **kwargs)
 
+    def utter_attachment(self, attachment):
+        # type: (Text) -> None
+        """Send a message to the client with attachements."""
+        self.output_channel.send_image_url(self.sender, attachment)
+
     def utter_button_template(self, template, buttons, **kwargs):
         # type: (Text, List[Dict[Text, Any]], **Any) -> None
         """Sends a message template with buttons to the output channel."""
 
-        self.utter_button_message(self.retrieve_template(template, **kwargs),
-                                  buttons, **kwargs)
-
-    def utter_attachment(self, attachment):
-        # type: (Text) -> None
-        """Send a message to the client with attachements."""
-
-        self.output_channel.send_image_url(self.sender, attachment)
+        t = self.retrieve_template(template, **kwargs)
+        if "buttons" not in t:
+            t["buttons"] = buttons
+        else:
+            t["buttons"].extend(buttons)
+        self.utter_response(t)
 
     def utter_template(self, template, **kwargs):
         # type: (Text, **Any) -> None
         """"Send a message to the client based on a template."""
-
-        self.utter_message(self.retrieve_template(template, **kwargs))
+        self.utter_response(self.retrieve_template(template, **kwargs))
 
     def retrieve_template(self, template, **kwargs):
-        # type: (Text, **Any) -> Text
+        # type: (Text, **Any) -> Dict[Text, Any]
         """Retrieve a named template from the domain."""
 
         r = self.domain.random_template_for(template)
         if r is not None:
             if len(kwargs) > 0:
-                return r.format(**kwargs)
-            else:
-                return r
+                r["text"] = r["text"].format(**kwargs)
+            return r
         else:
-            return "Undefined utter template <{}>".format(template)
+            return {"text": "Undefined utter template <{}>".format(template)}

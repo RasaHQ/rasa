@@ -7,6 +7,7 @@ import numpy as np
 
 from rasa_core.domain import TemplateDomain
 from rasa_core.featurizers import BinaryFeaturizer
+from rasa_core.policies.ensemble import PolicyEnsemble
 from rasa_core.training_utils import extract_training_data_from_file
 
 
@@ -82,7 +83,23 @@ def test_create_train_data_with_history(default_domain):
 
 
 def test_domain_from_template():
-    file = "examples/restaurant_domain.yml"
-    domain = TemplateDomain.load(file)
+    domain_file = "examples/restaurant_domain.yml"
+    domain = TemplateDomain.load(domain_file)
     assert len(domain.intents) == 6
     assert len(domain.actions) == 18
+
+
+def test_utter_templates():
+    domain_file = "examples/restaurant_domain.yml"
+    domain = TemplateDomain.load(domain_file)
+    expected_template = {
+        "text": "in which price range?",
+        "buttons": [{"title": "cheap", "payload": "cheap"},
+                    {"title": "expensive", "payload": "expensive"}]
+    }
+    assert domain.random_template_for("utter_ask_price") == expected_template
+
+
+def test_restaurant_domain_is_valid():
+    # should raise no exception
+    TemplateDomain.validate_domain_yaml('examples/restaurant_domain.yml')

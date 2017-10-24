@@ -23,10 +23,12 @@ def create_argument_parser():
             description='starts server to serve an agent')
     parser.add_argument(
             '-d', '--core',
+            required=True,
             type=str,
             help="core model to run with the server")
     parser.add_argument(
             '-u', '--nlu',
+            required=True,
             type=str,
             help="nlu model to run with the server")
     parser.add_argument(
