@@ -11,6 +11,10 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+- added support for conditional checkpoints. a checkpoint can be restricted to
+  only allow one to use it if certain slots are set. see docs for details
+- utterance templates in domain yaml support buttons and images
+- validate domain yaml and raise exception on invalid file
 - ``run`` script to load models and handle messages from an input channel
 
 Changed

@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from rasa_core.domain import Domain
-
+    from rasa_core.featurizers import Featurizer
 
 class PolicyEnsemble(object):
     def __init__(self, policies):
@@ -85,7 +85,7 @@ class PolicyEnsemble(object):
 
     @classmethod
     def load(cls, path, featurizer):
-        # type: (Text, Optional[Domain]) -> PolicyEnsemble
+        # type: (Text, Optional[Featurizer]) -> PolicyEnsemble
         """Loads policy and domain specification from storage"""
 
         metadata = cls.load_metadata(path)
