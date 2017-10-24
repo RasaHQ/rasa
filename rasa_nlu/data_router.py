@@ -139,8 +139,8 @@ class DataRouter(object):
             from rasa_nlu.emulators.luis import LUISEmulator
             return LUISEmulator()
         elif mode.lower() == 'api':
-            from rasa_nlu.emulators.api import ApiEmulator
-            return ApiEmulator()
+            from rasa_nlu.emulators.dialogflow import DialogflowEmulator
+            return DialogflowEmulator()
         else:
             raise ValueError("unknown mode : {0}".format(mode))
 

@@ -1,0 +1,207 @@
+{
+  "rasa_nlu_data": {
+    "entity_synonyms": [
+      {
+        "value": "mexicano",
+        "synonyms": [
+          "mexicana",
+          "méxico"
+        ]
+      },
+      {
+        "value": "chino",
+        "synonyms": [
+          "china",
+          "chinos"
+        ]
+      },
+      {
+        "value": "indio",
+        "synonyms": [
+          "india"
+        ]
+      },
+      {
+        "value": "centro",
+        "synonyms": [
+          "centrar"
+        ]
+      },
+      {
+        "value": "oeste",
+        "synonyms": [
+          "occidente"
+        ]
+      },
+      {
+        "value": "central",
+        "synonyms": [
+          "céntrico"
+        ]
+      }
+    ],
+    "common_examples": [
+      {
+        "text": "restaurante central de la India",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 12,
+            "end": 19,
+            "value": "central",
+            "entity": "location"
+          },
+          {
+            "start": 27,
+            "end": 33,
+            "value": "India",
+            "entity": "cuisine"
+          }
+        ]
+      },
+      {
+        "text": "en cualquier parte del oeste",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 23,
+            "end": 28,
+            "value": "oeste",
+            "entity": "location"
+          }
+        ]
+      },
+      {
+        "text": "estoy buscando un lugar indio",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 24,
+            "end": 30,
+            "value": "indio",
+            "entity": "cuisine"
+          }
+        ]
+      },
+      {
+        "text": "muéstrame los restaurantes chinos",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 27,
+            "end": 33,
+            "value": "chinos",
+            "entity": "cuisine"
+          }
+        ]
+      },
+      {
+        "text": "busco un lugar en el norte",
+        "intent": "inform",
+        "entities": [
+          {
+            "start": 21,
+            "end": 26,
+            "value": "norte",
+            "entity": "location"
+          }
+        ]
+      },
+      {
+        "text": "sí",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
+        "text": "si",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
+        "text": "Sí",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
+        "text": "de verdad",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
+        "text": "está bien",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
+        "text": "muy bien",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
+        "text": "estupendo",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
+        "text": "a usted adiós",
+        "intent": "goodbye",
+        "entities": []
+      },
+      {
+        "text": "despedida",
+        "intent": "goodbye",
+        "entities": []
+      },
+      {
+        "text": "adiós",
+        "intent": "goodbye",
+        "entities": []
+      },
+      {
+        "text": "suspender",
+        "intent": "goodbye",
+        "entities": []
+      },
+      {
+        "text": "fin",
+        "intent": "goodbye",
+        "entities": []
+      },
+      {
+        "text": "hello",
+        "intent": "hi",
+        "entities": []
+      },
+      {
+        "text": "Hola amigo",
+        "intent": "hi",
+        "entities": []
+      },
+      {
+        "text": "Bueno",
+        "intent": "hi",
+        "entities": []
+      },
+      {
+        "text": "Caramba",
+        "intent": "hi",
+        "entities": []
+      },
+      {
+        "text": "Hola",
+        "intent": "hi",
+        "entities": []
+      },
+      {
+        "text": "buscar restaurantes",
+        "intent": "inform",
+        "entities": []
+      },
+      {
+        "text": "estoy buscando un lugar para comer",
+        "intent": "inform",
+        "entities": []
+      }
+    ]
+  }
+}
