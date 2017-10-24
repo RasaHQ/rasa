@@ -36,6 +36,7 @@ def load_dialogflow_data(files, language):
     entity_synonyms = {}
     for filename in files:
         with io.open(filename, encoding="utf-8-sig") as f:
+            # Language specific extensions
             usersays_language_file_extension = '_usersays_{}.json'.format(language)
             synonyms_language_file_extension = '_entries_{}.json'.format(language)
             if filename.endswith(usersays_language_file_extension):
@@ -46,7 +47,6 @@ def load_dialogflow_data(files, language):
                     root_f_data = json.loads(root_synonyms_f.read())
                     intent = root_f_data.get("name")
 
-                    logger.info('intent: {}'.format(intent))
                     for s in data:
                         text = "".join([chunk["text"] for chunk in s.get("data")])
                         # add entities to each token, if available
@@ -71,23 +71,16 @@ def load_dialogflow_data(files, language):
                         training_examples.append(Message(text, data))
 
             elif filename.endswith(synonyms_language_file_extension):
-                logger.info('synonyms_language_file_extension:{}'.format(filename))
                 data = json.loads(f.read())
 
-                root_synonyms_filename = filename.replace(synonyms_language_file_extension, '.json')
-                with io.open(root_synonyms_filename, encoding="utf-8-sig") as root_synonyms_f:
-                    root_f_data = json.loads(root_synonyms_f.read())
-                    entity = root_f_data.get("name")
-
-                    # create synonyms dictionary
-                    for entry in data:
-                        if "value" in entry and "synonyms" in entry:
-                            for synonym in entry["synonyms"]:
-                                entity_synonyms[synonym] = entry["value"]
-
-    logger.info('training_examples: {}'.format(training_examples))
-    logger.info('entity_synonyms: {}'.format(entity_synonyms))
+                # create synonyms dictionary
+                for entry in data:
+                    if "value" in entry and "synonyms" in entry:
+                        for synonym in entry["synonyms"]:
+                            entity_synonyms[synonym] = entry["value"]
     return TrainingData(training_examples, entity_synonyms)
+
+
 
 def load_luis_data(filename):
     # type: (Text) -> TrainingData
@@ -142,7 +135,7 @@ def load_wit_data(filename):
 
         entities = [e for e in entities if ("start" in e and "end" in e and e["entity"] != 'intent')]
         for e in entities:
-            e["value"] = e["value"].strip("\"")    # for some reason wit adds additional quotes around entity values
+            e["value"] = e["value"].strip("\"")  # for some reason wit adds additional quotes around entity values
 
         data = {}
         if intent:
@@ -324,7 +317,7 @@ def load_data(resource_name, language='en', fformat=None):
     if not fformat:
         fformat = guess_format(files)
 
-    logger.info("Training data format at {} is {} in {}".format(resource_name, fformat, language))
+    logger.info("Training data format at {} is {}".format(resource_name, fformat))
 
     if fformat == LUIS_FILE_FORMAT:
         return load_luis_data(files[0])
