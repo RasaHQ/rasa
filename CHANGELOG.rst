@@ -11,7 +11,7 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 Added
 -----
-- support for new dataflow data format (previously api.ai)
+- support for new dialogflow data format (previously api.ai)
 
 Fixed
 -----
