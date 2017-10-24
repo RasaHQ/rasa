@@ -106,7 +106,7 @@ def str_range_list(start, end):
     return [str(e) for e in range(start, end)]
 
 
-def request_input(valid_values, prompt=None, max_suggested=3):
+def request_input(valid_values=None, prompt=None, max_suggested=3):
     def wrong_input_message():
         print("Invalid answer, only {}{} allowed\n".format(
                 ", ".join(valid_values[:max_suggested]),
@@ -115,7 +115,7 @@ def request_input(valid_values, prompt=None, max_suggested=3):
     while True:
         try:
             input_value = input(prompt) if prompt else input()
-            if input_value not in valid_values:
+            if valid_values is not None and input_value not in valid_values:
                 wrong_input_message()
                 continue
         except ValueError:

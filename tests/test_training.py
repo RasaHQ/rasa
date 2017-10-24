@@ -24,4 +24,7 @@ def test_story_visualization(default_domain):
 
 def test_training_script(tmpdir):
     train_dialogue_model(DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
-                         tmpdir.strpath, {})
+                         tmpdir.strpath,
+                         use_online_learning=False,
+                         nlu_model_path=None,
+                         kwargs={})

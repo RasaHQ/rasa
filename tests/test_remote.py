@@ -15,7 +15,10 @@ from rasa_core.train import train_dialogue_model
 def test_remote_training(tmpdir):
     train_dialogue_model("examples/remote/concert_domain_remote.yml",
                          "examples/remote/data/stories.md",
-                         tmpdir.strpath, {})
+                         tmpdir.strpath,
+                         use_online_learning=False,
+                         nlu_model_path=None,
+                         kwargs={})
 
     agent = Agent.load(tmpdir.strpath)
     assert agent.domain._factory_name == "remote"

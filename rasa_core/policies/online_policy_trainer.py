@@ -142,8 +142,9 @@ class OnlinePolicyEnsemble(PolicyEnsemble):
 
     def _export_stories(self, tracker):
         # export current stories and quit
-        export_file_path = input("File to export to (if file exists, this "
-                                 "will append the stories) [stories.md]: ")
+        export_file_path = utils.request_input(
+                prompt="File to export to (if file exists, this "
+                       "will append the stories) [stories.md]: ")
         exported = StoryExported(export_file_path)
         tracker.update(exported)
         logger.info("Stories got exported to '{}'.".format(
