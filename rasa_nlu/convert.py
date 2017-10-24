@@ -14,6 +14,9 @@ def create_argparser():
                         help='file or dir containing training data')
     parser.add_argument('-o', '--out_file',
                         help='file where to save training data in rasa format')
+    parser.add_argument('-l', '--language',
+                        default='en',
+                        help='language of the data')
     parser.add_argument('-f', '--format',
                         help="output format. 'json' or 'md'")
     return parser
