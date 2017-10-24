@@ -22,8 +22,8 @@ def create_argparser():
     return parser
 
 
-def convert_training_data(data_file, out_file, output_format, language):
-    td = load_data(data_file, language)
+def convert_training_data(data_file, out_file, output_format):
+    td = load_data(data_file)
     with io.open(out_file, "w", encoding='utf-8') as f:
         if output_format == 'md':
             f.write(td.as_markdown())
@@ -34,4 +34,4 @@ def convert_training_data(data_file, out_file, output_format, language):
 if __name__ == "__main__":
     parser = create_argparser()
     args = parser.parse_args()
-    convert_training_data(args.data_file, args.out_file, args.format, args.language)
+    convert_training_data(args.data_file, args.out_file, args.format)
