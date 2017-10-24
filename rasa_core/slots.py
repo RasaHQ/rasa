@@ -52,7 +52,13 @@ class Slot(object):
         for cls in utils.all_subclasses(Slot):
             if cls.type_name == type_name:
                 return cls
-        raise ValueError("Unknown slot type name '{}'.".format(type_name))
+        try:
+            return utils.class_from_module_path(type_name)
+        except Exception:
+            raise ValueError(
+                    "Failed to find slot type. Neither a known type nor. If "
+                    "you are creating your own slot type, make sure its "
+                    "module path is correct: {}.".format(type_name))
 
     def additional_persistence_info(self):
         return {}

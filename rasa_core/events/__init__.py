@@ -404,6 +404,9 @@ class StoryExported(Event):
 
     type_name = "export"
 
+    def __init__(self, path=None):
+        self.path = path if path else "stories.md"
+
     def __hash__(self):
         return hash(32143124319)
 
@@ -419,7 +422,7 @@ class StoryExported(Event):
     def apply_to(self, tracker):
         # type: (DialogueStateTracker) -> None
 
-        tracker.export_stories_to_file()
+        tracker.export_stories_to_file(self.path)
 
 
 # noinspection PyProtectedMember

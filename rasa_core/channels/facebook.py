@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import logging
 
+from builtins import str
 from flask import Blueprint, request, jsonify
 from pymessenger.bot import Bot
 
@@ -45,7 +46,7 @@ class FacebookInput(HttpInputComponent):
         self.fb_verify = fb_verify
         self.fb_secret = fb_secret
         self.debug_mode = debug_mode
-        self.fb_tokens = fb_tokens
+        self.fb_tokens = {str(k): v for k, v in fb_tokens.items()}
 
     @staticmethod
     def _is_user_message(fb_event):

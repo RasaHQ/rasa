@@ -4,12 +4,13 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import copy
-import logging
+import logging, os
 
 import numpy as np
-from builtins import range
+from builtins import input, range
 
 from rasa_core import utils
+from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.channels.console import ConsoleInputChannel
 from rasa_core.domain import check_domain_sanity
 from rasa_core.events import UserUtteranceReverted, UserUttered, StoryExported
@@ -18,6 +19,11 @@ from rasa_core.policies import PolicyTrainer
 from rasa_core.policies.ensemble import PolicyEnsemble
 
 logger = logging.getLogger(__name__)
+
+
+class TrainingFinishedException(Exception):
+    """Signal a finished online learning. Needed to break out of loops."""
+    pass
 
 
 class OnlinePolicyTrainer(PolicyTrainer):
@@ -51,8 +57,11 @@ class OnlinePolicyTrainer(PolicyTrainer):
                     interpreter=interpreter)
         bot.toggle_memoization(False)
 
-        bot.handle_channel(
-                input_channel if input_channel else ConsoleInputChannel())
+        try:
+            bot.handle_channel(
+                    input_channel if input_channel else ConsoleInputChannel())
+        except TrainingFinishedException:
+            pass    # training has finished
 
 
 class OnlinePolicyEnsemble(PolicyEnsemble):
@@ -106,6 +115,8 @@ class OnlinePolicyEnsemble(PolicyEnsemble):
         X = np.expand_dims(np.array(feature_vector), 0)
         if user_input == "1":
             # max prob prediction was correct
+            if action_name == ACTION_LISTEN_NAME:
+                print("Next user input:")
             return probabilities
         elif user_input == "2":
             # max prob prediction was false, new action required
@@ -123,12 +134,21 @@ class OnlinePolicyEnsemble(PolicyEnsemble):
             tracker.update(latest_message)
             return self.probabilities_using_best_policy(tracker, domain)
         elif user_input == "0":
-            # export current stories and quit
-            tracker.update(StoryExported())
-            exit()
+            self._export_stories(tracker)
+            raise TrainingFinishedException()
         else:
             raise Exception(
                     "Incorrect user input received '{}'".format(user_input))
+
+    def _export_stories(self, tracker):
+        # export current stories and quit
+        export_file_path = utils.request_input(
+                prompt="File to export to (if file exists, this "
+                       "will append the stories) [stories.md]: ")
+        exported = StoryExported(export_file_path)
+        tracker.update(exported)
+        logger.info("Stories got exported to '{}'.".format(
+                os.path.abspath(exported.path)))
 
     def _fit_example(self, X, y, domain):
         # takes the new example labelled and learns it

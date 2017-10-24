@@ -54,7 +54,13 @@ templates:
   utter_ask_numpeople:
     - "for how many people?"
   utter_ask_price: 
-    - "in which price range?"
+    - text: "in which price range?"
+      buttons:
+      - title: "cheap"
+        payload: "cheap"
+      - title: "expensive"
+        payload: "expensive"
+
   utter_on_it: 
     - "I'm on it"
 

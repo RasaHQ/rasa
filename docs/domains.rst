@@ -99,9 +99,9 @@ action in a module called ``restaurant.actions``):
          - "default message"
 
    actions:
-      - default
-      - greet
-      - goodbye
+      - utter_default
+      - utter_greet
+      - utter_goodbye
       - restaurant.actions.ActionCheckRestaurants
 
 
@@ -110,6 +110,53 @@ of your domain, you can list utter actions (which respond an utter template to t
 actions using their module path.
 
 For an example you can run, check the :doc:`tutorial_scratch`.
+
+.. _utter_templates:
+Utterance templates
+-------------------
+
+Utterance templates are messages the bot will send back to the user. Either
+automatically by an action with the same name as the utterance (e.g. in the
+above example the `utter_default` template and action) or by an action with
+custom code.
+
+Templates defined in a domains yaml file can contain images and buttons as well:
+
+.. code-block:: yaml
+
+   templates:
+     utter_greeting:
+     - text: "Hey! How are you?"
+       buttons:
+       - title: "great"
+         payload: "great"
+       - title: "super sad"
+         payload: "super sad"
+     utter_cheer_up:
+     - text: "Here is something to cheer you up:"
+       image: "https://cdn77.eatliver.com/wp-content/uploads/2017/10/trump-frog.jpg"
+
+
+.. note::
+
+   Please keep in mind that it is up to the implementation of the output
+   channel on how to display the defined buttons. E.g. the cmdline
+   interface can not display buttons or images, but tries to mimic them in
+   the command line.
+
+In custom code, you can retrieve a template by using:
+
+.. code-block:: python
+
+   class ActionCustom(Action):
+      def name(self):
+         return "action_custom"
+
+      def run(self, dispatcher, tracker, domain):
+         # send utter default template to user
+         dispatcher.utter_template("utter_default")
+         # ... other code
+         return []
 
 .. _slot_types:
 
