@@ -1,27 +1,27 @@
 allowempty: True
 mapping:
   intents:
-    type: seq
+    type: !!python/str "seq"
     sequence:
-    - type: str
+    - type: !!python/str "str"
   action_factory:
-    type: str
+    type: !!python/str "str"
   topics:
-    type: seq
+    type: !!python/str "seq"
     sequence:
-    - type: str
+    - type: !!python/str "str"
   entities:
-    type: seq
+    type: !!python/str "seq"
     sequence:
-    - type: str
+    - type: !!python/str "str"
   actions:
-    type: seq
+    type: !!python/str "seq"
     sequence:
-    - type: str
+    - type: !!python/str "str"
       required: True
   templates:
-    type: map
+    type: !!python/str "map"
     allowempty: True
   slots:
-    type: map
+    type: !!python/str "map"
     allowempty: True
