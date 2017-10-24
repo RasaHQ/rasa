@@ -3,15 +3,13 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import io
 import numpy as np
 import pytest
 
 from rasa_core.domain import TemplateDomain
 from rasa_core.featurizers import BinaryFeaturizer
-from rasa_core.policies.ensemble import PolicyEnsemble
-from rasa_core.slots import Slot
 from rasa_core.training_utils import extract_training_data_from_file
+from tests import utilities
 
 
 def test_create_train_data_no_history(default_domain):
@@ -39,12 +37,12 @@ def test_create_train_data_no_history(default_domain):
 def test_create_train_data_with_history(default_domain):
     featurizer = BinaryFeaturizer()
     X, y = extract_training_data_from_file(
-        "data/dsl_stories/stories_defaultdomain.md",
-        augmentation_factor=0,
-        domain=default_domain,
-        featurizer=featurizer,
-        max_history=4
-        )
+            "data/dsl_stories/stories_defaultdomain.md",
+            augmentation_factor=0,
+            domain=default_domain,
+            featurizer=featurizer,
+            max_history=4
+    )
     reference = np.array([
         [[0, 0, 0, 0, 0, 0, 0, 0, 0],
          [1, 0, 0, 0, 1, 0, 0, 0, 0],
@@ -108,15 +106,8 @@ def test_restaurant_domain_is_valid():
     TemplateDomain.validate_domain_yaml('examples/restaurant_domain.yml')
 
 
-def write_domain_yml(tmpdir, yml):
-    path = tmpdir.join("domain.yml").strpath
-    with io.open(path, "w") as f:
-        f.write(yml)
-    return path
-
-
 def test_custom_slot_type(tmpdir):
-    domain_path = write_domain_yml(tmpdir, """
+    domain_path = utilities.write_text_to_file(tmpdir, "domain.yml", """
        slots:
          custom:
            type: tests.conftest.CustomSlot
@@ -131,7 +122,7 @@ def test_custom_slot_type(tmpdir):
 
 
 def test_domain_fails_on_unknown_custom_slot_type(tmpdir):
-    domain_path=write_domain_yml(tmpdir,"""
+    domain_path = utilities.write_text_to_file(tmpdir, "domain.yml", """
         slots:
             custom:
              type: tests.conftest.Unknown

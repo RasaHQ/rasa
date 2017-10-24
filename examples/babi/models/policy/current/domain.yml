@@ -1,3 +1,4 @@
+action_factory: null
 actions:
 - utter_greet
 - utter_goodbye

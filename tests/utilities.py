@@ -33,3 +33,10 @@ def read_dialogue_file(filename):
     with io.open(filename, "r") as f:
         dialogue_json = f.read()
     return jsonpickle.loads(dialogue_json)
+
+
+def write_text_to_file(tmpdir, filename, text):
+    path = tmpdir.join(filename).strpath
+    with io.open(path, "w") as f:
+        f.write(text)
+    return path

@@ -85,7 +85,7 @@ def test_fake_user_online_example():
     # simulates cmdline input / detailed explanation above
     x = [0]
 
-    input_sequence = ["2", "2", "2", "2", "0", ""]
+    input_sequence = ["3", "0", "2", "2", "0", ""]
 
     def online_learning_answers(_=None, counter=x):
         out = input_sequence[counter[0]]
