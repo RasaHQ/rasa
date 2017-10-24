@@ -44,11 +44,12 @@ class Dispatcher(object):
         if message.get("buttons"):
             self.utter_button_message(message.get("text"),
                                       message.get("buttons"))
-        elif message.get("image"):
-            self.utter_message(message.get("text"))
-            self.utter_attachment(message.get("image"))
         else:
             self.utter_message(message.get("text"))
+
+        # if there is an image we handle it separately as an attachment
+        if message.get("image"):
+            self.utter_attachment(message.get("image"))
 
     def utter_message(self, text):
         # type: (Text) -> None
