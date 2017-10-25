@@ -12,6 +12,8 @@ from __future__ import unicode_literals
 
 import linecache
 import sys
+import warnings
+
 import six
 
 
@@ -26,7 +28,5 @@ def py2_monkey_patch_warnings():
                 line = line.strip()
                 s += "  %s\n" % line.decode("utf-8")
             return s
-
-        import warnings
 
         sys.modules['warnings'].formatwarning = formatwarning
