@@ -50,7 +50,7 @@ def formatwarning(message, category, filename, lineno, line=None):
     line = linecache.getline(filename, lineno) if line is None else line
     if line:
         line = line.strip()
-        s += "  %s\n" % line
+        s += "  %s\n" % line.decode("utf-8")
     return s
 
 def filterwarnings(action, message="", category=Warning, module="", lineno=0,
