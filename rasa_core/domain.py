@@ -11,6 +11,7 @@ import logging
 import os
 
 import numpy as np
+import pkg_resources
 from builtins import str
 from pykwalify.errors import SchemaError
 from six import string_types
@@ -442,8 +443,10 @@ class TemplateDomain(Domain):
         log = logging.getLogger('pykwalify')
         log.setLevel(logging.WARN)
 
+        schema_file = pkg_resources.resource_filename(__name__,
+                                                      "schemas/domain.yml")
         c = Core(source_file=file_name,
-                 schema_files=["data/validation/domain_schema.yml"])
+                 schema_files=[schema_file])
         try:
             c.validate(raise_exception=True)
         except SchemaError:
