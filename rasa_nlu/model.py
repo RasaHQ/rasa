@@ -19,7 +19,7 @@ from typing import Optional
 from typing import Text
 
 import rasa_nlu
-from rasa_nlu import components
+from rasa_nlu import components, utils
 from rasa_nlu.components import Component
 from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.config import RasaNLUConfig
@@ -171,7 +171,8 @@ class Trainer(object):
         timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
         metadata = {
             "language": self.config["language"],
-            "pipeline": [component.name for component in self.pipeline],
+            "pipeline": [utils.module_path_from_object(component)
+                         for component in self.pipeline],
         }
 
         if project_name is None:

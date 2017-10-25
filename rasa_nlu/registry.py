@@ -109,6 +109,7 @@ registered_pipeline_templates = {
         "ner_crf",
         "ner_spacy",
         "ner_duckling",
+        "ner_duckling_http",
         "ner_synonyms",
         "intent_classifier_keyword",
         "intent_classifier_sklearn",
