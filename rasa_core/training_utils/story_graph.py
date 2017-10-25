@@ -38,8 +38,6 @@ class StoryGraph(object):
 
     def build_stories(self,
                       domain,
-                      interpreter=RegexInterpreter(),
-                      remove_duplicates=True,
                       max_number_of_trackers=2000):
         # type: (Domain, NaturalLanguageInterpreter, bool, int) -> List[Story]
         """Build the stories of a graph."""
@@ -61,7 +59,7 @@ class StoryGraph(object):
                     incoming_trackers = utils.subsample_array(
                             incoming_trackers, max_number_of_trackers, rand)
 
-                events = step.explicit_events(domain, interpreter)
+                events = step.explicit_events(domain)
                 # need to copy the tracker as multiple story steps might
                 # start with the same checkpoint and all of them
                 # will use the same set of incoming trackers

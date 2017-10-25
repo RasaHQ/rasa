@@ -104,6 +104,11 @@ class UserUttered(Event):
                 "entities": self.entities,
                 "text": text}
 
+    @staticmethod
+    def from_parse_data(text, parse_data):
+        return UserUttered(text, parse_data["intent"], parse_data["entities"],
+                           parse_data)
+
     def __hash__(self):
         return hash((self.text, self.intent, tuple(self.entities)))
 

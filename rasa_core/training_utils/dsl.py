@@ -139,8 +139,7 @@ class StoryStep(object):
                 result += "> {}\n".format(cp)
         return result
 
-    def explicit_events(self, domain, interpreter,
-                        should_append_final_listen=True):
+    def explicit_events(self, domain, should_append_final_listen=True):
         # type: (Domain, NaturalLanguageInterpreter) -> List[Event]
         """Returns events contained in the story step including implicit events.
 
@@ -153,14 +152,9 @@ class StoryStep(object):
 
         for e in self.events:
             if isinstance(e, UserUttered):
-                parse_data = interpreter.parse(e.text)
-                updated_utterance = UserUttered(e.text,
-                                                parse_data["intent"],
-                                                parse_data["entities"],
-                                                parse_data)
                 events.append(ActionExecuted(ActionListen().name()))
-                events.append(updated_utterance)
-                events.extend(domain.slots_for_entities(parse_data["entities"]))
+                events.append(e)
+                events.extend(domain.slots_for_entities(e.entities))
             else:
                 events.append(e)
 
@@ -209,7 +203,7 @@ class StoryStepBuilder(object):
         if len(messages) == 1:
             # If there is only one possible intent, we'll keep things simple
             for t in self.current_steps:
-                t.add_user_message(UserUttered(messages[0]))
+                t.add_user_message(messages[0])
         else:
             # If there are multiple different intents the
             # user can use the express the same thing
@@ -220,7 +214,7 @@ class StoryStepBuilder(object):
             for t in self.current_steps:
                 for m in messages:
                     copied = t.create_copy(use_new_id=True)
-                    copied.add_user_message(UserUttered(m))
+                    copied.add_user_message(m)
                     copied.end_checkpoint = Checkpoint(generated_checkpoint)
                     updated_steps.append(copied)
             self.current_steps = updated_steps
@@ -259,11 +253,11 @@ class Story(object):
     def __init__(self, story_steps=None):
         self.story_steps = story_steps if story_steps else []
 
-    def as_dialogue(self, sender, domain, interpreter=RegexInterpreter()):
+    def as_dialogue(self, sender, domain):
         events = []
         for step in self.story_steps:
             events.extend(
-                    step.explicit_events(domain, interpreter,
+                    step.explicit_events(domain,
                                          should_append_final_listen=False))
 
         events.append(ActionExecuted(ActionListen().name()))
@@ -288,21 +282,23 @@ class Story(object):
 class StoryFileReader(object):
     """Helper class to read a story file."""
 
-    def __init__(self, domain, template_vars=None):
+    def __init__(self, domain, interpreter, template_vars=None):
         self.story_steps = []
         self.current_step_builder = None  # type: Optional[StoryStepBuilder]
         self.domain = domain
+        self.interpreter = interpreter
         self.template_variables = template_vars if template_vars else {}
 
     @staticmethod
-    def read_from_file(file_name, domain, template_variables=None):
+    def read_from_file(file_name, domain, interpreter=RegexInterpreter(),
+                       template_variables=None):
         """Given a json file reads the contained stories."""
 
         try:
             with io.open(file_name, "r") as f:
                 lines = f.readlines()
-            return StoryFileReader(domain, template_variables).process_lines(
-                    lines)
+            reader = StoryFileReader(domain, interpreter, template_variables)
+            return reader.process_lines(lines)
         except Exception as e:
             raise Exception("Failed to parse '{}'. {}".format(
                     os.path.abspath(file_name), e))
@@ -409,7 +405,16 @@ class StoryFileReader(object):
         if not self.current_step_builder:
             raise StoryParseError("User message '{}' at invalid location. "
                                   "Expected story start.".format(messages))
-        self.current_step_builder.add_user_messages(messages)
+        parsed_messages = []
+        for m in messages:
+            parse_data = self.interpreter.parse(m)
+            utterance = UserUttered.from_parse_data(m, parse_data)
+            if utterance.intent.get("name") not in self.domain.intents:
+                logger.warn("Found unknown intent '{}'. Please, make sure "
+                            "that all intents are listed in your domain "
+                            "yaml.".format(utterance.intent.get("name")))
+            parsed_messages.append(utterance)
+        self.current_step_builder.add_user_messages(parsed_messages)
 
     def add_event(self, event_name, parameters):
         parsed = Event.from_story_string(event_name, parameters, self.domain,
@@ -481,15 +486,13 @@ class TrainingsDataExtractor(object):
     def __init__(self,
                  story_graph,  # type: StoryGraph
                  domain,  # type: Domain
-                 featurizer,  # type: Featurizer
-                 interpreter=None  # type: Optional[NaturalLanguageInterpreter]
+                 featurizer  # type: Featurizer
                  ):
         # type: (...) -> None
 
         self.story_graph = story_graph
         self.domain = domain
         self.featurizer = featurizer
-        self.interpreter = interpreter if interpreter else RegexInterpreter()
 
     def extract_trainings_data(self,
                                remove_duplicates=True,
@@ -653,7 +656,7 @@ class TrainingsDataExtractor(object):
         be used to process the events. Collects and returns training
         data while processing the story step."""
 
-        events = step.explicit_events(self.domain, self.interpreter)
+        events = step.explicit_events(self.domain)
         # need to copy the tracker as multiple story steps
         # might start with the same checkpoint and all of them
         # will use the same set of incoming trackers
