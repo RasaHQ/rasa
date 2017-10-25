@@ -4,13 +4,14 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import warnings
+
 import six
+
 
 if six.PY2:
     from rasa_nlu.py2_patched_warnings import py2_monkey_patch_warnings
     py2_monkey_patch_warnings()
-
-import warnings
 
 
 if six.PY2:

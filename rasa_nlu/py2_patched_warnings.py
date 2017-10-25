@@ -12,7 +12,7 @@ from __future__ import unicode_literals
 
 import linecache
 import sys
-import warnings
+import warnings  # noqa
 
 import six
 
