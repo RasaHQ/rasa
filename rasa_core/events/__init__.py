@@ -426,6 +426,56 @@ class StoryExported(Event):
 
 
 # noinspection PyProtectedMember
+class ConversationPaused(Event):
+    """Ignore messages from the user to let a human take over.
+
+    As a side effect the ``Tracker``'s ``paused`` attribute will
+    be set to ``True``. """
+
+    type_name = "pause"
+
+    def __hash__(self):
+        return hash(32143124313)
+
+    def __eq__(self, other):
+        return isinstance(other, ConversationPaused)
+
+    def __str__(self):
+        return "ConversationPaused()"
+
+    def as_story_string(self):
+        return self.type_name
+
+    def apply_to(self, tracker):
+        tracker._paused = True
+
+
+# noinspection PyProtectedMember
+class ConversationResumed(Event):
+    """Bot takes over conversation.
+
+    Inverse of ``PauseConversation``. As a side effect the ``Tracker``'s
+    ``paused`` attribute will be set to ``False``."""
+
+    type_name = "resume"
+
+    def __hash__(self):
+        return hash(32143124314)
+
+    def __eq__(self, other):
+        return isinstance(other, ConversationResumed)
+
+    def __str__(self):
+        return "ConversationResumed()"
+
+    def as_story_string(self):
+        return self.type_name
+
+    def apply_to(self, tracker):
+        tracker._paused = False
+
+
+# noinspection PyProtectedMember
 class ActionExecuted(Event):
     """An operation describes an action taken + its result.
 
