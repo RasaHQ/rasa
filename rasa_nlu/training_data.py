@@ -14,9 +14,10 @@ import six
 # because standard py2's warnings library can't handle unicode message
 # correctly, a patched version of warnings library will be used
 if six.PY2:
-    from . import py2_patched_warnings as warnings
-else:
-    import warnings
+    from .py2_patched_warnings import py2_monkey_patch_warnings
+    py2_monkey_patch_warnings()
+
+import warnings
 
 from itertools import groupby
 
