@@ -46,7 +46,6 @@ jobs:
     - pip install sphinx==1.5.2 sphinx-autobuild==0.6.0 sphinxcontrib-versioning==2.2.1
       nbsphinx==0.2.13
     - pip install -e git://github.com/RasaHQ/sphinx_rtd_theme.git#egg=sphinx_rtd_theme
-    - pip install -e .
     script:
     - eval "$(ssh-agent -s)"; touch docs/key; chmod 0600 docs/key
     - openssl aes-256-cbc -K $encrypted_050c822e99ef_key -iv $encrypted_050c822e99ef_iv
