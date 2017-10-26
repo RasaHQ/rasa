@@ -81,7 +81,6 @@ def load_dialogflow_data(files, language):
     return TrainingData(training_examples, entity_synonyms)
 
 
-
 def load_luis_data(filename):
     # type: (Text) -> TrainingData
     """Loads training data stored in the LUIS.ai data format."""
