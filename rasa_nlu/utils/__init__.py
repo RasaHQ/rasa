@@ -104,6 +104,11 @@ def ordered(obj):
         return obj
 
 
+def module_path_from_object(o):
+    """Returns the fully qualified class path of the instantiated object."""
+    return o.__class__.__module__ + "." + o.__class__.__name__
+
+
 def class_from_module_path(module_path):
     """Given the module name and path of a class, tries to retrieve the class.
 

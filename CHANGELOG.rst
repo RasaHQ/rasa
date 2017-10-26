@@ -26,10 +26,13 @@ Added
 - support for new dialogflow data format (previously api.ai)
 - improved support for custom components (components are stored by class name in stored
   metadata to allow for components that are not mentioned in the Rasa NLU registry)
+- language option to convert script
 
 Fixed
 -----
 - Fixed loading of default model from S3. Fixes #633
+- fixed permanent training status when training fails #652
+- quick fix for None "_formatter_parser" bug
 
 [0.10.1] - 2017-10-06
 ^^^^^^^^^^^^^^^^^^^^^
