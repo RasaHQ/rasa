@@ -11,12 +11,25 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 Added
 -----
+
+Changed
+-------
+
+Fixed
+-----
+
+[0.10.2] - 2017-10-26
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
 - support for new dialogflow data format (previously api.ai)
+- improved support for custom components (components are stored by class name in stored
+  metadata to allow for components that are not mentioned in the Rasa NLU registry)
 
 Fixed
 -----
 - Fixed loading of default model from S3. Fixes #633
-
 
 [0.10.1] - 2017-10-06
 ^^^^^^^^^^^^^^^^^^^^^
