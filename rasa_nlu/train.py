@@ -96,7 +96,7 @@ def do_train_in_worker(config):
         _, _, persisted_path = do_train(config)
         return persisted_path
     except Exception as e:
-        raise TrainingException(config.get("name"), e)
+        raise TrainingException(config.get("project"), e)
 
 
 def do_train(config,  # type: RasaNLUConfig
