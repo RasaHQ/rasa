@@ -7,7 +7,7 @@ HTTP server
 
     Before you can use the server, you need to define a domain, create training
     data, and train a model. You can then use the trained model for remote code
-    execution! See :ref:`tour` for an introduction.
+    execution! See :ref:`tutorial_basics` for an introduction.
 
 .. warning::
 

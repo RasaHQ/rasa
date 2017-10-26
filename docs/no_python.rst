@@ -24,7 +24,7 @@ You can build a chatbot with Rasa Core by:
 * running python scripts to train and run your bot
 
 The only part where you need to write python is when you want to define custom actions. 
-There's an excellent python library called :ref:`requests <http://docs.python-requests.org/en/master/>`, which makes HTTP programming painless.
+There's an excellent python library called `requests <http://docs.python-requests.org/en/master/>`_, which makes HTTP programming painless.
 If Rasa just needs to interact with your other services over HTTP, your actions will all look 
 something like this:
 

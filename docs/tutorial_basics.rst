@@ -1,14 +1,14 @@
-.. _tour:
+.. _tutorial_basics:
 
-A Quick Tour
-============
+Building a Simple Bot
+=====================
 
 
 .. note:: 
    In this tutorial we will build a demo app with a rule-based policy. 
    This is just to show what each of the classes do, and how they fit together.
 
-Here we show how to combine the relevant classes in an application. 
+Here we show how to create your first bot the relevant classes in an application.
 This might be easier to follow if you also look at :ref:`plumbing`.
 
 

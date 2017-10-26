@@ -61,7 +61,7 @@ Where to Start
 --------------
 
 After going through the :ref:`installation`, most users should start with
-:ref:`tutorial_scratch`. However, if you already have a bunch of conversations
+:ref:`tutorial_basics`. However, if you already have a bunch of conversations
 you'd like to use as a training set, check the :ref:`tutorial_babi`.
 
 Questions

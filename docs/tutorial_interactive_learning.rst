@@ -1,7 +1,7 @@
-.. _tutorial_scratch:
+.. _tutorial_interactive_learning:
 
-Building a Simple Bot
-=====================
+Interactive Learning
+====================
 
 .. note::
 

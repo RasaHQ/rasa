@@ -32,7 +32,7 @@ Welcome to the Rasa Documentation!
 *Can I see it in action?*
 
     We thought you'd never ask! Make sure to follow the :ref:`installation`
-    and check out :ref:`tutorial_scratch` afterwards!
+    and check out :ref:`tutorial_basics` afterwards!
 
 
 
@@ -48,7 +48,8 @@ Welcome to the Rasa Documentation!
    :maxdepth: 1
    :caption: Tutorials
 
-   tutorial_scratch
+   tutorial_basics
+   tutorial_interactive_learning
    tutorial_babi
    tutorial_fake_user
 
@@ -56,7 +57,6 @@ Welcome to the Rasa Documentation!
    :maxdepth: 1
    :caption: Deep Dives
 
-   tour
    domains
    stories
    patterns

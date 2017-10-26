@@ -109,7 +109,7 @@ The point of this is just to show how the pieces fit together. As you can see, i
 of your domain, you can list utter actions (which respond an utter template to the user) as well as custom
 actions using their module path.
 
-For an example you can run, check the :doc:`tutorial_scratch`.
+For an example you can run, check the :doc:`tutorial_basics`.
 
 .. _utter_templates:
 

@@ -43,4 +43,4 @@ Getting Started
 ---------------
 
 To so your newly installed Rasa Core in action, head over to the
-introductory tutorial :ref:`tutorial_scratch`.
+introductory tutorial :ref:`tutorial_basics`.
