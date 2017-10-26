@@ -16,6 +16,7 @@ Added
 Fixed
 -----
 - Fixed loading of default model from S3. Fixes #633
+- fixed permanent training status when training fails #652
 
 
 [0.10.1] - 2017-10-06
