@@ -34,7 +34,8 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.doctest',
-    'nbsphinx'
+    'nbsphinx',
+    'sphinxcontrib.httpdomain',
 #    'numpydoc',
 ]
 

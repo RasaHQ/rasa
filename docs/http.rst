@@ -28,7 +28,7 @@ a HTTP REST interface.
 
 To activate the remote mode, include
 
-.. code-block:: yml
+.. code-block:: yaml
 
     action_factory: remote
 
@@ -176,17 +176,28 @@ Reset Slots
 Endpoints
 ---------
 
-``POST /conversation/<cid>/parse``
-:::::::::::::::::::::::::::::::::::
+.. http:get:: /conversations/(str:sender)/parse
 
-Notify the dialogue engine that the user posted a new message. You must ``POST``
-data in this format ``'{"query":"<your text to parse>"}'``,
-you can do this with
+   Notify the dialogue engine that the user posted a new message. You must
+   ``POST`` data in this format ``'{"query":"<your text to parse>"}'``,
+   you can do this with
 
-.. code-block:: bash
+   **Example request**:
 
-    $ curl -XPOST localhost:5005/conversations/default/parse -d '{"query":"hello there"}' | python -mjson.tool
-    {
+   .. sourcecode:: bash
+
+      curl -XPOST localhost:5005/conversations/default/parse -d \
+        '{"query":"hello there"}' | python -mjson.tool
+
+   **Example response**:
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Vary: Accept
+      Content-Type: text/javascript
+
+      {
         "next_action": "utter_ask_howcanhelp",
         "tracker": {
             "latest_message": {
@@ -204,45 +215,73 @@ you can do this with
         }
     }
 
+   :statuscode 200: no error
 
-``POST /conversation/<cid>/continue``
-:::::::::::::::::::::::::::::::::::::
 
-Continue the prediction loop. Should be called until the endpoint returns
-``action_listen`` as the next action. Between the calls to this endpoint,
-your code should execute the mentioned next action. If you receive
-``action_listen`` as the next action, you should wait for the next user input.
+.. http:get:: /conversations/(str:sender)/continue
 
-.. code-block:: bash
+   Continue the prediction loop for the conversation with id `user_id`. Should
+   be called until the endpoint returns ``action_listen`` as the next action.
+   Between the calls to this endpoint, your code should execute the mentioned
+   next action. If you receive ``action_listen`` as the next action, you should
+   wait for the next user input.
 
-    $ curl -XPOST http://localhost:5005/conversations/default/continue -d \
+   **Example request**:
+
+   .. sourcecode:: bash
+
+      curl -XPOST http://localhost:5005/conversations/default/continue -d \
         '{"executed_action": "utter_ask_howcanhelp", "events": []}' | python -mjson.tool
-    {
-        "next_action": "utter_ask_cuisine",
-        "tracker": {
-            "latest_message": {
-                ...
-            },
-            "sender_id": "default",
-            "slots": {
-                "cuisine": null,
-                "info": null,
-                "location": null,
-                "matches": null,
-                "people": null,
-                "price": null
-            }
-        }
-    }
 
-``GET /version``
-::::::::::::::::
+   **Example response**:
 
-This will return the current version of the Rasa Core instance.
+   .. sourcecode:: http
 
-.. code-block:: bash
+      HTTP/1.1 200 OK
+      Vary: Accept
+      Content-Type: text/javascript
 
-    $ curl http://localhost:5005/version | python -mjson.tool
-    {
-      "version" : "0.7.0"
-    }
+      {
+          "next_action": "utter_ask_cuisine",
+          "tracker": {
+              "latest_message": {
+                  ...
+              },
+              "sender_id": "default",
+              "slots": {
+                  "cuisine": null,
+                  "info": null,
+                  "location": null,
+                  "matches": null,
+                  "people": null,
+                  "price": null
+              }
+          }
+      }
+
+   :statuscode 200: no error
+
+
+.. http:get:: /version
+
+   Version of Rasa Core that is currently running.
+
+   **Example request**:
+
+   .. sourcecode:: bash
+
+      curl http://localhost:5005/version | python -mjson.tool
+
+   **Example response**:
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Vary: Accept
+      Content-Type: text/javascript
+
+      {
+          "version" : "0.7.0"
+      }
+
+   :statuscode 200: no error
