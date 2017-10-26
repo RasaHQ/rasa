@@ -28,7 +28,6 @@ def create_argument_parser():
             help="core model to run with the server")
     parser.add_argument(
             '-u', '--nlu',
-            required=True,
             type=str,
             help="nlu model to run with the server")
     parser.add_argument(
@@ -66,7 +65,10 @@ class RasaCoreServer(object):
 
     app = Klein()
 
-    def __init__(self, model_directory, nlu_model, verbose, log_file):
+    def __init__(self, model_directory,
+                 nlu_model=None,
+                 verbose=True,
+                 log_file="rasa_core.log"):
         logging.basicConfig(filename=log_file,
                             level="DEBUG" if verbose else "INFO")
         logging.captureWarnings(True)

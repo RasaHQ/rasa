@@ -25,7 +25,8 @@ class NaturalLanguageInterpreter(object):
             return obj
         if isinstance(obj, str):
             return RasaNLUInterpreter(model_directory=obj)
-        return None
+        else:
+            return RegexInterpreter()   # default interpreter
 
 
 class RegexInterpreter(NaturalLanguageInterpreter):
