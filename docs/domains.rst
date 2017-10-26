@@ -55,7 +55,7 @@ your bot would execute the action ``ActionCheckRestaurants``, which might look l
 .. testcode::
 
    from rasa_core.actions import Action
-   from rasa_core.events import SetSlot
+   from rasa_core.events import SlotSet
 
    class ActionCheckRestaurants(Action):
       def name(self):
@@ -66,7 +66,7 @@ your bot would execute the action ``ActionCheckRestaurants``, which might look l
          q = "select * from restaurants where cuisine='{0}' limit 1".format(cuisine)
          result = db.query(q)
 
-         return [SetSlot("matches", result if result is not None else [])]
+         return [SlotSet("matches", result if result is not None else [])]
 
 
 Note that actions **do not mutate the tracker directly**.
@@ -147,7 +147,11 @@ Templates defined in a domains yaml file can contain images and buttons as well:
 
 In custom code, you can retrieve a template by using:
 
-.. code-block:: python
+.. testsetup::
+
+   from rasa_core.actions import Action
+
+.. testcode::
 
    class ActionCustom(Action):
       def name(self):

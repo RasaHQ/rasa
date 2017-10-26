@@ -62,11 +62,15 @@ You can also call the visualization directly from your code using:
 
 .. testcode::
 
-   from rasa_core.training_utils import create_stories_from_file
+   from rasa_core.training_utils.dsl import StoryFileReader
+   from rasa_core.domain import TemplateDomain
    from rasa_core.training_utils.visualization import visualize_stories
    from rasa_nlu.converters import load_data
 
-   stories = create_stories_from_file("examples/babi/data/babi_task5_dev_rasa_even_smaller.md")
+   domain = TemplateDomain.load("examples/restaurant_domain.yml")
+   stories = StoryFileReader.read_from_file("examples/babi/data/babi_task5_dev_rasa_even_smaller.md",
+                                                domain)
+
    training_data = load_data("examples/babi/data/babi_dialog_nlu.json")
    visualize_stories(stories, "graph.png", training_data=training_data)
 

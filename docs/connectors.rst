@@ -35,12 +35,12 @@ Code to create a Messenger-compatible webserver looks like this:
     input_channel = FacebookInput(
        fb_verify="YOUR_FB_VERIFY",
        fb_secret="YOUR_FB_SECRET",
-       fb_tokens=["YOUR_FB_PAGE_TOKEN"],
+       fb_tokens={"YOUR_FB_PAGE_ID": "YOUR_FB_PAGE_TOKEN"},
        debug_mode=True
     )
 
     # or `agent.handle_channel(...)` for synchronous handling
-    agent.handle_asynchronous(HttpInputChannel(5004, "/app", input_channel))
+    agent.handle_channel(HttpInputChannel(5004, "/app", input_channel))
 
 The arguments for the ``FacebookInput`` constructor are as follows, reading the
 `messenger docs <https://developers.facebook.com/docs/graph-api/webhooks>`_ probably helps too.

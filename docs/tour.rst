@@ -136,7 +136,7 @@ And there we have it! A minimal bot containing all the important pieces of Rasa 
 If you want to handle input from the command line (or a different input channel) you need handle
 that channel instead of handling messages directly, e.g.:
 
-.. code-block:: python
+.. testcode::
 
    from rasa_core.channels.console import ConsoleInputChannel
    agent.handle_channel(ConsoleInputChannel())

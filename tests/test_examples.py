@@ -8,21 +8,8 @@ from examples.babi.train_online import run_babi_online
 from examples.concerts.run import run_concerts
 from examples.concerts.train_online import run_concertbot_online
 from examples.fake_user.train import run_fake_user
-from examples.hello_world.run import run_hello_world
 from rasa_core.channels.file import FileInputChannel
 from rasa_core.interpreter import RegexInterpreter
-
-
-def test_hello_world_example():
-    agent = run_hello_world(serve_forever=False)
-    responses = agent.handle_message("hello bot")
-    assert responses[-1] == "hey there!"
-
-    responses.extend(agent.handle_message("goodbye"))
-    assert responses[-1] == "default message"
-
-    assert len(responses) == 2, ("The bot shouldn't have sent any other "
-                                 "message then the above two")
 
 
 def test_babi_example():

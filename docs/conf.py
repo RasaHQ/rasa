@@ -329,3 +329,9 @@ scv_sort = ('semver',)
 scv_whitelist_branches = ('master', 'latest')
 scv_grm_exclude = ('README.md', '.gitignore', '.nojekyll', 'CNAME')
 scv_greatest_tag = True
+
+# patch agent handle to fix indefinite running during doctests
+from rasa_core.agent import Agent
+from mock import Mock
+
+Agent.handle_channel = Mock('handle_channel')

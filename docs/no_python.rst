@@ -29,16 +29,18 @@ If Rasa just needs to interact with your other services over HTTP, your actions 
 something like this:
 
 
-.. code-block:: python
+.. doctest::
 
    from rasa_core.actions import Action
    import requests
 
    class ApiAction(Action):
+       def name(self):
+           return "my_api_action"
 
-       def run(self, tracker, dispatcher):
-         data = requests.get(url).json
-         return [SetSlot("api_result", data)]
+       def run(self, dispatcher, tracker, domain):
+           data = requests.get(url).json
+           return [SlotSet("api_result", data)]
 
 
 

@@ -12,23 +12,19 @@ logger = logging.getLogger(__name__)
 
 
 class ActionSearchRestaurants(Action):
-    @classmethod
-    def name(cls):
+    def name(self):
         return 'action_search_restaurants'
 
-    @classmethod
-    def run(cls, dispatcher, tracker, domain):
+    def run(self, dispatcher, tracker, domain):
         dispatcher.utter_message("here's what I found")
         return []
 
 
 class ActionSuggest(Action):
-    @classmethod
-    def name(cls):
+    def name(self):
         return 'action_suggest'
 
-    @classmethod
-    def run(cls, dispatcher, tracker, domain):
+    def run(self, dispatcher, tracker, domain):
         dispatcher.utter_message("papi's pizza place")
         return []
 
