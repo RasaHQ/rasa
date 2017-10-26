@@ -729,13 +729,16 @@ class TrainingsDataExtractor(object):
         # we do NOT throw out contradicting examples
         # (same featurization but different labels).
         # appends y to X so it appears to be just another feature
-        casted_y = np.broadcast_to(
-                np.reshape(y, (y.shape[0], 1, 1)), (y.shape[0], X.shape[1], 1))
-        concatenated = np.concatenate((X, casted_y), axis=2)
-        t_data = np.unique(concatenated, axis=0)
-        X_unique = t_data[:, :, :-1]
-        y_unique = np.array(t_data[:, 0, -1], dtype=casted_y.dtype)
-        return X_unique, y_unique
+        if not utils.is_training_data_empty(X):
+            casted_y = np.broadcast_to(
+                    np.reshape(y, (y.shape[0], 1, 1)), (y.shape[0], X.shape[1], 1))
+            concatenated = np.concatenate((X, casted_y), axis=2)
+            t_data = np.unique(concatenated, axis=0)
+            X_unique = t_data[:, :, :-1]
+            y_unique = np.array(t_data[:, 0, -1], dtype=casted_y.dtype)
+            return X_unique, y_unique
+        else:
+            return X, y
 
     def _mark_first_action_in_story_steps_as_unpredictable(self):
         # type: () -> None

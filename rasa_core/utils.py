@@ -255,3 +255,8 @@ def read_yaml_file(filename):
     fix_yaml_loader()
     with io.open(filename, encoding="utf-8") as f:
         return yaml.load(f.read())
+
+
+def is_training_data_empty(X):
+    """Check if the training matrix does contain training samples."""
+    return X.shape[0] == 0
