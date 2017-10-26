@@ -1,7 +1,7 @@
 .. _installation:
 
-Installation and Hello World
-============================
+Installation
+============
 
 Installation
 ------------

@@ -1,7 +1,7 @@
 .. _tour:
 
-A Quick Tour (no ML)
-====================
+A Quick Tour
+============
 
 
 .. note:: 

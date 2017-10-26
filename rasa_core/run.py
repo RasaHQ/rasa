@@ -96,7 +96,11 @@ def main(model_directory, nlu_model, channel, port, credentials_file):
     agent = Agent.load(model_directory, nlu_model)
 
     logger.info("Finished loading agent, starting input channel & server.")
-    agent.handle_channel(create_input_channel(channel, port, credentials_file))
+    if channel:
+        input_channel = create_input_channel(channel, port, credentials_file)
+        agent.handle_channel(input_channel)
+
+    return agent
 
 
 if __name__ == '__main__':

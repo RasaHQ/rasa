@@ -1,7 +1,7 @@
 .. _section_http:
 
-Rasa Core as a HTTP server
-==========================
+HTTP server
+===========
 
 .. note::
 
@@ -198,22 +198,22 @@ Endpoints
       Content-Type: text/javascript
 
       {
-        "next_action": "utter_ask_howcanhelp",
-        "tracker": {
-            "latest_message": {
-                ...
-            },
-            "sender_id": "default",
-            "slots": {
-                "cuisine": null,
-                "info": null,
-                "location": null,
-                "matches": null,
-                "people": null,
-                "price": null
-            }
-        }
-    }
+          "next_action": "utter_ask_howcanhelp",
+          "tracker": {
+              "latest_message": {
+                  ...
+              },
+              "sender_id": "default",
+              "slots": {
+                  "cuisine": null,
+                  "info": null,
+                  "location": null,
+                  "matches": null,
+                  "people": null,
+                  "price": null
+              }
+          }
+      }
 
    :statuscode 200: no error
 

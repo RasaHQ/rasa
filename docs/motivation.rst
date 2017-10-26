@@ -1,15 +1,16 @@
-.. _read_first:
+.. _motivation:
 
-Read this first
-===============
+Motivation
+==========
 
 Where Rasa Core fits in
 -----------------------
 
 
-Rasa Core takes in structured input: intents and entities, button clicks, etc., and decides
-what your bot should do next. If you want your system to handle free text, you need to also
-use Rasa NLU or another NLU tool. 
+Rasa Core takes in structured input: **intents** and **entities**,
+**button clicks**, etc., and decides which **action** your bot should run next.
+If you want your system to handle free text, you need to also use Rasa NLU or
+another NLU tool.
 
 
 .. image:: _static/images/rasa_system.png
@@ -22,6 +23,8 @@ The main idea behind Rasa Core is that thinking of conversations as a flowchart 
 It's very hard to reason about *all possible conversations* explicitly, but it's
 very easy to tell, mid-conversation, if a response is right or wrong.
 
+The Wrong Way™
+--------------
 The typical way to implement conversation flows is to use a state machine. 
 For example, you might need to collect some data from a user to fulfill their order, and manually
 take them through the states ``BROWSING``, ``CHECKING_OUT``, ``ADDING_PAYMENT``, ``ORDER_COMPLETE``, etc.
@@ -36,8 +39,8 @@ Similarly, when you want to add some new functionality, you end up clashing with
 and it gets harder and harder to make progress.
 
 Our view is that taking flowcharts literally and implementing them as a state machine is not a good idea,
-but that flowcharts are still useful for describing happy paths in your conversations, and for 
-visualising real dialogues. 
+but that **flowcharts are still useful for describing happy paths and for
+visualising dialogues**.
 
 The Rasa Way
 ------------
@@ -57,26 +60,25 @@ The advantages of this approach are that:
 Where to Start
 --------------
 
-Most users should start with :ref:`tutorial_scratch` . However,
-if you already have a bunch of conversations you'd like to use as
-a training set, check the :ref:`tutorial_babi`.
+After going through the :ref:`installation`, most users should start with
+:ref:`tutorial_scratch`. However, if you already have a bunch of conversations
+you'd like to use as a training set, check the :ref:`tutorial_babi`.
 
 Questions
 ---------
 
-*why python?*
+*Why python?*
 
     Because of its ecosystem of machine learning tools.
-    The machine learning happens inside the ``Policy`` subclasses, Rasa Core
-    ships with an implementation that uses Keras to predict the bot actions.
+    Head over to :ref:`no_python` for details.
 
-*is this only for ML experts?*
+*Is this only for ML experts?*
 
     You can use Rasa if you don't know anything about machine learning, but if
     you do it's easy to experiment.
 
 
-*how much training data do I need?*
+*How much training data do I need?*
 
     You can bootstrap from zero training data by using interactive learning.
     Try the tutorials!
