@@ -61,6 +61,8 @@ class InvalidConfigError(ValueError):
 
 
 class RasaNLUConfig(object):
+    DEFAULT_PROJECT_NAME = "default"
+
     def __init__(self, filename=None, env_vars=None, cmdline_args=None):
 
         if filename is None and os.path.isfile(DEFAULT_CONFIG_LOCATION):
@@ -142,13 +144,15 @@ class RasaNLUConfig(object):
         return config
 
     def create_cmdline_config(self, cmdline_args):
-        cmdline_config = {k: v for k, v in list(cmdline_args.items()) if v is not None}
+        cmdline_config = {k: v
+                          for k, v in list(cmdline_args.items())
+                          if v is not None}
         cmdline_config = self.split_pipeline(cmdline_config)
         cmdline_config = self.split_arg(cmdline_config, "duckling_dimensions")
         return cmdline_config
 
     def create_env_config(self, env_vars):
-        keys = [key for key in env_vars.keys() if "RASA" in key]
+        keys = [key for key in env_vars.keys() if "RASA_" in key]
         env_config = {key.split('RASA_')[1].lower(): env_vars[key] for key in keys}
         env_config = self.split_pipeline(env_config)
         env_config = self.split_arg(env_config, "duckling_dimensions")

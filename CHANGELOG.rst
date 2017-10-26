@@ -9,6 +9,14 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 .. note:: This version is not yet released and is under active development.
 
+Added
+-----
+- support for new dialogflow data format (previously api.ai)
+
+Fixed
+-----
+- Fixed loading of default model from S3. Fixes #633
+
 
 [0.10.1] - 2017-10-06
 ^^^^^^^^^^^^^^^^^^^^^

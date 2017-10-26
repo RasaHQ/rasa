@@ -5,7 +5,7 @@
 Tutorial: A simple restaurant search bot
 ========================================
 
-.. note:: See :ref:`section_migration` for how to clone your existing wit/LUIS/api.ai app.
+.. note:: See :ref:`section_migration` for how to clone your existing wit/LUIS/Dialogflow app.
 
 As an example we'll start a new project covering the domain of searching for restaurants.
 We'll start with an extremely simple model of those conversations. You can build up from there.
@@ -181,9 +181,9 @@ With very little data, rasa NLU can in certain cases already generalise concepts
 
 .. code-block:: console
 
-    $ curl -XPOST localhost:5000/parse -d '{"q":"I want some italian"}' | python -mjson.tool
+    $ curl -XPOST localhost:5000/parse -d '{"q":"I want some italian food"}' | python -mjson.tool
     {
-        "text": "I want some italian",
+        "text": "I want some italian food",
         "entities": [
             {
               "end": 19,

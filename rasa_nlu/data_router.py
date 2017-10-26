@@ -73,8 +73,6 @@ def deferred_from_future(future):
 
 
 class DataRouter(object):
-    DEFAULT_PROJECT_NAME = "default"
-
     def __init__(self, config, component_builder):
         self._training_processes = config['max_training_processes'] if config['max_training_processes'] > 0 else 1
         self.config = config
@@ -124,7 +122,7 @@ class DataRouter(object):
             project_store[project] = Project(self.config, self.component_builder, project)
 
         if not project_store:
-            project_store[self.DEFAULT_PROJECT_NAME] = Project()
+            project_store[RasaNLUConfig.DEFAULT_PROJECT_NAME] = Project(self.config)
         return project_store
 
     def _create_emulator(self):
@@ -141,8 +139,8 @@ class DataRouter(object):
             from rasa_nlu.emulators.luis import LUISEmulator
             return LUISEmulator()
         elif mode.lower() == 'api':
-            from rasa_nlu.emulators.api import ApiEmulator
-            return ApiEmulator()
+            from rasa_nlu.emulators.dialogflow import DialogflowEmulator
+            return DialogflowEmulator()
         else:
             raise ValueError("unknown mode : {0}".format(mode))
 
@@ -150,7 +148,7 @@ class DataRouter(object):
         return self.emulator.normalise_request_json(data)
 
     def parse(self, data):
-        project = data.get("project") or self.DEFAULT_PROJECT_NAME
+        project = data.get("project") or RasaNLUConfig.DEFAULT_PROJECT_NAME
         model = data.get("model")
 
         if project not in self.project_store:
@@ -166,7 +164,7 @@ class DataRouter(object):
         response, used_model = self.project_store[project].parse(data['text'], data.get('time', None), model)
 
         if self.responses:
-            self.responses.info(user_input=response, project=project, model=used_model)
+            self.responses.info('',user_input=response, project=project, model=used_model)
         return self.format_response(response)
 
     def format_response(self, data):

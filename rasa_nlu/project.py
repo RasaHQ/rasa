@@ -64,9 +64,11 @@ class Project(object):
             logger.warn("Invalid model requested. Using default")
 
         self._loader_lock.acquire()
-        if not self._models.get(model_name):
-            self._models[model_name] = self._interpreter_for_model(model_name)
-        self._loader_lock.release()
+        try:
+            if not self._models.get(model_name):
+                self._models[model_name] = self._interpreter_for_model(model_name)
+        finally:
+            self._loader_lock.release()
 
         response = self._models[model_name].parse(text, time)
 
@@ -124,7 +126,7 @@ class Project(object):
             data = Project._default_model_metadata()
             return Metadata(data, model_name)
         else:
-            if not os.path.isabs(model_name):
+            if not os.path.isabs(model_name) and self._path:
                 path = os.path.join(self._path, model_name)
             else:
                 path = model_name

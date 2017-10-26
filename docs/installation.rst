@@ -36,7 +36,7 @@ installed and tell you which are missing, if any.
 
     .. code-block:: bash
 
-        pip install -r dev-requirements.txt
+        pip install -r alt_requirements/requirements_full.txt
 
     to install all requirements.
 

@@ -31,7 +31,7 @@ def create_argparser():
                              "also be passed via a (json-formatted) config "
                              "file. NB command line args take precedence")
     parser.add_argument('-e', '--emulate',
-                        choices=['wit', 'luis', 'api'],
+                        choices=['wit', 'luis', 'dialogflow'],
                         help='which service to emulate (default: None i.e. use '
                              'simple built in format)')
     parser.add_argument('-l', '--language',
