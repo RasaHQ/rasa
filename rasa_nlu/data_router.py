@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import datetime
+import glob
 import io
 import logging
 import os
@@ -140,8 +141,8 @@ class DataRouter(object):
             from rasa_nlu.emulators.luis import LUISEmulator
             return LUISEmulator()
         elif mode.lower() == 'api':
-            from rasa_nlu.emulators.api import ApiEmulator
-            return ApiEmulator()
+            from rasa_nlu.emulators.dialogflow import DialogflowEmulator
+            return DialogflowEmulator()
         else:
             raise ValueError("unknown mode : {0}".format(mode))
 
@@ -153,7 +154,7 @@ class DataRouter(object):
         model = data.get("model")
 
         if project not in self.project_store:
-            projects = os.listdir(self.config['path'])
+            projects = self._list_projects(self.config['path'])
             if project not in projects:
                 raise InvalidProjectError("No project found with name '{}'.".format(project))
             else:
@@ -165,8 +166,15 @@ class DataRouter(object):
         response, used_model = self.project_store[project].parse(data['text'], data.get('time', None), model)
 
         if self.responses:
-            self.responses.info(user_input=response, project=project, model=used_model)
+            self.responses.info('', user_input=response, project=project, model=used_model)
         return self.format_response(response)
+
+    @staticmethod
+    def _list_projects(path):
+        """List the projects in the path, ignoring hidden directories."""
+        return [fn
+                for fn in glob.glob(os.path.join(path, '*'))
+                if os.path.isdir(fn)]
 
     def format_response(self, data):
         return self.emulator.normalise_response_json(data)

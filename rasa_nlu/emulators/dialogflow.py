@@ -14,16 +14,16 @@ from typing import List
 from rasa_nlu.emulators import NoEmulator
 
 
-class ApiEmulator(NoEmulator):
+class DialogflowEmulator(NoEmulator):
     def __init__(self):
         # type: () -> None
 
-        super(ApiEmulator, self).__init__()
+        super(DialogflowEmulator, self).__init__()
         self.name = 'api'
 
     def normalise_response_json(self, data):
         # type: (Dict[Text, Any]) -> Dict[Text, Any]
-        """Transform data to API.ai format."""
+        """Transform data to Dialogflow format."""
 
         # populate entities dict
         entities = {

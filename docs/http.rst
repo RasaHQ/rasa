@@ -5,7 +5,7 @@ Using rasa NLU as a HTTP server
 
 .. note:: Before you can use the server, you need to train a model! See :ref:`training_your_model`
 
-The HTTP api exists to make it easy for non-python projects to use rasa NLU, and to make it trivial for projects currently using {wit,LUIS,api}.ai to try it out.
+The HTTP api exists to make it easy for non-python projects to use rasa NLU, and to make it trivial for projects currently using wit/LUIS/Dialogflow to try it out.
 
 Running the server
 ------------------

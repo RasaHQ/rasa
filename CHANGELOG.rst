@@ -8,10 +8,38 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. note:: This version is not yet released and is under active development.
+
+Added
+-----
+
+Changed
+-------
+
+Fixed
+-----
+
+[0.10.4] - 2017-10-27
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- docker image build
+
+[0.10.3] - 2017-10-26
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- support for new dialogflow data format (previously api.ai)
+- improved support for custom components (components are stored by class name in stored
+  metadata to allow for components that are not mentioned in the Rasa NLU registry)
+- language option to convert script
+
 Fixed
 -----
 - Fixed loading of default model from S3. Fixes #633
-
+- fixed permanent training status when training fails #652
+- quick fix for None "_formatter_parser" bug
 
 [0.10.1] - 2017-10-06
 ^^^^^^^^^^^^^^^^^^^^^

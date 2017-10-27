@@ -19,14 +19,9 @@ Which version of rasa NLU am I running?
 ---------------------------------------
 To find out which rasa version you are running, you can execute
 
-.. code-block:: python
+.. code-block:: bash
 
-   For Python 2.7:
-   python -c "import rasa_nlu; print rasa_nlu.__version__"
-
-   For Python 3.x:
    python -c "import rasa_nlu; print(rasa_nlu.__version__);"
-
 
 If you are using a virtual environment to run your python code, make sure you are using the correct python to execute the above code.
 

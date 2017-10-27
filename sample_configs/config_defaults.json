@@ -20,6 +20,7 @@
   "aws_endpoint_url": null,
   "max_number_of_ngrams": 7,
   "duckling_dimensions": null,
+  "duckling_http_url": null,
 
   "ner_crf": {
     "BILOU_flag": true,

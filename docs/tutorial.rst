@@ -5,7 +5,7 @@
 Tutorial: A simple restaurant search bot
 ========================================
 
-.. note:: See :ref:`section_migration` for how to clone your existing wit/LUIS/api.ai app.
+.. note:: See :ref:`section_migration` for how to clone your existing wit/LUIS/Dialogflow app.
 
 As an example we'll start a new project covering the domain of searching for restaurants.
 We'll start with an extremely simple model of those conversations. You can build up from there.

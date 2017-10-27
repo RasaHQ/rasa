@@ -1,0 +1,33 @@
+{
+  "id": "a90df8dd-f5bd-45dd-b8cf-12cc4b5cb800",
+  "name": "goodbye",
+  "auto": true,
+  "contexts": [],
+  "responses": [
+    {
+      "resetContexts": false,
+      "affectedContexts": [],
+      "parameters": [],
+      "messages": [
+        {
+          "type": 0,
+          "lang": "es",
+          "speech": "¡Nos vemos! Disfrutar"
+        },
+        {
+          "type": 0,
+          "lang": "en",
+          "speech": "See ya! Enjoy"
+        }
+      ],
+      "defaultResponsePlatforms": {},
+      "speech": []
+    }
+  ],
+  "priority": 500000,
+  "webhookUsed": false,
+  "webhookForSlotFilling": false,
+  "lastUpdate": 1507540635,
+  "fallbackIntent": false,
+  "events": []
+}

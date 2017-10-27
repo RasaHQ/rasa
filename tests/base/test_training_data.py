@@ -62,8 +62,8 @@ def test_rasa_data():
                                   u'vegg': u'vegetarian', u'veggie': u'vegetarian'}
 
 
-def test_api_data():
-    td = load_data('data/examples/api/')
+def test_dialogflow_data():
+    td = load_data('data/examples/dialogflow/')
     assert td.entity_examples != []
     assert td.intent_examples != []
     assert td.entity_synonyms != {}
@@ -241,29 +241,30 @@ def cmp_dict_list(firsts, seconds):
     return not seconds
 
 
-@pytest.mark.parametrize("data_file,gold_standard_file,output_format", [
-    ("data/examples/wit/demo-flights.json", "data/test/wit_converted_to_rasa.json", "json"),
-    ("data/examples/luis/demo-restaurants.json", "data/test/luis_converted_to_rasa.json", "json"),
-    ("data/examples/api/", "data/test/api_converted_to_rasa.json", "json"),
-    ("data/examples/rasa/demo-rasa.md", "data/test/md_converted_to_json.json", "json"),
-    ("data/examples/rasa/demo-rasa.json", "data/test/json_converted_to_md.md", "md")
+@pytest.mark.parametrize("data_file,gold_standard_file,output_format,language", [
+    ("data/examples/wit/demo-flights.json", "data/test/wit_converted_to_rasa.json", "json", None),
+    ("data/examples/luis/demo-restaurants.json", "data/test/luis_converted_to_rasa.json", "json", None),
+    ("data/examples/dialogflow/", "data/test/dialogflow_en_converted_to_rasa.json", "json", "en"),
+    ("data/examples/dialogflow/", "data/test/dialogflow_es_converted_to_rasa.json", "json", "es"),
+    ("data/examples/rasa/demo-rasa.md", "data/test/md_converted_to_json.json", "json", None),
+    ("data/examples/rasa/demo-rasa.json", "data/test/json_converted_to_md.md", "md", None)
 ])
-def test_training_data_conversion(tmpdir, data_file, gold_standard_file, output_format):
+def test_training_data_conversion(tmpdir, data_file, gold_standard_file, output_format, language):
     out_path = tmpdir.join("rasa_nlu_data.json")
-    convert_training_data(data_file, out_path.strpath, output_format)
-    td = load_data(out_path.strpath)
+    convert_training_data(data_file, out_path.strpath, output_format, language)
+    td = load_data(out_path.strpath, language)
     assert td.entity_examples != []
     assert td.intent_examples != []
 
-    gold_standard = load_data(gold_standard_file)
+    gold_standard = load_data(gold_standard_file, language)
     cmp_message_list(td.entity_examples, gold_standard.entity_examples)
     cmp_message_list(td.intent_examples, gold_standard.intent_examples)
     assert td.entity_synonyms == gold_standard.entity_synonyms
 
     # converting the converted file back to original file format and performing the same tests
     rto_path = tmpdir.join("data_in_original_format.txt")
-    convert_training_data(out_path.strpath, rto_path.strpath, 'json')
-    rto = load_data(rto_path.strpath)
+    convert_training_data(out_path.strpath, rto_path.strpath, 'json', language)
+    rto = load_data(rto_path.strpath, language)
     cmp_message_list(gold_standard.entity_examples, rto.entity_examples)
     cmp_message_list(gold_standard.intent_examples, rto.intent_examples)
     assert gold_standard.entity_synonyms == rto.entity_synonyms
