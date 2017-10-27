@@ -1,5 +1,7 @@
-Creating Policies
-=================
+.. _custom_policies:
+
+Custom Policies
+===============
 
 
 The ``Policy`` is the core of your bot, and it really just has one important method:

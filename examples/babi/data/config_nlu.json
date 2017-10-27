@@ -6,5 +6,8 @@
     "intent_classifier_sklearn",
     "ner_crf",
     "ner_synonyms"
-  ]
+  ],
+  "path" : "./models",
+  "project": "nlu",
+  "data" : "./data/franken_data.json"
 }

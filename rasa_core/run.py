@@ -29,7 +29,6 @@ def create_argument_parser():
             help="core model to run")
     parser.add_argument(
             '-u', '--nlu',
-            required=True,
             type=str,
             help="nlu model to run")
     parser.add_argument(
