@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import io
+import logging
 import os
 
 import requests
@@ -18,6 +19,8 @@ from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.model import Metadata
 from rasa_nlu.training_data import Message
+
+logger = logging.getLogger(__name__)
 
 
 class DucklingHTTPExtractor(EntityExtractor):
@@ -48,7 +51,13 @@ class DucklingHTTPExtractor(EntityExtractor):
 
         payload = {"text": text, "lang": self.language}
         response = requests.post(self.duckling_url + "/parse", data=payload)
-        return simplejson.loads(response.text)
+        if response.status_code == 200:
+            return simplejson.loads(response.text)
+        else:
+            logger.warn("Failed to get a proper response from remote duckling. "
+                        "Status Code: {}. ".format(response.status_code) +
+                        "Response: {}".format(response.text))
+            return {}
 
     def _filter_irrelevant_matches(self, matches):
         """Only return dimensions the user configured"""
