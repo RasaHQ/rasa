@@ -135,7 +135,7 @@ class Agent(object):
             if type(p) == MemoizationPolicy:
                 p.toggle(activate)
 
-    def train(self, filename=None, model_path=None, **kwargs):
+    def train(self, filename=None, model_path=None, remove_duplicates=True, **kwargs):
         # type: (Optional[Text], Optional[Text], **Any) -> None
         """Train the policies / policy ensemble using dialogue data from file"""
 
