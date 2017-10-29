@@ -15,9 +15,10 @@ A ``FacebookInput`` instance provides a flask blueprint for creating
 a webserver. This lets you separate the exact endpoints and implementation
 from your webserver creation logic.
 
+.. _facebook_connector:
 
-Facebook Messenger
-------------------
+Facebook Messenger Setup
+------------------------
 
 Code to create a Messenger-compatible webserver looks like this:
 

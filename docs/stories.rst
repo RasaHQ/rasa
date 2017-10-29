@@ -21,15 +21,15 @@ Here's an example from the bAbi data:
 
 This is what we call a **story**. A story starts with a name preceeded by two
 hashes ``## story_03248462``, this is arbitrary but can be used for debugging.
-After this point, we have two types of events which sequentially happen when separated by a newline.
 
-An event such as ``* _inform[location=bombay]`` is a user utterance. These utterances are written like ``* _{intent}[{entities}]``.
-The intent and entities provided (as well as those in the past)
-are the input features to the neural network which then predicts the bot’s next action,
-which is in the format ``- action_{action_name}`` where actions can be anything from a bot response sent
-to the user or something internal. For example in our case,
-``- action_store_stot`` stores the entities given by the user into internal slots within the bot. The user will not
-see this step. However, something such as ``- action_ask_howcanhelp`` is the bot asking how it can help.
+
+A story starts with a name preceded by two hashes, e.g. ``## story_07715946``.
+The choice of name is arbitrary but can be helpful for debugging. The body of
+a story is a sequence of events, separated by newlines. An event such as
+``* _inform[location=rome,price=cheap]`` is a user utterance, annotated as a
+dialogue act.
+The general format is ``* _intent[entities]``, where entities are key-value
+pairs separated by commas.
 
 The end of a story is denoted by a newline, and then a new story starts again with ``##``.
 

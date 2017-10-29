@@ -15,6 +15,18 @@ and the bot will ask more details until it is ready to suggest a restaurant.
 This assumes you already know what the ``Domain``, ``Policy``, and ``Action`` classes do. 
 If you don't, it's a good idea to read the basic tutorial first. 
 
+Domain
+~~~~~~
+
+You can instantiate your ``Domain`` like this:
+
+.. testcode::
+
+   from rasa_core.domain import TemplateDomain
+
+   domain = TemplateDomain.load("examples/restaurant_domain.yml")
+
+
 The Dataset
 ^^^^^^^^^^^
 

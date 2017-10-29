@@ -1,12 +1,12 @@
-## happy path
-* _greeting
+## happy path               <!-- name of the story - just for debugging -->
+* _greeting                 
   - utter_greeting
-* _mood_great
+* _mood_great               <!-- user utterance, in format _intent[entities] -->
   - utter_happy
 
-## sad path
+## sad path                 <!-- this is already the start of the next story -->
 * _greeting
-  - utter_greeting
+  - utter_greeting          <!-- action of the bot to execute -->
 * _mood_shitty
   - utter_cheer_up
   - utter_did_that_help

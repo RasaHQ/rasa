@@ -11,17 +11,47 @@ Building a Simple Bot
 Here we show how to create your first bot the relevant classes in an application.
 This might be easier to follow if you also look at :ref:`plumbing`.
 
+Goal
+^^^^
 
-Define a Domain
-^^^^^^^^^^^^^^^
+We will create a very simple bot that checks our current mood and tries to
+cheer us up if we are feeling sad. It will query our mood and based on our
+response will respond with a funny image or a message.
+
+Let's start by creating a project folder:
+
+.. code-block:: bash
+
+   mkdir moodbot && cd moodbot
+
+We are need to create two data files (dialogue stories as well as nlu examples)
+as well as two configuration files (dialogue domain and nlu config). The final
+structure should look like this:
+
+.. code-block:: text
+
+   moodbot/
+   ├── domain.yml             # dialogue configuration
+   ├── nlu_model_config.json  # nlu configuration
+   ├── stories.md             # dialogue training data
+   └── nlu.md                 # nlu training data
+
+Let's go through each of them!
+
+1. Define a Domain
+^^^^^^^^^^^^^^^^^^
 
 The first thing we need is a ``Domain`` instance. 
 The domain specifies the universe of possibilities in which the bot operates. 
 You can define a domain as a python class or as a yaml file. 
 Below is the restaurant domain from the examples folder.
 
+Here is an example domain for our moodbot, ``domain.yml``:
 
-A Domain defines the following things:
+
+.. literalinclude:: ../examples/facebook/domain.yml
+
+So what do the different parts mean?
 
 
 +---------------+------------------------------------------------------------------------------------------------------+
@@ -31,117 +61,135 @@ A Domain defines the following things:
 +---------------+------------------------------------------------------------------------------------------------------+
 | ``actions``   | things your bot can do and say                                                                       |
 +---------------+------------------------------------------------------------------------------------------------------+
-| ``slots``     | pieces of info you want to keep track of during a conversation. usually some overlap with entities.  |
+| ``slots``     | information to keep track of during a conversation (e.g. a users age) - similar to entities          |
 +---------------+------------------------------------------------------------------------------------------------------+
 | ``templates`` | template strings for the things your bot can say                                                     |
 +---------------+------------------------------------------------------------------------------------------------------+
 
-
-
-
-Here is an example of a restaurant domain from the examples folder:
-
-
-.. literalinclude:: ../examples/restaurant_domain.yml
-
+In our simple example we don't need the slots, so that section doesn't appear
+in our definition.
 
 **How does this fit together?**
-Rasa takes the ``intent`` and ``entities`` as input, and returns the ``action`` that should be taken
-next.
-If the action is just to say something to the user, Rasa will look for a matching template in the domain, fill in
-any variables, and respond.
-There is one special action, ``ActionListen`` which means to stop taking further actions until the user says something else.
-For more actions which do more than just sent a message, you define them as python classes and include them in a file.
+Rasa takes the ``intent``, ``entities``, and the internal state of the dialogue,
+and selects one of the ``actions`` that should executed next.
+If the action is just to say something to the user, Rasa will look for a matching
+template in the domain (action name equals the utter template,
+e.g. as for ``utter_greeting`` in the above example), fill in any variables,
+and respond.
 
-You can instantiate your ``Domain`` like this:
+.. note::
+   There is one special action, ``ActionListen`` which means to stop taking further
+   actions until the user says something else.
+   For more actions which do more than just sent a message, you can define them as
+   python classes and reference them in the domain by their module path. See
+   :ref:`custom_actions` for more information about custom actions.
 
-.. testcode::
-
-   from rasa_core.domain import TemplateDomain
-
-   domain = TemplateDomain.load("examples/restaurant_domain.yml")
-
-
-
-Define an interpreter
-^^^^^^^^^^^^^^^^^^^^^
-
-Instead of using Rasa NLU, we will use a dummy interpreter which is helpful for testing. The `RegexInterpreter`'s `parse` method takes string of the format `"_intent[entity1=value1,entity2=value2]"` and returns this same information in the canonical dict format we would get from Rasa NLU.
-
-
-.. doctest::
-
-   >>> from rasa_core.interpreter import RegexInterpreter
-   >>> interpreter = RegexInterpreter()
-   >>> result = interpreter.parse("_greet[name=rasa]")
-   >>> pp.pprint(result)
-   {   u'entities': [   {   u'end': 16,
-                            u'entity': u'name',
-                            u'start': 12,
-                            u'value': u'rasa'}],
-       u'intent': {   u'confidence': 1.0, u'name': u'greet'},
-       u'intent_ranking': [{   u'confidence': 1.0, u'name': u'greet'}],
-       u'text': u'_greet[name=rasa]'}
-
-
-Define a Policy
-^^^^^^^^^^^^^^^
-
-We'll create a really simple, deterministic policy. Again, this tutorial is just to show how the pieces fit together. To create ML-based policies see the other tutorials.
-
-If the user greets the bot, we respond with a greeting, and then listen (i.e. wait for them to say something again). For goodbye we respond with a good bye message and then listen, for any other intent we respond with the default message and then listen. 
-
-
-.. literalinclude:: ../examples/hello_world/run.py
-   :pyobject: SimplePolicy
-
-
-Put the pieces together
+2. Define an interpreter
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-Now we're going to glue some pieces together to create an actual bot. 
-We instantiate the policy, and an ``Agent`` instance, which owns an ``interpreter``, a ``policy``, and a ``domain``.
+An interpreter is responsible for parsing messages. It performs the Natural
+Language Understanding and transforms the message into structured output. For
+this example we are going to use Rasa NLU for this purpose.
 
-We will pass messages directly to the bot, but this is just for
-this is just for demonstration purposes. You can look at how to
-build a command line bot and a facebook bot by checking out the examples folder.
+Since we want to use Rasa NLU, we need to define the user messages our bot
+should be able to handle in the
+`Rasa NLU training format <https://nlu.rasa.ai/dataformat.html>`_. Let's create
+some intent examples in ``nlu.md``:
 
-.. testsetup::
+.. literalinclude:: ../examples/facebook/nlu.md
 
-   from examples.hello_world.run import SimplePolicy, HelloInterpreter
+Furthermore, we need a configuration file ``nlu_model_config.json`` for the
+NLU model:
 
-.. testcode::
+.. literalinclude:: ../examples/facebook/nlu_model_config.json
 
-   from rasa_core.agent import Agent
-   from rasa_core.domain import TemplateDomain
-   from rasa_core.tracker_store import InMemoryTrackerStore
+We can now train a NLU model using our examples (make sure to
+`install Rasa NLU <http://nlu.rasa.ai/installation.html#setting-up-rasa-nlu>`_
+first as well as
+`spaCy <http://nlu.rasa.ai/installation.html#best-for-most-spacy-sklearn>`_).
 
-   default_domain = TemplateDomain.load("examples/default_domain.yml")
-   agent = Agent(
-      default_domain,
-      policies=[SimplePolicy()],
-      interpreter=HelloInterpreter(),
-      tracker_store=InMemoryTrackerStore(default_domain))
+Let's run
 
+.. code-block:: bash
 
-We can then try sending it a message:
+   python -m rasa_nlu.train -c nlu_model_config.json --fixed_model_name current
 
-.. doctest::
+to train our NLU model. A new directory ``models/nlu/current`` should have been
+created containing the NLU model.
 
-   >>> agent.handle_message("_greet")
-   [u'hey there!']
+.. note::
+
+   To gather more insights about the above configuration and Rasa NLU features
+   head over to the `Rasa NLU documentation <https://nlu.rasa.ai>`_.
+
+3. Define stories
+^^^^^^^^^^^^^^^^^
+
+Ok, no we've got a NLU model as well as a domain defining actions our bot can
+take as well as the inputs it should handle (intents & entities). We are still
+missing the central piece, **stories to tell our bot what to do at which
+point in the dialogue**. There are two different ways to create stories (and
+you can mix them):
+   - create the stories by hand, writing them directly in a file
+   - create stories using the interactive learning.
+
+For this example, we are going to create the stories by writing them directly
+into ``stories.md``. But be aware, although it is a bit faster to write
+stories directly by hand instead of using interactive learning, special
+care needs to be taken when using slots, as they need to be properly set in the
+stories. But enough talking, let's get to our stories:
+
+.. literalinclude:: ../examples/facebook/stories.md
+
+The bot actions are also events, and are specified by lines starting
+with a dash. The end of a story is denoted by a newline. See :ref:`stories` for
+more infos about the data format.
+
+.. note::
+
+   You can see the interactive learning in action in the
+   :ref:`tutorial_interactive_learning` tutorial.
+
+4. Put the pieces together
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+There are two things we still need to do: train the dialogue model and run it.
+
+To train the dialogue model, run:
+
+.. code-block:: bash
+
+   python -m rasa_core.train -s stories.md -d domain.yml -o models/dialogue
+
+This will train the model and store it into ``models/dialogue``. Now we can use
+that trained dialogue model and the previously created NLU model to run our bot:
+
+.. code-block:: bash
+
+   python -m rasa_core.run -d models/dialogue -u models/nlu/current
 
 And there we have it! A minimal bot containing all the important pieces of Rasa Core.
 
-If you want to handle input from the command line (or a different input channel) you need handle
-that channel instead of handling messages directly, e.g.:
+.. image:: _static/images/facebook-run.png
 
-.. testcode::
+Bonus: Handle messages from facebook
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-   from rasa_core.channels.console import ConsoleInputChannel
-   agent.handle_channel(ConsoleInputChannel())
+If you want to handle input from facebook instead of the command line, you can
+specify that as part of the run command, after creating a credentials file
+containing the information to connect to facebook. Let's put that
+into ``credentials.yml``:
 
-In this case messages will be retrieved from the command line because we specified
-the ``ConsoleInputChannel``. Responses are printed to the command line as well. You
-can find a complete example on how to load an agent and chat with it on the
-command line in the following python example: ``examples/concerts/run.py``.
+.. literalinclude:: ../examples/facebook/credentials.yml
+
+If you are new to facebook messenger bots, head over to
+:ref:`facebook_connector` for an explanation of the different values.
+
+After setting that up, we can now run the bot using
+
+.. code-block:: bash
+
+   python -m rasa_core.run -d models/dialogue -u models/nlu/current \
+      --port 5002 --connector facebook --credentials credentials.yml
+
+and it will now handle messages users send to the facebook page!

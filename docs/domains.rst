@@ -37,6 +37,8 @@ For example, an ``action`` can:
 * make an external API call
 * query a database
 
+.. _custom_actions:
+
 Defining Custom Actions
 :::::::::::::::::::::::
 
