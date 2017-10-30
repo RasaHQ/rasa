@@ -99,16 +99,23 @@ class Dispatcher(object):
         message = self.retrieve_template(template, filled_slots, **kwargs)
         self.utter_response(message)
 
+    @staticmethod
+    def _template_variables(filled_slots, kwargs):
+        """Combine slot values and key word arguments to fill templates."""
+
+        if filled_slots is None:
+            filled_slots = {}
+        template_vars = filled_slots.copy()
+        template_vars.update(kwargs.items())
+        return template_vars
+
     def retrieve_template(self, template, filled_slots=None, **kwargs):
         # type: (Text, **Any) -> Dict[Text, Any]
         """Retrieve a named template from the domain."""
 
         r = copy.deepcopy(self.domain.random_template_for(template))
         if r is not None:
-            if filled_slots is None:
-                filled_slots = {}
-            template_vars = filled_slots.copy()
-            template_vars.update(kwargs.items())
+            template_vars = self._template_variables(filled_slots, kwargs)
             if template_vars:
                 r["text"] = r["text"].format(**template_vars)
             return r
