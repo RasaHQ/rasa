@@ -106,7 +106,8 @@ class Dispatcher(object):
         if r is not None:
             if filled_slots is None:
                 filled_slots = {}
-            template_vars = dict(filled_slots.items() + kwargs.items())
+            template_vars = filled_slots.copy()
+            template_vars.update(kwargs.items())
             if template_vars:
                 r["text"] = r["text"].format(**template_vars)
             return r
