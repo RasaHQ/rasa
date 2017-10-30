@@ -5,8 +5,10 @@ Building a Simple Bot
 
 
 .. note:: 
-   In this tutorial we will build a demo app with a rule-based policy. 
-   This is just to show what each of the classes do, and how they fit together.
+   This tutorial will show you the different parts needed to build a bot. Be
+   aware that this is a small example to get started quickly, it doesn't
+   include a lot of training data, so there is some room for improvement of
+   the final bot performance.
 
    `Example Code on GitHub <https://github.com/RasaHQ/rasa_core/tree/master/examples/moodbot>`_
 
