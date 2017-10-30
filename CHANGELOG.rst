@@ -11,6 +11,21 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+
+Changed
+-------
+
+Removed
+-------
+
+Fixed
+-----
+
+[0.7.2] - 2017-10-30
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
 - added facebook bot example
 - added support for conditional checkpoints. a checkpoint can be restricted to
   only allow one to use it if certain slots are set. see docs for details
@@ -21,9 +36,7 @@ Added
 Changed
 -------
 - small dropout in standard keras model to decrease reliance on exact intents
-
-Removed
--------
+- a LOT of documentation improvements
 
 Fixed
 -----
