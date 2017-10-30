@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from typing import Text, List, Dict, Any
+import copy
 
 from rasa_core.domain import Domain
 from rasa_core.channels import OutputChannel
@@ -98,7 +99,7 @@ class Dispatcher(object):
         # type: (Text, **Any) -> Dict[Text, Any]
         """Retrieve a named template from the domain."""
 
-        r = self.domain.random_template_for(template)
+        r = copy.deepcopy(self.domain.random_template_for(template))
         if r is not None:
             if len(kwargs) > 0:
                 r["text"] = r["text"].format(**kwargs)
