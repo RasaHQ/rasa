@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from rasa_core.channels import UserMessage
+from rasa_core.channels.direct import CollectingOutputChannel
 from rasa_core.featurizers import BinaryFeaturizer
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.channels.console import ConsoleOutputChannel
@@ -29,6 +30,6 @@ def test_message_processor(default_domain, capsys):
                                  default_domain,
                                  tracker_store)
 
-    processor.handle_message(UserMessage("_greet", ConsoleOutputChannel()))
-    out, _ = capsys.readouterr()
-    assert "hey there!" in out
+    out = CollectingOutputChannel()
+    processor.handle_message(UserMessage("_greet[name=Core]", out))
+    assert ("default", "hey there Core!") == out.latest_output()

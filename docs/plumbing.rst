@@ -6,7 +6,7 @@ Plumbing - How it all fits together
 
 This diagram shows the basic steps of how a Rasa Core app responds to a message:
 
-.. image:: _static/images/intro_1.png
+.. image:: _static/images/rasa_arch_colour.png
 
 The steps are: 
 
@@ -22,10 +22,8 @@ The steps are:
 
 .. note:: Messages can be text typed by a human, but can equally well be a button payload, or a message that's already been interpreted (as you would get from an Amazon Echo). See the section on :ref:`interpreters` for details.
 
-The steps above are carried out by the ``Controller``, which adds messages to a queue as they come in,
-and asynchronously works through the message queue to respond to users.
-In most cases, you shouldn't have to worry at all about this, but the details are explained in :ref:`message_handling`.
+The steps above are carried out by the ``MessageProcessor``, which receives
+the messages and processes them as they arrive.
 
-
-
-Now check out the :doc:`tour` and :doc:`tutorial_scratch`!
+Feel free to check out the :doc:`tutorial_basics` and
+:doc:`tutorial_interactive_learning` to see a bot in action!

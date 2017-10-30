@@ -11,12 +11,12 @@ For example:
 
     >>> from rasa_core.trackers import DialogueStateTracker
     >>> from rasa_core.slots import TextSlot
-    >>> from rasa_core.events import SetSlot
+    >>> from rasa_core.events import SlotSet
 
     >>> tracker = DialogueStateTracker("default", slots=[TextSlot("cuisine")])
     >>> print(tracker.slots)
     {u'cuisine': <TextSlot(cuisine: None)>}
-    >>> tracker.log_event(SetSlot("cuisine","Mexican"))
+    >>> tracker.update(SlotSet("cuisine","Mexican"))
     >>> print(tracker.slots)
     {u'cuisine': <TextSlot(cuisine: Mexican)>}
 
@@ -52,4 +52,5 @@ Here's a simple example of a dialogue as it would be stored in the TrackerStore:
 
 .. literalinclude:: ../data/test_dialogues/greet.json
     :language: json
+    :linenos:
 

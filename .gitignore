@@ -37,5 +37,7 @@ tmp/
 tokens.dat
 graph.png
 debug.md
-stories.md
-examples/facebook/models
+examples/moodbot/models
+examples/remotebot/models
+examples/restaurantbot/models
+examples/concertbot/models

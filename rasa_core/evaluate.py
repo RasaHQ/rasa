@@ -46,7 +46,7 @@ def create_argument_parser():
             help="nlu model to run with the server. None for regex interpreter")
     parser.add_argument(
             '-v', '--verbose',
-            default=True,
+            default=False,
             help="use verbose logging")
     parser.add_argument(
             '-o', '--output',

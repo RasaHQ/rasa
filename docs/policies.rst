@@ -1,10 +1,12 @@
-Creating Policies
-=================
+.. _custom_policies:
+
+Custom Policies
+===============
 
 
 The ``Policy`` is the core of your bot, and it really just has one important method:
 
-.. code-block:: python
+.. doctest::
 
     def predict_action_probabilities(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> List[float]
@@ -17,10 +19,25 @@ The domain is there if you need it, but only some policy types make use of it. T
 the probabilities for each action to be executed next. The action that is most likely will be executed.
 
 
-Let's look at the simplest possible example, taken from our hello world bot: 
+Let's look at a simple example for a custom policy:
 
-.. literalinclude:: ../examples/hello_world/run.py
-   :pyobject: SimplePolicy
+.. doctest::
+
+  from rasa_core.policies import Policy
+  from rasa_core.actions.action import ACTION_LISTEN_NAME
+  from rasa_core import utils
+  import numpy as np
+
+  class SimplePolicy(Policy):
+      def predict_action_probabilities(self, tracker, domain):
+          responses = {"greet": 3}
+
+          if tracker.latest_action_name == ACTION_LISTEN_NAME:
+              key = tracker.latest_message.intent["name"]
+              action = responses[key] if key in responses else 2
+              return utils.one_hot(action, domain.num_actions)
+          else:
+              return np.zeros(domain.num_actions)
 
 
 **How does this work?**
@@ -101,7 +118,7 @@ By default, each of these trains a linear model to fit the ``X, y`` data.
 The model is defined here: 
 
 .. literalinclude:: ../rasa_core/policies/keras_policy.py
-   :pyobject: KerasPolicy._build_model
+   :pyobject: KerasPolicy.model_architecture
 
 
 and the training is run here:

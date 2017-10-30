@@ -34,10 +34,18 @@ When Rasa sees an entity with the same name as one of the slots, this value is a
 For example, if your NLU module detects the entity ``people=8`` in the sentence *"I'd like a table for 8"*,
 this will be saved as a slot,
 
-.. code-block:: python
+.. testsetup::
 
-   tracker.slots()
-   >>> {"people": "8"}
+   from rasa_core.trackers import DialogueStateTracker
+   from rasa_core.slots import TextSlot
+   from rasa_core.events import SlotSet
+   tracker = DialogueStateTracker("default", slots=[TextSlot("people")])
+   tracker.update(SlotSet("people", "8"))
+
+.. doctest::
+
+   >>> tracker.slots
+   {'people': <TextSlot(people: 8)>}
 
 
 When Rasa Core predicts the next action to take, the only information it has about the ``TextSlot`` s is 
@@ -73,7 +81,7 @@ you have some training stories where the appropriate responses take place, e.g.:
    
 
 
-.. code-block:: python
+.. doctest::
 
    from rasa_core.slots import Slot
    
@@ -94,12 +102,12 @@ you have some training stories where the appropriate responses take place, e.g.:
 
 If you want to store something like the price range, this is actually a little simpler. Variables
 like price range usually take on one-of-n values, e.g. low, medium, high. For these cases you can use
-a ``CategoricalSlot``. 
+a ``categorical`` slot.
 
 .. code-block:: yaml
 
    slots:
-     pricerange:
+     price_range:
        type: categorical
        values: low, medium, high
 
@@ -107,26 +115,23 @@ a ``CategoricalSlot``.
 Rasa automatically represents (featurises) this as a one-hot encoding of the values: ``(1,0,0)``, ``(0,1,0)``, or ``(0,0,1)``.
 
 
-
 Storing API responses in the tracker
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You often want to save some information in the tracker, like the results from 
 a database query, or from an API call. If you don't want the value to influence the 
-dialogue, you can use a ``UnfeaturizedSlot``. You can explicitly set this value in a custom action:
+dialogue, you can use a ``unfeaturized`` slot. You can explicitly set this value in a custom action:
 
-.. code-block:: python
+.. doctest::
 
    from rasa_core.actions import Action
+   from rasa_core.events import SlotSet
    import requests
    
    class ApiAction(Action):
+       def name(self):
+           return "api_action"
+
        def run(self, tracker, dispatcher):
-         data = requests.get(url).json
-         return [SetSlot("api_result", data)]
-       
-
-
-
-     
-
+           data = requests.get(url).json
+           return [SlotSet("api_result", data)]

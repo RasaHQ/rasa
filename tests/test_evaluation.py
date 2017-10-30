@@ -8,13 +8,16 @@ import os
 
 from rasa_core.evaluate import run_story_evaluation, \
     collect_story_predictions
+from tests.conftest import DEFAULT_STORIES_FILE
 
 
-def test_evaluation_image_creation(tmpdir):
+def test_evaluation_image_creation(tmpdir, default_agent):
+    model_path = os.path.join(tmpdir.strpath, "model")
+    default_agent.persist(model_path)
     img_path = os.path.join(tmpdir.strpath, "evaltion.png")
     run_story_evaluation(
-            story_file="examples/concerts/data/stories.md",
-            policy_model_path="examples/concerts/models/policy/init",
+            story_file=DEFAULT_STORIES_FILE,
+            policy_model_path=model_path,
             nlu_model_path=None,
             out_file=img_path,
             max_stories=None
@@ -24,10 +27,12 @@ def test_evaluation_image_creation(tmpdir):
     assert imghdr.what(img_path) == "png"
 
 
-def test_evaluation_script():
+def test_evaluation_script(tmpdir, default_agent):
+    model_path = os.path.join(tmpdir.strpath, "model")
+    default_agent.persist(model_path)
     actual, preds = collect_story_predictions(
-            story_file="examples/concerts/data/stories.md",
-            policy_model_path="examples/concerts/models/policy/init",
+            story_file=DEFAULT_STORIES_FILE,
+            policy_model_path=model_path,
             nlu_model_path=None,
             max_stories=None,
             shuffle_stories=False

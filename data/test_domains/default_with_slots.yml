@@ -4,9 +4,7 @@ intents:
  - goodbye
 
 slots:
-  cuisine:
-    type: text
-  location:
+  name:
     type: text
 
 entities:
@@ -14,7 +12,7 @@ entities:
 
 templates:
   utter_greet:
-    - hey there!
+    - hey there {name}!
   utter_goodbye:
     - goodbye :(
   utter_default:

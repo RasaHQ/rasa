@@ -1,4 +1,4 @@
-.PHONY: clean test lint
+.PHONY: clean test lint init
 
 TEST_PATH=./
 
@@ -9,6 +9,11 @@ help:
 	@echo "        Check style with flake8."
 	@echo "    test"
 	@echo "        Run py.test"
+	@echo "    init"
+	@echo "        Install Rasa Core"
+
+init:
+	pip install -r requirements.txt
 
 clean:
 	find . -name '*.pyc' -exec rm -f {} +
@@ -24,6 +29,9 @@ lint:
 
 test: clean
 	py.test tests --verbose --pep8 --color=yes $(TEST_PATH)
+
+doctest: clean
+	cd docs && make doctest
 
 livedocs:
 	cd docs && make livehtml

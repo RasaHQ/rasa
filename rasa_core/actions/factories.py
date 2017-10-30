@@ -3,11 +3,15 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import logging
+
 from rasa_core.actions.action import UtterAction
 from typing import Text, Optional, List
 
 from rasa_core.actions import Action
 from rasa_core import utils
+
+logger = logging.getLogger(__name__)
 
 
 def action_factory_by_name(name):
@@ -80,7 +84,8 @@ class RemoteAction(Action):
         self._name = name
 
     def run(self, dispatcher, tracker, domain):
-        raise Exception("Remote action can not be run locally.")
+        logger.info("Remote action can not be run locally.")
+        return []
 
     def name(self):
         return self._name

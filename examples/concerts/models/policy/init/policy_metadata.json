@@ -1,9 +1,0 @@
-{
-  "ensemble_name": "rasa_core.policies.ensemble.SimplePolicyEnsemble", 
-  "policy_names": [
-    "rasa_core.policies.memoization.MemoizationPolicy", 
-    "examples.concerts.policy.ConcertPolicy"
-  ], 
-  "max_history": 2, 
-  "rasa_core": "0.7.0a1"
-}

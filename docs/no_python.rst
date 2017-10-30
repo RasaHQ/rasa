@@ -21,23 +21,26 @@ You can build a chatbot with Rasa Core by:
 
 * defining a domain (:ref:`a yaml file <domain>`)
 * writing / collecting stories (:ref:`markdown format <stories>`)
-* running a script like ``python train_dm.py`` from the :ref:`command line <tutorial_babi>`
+* running python scripts to train and run your bot
 
 The only part where you need to write python is when you want to define custom actions. 
-There's an excellent python library called :ref:`requests <http://docs.python-requests.org/en/master/>`, which makes HTTP programming painless.
+There's an excellent python library called `requests <http://docs.python-requests.org/en/master/>`_, which makes HTTP programming painless.
 If Rasa just needs to interact with your other services over HTTP, your actions will all look 
 something like this:
 
 
-.. code-block:: python
+.. doctest::
 
    from rasa_core.actions import Action
    import requests
 
    class ApiAction(Action):
-       def run(self, tracker, dispatcher):
-         data = requests.get(url).json
-         return [SetSlot("api_result", data)]
+       def name(self):
+           return "my_api_action"
+
+       def run(self, dispatcher, tracker, domain):
+           data = requests.get(url).json
+           return [SlotSet("api_result", data)]
 
 
 

@@ -6,6 +6,9 @@ from __future__ import unicode_literals
 import io
 import re
 
+from typing import Optional, Text
+
+from rasa_core.channels import OutputChannel
 from rasa_core.channels.channel import InputChannel, UserMessage
 
 
@@ -25,7 +28,9 @@ class FileInputChannel(InputChannel):
                  output_channel=None,
                  message_line_pattern=".*",
                  max_messages=None):
+        # type: (Text, OutputChannel, Text, Optional[int]) -> None
         from rasa_core.channels.console import ConsoleOutputChannel
+
         self.message_filter = re.compile(message_line_pattern)
         self.file_name = file_name
         self.max_messages = max_messages

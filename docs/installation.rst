@@ -1,7 +1,7 @@
 .. _installation:
 
-Installation and Hello World
-============================
+Installation
+============
 
 Installation
 ------------
@@ -39,14 +39,8 @@ want to use Rasa NLU make sure to follow the installation instructions of the
 In fact, you don't need to use NLU at all, if your messaging app uses buttons
 rather than free text.
 
-Hello, World!
--------------
+Getting Started
+---------------
 
-First things first, let's try it out! From the project's root dir, run:
-
-.. code-block:: bash
-
-    python examples/hello_world/run.py
-    Bot loaded. Type hello and press enter : 
-    hello
-    hey there!
+To so your newly installed Rasa Core in action, head over to the
+introductory tutorial :ref:`tutorial_basics`.

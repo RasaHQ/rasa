@@ -8,6 +8,7 @@ import logging
 
 from builtins import str
 
+from rasa_core import utils
 from rasa_core.agent import Agent
 from rasa_core.channels.console import ConsoleInputChannel
 from rasa_core.channels.facebook import FacebookInput
@@ -29,7 +30,6 @@ def create_argument_parser():
             help="core model to run")
     parser.add_argument(
             '-u', '--nlu',
-            required=True,
             type=str,
             help="nlu model to run")
     parser.add_argument(
@@ -61,32 +61,41 @@ def create_argument_parser():
     return parser
 
 
+def _create_facebook_channel(channel, port, credentials_file):
+    if credentials_file is None:
+        raise Exception("To use the facebook input channel, you need to "
+                        "pass a credentials file using '--credentials'. "
+                        "The argument should be a file path pointing to"
+                        "a yml file containing the facebook authentication"
+                        "information. Details in the docs: "
+                        "https://core.rasa.ai/facebook.html")
+    credentials = read_yaml_file(credentials_file)
+    input_blueprint = FacebookInput(
+            credentials.get("verify"),
+            credentials.get("secret"),
+            credentials.get("page-tokens"),
+            debug_mode=True)
+
+    return HttpInputChannel(port, None, input_blueprint)
+
+
 def create_input_channel(channel, port, credentials_file):
     """Instantiate the chosen input channel."""
 
     if channel == "facebook":
-        if credentials_file is None:
-            raise Exception("To use the facebook input channel, you need to "
-                            "pass a credentials file using '--credentials'. "
-                            "The argument should be a file path pointing to"
-                            "a yml file containing the facebook authentication"
-                            "information. Details in the docs: "
-                            "https://core.rasa.ai/facebook.html")
-        credentials = read_yaml_file(credentials_file)
-        input_blueprint = FacebookInput(
-                credentials.get("verify"),
-                credentials.get("secret"),
-                credentials.get("page-tokens"),
-                True
-        )
-        return HttpInputChannel(port, None, input_blueprint)
+        return _create_facebook_channel(channel, port, credentials_file)
     elif channel == "cmdline":
         return ConsoleInputChannel()
     else:
-        raise Exception("Unknown input channel for running main.")
+        try:
+            c = utils.class_from_module_path(channel)
+            return c()
+        except Exception:
+            raise Exception("Unknown input channel for running main.")
 
 
-def main(model_directory, nlu_model, channel, port, credentials_file):
+def main(model_directory, nlu_model=None, channel=None, port=None,
+         credentials_file=None):
     """Run the agent."""
 
     log = logging.getLogger('werkzeug')
@@ -96,7 +105,11 @@ def main(model_directory, nlu_model, channel, port, credentials_file):
     agent = Agent.load(model_directory, nlu_model)
 
     logger.info("Finished loading agent, starting input channel & server.")
-    agent.handle_channel(create_input_channel(channel, port, credentials_file))
+    if channel:
+        input_channel = create_input_channel(channel, port, credentials_file)
+        agent.handle_channel(input_channel)
+
+    return agent
 
 
 if __name__ == '__main__':

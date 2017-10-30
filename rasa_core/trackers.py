@@ -73,13 +73,15 @@ class DialogueStateTracker(object):
         # type: () -> Dict[Text, Any]
         """Returns the current tracker state as an object."""
 
-        serialised_slots = {key: slot.value
-                            for key, slot in self.slots.items()}
         return {
             "sender_id": self.sender_id,
-            "slots": serialised_slots,
+            "slots": self.current_slot_values(),
             "latest_message": self.latest_message.parse_data
         }
+
+    def current_slot_values(self):
+        """Return the currently set values of the slots"""
+        return {key: slot.value for key, slot in self.slots.items()}
 
     def get_slot(self, key):
         # type: (Text) -> Optional[Any]
