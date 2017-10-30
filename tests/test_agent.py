@@ -11,8 +11,8 @@ from rasa_core.tracker_store import InMemoryTrackerStore
 
 
 def test_agent_train(tmpdir, default_domain):
-    training_data_file = 'examples/concertbot/data/stories.md'
-    agent = Agent("examples/concertbot/concert_domain.yml",
+    training_data_file = 'examples/moodbot/data/stories.md'
+    agent = Agent("examples/moodbot/domain.yml",
                   policies=[ScoringPolicy()])
 
     agent.train(training_data_file, max_history=3)

@@ -42,13 +42,13 @@ def test_remote_example():
     response = agent.start_message_handling("_search_venues")
     assert response.get("next_action") == 'search_venues'
     assert response.get("tracker") == {
-            'slots': {'concerts': None, 'venues': None},
-            'sender_id': 'default',
-            'latest_message': {
-                'text': '_search_venues',
-                'intent_ranking': [{'confidence': 1.0, 'name': 'search_venues'}],
-                'intent': {'confidence': 1.0, 'name': 'search_venues'},
-                'entities': []}}
+        'slots': {'concerts': None, 'venues': None},
+        'sender_id': 'default',
+        'latest_message': {
+            'text': '_search_venues',
+            'intent_ranking': [{'confidence': 1.0, 'name': 'search_venues'}],
+            'intent': {'confidence': 1.0, 'name': 'search_venues'},
+            'entities': []}}
 
     next_response = agent.continue_message_handling("default", "search_venues",
                                                     [])
@@ -80,7 +80,7 @@ def test_concerts_online_example():
             'examples/concertbot/data/stories.md',
             message_line_pattern='^\s*\*\s(.*)$',
             max_messages=3)
-    domain_file = os.path.join("examples","concertbot","concert_domain.yml")
+    domain_file = os.path.join("examples", "concertbot", "concert_domain.yml")
     training_file = os.path.join("examples", "concertbot", "data", "stories.md")
     agent = run_concertbot_online(input_channel, RegexInterpreter(),
                                   domain_file, training_file)

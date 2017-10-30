@@ -124,14 +124,14 @@ def test_domain_from_template():
 
 
 def test_utter_templates():
-    domain_file = "examples/restaurantbot/restaurant_domain.yml"
+    domain_file = "examples/moodbot/domain.yml"
     domain = TemplateDomain.load(domain_file)
     expected_template = {
-        "text": "in which price range?",
-        "buttons": [{"title": "cheap", "payload": "cheap"},
-                    {"title": "expensive", "payload": "expensive"}]
+        "text": "Hey! How are you?",
+        "buttons": [{"title": "great", "payload": "great"},
+                    {"title": "super sad", "payload": "super sad"}]
     }
-    assert domain.random_template_for("utter_ask_price") == expected_template
+    assert domain.random_template_for("utter_greet") == expected_template
 
 
 def test_restaurant_domain_is_valid():
