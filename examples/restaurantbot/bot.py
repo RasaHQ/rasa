@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import argparse
 import logging
 
 import sys
@@ -104,12 +105,21 @@ def run(serve_forever=True):
 if __name__ == '__main__':
     logging.basicConfig(level="DEBUG")
 
-    # decide what to do based on first parameter to the script
-    if len(sys.argv) >= 2 and sys.argv[1] == "train-nlu":
+    parser = argparse.ArgumentParser(
+            description='starts the bot')
+
+    parser.add_argument(
+            'task',
+            choices=["train-nlu", "train-dialogue", "run"],
+            help="what the bot should do - e.g. run or train?")
+    task = parser.parse_args().task
+
+    # decide what to do based on first parameter of the script
+    if task == "train-nlu":
         train_nlu()
-    elif len(sys.argv) >= 2 and sys.argv[1] == "train-dialogue":
+    elif task == "train-dialogue":
         train_dialogue()
-    elif len(sys.argv) >= 2 and sys.argv[1] == "run":
+    elif task == "run":
         run()
     else:
         warnings.warn("Need to pass either 'train-nlu', 'train-dialogue' or "
