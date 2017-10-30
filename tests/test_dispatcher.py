@@ -18,7 +18,7 @@ def test_dispatcher_utter_attachment(default_dispatcher, capsys):
 def test_dispatcher_utter_template(default_dispatcher, capsys):
     default_dispatcher.utter_template("utter_goodbye")
     out, _ = capsys.readouterr()
-    assert "goodbye :(" in out
+    assert "goodbye :(" in out or "bye bye" in out
 
 
 def test_dispatcher_handle_unknown_template(default_dispatcher, capsys):
