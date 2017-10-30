@@ -32,6 +32,7 @@ templates:
     - "hey there!"
   utter_goodbye:
     - "goodbye :("
+    - "Bye-bye"
   utter_default:
     - "default message"
   utter_ack_dosearch: 

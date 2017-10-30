@@ -17,13 +17,13 @@ entities:
 
 templates:
   utter_greet:
-    - hey there!
+    - "hey there!"
   utter_goodbye:
-    - goodbye :(
+    - "goodbye :("
   utter_default:
-    - default message
+    - "default message"
   utter_youarewelcome:
-    - you're very welcome
+    - "you're very welcome"
 
 actions:
   - utter_default
