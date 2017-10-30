@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import copy
 
 from typing import Text, List, Dict, Any
+import copy
 
 from rasa_core.domain import Domain
 from rasa_core.channels import OutputChannel
