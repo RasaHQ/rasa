@@ -40,14 +40,14 @@ def test_dispatcher_utter_buttons(default_dispatcher, capsys):
 
 
 def test_dispatcher_utter_buttons_from_domain_templ(capsys):
-    domain_file = "examples/restaurantbot/restaurant_domain.yml"
+    domain_file = "examples/moodbot/domain.yml"
     domain = TemplateDomain.load(domain_file)
     bot = CollectingOutputChannel()
     dispatcher = Dispatcher("my-sender", bot, domain)
-    dispatcher.utter_template("utter_ask_price")
-    assert bot.messages[0][1] == "in which price range?"
-    assert bot.messages[1][1] == "1: cheap (cheap)"
-    assert bot.messages[2][1] == "2: expensive (expensive)"
+    dispatcher.utter_template("utter_greet")
+    assert bot.messages[0][1] == "Hey! How are you?"
+    assert bot.messages[1][1] == "1: great (great)"
+    assert bot.messages[2][1] == "2: super sad (super sad)"
 
 
 def test_dispatcher_utter_custom_message(default_dispatcher, capsys):
