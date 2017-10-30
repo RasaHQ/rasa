@@ -35,7 +35,6 @@ Welcome to the Rasa Documentation!
     and check out :ref:`tutorial_basics` afterwards!
 
 
-
 .. toctree::
    :maxdepth: 1
    :caption: Getting Started
@@ -49,9 +48,9 @@ Welcome to the Rasa Documentation!
    :caption: Tutorials
 
    tutorial_basics
+   tutorial_supervised
    tutorial_interactive_learning
-   tutorial_babi
-   tutorial_fake_user
+   tutorial_remote
 
 .. toctree::
    :maxdepth: 1

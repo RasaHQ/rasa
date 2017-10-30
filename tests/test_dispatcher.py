@@ -40,7 +40,7 @@ def test_dispatcher_utter_buttons(default_dispatcher, capsys):
 
 
 def test_dispatcher_utter_buttons_from_domain_templ(capsys):
-    domain_file = "examples/restaurant_domain.yml"
+    domain_file = "examples/restaurantbot/restaurant_domain.yml"
     domain = TemplateDomain.load(domain_file)
     bot = CollectingOutputChannel()
     dispatcher = Dispatcher("my-sender", bot, domain)

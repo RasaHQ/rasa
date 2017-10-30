@@ -52,4 +52,5 @@ Here's a simple example of a dialogue as it would be stored in the TrackerStore:
 
 .. literalinclude:: ../data/test_dialogues/greet.json
     :language: json
+    :linenos:
 

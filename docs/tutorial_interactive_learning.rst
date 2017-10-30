@@ -4,12 +4,42 @@ Interactive Learning
 ====================
 
 .. note::
-
    This is the place to start if you have a great idea for a bot but you
    don't have any conversations to use as training data. We will assume that
    you've already thought of what intents and entities you need (check out the
    `Rasa NLU <http://nlu.rasa.ai/tutorial.html#tutorial-a-simple-restaurant-search-bot>`_
    docs if you don't know what those are).
+
+   `Example Code on GitHub <https://github.com/RasaHQ/rasa_core/tree/master/examples/concerts>`_
+
+
+Motivation: Why Interactive Learning?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+There are some complications to chatbot training which makes them more
+tricky than most machine learning problems.
+
+The first is that there
+are several ways of getting to the same goal, and they may all be equivalently good.
+Therefore it is wrong to say with certainty that given X, you should do Y,
+and if you do not do exactly Y then you are wrong. This is essentially
+what you do in a fully supervised learning case. We want the bot
+to be able to learn it can get to a successful state through a number of
+different means.
+
+Secondly, the utterances from users will be strongly affected by the
+actions of the bot. That means that a network trained on pre-collected
+data will suffer from `exposure bias <https://arxiv.org/abs/1511.06732>`_,
+this is when a system is trained to make predictions but is never given the ability to train on its own predictions, instead being given the
+ground truth every time. This has been shown to have issues when trying
+to predict sequences multiple steps into the future.
+
+Also, from a practical perspective Rasa Core developers should be able to train
+via the `Wizard of Oz <https://en.wikipedia.org/wiki/Wizard_of_Oz_experiment>`_
+method. I.e. if you want a bot to do a certain task, you can simply
+pretend to be a bot for a little while and at the end it will learn how
+to respond. This is a good way of learning how to make natural and flowing
+
 
 The Bot
 ^^^^^^^
@@ -22,16 +52,16 @@ our bot should know whether they want to compare *musicians* or *venues*.
 Let's go!
 
 
-
 The Domain
 ^^^^^^^^^^
 
 We will keep the concert domain simple, and won't add any slots just yet.
 We'll also only support these intents:
 ``"greet", "thankyou", "goodbye", "search_concerts", "search_venues", "compare_reviews"``
-You can see the domain definition in ``examples/concerts/concert_domain.yml``.
+Here is the domain definition:
 
-
+.. literalinclude:: ../examples/concertbot/concert_domain.yml
+    :linenos:
 
 Stateless Stories
 ^^^^^^^^^^^^^^^^^
@@ -76,7 +106,7 @@ Training
 ^^^^^^^^
 
 We start by training the policy to recognise these input-output pairs independently of any context.
-( You can see the definition of the ConcertPolicy class in ``concert_policy.py``. )
+( You can see the definition of the ``ConcertPolicy`` class in ``policy.py``. )
 Run the script ``train_init.py``.
 This creates a training set of conversations by randomly combining the
 stories we've provided into longer dialogues, and then trains the policy on that dataset.

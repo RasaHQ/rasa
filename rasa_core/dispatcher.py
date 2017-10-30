@@ -3,6 +3,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import copy
+
 from typing import Text, List, Dict, Any
 
 from rasa_core.domain import Domain
@@ -78,30 +80,35 @@ class Dispatcher(object):
         """Send a message to the client with attachements."""
         self.output_channel.send_image_url(self.sender, attachment)
 
-    def utter_button_template(self, template, buttons, **kwargs):
+    def utter_button_template(self, template, buttons, filled_slots=None, **kwargs):
         # type: (Text, List[Dict[Text, Any]], **Any) -> None
         """Sends a message template with buttons to the output channel."""
 
-        t = self.retrieve_template(template, **kwargs)
+        t = self.retrieve_template(template, filled_slots, **kwargs)
         if "buttons" not in t:
             t["buttons"] = buttons
         else:
             t["buttons"].extend(buttons)
         self.utter_response(t)
 
-    def utter_template(self, template, **kwargs):
+    def utter_template(self, template, filled_slots=None, **kwargs):
         # type: (Text, **Any) -> None
         """"Send a message to the client based on a template."""
-        self.utter_response(self.retrieve_template(template, **kwargs))
 
-    def retrieve_template(self, template, **kwargs):
+        message = self.retrieve_template(template, filled_slots, **kwargs)
+        self.utter_response(message)
+
+    def retrieve_template(self, template, filled_slots=None, **kwargs):
         # type: (Text, **Any) -> Dict[Text, Any]
         """Retrieve a named template from the domain."""
 
-        r = self.domain.random_template_for(template)
+        r = copy.deepcopy(self.domain.random_template_for(template))
         if r is not None:
-            if len(kwargs) > 0:
-                r["text"] = r["text"].format(**kwargs)
+            if filled_slots is None:
+                filled_slots = {}
+            template_vars = dict(filled_slots.items() + kwargs.items())
+            if template_vars:
+                r["text"] = r["text"].format(**template_vars)
             return r
         else:
             return {"text": "Undefined utter template <{}>".format(template)}

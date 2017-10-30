@@ -118,7 +118,7 @@ By default, each of these trains a linear model to fit the ``X, y`` data.
 The model is defined here: 
 
 .. literalinclude:: ../rasa_core/policies/keras_policy.py
-   :pyobject: KerasPolicy._build_model
+   :pyobject: KerasPolicy.model_architecture
 
 
 and the training is run here:

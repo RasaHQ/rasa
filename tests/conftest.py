@@ -21,7 +21,7 @@ matplotlib.use('Agg')
 
 logging.basicConfig(level="DEBUG")
 
-DEFAULT_DOMAIN_PATH = "examples/default_domain.yml"
+DEFAULT_DOMAIN_PATH = "data/test_domains/default_with_slots.yml"
 
 DEFAULT_STORIES_FILE = "data/dsl_stories/stories_defaultdomain.md"
 

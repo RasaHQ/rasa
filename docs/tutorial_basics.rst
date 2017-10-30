@@ -8,6 +8,8 @@ Building a Simple Bot
    In this tutorial we will build a demo app with a rule-based policy. 
    This is just to show what each of the classes do, and how they fit together.
 
+   `Example Code on GitHub <https://github.com/RasaHQ/rasa_core/tree/master/examples/moodbot>`_
+
 Here we show how to create your first bot the relevant classes in an application.
 This might be easier to follow if you also look at :ref:`plumbing`.
 
@@ -31,10 +33,11 @@ structure should look like this:
 .. code-block:: text
 
    moodbot/
-   ├── domain.yml             # dialogue configuration
-   ├── nlu_model_config.json  # nlu configuration
-   ├── stories.md             # dialogue training data
-   └── nlu.md                 # nlu training data
+   ├── data/
+   │   ├── stories.md            # dialogue training data
+   │   └── nlu.json              # nlu training data
+   ├── domain.yml                # dialogue configuration
+   └── nlu_model_config.json     # nlu configuration
 
 Let's go through each of them!
 
@@ -49,7 +52,10 @@ Below is the restaurant domain from the examples folder.
 Here is an example domain for our moodbot, ``domain.yml``:
 
 
-.. literalinclude:: ../examples/facebook/domain.yml
+.. literalinclude:: ../examples/moodbot/domain.yml
+   :linenos:
+   :language: yaml
+   :name: domain.yml
 
 So what do the different parts mean?
 
@@ -85,7 +91,7 @@ and respond.
    :ref:`custom_actions` for more information about custom actions.
 
 2. Define an interpreter
-^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 An interpreter is responsible for parsing messages. It performs the Natural
 Language Understanding and transforms the message into structured output. For
@@ -94,14 +100,17 @@ this example we are going to use Rasa NLU for this purpose.
 Since we want to use Rasa NLU, we need to define the user messages our bot
 should be able to handle in the
 `Rasa NLU training format <https://nlu.rasa.ai/dataformat.html>`_. Let's create
-some intent examples in ``nlu.md``:
+some intent examples in ``data/nlu.md``:
 
-.. literalinclude:: ../examples/facebook/nlu.md
+.. literalinclude:: ../examples/moodbot/data/nlu.md
+   :linenos:
+   :language: md
 
 Furthermore, we need a configuration file ``nlu_model_config.json`` for the
 NLU model:
 
-.. literalinclude:: ../examples/facebook/nlu_model_config.json
+.. literalinclude:: ../examples/moodbot/nlu_model_config.json
+   :linenos:
 
 We can now train a NLU model using our examples (make sure to
 `install Rasa NLU <http://nlu.rasa.ai/installation.html#setting-up-rasa-nlu>`_
@@ -130,8 +139,9 @@ take as well as the inputs it should handle (intents & entities). We are still
 missing the central piece, **stories to tell our bot what to do at which
 point in the dialogue**. There are two different ways to create stories (and
 you can mix them):
-   - create the stories by hand, writing them directly in a file
-   - create stories using the interactive learning.
+
+- create the stories by hand, writing them directly in a file
+- create stories using the interactive learning (see :ref:`tutorial_interactive_learning`).
 
 For this example, we are going to create the stories by writing them directly
 into ``stories.md``. But be aware, although it is a bit faster to write
@@ -139,16 +149,13 @@ stories directly by hand instead of using interactive learning, special
 care needs to be taken when using slots, as they need to be properly set in the
 stories. But enough talking, let's get to our stories:
 
-.. literalinclude:: ../examples/facebook/stories.md
+.. literalinclude:: ../examples/moodbot/data/stories.md
+   :linenos:
+   :language: md
 
 The bot actions are also events, and are specified by lines starting
 with a dash. The end of a story is denoted by a newline. See :ref:`stories` for
 more infos about the data format.
-
-.. note::
-
-   You can see the interactive learning in action in the
-   :ref:`tutorial_interactive_learning` tutorial.
 
 4. Put the pieces together
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -159,7 +166,7 @@ To train the dialogue model, run:
 
 .. code-block:: bash
 
-   python -m rasa_core.train -s stories.md -d domain.yml -o models/dialogue
+   python -m rasa_core.train -s data/stories.md -d domain.yml -o models/dialogue
 
 This will train the model and store it into ``models/dialogue``. Now we can use
 that trained dialogue model and the previously created NLU model to run our bot:
@@ -180,7 +187,8 @@ specify that as part of the run command, after creating a credentials file
 containing the information to connect to facebook. Let's put that
 into ``credentials.yml``:
 
-.. literalinclude:: ../examples/facebook/credentials.yml
+.. literalinclude:: ../examples/moodbot/credentials.yml
+   :linenos:
 
 If you are new to facebook messenger bots, head over to
 :ref:`facebook_connector` for an explanation of the different values.

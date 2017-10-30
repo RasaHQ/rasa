@@ -1,18 +1,28 @@
 # Rasa Core Examples
 
-## facebook: Simple getting started example
+## moodbot: Simple getting started example
 
-This is a simple example showcasing the creation of a bot for facebook (or for
-any other channel for that matter) 
-Documentation can be found [here](https://core.rasa.ai/tutorial_scratch.html).
+Getting started example. It is a simple example showcasing the creation of a 
+bot for facebook (or for any other channel for that matter). 
+Documentation can be found [here](https://core.rasa.ai/tutorial_basics.html).
 
-## babi: Restaurant suggestion example
+## restaurantbot: Restaurant suggestion example
 
-This is an example of supervised learning with stories, and including NLU. 
-Documentation can be found [here](https://core.rasa.ai/tutorial_babi.html).
+Highlights advanced features, like a custom policy as well as custom action
+code. It is an example of supervised learning with stories, and includes a NLU
+model. Based on the bAbI and DSTC datasets. 
+Documentation can be found [here](https://core.rasa.ai/tutorial_supervised.html).
 
-## fake user: Online learning with a simulated user
+## concertbot: Interactive learning example
 
-This is an example of using online learning with a simulated user. 
-Documentation can be found [here](https://core.rasa.ai/tutorial_fake_user.html).
+Create stories using interactive learning. Does not contain NLU training data,
+hence uses a simple regex interpreter to parse user messages. 
+Documentation can be found [here](https://core.rasa.ai/tutorial_interactive_learning.html).
+
+## remotebot: Using Rasa Core as a HTTP server
+
+Showcase for using Rasa over HTTP. Instead of defining custom action code in 
+python, the Rasa Core server will call a custom endpoint to run the action code
+written in an arbitrary programming language. 
+Documentation can be found [here](https://core.rasa.ai/tutorial_remote.html).
 

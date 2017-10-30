@@ -15,6 +15,7 @@ from rasa_core.policies.scoring_policy import ScoringPolicy
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training_utils import extract_training_data_from_file, \
     extract_stories_from_file
+from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 
 
 def train_data(max_history, domain):
@@ -42,7 +43,7 @@ class PolicyTestCollection(object):
 
     @pytest.fixture(scope="module")
     def trained_policy(self):
-        default_domain = TemplateDomain.load("examples/default_domain.yml")
+        default_domain = TemplateDomain.load(DEFAULT_DOMAIN_PATH)
         policy = self.create_policy()
         X, y = train_data(self.max_history, default_domain)
         policy.max_history = self.max_history
@@ -56,7 +57,7 @@ class PolicyTestCollection(object):
                                                trained_policy.featurizer,
                                                trained_policy.max_history)
         stories = extract_stories_from_file(
-                "data/dsl_stories/stories_defaultdomain.md", default_domain)
+                DEFAULT_STORIES_FILE, default_domain)
 
         for story in stories:
             tracker = DialogueStateTracker("default", default_domain.slots)

@@ -4,7 +4,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import pytest
-from examples.concerts.actions import ActionSearchConcerts
 
 from rasa_core.actions.factories import action_factory_by_name, RemoteAction
 
@@ -43,11 +42,11 @@ def test_action_factories():
 
 def test_local_action_factory_module_import():
     instantiated_actions = action_factory_by_name("local")(
-            ["action_listen", "examples.concerts.actions.ActionSearchConcerts",
+            ["action_listen", "rasa_core.actions.action.ActionListen",
              "utter_test"], ["utter_test"])
     assert len(instantiated_actions) == 3
     assert isinstance(instantiated_actions[0], ActionListen)
-    assert isinstance(instantiated_actions[1], ActionSearchConcerts)
+    assert isinstance(instantiated_actions[1], ActionListen)
     assert isinstance(instantiated_actions[2], UtterAction)
 
 

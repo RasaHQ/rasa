@@ -14,7 +14,7 @@ The ``Domain`` defines the universe in which your bot operates. It specifies exa
 
 For example, the ``DefaultDomain`` has the following yaml definition (no slots here - but we will get there):
 
-.. literalinclude:: ../examples/default_domain.yml
+.. literalinclude:: ../data/test_domains/default_with_slots.yml
    :language: yaml
 
 **What does this mean?**

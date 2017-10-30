@@ -13,8 +13,8 @@ from rasa_core.train import train_dialogue_model
 
 
 def test_remote_training(tmpdir):
-    train_dialogue_model("examples/remote/concert_domain_remote.yml",
-                         "examples/remote/data/stories.md",
+    train_dialogue_model("examples/remotebot/concert_domain_remote.yml",
+                         "examples/remotebot/data/stories.md",
                          tmpdir.strpath,
                          use_online_learning=False,
                          nlu_model_path=None,

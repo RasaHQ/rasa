@@ -94,7 +94,7 @@ def test_tracker_store(filename, store):
 
 def test_tracker_write_to_story(tmpdir, default_domain):
     tracker = tracker_from_dialogue_file(
-            "data/test_dialogues/restaurant_search.json", default_domain)
+            "data/test_dialogues/enter_name.json", default_domain)
     p = tmpdir.join("export.md")
     tracker.export_stories_to_file(p.strpath)
     stories = extract_stories_from_file(p.strpath, default_domain)

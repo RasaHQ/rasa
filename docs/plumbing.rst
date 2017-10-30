@@ -6,7 +6,7 @@ Plumbing - How it all fits together
 
 This diagram shows the basic steps of how a Rasa Core app responds to a message:
 
-.. image:: _static/images/intro_1.png
+.. image:: _static/images/rasa_arch_colour.png
 
 The steps are: 
 

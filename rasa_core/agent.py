@@ -82,8 +82,8 @@ class Agent(object):
         :Example:
 
             >>> from rasa_core.agent import Agent
-            >>> agent = Agent.load("examples/babi/models/policy/current",
-            ... interpreter="examples/babi/models/nlu/current_py2")
+            >>> agent = Agent.load("examples/restaurantbot/models/dialogue",
+            ... interpreter="examples/restaurantbot/models/nlu/current")
             >>> agent.handle_message("hello")
             [u'how can I help you?']
 

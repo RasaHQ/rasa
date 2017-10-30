@@ -11,8 +11,8 @@ from rasa_core.tracker_store import InMemoryTrackerStore
 
 
 def test_agent_train(tmpdir, default_domain):
-    training_data_file = 'examples/concerts/data/stories.md'
-    agent = Agent("examples/concerts/concert_domain.yml",
+    training_data_file = 'examples/concertbot/data/stories.md'
+    agent = Agent("examples/concertbot/concert_domain.yml",
                   policies=[ScoringPolicy()])
 
     agent.train(training_data_file, max_history=3)
@@ -38,6 +38,6 @@ def test_agent_train(tmpdir, default_domain):
 
 
 def test_agent_handle_message(default_agent):
-    result = default_agent.handle_message("_greet",
+    result = default_agent.handle_message("_greet[name=Rasa]",
                                           sender="test_agent_handle_message")
-    assert result == ["hey there!"]
+    assert result == ["hey there Rasa!"]

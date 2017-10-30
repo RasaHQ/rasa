@@ -8,6 +8,7 @@ import logging
 
 from builtins import str
 
+from rasa_core import utils
 from rasa_core.agent import Agent
 from rasa_core.channels.console import ConsoleInputChannel
 from rasa_core.channels.facebook import FacebookInput
@@ -82,10 +83,15 @@ def create_input_channel(channel, port, credentials_file):
     elif channel == "cmdline":
         return ConsoleInputChannel()
     else:
-        raise Exception("Unknown input channel for running main.")
+        try:
+            c = utils.class_from_module_path(channel)
+            return c()
+        except Exception:
+            raise Exception("Unknown input channel for running main.")
 
 
-def main(model_directory, nlu_model, channel, port, credentials_file):
+def main(model_directory, nlu_model=None, channel=None, port=None,
+         credentials_file=None):
     """Run the agent."""
 
     log = logging.getLogger('werkzeug')
