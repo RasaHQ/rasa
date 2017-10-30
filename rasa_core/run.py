@@ -61,25 +61,29 @@ def create_argument_parser():
     return parser
 
 
+def _create_facebook_channel(channel, port, credentials_file):
+    if credentials_file is None:
+        raise Exception("To use the facebook input channel, you need to "
+                        "pass a credentials file using '--credentials'. "
+                        "The argument should be a file path pointing to"
+                        "a yml file containing the facebook authentication"
+                        "information. Details in the docs: "
+                        "https://core.rasa.ai/facebook.html")
+    credentials = read_yaml_file(credentials_file)
+    input_blueprint = FacebookInput(
+            credentials.get("verify"),
+            credentials.get("secret"),
+            credentials.get("page-tokens"),
+            debug_mode=True)
+    
+    return HttpInputChannel(port, None, input_blueprint)
+
+
 def create_input_channel(channel, port, credentials_file):
     """Instantiate the chosen input channel."""
 
     if channel == "facebook":
-        if credentials_file is None:
-            raise Exception("To use the facebook input channel, you need to "
-                            "pass a credentials file using '--credentials'. "
-                            "The argument should be a file path pointing to"
-                            "a yml file containing the facebook authentication"
-                            "information. Details in the docs: "
-                            "https://core.rasa.ai/facebook.html")
-        credentials = read_yaml_file(credentials_file)
-        input_blueprint = FacebookInput(
-                credentials.get("verify"),
-                credentials.get("secret"),
-                credentials.get("page-tokens"),
-                True
-        )
-        return HttpInputChannel(port, None, input_blueprint)
+        return _create_facebook_channel(channel, port, credentials_file)
     elif channel == "cmdline":
         return ConsoleInputChannel()
     else:
