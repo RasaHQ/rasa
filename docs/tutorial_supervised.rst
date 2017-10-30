@@ -1,14 +1,14 @@
 .. _tutorial_supervised:
 
+Supervised Learning Tutorial
+============================
+
 .. testsetup::
 
    import os, sys
    p = os.path.abspath(os.path.join('examples', 'restaurantbot'))
    os.chdir(p)
    sys.path.append(p)
-
-Supervised Learning Tutorial
-============================
 
 .. note::
 

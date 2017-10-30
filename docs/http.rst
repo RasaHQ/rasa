@@ -59,9 +59,11 @@ The different parameters are:
 - ``-u``, which is the path to the Rasa NLU model.
 - ``-o``, which is the path to the log file.
 
+.. _http_start_conversation:
+
 Starting a conversation
 -----------------------
-You need to do a ``POST`` to the ``/conversation/<cid>/parse`` endpoint. ``<cid>``
+You need to do a ``POST`` to the ``/conversation/<sender>/parse`` endpoint. ``<sender>``
 is the conversation id (e.g. ``default`` if you just have one user, or the facebook user id or any
 other identifier).
 
@@ -145,7 +147,7 @@ You can return multiple events as part of your query, e.g.:
         '{"executed_action": "search_restaurants", "events": [{"event": "slot", "name": "cuisine", "value": "mexican"}, {"event": "slot", "name": "people", "value": 5}]}'
 
 Here is a list of all available events you can append to the ``events`` array in
-your call to ``/conversation/<cid>/continue``.
+your call to ``/conversation/<sender>/continue``.
 
 Set a slot
 ::::::::::
