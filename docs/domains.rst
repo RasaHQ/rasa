@@ -198,7 +198,7 @@ multiple responses and the bot will randomly pick one of them, e.g.:
 .. _slot_types:
 
 Slots
-^^^^
+^^^^^
 
 Most slots influence the prediction of the next action the bot should run. For the
 prediction, the slots value is not used directly, but rather it is featurized.

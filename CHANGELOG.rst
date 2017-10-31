@@ -21,6 +21,17 @@ Removed
 Fixed
 -----
 
+[0.7.3] - 2017-10-31
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- parameter to specify font size when rendering story visualization
+
+Fixed
+-----
+- fixed documentation of story visualization
+
 [0.7.2] - 2017-10-30
 ^^^^^^^^^^^^^^^^^^^^
 
