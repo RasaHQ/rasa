@@ -4,7 +4,7 @@ intents:
   - mood_affirm
   - mood_deny
   - mood_great
-  - mood_shitty
+  - mood_unhappy
 
 templates:
   utter_greet:

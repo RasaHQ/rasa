@@ -4,19 +4,19 @@
 * _mood_great               <!-- user utterance, in format _intent[entities] -->
   - utter_happy
 
-## sad path                 <!-- this is already the start of the next story -->
+## sad path 1               <!-- this is already the start of the next story -->
 * _greet
   - utter_greet             <!-- action of the bot to execute -->
-* _mood_shitty
+* _mood_unhappy
   - utter_cheer_up
   - utter_did_that_help
 * _mood_affirm
   - utter_happy
 
-## sad path
+## sad path 2
 * _greet
   - utter_greet
-* _mood_shitty
+* _mood_unhappy
   - utter_cheer_up
   - utter_did_that_help
 * _mood_deny

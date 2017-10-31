@@ -11,7 +11,11 @@ The recommended way to install Rasa Core is using pip:
 
     pip install rasa_core
 
-If you want to use the bleeding edge version use github + setup.py:
+Unless you've already got numpy & scipy installed, we highly recommend 
+that you install and use `Anaconda <https://www.continuum.io\/downloads>`_.
+
+
+If you want to use the bleeding edge version of Rasa use github + setup.py:
 
 .. code-block:: bash
 
@@ -42,5 +46,5 @@ rather than free text.
 Getting Started
 ---------------
 
-To so your newly installed Rasa Core in action, head over to the
+To see your newly installed Rasa Core in action, head over to the
 introductory tutorial :ref:`tutorial_basics`.

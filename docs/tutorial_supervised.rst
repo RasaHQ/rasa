@@ -14,8 +14,8 @@ Supervised Learning Tutorial
 
    This tutorial will cover how to use Rasa Core directly from python. We will
    dive a bit deeper into the different concepts and overall structure of the
-   library. You should already be familiar with the terms domain, stories, as
-   well as some knowledge about NLU.
+   library. You should already be familiar with the terms domain, stories, and
+   have some knowledge of NLU.
 
    `Example Code on GitHub <https://github.com/RasaHQ/rasa_core/tree/master/examples/restaurantbot>`_
 
@@ -106,7 +106,7 @@ Lucky for us, this dataset is also in the restaurant domain.
    a useful bot. How much data you need depends on the number of actions you define, and the 
    number of edge cases you want to support. But a few dozen stories is a good place to start.
 
-We converted the bAbI dialogue training set into the Rasa stories format, you
+We have converted the bAbI dialogue training set into the Rasa stories format, you
 can download the stories training data from `GitHub <https://raw.githubusercontent.com/RasaHQ/rasa_core/master/examples/restaurantbot/data/babi_stories.md>`_.
 Download that file, and store it in ``babi_stories.yml``. Here's an example
 conversation snippet:
@@ -131,8 +131,8 @@ We can also visualize that training data to generate a graph which is similar to
 
 .. image:: _static/images/babi_flow.png
 
-The chart shows the incoming user intents and entities and the action the bot is supposed to execute based on
-the stories from the training data. As you can see, flow charts get complicated quite quickly. Nevertheless, they
+The graph shows all of the actions executed in the training data, and the user messages (if any) 
+that occurred between them. As you can see, flow charts get complicated quite quickly. Nevertheless, they
 can be a helpful tool in debugging a bot. More information can be found in :ref:`story-visualization`.
 
 3. Training your bot
@@ -181,7 +181,7 @@ Dialogue Policy
 Now our bot needs to learn what to do in response to these messages. 
 We do this by training one or multiple Rasa Core policies.
 
-For this bot, we came up with our own policy. Here are the glory details:
+For this bot, we came up with our own policy. Here are the gory details:
 
 .. literalinclude:: ../examples/restaurantbot/bot.py
    :linenos:
@@ -235,7 +235,7 @@ We put the NLU model into an ``Interpreter`` and then put that into an ``Agent``
 
 We will pass messages directly to the bot, but this is just for
 this is just for demonstration purposes. You can look at how to
-build a command line bot and a facebook bot by checking out the other tutorials.
+build a command line bot and a facebook bot by checking out the :ref:`connectors`.
 
 .. doctest::
 
@@ -263,5 +263,5 @@ that channel instead of handling messages directly, e.g.:
 
 In this case messages will be retrieved from the command line because we specified
 the ``ConsoleInputChannel``. Responses are printed to the command line as well. You
-can find a complete example on how to load an agent and chat with it on the
+can find a complete example of how to load an agent and chat with it on the
 command line in ``examples/restaurantbot/run.py``.

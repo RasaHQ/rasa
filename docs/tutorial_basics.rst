@@ -46,10 +46,8 @@ Let's go through each of them!
 1. Define a Domain
 ^^^^^^^^^^^^^^^^^^
 
-The first thing we need is a ``Domain`` instance. 
-The domain specifies the universe of possibilities in which the bot operates. 
-You can define a domain as a python class or as a yaml file. 
-Below is the restaurant domain from the examples folder.
+The first thing we need is a ``Domain``. 
+The domain defines the universe your bot lives in. 
 
 Here is an example domain for our moodbot, ``domain.yml``:
 
@@ -69,12 +67,12 @@ So what do the different parts mean?
 +---------------+------------------------------------------------------------------------------------------------------+
 | ``actions``   | things your bot can do and say                                                                       |
 +---------------+------------------------------------------------------------------------------------------------------+
-| ``slots``     | information to keep track of during a conversation (e.g. a users age) - similar to entities          |
+| ``slots``     | information to keep track of during a conversation (e.g. a users age)                                |
 +---------------+------------------------------------------------------------------------------------------------------+
 | ``templates`` | template strings for the things your bot can say                                                     |
 +---------------+------------------------------------------------------------------------------------------------------+
 
-In our simple example we don't need the slots, so that section doesn't appear
+In our simple example we don't need slots, so that section doesn't appear
 in our definition.
 
 **How does this fit together?**
@@ -88,7 +86,7 @@ and respond.
 .. note::
    There is one special action, ``ActionListen`` which means to stop taking further
    actions until the user says something else.
-   For more actions which do more than just sent a message, you can define them as
+   For more actions which do more than just send a message, you can define them as
    python classes and reference them in the domain by their module path. See
    :ref:`custom_actions` for more information about custom actions.
 
@@ -136,8 +134,8 @@ created containing the NLU model.
 3. Define stories
 ^^^^^^^^^^^^^^^^^
 
-Ok, no we've got a NLU model as well as a domain defining actions our bot can
-take as well as the inputs it should handle (intents & entities). We are still
+So far, we've got a NLU model, a domain defining the actions our bot can
+take, and inputs it should handle (intents & entities). We are still
 missing the central piece, **stories to tell our bot what to do at which
 point in the dialogue**. There are two different ways to create stories (and
 you can mix them):
@@ -157,7 +155,7 @@ stories. But enough talking, let's get to our stories:
 
 The bot actions are also events, and are specified by lines starting
 with a dash. The end of a story is denoted by a newline. See :ref:`stories` for
-more infos about the data format.
+more information about the data format.
 
 4. Put the pieces together
 ^^^^^^^^^^^^^^^^^^^^^^^^^^

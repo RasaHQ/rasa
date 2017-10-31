@@ -16,7 +16,7 @@ Welcome to the Rasa Documentation!
     Messenger/Slack bots, Alexa skills, etc. We'll abbreviate this as a **bot**
     in this documentation. You can
 
-    - write your bots logic in python code (recommended),
+    - implement the actions your bot can take in python code (recommended),
     - or use Rasa Core as a webservice (experimental, see :ref:`section_http`).
 
 *What's cool about it?*

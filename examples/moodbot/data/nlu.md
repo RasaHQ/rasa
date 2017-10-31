@@ -23,7 +23,6 @@
 - I am amazing
 - I am going to save the world
 
-## intent:mood_shitty
+## intent:mood_unhappy
 - my day was horrible
 - I am sad
-- I am going to kill myself
