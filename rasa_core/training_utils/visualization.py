@@ -176,7 +176,8 @@ def _merge_equivalent_nodes(G, max_history):
                         G.remove_node(j)
 
 
-def _replace_edge_labels_with_nodes(G, next_id, interpreter, training_data):
+def _replace_edge_labels_with_nodes(G, next_id, interpreter, training_data,
+                                    fontsize):
     """User messages are created as edge labels. This removes the labels and
     creates nodes instead.
 
@@ -200,7 +201,7 @@ def _replace_edge_labels_with_nodes(G, next_id, interpreter, training_data):
             next_id += 1
             G.remove_edge(s, e, k)
             G.add_node(next_id, label=label, style="filled",
-                       fillcolor="lightblue", shape="box")
+                       fillcolor="lightblue", shape="box", fontsize=fontsize)
             G.add_edge(s, next_id)
             G.add_edge(next_id, e)
 
@@ -211,7 +212,8 @@ def _persist_graph(G, output_file):
     import networkx as nx
 
     A = nx.nx_agraph.to_agraph(G)  # convert to a graphviz graph
-    A.layout("dot", args="-Goverlap=false -Gsplines=true -Gconcentrate=true")
+    A.layout("dot", args="-Goverlap=false -Gsplines=true -Gconcentrate=true "
+                         "-Gfontname=typewriter")
     A.draw(output_file)
 
 
@@ -219,7 +221,8 @@ def visualize_stories(story_steps,
                       output_file=None,
                       max_history=2,
                       interpreter=RegexInterpreter(),
-                      training_data=None):
+                      training_data=None,
+                      fontsize=12):
     """Given a set of stories, generates a graph visualizing the flows in the
     stories.
 
@@ -252,8 +255,10 @@ def visualize_stories(story_steps,
     story_graph = StoryGraph(story_steps)
     G = nx.MultiDiGraph()
     next_node_idx = 0
-    G.add_node(0, label="START", fillcolor="green", style="filled")
-    G.add_node(-1, label="END", fillcolor="red", style="filled")
+    G.add_node(0, label="START", fillcolor="green", style="filled",
+               fontsize=fontsize)
+    G.add_node(-1, label="END", fillcolor="red", style="filled",
+               fontsize=fontsize)
 
     checkpoint_indices = defaultdict(list)
     checkpoint_indices[STORY_START] = [(0, None)]
@@ -266,7 +271,8 @@ def visualize_stories(story_steps,
                 message = interpreter.parse(el.text)
             elif isinstance(el, ActionExecuted):
                 next_node_idx += 1
-                G.add_node(next_node_idx, label=el.action_name)
+                G.add_node(next_node_idx, label=el.action_name,
+                           fontsize=fontsize)
 
                 for current_node, tailing_message in current_nodes:
                     msg = message if message else tailing_message
@@ -294,8 +300,8 @@ def visualize_stories(story_steps,
             checkpoint_indices[step.end_checkpoint_name()].extend(updated_nodes)
 
     _merge_equivalent_nodes(G, max_history)
-    _replace_edge_labels_with_nodes(
-             G, next_node_idx, interpreter, training_data)
+    _replace_edge_labels_with_nodes(G, next_node_idx, interpreter,
+                                    training_data, fontsize)
 
     if output_file:
         _persist_graph(G, output_file)
