@@ -23,7 +23,7 @@ def test_moodbot_example():
     responses = agent.handle_message("_greet")
     assert responses[0] == 'Hey! How are you?'
 
-    responses.extend(agent.handle_message("_mood_shitty"))
+    responses.extend(agent.handle_message("_mood_unhappy"))
     assert responses[-1] in {"Did that help you?"}
 
     # (there is a 'I am on it' message in the middle we are not checking)
