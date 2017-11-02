@@ -18,7 +18,10 @@ which has a method ``parse(message)`` which takes a single string argument and r
 
     {
       "text": "show me chinese restaurants",
-      "intent": "restaurant_search",
+      "intent": {
+        "name": "restaurant_search",
+        "confidence": 1.0
+      }
       "entities": [
         {
           "start": 8,
