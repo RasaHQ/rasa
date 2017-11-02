@@ -1,4 +1,4 @@
-## intent:greeting
+## intent:greet
 - hey
 - hello
 - moin
