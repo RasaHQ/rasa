@@ -38,3 +38,10 @@ def test_probabilistic_featurizer_handles_on_non_existing_features():
     encoded = f.encode({"a": 1.0, "b": 0.2, "c": 0.0, "e": 1.0},
                        {"a": 0, "b": 3, "c": 2, "d": 1})
     assert (encoded == np.array([1, 0, 0, 0.2])).all()
+
+
+def test_probabilistic_featurizer_handles_intent_probs():
+    f = ProbabilisticFeaturizer()
+    encoded = f.encode({"intent_a": 0.5, "b": 0.2, "intent_c": 1.0},
+                       {"intent_a": 0, "b": 3, "intent_c": 2, "d": 1})
+    assert (encoded == np.array([0.5, 0, 1.0, 0.2])).all()

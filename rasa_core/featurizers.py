@@ -144,11 +144,11 @@ class ProbabilisticFeaturizer(Featurizer):
 
         Given a dictionary of active_features (e.g. 'intent_greet',
         'prev_action_listen',...) and intent probabilities
-        from rasa_nlu, will a binary vector indicating which features of
-        `self.input_features` are active.
+        from rasa_nlu, will be a binary vector indicating which features
+        of `self.input_features` are active.
 
-        For example with two active features and an uncertain intent out of
-        five possible features this would return a vector
+        For example with two active features and two uncertain intents out
+        of five possible features this would return a vector
         like `[0.3, 0.7, 1, 0, 1]`.
 
         If this is just a padding vector we set all values to `-1`.
@@ -160,10 +160,6 @@ class ProbabilisticFeaturizer(Featurizer):
             return np.ones(num_features, dtype=np.int32) * -1
         else:
 
-            intent_probs = {key: value
-                            for key, value in active_features.items()
-                            if key.startswith('intent_')}
-
             used_features = np.zeros(num_features, dtype=np.float)
             for active_feature, value in active_features.items():
                 if active_feature in input_feature_map:
@@ -173,8 +169,6 @@ class ProbabilisticFeaturizer(Featurizer):
                     logger.debug(
                             "Found feature not in feature map. "
                             "Name: {} Value: {}".format(active_feature, value))
-            for intent, probability in intent_probs.values():
-                used_features[input_feature_map[intent]] = probability
             return used_features
 
     def decode(self, feature_vec, input_features, ndigits=8):
