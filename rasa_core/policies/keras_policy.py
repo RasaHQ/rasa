@@ -161,15 +161,15 @@ class KerasPolicy(Policy):
                 with io.open(meta_path) as f:
                     meta = json.loads(f.read())
                 model_arch = cls._load_model_arch(path, meta)
-                return KerasPolicy(
+                return cls(
                         cls._load_weights_for_model(path, model_arch, meta),
                         current_epoch=meta["epochs"],
                         max_history=max_history,
                         featurizer=featurizer
                 )
             else:
-                return KerasPolicy(max_history=max_history,
-                                   featurizer=featurizer)
+                return cls(max_history=max_history,
+                           featurizer=featurizer)
         else:
             raise Exception("Failed to load dialogue model. Path {} "
                             "doesn't exist".format(os.path.abspath(path)))
