@@ -11,6 +11,7 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+- added method to tracker to retrieve the latest entities #68
 
 Changed
 -------
