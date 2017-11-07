@@ -126,9 +126,9 @@ def test_tracker_entity_retrieval(default_domain):
                                    default_domain.default_topic)
     # the retrieved tracker should be empty
     assert len(tracker.events) == 0
+    assert tracker.get_latest_entity_values("entity_name") == []
 
     intent = {"name": "greet", "confidence": 1.0}
-    assert tracker.get_latest_entity_values("entity_name") == []
     tracker.update(UserUttered("_greet", intent, [{
           "start": 1,
           "end": 5,
