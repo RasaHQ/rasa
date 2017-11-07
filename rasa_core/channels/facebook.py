@@ -95,7 +95,7 @@ class FacebookInput(HttpInputComponent):
                 signature = request.headers.get("X-Hub-Signature") or ''
                 if not validate_hub_signature(self.fb_secret, request.data,
                                               signature):
-                    logger.debug("Fb secret not validated. FB secret: {0}, request: {1}, signature: {2}".format(self.fb_secret, request.data, signature))
+                    logger.debug("Fb secret not validated.")
                     return "not validated"
 
                 output = request.json
