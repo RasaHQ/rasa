@@ -4,7 +4,7 @@ Tracking Conversation State
 ===========================
 
 The ``DialogueStateTracker`` is the stateful object which keeps track of a conversation. 
-The only way the tracker should ever be updated is by passing ``events`` to the ``log_event`` method.
+The only way the tracker should ever be updated is by passing ``events`` to the ``update`` method.
 For example:
 
 .. doctest::
