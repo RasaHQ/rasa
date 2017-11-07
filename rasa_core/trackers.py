@@ -10,7 +10,7 @@ from collections import deque
 
 import jsonpickle
 import typing
-from typing import Generator, Dict, Text, Any, Optional
+from typing import Generator, Dict, Text, Any, Optional, Union
 from typing import List
 
 from rasa_core import utils
@@ -92,6 +92,16 @@ class DialogueStateTracker(object):
         else:
             logger.info("Tried to access non existent slot '{}'".format(key))
             return None
+
+    def get_latest_entity_values(self, entity_name):
+        # type: (Text) -> List[Text]
+        """Get entity values found for the passed entity name in latest msg."""
+
+        entity_values = [x.get("value")
+                         for x in self.latest_message.entities
+                         if x.get("entity") == entity_name]
+
+        return entity_values
 
     def is_paused(self):
         # type: () -> bool

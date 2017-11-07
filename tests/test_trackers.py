@@ -120,6 +120,26 @@ def test_tracker_state_regression(default_agent):
     assert ";".join([e.as_story_string() for e in tracker.events]) == expected
 
 
+def test_tracker_entity_retrieval(default_domain):
+    tracker = DialogueStateTracker("default", default_domain.slots,
+                                   default_domain.topics,
+                                   default_domain.default_topic)
+    # the retrieved tracker should be empty
+    assert len(tracker.events) == 0
+
+    intent = {"name": "greet", "confidence": 1.0}
+    assert tracker.get_latest_entity_values("entity_name") == []
+    tracker.update(UserUttered("_greet", intent, [{
+          "start": 1,
+          "end": 5,
+          "value": "greet",
+          "entity": "entity_name",
+          "extractor": "manual"
+        }]))
+    assert tracker.get_latest_entity_values("entity_name") == ["greet"]
+    assert tracker.get_latest_entity_values("unknown") == []
+
+
 def test_restart_event(default_domain):
     tracker = DialogueStateTracker("default", default_domain.slots,
                                    default_domain.topics,
