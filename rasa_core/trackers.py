@@ -10,7 +10,7 @@ from collections import deque
 
 import jsonpickle
 import typing
-from typing import Generator, Dict, Text, Any, Optional, Union
+from typing import Generator, Dict, Text, Any, Optional
 from typing import List
 
 from rasa_core import utils
