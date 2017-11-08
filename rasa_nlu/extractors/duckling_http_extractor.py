@@ -50,7 +50,11 @@ class DucklingHTTPExtractor(EntityExtractor):
         """Sends the request to the duckling server and parses the result."""
 
         payload = {"text": text, "lang": self.language}
-        response = requests.post(self.duckling_url + "/parse", data=payload)
+        headers = {"Content-Type": "application/x-www-form-urlencoded; "
+                                   "charset=UTF-8"}
+        response = requests.post(self.duckling_url + "/parse",
+                                 data=payload,
+                                 headers=headers)
         if response.status_code == 200:
             return simplejson.loads(response.text)
         else:
