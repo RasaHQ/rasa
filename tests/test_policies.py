@@ -70,7 +70,7 @@ class PolicyTestCollection(object):
             assert predicted_probabilities == actual_probabilities
 
     def test_prediction_on_empty_tracker(self, trained_policy, default_domain):
-        tracker = DialogueStateTracker(UserMessage.DEFAULT_SENDER,
+        tracker = DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
                                        default_domain.slots,
                                        default_domain.topics,
                                        default_domain.default_topic)
