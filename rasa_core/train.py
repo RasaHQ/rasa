@@ -44,14 +44,17 @@ def create_argument_parser():
             help="use verbose logging")
     parser.add_argument(
             '--history',
+            type=int,
             default=3,
             help="max history to use of a story")
     parser.add_argument(
             '--epochs',
+            type=int,
             default=100,
             help="number of epochs to train the model")
     parser.add_argument(
             '--batch_size',
+            type=int,
             default=20,
             help="number of training samples to put into one training batch")
     parser.add_argument(
@@ -61,6 +64,7 @@ def create_argument_parser():
             help="enable online training")
     parser.add_argument(
             '--augmentation',
+            type=int,
             default=50,
             help="how much data augmentation to use during training")
 
