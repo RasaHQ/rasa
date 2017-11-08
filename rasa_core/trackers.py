@@ -243,7 +243,7 @@ class DialogueStateTracker(object):
 
         self._reset_slots()
         self._paused = False
-        self.latest_action_name = []
+        self.latest_action_name = None
         self.latest_message = UserUttered.empty()
         self.follow_up_action = None
         self._topic_stack = utils.TopicStack(self.topics, [],
