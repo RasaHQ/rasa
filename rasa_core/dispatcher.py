@@ -32,10 +32,10 @@ class Button(dict):
 class Dispatcher(object):
     """Send messages back to user"""
 
-    def __init__(self, sender, output_channel, domain):
+    def __init__(self, sender_id, output_channel, domain):
         # type: (Text, OutputChannel, Domain) -> None
 
-        self.sender = sender
+        self.sender_id = sender_id
         self.output_channel = output_channel
         self.domain = domain
         self.send_messages = []
@@ -58,28 +58,28 @@ class Dispatcher(object):
         # type: (Text) -> None
         """"Send a text to the output channel"""
 
-        if self.sender is not None and self.output_channel is not None:
+        if self.sender_id is not None and self.output_channel is not None:
             for message_part in text.split("\n\n"):
-                self.output_channel.send_text_message(self.sender, message_part)
+                self.output_channel.send_text_message(self.sender_id, message_part)
                 self.send_messages.append(message_part)
 
     def utter_custom_message(self, *elements):
         # type: (*Dict[Text, Any]) -> None
         """Sends a message with custom elements to the output channel."""
 
-        self.output_channel.send_custom_message(self.sender, elements)
+        self.output_channel.send_custom_message(self.sender_id, elements)
 
     def utter_button_message(self, text, buttons, **kwargs):
         # type: (Text, List[Dict[Text, Any]], **Any) -> None
         """Sends a message with buttons to the output channel."""
 
-        self.output_channel.send_text_with_buttons(self.sender, text, buttons,
+        self.output_channel.send_text_with_buttons(self.sender_id, text, buttons,
                                                    **kwargs)
 
     def utter_attachment(self, attachment):
         # type: (Text) -> None
         """Send a message to the client with attachments."""
-        self.output_channel.send_image_url(self.sender, attachment)
+        self.output_channel.send_image_url(self.sender_id, attachment)
 
     def utter_button_template(self, template, buttons, filled_slots=None, **kwargs):
         # type: (Text, List[Dict[Text, Any]], **Any) -> None

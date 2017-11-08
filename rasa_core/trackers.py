@@ -141,7 +141,7 @@ class DialogueStateTracker(object):
         The resulting array is representing the state before each action."""
         from rasa_core.channels import UserMessage
 
-        tracker = DialogueStateTracker(UserMessage.DEFAULT_SENDER,
+        tracker = DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
                                        self.slots.values(),
                                        self.topics,
                                        self.default_topic)

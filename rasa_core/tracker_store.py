@@ -31,7 +31,7 @@ class TrackerStore(object):
                                        self.domain.default_topic)
 
     def create_tracker(self, sender_id):
-        """Creates a new tracker for the sender.
+        """Creates a new tracker for the sender_id.
 
         The tracker is initially listening."""
 

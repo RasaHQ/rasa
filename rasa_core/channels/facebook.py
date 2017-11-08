@@ -109,10 +109,10 @@ class FacebookInput(HttpInputComponent):
                     else:
                         continue
                     try:
-                        sender = x['sender']['id']
+                        sender_id = x['sender']['id']
                         if page_id in self.fb_tokens:
                             out_channel = MessengerBot(self.fb_tokens[page_id])
-                            user_msg = UserMessage(text, out_channel, sender)
+                            user_msg = UserMessage(text, out_channel, sender_id)
                             on_new_message(user_msg)
                         else:
                             raise Exception("Unknown page id '{}'. Make sure to"

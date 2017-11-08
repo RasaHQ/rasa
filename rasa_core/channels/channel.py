@@ -13,7 +13,7 @@ class UserMessage(object):
 
      Includes the channel the responses should be sent to."""
 
-    DEFAULT_SENDER = "default"
+    DEFAULT_SENDER_ID = "default"
 
     def __init__(self, text, output_channel=None, sender_id=None):
         # type: (Optional[Text], Optional[OutputChannel], Text) -> None
@@ -29,7 +29,7 @@ class UserMessage(object):
         if sender_id is not None:
             self.sender_id = sender_id
         else:
-            self.sender_id = self.DEFAULT_SENDER
+            self.sender_id = self.DEFAULT_SENDER_ID
 
 
 class InputChannel(object):

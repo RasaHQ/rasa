@@ -253,7 +253,7 @@ class Story(object):
     def __init__(self, story_steps=None):
         self.story_steps = story_steps if story_steps else []
 
-    def as_dialogue(self, sender, domain):
+    def as_dialogue(self, sender_id, domain):
         events = []
         for step in self.story_steps:
             events.extend(
@@ -261,7 +261,7 @@ class Story(object):
                                          should_append_final_listen=False))
 
         events.append(ActionExecuted(ActionListen().name()))
-        return Dialogue(sender, events)
+        return Dialogue(sender_id, events)
 
     def as_story_string(self, flat=False):
         story_content = ""
@@ -471,7 +471,7 @@ class FeaturizedTracker(object):
         # type: (Domain, int) -> FeaturizedTracker
         """Creates a featurized tracker from a domain."""
 
-        tracker = DialogueStateTracker(UserMessage.DEFAULT_SENDER,
+        tracker = DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
                                        domain.slots,
                                        domain.topics,
                                        domain.default_topic,
