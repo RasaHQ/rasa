@@ -52,8 +52,9 @@ class StoryGraph(object):
                 # and that need to handle all events of the step
                 incoming_trackers = active_trackers[step.start_checkpoint_name()]
 
-                incoming_trackers = step.start_checkpoint.filter_trackers(
-                        incoming_trackers)
+                # TODO: we can't use tracker filter here to filter for
+                #       checkpoint conditions since we don't have trackers.
+                #       this code should rather use the code from the dsl.
 
                 if max_number_of_trackers is not None:
                     incoming_trackers = utils.subsample_array(

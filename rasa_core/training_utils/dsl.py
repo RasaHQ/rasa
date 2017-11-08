@@ -251,6 +251,7 @@ class StoryStepBuilder(object):
 
 class Story(object):
     def __init__(self, story_steps=None):
+        # type: (List[StoryStep]) -> None
         self.story_steps = story_steps if story_steps else []
 
     def as_dialogue(self, sender, domain):
