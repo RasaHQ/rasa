@@ -61,7 +61,10 @@ class Project(object):
         # Lazy model loading
         if not model_name or model_name not in self._models:
             model_name = self._latest_project_model()
-            logger.warn("Invalid model requested. Using default")
+            if model_name not in self._models:
+                logger.warn("Invalid model requested. Using default")
+            else:
+                logger.debug("No model specified. Using default")
 
         self._loader_lock.acquire()
         try:
