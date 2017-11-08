@@ -2,5 +2,5 @@
   "pipeline": "spacy_sklearn",
   "path" : "./models",
   "project": "nlu",
-  "data" : "./nlu.md"
+  "data" : "./data/concert_messages.md"
 }
