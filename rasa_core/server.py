@@ -32,6 +32,7 @@ def create_argument_parser():
             help="nlu model to run with the server")
     parser.add_argument(
             '-p', '--port',
+            type=int,
             default=5005,
             help="port to run the server at")
     parser.add_argument(

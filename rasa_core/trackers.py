@@ -93,6 +93,16 @@ class DialogueStateTracker(object):
             logger.info("Tried to access non existent slot '{}'".format(key))
             return None
 
+    def get_latest_entity_values(self, entity_name):
+        # type: (Text) -> List[Text]
+        """Get entity values found for the passed entity name in latest msg."""
+
+        entity_values = [x.get("value")
+                         for x in self.latest_message.entities
+                         if x.get("entity") == entity_name]
+
+        return entity_values
+
     def is_paused(self):
         # type: () -> bool
         """States whether the tracker is currently paused."""
@@ -233,7 +243,7 @@ class DialogueStateTracker(object):
 
         self._reset_slots()
         self._paused = False
-        self.latest_action_name = []
+        self.latest_action_name = None
         self.latest_message = UserUttered.empty()
         self.follow_up_action = None
         self._topic_stack = utils.TopicStack(self.topics, [],
