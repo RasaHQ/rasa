@@ -96,7 +96,7 @@ class FacebookInput(HttpInputComponent):
                 signature = request.headers.get("X-Hub-Signature") or ''
                 if not validate_hub_signature(self.fb_secret, request.data,
                                               signature):
-                    logger.debug("Wrong fb secret! Make sure this matches the "
+                    logger.warn("Wrong fb secret! Make sure this matches the "
                                  "secret in your facebook app settings")
                     return "not validated"
 
@@ -125,7 +125,7 @@ class FacebookInput(HttpInputComponent):
                     except Exception as e:
                         logger.error("Exception when trying to handle "
                                      "message.{0}".format(e))
-                        logger.error(e,exec_info=True)
+                        logger.error(e,exc_info=True)
                         if self.debug_mode:
                             raise
                         pass
