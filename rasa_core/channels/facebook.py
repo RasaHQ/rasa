@@ -88,14 +88,16 @@ class FacebookInput(HttpInputComponent):
                 if request.args.get("hub.verify_token") == self.fb_verify:
                     return request.args.get("hub.challenge")
                 else:
-                    logger.debug("Failure, invalid token")
+                    logger.warn("Invalid fb verify token! Make sure this matches "
+                                "your webhook settings on the facebook app.")
                     return "failure, invalid token"
             if request.method == 'POST':
 
                 signature = request.headers.get("X-Hub-Signature") or ''
                 if not validate_hub_signature(self.fb_secret, request.data,
                                               signature):
-                    logger.debug("Fb secret not validated.")
+                    logger.debug("Wrong fb secret! Make sure this matches the "
+                                 "secret in your facebook app settings")
                     return "not validated"
 
                 output = request.json
@@ -123,6 +125,7 @@ class FacebookInput(HttpInputComponent):
                     except Exception as e:
                         logger.error("Exception when trying to handle "
                                      "message.{0}".format(e))
+                        logger.error(e,exec_info=True)
                         if self.debug_mode:
                             raise
                         pass
