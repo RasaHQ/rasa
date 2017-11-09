@@ -126,7 +126,7 @@ def test_tracker_entity_retrieval(default_domain):
                                    default_domain.default_topic)
     # the retrieved tracker should be empty
     assert len(tracker.events) == 0
-    assert tracker.get_latest_entity_values("entity_name") == []
+    assert list(tracker.get_latest_entity_values("entity_name")) == []
 
     intent = {"name": "greet", "confidence": 1.0}
     tracker.update(UserUttered("_greet", intent, [{
@@ -136,8 +136,8 @@ def test_tracker_entity_retrieval(default_domain):
           "entity": "entity_name",
           "extractor": "manual"
         }]))
-    assert tracker.get_latest_entity_values("entity_name") == ["greet"]
-    assert tracker.get_latest_entity_values("unknown") == []
+    assert list(tracker.get_latest_entity_values("entity_name")) == ["greet"]
+    assert list(tracker.get_latest_entity_values("unknown")) == []
 
 
 def test_restart_event(default_domain):
