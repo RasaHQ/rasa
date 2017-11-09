@@ -301,8 +301,9 @@ class MessageProcessor(object):
         logger.debug("Action '{}' ended with events '{}'".format(
                 action_name, ['{}'.format(e) for e in events]))
 
-        # log the action and its produced events
-        tracker.update(ActionExecuted(action_name))
+        if action_name is not None:
+            # log the action and its produced events
+            tracker.update(ActionExecuted(action_name))
 
         for e in events:
             tracker.update(e)
