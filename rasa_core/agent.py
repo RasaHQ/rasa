@@ -61,7 +61,7 @@ class Agent(object):
             text_message,  # type: Text
             message_preprocessor=None,  # type: Optional[Callable[[Text], Text]]
             output_channel=None,  # type: Optional[OutputChannel]
-            sender_id="default"  # type: Optional[Text]
+            sender_id=UserMessage.DEFAULT_SENDER_ID  # type: Optional[Text]
     ):
         # type: (...) -> Optional[List[Text]]
         """
@@ -95,7 +95,7 @@ class Agent(object):
 
     def start_message_handling(self,
                                text_message,
-                               sender_id="default"):
+                               sender_id=UserMessage.DEFAULT_SENDER_ID):
         # type: (Text, Optional[Text]) -> Dict[Text, Any]
 
         processor = self._create_processor()
