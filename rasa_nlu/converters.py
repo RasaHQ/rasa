@@ -216,7 +216,9 @@ def rasa_nlu_data_schema():
 
 def validate_rasa_nlu_data(data):
     # type: (Dict[Text, Any]) -> None
-    """Validate rasa training data format to ensure proper training. Raises exception on failure."""
+    """Validate rasa training data format to ensure proper training.
+
+    Raises exception on failure."""
     from jsonschema import validate
     from jsonschema import ValidationError
 
