@@ -161,7 +161,7 @@ class MessageProcessor(object):
                     return True
             return True  # tracker has probably been restarted
 
-        tracker = self._get_tracker(dispatcher.sender)
+        tracker = self._get_tracker(dispatcher.sender_id)
 
         if (reminder_event.kill_on_user_message and
                 has_message_after_reminder(tracker)):
@@ -177,7 +177,7 @@ class MessageProcessor(object):
             if should_continue:
                 user_msg = UserMessage(None,
                                        dispatcher.output_channel,
-                                       dispatcher.sender)
+                                       dispatcher.sender_id)
                 self._predict_and_execute_next_action(user_msg, tracker)
             # save tracker state to continue conversation from this state
             self._save_tracker(tracker)
@@ -308,10 +308,10 @@ class MessageProcessor(object):
         for e in events:
             tracker.update(e)
 
-    def _get_tracker(self, sender):
+    def _get_tracker(self, sender_id):
         # type: (Text) -> DialogueStateTracker
 
-        sender_id = sender or UserMessage.DEFAULT_SENDER
+        sender_id = sender_id or UserMessage.DEFAULT_SENDER_ID
         tracker = self.tracker_store.get_or_create_tracker(sender_id)
         return tracker
 

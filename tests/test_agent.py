@@ -39,5 +39,5 @@ def test_agent_train(tmpdir, default_domain):
 
 def test_agent_handle_message(default_agent):
     result = default_agent.handle_message("_greet[name=Rasa]",
-                                          sender="test_agent_handle_message")
+                                          sender_id="test_agent_handle_message")
     assert result == ["hey there Rasa!"]

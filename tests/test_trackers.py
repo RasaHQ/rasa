@@ -106,11 +106,11 @@ def test_tracker_write_to_story(tmpdir, default_domain):
 
 
 def test_tracker_state_regression(default_agent):
-    sender = "test_tracker_state_regression"
+    sender_id = "test_tracker_state_regression"
     n_actions = []
     for i in range(0, 2):
-        default_agent.handle_message("_greet", sender=sender)
-    tracker = default_agent.tracker_store.get_or_create_tracker(sender)
+        default_agent.handle_message("_greet", sender_id=sender_id)
+    tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
 
     # Ensures that the tracker has changed between the utterances
     # (and wasn't reset in between them)

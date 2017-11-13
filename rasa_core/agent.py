@@ -61,7 +61,7 @@ class Agent(object):
             text_message,  # type: Text
             message_preprocessor=None,  # type: Optional[Callable[[Text], Text]]
             output_channel=None,  # type: Optional[OutputChannel]
-            sender=None  # type: Optional[Text]
+            sender_id=UserMessage.DEFAULT_SENDER_ID  # type: Optional[Text]
     ):
         # type: (...) -> Optional[List[Text]]
         """
@@ -91,16 +91,16 @@ class Agent(object):
 
         processor = self._create_processor(message_preprocessor)
         return processor.handle_message(
-                UserMessage(text_message, output_channel, sender))
+                UserMessage(text_message, output_channel, sender_id))
 
     def start_message_handling(self,
                                text_message,
-                               sender=None):
+                               sender_id=UserMessage.DEFAULT_SENDER_ID):
         # type: (Text, Optional[Text]) -> Dict[Text, Any]
 
         processor = self._create_processor()
         return processor.start_message_handling(
-                UserMessage(text_message, None, sender))
+                UserMessage(text_message, None, sender_id))
 
     def continue_message_handling(self, sender_id, executed_action, events):
         # type: (Text, Text, List[Event]) -> Dict[Text, Any]

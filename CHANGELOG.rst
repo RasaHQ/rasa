@@ -14,6 +14,7 @@ Added
 
 Changed
 -------
+- "sender_id" (and "DEFAULT_SENDER_ID") keyword consistency issue #56
 
 Removed
 -------
