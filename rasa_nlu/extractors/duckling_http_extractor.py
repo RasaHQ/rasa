@@ -86,10 +86,13 @@ class DucklingHTTPExtractor(EntityExtractor):
                     "start": match["start"],
                     "end": match["end"],
                     "text": match["body"],
-                    "value": match["value"]["value"],
+                    "value": None,
                     "additional_info": match["value"],
                     "entity": match["dim"]}
-
+                try:
+                    entity["value"] = match["value"]["value"]
+                except KeyError:
+                    entity["value"] = {"to":match["value"]["to"]["value"], "from":match["value"]["from"]["value"]}
                 extracted.append(entity)
 
         extracted = self.add_extractor_name(extracted)
