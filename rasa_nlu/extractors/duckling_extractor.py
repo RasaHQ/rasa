@@ -28,6 +28,14 @@ if typing.TYPE_CHECKING:
     from duckling import DucklingWrapper
 
 
+def extract_value(match):
+    if match["value"]["type"] == "interval":
+        value = {"to":match["value"]["to"]["value"], "from":match["value"]["from"]["value"]}
+    else:
+        value = match["value"]["value"]
+
+    return value
+
 class DucklingExtractor(EntityExtractor):
     """Adds entity normalization by analyzing found entities and transforming them into regular formats."""
 
@@ -101,17 +109,14 @@ class DucklingExtractor(EntityExtractor):
             matches = self.duckling.parse(message.text, reference_time=ref_time)
             relevant_matches = [match for match in matches if match["dim"] in self.dimensions]
             for match in relevant_matches:
+                value = extract_value(match)
                 entity = {"start": match["start"],
                           "end": match["end"],
                           "text": match["text"],
-                          "value": None,
+                          "value": value,
                           "additional_info": match["value"],
                           "entity": match["dim"]}
-                try:
-                    entity["value"] = match["value"]["value"]
-                except KeyError:
-                    entity["value"] = {"to":match["value"]["to"]["value"], "from":match["value"]["from"]["value"]}
-                    
+
                 extracted.append(entity)
 
         extracted = self.add_extractor_name(extracted)
