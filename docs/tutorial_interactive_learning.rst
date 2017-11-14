@@ -10,7 +10,7 @@ Interactive Learning
    `Rasa NLU <http://nlu.rasa.ai/tutorial.html#tutorial-a-simple-restaurant-search-bot>`_
    docs if you don't know what those are).
 
-   `Example Code on GitHub <https://github.com/RasaHQ/rasa_core/tree/master/examples/concerts>`_
+   `Example Code on GitHub <https://github.com/RasaHQ/rasa_core/tree/master/examples/concertbot>`_
 
 
 Motivation: Why Interactive Learning?
