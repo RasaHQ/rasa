@@ -1,3 +1,5 @@
+# -*-coding: utf-8-*-
+
 from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import division
@@ -49,7 +51,8 @@ DEFAULT_CONFIG = {
     "intent_classifier_sklearn": {
         "C": [1, 2, 5, 10, 20, 100],
         "kernel": "linear"
-    }
+    },
+    "trailing_punctuation_marks": "?？"  # default values are english question mark and chinese question mark
 }
 
 
