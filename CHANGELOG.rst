@@ -14,14 +14,25 @@ Added
 
 Changed
 -------
-- "sender_id" (and "DEFAULT_SENDER_ID") keyword consistency issue #56
 
 Removed
 -------
 
 Fixed
 -----
+
+
+[0.7.5] - 2017-11-14
+^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- "sender_id" (and "DEFAULT_SENDER_ID") keyword consistency issue #56
+
+Fixed
+-----
 - improved moodbot example - more nlu examples as well as better fitting of dialogue model
+
 
 [0.7.4] - 2017-11-09
 ^^^^^^^^^^^^^^^^^^^^
