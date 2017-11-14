@@ -15,7 +15,9 @@ from typing import Text, Optional
 
 import rasa_core
 from rasa_core import utils
+from rasa_core.events import SlotSet
 from rasa_core.trackers import DialogueStateTracker
+from rasa_core.training.dsl import DialogueTrainingData
 
 logger = logging.getLogger(__name__)
 
@@ -27,12 +29,16 @@ if typing.TYPE_CHECKING:
 class PolicyEnsemble(object):
     def __init__(self, policies):
         self.policies = policies
+        self.training_metadata = {}
 
-    def train(self, X, y, domain, featurizer, **kwargs):
-        if not utils.is_training_data_empty(X):
+    def train(self, training_data, domain, featurizer, **kwargs):
+        # type: (DialogueTrainingData, Domain, Featurizer, **Any) -> None
+        if not training_data.is_empty():
             for policy in self.policies:
-                policy.prepare(featurizer, max_history=X.shape[1])
-                policy.train(X, y, domain, **kwargs)
+                policy.prepare(featurizer,
+                               max_history=training_data.max_history())
+                policy.train(training_data, domain, **kwargs)
+                self.training_metadata.update(training_data.metadata)
         else:
             logger.info("Skipped training, because there are no "
                         "training samples.")
@@ -60,7 +66,11 @@ class PolicyEnsemble(object):
         utils.create_dir_for_file(domain_spec_path)
         policy_names = [p.__module__ + "." + p.__class__.__name__
                         for p in self.policies]
+        meta_events = self.training_metadata.get("events", {})
+        slot_meta = {k: list({v.key for v in vs if isinstance(v, SlotSet)})
+                     for k, vs in meta_events.items()}
         metadata = {
+            "slot_meta": slot_meta,
             "rasa_core": rasa_core.__version__,
             "max_history": max_history,
             "ensemble_name": self.__module__ + "." + self.__class__.__name__,

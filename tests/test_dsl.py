@@ -6,9 +6,9 @@ from __future__ import unicode_literals
 import io
 
 from rasa_core.events import SlotSet, ActionExecuted
-from rasa_core.training_utils import extract_stories_from_file, \
+from rasa_core.training import extract_stories_from_file, \
     extract_story_graph_from_file
-from rasa_core.training_utils.dsl import Story
+from rasa_core.training.dsl import Story
 
 
 def test_can_read_test_story(default_domain):

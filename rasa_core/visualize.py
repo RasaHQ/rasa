@@ -9,8 +9,8 @@ import logging
 import os
 
 from rasa_core.domain import TemplateDomain
-from rasa_core.training_utils.dsl import StoryFileReader
-from rasa_core.training_utils.visualization import visualize_stories
+from rasa_core.training.dsl import StoryFileReader
+from rasa_core.training.visualization import visualize_stories
 
 logger = logging.getLogger(__name__)
 

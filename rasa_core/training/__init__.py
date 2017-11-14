@@ -4,9 +4,9 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from rasa_core.interpreter import RegexInterpreter
-from rasa_core.training_utils.dsl import StoryFileReader, STORY_START, \
+from rasa_core.training.dsl import StoryFileReader, STORY_START, \
     TrainingsDataExtractor
-from rasa_core.training_utils.story_graph import StoryGraph
+from rasa_core.training.story_graph import StoryGraph
 
 
 def extract_training_data_from_file(filename,

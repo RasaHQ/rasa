@@ -17,6 +17,7 @@ from rasa_core.events import UserUtteranceReverted, UserUttered, StoryExported
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.policies import PolicyTrainer
 from rasa_core.policies.ensemble import PolicyEnsemble
+from rasa_core.training.data import DialogueTrainingData
 
 logger = logging.getLogger(__name__)
 
@@ -34,15 +35,18 @@ class OnlinePolicyTrainer(PolicyTrainer):
         logger.debug("Policy trainer got kwargs: {}".format(kwargs))
         check_domain_sanity(self.domain)
 
-        X, y = self._prepare_training_data(filename, max_history,
+        training_data = self._prepare_training_data(filename, max_history,
                                            augmentation_factor,
                                            max_training_samples,
                                            max_number_of_trackers)
 
-        self.ensemble.train(X, y, self.domain, self.featurizer, **kwargs)
+        self.ensemble.train(training_data, self.domain, self.featurizer,
+                            **kwargs)
+
+        training_data.reset_metadata()  # online learning doesn't support it yet
 
         ensemble = OnlinePolicyEnsemble(self.ensemble, self.featurizer,
-                                        max_history, (X, y))
+                                        max_history, training_data)
         self.run_online_training(ensemble, self.domain, interpreter,
                                  input_channel)
 
@@ -150,23 +154,24 @@ class OnlinePolicyEnsemble(PolicyEnsemble):
         logger.info("Stories got exported to '{}'.".format(
                 os.path.abspath(exported.path)))
 
+    def continue_training(self, training_data, domain):
+        for p in self.policies:
+            p.continue_training(training_data, domain)
+
     def _fit_example(self, X, y, domain):
         # takes the new example labelled and learns it
         # via taking `epochs` samples of n_batch-1 parts of the training data,
         # inserting our new example and learning them. this means that we can
         # ask the network to fit the example without overemphasising
         # its importance (and therefore throwing off the biases)
-        train_X, train_y = self.train_data
-        for i in range(self.epochs):
-            padding_idx = np.random.choice(range(len(train_y)),
-                                           replace=False,
-                                           size=min(self.batch_size - 1,
-                                                    len(train_y) - 1))
-            batch_X = np.vstack((train_X[padding_idx, :, :], X))
-            batch_y = np.hstack((train_y[padding_idx], y))
-            for p in self.policies:
-                p.continue_training(batch_X, np.array(batch_y), domain)
-        self.train_data = (np.vstack((train_X, X)), np.hstack((train_y, y)))
+        num_samples = self.batch_size - 1
+        for _ in range(self.epochs):
+            sampled_X, sampled_y = self.train_data.random_samples(num_samples)
+            batch_X = np.vstack((sampled_X, X))
+            batch_y = np.hstack((sampled_y, y))
+            data = DialogueTrainingData(batch_X, batch_y)
+            self.continue_training(data, domain)
+        self.train_data.append(X, y)
 
     def write_out_story(self, tracker):
         # takes our new example and writes it in markup story format

@@ -9,11 +9,13 @@ import logging
 import os
 import warnings
 
-import numpy as np
 from builtins import str
+from typing import Any
 
 from rasa_core import utils
+from rasa_core.domain import Domain
 from rasa_core.policies import Policy
+from rasa_core.training.dsl import DialogueTrainingData
 
 logger = logging.getLogger(__name__)
 
@@ -86,32 +88,26 @@ class KerasPolicy(Policy):
         logger.debug(model.summary())
         return model
 
-    def train(self, X, y, domain, **kwargs):
+    def train(self, training_data, domain, **kwargs):
+        # type: (DialogueTrainingData, Domain, **Any) -> None
         self.model = self.model_architecture(domain.num_features,
                                              domain.num_actions,
-                                             X.shape[1])
-        y_one_hot = np.zeros((len(y), domain.num_actions))
-        y_one_hot[np.arange(len(y)), y] = 1
-
-        number_of_samples = X.shape[0]
-        idx = np.arange(number_of_samples)
-        np.random.shuffle(idx)
-        shuffled_X = X[idx, :, :]
-        shuffled_y = y_one_hot[idx, :]
+                                             training_data.max_history())
+        shuffled_X, shuffled_y = training_data.shuffled(domain)
 
         validation_split = kwargs.get("validation_split", 0.0)
         logger.info("Fitting model with {} total samples and a validation "
-                    "split of {}".format(number_of_samples, validation_split))
+                    "split of {}".format(training_data.num_examples(),
+                                         validation_split))
         self.model.fit(shuffled_X, shuffled_y, **kwargs)
         self.current_epoch = kwargs.get("epochs", 10)
         logger.info("Done fitting keras policy model")
 
-    def continue_training(self, X, y, domain, **kwargs):
+    def continue_training(self, training_data, domain, **kwargs):
         # fit to one extra example
-        y_one_hot = np.zeros((len(y), domain.num_actions))
-        y_one_hot[np.arange(len(y)), y] = 1
+
         self.current_epoch += 1
-        self.model.fit(X, y_one_hot,
+        self.model.fit(training_data.X, training_data.y_as_one_hot(domain),
                        epochs=self.current_epoch + 1,
                        batch_size=1,
                        verbose=0,

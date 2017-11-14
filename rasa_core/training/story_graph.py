@@ -13,7 +13,7 @@ from rasa_core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa_core import utils
 
 if typing.TYPE_CHECKING:
-    from rasa_core.training_utils.dsl import StoryStep, Story, \
+    from rasa_core.training.dsl import StoryStep, Story, \
     TrainingsDataExtractor
 
 
@@ -41,7 +41,7 @@ class StoryGraph(object):
                       max_number_of_trackers=2000):
         # type: (Domain, NaturalLanguageInterpreter, bool, int) -> List[Story]
         """Build the stories of a graph."""
-        from rasa_core.training_utils.dsl import STORY_START, Story
+        from rasa_core.training.dsl import STORY_START, Story
 
         active_trackers = {STORY_START: [Story()]}
         rand = random.Random(42)

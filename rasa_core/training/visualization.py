@@ -10,8 +10,8 @@ from typing import Any, Text, List, Dict
 
 from rasa_core.events import UserUttered, ActionExecuted
 from rasa_core.interpreter import RegexInterpreter
-from rasa_core.training_utils import STORY_START
-from rasa_core.training_utils.story_graph import StoryGraph
+from rasa_core.training import STORY_START
+from rasa_core.training.story_graph import StoryGraph
 from rasa_nlu.training_data import TrainingData
 
 EDGE_NONE_LABEL = "NONE"

@@ -12,7 +12,7 @@ import os
 import random
 import re
 import uuid
-from collections import deque
+from collections import deque, defaultdict
 from random import Random
 
 import numpy as np
@@ -29,7 +29,8 @@ from rasa_core.events import ActionExecuted, UserUttered, Event, \
 from rasa_core.featurizers import Featurizer
 from rasa_core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa_core.trackers import DialogueStateTracker
-from rasa_core.training_utils.story_graph import StoryGraph
+from rasa_core.training.data import DialogueTrainingData
+from rasa_core.training.story_graph import StoryGraph
 from rasa_core import utils
 
 logger = logging.getLogger(__name__)
@@ -467,6 +468,14 @@ class FeaturizedTracker(object):
 
         self.tracker.update(event)
 
+    def previously_executed_action(self):
+        """Returns the previously logged action."""
+
+        for e in reversed(self.tracker.events):
+            if isinstance(e, ActionExecuted):
+                return e.action_name
+        return None
+
     @classmethod
     def from_domain(cls, domain, max_history):
         # type: (Domain, int) -> FeaturizedTracker
@@ -494,13 +503,14 @@ class TrainingsDataExtractor(object):
         self.story_graph = story_graph
         self.domain = domain
         self.featurizer = featurizer
+        self.events_metadata = defaultdict(set)
 
     def extract_trainings_data(self,
                                remove_duplicates=True,
                                augmentation_factor=20,
                                max_history=1,
                                max_number_of_trackers=2000):
-        # type: (bool, int, int) -> Tuple[ndarray, ndarray]
+        # type: (bool, int, int) -> DialogueTrainingData
         """Given a set of story parts, generates all stories that are possible.
 
         The different story parts can end and start with checkpoints
@@ -591,9 +601,11 @@ class TrainingsDataExtractor(object):
             X_unique, y_unique = self._deduplicate_training_data(X, y)
             logger.debug("Deduplicated to {} unique action examples.".format(
                     y_unique.shape[0]))
-            return X_unique, y_unique
+            return DialogueTrainingData(X_unique, y_unique,
+                                        {"events": self.events_metadata})
         else:
-            return X, y
+            return DialogueTrainingData(X, y,
+                                        {"events": self.events_metadata})
 
     @staticmethod
     def _subsample_trackers(incoming_trackers, max_number_of_trackers,
@@ -718,6 +730,9 @@ class TrainingsDataExtractor(object):
             else:
                 unique_trackers.append(tracker)
             tracker.update(event)
+            if not isinstance(event, ActionExecuted):
+                action_name = tracker.previously_executed_action()
+                self.events_metadata[action_name].add(event)
 
         return training_features, training_labels, unique_trackers
 

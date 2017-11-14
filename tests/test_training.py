@@ -6,8 +6,8 @@ from __future__ import unicode_literals
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.train import train_dialogue_model
 
-from rasa_core.training_utils import StoryFileReader
-from rasa_core.training_utils.visualization import visualize_stories
+from rasa_core.training import StoryFileReader
+from rasa_core.training.visualization import visualize_stories
 from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 
 

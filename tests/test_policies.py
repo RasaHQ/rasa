@@ -13,7 +13,7 @@ from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.policies.scoring_policy import ScoringPolicy
 from rasa_core.trackers import DialogueStateTracker
-from rasa_core.training_utils import extract_training_data_from_file, \
+from rasa_core.training import extract_training_data_from_file, \
     extract_stories_from_file
 from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 

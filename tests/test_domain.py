@@ -8,7 +8,7 @@ import pytest
 
 from rasa_core.domain import TemplateDomain
 from rasa_core.featurizers import BinaryFeaturizer
-from rasa_core.training_utils import extract_training_data_from_file
+from rasa_core.training import extract_training_data_from_file
 from tests import utilities
 from tests.conftest import DEFAULT_DOMAIN_PATH
 

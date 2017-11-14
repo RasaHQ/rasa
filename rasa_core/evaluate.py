@@ -15,7 +15,7 @@ from tqdm import tqdm
 from rasa_core.agent import Agent
 from rasa_core.events import ActionExecuted, UserUttered
 from rasa_core.interpreter import RegexInterpreter, RasaNLUInterpreter
-from rasa_core.training_utils import extract_stories_from_file
+from rasa_core.training import extract_stories_from_file
 from rasa_nlu.evaluate import plot_confusion_matrix, log_evaluation_table
 
 logger = logging.getLogger(__name__)

@@ -7,6 +7,7 @@ import json
 import logging
 import uuid
 
+import jsonpickle
 import typing
 from builtins import str
 
@@ -110,14 +111,17 @@ class UserUttered(Event):
                            parse_data)
 
     def __hash__(self):
-        return hash((self.text, self.intent, tuple(self.entities)))
+        return hash((self.text, self.intent.get("name"),
+                     jsonpickle.encode(self.entities)))
 
     def __eq__(self, other):
         if not isinstance(other, UserUttered):
             return False
         else:
-            return (self.text, self.intent, self.entities, self.parse_data) == \
-                   (other.text, other.intent, other.entities, other.parse_data)
+            return (self.text, self.intent.get("name"),
+                    jsonpickle.encode(self.entities), self.parse_data) == \
+                   (other.text, other.intent.get("name"),
+                    jsonpickle.encode(other.entities), other.parse_data)
 
     def __str__(self):
         return ("UserUttered(text: {}, intent: {}, "
@@ -199,9 +203,10 @@ class SlotSet(Event):
 
     type_name = "slot"
 
-    def __init__(self, key, value=None):
+    def __init__(self, key, value=None, automatically_generated=False):
         self.key = key
         self.value = value
+        self.automatically_generated = automatically_generated
 
     def __str__(self):
         return "SlotSet(key: {}, value: {})".format(self.key, self.value)
