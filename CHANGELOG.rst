@@ -21,6 +21,7 @@ Removed
 
 Fixed
 -----
+- improved moodbot example - more nlu examples as well as better fitting of dialogue model
 
 [0.7.4] - 2017-11-09
 ^^^^^^^^^^^^^^^^^^^^
