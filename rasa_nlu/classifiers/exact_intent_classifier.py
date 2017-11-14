@@ -85,7 +85,7 @@ class ExactIntentClassifier(Component):
             cleaned_message = msg_text.rstrip(question_mark)
             patched_message = ["".join([msg_text, i]) for i in question_mark]
 
-            augmented_msg = set([cleaned_message] + patched_message + [msg_text])
+            augmented_msg = set([cleaned_message] + patched_message)
 
             for m in augmented_msg:
                 self._intent_data[m].append(
