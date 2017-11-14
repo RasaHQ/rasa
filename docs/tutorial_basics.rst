@@ -165,11 +165,11 @@ There are two things we still need to do: train the dialogue model and run it.
 To train the dialogue model, run:
 
 .. code-block:: bash
+   python -m rasa_core.train -s data/stories.md -d domain.yml -o models/dialogue --epochs 300
 
-   python -m rasa_core.train -s data/stories.md -d domain.yml -o models/dialogue
-
-This will train the model and store it into ``models/dialogue``. Now we can use
-that trained dialogue model and the previously created NLU model to run our bot:
+This will train the dialogue model for ``300`` epochs and store it
+into ``models/dialogue``. Now we can use that trained dialogue model
+and the previously created NLU model to run our bot:
 
 .. code-block:: bash
 
