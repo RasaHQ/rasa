@@ -116,6 +116,7 @@ registered_pipeline_templates = {
         "intent_classifier_keyword",
         "intent_classifier_sklearn",
         "intent_classifier_mitie",
+        "intent_classifier_exact"
     ]
 }
 
