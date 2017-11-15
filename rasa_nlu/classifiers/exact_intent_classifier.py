@@ -78,16 +78,11 @@ class ExactIntentClassifier(Component):
             text = e.text
             intent = e.data['intent']
 
-            msg_text = text.strip()  # with leading and trailing whitespace removed
-
             question_mark = config.get("trailing_punctuation_marks", "")
 
-            cleaned_message = msg_text.rstrip(question_mark)
-            patched_message = ["".join([msg_text, i]) for i in question_mark]
+            augmented_text = self._augment_text(text, question_mark)
 
-            augmented_msg = set([cleaned_message] + patched_message)
-
-            for m in augmented_msg:
+            for m in augmented_text:
                 self._intent_data[m].append(
                     {"name": intent, "confidence": 1.0}
                 )
@@ -97,6 +92,17 @@ class ExactIntentClassifier(Component):
             mean_score = 1 / len(intents)
             for i in intents:
                 i['confidence'] = mean_score
+
+    @staticmethod
+    def _augment_text(text, question_mark):
+        # with leading and trailing whitespace removed
+        text = text.strip()
+
+        cleaned_message = text.rstrip(question_mark)
+        patched_message = ["".join([text, i]) for i in question_mark]
+
+        augmented_msg = set([cleaned_message] + patched_message)
+        return augmented_msg
 
     @classmethod
     def load(cls, model_dir=None, model_metadata=None, cached_component=None, **kwargs):
