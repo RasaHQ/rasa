@@ -52,11 +52,17 @@ class ExactIntentClassifier(Component):
         msg_text = msg_text.strip() # with leading and trailing whitespace removed
 
         if msg_text in self._intent_data:
-            # clean previous classifier's decision, using this one only
-            message.set("intent", self._intent_data[msg_text], add_to_output=True)
+            predicted_intents = self._intent_data[msg_text]
 
-            # remove previous classifier's intent_ranking output if exists
-            message.data.pop('intent_ranking', None)
+            # if there two or more predicted intents,
+            # take first one as most confident one
+            most_likely_intent = predicted_intents[0]
+
+            # replace previous classifier's decision, using this one only
+            message.set("intent", most_likely_intent, add_to_output=True)
+
+            # replace previous classifier's intent_ranking
+            message.data['intent_ranking'] = predicted_intents
 
             # no more work
             return None
