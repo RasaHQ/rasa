@@ -21,6 +21,13 @@ Removed
 Fixed
 -----
 
+[0.7.6] - 2017-11-15
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- moodbot example train command in docs
+
 
 [0.7.5] - 2017-11-14
 ^^^^^^^^^^^^^^^^^^^^
