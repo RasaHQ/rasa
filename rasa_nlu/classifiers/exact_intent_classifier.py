@@ -62,7 +62,7 @@ class ExactIntentClassifier(Component):
             message.set("intent", most_likely_intent, add_to_output=True)
 
             # replace previous classifier's intent_ranking
-            message.data['intent_ranking'] = predicted_intents
+            message.set('intent_ranking', predicted_intents, add_to_output=True)
 
             # no more work
             return None
