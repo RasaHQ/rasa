@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import io
 import json
 import logging
+from pymongo import MongoClient
 
 from typing import Any
 from typing import Dict
@@ -330,3 +331,45 @@ def load_data(resource_name, language='en', fformat=None):
         return load_markdown_data(files[0])
     else:
         raise ValueError("unknown training file format : {} for file {}".format(fformat, resource_name))
+
+
+def load_db_data(db_name, uri=None):
+    """ Load data from your mongo database"""
+
+    db = MongoClient(uri)[str(db_name)]
+    reg_cur = db.regex_features.find({}, {'_id': 0})
+    entsyn_cur = db.entity_synonyms.find({}, {'_id': 0})
+    commonex_cur = db.common_examples.find({}, {'_id': 0, 'ans': 0})
+
+    regex_features = [doc for doc in reg_cur]
+    entity_synonyms = [doc for doc in entsyn_cur]
+
+    training_examples = []
+    for e in commonex_cur:
+        data = {}
+        if e.get("intent"):
+            data["intent"] = e["intent"]
+        if e.get("entities") is not None:
+            data["entities"] = e["entities"]
+        training_examples.append(Message(e["text"], data))
+
+    return TrainingData(training_examples, entity_synonyms, regex_features)
+
+
+def json_to_db(db_name, file_path, uri=None):
+    """ Inserts data from your rasa-nlu formatted json file into mongodb"""
+
+    with open(file_path) as json_data:
+        d = json.load(json_data)
+
+    regex_features = d['rasa_nlu_data']['regex_features']
+    entity_synonyms = d['rasa_nlu_data']['entity_synonyms']
+    common_examples = d['rasa_nlu_data']['common_examples']
+
+    db = MongoClient(uri)[str(db_name)]
+    db.regex_features.insert_many(regex_features)
+    db.entity_synonyms.insert_many(entity_synonyms)
+    db.common_examples.insert_many(common_examples)
+
+    logging.info("Conversion of {0} into {1} db successful".format(
+                 file_path, db_name))
