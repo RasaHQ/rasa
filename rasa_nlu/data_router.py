@@ -170,6 +170,10 @@ class DataRouter(object):
 
         if project not in self.project_store:
             projects = self._list_projects(self.config['path'])
+
+            cloud_provided_projects = self._list_projects_in_cloud()
+            projects.extend(cloud_provided_projects)
+
             if project not in projects:
                 raise InvalidProjectError("No project found with name '{}'.".format(project))
             else:
