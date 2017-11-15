@@ -36,5 +36,6 @@
   "intent_classifier_sklearn": {
     "C": [1, 2, 5, 10, 20, 100],
     "kernel": "linear"
-  }
+  },
+  "trailing_punctuation_marks": "?？"
 }
