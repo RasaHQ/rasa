@@ -54,7 +54,9 @@ class ExactIntentClassifier(Component):
         if msg_text in self._intent_data:
             # clean previous classifier's decision, using this one only
             message.set("intent", self._intent_data[msg_text], add_to_output=True)
-            del message.data['intent_ranking']
+
+            # remove previous classifier's intent_ranking output if exists
+            message.data.pop('intent_ranking', None)
 
             # no more work
             return None
