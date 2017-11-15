@@ -12,6 +12,7 @@ import os
 import random
 import re
 import uuid
+import warnings
 from collections import deque
 from random import Random
 
@@ -305,28 +306,34 @@ class StoryFileReader(object):
                     os.path.abspath(file_name), e))
 
     @staticmethod
-    def _parse_event_line(line, parameter_default_value=""):
+    def _parse_event_line(line):
         """Tries to parse a single line as an event with arguments."""
 
-        # the regex matches "slot{"a": 1}" as well as "slot["a"]"
-        m = re.search('^([^\[{]+)([\[{].+)?', line)
+        # the regex matches "slot{"a": 1}"
+        m = re.search('^([^{]+)([{].+)?', line)
         if m is not None:
             event_name = m.group(1).strip()
             slots_str = m.group(2)
             parameters = {}
             if slots_str is not None and slots_str.strip():
-                parsed_slots = json.loads(slots_str)
-                if isinstance(parsed_slots, list):
-                    for slot in parsed_slots:
-                        parameters[slot] = parameter_default_value
-                elif isinstance(parsed_slots, dict):
-                    parameters = parsed_slots
-                else:
-                    raise Exception(
-                            "Invalid slot string in line '{}'.".format(line))
+                try:
+                    parsed_slots = json.loads(slots_str)
+                    if isinstance(parsed_slots, dict):
+                        parameters = parsed_slots
+                    else:
+                        raise Exception("Parsed value isn't a json object "
+                                        "(instead parser found '{}')"
+                                        ".".format(type(parsed_slots)))
+                except Exception as e:
+                    raise ValueError("Invalid to parse arguments in line "
+                                     "'{}'. Failed to decode parameters"
+                                     "as a json object. Make sure the event"
+                                     "name is followed by a proper json "
+                                     "object. Error: {}".format(line, e))
             return event_name, parameters
         else:
-            logger.debug("Failed to parse action line '{}'. ".format(line))
+            warnings.warn("Failed to parse action line '{}'. "
+                          "Ignoring this line.".format(line))
             return "", {}
 
     def process_lines(self, lines):

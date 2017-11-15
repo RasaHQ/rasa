@@ -20,7 +20,7 @@ from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 
 def train_data(max_history, domain):
     return extract_training_data_from_file(
-            "data/dsl_stories/stories_defaultdomain.md",
+            DEFAULT_STORIES_FILE,
             domain=domain, max_history=max_history, remove_duplicates=True,
             featurizer=BinaryFeaturizer())
 

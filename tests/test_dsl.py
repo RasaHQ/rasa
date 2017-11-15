@@ -12,7 +12,7 @@ from rasa_core.training_utils.dsl import Story
 
 
 def test_can_read_test_story(default_domain):
-    stories = extract_stories_from_file("data/dsl_stories/stories.md",
+    stories = extract_stories_from_file("data/test_stories/stories.md",
                                         default_domain)
     assert len(stories) == 7
     # this should be the story simple_story_with_only_end -> show_it_all
@@ -31,7 +31,7 @@ def test_can_read_test_story(default_domain):
 
 
 def test_persist_and_read_test_story_graph(tmpdir, default_domain):
-    graph = extract_story_graph_from_file("data/dsl_stories/stories.md",
+    graph = extract_story_graph_from_file("data/test_stories/stories.md",
                                           default_domain)
     out_path = tmpdir.join("persisted_story.md")
     with io.open(out_path.strpath, "w") as f:
@@ -48,7 +48,7 @@ def test_persist_and_read_test_story_graph(tmpdir, default_domain):
 
 
 def test_persist_and_read_test_story(tmpdir, default_domain):
-    graph = extract_story_graph_from_file("data/dsl_stories/stories.md",
+    graph = extract_story_graph_from_file("data/test_stories/stories.md",
                                           default_domain)
     out_path = tmpdir.join("persisted_story.md")
     Story(graph.story_steps).dump_to_file(out_path.strpath)

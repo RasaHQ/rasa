@@ -10,13 +10,13 @@ from rasa_core.domain import TemplateDomain
 from rasa_core.featurizers import BinaryFeaturizer
 from rasa_core.training_utils import extract_training_data_from_file
 from tests import utilities
-from tests.conftest import DEFAULT_DOMAIN_PATH
+from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 
 
 def test_create_train_data_no_history(default_domain):
     featurizer = BinaryFeaturizer()
     X, y = extract_training_data_from_file(
-            "data/dsl_stories/stories_defaultdomain.md",
+            DEFAULT_STORIES_FILE,
             augmentation_factor=0,
             domain=default_domain,
             featurizer=featurizer,
@@ -46,7 +46,7 @@ def test_create_train_data_no_history(default_domain):
 def test_create_train_data_with_history(default_domain):
     featurizer = BinaryFeaturizer()
     X, y = extract_training_data_from_file(
-            "data/dsl_stories/stories_defaultdomain.md",
+            DEFAULT_STORIES_FILE,
             augmentation_factor=0,
             domain=default_domain,
             featurizer=featurizer,

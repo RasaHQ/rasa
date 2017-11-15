@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import json
 import logging
 import re
 
@@ -26,12 +27,51 @@ class NaturalLanguageInterpreter(object):
         if isinstance(obj, str):
             return RasaNLUInterpreter(model_directory=obj)
         else:
-            return RegexInterpreter()   # default interpreter
+            return RegexInterpreter()  # default interpreter
 
 
 class RegexInterpreter(NaturalLanguageInterpreter):
     @staticmethod
     def extract_intent_and_entities(user_input):
+
+        # the regex matches "slot{"a": 1}"
+        m = re.search('^/?([^{]+)([{].+)?', user_input)
+        if m is not None:
+            event_name = m.group(1).strip()
+            entitiy_str = m.group(2)
+            entities = []
+            if entitiy_str is not None and entitiy_str.strip():
+                try:
+                    parsed_entities = json.loads(entitiy_str)
+                    if isinstance(parsed_entities, dict):
+                        for k, vs in parsed_entities.items():
+                            if not isinstance(vs, list):
+                                vs = [vs]
+                            for value in vs:
+                                entities.append({
+                                    "entity": k,
+                                    "start": m.start(2),
+                                    "end": m.end(2),    # can't be more specific
+                                    "value": value
+                                })
+                    else:
+                        raise Exception("Parsed value isn't a json object "
+                                        "(instead parser found '{}')"
+                                        ".".format(type(parsed_entities)))
+                except Exception as e:
+                    logger.warning("Invalid to parse arguments in line "
+                                   "'{}'. Failed to decode parameters"
+                                   "as a json object. Make sure the intent"
+                                   "followed by a proper json object. "
+                                   "Error: {}".format(user_input, e))
+            return event_name, entities
+        else:
+            logger.warning("Failed to parse intent end entities from "
+                           "'{}'. ".format(user_input))
+            return None, []
+
+    @staticmethod
+    def deprecated_extraction(user_input):
         value_assign_rx = '\s*(.+)\s*=\s*(.+)\s*'
         structed_message_rx = '^_([^\[]+)(\[(.+)\])?'
         m = re.search(structed_message_rx, user_input)
@@ -57,7 +97,10 @@ class RegexInterpreter(NaturalLanguageInterpreter):
             return None, []
 
     def parse(self, text):
-        intent, entities = self.extract_intent_and_entities(text)
+        if text.startswith("_"):
+            intent, entities = self.deprecated_extraction(text)
+        else:
+            intent, entities = self.extract_intent_and_entities(text)
         return {
             'text': text,
             'intent': {
