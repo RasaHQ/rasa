@@ -159,8 +159,9 @@ class AWSPersistor(Persistor):
     def list_projects(self):
         # type: (Text) -> List[Text]
         try:
-            return [self._project_and_model_from_filename(obj.key)[0]
-                    for obj in self.bucket.objects.filter()]
+            projects_set = {self._project_and_model_from_filename(obj.key)[0]
+                            for obj in self.bucket.objects.filter()}
+            return list(projects_set)
         except Exception as e:
             logger.warning("Failed to list projects in AWS. {}".format(e))
             return []
@@ -222,8 +223,9 @@ class GCSPersistor(Persistor):
 
         try:
             blob_iterator = self.bucket.list_blobs()
-            return [self._project_and_model_from_filename(b.name)[0]
-                    for b in blob_iterator]
+            projects_set = {self._project_and_model_from_filename(b.name)[0]
+                            for b in blob_iterator}
+            return list(projects_set)
         except Exception as e:
             logger.warning("Failed to list projects in "
                            "google cloud storage. {}".format(e))
