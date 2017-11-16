@@ -33,7 +33,7 @@ DEFAULT_CONFIG = {
     "max_number_of_ngrams": 7,
     "pipeline": [],
     "response_log": "logs",
-    "storage": null,
+    "storage": None,
     "aws_endpoint_url": None,
     "duckling_dimensions": None,
     "duckling_http_url": None,
