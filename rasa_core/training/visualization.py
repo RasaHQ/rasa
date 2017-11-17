@@ -8,9 +8,11 @@ from collections import defaultdict, deque
 
 from typing import Any, Text, List, Dict
 
+from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.events import UserUttered, ActionExecuted
+from rasa_core.featurizers import BinaryFeaturizer
 from rasa_core.interpreter import RegexInterpreter
-from rasa_core.training import STORY_START
+from rasa_core.training import TrainingsDataExtractor
 from rasa_core.training.story_graph import StoryGraph
 from rasa_nlu.training_data import TrainingData
 
@@ -18,9 +20,9 @@ EDGE_NONE_LABEL = "NONE"
 
 
 class UserMessageGenerator(object):
-    def __init__(self, training_data):
-        self.training_data = training_data
-        self.mapping = self._create_reverse_mapping(self.training_data)
+    def __init__(self, nlu_training_data):
+        self.nlu_training_data = nlu_training_data
+        self.mapping = self._create_reverse_mapping(self.nlu_training_data)
 
     def _create_reverse_mapping(self, data):
         # type: (TrainingData) -> Dict[Text, List[Dict[Text, Any]]]
@@ -176,7 +178,7 @@ def _merge_equivalent_nodes(G, max_history):
                         G.remove_node(j)
 
 
-def _replace_edge_labels_with_nodes(G, next_id, interpreter, training_data,
+def _replace_edge_labels_with_nodes(G, next_id, interpreter, nlu_training_data,
                                     fontsize):
     """User messages are created as edge labels. This removes the labels and
     creates nodes instead.
@@ -186,8 +188,8 @@ def _replace_edge_labels_with_nodes(G, next_id, interpreter, training_data,
     looks better if in the final graphs the user messages are nodes instead
     of edge labels."""
 
-    if training_data:
-        message_generator = UserMessageGenerator(training_data)
+    if nlu_training_data:
+        message_generator = UserMessageGenerator(nlu_training_data)
     else:
         message_generator = None
 
@@ -218,10 +220,11 @@ def _persist_graph(G, output_file):
 
 
 def visualize_stories(story_steps,
+                      domain,
                       output_file=None,
                       max_history=2,
                       interpreter=RegexInterpreter(),
-                      training_data=None,
+                      nlu_training_data=None,
                       fontsize=12):
     """Given a set of stories, generates a graph visualizing the flows in the
     stories.
@@ -260,48 +263,44 @@ def visualize_stories(story_steps,
     G.add_node(-1, label="END", fillcolor="red", style="filled",
                fontsize=fontsize)
 
-    checkpoint_indices = defaultdict(list)
-    checkpoint_indices[STORY_START] = [(0, None)]
+    data = TrainingsDataExtractor(story_graph, domain, BinaryFeaturizer()). \
+        extract_trainings_data(max_history=max_history, phase_limit=1,
+                               tracker_limit=100)
 
-    for step in story_graph.ordered_steps():
-        current_nodes = checkpoint_indices[step.start_checkpoint_name()]
+    completed_trackers = data.metadata["trackers"][None]
+    for ft in completed_trackers:
         message = None
-        for el in step.events:
+        current_node = 0
+        for el in ft.tracker.events:
             if isinstance(el, UserUttered):
                 message = interpreter.parse(el.text)
-            elif isinstance(el, ActionExecuted):
+            elif isinstance(el, ActionExecuted) and \
+                            el.action_name != ACTION_LISTEN_NAME:
                 next_node_idx += 1
                 G.add_node(next_node_idx, label=el.action_name,
                            fontsize=fontsize)
 
-                for current_node, tailing_message in current_nodes:
-                    msg = message if message else tailing_message
-                    if msg:
-                        message_key = msg.get("intent", {}).get("name", None)
-                        message_label = msg.get("text", None)
-                    else:
-                        message_key = None
-                        message_label = None
-
-                    _add_edge(G, current_node, next_node_idx, message_key,
-                              message_label)
-
-                current_nodes = [(next_node_idx, None)]
-                message = None
-        if not step.end_checkpoint_name():
-            for current_node, _ in current_nodes:
                 if message:
-                    G.add_edge(current_node, -1,
-                               key=EDGE_NONE_LABEL, label=message)
+                    message_key = message.get("intent", {}).get("name", None)
+                    message_label = message.get("text", None)
                 else:
-                    G.add_edge(current_node, -1, key=EDGE_NONE_LABEL)
+                    message_key = None
+                    message_label = None
+
+                _add_edge(G, current_node, next_node_idx, message_key,
+                          message_label)
+                current_node = next_node_idx
+
+                message = None
+        if message:
+            G.add_edge(current_node, -1,
+                       key=EDGE_NONE_LABEL, label=message)
         else:
-            updated_nodes = [(c, message) for c, _ in current_nodes]
-            checkpoint_indices[step.end_checkpoint_name()].extend(updated_nodes)
+            G.add_edge(current_node, -1, key=EDGE_NONE_LABEL)
 
     _merge_equivalent_nodes(G, max_history)
     _replace_edge_labels_with_nodes(G, next_node_idx, interpreter,
-                                    training_data, fontsize)
+                                    nlu_training_data, fontsize)
 
     if output_file:
         _persist_graph(G, output_file)

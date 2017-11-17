@@ -180,6 +180,21 @@ class Agent(object):
         self.domain.persist_specification(model_path)
         self.featurizer.persist(model_path)
 
+    def visualize(self,
+                  filename,
+                  output_file=None,
+                  max_history=2,
+                  nlu_training_data=None,
+                  fontsize=12
+                  ):
+        from rasa_core.training.visualization import visualize_stories
+        from rasa_core.training import StoryFileReader
+
+        story_steps = StoryFileReader.read_from_file(filename, self.domain)
+        visualize_stories(story_steps, self.domain, output_file,
+                          max_history, self.interpreter, nlu_training_data,
+                          fontsize)
+
     def _ensure_agent_is_prepared(self):
         # type: () -> None
         """Checks that an interpreter and a tracker store are set.

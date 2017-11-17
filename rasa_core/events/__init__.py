@@ -212,7 +212,7 @@ class SlotSet(Event):
         return "SlotSet(key: {}, value: {})".format(self.key, self.value)
 
     def __hash__(self):
-        return hash((self.key, self.value))
+        return hash((self.key, json.dumps(self.value)))
 
     def __eq__(self, other):
         if not isinstance(other, SlotSet):
