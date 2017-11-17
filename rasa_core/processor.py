@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
+import warnings
 from types import LambdaType
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -16,7 +17,7 @@ from rasa_core.channels import UserMessage, InputChannel
 from rasa_core.channels.direct import CollectingOutputChannel
 from rasa_core.dispatcher import Dispatcher
 from rasa_core.domain import Domain
-from rasa_core.events import Restarted, ReminderScheduled, Event
+from rasa_core.events import Restarted, ReminderScheduled, Event, SlotSet
 from rasa_core.events import UserUttered, ActionExecuted
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.interpreter import RegexInterpreter
@@ -232,7 +233,7 @@ class MessageProcessor(object):
         # action loop. predicts actions until we hit action listen
         while should_predict_another_action and \
                 self._should_handle_message(tracker) and \
-                num_predicted_actions < self.max_number_of_predictions:
+                        num_predicted_actions < self.max_number_of_predictions:
             # this actually just calls the policy's method by the same name
             action = self._get_next_action(tracker)
 
@@ -291,6 +292,24 @@ class MessageProcessor(object):
 
         return self._should_predict_another_action(action.name(), events)
 
+    def _warn_about_new_slots(self, tracker, action_name, events):
+        # these are the events from that action we have seen during training
+        known = self.policy_ensemble.known_slot_events.get(action_name, {})
+        for e in events:
+            if isinstance(e, SlotSet) and e.key not in known:
+                s = tracker.slots.get(e.key)
+                if s and s.has_features():
+                    logger.warn("Action '{0}' set a slot type '{1}' that "
+                                "it never set during the training. This "
+                                "can throw of the prediction. Make sure to"
+                                "include training examples in your stories "
+                                "for the different types of slots this"
+                                "action can return. Remember: you need to "
+                                "set the slots manually in the stories by "
+                                "adding '- slot{{\"{1}\": \"{2}\"}}' "
+                                "after the action."
+                                "".format(action_name, e.key, e.value))
+
     def _log_action_on_tracker(self, tracker, action_name, events):
         # Ensures that the code still works even if a lazy programmer missed
         # to type `return []` at the end of an action or the run method
@@ -300,6 +319,8 @@ class MessageProcessor(object):
 
         logger.debug("Action '{}' ended with events '{}'".format(
                 action_name, ['{}'.format(e) for e in events]))
+
+        self._warn_about_new_slots(tracker, action_name, events)
 
         if action_name is not None:
             # log the action and its produced events

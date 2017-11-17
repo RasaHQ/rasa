@@ -9,6 +9,7 @@ import logging
 import sys
 import warnings
 
+from rasa_core import utils
 from rasa_core.actions import Action
 from rasa_core.agent import Agent
 from rasa_core.channels.console import ConsoleInputChannel
@@ -94,8 +95,8 @@ def train_nlu():
 
 
 def run(serve_forever=True):
-    agent = Agent.load("models/dialogue",
-                       interpreter=RasaNLUInterpreter("models/nlu/current"))
+    interpreter = RasaNLUInterpreter("models/nlu/default/current")
+    agent = Agent.load("models/dialogue", interpreter=interpreter)
 
     if serve_forever:
         agent.handle_channel(ConsoleInputChannel())
@@ -103,7 +104,7 @@ def run(serve_forever=True):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level="DEBUG")
+    utils.configure_colored_logging(verbose=True)
 
     parser = argparse.ArgumentParser(
             description='starts the bot')

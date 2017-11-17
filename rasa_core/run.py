@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import argparse
 import logging
 
+import coloredlogs as coloredlogs
 from builtins import str
 
 from rasa_core import utils
@@ -117,7 +118,7 @@ if __name__ == '__main__':
     arg_parser = create_argument_parser()
     cmdline_args = arg_parser.parse_args()
 
-    logging.basicConfig(level="DEBUG" if cmdline_args.verbose else "INFO")
+    utils.configure_colored_logging(cmdline_args.verbose)
 
     main(cmdline_args.core,
          cmdline_args.nlu,

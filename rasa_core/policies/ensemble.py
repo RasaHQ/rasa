@@ -27,9 +27,10 @@ if typing.TYPE_CHECKING:
 
 
 class PolicyEnsemble(object):
-    def __init__(self, policies):
+    def __init__(self, policies, known_slot_events=None):
         self.policies = policies
         self.training_metadata = {}
+        self.known_slot_events = known_slot_events if known_slot_events else {}
 
     def train(self, training_data, domain, featurizer, **kwargs):
         # type: (DialogueTrainingData, Domain, Featurizer, **Any) -> None
@@ -110,13 +111,13 @@ class PolicyEnsemble(object):
             policy = policy_cls.load(path, featurizer, metadata["max_history"])
             policies.append(policy)
         ensemble_cls = utils.class_from_module_path(metadata["ensemble_name"])
-        ensemble = ensemble_cls(policies)
+        ensemble = ensemble_cls(policies, metadata["slot_meta"])
         return ensemble
 
 
 class SimplePolicyEnsemble(PolicyEnsemble):
-    def __init__(self, policies):
-        super(SimplePolicyEnsemble, self).__init__(policies)
+    def __init__(self, policies, known_slot_events=None):
+        super(SimplePolicyEnsemble, self).__init__(policies, known_slot_events)
 
     def probabilities_using_best_policy(self, tracker, domain):
         result = None

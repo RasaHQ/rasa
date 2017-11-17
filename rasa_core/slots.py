@@ -21,6 +21,9 @@ class Slot(object):
         to correspond to this value."""
         return 1
 
+    def has_features(self):
+        return self.feature_dimensionality() != 0
+
     def value_reset_delay(self):
         """After how many turns the slot should be reset to the initial_value.
 

@@ -259,7 +259,9 @@ class DialogueStateTracker(object):
         if key in self.slots:
             self.slots[key].value = value
         else:
-            logger.warn("Tried to set non existent slot '{}'".format(key))
+            logger.error("Tried to set non existent slot '{}'. Make sure you "
+                         "added all your slots to your domain file."
+                         "".format(key))
 
     def _create_events(self, events):
         # type: (List[Event]) -> deque

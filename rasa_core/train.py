@@ -73,7 +73,10 @@ def create_argument_parser():
 
 def train_dialogue_model(domain_file, stories_file, output_path,
                          use_online_learning=False, nlu_model_path=None,
-                         kwargs={}):
+                         kwargs=None):
+    if not kwargs:
+        kwargs = {}
+
     agent = Agent(domain_file, policies=[MemoizationPolicy(), KerasPolicy()])
 
     if use_online_learning:
