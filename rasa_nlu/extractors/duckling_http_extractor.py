@@ -49,19 +49,29 @@ class DucklingHTTPExtractor(EntityExtractor):
     def _duckling_parse(self, text):
         """Sends the request to the duckling server and parses the result."""
 
-        payload = {"text": text, "lang": self.language}
-        headers = {"Content-Type": "application/x-www-form-urlencoded; "
-                                   "charset=UTF-8"}
-        response = requests.post(self.duckling_url + "/parse",
-                                 data=payload,
-                                 headers=headers)
-        if response.status_code == 200:
-            return simplejson.loads(response.text)
-        else:
-            logger.warn("Failed to get a proper response from remote duckling. "
-                        "Status Code: {}. ".format(response.status_code) +
-                        "Response: {}".format(response.text))
-            return {}
+        try:
+            payload = {"text": text, "lang": self.language}
+            headers = {"Content-Type": "application/x-www-form-urlencoded; "
+                                       "charset=UTF-8"}
+            response = requests.post(self.duckling_url + "/parse",
+                                     data=payload,
+                                     headers=headers)
+            if response.status_code == 200:
+                return simplejson.loads(response.text)
+            else:
+                logger.error("Failed to get a proper response from remote "
+                             "duckling. Status Code: {}. Response: {}"
+                             "".format(response.status_code, response.text))
+                return []
+        except requests.exceptions.ConnectionError as e:
+            logger.error("Failed to connect to duckling http server. Make sure "
+                         "the duckling server is running and the proper host "
+                         "and port are set in the configuration. More "
+                         "information on how to run the server can be found on "
+                         "github: "
+                         "https://github.com/facebook/duckling#quickstart "
+                         "Error: {}".format(e))
+            return []
 
     def _filter_irrelevant_matches(self, matches):
         """Only return dimensions the user configured"""
