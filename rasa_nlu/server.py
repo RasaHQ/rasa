@@ -155,6 +155,7 @@ class RasaNLU(object):
                 returnValue(simplejson.dumps({"error": "{}".format(e)}))
             except Exception as e:
                 request.setResponseCode(500)
+                logger.exception(e)
                 returnValue(simplejson.dumps({"error": "{}".format(e)}))
 
     @app.route("/version", methods=['GET'])
