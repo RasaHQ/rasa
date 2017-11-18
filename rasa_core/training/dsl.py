@@ -38,6 +38,8 @@ logger = logging.getLogger(__name__)
 # Checkpoint used to identify story starting blocks
 STORY_START = "STORY_START"
 
+STORY_END = None
+
 
 class Checkpoint(object):
     def __init__(self, name, conditions=None):
@@ -210,7 +212,7 @@ class StoryStepBuilder(object):
             # user can use the express the same thing
             # we need to copy the blocks and create one
             # copy for each possible message
-            generated_checkpoint = "GENERATED_M_{}".format(uuid.uuid4().hex)
+            generated_checkpoint = utils.generate_id("GENERATED_M_")
             updated_steps = []
             for t in self.current_steps:
                 for m in messages:
@@ -244,7 +246,8 @@ class StoryStepBuilder(object):
             self.current_steps = []
 
     def _next_story_steps(self):
-        start_checkpoints = self._prev_end_checkpoints() or [Checkpoint(STORY_START)]
+        start_checkpoints = self._prev_end_checkpoints() or [
+            Checkpoint(STORY_START)]
         current_turns = [StoryStep(block_name=self.name, start_checkpoint=s)
                          for s in start_checkpoints]
         return current_turns
@@ -511,8 +514,8 @@ class TrainingsDataExtractor(object):
                                augmentation_factor=20,
                                max_history=1,
                                max_number_of_trackers=2000,
-                               phase_limit=None,
-                               tracker_limit=None):
+                               tracker_limit=None,
+                               use_story_concatenation=True):
         # type: (bool, int, int) -> DialogueTrainingData
         """Given a set of story parts, generates all stories that are possible.
 
@@ -529,28 +532,30 @@ class TrainingsDataExtractor(object):
         unused_checkpoints = set()  # type: Set[Text]
 
         active_trackers = {}
-
-        if phase_limit is None:
-            phase_limit = max_history + 1
+        finished_trackers = []
 
         phases = (["normal generation"] +
                   ["augmentation round {})".format(i)
-                   for i in range(1, phase_limit)])
+                   for i in range(1, max_history + 1)])
+
+        acyclic_graph = self.story_graph.with_cycles_removed()
 
         for i, phase in enumerate(phases):
-            active_trackers = self._prepare_next_phase(active_trackers,
+            active_trackers = self._prepare_next_phase(acyclic_graph.story_end_checkpoints,
+                                                       active_trackers,
                                                        augmentation_factor,
                                                        rand,
                                                        max_history,
-                                                       tracker_limit)
-            num_trackers = len(active_trackers[STORY_START])
+                                                       tracker_limit,
+                                                       use_story_concatenation)
+            num_trackers = self._count_trackers(active_trackers)
             logger.debug("Starting {} (phase {} of {})... "
                          "(using {} trackers)".format(phase,
                                                       i + 1,
                                                       len(phases),
                                                       num_trackers))
 
-            pbar = tqdm(self.story_graph.ordered_steps(),
+            pbar = tqdm(acyclic_graph.ordered_steps(),
                         desc="Processed Story Blocks")
             for step in pbar:
                 if step.start_checkpoint:
@@ -595,7 +600,7 @@ class TrainingsDataExtractor(object):
                     if step.end_checkpoint_name() not in active_trackers:
                         active_trackers[step.end_checkpoint_name()] = []
                     active_trackers[step.end_checkpoint_name()].extend(trackers)
-
+            finished_trackers.extend(active_trackers.get(STORY_END, []))
             logger.debug("Finished phase. ({} training samples found)".format(
                     len(all_actions)))
 
@@ -605,7 +610,8 @@ class TrainingsDataExtractor(object):
         X = np.array(all_features)
         y = np.array(all_actions)
 
-        metadata = {"events": self.events_metadata, "trackers": active_trackers}
+        metadata = {"events": self.events_metadata,
+                    "trackers": finished_trackers}
 
         if remove_duplicates:
             X_unique, y_unique = self._deduplicate_training_data(X, y)
@@ -614,6 +620,10 @@ class TrainingsDataExtractor(object):
             return DialogueTrainingData(X_unique, y_unique, metadata)
         else:
             return DialogueTrainingData(X, y, metadata)
+
+    @staticmethod
+    def _count_trackers(active_trackers):
+        return sum(len(ts) for ts in active_trackers.values())
 
     @staticmethod
     def _subsample_trackers(incoming_trackers, max_number_of_trackers,
@@ -635,11 +645,13 @@ class TrainingsDataExtractor(object):
                                          augmentation_factor, rand)
 
     def _prepare_next_phase(self,
+                            story_end_checkpoints,   # type: List[Text]
                             active_trackers,  # type: TrackerLookupDict
                             augmentation_factor,  # type: int
                             rand,  # type: Random
                             max_history,     # type: int
-                            tracker_limit    # type: int
+                            tracker_limit,    # type: int
+                            use_story_concatenation
                             ):
         # type: (...) -> Dict[Optional[Text], List[FeaturizedTracker]]
         """One phase is one traversal of all story steps.
@@ -652,28 +664,36 @@ class TrainingsDataExtractor(object):
                                                          tracker_limit)
             return {STORY_START: [init_tracker]}
         else:
-            ending_trackers = active_trackers[None]
-            subsampled_trackers = utils.subsample_array(ending_trackers,
-                                                        augmentation_factor,
-                                                        rand)
-            active_trackers = {STORY_START: []}
+            glue_mapping = {cp: cp for cp in story_end_checkpoints}
+            if use_story_concatenation:
+                glue_mapping[STORY_START] = STORY_END
+            next_active_trackers = {}
+            for original, target in glue_mapping.items():
+                ending_trackers = active_trackers.get(target, [])
+                if original == STORY_START:
+                    ending_trackers = utils.subsample_array(ending_trackers,
+                                                            augmentation_factor,
+                                                            rand)
 
-            # This is where the augmentation magic happens. We
-            # will reuse all the trackers that reached the
-            # end checkpoint `None` (which is the end of a
-            # story) and start processing all steps again. So instead
-            # of starting with a fresh tracker, the second and
-            # all following phases will reuse a couple of the trackers
-            # that made their way to a story end.
-            for t in subsampled_trackers:
-                # this is a nasty thing - all stories end and
-                # start with action listen - so after logging the first
-                # actions in the next phase the trackers would
-                # contain action listen followed by action listen.
-                # to fix this we are going to "undo" the last action listen
-                t.undo_last_action()
-                active_trackers[STORY_START].append(t)
-            return active_trackers
+                next_active_trackers[original] = []
+
+                # This is where the augmentation magic happens. We
+                # will reuse all the trackers that reached the
+                # end checkpoint `None` (which is the end of a
+                # story) and start processing all steps again. So instead
+                # of starting with a fresh tracker, the second and
+                # all following phases will reuse a couple of the trackers
+                # that made their way to a story end.
+                for t in ending_trackers:
+                    # this is a nasty thing - all stories end and
+                    # start with action listen - so after logging the first
+                    # actions in the next phase the trackers would
+                    # contain action listen followed by action listen.
+                    # to fix this we are going to "undo" the last action listen
+                    if original == STORY_START:
+                        t.undo_last_action()
+                    next_active_trackers[original].append(t)
+            return next_active_trackers
 
     def _process_step(self,
                       step,  # type: StoryStep
@@ -764,7 +784,8 @@ class TrainingsDataExtractor(object):
         # appends y to X so it appears to be just another feature
         if not utils.is_training_data_empty(X):
             casted_y = np.broadcast_to(
-                    np.reshape(y, (y.shape[0], 1, 1)), (y.shape[0], X.shape[1], 1))
+                    np.reshape(y, (y.shape[0], 1, 1)),
+                    (y.shape[0], X.shape[1], 1))
             concatenated = np.concatenate((X, casted_y), axis=2)
             t_data = np.unique(concatenated, axis=0)
             X_unique = t_data[:, :, :-1]

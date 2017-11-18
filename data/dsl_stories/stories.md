@@ -16,6 +16,12 @@
     - slot{"nice_person": ""}
 > check_greet                   <!-- checkpoint defining the end of this turn -->
 
+## arbitrary cycle
+> check_greet
+* _affirm
+    - utter_default
+> check_goodbye
+
 ## simple_story_with_multiple_turns
 * _affirm OR _thank_you
     - utter_default

@@ -264,10 +264,11 @@ def visualize_stories(story_steps,
                fontsize=fontsize)
 
     data = TrainingsDataExtractor(story_graph, domain, BinaryFeaturizer()). \
-        extract_trainings_data(max_history=max_history, phase_limit=1,
+        extract_trainings_data(max_history=max_history,
+                               use_story_concatenation=False,
                                tracker_limit=100)
 
-    completed_trackers = data.metadata["trackers"][None]
+    completed_trackers = data.metadata["trackers"]
     for ft in completed_trackers:
         message = None
         current_node = 0

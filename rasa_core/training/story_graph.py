@@ -3,32 +3,75 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import logging
 import random
 from collections import deque, defaultdict
 import typing
 from rasa_core.domain import Domain
-from typing import List, Text, Dict, Optional
+from typing import List, Text, Dict, Optional, Tuple
 
-from rasa_core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
+from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core import utils
 
+
 if typing.TYPE_CHECKING:
-    from rasa_core.training.dsl import StoryStep, Story, \
-    TrainingsDataExtractor
+    from rasa_core.training.dsl import StoryStep, Story
+
+logger = logging.getLogger(__name__)
 
 
 class StoryGraph(object):
-    def __init__(self, story_steps):
+    def __init__(self, story_steps, story_end_checkpoints=None):
         # type: (List[StoryStep]) -> None
         self.story_steps = story_steps
         self.step_lookup = {s.id: s for s in self.story_steps}
-        self.ordered_ids = StoryGraph.order_steps(story_steps)
+        ordered_ids, cyclic_edges = StoryGraph.order_steps(story_steps)
+        self.ordered_ids = ordered_ids
+        self.cyclic_edge_ids = cyclic_edges
+        if story_end_checkpoints:
+            self.story_end_checkpoints = story_end_checkpoints
+        else:
+            self.story_end_checkpoints = []
 
     def ordered_steps(self):
         # type: () -> List[StoryStep]
         """Returns the story steps ordered by topological order of the DAG."""
 
         return [self.get(step_id) for step_id in self.ordered_ids]
+
+    def cyclic_edges(self):
+        # type: () -> List[Tuple[Optional[StoryStep], Optional[StoryStep]]]
+        """Returns the story steps ordered by topological order of the DAG."""
+
+        return [(self.get(source), self.get(target))
+                for source, target in self.cyclic_edge_ids]
+
+    def with_cycles_removed(self):
+        from rasa_core.training.dsl import Checkpoint
+
+        story_end_checkpoints = self.story_end_checkpoints[:]
+        cyclic_edges = self.cyclic_edges()
+        # we need to remove the start steps and replace them with steps ending
+        # in a special end checkpoint
+        steps_to_be_removed = {start.id for start, _ in cyclic_edges}
+        story_steps = [s
+                       for s in self.story_steps
+                       if s.id not in steps_to_be_removed]
+
+        # add changed start steps again
+        for s, e in cyclic_edges:
+            cid = Checkpoint(utils.generate_id("CYCLE_"))
+            story_end_checkpoints.append(cid.name)
+
+            modified_start = s.create_copy(use_new_id=True)
+            modified_start.end_checkpoint = cid
+            story_steps.append(modified_start)
+
+            modified_end = e.create_copy(use_new_id=True)
+            modified_end.start_checkpoint = cid
+            story_steps.append(modified_end)
+
+        return StoryGraph(story_steps, story_end_checkpoints)
 
     def get(self, step_id):
         # type: (Text) -> Optional[StoryStep]
@@ -50,7 +93,8 @@ class StoryGraph(object):
             if step.start_checkpoint_name() in active_trackers:
                 # these are the trackers that reached this story step
                 # and that need to handle all events of the step
-                incoming_trackers = active_trackers[step.start_checkpoint_name()]
+                incoming_trackers = active_trackers[
+                    step.start_checkpoint_name()]
 
                 # TODO: we can't use tracker filter here to filter for
                 #       checkpoint conditions since we don't have trackers.
@@ -110,6 +154,9 @@ class StoryGraph(object):
     def topological_sort(graph):
         """Creates a topsort of a directed graph. This is an unstable sorting!
 
+        The function returns the sorted nodes as well as the edges that need
+        to be removed from the graph to make it acyclic (and hence, sortable).
+
         The graph should be represented as a dictionary, e.g.:
 
         >>> example_graph = {
@@ -120,19 +167,22 @@ class StoryGraph(object):
         ...         "e": ["f"],
         ...         "f": []}
         >>> StoryGraph.topological_sort(example_graph)
-        deque([u'e', u'f', u'a', u'c', u'd', u'b'])
+        (deque([u'e', u'f', u'a', u'c', u'd', u'b']), [])
         """
         GRAY, BLACK = 0, 1
         ordered = deque()
         unprocessed = set(graph)
         visited_nodes = {}
 
+        removed_edges = set()
+
         def dfs(node):
             visited_nodes[node] = GRAY
             for k in graph.get(node, ()):
                 sk = visited_nodes.get(k, None)
                 if sk == GRAY:
-                    raise ValueError("Cycle found at node: {}".format(sk))
+                    removed_edges.add((node, k))
+                    continue
                 if sk == BLACK:
                     continue
                 unprocessed.discard(k)
@@ -142,4 +192,4 @@ class StoryGraph(object):
 
         while unprocessed:
             dfs(unprocessed.pop())
-        return ordered
+        return ordered, removed_edges

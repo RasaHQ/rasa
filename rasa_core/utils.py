@@ -106,6 +106,11 @@ def str_range_list(start, end):
     return [str(e) for e in range(start, end)]
 
 
+def generate_id(prefix=""):
+    import uuid
+    return "{}{}".format(prefix, uuid.uuid4().hex)
+
+
 def configure_colored_logging(verbose):
     import coloredlogs
     field_styles = coloredlogs.DEFAULT_FIELD_STYLES.copy()
