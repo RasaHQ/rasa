@@ -12,8 +12,8 @@ from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.events import UserUttered, ActionExecuted
 from rasa_core.featurizers import BinaryFeaturizer
 from rasa_core.interpreter import RegexInterpreter
-from rasa_core.training import TrainingsDataExtractor
-from rasa_core.training.story_graph import StoryGraph
+from rasa_core.training.generator import TrainingsDataGenerator
+from rasa_core.training.structures import StoryGraph
 from rasa_nlu.training_data import TrainingData
 
 EDGE_NONE_LABEL = "NONE"
@@ -24,7 +24,8 @@ class UserMessageGenerator(object):
         self.nlu_training_data = nlu_training_data
         self.mapping = self._create_reverse_mapping(self.nlu_training_data)
 
-    def _create_reverse_mapping(self, data):
+    @staticmethod
+    def _create_reverse_mapping(data):
         # type: (TrainingData) -> Dict[Text, List[Dict[Text, Any]]]
         """Create a mapping from intent to messages
 
@@ -263,10 +264,10 @@ def visualize_stories(story_steps,
     G.add_node(-1, label="END", fillcolor="red", style="filled",
                fontsize=fontsize)
 
-    data = TrainingsDataExtractor(story_graph, domain, BinaryFeaturizer()). \
-        extract_trainings_data(max_history=max_history,
-                               use_story_concatenation=False,
-                               tracker_limit=100)
+    data = TrainingsDataGenerator(story_graph, domain, BinaryFeaturizer(),
+                                  max_history=max_history,
+                                  use_story_concatenation=False,
+                                  tracker_limit=100).generate()
 
     completed_trackers = data.metadata["trackers"]
     for ft in completed_trackers:
@@ -275,8 +276,8 @@ def visualize_stories(story_steps,
         for el in ft.tracker.events:
             if isinstance(el, UserUttered):
                 message = interpreter.parse(el.text)
-            elif isinstance(el, ActionExecuted) and \
-                            el.action_name != ACTION_LISTEN_NAME:
+            elif (isinstance(el, ActionExecuted) and
+                    el.action_name != ACTION_LISTEN_NAME):
                 next_node_idx += 1
                 G.add_node(next_node_idx, label=el.action_name,
                            fontsize=fontsize)

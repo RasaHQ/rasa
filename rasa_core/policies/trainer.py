@@ -10,7 +10,7 @@ from builtins import object
 
 from rasa_core.domain import check_domain_sanity
 from rasa_core.interpreter import RegexInterpreter
-from rasa_core.training.dsl import DialogueTrainingData
+from rasa_core.training.data import DialogueTrainingData
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +72,7 @@ class PolicyTrainer(object):
                     interpreter=RegexInterpreter(),
                     max_number_of_trackers=max_number_of_trackers)
             if max_training_samples is not None:
-                training_data.limit_samples_to(max_training_samples)
+                training_data.limit_training_data_to(max_training_samples)
             return training_data
         else:
             return DialogueTrainingData.empty(self.domain)

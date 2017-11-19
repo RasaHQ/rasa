@@ -222,7 +222,7 @@ class DialogueStateTracker(object):
         event.apply_to(self)
 
     def export_stories(self):
-        from rasa_core.training.dsl import StoryStep, Story
+        from rasa_core.training.structures import StoryStep, Story
 
         story_step = StoryStep()
         for event in self._applied_events():

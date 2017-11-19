@@ -6,7 +6,7 @@
 ## simple_story_with_only_start
 > check_greet                   <!-- checkpoints at the start define entry points -->
 * _simple
-    - slot["nice_person"]
+    - slot{"nice_person": ""}
     - utter_default
 
 ## simple_story_with_only_end
@@ -15,12 +15,6 @@
     - slot{"name": "peter"}
     - slot{"nice_person": ""}
 > check_greet                   <!-- checkpoint defining the end of this turn -->
-
-## arbitrary cycle
-> check_greet
-* _affirm
-    - utter_default
-> check_goodbye
 
 ## simple_story_with_multiple_turns
 * _affirm OR _thank_you

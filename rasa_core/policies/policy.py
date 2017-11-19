@@ -16,7 +16,7 @@ from typing import Text
 from rasa_core.domain import Domain
 from rasa_core.featurizers import Featurizer
 from rasa_core.trackers import DialogueStateTracker
-from rasa_core.training.dsl import DialogueTrainingData
+from rasa_core.training.data import DialogueTrainingData
 
 logger = logging.getLogger(__name__)
 

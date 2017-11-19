@@ -4,9 +4,15 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from rasa_core.interpreter import RegexInterpreter
-from rasa_core.training.dsl import StoryFileReader, STORY_START, \
-    TrainingsDataExtractor
-from rasa_core.training.story_graph import StoryGraph
+from rasa_core.training.dsl import StoryFileReader
+from rasa_core.training.generator import TrainingsDataGenerator
+from rasa_core.training.structures import StoryGraph, STORY_END, STORY_START
+
+
+def extract_story_graph_from_file(filename, domain,
+                                  interpreter=RegexInterpreter()):
+    story_steps = StoryFileReader.read_from_file(filename, domain, interpreter)
+    return StoryGraph(story_steps)
 
 
 def extract_training_data_from_file(filename,
@@ -18,11 +24,12 @@ def extract_training_data_from_file(filename,
                                     interpreter=RegexInterpreter(),
                                     max_number_of_trackers=2000):
     graph = extract_story_graph_from_file(filename, domain, interpreter)
-    extractor = TrainingsDataExtractor(graph, domain, featurizer)
-    return extractor.extract_trainings_data(remove_duplicates,
-                                            augmentation_factor,
-                                            max_history,
-                                            max_number_of_trackers)
+    g = TrainingsDataGenerator(graph, domain, featurizer,
+                               remove_duplicates,
+                               augmentation_factor,
+                               max_history,
+                               max_number_of_trackers)
+    return g.generate()
 
 
 def extract_stories_from_file(filename,
@@ -32,9 +39,3 @@ def extract_stories_from_file(filename,
     graph = extract_story_graph_from_file(filename, domain, interpreter)
     return graph.build_stories(domain,
                                max_number_of_trackers)
-
-
-def extract_story_graph_from_file(filename, domain,
-                                  interpreter=RegexInterpreter()):
-    story_steps = StoryFileReader.read_from_file(filename, domain, interpreter)
-    return StoryGraph(story_steps)

@@ -15,7 +15,7 @@ from typing import Any
 from rasa_core import utils
 from rasa_core.domain import Domain
 from rasa_core.policies import Policy
-from rasa_core.training.dsl import DialogueTrainingData
+from rasa_core.training.data import DialogueTrainingData
 
 logger = logging.getLogger(__name__)
 

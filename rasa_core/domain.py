@@ -288,7 +288,8 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         else:
             return {}
 
-    def get_parsing_features(self, tracker):
+    @staticmethod
+    def get_parsing_features(tracker):
         # type: (DialogueStateTracker) -> Dict[Text, float]
 
         feature_dict = {}

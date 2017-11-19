@@ -17,7 +17,7 @@ import rasa_core
 from rasa_core import utils
 from rasa_core.events import SlotSet
 from rasa_core.trackers import DialogueStateTracker
-from rasa_core.training.dsl import DialogueTrainingData
+from rasa_core.training.data import DialogueTrainingData
 
 logger = logging.getLogger(__name__)
 

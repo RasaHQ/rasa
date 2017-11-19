@@ -6,7 +6,7 @@
 ## simple_story_with_only_start
 > check_greet                   <!-- checkpoints at the start define entry points -->
 * _simple
-    - slot["nice_person"]
+    - slot{"nice_person": ""}
     - utter_default
 
 ## simple_story_with_only_end

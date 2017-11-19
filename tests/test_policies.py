@@ -45,10 +45,10 @@ class PolicyTestCollection(object):
     def trained_policy(self):
         default_domain = TemplateDomain.load(DEFAULT_DOMAIN_PATH)
         policy = self.create_policy()
-        X, y = train_data(self.max_history, default_domain)
+        training_data = train_data(self.max_history, default_domain)
         policy.max_history = self.max_history
         policy.featurizer = BinaryFeaturizer()
-        policy.train(X, y, default_domain)
+        policy.train(training_data, default_domain)
         return policy
 
     def test_persist_and_load(self, trained_policy, default_domain, tmpdir):
@@ -109,11 +109,13 @@ class TestMemoizationPolicy(PolicyTestCollection):
         return p
 
     def test_memorise(self, trained_policy, default_domain):
-        X, y = train_data(self.max_history, default_domain)
-        trained_policy.train(X, y, default_domain)
+        training_data = train_data(self.max_history, default_domain)
+        trained_policy.train(training_data, default_domain)
 
-        for ii in range(X.shape[0]):
-            assert trained_policy.recall(X[ii, :, :], default_domain) == y[ii]
+        for ii in range(training_data.num_examples()):
+            recalled = trained_policy.recall(training_data.X[ii, :, :],
+                                             default_domain)
+            assert recalled == training_data.y[ii]
 
         random_feature = np.random.randn(default_domain.num_features)
         assert trained_policy.recall(random_feature, default_domain) is None

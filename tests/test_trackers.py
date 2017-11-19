@@ -8,14 +8,11 @@ import glob
 import pytest
 
 from rasa_core.actions.action import ActionListen, ACTION_LISTEN_NAME
-from rasa_core.agent import Agent
 from rasa_core.conversation import Topic
 from rasa_core.domain import TemplateDomain
-from rasa_core.events import UserUttered, TopicSet, ActionExecuted, SlotSet, \
-    Restarted, ActionReverted
-from rasa_core.featurizers import BinaryFeaturizer
-from rasa_core.interpreter import NaturalLanguageInterpreter
-from rasa_core.policies.memoization import MemoizationPolicy
+from rasa_core.events import (
+    UserUttered, TopicSet, ActionExecuted, SlotSet,
+    Restarted, ActionReverted)
 from rasa_core.tracker_store import InMemoryTrackerStore, RedisTrackerStore
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training import extract_stories_from_file, STORY_START
