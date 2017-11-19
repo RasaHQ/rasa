@@ -15,7 +15,8 @@ from tqdm import tqdm
 from rasa_core.agent import Agent
 from rasa_core.events import ActionExecuted, UserUttered
 from rasa_core.interpreter import RegexInterpreter, RasaNLUInterpreter
-from rasa_core.training import extract_stories_from_file
+from rasa_core.training import extract_stories_from_file, \
+    TrainingsDataExtractor, extract_story_graph_from_file
 from rasa_nlu.evaluate import plot_confusion_matrix, log_evaluation_table
 
 logger = logging.getLogger(__name__)
@@ -103,22 +104,29 @@ def collect_story_predictions(story_file, policy_model_path, nlu_model_path,
         interpreter = RegexInterpreter()
 
     agent = Agent.load(policy_model_path, interpreter=interpreter)
-    stories = _get_stories(story_file, agent.domain,
-                           max_stories=max_stories,
-                           shuffle_stories=shuffle_stories)
+    story_graph = extract_story_graph_from_file(story_file, agent.domain,
+                                                interpreter)
     preds = []
     actual = []
 
-    logger.info("Evaluating {} stories\nProgress:".format(len(stories)))
+    max_history = agent.policy_ensemble.policies[0].max_history
 
-    for s in tqdm(stories):
+    data = TrainingsDataExtractor(story_graph, agent.domain, agent.featurizer). \
+        extract_trainings_data(max_history=max_history,
+                               phase_limit=1,
+                               tracker_limit=100)
+
+    completed_trackers = data.metadata["trackers"][None]
+    logger.info("Evaluating {} stories\nProgress:".format(len(completed_trackers)))
+
+    for tf in tqdm(completed_trackers):
         sender_id = "default-" + uuid.uuid4().hex
 
-        dialogue = s.as_dialogue(sender_id, agent.domain)
+        events = list(tf.tracker.events)
         actions_between_utterances = []
         last_prediction = []
 
-        for i, event in enumerate(dialogue.events[1:]):
+        for i, event in enumerate(events[1:]):
             if isinstance(event, UserUttered):
                 p, a = _min_list_distance(last_prediction,
                                           actions_between_utterances)

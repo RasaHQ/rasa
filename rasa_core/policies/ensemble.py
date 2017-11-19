@@ -111,7 +111,7 @@ class PolicyEnsemble(object):
             policy = policy_cls.load(path, featurizer, metadata["max_history"])
             policies.append(policy)
         ensemble_cls = utils.class_from_module_path(metadata["ensemble_name"])
-        ensemble = ensemble_cls(policies, metadata["slot_meta"])
+        ensemble = ensemble_cls(policies, metadata.get("slot_meta", {}))
         return ensemble
 
 
