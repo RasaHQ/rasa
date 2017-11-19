@@ -3,12 +3,12 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from rasa_core.domain import TemplateDomain
-from rasa_core.training.dsl import StoryFileReader
-from rasa_core.training.visualization import visualize_stories
+from rasa_core.agent import Agent
+from rasa_core.policies.keras_policy import KerasPolicy
+from rasa_core.policies.memoization import MemoizationPolicy
 
 if __name__ == '__main__':
-    domain = TemplateDomain.load("concert_domain.yml")
-    stories = StoryFileReader.read_from_file("data/stories.md", domain)
+    agent = Agent("concert_domain.yml",
+                  policies=[MemoizationPolicy(), KerasPolicy()])
 
-    visualize_stories(stories, "graph.png")
+    agent.visualize("data/stories.md", "graph.png", max_history=2)

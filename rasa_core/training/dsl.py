@@ -276,8 +276,8 @@ class Story(object):
         else:
             return story_content
 
-    def dump_to_file(self, file_name, flat=False):
-        with io.open(file_name, "a") as f:
+    def dump_to_file(self, filename, flat=False):
+        with io.open(filename, "a") as f:
             f.write(self.as_story_string(flat))
 
 
@@ -292,18 +292,18 @@ class StoryFileReader(object):
         self.template_variables = template_vars if template_vars else {}
 
     @staticmethod
-    def read_from_file(file_name, domain, interpreter=RegexInterpreter(),
+    def read_from_file(filename, domain, interpreter=RegexInterpreter(),
                        template_variables=None):
         """Given a json file reads the contained stories."""
 
         try:
-            with io.open(file_name, "r") as f:
+            with io.open(filename, "r") as f:
                 lines = f.readlines()
             reader = StoryFileReader(domain, interpreter, template_variables)
             return reader.process_lines(lines)
         except Exception as e:
             raise Exception("Failed to parse '{}'. {}".format(
-                    os.path.abspath(file_name), e))
+                    os.path.abspath(filename), e))
 
     @staticmethod
     def _parse_event_line(line, parameter_default_value=""):
@@ -477,15 +477,16 @@ class FeaturizedTracker(object):
         return None
 
     @classmethod
-    def from_domain(cls, domain, max_history):
+    def from_domain(cls, domain, max_history, tracker_limit=None):
         # type: (Domain, int) -> FeaturizedTracker
         """Creates a featurized tracker from a domain."""
 
+        tracker_limit = max_history * 2 if not tracker_limit else tracker_limit
         tracker = DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
                                        domain.slots,
                                        domain.topics,
                                        domain.default_topic,
-                                       max_event_history=max_history * 2)
+                                       max_event_history=tracker_limit)
         return cls(tracker, max_history)
 
 
@@ -509,7 +510,9 @@ class TrainingsDataExtractor(object):
                                remove_duplicates=True,
                                augmentation_factor=20,
                                max_history=1,
-                               max_number_of_trackers=2000):
+                               max_number_of_trackers=2000,
+                               phase_limit=None,
+                               tracker_limit=None):
         # type: (bool, int, int) -> DialogueTrainingData
         """Given a set of story parts, generates all stories that are possible.
 
@@ -524,14 +527,22 @@ class TrainingsDataExtractor(object):
         all_features = []  # type: List[ndarray]
         all_actions = []  # type: List[int]
         unused_checkpoints = set()  # type: Set[Text]
-        init_tracker = FeaturizedTracker.from_domain(self.domain, max_history)
-        active_trackers = {STORY_START: [init_tracker]}
+
+        active_trackers = {}
+
+        if phase_limit is None:
+            phase_limit = max_history + 1
 
         phases = (["normal generation"] +
                   ["augmentation round {})".format(i)
-                   for i in range(1, max_history + 1)])
+                   for i in range(1, phase_limit)])
 
         for i, phase in enumerate(phases):
+            active_trackers = self._prepare_next_phase(active_trackers,
+                                                       augmentation_factor,
+                                                       rand,
+                                                       max_history,
+                                                       tracker_limit)
             num_trackers = len(active_trackers[STORY_START])
             logger.debug("Starting {} (phase {} of {})... "
                          "(using {} trackers)".format(phase,
@@ -587,9 +598,6 @@ class TrainingsDataExtractor(object):
 
             logger.debug("Finished phase. ({} training samples found)".format(
                     len(all_actions)))
-            active_trackers = self._prepare_next_phase(active_trackers,
-                                                       augmentation_factor,
-                                                       rand)
 
         self._issue_unused_checkpoint_notification(unused_checkpoints)
         logger.debug("Found {} action examples.".format(len(all_actions)))
@@ -597,15 +605,15 @@ class TrainingsDataExtractor(object):
         X = np.array(all_features)
         y = np.array(all_actions)
 
+        metadata = {"events": self.events_metadata, "trackers": active_trackers}
+
         if remove_duplicates:
             X_unique, y_unique = self._deduplicate_training_data(X, y)
             logger.debug("Deduplicated to {} unique action examples.".format(
                     y_unique.shape[0]))
-            return DialogueTrainingData(X_unique, y_unique,
-                                        {"events": self.events_metadata})
+            return DialogueTrainingData(X_unique, y_unique, metadata)
         else:
-            return DialogueTrainingData(X, y,
-                                        {"events": self.events_metadata})
+            return DialogueTrainingData(X, y, metadata)
 
     @staticmethod
     def _subsample_trackers(incoming_trackers, max_number_of_trackers,
@@ -626,37 +634,46 @@ class TrainingsDataExtractor(object):
             return utils.subsample_array(incoming_trackers,
                                          augmentation_factor, rand)
 
-    @staticmethod
-    def _prepare_next_phase(active_trackers,  # type: TrackerLookupDict
+    def _prepare_next_phase(self,
+                            active_trackers,  # type: TrackerLookupDict
                             augmentation_factor,  # type: int
-                            rand  # type: Random
+                            rand,  # type: Random
+                            max_history,     # type: int
+                            tracker_limit    # type: int
                             ):
         # type: (...) -> Dict[Optional[Text], List[FeaturizedTracker]]
         """One phase is one traversal of all story steps.
 
         We need to do some cleanup before processing them again."""
 
-        ending_trackers = active_trackers.get(None, [])
-        subsampled_trackers = utils.subsample_array(ending_trackers,
-                                                    augmentation_factor, rand)
-        active_trackers = {STORY_START: []}
+        if not active_trackers:
+            init_tracker = FeaturizedTracker.from_domain(self.domain,
+                                                         max_history,
+                                                         tracker_limit)
+            return {STORY_START: [init_tracker]}
+        else:
+            ending_trackers = active_trackers[None]
+            subsampled_trackers = utils.subsample_array(ending_trackers,
+                                                        augmentation_factor,
+                                                        rand)
+            active_trackers = {STORY_START: []}
 
-        # This is where the augmentation magic happens. We
-        # will reuse all the trackers that reached the
-        # end checkpoint `None` (which is the end of a
-        # story) and start processing all steps again. So instead
-        # of starting with a fresh tracker, the second and
-        # all following phases will reuse a couple of the trackers
-        # that made their way to a story end.
-        for t in subsampled_trackers:
-            # this is a nasty thing - all stories end and
-            # start with action listen - so after logging the first
-            # actions in the next phase the trackers would
-            # contain action listen followed by action listen.
-            # to fix this we are going to "undo" the last action listen
-            t.undo_last_action()
-            active_trackers[STORY_START].append(t)
-        return active_trackers
+            # This is where the augmentation magic happens. We
+            # will reuse all the trackers that reached the
+            # end checkpoint `None` (which is the end of a
+            # story) and start processing all steps again. So instead
+            # of starting with a fresh tracker, the second and
+            # all following phases will reuse a couple of the trackers
+            # that made their way to a story end.
+            for t in subsampled_trackers:
+                # this is a nasty thing - all stories end and
+                # start with action listen - so after logging the first
+                # actions in the next phase the trackers would
+                # contain action listen followed by action listen.
+                # to fix this we are going to "undo" the last action listen
+                t.undo_last_action()
+                active_trackers[STORY_START].append(t)
+            return active_trackers
 
     def _process_step(self,
                       step,  # type: StoryStep

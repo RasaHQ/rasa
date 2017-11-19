@@ -328,11 +328,11 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         else:
             return []
 
-    def persist(self, file_name):
+    def persist(self, filename):
         raise NotImplementedError
 
     @classmethod
-    def load(cls, file_name):
+    def load(cls, filename):
         raise NotImplementedError
 
     def persist_specification(self, model_path):
@@ -411,14 +411,14 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
 
 class TemplateDomain(Domain):
     @classmethod
-    def load(cls, file_name):
-        if not os.path.isfile(file_name):
+    def load(cls, filename):
+        if not os.path.isfile(filename):
             raise Exception(
                     "Failed to load domain specification from '{}'. "
-                    "File not found!".format(os.path.abspath(file_name)))
+                    "File not found!".format(os.path.abspath(filename)))
 
-        cls.validate_domain_yaml(file_name)
-        data = read_yaml_file(file_name)
+        cls.validate_domain_yaml(filename)
+        data = read_yaml_file(filename)
         utter_templates = cls.collect_templates(data.get("templates", {}))
         action_factory = data.get("action_factory", None)
         topics = [Topic(name) for name in data.get("topics", [])]
@@ -436,16 +436,19 @@ class TemplateDomain(Domain):
         )
 
     @classmethod
-    def validate_domain_yaml(cls, file_name):
+    def validate_domain_yaml(cls, filename):
         """Validate domain yaml."""
         from pykwalify.core import Core
+        import ruamel
+        import warnings
+        warnings.simplefilter('ignore', ruamel.yaml.error.UnsafeLoaderWarning)
 
         log = logging.getLogger('pykwalify')
         log.setLevel(logging.WARN)
 
         schema_file = pkg_resources.resource_filename(__name__,
                                                       "schemas/domain.yml")
-        c = Core(source_file=file_name,
+        c = Core(source_file=filename,
                  schema_files=[schema_file])
         try:
             c.validate(raise_exception=True)
@@ -454,7 +457,7 @@ class TemplateDomain(Domain):
                              "Make sure the file is correct, to do so"
                              "take a look at the errors logged during "
                              "validation previous to this exception. "
-                             "".format(os.path.abspath(file_name)))
+                             "".format(os.path.abspath(filename)))
 
     @staticmethod
     def collect_slots(slot_dict):
@@ -517,7 +520,7 @@ class TemplateDomain(Domain):
             slots[slot.name] = d
         return slots
 
-    def persist(self, file_name):
+    def persist(self, filename):
         import yaml
 
         additional_config = {
@@ -535,7 +538,7 @@ class TemplateDomain(Domain):
             "action_factory": self._factory_name
         }
 
-        with io.open(file_name, 'w', encoding="utf-8") as yaml_file:
+        with io.open(filename, 'w', encoding="utf-8") as yaml_file:
             yaml.safe_dump(domain_data, yaml_file,
                            default_flow_style=False,
                            allow_unicode=True)
