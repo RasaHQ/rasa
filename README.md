@@ -4,7 +4,21 @@
 [![Coverage Status](https://coveralls.io/repos/github/RasaHQ/rasa_core/badge.svg?branch=master)](https://coveralls.io/github/RasaHQ/rasa_core?branch=master)
 [![PyPI version](https://img.shields.io/pypi/v/rasa_core.svg)](https://pypi.python.org/pypi/rasa-core)
 
-### [Go To Docs](https://core.rasa.ai)
+## I want to understand what Rasa Core & NLU do
+[Read More](http://rasa.ai/products/rasa-stack/)
+
+## I want to read the docs
+[Read The Docs](https://core.rasa.ai)
+
+## I'm ready to install Rasa Core
+[Installation](https://core.rasa.ai/installation.html)
+
+## I have a question
+[Gitter channel](https://gitter.im/RasaHQ/rasa_core)
+
+## I would like to contribute
+[How to contribute](#how-to-contribute)
+
 
 ## Introduction
 
@@ -36,24 +50,10 @@ questions.
 
 
 #### README Contents:
-- [Setup](#setup) 
 - [How to contribute](#how-to-contribute)
 - [Development Internals](#development-internals)
 - [License](#license)
 
-## Setup
-There isn't a released pypi package yet. Hence, you need to clone and install 
-the package from the github repository. For a more detailed description, please 
-visit the [**Installation page**](https://core.rasa.ai/installation.html) 
-of the docs.
-
-If you want to install the latest master version from github, run:
-```bash
-git clone https://github.com/RasaHQ/rasa_core.git
-cd rasa_core
-pip install -r requirements.txt
-pip install -e .
-```
 
 
 ## Development Internals
