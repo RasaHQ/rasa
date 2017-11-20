@@ -6,6 +6,7 @@ from __future__ import absolute_import
 import argparse
 import logging
 import os
+import six
 from functools import wraps
 
 import simplejson
@@ -86,8 +87,10 @@ def requires_auth(f):
     def decorated(*args, **kwargs):
         self = args[0]
         request = args[1]
-        token = str(request.args.get('token', [''])[0])
-
+        if six.PY3:
+            token = request.args.get(b'token', [b''])[0].decode("utf8")
+        else:
+            token = str(request.args.get('token', [''])[0])
         if self.data_router.token is None or token == self.data_router.token:
             return f(*args, **kwargs)
         request.setResponseCode(401)
