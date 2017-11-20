@@ -159,8 +159,8 @@ class BotUttered(Event):
     type_name = "bot"
 
     def __init__(self, text=None, data=None):
-        self.text = text if text else ""
-        self.data = data if data else {}
+        self.text = text if text else []
+        self.data = data if data else []
 
     def __hash__(self):
         return hash((self.text, self.data))
