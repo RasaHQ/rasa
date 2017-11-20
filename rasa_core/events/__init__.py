@@ -154,7 +154,9 @@ class BotUttered(Event):
 
     This class is not used in the story training as it is contained in the
 
-    ```ActionExecuted class```. An entry is made in the ``Tracker``."""
+    ``ActionExecuted`` class. An entry is made in the ``Tracker``."""
+
+    type_name = "bot"
 
     def __init__(self, text=None, data=None):
         self.text = text if text else ""
@@ -176,12 +178,17 @@ class BotUttered(Event):
     def apply_to(self, tracker):
         # type: (DialogueStateTracker) -> None
 
-        tracker.latest_bot_message = self
+        tracker.latest_bot_utterance = self
 
     def as_story_string(self):
-        logger.debug("BotUttered event for {} need not be featurized. "
-                     "Use an ActionExecuted instead.".format(self.text))
-        raise NotImplementedError
+        return None
+
+    @classmethod
+    def _from_parameters(cls, event_name, parameters, domain):
+        try:
+            return BotUttered(parameters["text"], parameters["data"])
+        except KeyError as e:
+            raise ValueError("Failed to parse bot uttered event. {}".format(e))
 
 
 # noinspection PyProtectedMember

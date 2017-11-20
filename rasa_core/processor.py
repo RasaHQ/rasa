@@ -286,8 +286,8 @@ class MessageProcessor(object):
                          "code.".format(action.name()), )
             logger.error(e, exc_info=True)
             events = []
-        self._log_action_on_tracker(tracker, action.name(), events)
         self._log_bot_utterances_on_tracker(tracker, dispatcher)
+        self._log_action_on_tracker(tracker, action.name(), events)
         self._schedule_reminders(events, dispatcher)
 
         return self._should_predict_another_action(action.name(), events)
@@ -295,15 +295,17 @@ class MessageProcessor(object):
     def _log_bot_utterances_on_tracker(self, tracker, dispatcher):
         # type: (DialogueStateTracker, Dispatcher) -> None
 
-        if dispatcher.bot_message is not None:
-            text = dispatcher.bot_message.get("text")
-            data = dispatcher.bot_message.get("data")
+        if dispatcher.latest_bot_messages:
+            text = dispatcher.latest_bot_messages.get("text")
+            data = dispatcher.latest_bot_messages.get("data")
 
             bot_utterance = BotUttered(text=text, data=data)
 
             logger.debug("Bot utterance '{}'".format(bot_utterance))
 
             tracker.update(bot_utterance)
+
+            dispatcher.latest_bot_messages = []
 
     def _log_action_on_tracker(self, tracker, action_name, events):
         # Ensures that the code still works even if a lazy programmer missed

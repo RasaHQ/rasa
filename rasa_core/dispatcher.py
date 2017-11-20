@@ -6,6 +6,8 @@ from __future__ import unicode_literals
 import copy
 
 from typing import Text, List, Dict, Any
+from collections import namedtuple
+
 import copy
 
 from rasa_core.domain import Domain
@@ -24,15 +26,7 @@ class Element(dict):
         super(Element, self).__init__(*args, **kwargs)
 
 
-class BotMessage(dict):
-    __acceptable_keys = ['text', 'data']
-
-    def __init__(self, *args, **kwargs):
-        kwargs = {key: value
-                  for key, value in kwargs.items()
-                  if key in self.__acceptable_keys}
-
-        super(BotMessage, self).__init__(*args, **kwargs)
+BotMessage = namedtuple("BotMessage", "text data")
 
 
 class Button(dict):
@@ -50,7 +44,7 @@ class Dispatcher(object):
         self.output_channel = output_channel
         self.domain = domain
         self.send_messages = []
-        self.bot_message = None
+        self.latest_bot_messages = []
 
     def utter_response(self, message):
         # type: (Dict[Text, Any]) -> None
@@ -70,8 +64,8 @@ class Dispatcher(object):
         # type: (Text) -> None
         """"Send a text to the output channel"""
 
-        self.bot_message = BotMessage(text=text,
-                                      data=None)
+        self.latest_bot_messages.append(BotMessage(text=text,
+                                                   data=None))
         if self.sender_id is not None and self.output_channel is not None:
             for message_part in text.split("\n\n"):
                 self.output_channel.send_text_message(self.sender_id, message_part)
@@ -81,23 +75,23 @@ class Dispatcher(object):
         # type: (*Dict[Text, Any]) -> None
         """Sends a message with custom elements to the output channel."""
 
-        self.bot_message = BotMessage(text=None,
-                                      data={"elements": elements})
+        self.latest_bot_messages.append(BotMessage(text=None,
+                                                   data={"elements": elements}))
         self.output_channel.send_custom_message(self.sender_id, elements)
 
     def utter_button_message(self, text, buttons, **kwargs):
         # type: (Text, List[Dict[Text, Any]], **Any) -> None
         """Sends a message with buttons to the output channel."""
-        self.bot_message = BotMessage(text=None,
-                                      data={"buttons": buttons})
+        self.latest_bot_messages.append(BotMessage(text=None,
+                                                   data={"buttons": buttons}))
         self.output_channel.send_text_with_buttons(self.sender_id, text, buttons,
                                                    **kwargs)
 
     def utter_attachment(self, attachment):
         # type: (Text) -> None
         """Send a message to the client with attachments."""
-        self.bot_message = BotMessage(text=None,
-                                      data={"attachment": attachment})
+        self.latest_bot_messages.append(BotMessage(text=None,
+                                                   data={"attachment": attachment}))
         self.output_channel.send_image_url(self.sender_id, attachment)
 
     def utter_button_template(self, template, buttons, filled_slots=None, **kwargs):
@@ -109,8 +103,8 @@ class Dispatcher(object):
             t["buttons"] = buttons
         else:
             t["buttons"].extend(buttons)
-        self.bot_message = BotMessage(text=t["text"],
-                                      data={"buttons": t["buttons"]})
+        self.latest_bot_messages.append(BotMessage(text=t["text"],
+                                                   data={"buttons": t["buttons"]}))
         self.utter_response(t)
 
     def utter_template(self, template, filled_slots=None, **kwargs):
@@ -118,8 +112,8 @@ class Dispatcher(object):
         """"Send a message to the client based on a template."""
 
         message = self.retrieve_template(template, filled_slots, **kwargs)
-        self.bot_message = BotMessage(text=message["text"],
-                                      data=None)
+        self.latest_bot_messages.append(BotMessage(text=message["text"],
+                                                   data=None))
         self.utter_response(message)
 
     @staticmethod

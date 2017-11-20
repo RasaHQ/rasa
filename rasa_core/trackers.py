@@ -16,7 +16,7 @@ from typing import List
 from rasa_core import utils
 from rasa_core.conversation import Dialogue
 from rasa_core.events import UserUttered, TopicSet, ActionExecuted, \
-    Event, SlotSet, Restarted, ActionReverted, UserUtteranceReverted
+    Event, SlotSet, Restarted, ActionReverted, UserUtteranceReverted, BotUttered
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +63,7 @@ class DialogueStateTracker(object):
         self._topic_stack = None
         self.latest_action_name = None
         self.latest_message = None
+        self.latest_bot_utterance = None
         self.latest_restart_event = None
         self._reset()
 
@@ -247,6 +248,7 @@ class DialogueStateTracker(object):
         self._paused = False
         self.latest_action_name = None
         self.latest_message = UserUttered.empty()
+        self.latest_bot_utterance = BotUttered.empty()
         self.follow_up_action = None
         self._topic_stack = utils.TopicStack(self.topics, [],
                                              self.default_topic)

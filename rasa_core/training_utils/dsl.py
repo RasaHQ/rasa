@@ -25,7 +25,7 @@ from rasa_core.channels import UserMessage
 from rasa_core.conversation import Dialogue
 from rasa_core.domain import Domain
 from rasa_core.events import ActionExecuted, UserUttered, Event, \
-    ActionReverted
+    ActionReverted, BotUttered
 from rasa_core.featurizers import Featurizer
 from rasa_core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa_core.trackers import DialogueStateTracker
@@ -128,6 +128,8 @@ class StoryStep(object):
         for s in self.events:
             if isinstance(s, UserUttered):
                 result += "* {}\n".format(s.as_story_string())
+            elif isinstance(s, BotUttered):
+                continue
             elif isinstance(s, Event):
                 result += "    - {}\n".format(s.as_story_string())
             else:
