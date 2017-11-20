@@ -25,7 +25,7 @@ from rasa_core.channels import UserMessage
 from rasa_core.conversation import Dialogue
 from rasa_core.domain import Domain
 from rasa_core.events import ActionExecuted, UserUttered, Event, \
-    ActionReverted, BotUttered
+    ActionReverted
 from rasa_core.featurizers import Featurizer
 from rasa_core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa_core.trackers import DialogueStateTracker

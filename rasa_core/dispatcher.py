@@ -103,8 +103,6 @@ class Dispatcher(object):
             t["buttons"] = buttons
         else:
             t["buttons"].extend(buttons)
-        self.latest_bot_messages.append(BotMessage(text=t["text"],
-                                                   data={"buttons": t["buttons"]}))
         self.utter_response(t)
 
     def utter_template(self, template, filled_slots=None, **kwargs):
@@ -112,8 +110,6 @@ class Dispatcher(object):
         """"Send a message to the client based on a template."""
 
         message = self.retrieve_template(template, filled_slots, **kwargs)
-        self.latest_bot_messages.append(BotMessage(text=message["text"],
-                                                   data=None))
         self.utter_response(message)
 
     @staticmethod
