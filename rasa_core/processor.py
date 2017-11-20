@@ -296,20 +296,10 @@ class MessageProcessor(object):
         # type: (DialogueStateTracker, Dispatcher) -> None
 
         if dispatcher.latest_bot_messages:
-            text = []
-            data = []
-
             for m in dispatcher.latest_bot_messages:
-                if m["text"]:
-                    text.append(m["text"])
-                if m["data"]:
-                    data.append(m["data"])
-
-            bot_utterance = BotUttered(text=text, data=data)
-
-            logger.debug("Bot utterance '{}'".format(bot_utterance))
-
-            tracker.update(bot_utterance)
+                bot_utterance = BotUttered(text=m.text, data=m.data)
+                logger.debug("Bot utterance '{}'".format(bot_utterance))
+                tracker.update(bot_utterance)
 
             dispatcher.latest_bot_messages = []
 
