@@ -183,6 +183,10 @@ class BotUttered(Event):
     def as_story_string(self):
         return None
 
+    @staticmethod
+    def empty():
+        return BotUttered()
+
     @classmethod
     def _from_parameters(cls, event_name, parameters, domain):
         try:
