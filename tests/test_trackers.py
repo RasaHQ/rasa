@@ -116,7 +116,8 @@ def test_tracker_state_regression_without_bot_utterance(default_agent):
     expected = ("action_listen;"
                 "_greet;utter_greet;action_listen;"
                 "_greet;action_listen")
-    assert ";".join([e.as_story_string() for e in tracker.events if e.as_story_string()]) == expected
+    assert ";".join([e.as_story_string() for e in
+                     tracker.events if e.as_story_string()]) == expected
 
 
 def test_tracker_state_regression_with_bot_utterance(default_agent):
@@ -124,7 +125,7 @@ def test_tracker_state_regression_with_bot_utterance(default_agent):
     for i in range(0, 2):
         default_agent.handle_message("_greet", sender_id=sender_id)
     tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
-    
+
     expected = ["action_listen", "_greet", None, "utter_greet",
                 "action_listen", "_greet", "action_listen"]
     print([e.as_story_string() for e in tracker.events])

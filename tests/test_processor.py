@@ -15,7 +15,9 @@ def test_message_processor(default_processor):
     assert ("default", "hey there Core!") == out.latest_output()
 
 
-def test_logging_of_bot_utterances_on_tracker(default_processor, default_dispatcher, default_agent):
+def test_logging_of_bot_utterances_on_tracker(default_processor,
+                                              default_dispatcher,
+                                              default_agent):
     sender_id = "test_logging_of_bot_utterances_on_tracker"
     tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
     buttons = [
@@ -30,5 +32,6 @@ def test_logging_of_bot_utterances_on_tracker(default_processor, default_dispatc
 
     assert len(default_dispatcher.latest_bot_messages) == 4
 
-    default_processor._log_bot_utterances_on_tracker(tracker, default_dispatcher)
+    default_processor._log_bot_utterances_on_tracker(tracker,
+                                                     default_dispatcher)
     assert not default_dispatcher.latest_bot_messages
