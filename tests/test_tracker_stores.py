@@ -16,12 +16,12 @@ def test_get_or_create():
     slot_val = 'Easter Island'
     store = InMemoryTrackerStore(domain)
 
-    tracker = store.get_or_create_tracker(UserMessage.DEFAULT_SENDER)
+    tracker = store.get_or_create_tracker(UserMessage.DEFAULT_SENDER_ID)
     ev = SlotSet(slot_key, slot_val)
     tracker.update(ev)
     assert tracker.get_slot(slot_key) == slot_val
 
     store.save(tracker)
 
-    again = store.get_or_create_tracker(UserMessage.DEFAULT_SENDER)
+    again = store.get_or_create_tracker(UserMessage.DEFAULT_SENDER_ID)
     assert again.get_slot(slot_key) == slot_val
