@@ -9,7 +9,8 @@ import pytest
 
 from rasa_core.events import UserUttered, TopicSet, SlotSet, Restarted, \
     ActionExecuted, AllSlotsReset, \
-    ReminderScheduled
+    ReminderScheduled, ConversationResumed, ConversationPaused, StoryExported, \
+    ActionReverted
 
 
 @pytest.mark.parametrize("one_event,another_event", [
@@ -26,6 +27,18 @@ from rasa_core.events import UserUttered, TopicSet, SlotSet, Restarted, \
      None),
 
     (AllSlotsReset(),
+     None),
+
+    (ConversationPaused(),
+     None),
+
+    (ConversationResumed(),
+     None),
+
+    (StoryExported(),
+     None),
+
+    (ActionReverted(),
      None),
 
     (ActionExecuted("my_action"),

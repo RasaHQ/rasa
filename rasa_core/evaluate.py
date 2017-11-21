@@ -46,7 +46,7 @@ def create_argument_parser():
             help="nlu model to run with the server. None for regex interpreter")
     parser.add_argument(
             '-v', '--verbose',
-            default=True,
+            default=False,
             help="use verbose logging")
     parser.add_argument(
             '-o', '--output',
@@ -112,9 +112,9 @@ def collect_story_predictions(story_file, policy_model_path, nlu_model_path,
     logger.info("Evaluating {} stories\nProgress:".format(len(stories)))
 
     for s in tqdm(stories):
-        sender = "default-" + uuid.uuid4().hex
+        sender_id = "default-" + uuid.uuid4().hex
 
-        dialogue = s.as_dialogue(sender, agent.domain)
+        dialogue = s.as_dialogue(sender_id, agent.domain)
         actions_between_utterances = []
         last_prediction = []
 
@@ -126,8 +126,8 @@ def collect_story_predictions(story_file, policy_model_path, nlu_model_path,
                 actual.extend(a)
 
                 actions_between_utterances = []
-                agent.handle_message(event.text, sender=sender)
-                tracker = agent.tracker_store.retrieve(sender)
+                agent.handle_message(event.text, sender_id=sender_id)
+                tracker = agent.tracker_store.retrieve(sender_id)
                 last_prediction = actions_since_last_utterance(tracker)
 
             elif isinstance(event, ActionExecuted):

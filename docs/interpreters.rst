@@ -14,11 +14,14 @@ To use something other than Rasa NLU, you just need to implement a subclass of `
 which has a method ``parse(message)`` which takes a single string argument and returns a dict in the following format:
 
 
-.. code-block:: python
+.. code-block:: javascript
 
     {
       "text": "show me chinese restaurants",
-      "intent": "restaurant_search",
+      "intent": {
+        "name": "restaurant_search",
+        "confidence": 1.0
+      }
       "entities": [
         {
           "start": 8,

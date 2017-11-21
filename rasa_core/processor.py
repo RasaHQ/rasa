@@ -103,31 +103,40 @@ class MessageProcessor(object):
 
         # action loop. predicts actions until we hit action listen
         if self._should_handle_message(tracker):
-            # this actually just calls the policy's method by the same name
-            action = self._get_next_action(tracker)
-
-            # save tracker state to continue conversation from this state
-            self._save_tracker(tracker)
-            return {"next_action": action.name(),
-                    "tracker": tracker.current_state()}
+            return self._predict_next_and_return_state(tracker)
         else:
             return {"next_action": None,
+                    "info": "Bot is currently paused and no restart was "
+                            "received yet.",
                     "tracker": tracker.current_state()}
 
     def continue_message_handling(self, sender_id, executed_action, events):
         # type: (Text, Text, List[Event]) -> Dict[Text, Any]
 
         tracker = self._get_tracker(sender_id)
-        self._log_action_on_tracker(tracker, executed_action, events)
+        if executed_action != ACTION_LISTEN_NAME:
+            self._log_action_on_tracker(tracker, executed_action, events)
         if self._should_predict_another_action(executed_action, events):
-            action = self._get_next_action(tracker)
-            # save tracker state to continue conversation from this state
-            self._save_tracker(tracker)
-            return {"next_action": action.name(),
-                    "tracker": tracker.current_state()}
+            return self._predict_next_and_return_state(tracker)
         else:
+            self._save_tracker(tracker)
             return {"next_action": None,
+                    "info": "You do not need to call continue after action "
+                            "listen got returned for the previous continue "
+                            "call. You are expected to call 'parse' with the "
+                            "next user message.",
                     "tracker": tracker.current_state()}
+
+    def _predict_next_and_return_state(self, tracker):
+        action = self._get_next_action(tracker)
+        # save tracker state to continue conversation from this state
+        if action.name() == ACTION_LISTEN_NAME:
+            # action listen always get logged automatically - no need to
+            # call continue
+            self._log_action_on_tracker(tracker, action.name(), [])
+        self._save_tracker(tracker)
+        return {"next_action": action.name(),
+                "tracker": tracker.current_state()}
 
     def _log_slots(self, tracker):
         # Log currently set slots
@@ -152,7 +161,7 @@ class MessageProcessor(object):
                     return True
             return True  # tracker has probably been restarted
 
-        tracker = self._get_tracker(dispatcher.sender)
+        tracker = self._get_tracker(dispatcher.sender_id)
 
         if (reminder_event.kill_on_user_message and
                 has_message_after_reminder(tracker)):
@@ -168,7 +177,7 @@ class MessageProcessor(object):
             if should_continue:
                 user_msg = UserMessage(None,
                                        dispatcher.output_channel,
-                                       dispatcher.sender)
+                                       dispatcher.sender_id)
                 self._predict_and_execute_next_action(user_msg, tracker)
             # save tracker state to continue conversation from this state
             self._save_tracker(tracker)
@@ -268,7 +277,15 @@ class MessageProcessor(object):
     def _run_action(self, action, tracker, dispatcher):
         # events and return values are used to update
         # the tracker state after an action has been taken
-        events = action.run(dispatcher, tracker, self.domain)
+        try:
+            events = action.run(dispatcher, tracker, self.domain)
+        except Exception as e:
+            logger.error("Encountered an exception while running action '{}'. "
+                         "Bot will continue, but the actions events are lost. "
+                         "Make sure to fix the exception in your custom "
+                         "code.".format(action.name()), )
+            logger.error(e, exc_info=True)
+            events = []
         self._log_action_on_tracker(tracker, action.name(), events)
         self._schedule_reminders(events, dispatcher)
 
@@ -284,16 +301,17 @@ class MessageProcessor(object):
         logger.debug("Action '{}' ended with events '{}'".format(
                 action_name, ['{}'.format(e) for e in events]))
 
-        # log the action and its produced events
-        tracker.update(ActionExecuted(action_name))
+        if action_name is not None:
+            # log the action and its produced events
+            tracker.update(ActionExecuted(action_name))
 
         for e in events:
             tracker.update(e)
 
-    def _get_tracker(self, sender):
+    def _get_tracker(self, sender_id):
         # type: (Text) -> DialogueStateTracker
 
-        sender_id = sender or UserMessage.DEFAULT_SENDER
+        sender_id = sender_id or UserMessage.DEFAULT_SENDER_ID
         tracker = self.tracker_store.get_or_create_tracker(sender_id)
         return tracker
 

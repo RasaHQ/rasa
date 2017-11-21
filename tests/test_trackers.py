@@ -7,7 +7,6 @@ import glob
 
 import pytest
 
-from examples.hello_world.run import SimplePolicy
 from rasa_core.actions.action import ActionListen, ACTION_LISTEN_NAME
 from rasa_core.agent import Agent
 from rasa_core.conversation import Topic
@@ -16,6 +15,7 @@ from rasa_core.events import UserUttered, TopicSet, ActionExecuted, SlotSet, \
     Restarted, ActionReverted
 from rasa_core.featurizers import BinaryFeaturizer
 from rasa_core.interpreter import NaturalLanguageInterpreter
+from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.tracker_store import InMemoryTrackerStore, RedisTrackerStore
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training_utils import extract_stories_from_file, STORY_START
@@ -94,41 +94,50 @@ def test_tracker_store(filename, store):
 
 def test_tracker_write_to_story(tmpdir, default_domain):
     tracker = tracker_from_dialogue_file(
-            "data/test_dialogues/restaurant_search.json", default_domain)
+            "data/test_dialogues/enter_name.json", default_domain)
     p = tmpdir.join("export.md")
     tracker.export_stories_to_file(p.strpath)
     stories = extract_stories_from_file(p.strpath, default_domain)
     assert len(stories) == 1
     assert len(stories[0].story_steps) == 1
     assert len(stories[0].story_steps[0].events) == 4
-    assert stories[0].story_steps[0].start_checkpoint == STORY_START
+    assert stories[0].story_steps[0].start_checkpoint_name() == STORY_START
     assert stories[0].story_steps[0].events[3] == SlotSet("location", "central")
 
 
-def test_tracker_state_regression(default_domain):
-    class HelloInterpreter(NaturalLanguageInterpreter):
-        def parse(self, text):
-            intent = "greet" if 'hello' in text else "default"
-            return {
-                "text": text,
-                "intent": {"name": intent},
-                "entities": []
-            }
-
-    agent = Agent(domain, [SimplePolicy()], BinaryFeaturizer(),
-                  interpreter=HelloInterpreter())
-
+def test_tracker_state_regression(default_agent):
+    sender_id = "test_tracker_state_regression"
     n_actions = []
     for i in range(0, 2):
-        agent.handle_message("hello")
-    tracker = agent.tracker_store.get_or_create_tracker('default')
+        default_agent.handle_message("_greet", sender_id=sender_id)
+    tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
 
     # Ensures that the tracker has changed between the utterances
     # (and wasn't reset in between them)
     expected = ("action_listen;"
                 "_greet;utter_greet;action_listen;"
-                "_greet;utter_greet;action_listen")
+                "_greet;action_listen")
     assert ";".join([e.as_story_string() for e in tracker.events]) == expected
+
+
+def test_tracker_entity_retrieval(default_domain):
+    tracker = DialogueStateTracker("default", default_domain.slots,
+                                   default_domain.topics,
+                                   default_domain.default_topic)
+    # the retrieved tracker should be empty
+    assert len(tracker.events) == 0
+    assert list(tracker.get_latest_entity_values("entity_name")) == []
+
+    intent = {"name": "greet", "confidence": 1.0}
+    tracker.update(UserUttered("_greet", intent, [{
+          "start": 1,
+          "end": 5,
+          "value": "greet",
+          "entity": "entity_name",
+          "extractor": "manual"
+        }]))
+    assert list(tracker.get_latest_entity_values("entity_name")) == ["greet"]
+    assert list(tracker.get_latest_entity_values("unknown")) == []
 
 
 def test_restart_event(default_domain):

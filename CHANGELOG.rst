@@ -21,6 +21,66 @@ Removed
 Fixed
 -----
 
+[0.7.6] - 2017-11-15
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- moodbot example train command in docs
+
+
+[0.7.5] - 2017-11-14
+^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- "sender_id" (and "DEFAULT_SENDER_ID") keyword consistency issue #56
+
+Fixed
+-----
+- improved moodbot example - more nlu examples as well as better fitting of dialogue model
+
+
+[0.7.4] - 2017-11-09
+^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+
+- added method to tracker to retrieve the latest entities #68
+
+[0.7.3] - 2017-10-31
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- parameter to specify font size when rendering story visualization
+
+Fixed
+-----
+- fixed documentation of story visualization
+
+[0.7.2] - 2017-10-30
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- added facebook bot example
+- added support for conditional checkpoints. a checkpoint can be restricted to
+  only allow one to use it if certain slots are set. see docs for details
+- utterance templates in domain yaml support buttons and images
+- validate domain yaml and raise exception on invalid file
+- ``run`` script to load models and handle messages from an input channel
+
+Changed
+-------
+- small dropout in standard keras model to decrease reliance on exact intents
+- a LOT of documentation improvements
+
+Fixed
+-----
+- fixed http error if action listen is not confirmed. #42
+
 [0.7.1] - 2017-10-06
 ^^^^^^^^^^^^^^^^^^^^
 

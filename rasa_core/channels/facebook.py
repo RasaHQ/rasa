@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import logging
 
+from builtins import str
 from flask import Blueprint, request, jsonify
 from pymessenger.bot import Bot
 
@@ -45,7 +46,7 @@ class FacebookInput(HttpInputComponent):
         self.fb_verify = fb_verify
         self.fb_secret = fb_secret
         self.debug_mode = debug_mode
-        self.fb_tokens = fb_tokens
+        self.fb_tokens = {str(k): v for k, v in fb_tokens.items()}
 
     @staticmethod
     def _is_user_message(fb_event):
@@ -87,12 +88,16 @@ class FacebookInput(HttpInputComponent):
                 if request.args.get("hub.verify_token") == self.fb_verify:
                     return request.args.get("hub.challenge")
                 else:
+                    logger.warn("Invalid fb verify token! Make sure this matches "
+                                "your webhook settings on the facebook app.")
                     return "failure, invalid token"
             if request.method == 'POST':
 
                 signature = request.headers.get("X-Hub-Signature") or ''
                 if not validate_hub_signature(self.fb_secret, request.data,
                                               signature):
+                    logger.warn("Wrong fb secret! Make sure this matches the "
+                                 "secret in your facebook app settings")
                     return "not validated"
 
                 output = request.json
@@ -108,10 +113,10 @@ class FacebookInput(HttpInputComponent):
                     else:
                         continue
                     try:
-                        sender = x['sender']['id']
+                        sender_id = x['sender']['id']
                         if page_id in self.fb_tokens:
                             out_channel = MessengerBot(self.fb_tokens[page_id])
-                            user_msg = UserMessage(text, out_channel, sender)
+                            user_msg = UserMessage(text, out_channel, sender_id)
                             on_new_message(user_msg)
                         else:
                             raise Exception("Unknown page id '{}'. Make sure to"
@@ -120,6 +125,7 @@ class FacebookInput(HttpInputComponent):
                     except Exception as e:
                         logger.error("Exception when trying to handle "
                                      "message.{0}".format(e))
+                        logger.error(e,exc_info=True)
                         if self.debug_mode:
                             raise
                         pass

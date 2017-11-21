@@ -4,11 +4,12 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import errno
-import os
+import os, io
 from collections import deque
 from hashlib import sha1
 
 import six
+import yaml
 from builtins import input, range, str
 from numpy import all, array
 from typing import Text
@@ -105,7 +106,7 @@ def str_range_list(start, end):
     return [str(e) for e in range(start, end)]
 
 
-def request_input(valid_values, prompt=None, max_suggested=3):
+def request_input(valid_values=None, prompt=None, max_suggested=3):
     def wrong_input_message():
         print("Invalid answer, only {}{} allowed\n".format(
                 ", ".join(valid_values[:max_suggested]),
@@ -114,7 +115,7 @@ def request_input(valid_values, prompt=None, max_suggested=3):
     while True:
         try:
             input_value = input(prompt) if prompt else input()
-            if input_value not in valid_values:
+            if valid_values is not None and input_value not in valid_values:
                 wrong_input_message()
                 continue
         except ValueError:
@@ -235,3 +236,27 @@ class HashableNDArray(object):
             return array(self.__wrapped)
 
         return self.__wrapped
+
+
+def fix_yaml_loader():
+    """Ensure that any string read by yaml is represented as unicode."""
+    from yaml import Loader, SafeLoader
+
+    def construct_yaml_str(self, node):
+        # Override the default string handling function
+        # to always return unicode objects
+        return self.construct_scalar(node)
+
+    Loader.add_constructor(u'tag:yaml.org,2002:str', construct_yaml_str)
+    SafeLoader.add_constructor(u'tag:yaml.org,2002:str', construct_yaml_str)
+
+
+def read_yaml_file(filename):
+    fix_yaml_loader()
+    with io.open(filename, encoding="utf-8") as f:
+        return yaml.load(f.read())
+
+
+def is_training_data_empty(X):
+    """Check if the training matrix does contain training samples."""
+    return X.shape[0] == 0

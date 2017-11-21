@@ -176,7 +176,8 @@ def _merge_equivalent_nodes(G, max_history):
                         G.remove_node(j)
 
 
-def _replace_edge_labels_with_nodes(G, next_id, interpreter, training_data):
+def _replace_edge_labels_with_nodes(G, next_id, interpreter, training_data,
+                                    fontsize):
     """User messages are created as edge labels. This removes the labels and
     creates nodes instead.
 
@@ -200,7 +201,7 @@ def _replace_edge_labels_with_nodes(G, next_id, interpreter, training_data):
             next_id += 1
             G.remove_edge(s, e, k)
             G.add_node(next_id, label=label, style="filled",
-                       fillcolor="lightblue", shape="box")
+                       fillcolor="lightblue", shape="box", fontsize=fontsize)
             G.add_edge(s, next_id)
             G.add_edge(next_id, e)
 
@@ -211,7 +212,8 @@ def _persist_graph(G, output_file):
     import networkx as nx
 
     A = nx.nx_agraph.to_agraph(G)  # convert to a graphviz graph
-    A.layout("dot", args="-Goverlap=false -Gsplines=true -Gconcentrate=true")
+    A.layout("dot", args="-Goverlap=false -Gsplines=true -Gconcentrate=true "
+                         "-Gfontname=typewriter")
     A.draw(output_file)
 
 
@@ -219,7 +221,8 @@ def visualize_stories(story_steps,
                       output_file=None,
                       max_history=2,
                       interpreter=RegexInterpreter(),
-                      training_data=None):
+                      training_data=None,
+                      fontsize=12):
     """Given a set of stories, generates a graph visualizing the flows in the
     stories.
 
@@ -252,43 +255,53 @@ def visualize_stories(story_steps,
     story_graph = StoryGraph(story_steps)
     G = nx.MultiDiGraph()
     next_node_idx = 0
-    G.add_node(0, label="START", fillcolor="green", style="filled")
-    G.add_node(-1, label="END", fillcolor="red", style="filled")
+    G.add_node(0, label="START", fillcolor="green", style="filled",
+               fontsize=fontsize)
+    G.add_node(-1, label="END", fillcolor="red", style="filled",
+               fontsize=fontsize)
 
     checkpoint_indices = defaultdict(list)
-    checkpoint_indices[STORY_START] = [0]
+    checkpoint_indices[STORY_START] = [(0, None)]
 
     for step in story_graph.ordered_steps():
-        current_nodes = checkpoint_indices[step.start_checkpoint]
+        current_nodes = checkpoint_indices[step.start_checkpoint_name()]
         message = None
         for el in step.events:
             if isinstance(el, UserUttered):
                 message = interpreter.parse(el.text)
             elif isinstance(el, ActionExecuted):
-                if message:
-                    message_key = message.get("intent", {}).get("name", None)
-                    message_label = message.get("text", None)
-                else:
-                    message_key = None
-                    message_label = None
-
                 next_node_idx += 1
-                G.add_node(next_node_idx, label=el.action_name)
-                for current_node in current_nodes:
+                G.add_node(next_node_idx, label=el.action_name,
+                           fontsize=fontsize)
+
+                for current_node, tailing_message in current_nodes:
+                    msg = message if message else tailing_message
+                    if msg:
+                        message_key = msg.get("intent", {}).get("name", None)
+                        message_label = msg.get("text", None)
+                    else:
+                        message_key = None
+                        message_label = None
+
                     _add_edge(G, current_node, next_node_idx, message_key,
                               message_label)
 
-                current_nodes = [next_node_idx]
+                current_nodes = [(next_node_idx, None)]
                 message = None
-        if not step.end_checkpoint:
-            for current_node in current_nodes:
-                G.add_edge(current_node, -1, key=EDGE_NONE_LABEL)
+        if not step.end_checkpoint_name():
+            for current_node, _ in current_nodes:
+                if message:
+                    G.add_edge(current_node, -1,
+                               key=EDGE_NONE_LABEL, label=message)
+                else:
+                    G.add_edge(current_node, -1, key=EDGE_NONE_LABEL)
         else:
-            checkpoint_indices[step.end_checkpoint].extend(current_nodes)
+            updated_nodes = [(c, message) for c, _ in current_nodes]
+            checkpoint_indices[step.end_checkpoint_name()].extend(updated_nodes)
 
     _merge_equivalent_nodes(G, max_history)
-    _replace_edge_labels_with_nodes(
-            G, next_node_idx, interpreter, training_data)
+    _replace_edge_labels_with_nodes(G, next_node_idx, interpreter,
+                                    training_data, fontsize)
 
     if output_file:
         _persist_graph(G, output_file)

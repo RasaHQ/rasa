@@ -57,6 +57,11 @@ class KerasPolicy(Policy):
         return y_pred[-1].tolist()
 
     def _build_model(self, num_features, num_actions, max_history_len):
+        warnings.warn("Deprecated, use `model_architecture` instead.",
+                      DeprecationWarning, stacklevel=2)
+        return
+
+    def model_architecture(self, num_features, num_actions, max_history_len):
         """Build a keras model and return a compiled model.
 
         :param max_history_len: The maximum number of historical
@@ -70,7 +75,7 @@ class KerasPolicy(Policy):
         # Build Model
         model = Sequential()
         model.add(Masking(-1, batch_input_shape=batch_shape))
-        model.add(LSTM(n_hidden, batch_input_shape=batch_shape))
+        model.add(LSTM(n_hidden, batch_input_shape=batch_shape, dropout=0.2))
         model.add(Dense(input_dim=n_hidden, units=num_actions))
         model.add(Activation('softmax'))
 
@@ -82,9 +87,9 @@ class KerasPolicy(Policy):
         return model
 
     def train(self, X, y, domain, **kwargs):
-        self.model = self._build_model(domain.num_features,
-                                       domain.num_actions,
-                                       X.shape[1])
+        self.model = self.model_architecture(domain.num_features,
+                                             domain.num_actions,
+                                             X.shape[1])
         y_one_hot = np.zeros((len(y), domain.num_actions))
         y_one_hot[np.arange(len(y)), y] = 1
 
@@ -156,15 +161,15 @@ class KerasPolicy(Policy):
                 with io.open(meta_path) as f:
                     meta = json.loads(f.read())
                 model_arch = cls._load_model_arch(path, meta)
-                return KerasPolicy(
+                return cls(
                         cls._load_weights_for_model(path, model_arch, meta),
                         current_epoch=meta["epochs"],
                         max_history=max_history,
                         featurizer=featurizer
                 )
             else:
-                return KerasPolicy(max_history=max_history,
-                                   featurizer=featurizer)
+                return cls(max_history=max_history,
+                           featurizer=featurizer)
         else:
             raise Exception("Failed to load dialogue model. Path {} "
                             "doesn't exist".format(os.path.abspath(path)))

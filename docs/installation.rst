@@ -1,17 +1,23 @@
 .. _installation:
 
-Installation and Hello World
-============================
-
 Installation
-------------
+============
+
+Install Rasa Core to get started with the Rasa stack.
+
+Install Rasa Core
+-----------------
 The recommended way to install Rasa Core is using pip:
 
 .. code-block:: bash
 
     pip install rasa_core
 
-If you want to use the bleeding edge version use github + setup.py:
+Unless you've already got numpy & scipy installed, we highly recommend 
+that you install and use `Anaconda <https://www.continuum.io\/downloads>`_.
+
+
+If you want to use the bleeding edge version of Rasa use github + setup.py:
 
 .. code-block:: bash
 
@@ -29,24 +35,25 @@ If you want to use the bleeding edge version use github + setup.py:
         pip install -r dev-requirements.txt
 
 
-Additional Dependencies
------------------------
+Add Natural Language Understanding
+----------------------------------
 
-We use Rasa NLU for intent classification & entity extraction,
-but you are free to use other NLU services like wit.ai, api.ai, or LUIS.ai. If you
-want to use Rasa NLU make sure to follow the installation instructions of the
-`NLU docs <https://nlu.rasa.ai>`_ as well.
-In fact, you don't need to use NLU at all, if your messaging app uses buttons
-rather than free text.
+We use Rasa NLU for intent classification & entity extraction. To get it, run
 
-Hello, World!
--------------
-
-First things first, let's try it out! From the project's root dir, run:
 
 .. code-block:: bash
 
-    python examples/hello_world/run.py
-    Bot loaded. Type hello and press enter : 
-    hello
-    hey there!
+    pip install rasa_nlu
+
+
+Full instructions can be found `here <https://nlu.rasa.ai/installation.html>`_.
+
+You can also use other NLU services like wit.ai, dialogflow, or LUIS. 
+In fact, you don't need to use NLU at all, if your messaging app uses buttons
+rather than free text.
+
+Getting Started
+---------------
+
+To see your newly installed Rasa Core in action, head over to the
+introductory tutorial :ref:`tutorial_basics`.

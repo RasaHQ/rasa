@@ -16,7 +16,8 @@ from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.policies import PolicyTrainer
 from rasa_core.policies.ensemble import SimplePolicyEnsemble, PolicyEnsemble
 from rasa_core.policies.memoization import MemoizationPolicy
-from rasa_core.policies.online_policy_trainer import OnlinePolicyTrainer
+from rasa_core.policies.online_policy_trainer import OnlinePolicyTrainer, \
+    TrainingFinishedException
 from rasa_core.processor import MessageProcessor
 from rasa_core.tracker_store import InMemoryTrackerStore, TrackerStore
 
@@ -43,6 +44,9 @@ class Agent(object):
     @classmethod
     def load(cls, path, interpreter=None, tracker_store=None):
         # type: (Text, Any, Optional[TrackerStore]) -> Agent
+
+        if path is None:
+            raise ValueError("No domain path specified.")
         domain = TemplateDomain.load(os.path.join(path, "domain.yml"))
         # ensures the domain hasn't changed between test and train
         domain.compare_with_specification(path)
@@ -50,14 +54,14 @@ class Agent(object):
         ensemble = PolicyEnsemble.load(path, featurizer)
         _interpreter = NaturalLanguageInterpreter.create(interpreter)
         _tracker_store = cls._create_tracker_store(tracker_store, domain)
-        return Agent(domain, ensemble, featurizer, _interpreter, _tracker_store)
+        return cls(domain, ensemble, featurizer, _interpreter, _tracker_store)
 
     def handle_message(
             self,
             text_message,  # type: Text
             message_preprocessor=None,  # type: Optional[Callable[[Text], Text]]
             output_channel=None,  # type: Optional[OutputChannel]
-            sender=None  # type: Optional[Text]
+            sender_id=UserMessage.DEFAULT_SENDER_ID  # type: Optional[Text]
     ):
         # type: (...) -> Optional[List[Text]]
         """
@@ -78,8 +82,8 @@ class Agent(object):
         :Example:
 
             >>> from rasa_core.agent import Agent
-            >>> agent = Agent.load("examples/babi/models/policy/current",
-            ... interpreter="examples/babi/models/nlu/current_py2")
+            >>> agent = Agent.load("examples/restaurantbot/models/dialogue",
+            ... interpreter="examples/restaurantbot/models/nlu/current")
             >>> agent.handle_message("hello")
             [u'how can I help you?']
 
@@ -87,16 +91,16 @@ class Agent(object):
 
         processor = self._create_processor(message_preprocessor)
         return processor.handle_message(
-                UserMessage(text_message, output_channel, sender))
+                UserMessage(text_message, output_channel, sender_id))
 
     def start_message_handling(self,
                                text_message,
-                               sender=None):
+                               sender_id=UserMessage.DEFAULT_SENDER_ID):
         # type: (Text, Optional[Text]) -> Dict[Text, Any]
 
         processor = self._create_processor()
         return processor.start_message_handling(
-                UserMessage(text_message, None, sender))
+                UserMessage(text_message, None, sender_id))
 
     def continue_message_handling(self, sender_id, executed_action, events):
         # type: (Text, Text, List[Event]) -> Dict[Text, Any]
@@ -131,19 +135,24 @@ class Agent(object):
             if type(p) == MemoizationPolicy:
                 p.toggle(activate)
 
-    def train(self, filename=None, **kwargs):
-        # type: (Optional[Text], **Any) -> None
+    def train(self, filename=None, model_path=None, remove_duplicates=True, **kwargs):
+        # type: (Optional[Text], Optional[Text], **Any) -> None
         """Train the policies / policy ensemble using dialogue data from file"""
 
         trainer = PolicyTrainer(self.policy_ensemble, self.domain,
                                 self.featurizer)
         trainer.train(filename, **kwargs)
 
+        if model_path:
+            self.persist(model_path)
+
     def train_online(self,
-                     filename=None,
-                     input_channel=None,
-                     **kwargs):
-        # type: (Optional[Text], Optional[InputChannel], **Any) -> None
+                     filename=None,  # type: Optional[Text]
+                     input_channel=None,  # type: Optional[InputChannel]
+                     model_path=None,  # type: Optional[Text]
+                     **kwargs  # type: **Any
+                     ):
+        # type: (...) -> None
         """Runs an online training session on the set policies / ensemble.
 
         The policies will be pretrained using the data from `filename`.
@@ -158,6 +167,9 @@ class Agent(object):
         trainer = OnlinePolicyTrainer(self.policy_ensemble, self.domain,
                                       self.featurizer)
         trainer.train(filename, self.interpreter, input_channel, **kwargs)
+
+        if model_path:
+            self.persist(model_path)
 
     def persist(self, model_path):
         # type: (Text) -> None

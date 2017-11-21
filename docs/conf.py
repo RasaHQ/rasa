@@ -34,7 +34,8 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.doctest',
-    'nbsphinx'
+    'nbsphinx',
+    'sphinxcontrib.httpdomain',
 #    'numpydoc',
 ]
 
@@ -318,6 +319,12 @@ pp = pprint.PrettyPrinter(indent=4)
 logging.basicConfig(level="ERROR")
 
 os.chdir(os.path.abspath(os.path.join('%s', '..')))
+
+# patch agent handle to fix indefinite running during doctests
+from rasa_core.agent import Agent
+from mock import Mock
+
+Agent.handle_channel = Mock('handle_channel')
 ''' % os.path.dirname(__file__)
 
 # Sphinxcontrib configuration

@@ -65,7 +65,8 @@ class UtterAction(Action):
     def run(self, dispatcher, tracker, domain):
         """Simple run implementation uttering a (hopefully defined) template."""
 
-        dispatcher.utter_template(self.name())
+        dispatcher.utter_template(self.name(),
+                                  filled_slots=tracker.current_slot_values())
         return []
 
     def name(self):

@@ -1,24 +1,24 @@
+# all hashtags are comments :)
 intents:
  - greet
  - default
  - goodbye
 
-slots:
-  cuisine:
-    type: text
-  location:
-    type: text
-
 entities:
  - name
 
+slots:
+  name:
+    type: text
+
 templates:
   utter_greet:
-    - hey there!
+    - "hey there {name}!"    # variable will be filled by slot with the same name or by custom code
   utter_goodbye:
-    - goodbye :(
+    - "goodbye :("
+    - "bye bye"              # multiple templates will allow the bot to randomly pick from them
   utter_default:
-    - default message
+    - "default message"
 
 actions:
   - utter_default

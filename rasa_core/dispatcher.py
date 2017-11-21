@@ -3,7 +3,10 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import copy
+
 from typing import Text, List, Dict, Any
+import copy
 
 from rasa_core.domain import Domain
 from rasa_core.channels import OutputChannel
@@ -29,64 +32,92 @@ class Button(dict):
 class Dispatcher(object):
     """Send messages back to user"""
 
-    def __init__(self, sender, output_channel, domain):
+    def __init__(self, sender_id, output_channel, domain):
         # type: (Text, OutputChannel, Domain) -> None
 
-        self.sender = sender
+        self.sender_id = sender_id
         self.output_channel = output_channel
         self.domain = domain
         self.send_messages = []
 
-    def utter_message(self, message):
-        # type: (Text) -> None
+    def utter_response(self, message):
+        # type: (Dict[Text, Any]) -> None
         """Send a message to the client."""
 
-        if self.sender is not None and self.output_channel is not None:
-            for message_part in message.split("\n\n"):
-                self.output_channel.send_text_message(self.sender, message_part)
+        if message.get("buttons"):
+            self.utter_button_message(message.get("text"),
+                                      message.get("buttons"))
+        else:
+            self.utter_message(message.get("text"))
+
+        # if there is an image we handle it separately as an attachment
+        if message.get("image"):
+            self.utter_attachment(message.get("image"))
+
+    def utter_message(self, text):
+        # type: (Text) -> None
+        """"Send a text to the output channel"""
+
+        if self.sender_id is not None and self.output_channel is not None:
+            for message_part in text.split("\n\n"):
+                self.output_channel.send_text_message(self.sender_id, message_part)
                 self.send_messages.append(message_part)
 
     def utter_custom_message(self, *elements):
         # type: (*Dict[Text, Any]) -> None
         """Sends a message with custom elements to the output channel."""
 
-        self.output_channel.send_custom_message(self.sender, elements)
+        self.output_channel.send_custom_message(self.sender_id, elements)
 
     def utter_button_message(self, text, buttons, **kwargs):
         # type: (Text, List[Dict[Text, Any]], **Any) -> None
         """Sends a message with buttons to the output channel."""
 
-        self.output_channel.send_text_with_buttons(self.sender, text, buttons,
+        self.output_channel.send_text_with_buttons(self.sender_id, text, buttons,
                                                    **kwargs)
-
-    def utter_button_template(self, template, buttons, **kwargs):
-        # type: (Text, List[Dict[Text, Any]], **Any) -> None
-        """Sends a message template with buttons to the output channel."""
-
-        self.utter_button_message(self.retrieve_template(template, **kwargs),
-                                  buttons, **kwargs)
 
     def utter_attachment(self, attachment):
         # type: (Text) -> None
-        """Send a message to the client with attachements."""
+        """Send a message to the client with attachments."""
+        self.output_channel.send_image_url(self.sender_id, attachment)
 
-        self.output_channel.send_image_url(self.sender, attachment)
+    def utter_button_template(self, template, buttons, filled_slots=None, **kwargs):
+        # type: (Text, List[Dict[Text, Any]], **Any) -> None
+        """Sends a message template with buttons to the output channel."""
 
-    def utter_template(self, template, **kwargs):
+        t = self.retrieve_template(template, filled_slots, **kwargs)
+        if "buttons" not in t:
+            t["buttons"] = buttons
+        else:
+            t["buttons"].extend(buttons)
+        self.utter_response(t)
+
+    def utter_template(self, template, filled_slots=None, **kwargs):
         # type: (Text, **Any) -> None
         """"Send a message to the client based on a template."""
 
-        self.utter_message(self.retrieve_template(template, **kwargs))
+        message = self.retrieve_template(template, filled_slots, **kwargs)
+        self.utter_response(message)
 
-    def retrieve_template(self, template, **kwargs):
-        # type: (Text, **Any) -> Text
+    @staticmethod
+    def _template_variables(filled_slots, kwargs):
+        """Combine slot values and key word arguments to fill templates."""
+
+        if filled_slots is None:
+            filled_slots = {}
+        template_vars = filled_slots.copy()
+        template_vars.update(kwargs.items())
+        return template_vars
+
+    def retrieve_template(self, template, filled_slots=None, **kwargs):
+        # type: (Text, **Any) -> Dict[Text, Any]
         """Retrieve a named template from the domain."""
 
-        r = self.domain.random_template_for(template)
+        r = copy.deepcopy(self.domain.random_template_for(template))
         if r is not None:
-            if len(kwargs) > 0:
-                return r.format(**kwargs)
-            else:
-                return r
+            template_vars = self._template_variables(filled_slots, kwargs)
+            if template_vars:
+                r["text"] = r["text"].format(**template_vars)
+            return r
         else:
-            return "Undefined utter template <{}>".format(template)
+            return {"text": "Undefined utter template <{}>".format(template)}

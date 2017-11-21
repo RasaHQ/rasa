@@ -1,13 +1,13 @@
 .. _section_http:
 
-Rasa Core as a HTTP server
-==========================
+HTTP server
+===========
 
 .. note::
 
     Before you can use the server, you need to define a domain, create training
     data, and train a model. You can then use the trained model for remote code
-    execution! See :ref:`tour` for an introduction.
+    execution! See :ref:`tutorial_basics` for an introduction.
 
 .. warning::
 
@@ -28,7 +28,7 @@ a HTTP REST interface.
 
 To activate the remote mode, include
 
-.. code-block:: yml
+.. code-block:: yaml
 
     action_factory: remote
 
@@ -59,9 +59,11 @@ The different parameters are:
 - ``-u``, which is the path to the Rasa NLU model.
 - ``-o``, which is the path to the log file.
 
+.. _http_start_conversation:
+
 Starting a conversation
 -----------------------
-You need to do a ``POST`` to the ``/conversation/<cid>/parse`` endpoint. ``<cid>``
+You need to do a ``POST`` to the ``/conversation/<sender>/parse`` endpoint. ``<sender>``
 is the conversation id (e.g. ``default`` if you just have one user, or the facebook user id or any
 other identifier).
 
@@ -145,7 +147,7 @@ You can return multiple events as part of your query, e.g.:
         '{"executed_action": "search_restaurants", "events": [{"event": "slot", "name": "cuisine", "value": "mexican"}, {"event": "slot", "name": "people", "value": 5}]}'
 
 Here is a list of all available events you can append to the ``events`` array in
-your call to ``/conversation/<cid>/continue``.
+your call to ``/conversation/<sender>/continue``.
 
 Set a slot
 ::::::::::
@@ -176,73 +178,112 @@ Reset Slots
 Endpoints
 ---------
 
-``POST /conversation/<cid>/parse``
-:::::::::::::::::::::::::::::::::::
+.. http:get:: /conversations/(str:sender)/parse
 
-Notify the dialogue engine that the user posted a new message. You must ``POST``
-data in this format ``'{"query":"<your text to parse>"}'``,
-you can do this with
+   Notify the dialogue engine that the user posted a new message. You must
+   ``POST`` data in this format ``'{"query":"<your text to parse>"}'``,
+   you can do this with
 
-.. code-block:: bash
+   **Example request**:
 
-    $ curl -XPOST localhost:5005/conversations/default/parse -d '{"query":"hello there"}' | python -mjson.tool
-    {
-        "next_action": "utter_ask_howcanhelp",
-        "tracker": {
-            "latest_message": {
-                ...
-            },
-            "sender_id": "default",
-            "slots": {
-                "cuisine": null,
-                "info": null,
-                "location": null,
-                "matches": null,
-                "people": null,
-                "price": null
-            }
-        }
-    }
+   .. sourcecode:: bash
+
+      curl -XPOST localhost:5005/conversations/default/parse -d \
+        '{"query":"hello there"}' | python -mjson.tool
+
+   **Example response**:
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Vary: Accept
+      Content-Type: text/javascript
+
+      {
+          "next_action": "utter_ask_howcanhelp",
+          "tracker": {
+              "latest_message": {
+                  ...
+              },
+              "sender_id": "default",
+              "slots": {
+                  "cuisine": null,
+                  "info": null,
+                  "location": null,
+                  "matches": null,
+                  "people": null,
+                  "price": null
+              }
+          }
+      }
+
+   :statuscode 200: no error
 
 
-``POST /conversation/<cid>/continue``
-:::::::::::::::::::::::::::::::::::::
+.. http:get:: /conversations/(str:sender)/continue
 
-Continue the prediction loop. Should be called until the endpoint returns
-``action_listen`` as the next action. Between the calls to this endpoint,
-your code should execute the mentioned next action. If you receive
-``action_listen`` as the next action, you should wait for the next user input.
+   Continue the prediction loop for the conversation with id `user_id`. Should
+   be called until the endpoint returns ``action_listen`` as the next action.
+   Between the calls to this endpoint, your code should execute the mentioned
+   next action. If you receive ``action_listen`` as the next action, you should
+   wait for the next user input.
 
-.. code-block:: bash
+   **Example request**:
 
-    $ curl -XPOST http://localhost:5005/conversations/default/continue -d \
+   .. sourcecode:: bash
+
+      curl -XPOST http://localhost:5005/conversations/default/continue -d \
         '{"executed_action": "utter_ask_howcanhelp", "events": []}' | python -mjson.tool
-    {
-        "next_action": "utter_ask_cuisine",
-        "tracker": {
-            "latest_message": {
-                ...
-            },
-            "sender_id": "default",
-            "slots": {
-                "cuisine": null,
-                "info": null,
-                "location": null,
-                "matches": null,
-                "people": null,
-                "price": null
-            }
-        }
-    }
 
-``GET /version``
-::::::::::::::::
+   **Example response**:
 
-This will return the current version of the Rasa Core instance.
+   .. sourcecode:: http
 
-.. code-block:: bash
+      HTTP/1.1 200 OK
+      Vary: Accept
+      Content-Type: text/javascript
 
-    $ curl http://localhost:5005/version | python -mjson.tool
-    {
-      "version" : "0.7.0"
-    }
+      {
+          "next_action": "utter_ask_cuisine",
+          "tracker": {
+              "latest_message": {
+                  ...
+              },
+              "sender_id": "default",
+              "slots": {
+                  "cuisine": null,
+                  "info": null,
+                  "location": null,
+                  "matches": null,
+                  "people": null,
+                  "price": null
+              }
+          }
+      }
+
+   :statuscode 200: no error
+
+
+.. http:get:: /version
+
+   Version of Rasa Core that is currently running.
+
+   **Example request**:
+
+   .. sourcecode:: bash
+
+      curl http://localhost:5005/version | python -mjson.tool
+
+   **Example response**:
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Vary: Accept
+      Content-Type: text/javascript
+
+      {
+          "version" : "0.7.0"
+      }
+
+   :statuscode 200: no error

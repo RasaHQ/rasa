@@ -13,7 +13,8 @@ from rasa_core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa_core import utils
 
 if typing.TYPE_CHECKING:
-    from rasa_core.training_utils.dsl import StoryStep, Story
+    from rasa_core.training_utils.dsl import StoryStep, Story, \
+    TrainingsDataExtractor
 
 
 class StoryGraph(object):
@@ -37,8 +38,6 @@ class StoryGraph(object):
 
     def build_stories(self,
                       domain,
-                      interpreter=RegexInterpreter(),
-                      remove_duplicates=True,
                       max_number_of_trackers=2000):
         # type: (Domain, NaturalLanguageInterpreter, bool, int) -> List[Story]
         """Build the stories of a graph."""
@@ -48,16 +47,20 @@ class StoryGraph(object):
         rand = random.Random(42)
 
         for step in self.ordered_steps():
-            if step.start_checkpoint in active_trackers:
+            if step.start_checkpoint_name() in active_trackers:
                 # these are the trackers that reached this story step
                 # and that need to handle all events of the step
-                incoming_trackers = active_trackers[step.start_checkpoint]
+                incoming_trackers = active_trackers[step.start_checkpoint_name()]
+
+                # TODO: we can't use tracker filter here to filter for
+                #       checkpoint conditions since we don't have trackers.
+                #       this code should rather use the code from the dsl.
 
                 if max_number_of_trackers is not None:
                     incoming_trackers = utils.subsample_array(
                             incoming_trackers, max_number_of_trackers, rand)
 
-                events = step.explicit_events(domain, interpreter)
+                events = step.explicit_events(domain)
                 # need to copy the tracker as multiple story steps might
                 # start with the same checkpoint and all of them
                 # will use the same set of incoming trackers
@@ -70,9 +73,9 @@ class StoryGraph(object):
                 # update our tracker dictionary with the trackers that handled
                 # the events of the step and that can now be used for further
                 # story steps that start with the checkpoint this step ended on
-                if step.end_checkpoint not in active_trackers:
-                    active_trackers[step.end_checkpoint] = []
-                active_trackers[step.end_checkpoint].extend(trackers)
+                if step.end_checkpoint_name() not in active_trackers:
+                    active_trackers[step.end_checkpoint_name()] = []
+                active_trackers[step.end_checkpoint_name()].extend(trackers)
 
         return active_trackers[None]
 
@@ -88,7 +91,8 @@ class StoryGraph(object):
         """Topological sort of the steps returning the ids of the steps."""
 
         checkpoints = StoryGraph._group_by_start_checkpoint(story_steps)
-        graph = {s.id: [other.id for other in checkpoints[s.end_checkpoint]]
+        graph = {s.id: [other.id
+                        for other in checkpoints[s.end_checkpoint_name()]]
                  for s in story_steps}
         return StoryGraph.topological_sort(graph)
 
@@ -99,7 +103,7 @@ class StoryGraph(object):
 
         checkpoints = defaultdict(list)
         for step in story_steps:
-            checkpoints[step.start_checkpoint].append(step)
+            checkpoints[step.start_checkpoint_name()].append(step)
         return checkpoints
 
     @staticmethod

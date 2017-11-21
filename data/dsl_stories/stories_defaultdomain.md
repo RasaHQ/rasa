@@ -4,7 +4,7 @@
     - utter_default
 
 ## simple_story_with_only_end
-* _greet
+* _greet  OR _greet[name=Peter]
     - utter_greet
 > check_greet                   <!-- checkpoint defining the end of this turn -->
 

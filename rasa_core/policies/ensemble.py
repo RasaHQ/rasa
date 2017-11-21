@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from rasa_core.domain import Domain
+    from rasa_core.featurizers import Featurizer
 
 
 class PolicyEnsemble(object):
@@ -28,9 +29,13 @@ class PolicyEnsemble(object):
         self.policies = policies
 
     def train(self, X, y, domain, featurizer, **kwargs):
-        for policy in self.policies:
-            policy.prepare(featurizer, X.shape[1])
-            policy.train(X, y, domain, **kwargs)
+        if not utils.is_training_data_empty(X):
+            for policy in self.policies:
+                policy.prepare(featurizer, max_history=X.shape[1])
+                policy.train(X, y, domain, **kwargs)
+        else:
+            logger.info("Skipped training, because there are no "
+                        "training samples.")
 
     def predict_next_action(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> (float, int)
@@ -85,7 +90,7 @@ class PolicyEnsemble(object):
 
     @classmethod
     def load(cls, path, featurizer):
-        # type: (Text, Optional[Domain]) -> PolicyEnsemble
+        # type: (Text, Optional[Featurizer]) -> PolicyEnsemble
         """Loads policy and domain specification from storage"""
 
         metadata = cls.load_metadata(path)

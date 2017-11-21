@@ -1,0 +1,17 @@
+/*
+   fixes wrong line height in code snippets. (line height between code lines
+   and shown line numbers is different so that the line numbers and the code
+   lines don't align without that fix)
+ */
+.rst-content .highlight>pre {
+    line-height: 18px;
+ }
+
+/*
+   fixes overlapping "Choose Version" bar in the navigation hiding content items
+   adds enough padding so the version chooser doesn't overlap with any
+   navigation items
+*/
+.wy-nav-side {
+  padding-bottom: 3.2em;
+}

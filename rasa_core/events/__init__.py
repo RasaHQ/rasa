@@ -104,6 +104,11 @@ class UserUttered(Event):
                 "entities": self.entities,
                 "text": text}
 
+    @staticmethod
+    def from_parse_data(text, parse_data):
+        return UserUttered(text, parse_data["intent"], parse_data["entities"],
+                           parse_data)
+
     def __hash__(self):
         return hash((self.text, self.intent, tuple(self.entities)))
 
@@ -404,6 +409,9 @@ class StoryExported(Event):
 
     type_name = "export"
 
+    def __init__(self, path=None):
+        self.path = path if path else "stories.md"
+
     def __hash__(self):
         return hash(32143124319)
 
@@ -419,7 +427,57 @@ class StoryExported(Event):
     def apply_to(self, tracker):
         # type: (DialogueStateTracker) -> None
 
-        tracker.export_stories_to_file()
+        tracker.export_stories_to_file(self.path)
+
+
+# noinspection PyProtectedMember
+class ConversationPaused(Event):
+    """Ignore messages from the user to let a human take over.
+
+    As a side effect the ``Tracker``'s ``paused`` attribute will
+    be set to ``True``. """
+
+    type_name = "pause"
+
+    def __hash__(self):
+        return hash(32143124313)
+
+    def __eq__(self, other):
+        return isinstance(other, ConversationPaused)
+
+    def __str__(self):
+        return "ConversationPaused()"
+
+    def as_story_string(self):
+        return self.type_name
+
+    def apply_to(self, tracker):
+        tracker._paused = True
+
+
+# noinspection PyProtectedMember
+class ConversationResumed(Event):
+    """Bot takes over conversation.
+
+    Inverse of ``PauseConversation``. As a side effect the ``Tracker``'s
+    ``paused`` attribute will be set to ``False``."""
+
+    type_name = "resume"
+
+    def __hash__(self):
+        return hash(32143124314)
+
+    def __eq__(self, other):
+        return isinstance(other, ConversationResumed)
+
+    def __str__(self):
+        return "ConversationResumed()"
+
+    def as_story_string(self):
+        return self.type_name
+
+    def apply_to(self, tracker):
+        tracker._paused = False
 
 
 # noinspection PyProtectedMember

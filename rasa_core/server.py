@@ -23,6 +23,7 @@ def create_argument_parser():
             description='starts server to serve an agent')
     parser.add_argument(
             '-d', '--core',
+            required=True,
             type=str,
             help="core model to run with the server")
     parser.add_argument(
@@ -31,12 +32,20 @@ def create_argument_parser():
             help="nlu model to run with the server")
     parser.add_argument(
             '-p', '--port',
+            type=int,
             default=5005,
             help="port to run the server at")
     parser.add_argument(
             '-v', '--verbose',
             default=True,
+            action="store_true",
             help="use verbose logging")
+    parser.add_argument(
+            '--cors',
+            nargs='*',
+            type=str,
+            help="enable CORS for the passed origin. "
+                 "Use * to whitelist all origins")
     parser.add_argument(
             '-o', '--log_file',
             type=str,
@@ -63,11 +72,16 @@ class RasaCoreServer(object):
 
     app = Klein()
 
-    def __init__(self, model_directory, nlu_model, verbose, log_file):
+    def __init__(self, model_directory,
+                 nlu_model=None,
+                 verbose=True,
+                 log_file="rasa_core.log",
+                 cors_origins=None):
         logging.basicConfig(filename=log_file,
                             level="DEBUG" if verbose else "INFO")
         logging.captureWarnings(True)
 
+        self.config = {"cors_origins": cors_origins if cors_origins else []}
         self.agent = self._create_agent(model_directory, nlu_model)
 
     @staticmethod
@@ -144,7 +158,8 @@ if __name__ == '__main__':
     rasa = RasaCoreServer(cmdline_args.core,
                           cmdline_args.nlu,
                           cmdline_args.verbose,
-                          cmdline_args.log_file)
+                          cmdline_args.log_file,
+                          cmdline_args.cors)
 
     logger.info("Started http server on port %s" % cmdline_args.port)
     rasa.app.run("0.0.0.0", cmdline_args.port)

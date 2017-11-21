@@ -11,24 +11,27 @@ import logging
 import os
 
 import numpy as np
+import pkg_resources
 from builtins import str
+from pykwalify.errors import SchemaError
+from six import string_types
 from six import with_metaclass
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Any
 from typing import List
 from typing import Optional
 from typing import Text
 
+from rasa_core import utils
 from rasa_core.actions import Action
-from rasa_core.conversation import DefaultTopic
-from rasa_core.actions.action import ActionListen, UtterAction, ActionRestart
-
+from rasa_core.actions.action import ActionListen, ActionRestart
 from rasa_core.actions.factories import action_factory_by_name
+from rasa_core.conversation import DefaultTopic
 from rasa_core.conversation import Topic
 from rasa_core.events import ActionExecuted
 from rasa_core.featurizers import Featurizer
 from rasa_core.slots import Slot
 from rasa_core.trackers import DialogueStateTracker, SlotSet
-from rasa_core import utils
+from rasa_core.utils import read_yaml_file
 
 logger = logging.getLogger(__name__)
 
@@ -317,7 +320,6 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         return feature_dict
 
     def slots_for_entities(self, entities):
-        events = []
         if self.store_entities_as_slots:
             return [SlotSet(entity['entity'], entity['value'])
                     for entity in entities
@@ -402,7 +404,7 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
 
     @abc.abstractproperty
     def templates(self):
-        # type: () -> List[Text]
+        # type: () -> List[Dict[Text, Any]]
         raise NotImplementedError(
                 "domain must provide a dictionary of response templates")
 
@@ -410,30 +412,49 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
 class TemplateDomain(Domain):
     @classmethod
     def load(cls, file_name):
-        import yaml
-        import io
-        if os.path.isfile(file_name):
-            with io.open(file_name, encoding="utf-8") as f:
-                data = yaml.load(f.read())
-                templates = data.get("templates", [])
-                action_factory = data.get("action_factory", None)
-                topics = [Topic(name) for name in data.get("topics", [])]
-                slots = TemplateDomain.collect_slots(data.get("slots", {}))
-                additional_arguments = data.get("config", {})
-                return TemplateDomain(
-                        data.get("intents", []),
-                        data.get("entities", []),
-                        slots,
-                        templates,
-                        data.get("actions", []),
-                        action_factory,
-                        topics,
-                        **additional_arguments
-                )
-        else:
+        if not os.path.isfile(file_name):
             raise Exception(
                     "Failed to load domain specification from '{}'. "
                     "File not found!".format(os.path.abspath(file_name)))
+
+        cls.validate_domain_yaml(file_name)
+        data = read_yaml_file(file_name)
+        utter_templates = cls.collect_templates(data.get("templates", {}))
+        action_factory = data.get("action_factory", None)
+        topics = [Topic(name) for name in data.get("topics", [])]
+        slots = cls.collect_slots(data.get("slots", {}))
+        additional_arguments = data.get("config", {})
+        return TemplateDomain(
+                data.get("intents", []),
+                data.get("entities", []),
+                slots,
+                utter_templates,
+                data.get("actions", []),
+                action_factory,
+                topics,
+                **additional_arguments
+        )
+
+    @classmethod
+    def validate_domain_yaml(cls, file_name):
+        """Validate domain yaml."""
+        from pykwalify.core import Core
+
+        log = logging.getLogger('pykwalify')
+        log.setLevel(logging.WARN)
+
+        schema_file = pkg_resources.resource_filename(__name__,
+                                                      "schemas/domain.yml")
+        c = Core(source_file=file_name,
+                 schema_files=[schema_file])
+        try:
+            c.validate(raise_exception=True)
+        except SchemaError:
+            raise ValueError("Failed to validate your domain yaml '{}'. "
+                             "Make sure the file is correct, to do so"
+                             "take a look at the errors logged during "
+                             "validation previous to this exception. "
+                             "".format(os.path.abspath(file_name)))
 
     @staticmethod
     def collect_slots(slot_dict):
@@ -447,6 +468,28 @@ class TemplateDomain(Domain):
             slot = slot_class(slot_name, **slot_dict[slot_name])
             slots.append(slot)
         return slots
+
+    @staticmethod
+    def collect_templates(yml_templates):
+        # type: (Dict[Text, List[Any]]) -> Dict[Text, List[Dict[Text, Any]]]
+        """Go through the templates and make sure they are all in dict format"""
+
+        templates = {}
+        for template_key, template_variations in yml_templates.items():
+            validated_variations = []
+            for t in template_variations:
+                # templates can either directly be strings or a dict with
+                # options we will always create a dict out of them
+                if isinstance(t, string_types):
+                    validated_variations.append({"text": t})
+                elif "text" not in t:
+                    raise Exception("Utter template '{}' needs to contain"
+                                    "'- text: ' attribute to be a proper"
+                                    "template".format(template_key))
+                else:
+                    validated_variations.append(t)
+            templates[template_key] = validated_variations
+        return templates
 
     def __init__(self, intents, entities, slots, templates, action_names,
                  action_factory, topics, **kwargs):

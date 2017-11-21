@@ -10,7 +10,7 @@ from collections import deque
 
 import jsonpickle
 import typing
-from typing import Generator, Dict, Text, Any, Optional
+from typing import Generator, Dict, Text, Any, Optional, Iterator
 from typing import List
 
 from rasa_core import utils
@@ -73,13 +73,15 @@ class DialogueStateTracker(object):
         # type: () -> Dict[Text, Any]
         """Returns the current tracker state as an object."""
 
-        serialised_slots = {key: slot.value
-                            for key, slot in self.slots.items()}
         return {
             "sender_id": self.sender_id,
-            "slots": serialised_slots,
+            "slots": self.current_slot_values(),
             "latest_message": self.latest_message.parse_data
         }
+
+    def current_slot_values(self):
+        """Return the currently set values of the slots"""
+        return {key: slot.value for key, slot in self.slots.items()}
 
     def get_slot(self, key):
         # type: (Text) -> Optional[Any]
@@ -90,6 +92,18 @@ class DialogueStateTracker(object):
         else:
             logger.info("Tried to access non existent slot '{}'".format(key))
             return None
+
+    def get_latest_entity_values(self, entity_type):
+        # type: (Text) -> Iterator[Text]
+        """Get entity values found for the passed entity name in latest msg.
+
+        If you are only interested in the first entity of a given type use
+        `next(tracker.get_latest_entity_values("my_entity_name"), None)`.
+        If no entity is found `None` is the default result."""
+
+        return (x.get("value")
+                for x in self.latest_message.entities
+                if x.get("entity") == entity_type)
 
     def is_paused(self):
         # type: () -> bool
@@ -129,7 +143,7 @@ class DialogueStateTracker(object):
         The resulting array is representing the state before each action."""
         from rasa_core.channels import UserMessage
 
-        tracker = DialogueStateTracker(UserMessage.DEFAULT_SENDER,
+        tracker = DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
                                        self.slots.values(),
                                        self.topics,
                                        self.default_topic)
@@ -231,7 +245,7 @@ class DialogueStateTracker(object):
 
         self._reset_slots()
         self._paused = False
-        self.latest_action_name = []
+        self.latest_action_name = None
         self.latest_message = UserUttered.empty()
         self.follow_up_action = None
         self._topic_stack = utils.TopicStack(self.topics, [],

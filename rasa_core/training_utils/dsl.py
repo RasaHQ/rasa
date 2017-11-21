@@ -38,6 +38,33 @@ logger = logging.getLogger(__name__)
 STORY_START = "STORY_START"
 
 
+class Checkpoint(object):
+    def __init__(self, name, conditions=None):
+        # type: (Optional[Text], Optional[Dict[Text, Any]]) -> None
+
+        self.name = name
+        self.conditions = conditions if conditions else {}
+
+    def as_story_string(self):
+        dumped_conds = json.dumps(self.conditions) if self.conditions else ""
+        return "{}{}".format(self.name, dumped_conds)
+
+    def filter_trackers(self, trackers):
+        """Filters out all trackers that do not satisfy the conditions."""
+
+        if not self.conditions:
+            return trackers
+
+        for slot_name, slot_value in self.conditions.items():
+            trackers = [t
+                        for t in trackers
+                        if t.tracker.get_slot(slot_name) == slot_value]
+        return trackers
+
+    def __str__(self):
+        return "Checkpoint({})".format(self.as_story_string())
+
+
 class StoryParseError(Exception):
     """Raised if there is an error while parsing the story file."""
 
@@ -46,13 +73,25 @@ class StoryParseError(Exception):
 
 
 class StoryStep(object):
-    def __init__(self, block_name=None, start_checkpoint=None,
-                 end_checkpoint=None, events=None):
+    def __init__(self,
+                 block_name=None,  # type: Optional[Text]
+                 start_checkpoint=None,  # type: Optional[Checkpoint]
+                 end_checkpoint=None,  # type: Optional[Checkpoint]
+                 events=None  # type: Optional[List[Event]]
+                 ):
+        # type: (...) -> None
+
         self.end_checkpoint = end_checkpoint
         self.start_checkpoint = start_checkpoint
         self.events = events if events else []
         self.block_name = block_name
         self.id = uuid.uuid4().hex  # type: Text
+
+    def start_checkpoint_name(self):
+        return self.start_checkpoint.name if self.start_checkpoint else None
+
+    def end_checkpoint_name(self):
+        return self.end_checkpoint.name if self.end_checkpoint else None
 
     def create_copy(self, use_new_id):
         copied = StoryStep(self.block_name, self.start_checkpoint,
@@ -83,8 +122,9 @@ class StoryStep(object):
             result = ""
         else:
             result = "\n## {}\n".format(self.block_name)
-            if self.start_checkpoint != STORY_START:
-                result += "> {}\n".format(self.start_checkpoint)
+            if self.start_checkpoint_name() != STORY_START:
+                cp = self.start_checkpoint.as_story_string()
+                result += "> {}\n".format(cp)
         for s in self.events:
             if isinstance(s, UserUttered):
                 result += "* {}\n".format(s.as_story_string())
@@ -95,11 +135,11 @@ class StoryStep(object):
 
         if not flat:
             if self.end_checkpoint is not None:
-                result += "> {}\n".format(self.end_checkpoint)
+                cp = self.end_checkpoint.as_story_string()
+                result += "> {}\n".format(cp)
         return result
 
-    def explicit_events(self, domain, interpreter,
-                        should_append_final_listen=True):
+    def explicit_events(self, domain, should_append_final_listen=True):
         # type: (Domain, NaturalLanguageInterpreter) -> List[Event]
         """Returns events contained in the story step including implicit events.
 
@@ -112,14 +152,9 @@ class StoryStep(object):
 
         for e in self.events:
             if isinstance(e, UserUttered):
-                parse_data = interpreter.parse(e.text)
-                updated_utterance = UserUttered(e.text,
-                                                parse_data["intent"],
-                                                parse_data["entities"],
-                                                parse_data)
                 events.append(ActionExecuted(ActionListen().name()))
-                events.append(updated_utterance)
-                events.extend(domain.slots_for_entities(parse_data["entities"]))
+                events.append(e)
+                events.extend(domain.slots_for_entities(e.entities))
             else:
                 events.append(e)
 
@@ -135,27 +170,32 @@ class StoryStepBuilder(object):
         self.current_steps = []
         self.start_checkpoints = []
 
-    def add_checkpoint(self, name):
+    def add_checkpoint(self, name, conditions):
         # Depending on the state of the story part this
         # is either a start or an end check point
         if not self.current_steps:
-            self.start_checkpoints.append(name)
+            self.start_checkpoints.append(Checkpoint(name, conditions))
         else:
+            if conditions:
+                logger.warn("End or intermediate checkpoints "
+                            "do not support conditions! "
+                            "(checkpoint: {})".format(name))
             additional_steps = []
             for t in self.current_steps:
                 if t.end_checkpoint is not None:
                     tcp = t.create_copy(use_new_id=True)
-                    tcp.end_checkpoint = name
+                    tcp.end_checkpoint = Checkpoint(name)
                     additional_steps.append(tcp)
                 else:
-                    t.end_checkpoint = name
+                    t.end_checkpoint = Checkpoint(name)
             self.current_steps.extend(additional_steps)
 
     def _prev_end_checkpoints(self):
         if not self.current_steps:
             return self.start_checkpoints
         else:
-            return list({s.end_checkpoint for s in self.current_steps})
+            end_names = {s.end_checkpoint_name() for s in self.current_steps}
+            return [Checkpoint(name) for name in end_names]
 
     def add_user_messages(self, messages):
         self.ensure_current_steps()
@@ -163,7 +203,7 @@ class StoryStepBuilder(object):
         if len(messages) == 1:
             # If there is only one possible intent, we'll keep things simple
             for t in self.current_steps:
-                t.add_user_message(UserUttered(messages[0]))
+                t.add_user_message(messages[0])
         else:
             # If there are multiple different intents the
             # user can use the express the same thing
@@ -174,8 +214,8 @@ class StoryStepBuilder(object):
             for t in self.current_steps:
                 for m in messages:
                     copied = t.create_copy(use_new_id=True)
-                    copied.add_user_message(UserUttered(m))
-                    copied.end_checkpoint = generated_checkpoint
+                    copied.add_user_message(m)
+                    copied.end_checkpoint = Checkpoint(generated_checkpoint)
                     updated_steps.append(copied)
             self.current_steps = updated_steps
 
@@ -203,7 +243,7 @@ class StoryStepBuilder(object):
             self.current_steps = []
 
     def _next_story_steps(self):
-        start_checkpoints = self._prev_end_checkpoints() or [STORY_START]
+        start_checkpoints = self._prev_end_checkpoints() or [Checkpoint(STORY_START)]
         current_turns = [StoryStep(block_name=self.name, start_checkpoint=s)
                          for s in start_checkpoints]
         return current_turns
@@ -211,17 +251,18 @@ class StoryStepBuilder(object):
 
 class Story(object):
     def __init__(self, story_steps=None):
+        # type: (List[StoryStep]) -> None
         self.story_steps = story_steps if story_steps else []
 
-    def as_dialogue(self, sender, domain, interpreter=RegexInterpreter()):
+    def as_dialogue(self, sender_id, domain):
         events = []
         for step in self.story_steps:
             events.extend(
-                    step.explicit_events(domain, interpreter,
+                    step.explicit_events(domain,
                                          should_append_final_listen=False))
 
         events.append(ActionExecuted(ActionListen().name()))
-        return Dialogue(sender, events)
+        return Dialogue(sender_id, events)
 
     def as_story_string(self, flat=False):
         story_content = ""
@@ -242,21 +283,23 @@ class Story(object):
 class StoryFileReader(object):
     """Helper class to read a story file."""
 
-    def __init__(self, domain, template_vars=None):
+    def __init__(self, domain, interpreter, template_vars=None):
         self.story_steps = []
         self.current_step_builder = None  # type: Optional[StoryStepBuilder]
         self.domain = domain
+        self.interpreter = interpreter
         self.template_variables = template_vars if template_vars else {}
 
     @staticmethod
-    def read_from_file(file_name, domain, template_variables=None):
+    def read_from_file(file_name, domain, interpreter=RegexInterpreter(),
+                       template_variables=None):
         """Given a json file reads the contained stories."""
 
         try:
             with io.open(file_name, "r") as f:
                 lines = f.readlines()
-            return StoryFileReader(domain, template_variables).process_lines(
-                    lines)
+            reader = StoryFileReader(domain, interpreter, template_variables)
+            return reader.process_lines(lines)
         except Exception as e:
             raise Exception("Failed to parse '{}'. {}".format(
                     os.path.abspath(file_name), e))
@@ -300,8 +343,8 @@ class StoryFileReader(object):
                     name = line[1:].strip("# ")
                     self.new_story_part(name)
                 elif line.startswith(">"):  # reached a checkpoint
-                    checkpoint_name = line[1:].strip()
-                    self.add_checkpoint(checkpoint_name)
+                    name, conditions = self._parse_event_line(line[1:].strip())
+                    self.add_checkpoint(name, conditions)
                 elif line.startswith(
                         "-"):  # reached a slot, event, or executed action
                     event_name, parameters = self._parse_event_line(line[1:])
@@ -349,21 +392,30 @@ class StoryFileReader(object):
         self._add_current_stories_to_result()
         self.current_step_builder = StoryStepBuilder(name)
 
-    def add_checkpoint(self, checkpoint):
+    def add_checkpoint(self, name, conditions):
         # type: (Text) -> None
 
         # Ensure story part already has a name
         if not self.current_step_builder:
             raise StoryParseError("Checkpoint '{}' is at an invalid location. "
-                                  "Expected a story start.".format(checkpoint))
+                                  "Expected a story start.".format(name))
 
-        self.current_step_builder.add_checkpoint(checkpoint)
+        self.current_step_builder.add_checkpoint(name, conditions)
 
     def add_user_messages(self, messages):
         if not self.current_step_builder:
             raise StoryParseError("User message '{}' at invalid location. "
                                   "Expected story start.".format(messages))
-        self.current_step_builder.add_user_messages(messages)
+        parsed_messages = []
+        for m in messages:
+            parse_data = self.interpreter.parse(m)
+            utterance = UserUttered.from_parse_data(m, parse_data)
+            if utterance.intent.get("name") not in self.domain.intents:
+                logger.warn("Found unknown intent '{}'. Please, make sure "
+                            "that all intents are listed in your domain "
+                            "yaml.".format(utterance.intent.get("name")))
+            parsed_messages.append(utterance)
+        self.current_step_builder.add_user_messages(parsed_messages)
 
     def add_event(self, event_name, parameters):
         parsed = Event.from_story_string(event_name, parameters, self.domain,
@@ -420,7 +472,7 @@ class FeaturizedTracker(object):
         # type: (Domain, int) -> FeaturizedTracker
         """Creates a featurized tracker from a domain."""
 
-        tracker = DialogueStateTracker(UserMessage.DEFAULT_SENDER,
+        tracker = DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
                                        domain.slots,
                                        domain.topics,
                                        domain.default_topic,
@@ -435,15 +487,13 @@ class TrainingsDataExtractor(object):
     def __init__(self,
                  story_graph,  # type: StoryGraph
                  domain,  # type: Domain
-                 featurizer,  # type: Featurizer
-                 interpreter=None  # type: Optional[NaturalLanguageInterpreter]
+                 featurizer  # type: Featurizer
                  ):
         # type: (...) -> None
 
         self.story_graph = story_graph
         self.domain = domain
         self.featurizer = featurizer
-        self.interpreter = interpreter if interpreter else RegexInterpreter()
 
     def extract_trainings_data(self,
                                remove_duplicates=True,
@@ -482,14 +532,19 @@ class TrainingsDataExtractor(object):
             pbar = tqdm(self.story_graph.ordered_steps(),
                         desc="Processed Story Blocks")
             for step in pbar:
-                if step.start_checkpoint not in active_trackers:
+                if step.start_checkpoint:
+                    start = step.start_checkpoint
+                else:
+                    start = Checkpoint(None)
+                if start.name not in active_trackers:
                     # need to skip - there was no previous step that
                     # had this start checkpoint as an end checkpoint
-                    unused_checkpoints.add(step.start_checkpoint)
+                    unused_checkpoints.add(start.name)
                 else:
                     # these are the trackers that reached this story
                     # step and that need to handle all events of the step
-                    incoming_trackers = active_trackers[step.start_checkpoint]
+                    incoming_trackers = active_trackers[start.name]
+                    incoming_trackers = start.filter_trackers(incoming_trackers)
 
                     incoming_trackers = self._subsample_trackers(
                             incoming_trackers,
@@ -508,17 +563,17 @@ class TrainingsDataExtractor(object):
                     all_actions.extend(labels)
 
                     # update progress bar
-                    pbar.set_postfix(
-                            {"# trackers": len(incoming_trackers),
-                             "samples": len(all_actions)})
+                    pbar.set_postfix({
+                        "# trackers": len(incoming_trackers),
+                        "samples": len(all_actions)})
 
                     # update our tracker dictionary with the trackers
                     # that handled the events of the step and
                     # that can now be used for further story steps
                     # that start with the checkpoint this step ended with
-                    if step.end_checkpoint not in active_trackers:
-                        active_trackers[step.end_checkpoint] = []
-                    active_trackers[step.end_checkpoint].extend(trackers)
+                    if step.end_checkpoint_name() not in active_trackers:
+                        active_trackers[step.end_checkpoint_name()] = []
+                    active_trackers[step.end_checkpoint_name()].extend(trackers)
 
             logger.debug("Finished phase. ({} training samples found)".format(
                     len(all_actions)))
@@ -602,7 +657,7 @@ class TrainingsDataExtractor(object):
         be used to process the events. Collects and returns training
         data while processing the story step."""
 
-        events = step.explicit_events(self.domain, self.interpreter)
+        events = step.explicit_events(self.domain)
         # need to copy the tracker as multiple story steps
         # might start with the same checkpoint and all of them
         # will use the same set of incoming trackers
@@ -675,13 +730,16 @@ class TrainingsDataExtractor(object):
         # we do NOT throw out contradicting examples
         # (same featurization but different labels).
         # appends y to X so it appears to be just another feature
-        casted_y = np.broadcast_to(
-                np.reshape(y, (y.shape[0], 1, 1)), (y.shape[0], X.shape[1], 1))
-        concatenated = np.concatenate((X, casted_y), axis=2)
-        t_data = np.unique(concatenated, axis=0)
-        X_unique = t_data[:, :, :-1]
-        y_unique = np.array(t_data[:, 0, -1], dtype=casted_y.dtype)
-        return X_unique, y_unique
+        if not utils.is_training_data_empty(X):
+            casted_y = np.broadcast_to(
+                    np.reshape(y, (y.shape[0], 1, 1)), (y.shape[0], X.shape[1], 1))
+            concatenated = np.concatenate((X, casted_y), axis=2)
+            t_data = np.unique(concatenated, axis=0)
+            X_unique = t_data[:, :, :-1]
+            y_unique = np.array(t_data[:, 0, -1], dtype=casted_y.dtype)
+            return X_unique, y_unique
+        else:
+            return X, y
 
     def _mark_first_action_in_story_steps_as_unpredictable(self):
         # type: () -> None
@@ -697,7 +755,7 @@ class TrainingsDataExtractor(object):
         an action listen as unpredictable."""
 
         for step in self.story_graph.story_steps:
-            if step.start_checkpoint == STORY_START:
+            if step.start_checkpoint_name() == STORY_START:
                 for i, e in enumerate(step.events):
                     if isinstance(e, UserUttered):
                         # if there is a user utterance, that means before the
