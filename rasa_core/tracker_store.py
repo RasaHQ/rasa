@@ -74,8 +74,8 @@ class InMemoryTrackerStore(TrackerStore):
                          'id \'{}\''.format(sender_id))
             return self.deserialise_tracker(sender_id, self.store[sender_id])
         else:
-            logger.debug('Could not find a tracker for '
-                         'id \'{}\''.format(sender_id))
+            logger.debug('Creating a new tracker for '
+                         'id \'{}\'.'.format(sender_id))
             return None
 
 
