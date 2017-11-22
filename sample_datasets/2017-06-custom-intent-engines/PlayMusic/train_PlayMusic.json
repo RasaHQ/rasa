@@ -1,0 +1,6118 @@
+{
+  "PlayMusic": [
+    {
+      "data": [
+        {
+          "text": "I'd like to hear music that's "
+        },
+        {
+          "text": "popular",
+          "entity": "sort"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "Trick-trick",
+          "entity": "artist"
+        },
+        {
+          "text": " on the "
+        },
+        {
+          "text": "Slacker",
+          "entity": "service"
+        },
+        {
+          "text": " service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "Making Out",
+          "entity": "track"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Alexander Rosenbaum",
+          "entity": "artist"
+        },
+        {
+          "text": " off "
+        },
+        {
+          "text": "Google Music",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to hear "
+        },
+        {
+          "text": "Pamela Jintana Racine",
+          "entity": "artist"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "1986",
+          "entity": "year"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Lastfm",
+          "entity": "service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "is there something "
+        },
+        {
+          "text": "new",
+          "entity": "sort"
+        },
+        {
+          "text": " you can play by "
+        },
+        {
+          "text": "Lola Monroe",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to hear something from "
+        },
+        {
+          "text": "Post-punk Revival",
+          "entity": "genre"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Song",
+          "entity": "music_item"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "Brian Chase",
+          "entity": "artist"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "2004",
+          "entity": "year"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "give me something from the "
+        },
+        {
+          "text": "fifties",
+          "entity": "year"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play the "
+        },
+        {
+          "text": "top",
+          "entity": "sort"
+        },
+        {
+          "text": " music from "
+        },
+        {
+          "text": "Epic Mazur",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to hear "
+        },
+        {
+          "text": "track",
+          "entity": "music_item"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "34",
+          "entity": "track"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want something from the year "
+        },
+        {
+          "text": "1961",
+          "entity": "year"
+        },
+        {
+          "text": " that was on "
+        },
+        {
+          "text": "record",
+          "entity": "music_item"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "deezer",
+          "entity": "service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play some "
+        },
+        {
+          "text": "eighties",
+          "entity": "year"
+        },
+        {
+          "text": " music by "
+        },
+        {
+          "text": "Emil De Cou",
+          "entity": "artist"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Slacker",
+          "entity": "service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Let's listen to "
+        },
+        {
+          "text": "Matthew Shipp",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "Natalie Maines",
+          "entity": "artist"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "1959",
+          "entity": "year"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "concerto",
+          "entity": "music_item"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "put on a "
+        },
+        {
+          "text": "Serge Robert",
+          "entity": "artist"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "track",
+          "entity": "music_item"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play some "
+        },
+        {
+          "text": "Hridaynath Mangeshkar",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play music from "
+        },
+        {
+          "text": "Sleepy John Estes",
+          "entity": "artist"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "2002",
+          "entity": "year"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play a "
+        },
+        {
+          "text": "sound track",
+          "entity": "music_item"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "1952",
+          "entity": "year"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to hear music from "
+        },
+        {
+          "text": "Fonzworth Bentley",
+          "entity": "artist"
+        },
+        {
+          "text": " using the service "
+        },
+        {
+          "text": "slacker",
+          "entity": "service"
+        },
+        {
+          "text": " with any "
+        },
+        {
+          "text": "song",
+          "entity": "music_item"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Open up "
+        },
+        {
+          "text": "Google Music",
+          "entity": "service"
+        },
+        {
+          "text": " and play anything."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play music from "
+        },
+        {
+          "text": "Youtube",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Please play the "
+        },
+        {
+          "text": "album",
+          "entity": "music_item"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Prvi Poljubac",
+          "entity": "album"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Hiroki Uchi",
+          "entity": "artist"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Youtube",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to hear "
+        },
+        {
+          "text": "Merry Go Round",
+          "entity": "track"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Gary Nichols",
+          "entity": "artist"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "Groove Shark",
+          "entity": "service"
+        },
+        {
+          "text": " please."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play the "
+        },
+        {
+          "text": "top-twenty",
+          "entity": "sort"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "Tony Calder",
+          "entity": "artist"
+        },
+        {
+          "text": " off "
+        },
+        {
+          "text": "Slacker",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Let me hear "
+        },
+        {
+          "text": "Wintley Phipps",
+          "entity": "artist"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "top fifty",
+          "entity": "sort"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "album",
+          "entity": "music_item"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play an "
+        },
+        {
+          "text": "album",
+          "entity": "music_item"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "1956",
+          "entity": "year"
+        },
+        {
+          "text": " off "
+        },
+        {
+          "text": "Spotify",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "play me some "
+        },
+        {
+          "text": "Dom Pachino",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "See if "
+        },
+        {
+          "text": "Netflix",
+          "entity": "service"
+        },
+        {
+          "text": " has the "
+        },
+        {
+          "text": "Lightspeed Champion",
+          "entity": "artist"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "album",
+          "entity": "music_item"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "boris",
+          "entity": "album"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play a "
+        },
+        {
+          "text": "symphony",
+          "entity": "music_item"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "1989",
+          "entity": "year"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I wish to listen to some "
+        },
+        {
+          "text": "fifties",
+          "entity": "year"
+        },
+        {
+          "text": " music."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to hear music from "
+        },
+        {
+          "text": "1993",
+          "entity": "year"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "pandora",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Put "
+        },
+        {
+          "text": "The Silent Enigma",
+          "entity": "album"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "album",
+          "entity": "music_item"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Yoko Kanno",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Please play "
+        },
+        {
+          "text": "Every Woman In Me",
+          "entity": "album"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "play a "
+        },
+        {
+          "text": "good",
+          "entity": "sort"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "song",
+          "entity": "music_item"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Baaba Maal",
+          "entity": "artist"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Lastfm",
+          "entity": "service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "bouncy techno",
+          "entity": "genre"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "Lastfm",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "play "
+        },
+        {
+          "text": "In The Disco",
+          "entity": "track"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Danny Hutton",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play some "
+        },
+        {
+          "text": "lyn paul",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "Ocean Beach",
+          "entity": "album"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "paul delay",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play music from the "
+        },
+        {
+          "text": "thirties",
+          "entity": "year"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Swjatoslaw Wakartschuk",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I would like to hear "
+        },
+        {
+          "text": "The Worst Is Yet To Come",
+          "entity": "track"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I would like to hear something from "
+        },
+        {
+          "text": "Groove Shark",
+          "entity": "service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Can you play "
+        },
+        {
+          "text": "nineties",
+          "entity": "year"
+        },
+        {
+          "text": " music from "
+        },
+        {
+          "text": "Paul Kelly",
+          "entity": "artist"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "play the "
+        },
+        {
+          "text": "latest",
+          "entity": "sort"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movement",
+          "entity": "music_item"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Charlie Higgins",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play some "
+        },
+        {
+          "text": "chant",
+          "entity": "music_item"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "1974",
+          "entity": "year"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Go to "
+        },
+        {
+          "text": "Mick Fleetwood",
+          "entity": "artist"
+        },
+        {
+          "text": " on my "
+        },
+        {
+          "text": "Vimeo",
+          "entity": "service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play a "
+        },
+        {
+          "text": "tune",
+          "entity": "music_item"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "2007",
+          "entity": "year"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play some "
+        },
+        {
+          "text": "klezmer fiddle",
+          "entity": "genre"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play the "
+        },
+        {
+          "text": "Broom Of The Cowdenknowes",
+          "entity": "track"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to hear my "
+        },
+        {
+          "text": "Entre los Andes",
+          "entity": "playlist"
+        },
+        {
+          "text": " playlist."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Can you play some decent work by "
+        },
+        {
+          "text": "Timour Moutsouraev",
+          "entity": "artist"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play some "
+        },
+        {
+          "text": "1988",
+          "entity": "year"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Harry T. Burleigh",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "most popular",
+          "entity": "sort"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "song",
+          "entity": "music_item"
+        },
+        {
+          "text": " of "
+        },
+        {
+          "text": "taco ockerse",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "Tennessee Saturday Night",
+          "entity": "track"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Mr. Porter",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Please play a "
+        },
+        {
+          "text": "track",
+          "entity": "music_item"
+        },
+        {
+          "text": " from the "
+        },
+        {
+          "text": "nineties",
+          "entity": "year"
+        },
+        {
+          "text": " by any artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Can I hear "
+        },
+        {
+          "text": "Anna Vissi",
+          "entity": "artist"
+        },
+        {
+          "text": "'s "
+        },
+        {
+          "text": "new",
+          "entity": "sort"
+        },
+        {
+          "text": " music on "
+        },
+        {
+          "text": "Pandora",
+          "entity": "service"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "let's listen to the "
+        },
+        {
+          "text": "1986",
+          "entity": "year"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "sound track",
+          "entity": "music_item"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Mike Park",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to hear the "
+        },
+        {
+          "text": "last",
+          "entity": "sort"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "album",
+          "entity": "music_item"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "Frank Iero",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "them",
+          "entity": "music_item"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "good",
+          "entity": "sort"
+        },
+        {
+          "text": " songs by "
+        },
+        {
+          "text": "The Singing Nun",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "them",
+          "entity": "music_item"
+        },
+        {
+          "text": " the "
+        },
+        {
+          "text": "greatest",
+          "entity": "sort"
+        },
+        {
+          "text": " music by "
+        },
+        {
+          "text": "Chris Frantz",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play me a "
+        },
+        {
+          "text": "concerto",
+          "entity": "music_item"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Jethro Burns",
+          "entity": "artist"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "Zvooq",
+          "entity": "service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Can you play some music by "
+        },
+        {
+          "text": "Abatte Barihun",
+          "entity": "artist"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to hear "
+        },
+        {
+          "text": "Shooby Taylor",
+          "entity": "artist"
+        },
+        {
+          "text": "'s "
+        },
+        {
+          "text": "Tearing Up The Album Charts",
+          "entity": "album"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "itunes",
+          "entity": "service"
+        },
+        {
+          "text": " and "
+        },
+        {
+          "text": "Vimeo",
+          "entity": "service"
+        },
+        {
+          "text": " music"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "play something "
+        },
+        {
+          "text": "new",
+          "entity": "sort"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "tansen",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Please play "
+        },
+        {
+          "text": "Last Fm",
+          "entity": "service"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "Le Jardin De Heavenly",
+          "entity": "album"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Edward Leeson",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Open "
+        },
+        {
+          "text": "Itunes",
+          "entity": "service"
+        },
+        {
+          "text": " and play some "
+        },
+        {
+          "text": "twenties",
+          "entity": "year"
+        },
+        {
+          "text": " songs."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "play music from "
+        },
+        {
+          "text": "1974",
+          "entity": "year"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play some "
+        },
+        {
+          "text": "Grand Puba",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play the "
+        },
+        {
+          "text": "top fifty",
+          "entity": "sort"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Kate Bush",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play the "
+        },
+        {
+          "text": "Stephen Stills",
+          "entity": "artist"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "album",
+          "entity": "music_item"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Verge",
+          "entity": "album"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I need some "
+        },
+        {
+          "text": "Hardcore Hip Hop",
+          "entity": "genre"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "play the "
+        },
+        {
+          "text": "new",
+          "entity": "sort"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Feist",
+          "entity": "artist"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "deezer",
+          "entity": "service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "Gaston",
+          "entity": "track"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Daniel De Los Reyes",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "Man Like Me",
+          "entity": "album"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "heather b.",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Put some of "
+        },
+        {
+          "text": "Patrick Lachman",
+          "entity": "artist"
+        },
+        {
+          "text": "'s "
+        },
+        {
+          "text": "eighties",
+          "entity": "year"
+        },
+        {
+          "text": " music on "
+        },
+        {
+          "text": "Zvooq",
+          "entity": "service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "please, a "
+        },
+        {
+          "text": "sound track",
+          "entity": "music_item"
+        },
+        {
+          "text": " of "
+        },
+        {
+          "text": "Jyotsna Radhakrishnan",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play some "
+        },
+        {
+          "text": "Darkcore",
+          "entity": "genre"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "i want to listen to "
+        },
+        {
+          "text": "Say It Again",
+          "entity": "track"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Blackstratblues",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Can I hear "
+        },
+        {
+          "text": "Jeremy Taggart",
+          "entity": "artist"
+        },
+        {
+          "text": "'s "
+        },
+        {
+          "text": "newest",
+          "entity": "sort"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "chant",
+          "entity": "music_item"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Deezer",
+          "entity": "service"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I would like to hear music from "
+        },
+        {
+          "text": "1993",
+          "entity": "year"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to hear music from the "
+        },
+        {
+          "text": "top fifty",
+          "entity": "sort"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Yasuhiko Fukuda",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "seventies",
+          "entity": "year"
+        },
+        {
+          "text": " music on "
+        },
+        {
+          "text": "Itunes",
+          "entity": "service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Open up "
+        },
+        {
+          "text": "Last Fm",
+          "entity": "service"
+        },
+        {
+          "text": " and play me some "
+        },
+        {
+          "text": "Medieval Folk Rock",
+          "entity": "genre"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I'd like to listen to "
+        },
+        {
+          "text": "mark rae",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "play the "
+        },
+        {
+          "text": "most popular",
+          "entity": "sort"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Bret Michaels",
+          "entity": "artist"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "record",
+          "entity": "music_item"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to listen to "
+        },
+        {
+          "text": "Lastfm",
+          "entity": "service"
+        },
+        {
+          "text": ", play "
+        },
+        {
+          "text": "A Drop Of The Hard Stuff",
+          "entity": "album"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Joi Chua",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I wanna listen to "
+        },
+        {
+          "text": "Electroclash",
+          "entity": "genre"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "March 12",
+          "entity": "album"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "John Moyer",
+          "entity": "artist"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Groove Shark",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play an "
+        },
+        {
+          "text": "ep",
+          "entity": "music_item"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "Preap Sovath",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to listen to some music from "
+        },
+        {
+          "text": "2003",
+          "entity": "year"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Pandora",
+          "entity": "service"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "them",
+          "entity": "music_item"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play the "
+        },
+        {
+          "text": "Vic Damone",
+          "entity": "artist"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "album",
+          "entity": "music_item"
+        },
+        {
+          "text": " named "
+        },
+        {
+          "text": "Tuonela",
+          "entity": "album"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play some "
+        },
+        {
+          "text": "nineties",
+          "entity": "year"
+        },
+        {
+          "text": " stuff from "
+        },
+        {
+          "text": "Clem Burke",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play a "
+        },
+        {
+          "text": "song",
+          "entity": "music_item"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "Lars Danielsson",
+          "entity": "artist"
+        },
+        {
+          "text": " from the "
+        },
+        {
+          "text": "fourties",
+          "entity": "year"
+        },
+        {
+          "text": " using the service "
+        },
+        {
+          "text": "Last Fm",
+          "entity": "service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Open "
+        },
+        {
+          "text": "Lastfm",
+          "entity": "service"
+        },
+        {
+          "text": " and sort by the "
+        },
+        {
+          "text": "top-fifty",
+          "entity": "sort"
+        },
+        {
+          "text": " by the artist "
+        },
+        {
+          "text": "Korpiklaani",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "put th "
+        },
+        {
+          "text": "Power Gaming",
+          "entity": "playlist"
+        },
+        {
+          "text": " playlist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "something on "
+        },
+        {
+          "text": "Spotify",
+          "entity": "service"
+        },
+        {
+          "text": " please"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play some "
+        },
+        {
+          "text": "concerto",
+          "entity": "music_item"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "T. S. Monk",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Can you play the "
+        },
+        {
+          "text": "Star Tales",
+          "entity": "album"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "album",
+          "entity": "music_item"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Colleen",
+          "entity": "artist"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play some "
+        },
+        {
+          "text": "G. V. Prakash Kumar",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "Got Djent?",
+          "entity": "playlist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to hear "
+        },
+        {
+          "text": "Jimmy James",
+          "entity": "artist"
+        },
+        {
+          "text": " from the "
+        },
+        {
+          "text": "thirties",
+          "entity": "year"
+        },
+        {
+          "text": ", play a "
+        },
+        {
+          "text": "song",
+          "entity": "music_item"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Groove Shark",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to play music from "
+        },
+        {
+          "text": "1979",
+          "entity": "year"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Groove Shark",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Please play something from the "
+        },
+        {
+          "text": "twenties",
+          "entity": "year"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "google music",
+          "entity": "service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play a "
+        },
+        {
+          "text": "song",
+          "entity": "music_item"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "1994",
+          "entity": "year"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Please play a "
+        },
+        {
+          "text": "song",
+          "entity": "music_item"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "Jesse Harris",
+          "entity": "artist"
+        },
+        {
+          "text": " that's on "
+        },
+        {
+          "text": "Youtube",
+          "entity": "service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play music from "
+        },
+        {
+          "text": "Linzi Stoppard",
+          "entity": "artist"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "1994",
+          "entity": "year"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "itunes",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Please play something from the "
+        },
+        {
+          "text": "fifties",
+          "entity": "year"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Roscoe",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play a "
+        },
+        {
+          "text": "ballad",
+          "entity": "music_item"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Project Pat",
+          "entity": "artist"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "google music",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "can i lesten to the "
+        },
+        {
+          "text": "latest",
+          "entity": "sort"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "album",
+          "entity": "music_item"
+        },
+        {
+          "text": " of "
+        },
+        {
+          "text": "T-bone Burnett",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "chant",
+          "entity": "music_item"
+        },
+        {
+          "text": " music from "
+        },
+        {
+          "text": "2016",
+          "entity": "year"
+        },
+        {
+          "text": " off "
+        },
+        {
+          "text": "Pandora",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play some "
+        },
+        {
+          "text": "good",
+          "entity": "sort"
+        },
+        {
+          "text": " music from "
+        },
+        {
+          "text": "Jamelia",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "Alabama Concerto",
+          "entity": "album"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Kou Shibasaki",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play some "
+        },
+        {
+          "text": "good",
+          "entity": "sort"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "symphony",
+          "entity": "music_item"
+        },
+        {
+          "text": " music from "
+        },
+        {
+          "text": "Avispa",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to hear the "
+        },
+        {
+          "text": "greatest",
+          "entity": "sort"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "hits",
+          "entity": "playlist"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "King Ov Hell",
+          "entity": "artist"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "vimeo",
+          "entity": "service"
+        },
+        {
+          "text": " "
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "Pandora",
+          "entity": "service"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Last Fm",
+          "entity": "service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Let's listen to the "
+        },
+        {
+          "text": "best",
+          "entity": "sort"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "Jeff Loomis",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "Goldie Hill",
+          "entity": "artist"
+        },
+        {
+          "text": "'s "
+        },
+        {
+          "text": "record",
+          "entity": "music_item"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Google Music",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Please play "
+        },
+        {
+          "text": "Jim Martin",
+          "entity": "artist"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Vimeo",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "Bonnie Annie",
+          "entity": "track"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Tolmatschowa-schwestern",
+          "entity": "artist"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "last fm",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play my "
+        },
+        {
+          "text": "Women of Rock",
+          "entity": "playlist"
+        },
+        {
+          "text": " playlist."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to hear "
+        },
+        {
+          "text": "Nellie Mckay",
+          "entity": "artist"
+        },
+        {
+          "text": "'s "
+        },
+        {
+          "text": "new",
+          "entity": "sort"
+        },
+        {
+          "text": " music."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "Moris Tepper",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I need a "
+        },
+        {
+          "text": "SOUNDTRACK FOR STUDY",
+          "entity": "playlist"
+        },
+        {
+          "text": " purposes."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "concerto",
+          "entity": "music_item"
+        },
+        {
+          "text": " music by "
+        },
+        {
+          "text": "Nicholaus Arson",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Can you play "
+        },
+        {
+          "text": "Slacker",
+          "entity": "service"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "Maria Severa Onofriana",
+          "entity": "artist"
+        },
+        {
+          "text": " and sort by "
+        },
+        {
+          "text": "most popular",
+          "entity": "sort"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I'm looking for a "
+        },
+        {
+          "text": "movement",
+          "entity": "music_item"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Asim Brkan",
+          "entity": "artist"
+        },
+        {
+          "text": " that's on "
+        },
+        {
+          "text": "Netflix",
+          "entity": "service"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "best",
+          "entity": "sort"
+        },
+        {
+          "text": " channel"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Use "
+        },
+        {
+          "text": "Youtube",
+          "entity": "service"
+        },
+        {
+          "text": " to play the "
+        },
+        {
+          "text": "soundtrack",
+          "entity": "music_item"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "Manos Hadzidakis",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "Too Much Rain",
+          "entity": "track"
+        },
+        {
+          "text": " by the artist "
+        },
+        {
+          "text": "D-loc",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play something by "
+        },
+        {
+          "text": "Louisiana Blues",
+          "entity": "genre"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "play "
+        },
+        {
+          "text": "This Is Colour",
+          "entity": "track"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Panda Bear",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Please play some "
+        },
+        {
+          "text": "nineties",
+          "entity": "year"
+        },
+        {
+          "text": " music by "
+        },
+        {
+          "text": "Tommy Johnson",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play from the "
+        },
+        {
+          "text": "top",
+          "entity": "sort"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "record",
+          "entity": "music_item"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "1973",
+          "entity": "year"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Olexandr Ponomarjow",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "rock like war",
+          "entity": "track"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "Mohammad Reza Lotfi",
+          "entity": "artist"
+        },
+        {
+          "text": " please"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play something by the artist "
+        },
+        {
+          "text": "Jenifer",
+          "entity": "artist"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "2003",
+          "entity": "year"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Please play my "
+        },
+        {
+          "text": "Happy House",
+          "entity": "playlist"
+        },
+        {
+          "text": " playlist."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "Ashita E",
+          "entity": "track"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Ian Anderson",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play music from "
+        },
+        {
+          "text": "Stacy Ferguson",
+          "entity": "artist"
+        },
+        {
+          "text": " from the "
+        },
+        {
+          "text": "fourties",
+          "entity": "year"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I would like to hear "
+        },
+        {
+          "text": "lastfm",
+          "entity": "service"
+        },
+        {
+          "text": " play "
+        },
+        {
+          "text": "journey",
+          "entity": "playlist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "play some "
+        },
+        {
+          "text": "movement",
+          "entity": "music_item"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Franky Gee",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play the "
+        },
+        {
+          "text": "top-5",
+          "entity": "sort"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "track",
+          "entity": "music_item"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "Boris Liatochinski",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "play "
+        },
+        {
+          "text": "them",
+          "entity": "music_item"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Guy-manuel De Homem-christo",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Can i get a "
+        },
+        {
+          "text": "song",
+          "entity": "music_item"
+        },
+        {
+          "text": " from the "
+        },
+        {
+          "text": "eighties",
+          "entity": "year"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Zvooq",
+          "entity": "service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I'm looking for something by "
+        },
+        {
+          "text": "Young Rome",
+          "entity": "artist"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "2001",
+          "entity": "year"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Groove Shark",
+          "entity": "service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play a "
+        },
+        {
+          "text": "popular",
+          "entity": "sort"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "sound track",
+          "entity": "music_item"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Joe Pass",
+          "entity": "artist"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Itunes",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Please play "
+        },
+        {
+          "text": "symphony",
+          "entity": "music_item"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Travis Mccoy",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play some "
+        },
+        {
+          "text": "fun-punk",
+          "entity": "genre"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to hear an "
+        },
+        {
+          "text": "album",
+          "entity": "music_item"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "2010",
+          "entity": "year"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "play some "
+        },
+        {
+          "text": "movement",
+          "entity": "music_item"
+        },
+        {
+          "text": " from the "
+        },
+        {
+          "text": "fifties",
+          "entity": "year"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Spotify",
+          "entity": "service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "Tom Thacker",
+          "entity": "artist"
+        },
+        {
+          "text": " through a "
+        },
+        {
+          "text": "top",
+          "entity": "sort"
+        },
+        {
+          "text": " sort."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play anything you want from "
+        },
+        {
+          "text": "Slacker",
+          "entity": "service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to hear from "
+        },
+        {
+          "text": "Pepe Marchena",
+          "entity": "artist"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "song",
+          "entity": "music_item"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Delaware",
+          "entity": "track"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "Monts Et Merveilles",
+          "entity": "track"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to hear music from "
+        },
+        {
+          "text": "carman",
+          "entity": "artist"
+        },
+        {
+          "text": " from the "
+        },
+        {
+          "text": "1966",
+          "entity": "year"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "album",
+          "entity": "music_item"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play some "
+        },
+        {
+          "text": "twenties",
+          "entity": "year"
+        },
+        {
+          "text": " music"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play some "
+        },
+        {
+          "text": "1983",
+          "entity": "year"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Jon Brooks",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play some "
+        },
+        {
+          "text": "Jerry Dixon",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play an "
+        },
+        {
+          "text": "ep",
+          "entity": "music_item"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "Little Jimmy Dickens",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Please play the genre "
+        },
+        {
+          "text": "Rock Strumentale",
+          "entity": "genre"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I'd like to hear "
+        },
+        {
+          "text": "Grievance",
+          "entity": "track"
+        },
+        {
+          "text": " from the "
+        },
+        {
+          "text": "Youtube",
+          "entity": "service"
+        },
+        {
+          "text": " service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Put some "
+        },
+        {
+          "text": "fifties",
+          "entity": "year"
+        },
+        {
+          "text": " music on "
+        },
+        {
+          "text": "Netflix",
+          "entity": "service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Please play "
+        },
+        {
+          "text": "Short And Sweet",
+          "entity": "album"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Teyana Taylor",
+          "entity": "artist"
+        },
+        {
+          "text": " from my "
+        },
+        {
+          "text": "itunes",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play some "
+        },
+        {
+          "text": "pop",
+          "entity": "genre"
+        },
+        {
+          "text": " music."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play the "
+        },
+        {
+          "text": "greatest",
+          "entity": "sort"
+        },
+        {
+          "text": " hits by "
+        },
+        {
+          "text": "Inoj",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Please play the "
+        },
+        {
+          "text": "latest",
+          "entity": "sort"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "ep",
+          "entity": "music_item"
+        },
+        {
+          "text": " by the "
+        },
+        {
+          "text": "fifties",
+          "entity": "year"
+        },
+        {
+          "text": " famous "
+        },
+        {
+          "text": "Gholam Hossein Banan",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play a "
+        },
+        {
+          "text": "tune",
+          "entity": "music_item"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "1973",
+          "entity": "year"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "Arif",
+          "entity": "artist"
+        },
+        {
+          "text": " music from the "
+        },
+        {
+          "text": "fourties",
+          "entity": "year"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play a "
+        },
+        {
+          "text": "song",
+          "entity": "music_item"
+        },
+        {
+          "text": " from the "
+        },
+        {
+          "text": "fourties",
+          "entity": "year"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Deezer",
+          "entity": "service"
+        },
+        {
+          "text": " through "
+        },
+        {
+          "text": "Fakhar-e-alam",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I wish to listen to "
+        },
+        {
+          "text": "Gonna Get Along Without Ya Now",
+          "entity": "track"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Ian Curtis",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I'm looking for the "
+        },
+        {
+          "text": "last",
+          "entity": "sort"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "track",
+          "entity": "music_item"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Fei Yu Ching",
+          "entity": "artist"
+        },
+        {
+          "text": " from the "
+        },
+        {
+          "text": "fourties",
+          "entity": "year"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to hear "
+        },
+        {
+          "text": "Choice",
+          "entity": "artist"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Last Fm",
+          "entity": "service"
+        },
+        {
+          "text": " from the "
+        },
+        {
+          "text": "twenties",
+          "entity": "year"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Please play "
+        },
+        {
+          "text": "With Echoes In The Movement Of Stone",
+          "entity": "album"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Faith Evans",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play me a "
+        },
+        {
+          "text": "track",
+          "entity": "music_item"
+        },
+        {
+          "text": " from the "
+        },
+        {
+          "text": "sixties",
+          "entity": "year"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play music off "
+        },
+        {
+          "text": "Itunes",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "Gary Jules",
+          "entity": "artist"
+        },
+        {
+          "text": "'s "
+        },
+        {
+          "text": "latest",
+          "entity": "sort"
+        },
+        {
+          "text": " music"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Let's hear something from "
+        },
+        {
+          "text": "Elena Risteska",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "Les Lecter Smith",
+          "entity": "artist"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "deezer",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "play me something from the "
+        },
+        {
+          "text": "fifties",
+          "entity": "year"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Could you play the "
+        },
+        {
+          "text": "album",
+          "entity": "music_item"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "B Men Gahō",
+          "entity": "album"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Nathaniel Shilkret",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to hear music from the "
+        },
+        {
+          "text": "Lotus Flower",
+          "entity": "album"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "album",
+          "entity": "music_item"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Andy Mccoy",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Please play "
+        },
+        {
+          "text": "Different Slanguages",
+          "entity": "album"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Fred Labour",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play some "
+        },
+        {
+          "text": "1993",
+          "entity": "year"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Mark Maclaine",
+          "entity": "artist"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Deezer",
+          "entity": "service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play some "
+        },
+        {
+          "text": "pambiche",
+          "entity": "genre"
+        },
+        {
+          "text": " please"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Start the "
+        },
+        {
+          "text": "Last Fm",
+          "entity": "service"
+        },
+        {
+          "text": " service with a "
+        },
+        {
+          "text": "song",
+          "entity": "music_item"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "1976",
+          "entity": "year"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to listen to "
+        },
+        {
+          "text": "Foreign Affair",
+          "entity": "track"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Can you play it on "
+        },
+        {
+          "text": "Youtube",
+          "entity": "service"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play an "
+        },
+        {
+          "text": "ep",
+          "entity": "music_item"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Cristy Lane",
+          "entity": "artist"
+        },
+        {
+          "text": " off "
+        },
+        {
+          "text": "google music",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Put "
+        },
+        {
+          "text": "Lo mejor de Radio 3",
+          "entity": "playlist"
+        },
+        {
+          "text": " on in the background"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "nineties",
+          "entity": "year"
+        },
+        {
+          "text": " music."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play a "
+        },
+        {
+          "text": "song",
+          "entity": "music_item"
+        },
+        {
+          "text": " from the "
+        },
+        {
+          "text": "thirties",
+          "entity": "year"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Bruno Pelletier",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Can you play "
+        },
+        {
+          "text": "Deezer",
+          "entity": "service"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "2007",
+          "entity": "year"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "We want to listen to "
+        },
+        {
+          "text": "nineties",
+          "entity": "year"
+        },
+        {
+          "text": " music from "
+        },
+        {
+          "text": "mike burkett",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "play "
+        },
+        {
+          "text": "Facedown",
+          "entity": "album"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Maximum Bob",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Please play some "
+        },
+        {
+          "text": "nineties",
+          "entity": "year"
+        },
+        {
+          "text": " music "
+        },
+        {
+          "text": "album",
+          "entity": "music_item"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "Bad Boy Bill",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to hear music from the "
+        },
+        {
+          "text": "sixties",
+          "entity": "year"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play the "
+        },
+        {
+          "text": "latest",
+          "entity": "sort"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Bobby Darin",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "play some music from the "
+        },
+        {
+          "text": "thirties",
+          "entity": "year"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play the "
+        },
+        {
+          "text": "track",
+          "entity": "music_item"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Fight On, State",
+          "entity": "track"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Yuvan Shankar Raja",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "give me some "
+        },
+        {
+          "text": "Hank Shermann",
+          "entity": "artist"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "1975",
+          "entity": "year"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Lastfm",
+          "entity": "service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "Murdoc Nicalls",
+          "entity": "artist"
+        },
+        {
+          "text": " through "
+        },
+        {
+          "text": "Itunes",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Give me some "
+        },
+        {
+          "text": "Musica Post-industriale",
+          "entity": "genre"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "Groove Shark",
+          "entity": "service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Start blasting my "
+        },
+        {
+          "text": "Latin Jazz",
+          "entity": "playlist"
+        },
+        {
+          "text": " playlist."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "them",
+          "entity": "music_item"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Jt The Bigga Figga",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to hear the "
+        },
+        {
+          "text": "album",
+          "entity": "music_item"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Live In Munich",
+          "entity": "album"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Laura Love",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to hear a "
+        },
+        {
+          "text": "symphony",
+          "entity": "music_item"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Raf",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play the "
+        },
+        {
+          "text": "sound track",
+          "entity": "music_item"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "Raymond Murray Schafer",
+          "entity": "artist"
+        },
+        {
+          "text": " please"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play a "
+        },
+        {
+          "text": "melody",
+          "entity": "music_item"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "2010",
+          "entity": "year"
+        },
+        {
+          "text": " off "
+        },
+        {
+          "text": "Itunes",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "put my "
+        },
+        {
+          "text": "raining",
+          "entity": "playlist"
+        },
+        {
+          "text": " playlist on"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play the "
+        },
+        {
+          "text": "Get Turnt",
+          "entity": "playlist"
+        },
+        {
+          "text": " playlist."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I wish to enjoy some "
+        },
+        {
+          "text": "fifties",
+          "entity": "year"
+        },
+        {
+          "text": " music by "
+        },
+        {
+          "text": "Johnny Paycheck",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "the man who sold the world",
+          "entity": "album"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "Steve Swell",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "biguine",
+          "entity": "genre"
+        },
+        {
+          "text": " music."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play the "
+        },
+        {
+          "text": "latest",
+          "entity": "sort"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Peter Green",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Something by "
+        },
+        {
+          "text": "Danielle Polanco",
+          "entity": "artist"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "1986",
+          "entity": "year"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play something from the genre "
+        },
+        {
+          "text": "muzyka pop",
+          "entity": "genre"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play using from "
+        },
+        {
+          "text": "ep",
+          "entity": "music_item"
+        },
+        {
+          "text": " of "
+        },
+        {
+          "text": "Christopher Martin",
+          "entity": "artist"
+        },
+        {
+          "text": " using "
+        },
+        {
+          "text": "Lastfm",
+          "entity": "service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to hear music from the genre "
+        },
+        {
+          "text": "Ecossaise",
+          "entity": "genre"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "pop-rap",
+          "entity": "genre"
+        },
+        {
+          "text": " off "
+        },
+        {
+          "text": "Google Music",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to hear "
+        },
+        {
+          "text": "Aki Nawaz",
+          "entity": "artist"
+        },
+        {
+          "text": ", play the "
+        },
+        {
+          "text": "song",
+          "entity": "music_item"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "fair annie",
+          "entity": "track"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "Kastro Tis Orias",
+          "entity": "track"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Karl Denson",
+          "entity": "artist"
+        },
+        {
+          "text": " off "
+        },
+        {
+          "text": "Lastfm",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "Tony Crombie",
+          "entity": "artist"
+        },
+        {
+          "text": " songs that inspire "
+        },
+        {
+          "text": "movement",
+          "entity": "music_item"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Please play "
+        },
+        {
+          "text": "below the lion rock",
+          "entity": "track"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "stereo mike",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to hear "
+        },
+        {
+          "text": "Eddi Reader",
+          "entity": "artist"
+        },
+        {
+          "text": " from the "
+        },
+        {
+          "text": "twenties",
+          "entity": "year"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play the "
+        },
+        {
+          "text": "album",
+          "entity": "music_item"
+        },
+        {
+          "text": " entitled "
+        },
+        {
+          "text": "Se Potrei Avere Te",
+          "entity": "album"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "give me some "
+        },
+        {
+          "text": "Last Emperor",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play some "
+        },
+        {
+          "text": "art punk",
+          "entity": "genre"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play music off "
+        },
+        {
+          "text": "Youtube",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Open up "
+        },
+        {
+          "text": "Groove Shark",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "Donny Tourette",
+          "entity": "artist"
+        },
+        {
+          "text": "'s "
+        },
+        {
+          "text": "Push The Button",
+          "entity": "track"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to listen to an "
+        },
+        {
+          "text": "album",
+          "entity": "music_item"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "Sibel",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play music from "
+        },
+        {
+          "text": "Lastfm",
+          "entity": "service"
+        },
+        {
+          "text": " and "
+        },
+        {
+          "text": "Deezer",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "addicts: black meddle, part ii",
+          "entity": "album"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play the "
+        },
+        {
+          "text": "best",
+          "entity": "sort"
+        },
+        {
+          "text": " music from "
+        },
+        {
+          "text": "Klaus Badelt",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play the "
+        },
+        {
+          "text": "last",
+          "entity": "sort"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "chant",
+          "entity": "music_item"
+        },
+        {
+          "text": " music by "
+        },
+        {
+          "text": "Jan Smit",
+          "entity": "artist"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Deezer",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play a "
+        },
+        {
+          "text": "Sugarcult",
+          "entity": "artist"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "track",
+          "entity": "music_item"
+        },
+        {
+          "text": " from the "
+        },
+        {
+          "text": "twenties",
+          "entity": "year"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Itunes",
+          "entity": "service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play a "
+        },
+        {
+          "text": "Nóta",
+          "entity": "genre"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "song",
+          "entity": "music_item"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "play "
+        },
+        {
+          "text": "on the good ship lollipop",
+          "entity": "track"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Anthony Hamilton",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "While We Were Waiting",
+          "entity": "album"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Sippie Wallace",
+          "entity": "artist"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Vimeo",
+          "entity": "service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Put on "
+        },
+        {
+          "text": "Vimeo",
+          "entity": "service"
+        },
+        {
+          "text": " and play "
+        },
+        {
+          "text": "Kacapi Suling",
+          "entity": "genre"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "play something from "
+        },
+        {
+          "text": "1971",
+          "entity": "year"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "John Bonham",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "put "
+        },
+        {
+          "text": "El Mejor Rock en Español",
+          "entity": "playlist"
+        },
+        {
+          "text": " playlist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Can i use "
+        },
+        {
+          "text": "Lastfm",
+          "entity": "service"
+        },
+        {
+          "text": " to listen to "
+        },
+        {
+          "text": "Twilight Time",
+          "entity": "track"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Dj Khalil",
+          "entity": "artist"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "Lastfm",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "top",
+          "entity": "sort"
+        },
+        {
+          "text": " music from "
+        },
+        {
+          "text": "Charles L. Johnson",
+          "entity": "artist"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "vimeo",
+          "entity": "service"
+        },
+        {
+          "text": " "
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Please play "
+        },
+        {
+          "text": "All Funked Up",
+          "entity": "playlist"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "Vimeo",
+          "entity": "service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to hear the "
+        },
+        {
+          "text": "last",
+          "entity": "sort"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "album",
+          "entity": "music_item"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "Carsten Bohn",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Access my "
+        },
+        {
+          "text": "Vimeo",
+          "entity": "service"
+        },
+        {
+          "text": " service to play music from "
+        },
+        {
+          "text": "Bernhard Fleischmann",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Open "
+        },
+        {
+          "text": "Vimeo",
+          "entity": "service"
+        },
+        {
+          "text": " and play music."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I wish to listen to some "
+        },
+        {
+          "text": "instrumental",
+          "entity": "playlist"
+        },
+        {
+          "text": " music."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "i wanna listen to a the "
+        },
+        {
+          "text": "top-twenty",
+          "entity": "sort"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "track",
+          "entity": "music_item"
+        },
+        {
+          "text": " of "
+        },
+        {
+          "text": "Denniz Pop",
+          "entity": "artist"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Pandora",
+          "entity": "service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "Lil Hardin Armstrong",
+          "entity": "artist"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "Itunes",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "play the "
+        },
+        {
+          "text": "last",
+          "entity": "sort"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Niney The Observer",
+          "entity": "artist"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "song",
+          "entity": "music_item"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "chant",
+          "entity": "music_item"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Nao Matsushita",
+          "entity": "artist"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "1983",
+          "entity": "year"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "One Way Ticket",
+          "entity": "track"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Ray Kennedy",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play my "
+        },
+        {
+          "text": "Romántica",
+          "entity": "playlist"
+        },
+        {
+          "text": " playlist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "last",
+          "entity": "sort"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "melody",
+          "entity": "music_item"
+        },
+        {
+          "text": " of "
+        },
+        {
+          "text": "Bob Hardy",
+          "entity": "artist"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Iheart",
+          "entity": "service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to hear music on "
+        },
+        {
+          "text": "deezer",
+          "entity": "service"
+        },
+        {
+          "text": ", play the "
+        },
+        {
+          "text": "most popular",
+          "entity": "sort"
+        },
+        {
+          "text": " songs by "
+        },
+        {
+          "text": "Daisy Berkowitz",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Turn on "
+        },
+        {
+          "text": "Slacker",
+          "entity": "service"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "radio",
+          "entity": "playlist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Please play the "
+        },
+        {
+          "text": "last",
+          "entity": "sort"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "track",
+          "entity": "music_item"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "abbath",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play something interesting from a "
+        },
+        {
+          "text": "soundtrack",
+          "entity": "music_item"
+        },
+        {
+          "text": " recorded by "
+        },
+        {
+          "text": "Vishal-shekhar",
+          "entity": "artist"
+        },
+        {
+          "text": " in the "
+        },
+        {
+          "text": "thirties",
+          "entity": "year"
+        },
+        {
+          "text": " that's on "
+        },
+        {
+          "text": "Iheart",
+          "entity": "service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Put any "
+        },
+        {
+          "text": "1972",
+          "entity": "year"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "record",
+          "entity": "music_item"
+        },
+        {
+          "text": " on."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play music by "
+        },
+        {
+          "text": "larry mullen jr.",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play music from "
+        },
+        {
+          "text": "Lastfm",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play a "
+        },
+        {
+          "text": "soundtrack",
+          "entity": "music_item"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Wade Macneil",
+          "entity": "artist"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "1969",
+          "entity": "year"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "Jimmy Lafave",
+          "entity": "artist"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Vimeo",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play some "
+        },
+        {
+          "text": "Rumba Africana",
+          "entity": "genre"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play music from the "
+        },
+        {
+          "text": "thirties",
+          "entity": "year"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Let me listen to an "
+        },
+        {
+          "text": "eighties",
+          "entity": "year"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "ep",
+          "entity": "music_item"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "last",
+          "entity": "sort"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "song",
+          "entity": "music_item"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Latifa",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "An interesting piece from "
+        },
+        {
+          "text": "1991",
+          "entity": "year"
+        },
+        {
+          "text": " please"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play a "
+        },
+        {
+          "text": "song",
+          "entity": "music_item"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "1993",
+          "entity": "year"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Youtube",
+          "entity": "service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "Device",
+          "entity": "artist"
+        },
+        {
+          "text": " music from the "
+        },
+        {
+          "text": "fourties",
+          "entity": "year"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I'd like to hear music from "
+        },
+        {
+          "text": "1951",
+          "entity": "year"
+        },
+        {
+          "text": ", preferably a "
+        },
+        {
+          "text": "soundtrack",
+          "entity": "music_item"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play music through "
+        },
+        {
+          "text": "Groove Shark",
+          "entity": "service"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play me a "
+        },
+        {
+          "text": "good",
+          "entity": "sort"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "ep",
+          "entity": "music_item"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "1989",
+          "entity": "year"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "jenifer",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to listen to the "
+        },
+        {
+          "text": "track",
+          "entity": "music_item"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Close To The Edge",
+          "entity": "track"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to listen to some "
+        },
+        {
+          "text": "Aaliyah",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to listen to "
+        },
+        {
+          "text": "Merrily We Roll Along",
+          "entity": "track"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Marko Desantis",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play the "
+        },
+        {
+          "text": "newest",
+          "entity": "sort"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Roger Troutman",
+          "entity": "artist"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "track",
+          "entity": "music_item"
+        },
+        {
+          "text": " possible"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play some "
+        },
+        {
+          "text": "P. J. Proby",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play some "
+        },
+        {
+          "text": "diva house",
+          "entity": "genre"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to hear the "
+        },
+        {
+          "text": "album",
+          "entity": "music_item"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Picchio Dal Pozzo",
+          "entity": "album"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "Con Hunley",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "play "
+        },
+        {
+          "text": "almost independence day",
+          "entity": "track"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Vitas",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play the "
+        },
+        {
+          "text": "song",
+          "entity": "music_item"
+        },
+        {
+          "text": " from the genre "
+        },
+        {
+          "text": "Sunshine Reggae",
+          "entity": "genre"
+        },
+        {
+          "text": " that appeals to me."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to listen to "
+        },
+        {
+          "text": "martina mcbride",
+          "entity": "artist"
+        },
+        {
+          "text": " music from "
+        },
+        {
+          "text": "1995",
+          "entity": "year"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "play some "
+        },
+        {
+          "text": "fifties",
+          "entity": "year"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "tune",
+          "entity": "music_item"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Youtube",
+          "entity": "service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play the "
+        },
+        {
+          "text": "track",
+          "entity": "music_item"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Coma",
+          "entity": "track"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I wish to listen to "
+        },
+        {
+          "text": "Roni Duani",
+          "entity": "artist"
+        },
+        {
+          "text": " 's music."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "put my "
+        },
+        {
+          "text": "Family Road Trip",
+          "entity": "playlist"
+        },
+        {
+          "text": " playlist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "New World",
+          "entity": "album"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "groove shark",
+          "entity": "service"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Start playing anything "
+        },
+        {
+          "text": "Mike Muir",
+          "entity": "artist"
+        },
+        {
+          "text": " made in the "
+        },
+        {
+          "text": "thirties",
+          "entity": "year"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play some "
+        },
+        {
+          "text": "thirties",
+          "entity": "year"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Frank Wildhorn",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play a "
+        },
+        {
+          "text": "sound track",
+          "entity": "music_item"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "Gregory Douglass",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play music from "
+        },
+        {
+          "text": "1972",
+          "entity": "year"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to play a "
+        },
+        {
+          "text": "song",
+          "entity": "music_item"
+        },
+        {
+          "text": " from the "
+        },
+        {
+          "text": "nineties",
+          "entity": "year"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Roddy Woomble",
+          "entity": "artist"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Plaly "
+        },
+        {
+          "text": "The Ladybug Transistor",
+          "entity": "album"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Loreena Mckennitt",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play the "
+        },
+        {
+          "text": "latest",
+          "entity": "sort"
+        },
+        {
+          "text": " music from "
+        },
+        {
+          "text": "Mark Knopfler",
+          "entity": "artist"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play music from the "
+        },
+        {
+          "text": "eighties",
+          "entity": "year"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "Tyrants And Wraiths",
+          "entity": "album"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Play "
+        },
+        {
+          "text": "Before I Grew Up To Love You",
+          "entity": "track"
+        },
+        {
+          "text": " by "
+        },
+        {
+          "text": "Wafah Dufour",
+          "entity": "artist"
+        }
+      ]
+    }
+  ]
+}
