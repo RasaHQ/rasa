@@ -187,12 +187,12 @@ class MessageProcessor(object):
         # for testing - you can short-cut the NLU part with a message
         # in the format _intent[entity1=val1,entity=val2]
         # parse_data is a dict of intent & entities
-        if message.text.startswith('/'):
-            parse_data = RegexInterpreter().parse(message.text)
-        elif message.text.startswith('_'):
-            warnings.warn("Parsing messages with leading `_` is deprecated and "
-                          "will be removed. Instead, prepend your intents with "
-                          "`/`, e.g. `/mood_greet`  or `/restart`.")
+        if message.text.startswith('/') or message.text.startswith("_"):
+            if RegexInterpreter.is_using_deprecated_format(message.text):
+                warnings.warn(
+                    "Parsing messages with leading `_` is deprecated and "
+                    "will be removed. Instead, prepend your intents with "
+                    "`/`, e.g. `/mood_greet`  or `/restart`.")
             parse_data = RegexInterpreter().parse(message.text)
         else:
             parse_data = self.interpreter.parse(message.text)

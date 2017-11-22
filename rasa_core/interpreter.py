@@ -13,6 +13,8 @@ from builtins import str
 
 logger = logging.getLogger(__name__)
 
+INTENT_MESSAGE_PREFIX = "/"
+
 
 class NaturalLanguageInterpreter(object):
     def parse(self, text):
@@ -32,10 +34,15 @@ class NaturalLanguageInterpreter(object):
 
 class RegexInterpreter(NaturalLanguageInterpreter):
     @staticmethod
+    def allowed_prefixes():
+        return INTENT_MESSAGE_PREFIX + "_"   # _ is deprecated but supported
+
+    @staticmethod
     def extract_intent_and_entities(user_input):
 
         # the regex matches "slot{"a": 1}"
-        m = re.search('^/?([^{]+)([{].+)?', user_input)
+        prefixes = re.escape(RegexInterpreter.allowed_prefixes())
+        m = re.search('^['+prefixes+']?([^{]+)([{].+)?', user_input)
         if m is not None:
             event_name = m.group(1).strip()
             entitiy_str = m.group(2)
@@ -73,8 +80,9 @@ class RegexInterpreter(NaturalLanguageInterpreter):
     @staticmethod
     def deprecated_extraction(user_input):
         value_assign_rx = '\s*(.+)\s*=\s*(.+)\s*'
-        structed_message_rx = '^_([^\[]+)(\[(.+)\])?'
-        m = re.search(structed_message_rx, user_input)
+        prefixes = re.escape(RegexInterpreter.allowed_prefixes())
+        structured_message_rx = '^['+prefixes+']?([^\[]+)(\[(.+)\])?'
+        m = re.search(structured_message_rx, user_input)
         if m is not None:
             intent = m.group(1).lower()
             offset = m.start(3)
@@ -96,8 +104,21 @@ class RegexInterpreter(NaturalLanguageInterpreter):
         else:
             return None, []
 
+    @staticmethod
+    def is_using_deprecated_format(text):
+        """Indicates if the text string is using the deprecated intent format.
+
+        In the deprecated format entities where annotated using `[name=Rasa]`
+        which has been replaced with `{"name": "Rasa"}`."""
+
+        return (text.index("[") != -1
+                and (text.index("{") == -1 or
+                     text.index("[") < text.index("{")))
+
     def parse(self, text):
-        if text.startswith("_"):
+        """Parse a text message."""
+
+        if self.is_using_deprecated_format(text):
             intent, entities = self.deprecated_extraction(text)
         else:
             intent, entities = self.extract_intent_and_entities(text)
@@ -122,9 +143,9 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
         self.server = server
 
     def parse(self, text):
-        """Parses a text message.
+        """Parse a text message.
 
-        Returns a default value if the parsing of the text failed."""
+        Return a default value if the parsing of the text failed."""
 
         default_return = {"intent": {"name": "", "confidence": 0.0},
                           "entities": [], "text": ""}
@@ -135,7 +156,7 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
     def _rasa_http_parse(self, text):
         """Send a text message to a running rasa NLU http server.
 
-        Returns `None` on failure."""
+        Return `None` on failure."""
 
         if not self.server:
             logger.error(
@@ -177,9 +198,9 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
             self.interpreter = None
 
     def parse(self, text):
-        """Parses a text message.
+        """Parse a text message.
 
-        Returns a default value if the parsing of the text failed."""
+        Return a default value if the parsing of the text failed."""
 
         if self.lazy_init and self.interpreter is None:
             self._load_interpreter()
