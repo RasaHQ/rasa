@@ -28,15 +28,15 @@ def test_dispatcher_handle_unknown_template(default_dispatcher_collecting):
 
 def test_dispatcher_utter_buttons(default_dispatcher_collecting):
     buttons = [
-        Button(title="Btn1", payload="_btn1"),
-        Button(title="Btn2", payload="_btn2")
+        Button(title="Btn1", payload="/btn1"),
+        Button(title="Btn2", payload="/btn2")
     ]
     default_dispatcher_collecting.utter_button_message("my message", buttons)
     collected = default_dispatcher_collecting.output_channel.messages
     assert len(collected) == 3
     assert collected[0][1] == "my message"
-    assert collected[1][1] == "1: Btn1 (_btn1)"
-    assert collected[2][1] == "2: Btn2 (_btn2)"
+    assert collected[1][1] == "1: Btn1 (/btn1)"
+    assert collected[2][1] == "2: Btn2 (/btn2)"
 
 
 def test_dispatcher_utter_buttons_from_domain_templ():
@@ -54,18 +54,18 @@ def test_dispatcher_utter_buttons_from_domain_templ():
 def test_dispatcher_utter_custom_message(default_dispatcher_collecting):
     elements = [
         Element(title="hey there", subtitle="welcome", buttons=[
-            Button(title="Btn1", payload="_btn1"),
-            Button(title="Btn2", payload="_btn2")]),
+            Button(title="Btn1", payload="/btn1"),
+            Button(title="Btn2", payload="/btn2")]),
         Element(title="another title", subtitle="another subtitle", buttons=[
-            Button(title="Btn3", payload="_btn3"),
-            Button(title="Btn4", payload="_btn4")])
+            Button(title="Btn3", payload="/btn3"),
+            Button(title="Btn4", payload="/btn4")])
     ]
     default_dispatcher_collecting.utter_custom_message(*elements)
     collected = default_dispatcher_collecting.output_channel.messages
     assert len(collected) == 6
     assert collected[0][1] == "hey there : welcome"
-    assert collected[1][1] == "1: Btn1 (_btn1)"
-    assert collected[2][1] == "2: Btn2 (_btn2)"
+    assert collected[1][1] == "1: Btn1 (/btn1)"
+    assert collected[2][1] == "2: Btn2 (/btn2)"
     assert collected[3][1] == "another title : another subtitle"
-    assert collected[4][1] == "1: Btn3 (_btn3)"
-    assert collected[5][1] == "2: Btn4 (_btn4)"
+    assert collected[4][1] == "1: Btn3 (/btn3)"
+    assert collected[5][1] == "2: Btn4 (/btn4)"

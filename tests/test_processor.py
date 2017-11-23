@@ -30,5 +30,5 @@ def test_message_processor(default_domain):
                                  tracker_store)
 
     out = CollectingOutputChannel()
-    processor.handle_message(UserMessage("_greet[name=Core]", out))
+    processor.handle_message(UserMessage('/greet{"name": "Core"}', out))
     assert ("default", "hey there Core!") == out.latest_output()

@@ -14,8 +14,8 @@ from rasa_core.events import UserUttered, TopicSet, SlotSet, Restarted, \
 
 
 @pytest.mark.parametrize("one_event,another_event", [
-    (UserUttered("_greet", "greet", []),
-     UserUttered("_goodbye", "goodbye", [])),
+    (UserUttered("/greet", "greet", []),
+     UserUttered("/goodbye", "goodbye", [])),
 
     (TopicSet("my_topic"),
      TopicSet("my_other_topic")),

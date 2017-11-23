@@ -115,14 +115,14 @@ conversation snippet:
     :linenos:
 
     ## story_07715946
-    * _greet[]
+    * greet
      - action_ask_howcanhelp
-    * _inform[location=rome,price=cheap]
+    * inform{"location": "rome", "price": "cheap"}
      - action_on_it
      - action_ask_cuisine
-    * _inform[cuisine=spanish]
+    * inform{"cuisine": "spanish"}
      - action_ask_numpeople
-    * _inform[people=six]
+    * inform{"people": "six"}
      - action_ack_dosearch
      ...
 
@@ -248,10 +248,17 @@ We can then try sending it a message:
 
 .. doctest::
 
-   >>> agent.handle_message("_greet")
+   >>> agent.handle_message("/greet")
    [u'hey there!']
 
 And there we have it! A minimal bot containing all the important pieces of Rasa Core.
+
+.. note::
+
+   If you are wondering why we are not sending the bot a message like
+   "hello there" head over to :ref:`fixed_intent_format`. It basically forces,
+   the bot to interpret the message as if it would have the intent ``greet``,
+   skipping the NLU.
 
 If you want to handle input from the command line (or a different input channel) you need handle
 that channel instead of handling messages directly, e.g.:

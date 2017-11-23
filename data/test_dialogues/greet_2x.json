@@ -8,7 +8,7 @@
         "name": "greet",
         "confidence": 1.0
       },
-      "text": "_greet"
+      "text": "/greet"
     },
     {
       "py/object": "rasa_core.events.ActionExecuted",
@@ -22,7 +22,7 @@
         "name": "greet",
         "confidence": 1.0
       },
-      "text": "_greet"
+      "text": "/greet"
     },
     {
       "py/object": "rasa_core.events.ActionExecuted",

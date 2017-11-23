@@ -25,8 +25,9 @@ from rasa_core.actions.action import ActionListen, ACTION_LISTEN_NAME
 from rasa_core.channels import UserMessage
 from rasa_core.conversation import Dialogue
 from rasa_core.domain import Domain
-from rasa_core.events import ActionExecuted, UserUttered, Event, \
-    ActionReverted
+from rasa_core.events import (
+    ActionExecuted, UserUttered, Event,
+    ActionReverted)
 from rasa_core.featurizers import Featurizer
 from rasa_core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa_core.trackers import DialogueStateTracker
@@ -244,7 +245,8 @@ class StoryStepBuilder(object):
             self.current_steps = []
 
     def _next_story_steps(self):
-        start_checkpoints = self._prev_end_checkpoints() or [Checkpoint(STORY_START)]
+        start_checkpoints = self._prev_end_checkpoints() or [
+            Checkpoint(STORY_START)]
         current_turns = [StoryStep(block_name=self.name, start_checkpoint=s)
                          for s in start_checkpoints]
         return current_turns
@@ -302,8 +304,9 @@ class StoryFileReader(object):
             reader = StoryFileReader(domain, interpreter, template_variables)
             return reader.process_lines(lines)
         except Exception as e:
-            raise Exception("Failed to parse '{}'. {}".format(
-                    os.path.abspath(file_name), e))
+            logger.exception("Failed to parse '{}'".format(
+                    os.path.abspath(file_name)), e)
+            raise ValueError("Invalid story file format.")
 
     @staticmethod
     def _parse_event_line(line):
@@ -417,6 +420,12 @@ class StoryFileReader(object):
         for m in messages:
             parse_data = self.interpreter.parse(m)
             utterance = UserUttered.from_parse_data(m, parse_data)
+            if m.startswith("_"):
+                c = utterance.as_story_string()
+                logger.warn("Stating user intents with a leading '_' is "
+                            "deprecated. The new format is "
+                            "'* {}'. Please update "
+                            "your example '{}' to the new format.".format(c, m))
             if utterance.intent.get("name") not in self.domain.intents:
                 logger.warn("Found unknown intent '{}'. Please, make sure "
                             "that all intents are listed in your domain "
@@ -739,7 +748,8 @@ class TrainingsDataExtractor(object):
         # appends y to X so it appears to be just another feature
         if not utils.is_training_data_empty(X):
             casted_y = np.broadcast_to(
-                    np.reshape(y, (y.shape[0], 1, 1)), (y.shape[0], X.shape[1], 1))
+                    np.reshape(y, (y.shape[0], 1, 1)),
+                    (y.shape[0], X.shape[1], 1))
             concatenated = np.concatenate((X, casted_y), axis=2)
             t_data = np.unique(concatenated, axis=0)
             X_unique = t_data[:, :, :-1]

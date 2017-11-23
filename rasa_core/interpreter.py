@@ -111,9 +111,9 @@ class RegexInterpreter(NaturalLanguageInterpreter):
         In the deprecated format entities where annotated using `[name=Rasa]`
         which has been replaced with `{"name": "Rasa"}`."""
 
-        return (text.index("[") != -1
-                and (text.index("{") == -1 or
-                     text.index("[") < text.index("{")))
+        return (text.find("[") != -1
+                and (text.find("{") == -1 or
+                     text.find("[") < text.find("{")))
 
     def parse(self, text):
         """Parse a text message."""
