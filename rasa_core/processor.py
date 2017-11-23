@@ -17,7 +17,7 @@ from rasa_core.channels.direct import CollectingOutputChannel
 from rasa_core.dispatcher import Dispatcher
 from rasa_core.domain import Domain
 from rasa_core.events import Restarted, ReminderScheduled, Event
-from rasa_core.events import UserUttered, ActionExecuted
+from rasa_core.events import UserUttered, ActionExecuted, BotUttered
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.policies.ensemble import PolicyEnsemble
@@ -202,7 +202,7 @@ class MessageProcessor(object):
 
         parse_data = self._parse_message(message)
 
-        # don't ever directly mutate the tracker - instead pass it events to log
+        # don't ever directly mutate the tracker - instead pass its events to log
         tracker.update(UserUttered(message.text, parse_data["intent"],
                                    parse_data["entities"], parse_data))
         # store all entities as slots
@@ -286,10 +286,22 @@ class MessageProcessor(object):
                          "code.".format(action.name()), )
             logger.error(e, exc_info=True)
             events = []
+        self._log_bot_utterances_on_tracker(tracker, dispatcher)
         self._log_action_on_tracker(tracker, action.name(), events)
         self._schedule_reminders(events, dispatcher)
 
         return self._should_predict_another_action(action.name(), events)
+
+    def _log_bot_utterances_on_tracker(self, tracker, dispatcher):
+        # type: (DialogueStateTracker, Dispatcher) -> None
+
+        if dispatcher.latest_bot_messages:
+            for m in dispatcher.latest_bot_messages:
+                bot_utterance = BotUttered(text=m.text, data=m.data)
+                logger.debug("Bot utterance '{}'".format(bot_utterance))
+                tracker.update(bot_utterance)
+
+            dispatcher.latest_bot_messages = []
 
     def _log_action_on_tracker(self, tracker, action_name, events):
         # Ensures that the code still works even if a lazy programmer missed

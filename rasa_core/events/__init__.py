@@ -26,7 +26,7 @@ class Event(object):
     - the topic has been set
     - the bot has taken an action
 
-    Events are logged by the Tracker's log_event method.
+    Events are logged by the Tracker's update method.
     This updates the list of turns so that the current state
     can be recovered by consuming the list of turns."""
 
@@ -146,6 +146,53 @@ class UserUttered(Event):
         # type: (DialogueStateTracker) -> None
 
         tracker.latest_message = self
+
+
+# noinspection PyProtectedMember
+class BotUttered(Event):
+    """The bot has said something to the user.
+
+    This class is not used in the story training as it is contained in the
+
+    ``ActionExecuted`` class. An entry is made in the ``Tracker``."""
+
+    type_name = "bot"
+
+    def __init__(self, text=None, data=None):
+        self.text = text
+        self.data = data
+
+    def __hash__(self):
+        return hash((self.text, self.data))
+
+    def __eq__(self, other):
+        if not isinstance(other, BotUttered):
+            return False
+        else:
+            return (self.text, self.data) == \
+                   (other.text, other.data)
+
+    def __str__(self):
+        return "BotUttered(text: {}, data: {})".format(self.text, json.dumps(self.data, indent=2))
+
+    def apply_to(self, tracker):
+        # type: (DialogueStateTracker) -> None
+
+        tracker.latest_bot_utterance = self
+
+    def as_story_string(self):
+        return None
+
+    @staticmethod
+    def empty():
+        return BotUttered()
+
+    @classmethod
+    def _from_parameters(cls, event_name, parameters, domain):
+        try:
+            return BotUttered(parameters["text"], parameters["data"])
+        except KeyError as e:
+            raise ValueError("Failed to parse bot uttered event. {}".format(e))
 
 
 # noinspection PyProtectedMember
