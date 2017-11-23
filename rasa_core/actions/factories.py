@@ -15,12 +15,24 @@ logger = logging.getLogger(__name__)
 
 
 def action_factory_by_name(name):
-    if name == "local" or name is None:     # this is the default factory
+    if name == "local" or name is None:  # this is the default factory
         return local_action_factory
     elif name == "remote":
         return remote_action_factory
     else:
         raise Exception("Unknown executor name '{}'.".format(name))
+
+
+def ensure_action_name_uniqueness(actions):
+    actual_action_names = set()  # used to collect unique action names
+    for a in actions:
+        if a.name() in actual_action_names:
+            raise ValueError(
+                    "Action names are not unique! Found two actions with name"
+                    " '{}'. Either rename or remove one of them."
+                    "".format(a.name()))
+        else:
+            actual_action_names.add(a.name())
 
 
 def local_action_factory(action_names, utter_templates):
@@ -58,7 +70,7 @@ def local_action_factory(action_names, utter_templates):
         else:
             actions.append(_action_class(name))
 
-    # TODO: double check that action names are unique?
+    ensure_action_name_uniqueness(actions)
     return actions
 
 
@@ -76,6 +88,7 @@ def remote_action_factory(action_names, utter_templates):
         else:
             actions.append(RemoteAction(name))
 
+    ensure_action_name_uniqueness(actions)
     return actions
 
 
