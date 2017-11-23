@@ -13,16 +13,16 @@ from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.policies.scoring_policy import ScoringPolicy
 from rasa_core.trackers import DialogueStateTracker
-from rasa_core.training import extract_training_data_from_file, \
-    extract_stories_from_file
+from rasa_core.training import (
+    extract_training_data_from_file,
+    extract_trackers_from_file)
 from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 
 
 def train_data(max_history, domain):
     return extract_training_data_from_file(
-            "data/dsl_stories/stories_defaultdomain.md",
-            domain=domain, max_history=max_history, remove_duplicates=True,
-            featurizer=BinaryFeaturizer())
+            "data/dsl_stories/stories_defaultdomain.md", domain,
+            BinaryFeaturizer(), max_history=max_history, remove_duplicates=True)
 
 
 # We are going to use class style testing here since unfortunately pytest
@@ -56,13 +56,10 @@ class PolicyTestCollection(object):
         loaded = trained_policy.__class__.load(tmpdir.strpath,
                                                trained_policy.featurizer,
                                                trained_policy.max_history)
-        stories = extract_stories_from_file(
-                DEFAULT_STORIES_FILE, default_domain)
+        trackers= extract_trackers_from_file(
+                DEFAULT_STORIES_FILE, default_domain, BinaryFeaturizer())
 
-        for story in stories:
-            tracker = DialogueStateTracker("default", default_domain.slots)
-            dialogue = story.as_dialogue("default", default_domain)
-            tracker.recreate_from_dialogue(dialogue)
+        for tracker in trackers:
             predicted_probabilities = loaded.predict_action_probabilities(
                     tracker, default_domain)
             actual_probabilities = trained_policy.predict_action_probabilities(

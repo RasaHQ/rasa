@@ -21,7 +21,7 @@ def test_story_visualization(default_domain):
             "data/dsl_stories/stories.md", default_domain,
             interpreter=RegexInterpreter())
     generated_graph = visualize_stories(story_steps, default_domain)
-    assert len(generated_graph.nodes()) == 20
+    assert len(generated_graph.nodes()) == 22
 
 
 def test_training_script(tmpdir):

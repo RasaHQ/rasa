@@ -270,10 +270,10 @@ def visualize_stories(story_steps,
                                   tracker_limit=100).generate()
 
     completed_trackers = data.metadata["trackers"]
-    for ft in completed_trackers:
+    for tracker in completed_trackers:
         message = None
         current_node = 0
-        for el in ft.tracker.events:
+        for el in tracker.events:
             if isinstance(el, UserUttered):
                 message = interpreter.parse(el.text)
             elif (isinstance(el, ActionExecuted) and

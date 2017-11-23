@@ -17,9 +17,9 @@ def test_create_train_data_no_history(default_domain):
     featurizer = BinaryFeaturizer()
     training_data = extract_training_data_from_file(
             "data/dsl_stories/stories_defaultdomain.md",
+            default_domain,
+            featurizer,
             augmentation_factor=0,
-            domain=default_domain,
-            featurizer=featurizer,
             max_history=1
     )
     assert training_data.X.shape == (11, 1, 10)
@@ -48,9 +48,9 @@ def test_create_train_data_with_history(default_domain):
     featurizer = BinaryFeaturizer()
     training_data = extract_training_data_from_file(
             "data/dsl_stories/stories_defaultdomain.md",
+            default_domain,
+            featurizer,
             augmentation_factor=0,
-            domain=default_domain,
-            featurizer=featurizer,
             max_history=4
     )
     assert training_data.X.shape == (11, 4, 10)

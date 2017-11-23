@@ -5,7 +5,6 @@ from __future__ import unicode_literals
 
 import argparse
 import logging
-import random
 import uuid
 from difflib import SequenceMatcher
 
@@ -15,8 +14,8 @@ from tqdm import tqdm
 from rasa_core.agent import Agent
 from rasa_core.events import ActionExecuted, UserUttered
 from rasa_core.interpreter import RegexInterpreter, RasaNLUInterpreter
-from rasa_core.training import extract_stories_from_file, \
-    TrainingsDataExtractor, extract_story_graph_from_file
+from rasa_core.training import (
+    extract_story_graph_from_file, TrainingsDataGenerator)
 from rasa_nlu.evaluate import plot_confusion_matrix, log_evaluation_table
 
 logger = logging.getLogger(__name__)
@@ -55,17 +54,6 @@ def create_argument_parser():
             default="story_confmat.pdf",
             help="output path for the created evaluation plot")
     return parser
-
-
-def _get_stories(story_file, domain, max_stories=None, shuffle_stories=True):
-    """Retrieve the stories from a file."""
-    stories = extract_stories_from_file(story_file, domain)
-    if shuffle_stories:
-        random.Random(42).shuffle(stories)
-    if max_stories is not None:
-        return stories[:max_stories]
-    else:
-        return stories
 
 
 def _min_list_distance(pred, actual):
@@ -111,18 +99,21 @@ def collect_story_predictions(story_file, policy_model_path, nlu_model_path,
 
     max_history = agent.policy_ensemble.policies[0].max_history
 
-    data = TrainingsDataExtractor(story_graph, agent.domain, agent.featurizer). \
-        extract_trainings_data(max_history=max_history,
-                               phase_limit=1,
+    g = TrainingsDataGenerator(story_graph, agent.domain,
+                               agent.featurizer,
+                               max_history=max_history,
+                               use_story_concatenation=False,
                                tracker_limit=100)
+    data = g.generate()
 
-    completed_trackers = data.metadata["trackers"][None]
-    logger.info("Evaluating {} stories\nProgress:".format(len(completed_trackers)))
+    completed_trackers = data.metadata["trackers"]
+    logger.info(
+            "Evaluating {} stories\nProgress:".format(len(completed_trackers)))
 
-    for tf in tqdm(completed_trackers):
+    for tracker in tqdm(completed_trackers):
         sender_id = "default-" + uuid.uuid4().hex
 
-        events = list(tf.tracker.events)
+        events = list(tracker.events)
         actions_between_utterances = []
         last_prediction = []
 

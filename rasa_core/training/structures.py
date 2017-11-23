@@ -242,49 +242,6 @@ class StoryGraph(object):
 
         return self.step_lookup.get(step_id)
 
-    def build_stories(self,
-                      domain,
-                      max_number_of_trackers=2000):
-        # type: (Domain, int) -> List[Story]
-        """Build the stories of a graph."""
-
-        active_trackers = {STORY_START: [Story()]}
-        rand = random.Random(42)
-
-        for step in self.ordered_steps():
-            if step.start_checkpoint_name() in active_trackers:
-                # these are the trackers that reached this story step
-                # and that need to handle all events of the step
-                incoming_trackers = active_trackers[
-                    step.start_checkpoint_name()]
-
-                # TODO: we can't use tracker filter here to filter for
-                #       checkpoint conditions since we don't have trackers.
-                #       this code should rather use the code from the dsl.
-
-                if max_number_of_trackers is not None:
-                    incoming_trackers = utils.subsample_array(
-                            incoming_trackers, max_number_of_trackers, rand)
-
-                events = step.explicit_events(domain)
-                # need to copy the tracker as multiple story steps might
-                # start with the same checkpoint and all of them
-                # will use the same set of incoming trackers
-                if events:
-                    trackers = [Story(tracker.story_steps + [step])
-                                for tracker in incoming_trackers]
-                else:
-                    trackers = []  # small optimization
-
-                # update our tracker dictionary with the trackers that handled
-                # the events of the step and that can now be used for further
-                # story steps that start with the checkpoint this step ended on
-                if step.end_checkpoint_name() not in active_trackers:
-                    active_trackers[step.end_checkpoint_name()] = []
-                active_trackers[step.end_checkpoint_name()].extend(trackers)
-
-        return active_trackers[None]
-
     def as_story_string(self):
         # type: () -> Text
         """Convert the graph into the story file format."""

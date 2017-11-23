@@ -151,13 +151,15 @@ class TrainingsDataGenerator(object):
         all_actions = []  # type: List[int]
         unused_checkpoints = set()  # type: Set[Text]
 
-        active_trackers = {}
+        init_tracker = FeaturizedTracker.from_domain(
+                self.domain, self.config.max_history,
+                self.config.tracker_limit)
+        active_trackers = {STORY_START: [init_tracker]}
         finished_trackers = []
 
         phases = self._phase_names()
 
         for i, phase_name in enumerate(phases):
-            active_trackers = self._create_start_trackers(active_trackers)
             num_trackers = self._count_trackers(active_trackers)
 
             logger.debug("Starting {} (phase {} of {})... (using {} trackers)"
@@ -204,7 +206,10 @@ class TrainingsDataGenerator(object):
                     if step.end_checkpoint_name() not in active_trackers:
                         active_trackers[step.end_checkpoint_name()] = []
                     active_trackers[step.end_checkpoint_name()].extend(trackers)
-            finished_trackers.extend(active_trackers.get(STORY_END, []))
+            # trackers that reached the end of a story
+            completed = active_trackers.get(STORY_END, [])
+            finished_trackers.extend([t.tracker for t in completed])
+            active_trackers = self._create_start_trackers(active_trackers)
             logger.debug("Finished phase. ({} training samples found)".format(
                     len(all_actions)))
 
@@ -267,44 +272,38 @@ class TrainingsDataGenerator(object):
 
         We need to do some cleanup before processing them again."""
 
-        if not active_trackers:
-            init_tracker = FeaturizedTracker.from_domain(
-                    self.domain, self.config.max_history,
-                    self.config.tracker_limit)
-            return {STORY_START: [init_tracker]}
-        else:
-            glue_mapping = self.story_graph.story_end_checkpoints
-            if self.config.use_story_concatenation:
-                glue_mapping[STORY_END] = STORY_START
+        glue_mapping = self.story_graph.story_end_checkpoints
+        if self.config.use_story_concatenation:
+            glue_mapping[STORY_END] = STORY_START
 
-            next_active_trackers = {}
-            for end, start in glue_mapping.items():
-                ending_trackers = active_trackers.get(end, [])
+        next_active_trackers = {}
+        for end, start in glue_mapping.items():
+            ending_trackers = active_trackers.get(end, [])
+            if start == STORY_START:
+                ending_trackers = utils.subsample_array(
+                        ending_trackers,
+                        self.config.augmentation_factor,
+                        self.config.rand)
+
+            next_active_trackers[start] = []
+
+            # This is where the augmentation magic happens. We
+            # will reuse all the trackers that reached the
+            # end checkpoint `None` (which is the end of a
+            # story) and start processing all steps again. So instead
+            # of starting with a fresh tracker, the second and
+            # all following phases will reuse a couple of the trackers
+            # that made their way to a story end.
+            for t in ending_trackers:
+                # this is a nasty thing - all stories end and
+                # start with action listen - so after logging the first
+                # actions in the next phase the trackers would
+                # contain action listen followed by action listen.
+                # to fix this we are going to "undo" the last action listen
                 if start == STORY_START:
-                    ending_trackers = utils.subsample_array(
-                            ending_trackers,
-                            self.config.augmentation_factor,
-                            self.config.rand)
-
-                next_active_trackers[start] = []
-
-                # This is where the augmentation magic happens. We
-                # will reuse all the trackers that reached the
-                # end checkpoint `None` (which is the end of a
-                # story) and start processing all steps again. So instead
-                # of starting with a fresh tracker, the second and
-                # all following phases will reuse a couple of the trackers
-                # that made their way to a story end.
-                for t in ending_trackers:
-                    # this is a nasty thing - all stories end and
-                    # start with action listen - so after logging the first
-                    # actions in the next phase the trackers would
-                    # contain action listen followed by action listen.
-                    # to fix this we are going to "undo" the last action listen
-                    if start == STORY_START:
-                        t.undo_last_action()
-                    next_active_trackers[start].append(t)
-            return next_active_trackers
+                    t.undo_last_action()
+                next_active_trackers[start].append(t)
+        return next_active_trackers
 
     def _process_step(self, step, incoming_trackers):
         # type: (StoryStep, List[FeaturizedTracker]) -> TrackerResult
@@ -362,7 +361,8 @@ class TrainingsDataGenerator(object):
 
                 # only continue with trackers that created a
                 # featurization we haven't observed at this event
-                if hashed not in featurizations:
+                if (hashed not in featurizations
+                        or not self.config.remove_duplicates):
                     featurizations.add(hashed)
                     if not event.unpredictable:
                         # only actions which can be predicted at a stories start

@@ -13,9 +13,10 @@ from rasa_core.domain import TemplateDomain
 from rasa_core.events import (
     UserUttered, TopicSet, ActionExecuted, SlotSet,
     Restarted, ActionReverted)
+from rasa_core.featurizers import BinaryFeaturizer
 from rasa_core.tracker_store import InMemoryTrackerStore, RedisTrackerStore
 from rasa_core.trackers import DialogueStateTracker
-from rasa_core.training import extract_stories_from_file, STORY_START
+from rasa_core.training import STORY_START, extract_trackers_from_file
 from tests.utilities import tracker_from_dialogue_file, read_dialogue_file
 
 domain = TemplateDomain.load("data/test_domains/default_with_topic.yml")
@@ -94,12 +95,12 @@ def test_tracker_write_to_story(tmpdir, default_domain):
             "data/test_dialogues/enter_name.json", default_domain)
     p = tmpdir.join("export.md")
     tracker.export_stories_to_file(p.strpath)
-    stories = extract_stories_from_file(p.strpath, default_domain)
-    assert len(stories) == 1
-    assert len(stories[0].story_steps) == 1
-    assert len(stories[0].story_steps[0].events) == 4
-    assert stories[0].story_steps[0].start_checkpoint_name() == STORY_START
-    assert stories[0].story_steps[0].events[3] == SlotSet("location", "central")
+    trackers = extract_trackers_from_file(p.strpath, default_domain,
+                                          BinaryFeaturizer())
+    assert len(trackers) == 1
+    recovered = trackers[0]
+    assert len(recovered.events) == 8
+    assert recovered.events[6] == SlotSet("location", "central")
 
 
 def test_tracker_state_regression(default_agent):

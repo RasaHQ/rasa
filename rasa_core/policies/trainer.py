@@ -64,12 +64,12 @@ class PolicyTrainer(object):
         if filename:
             training_data = extract_training_data_from_file(
                     filename,
+                    self.domain,
+                    self.featurizer,
+                    interpreter=RegexInterpreter(),
                     augmentation_factor=augmentation_factor,
                     max_history=max_history,
                     remove_duplicates=remove_duplicates,
-                    domain=self.domain,
-                    featurizer=self.featurizer,
-                    interpreter=RegexInterpreter(),
                     max_number_of_trackers=max_number_of_trackers)
             if max_training_samples is not None:
                 training_data.limit_training_data_to(max_training_samples)
