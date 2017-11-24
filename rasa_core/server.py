@@ -73,7 +73,7 @@ class RasaCoreServer(object):
     app = Klein()
 
     def __init__(self, model_directory,
-                 nlu_model=None,
+                 interpreter=None,
                  verbose=True,
                  log_file="rasa_core.log",
                  cors_origins=None):
@@ -82,11 +82,11 @@ class RasaCoreServer(object):
         logging.captureWarnings(True)
 
         self.config = {"cors_origins": cors_origins if cors_origins else []}
-        self.agent = self._create_agent(model_directory, nlu_model)
+        self.agent = self._create_agent(model_directory, interpreter)
 
     @staticmethod
-    def _create_agent(model_directory, nlu_model):
-        return Agent.load(model_directory, nlu_model)
+    def _create_agent(model_directory, interpreter):
+        return Agent.load(model_directory, interpreter)
 
     @app.route("/", methods=['GET', 'OPTIONS'])
     @check_cors
