@@ -116,7 +116,7 @@ class MessageProcessor(object):
         tracker = self._get_tracker(sender_id)
         if executed_action != ACTION_LISTEN_NAME:
             self._log_action_on_tracker(tracker, executed_action, events)
-        if self._should_predict_another_action(executed_action, events):
+        if self.should_predict_another_action(executed_action, events):
             return self._predict_next_and_return_state(tracker)
         else:
             self._save_tracker(tracker)
@@ -253,9 +253,10 @@ class MessageProcessor(object):
 
         logger.debug("Current topic: {}".format(tracker.topic.name))
 
-    def _should_predict_another_action(self, action_name, events):
+    @staticmethod
+    def should_predict_another_action(action_name, events):
         is_listen_action = action_name == ACTION_LISTEN_NAME
-        contains_restart = events and isinstance(events[0], Restarted)
+        contains_restart = any(isinstance(e, Restarted) for e in events)
         return not is_listen_action and not contains_restart
 
     def _schedule_reminders(self, events, dispatcher):
@@ -286,13 +287,14 @@ class MessageProcessor(object):
                          "code.".format(action.name()), )
             logger.error(e, exc_info=True)
             events = []
-        self._log_bot_utterances_on_tracker(tracker, dispatcher)
+        self.log_bot_utterances_on_tracker(tracker, dispatcher)
         self._log_action_on_tracker(tracker, action.name(), events)
         self._schedule_reminders(events, dispatcher)
 
-        return self._should_predict_another_action(action.name(), events)
+        return self.should_predict_another_action(action.name(), events)
 
-    def _log_bot_utterances_on_tracker(self, tracker, dispatcher):
+    @staticmethod
+    def log_bot_utterances_on_tracker(tracker, dispatcher):
         # type: (DialogueStateTracker, Dispatcher) -> None
 
         if dispatcher.latest_bot_messages:

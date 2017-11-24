@@ -32,6 +32,6 @@ def test_logging_of_bot_utterances_on_tracker(default_processor,
 
     assert len(default_dispatcher.latest_bot_messages) == 4
 
-    default_processor._log_bot_utterances_on_tracker(tracker,
-                                                     default_dispatcher)
+    default_processor.log_bot_utterances_on_tracker(tracker,
+                                                    default_dispatcher)
     assert not default_dispatcher.latest_bot_messages

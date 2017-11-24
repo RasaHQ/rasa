@@ -55,6 +55,9 @@ class Event(object):
         """Called to convert a parsed story line into an event."""
         return cls()
 
+    def as_dict(self):
+        return {"event": self.type_name}
+
     @classmethod
     def _from_parameters(cls, event_name, parameters, domain):
         """Called to convert a dictionary of parameters to an event.
@@ -127,6 +130,9 @@ class UserUttered(Event):
     def empty():
         return UserUttered(None)
 
+    def as_dict(self):
+        raise NotImplementedError()
+
     def as_story_string(self):
         if self.intent:
             if self.entities:
@@ -187,6 +193,10 @@ class BotUttered(Event):
     def empty():
         return BotUttered()
 
+    def as_dict(self):
+        return {"event": self.type_name,
+                "text": self.text,
+                "data": self.data}
     @classmethod
     def _from_parameters(cls, event_name, parameters, domain):
         try:
@@ -225,6 +235,10 @@ class TopicSet(Event):
     def _from_story_string(cls, event_name, parameters, domain):
         topic = list(parameters.keys())[0] if parameters else ""
         return TopicSet(topic)
+
+    def as_dict(self):
+        return {"event": self.type_name,
+                "topic": self.topic}
 
     @classmethod
     def _from_parameters(cls, event_name, parameters, domain):
@@ -273,6 +287,11 @@ class SlotSet(Event):
             return SlotSet(slot_key, parameters[slot_key])
         else:
             return None
+
+    def as_dict(self):
+        return {"event": self.type_name,
+                "name": self.key,
+                "value": self.value}
 
     @classmethod
     def _from_parameters(cls, event_name, parameters, domain):
@@ -411,6 +430,9 @@ class ReminderScheduled(Event):
             "name": self.name,
             "kill_on_user_msg": self.kill_on_user_message})
         return "{name}{props}".format(name=self.type_name, props=props)
+
+    def as_dict(self):
+        raise NotImplementedError()
 
     @classmethod
     def _from_story_string(cls, event_name, parameters, domain):

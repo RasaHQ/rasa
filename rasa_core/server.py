@@ -58,13 +58,13 @@ def create_argument_parser():
 def convert_obj_2_tracker_events(serialized_events, domain):
     # Example format: {"event": "set_slot", "value": 5, "name": "my_slot"}
 
-    deserialised = []
+    deserialized = []
     for e in serialized_events:
         etype = e.get("event")
         if etype is not None:
             del e["event"]
-            deserialised.append(Event.from_parameters(etype, e, domain))
-    return deserialised
+            deserialized.append(Event.from_parameters(etype, e, domain))
+    return deserialized
 
 
 class RasaCoreServer(object):
@@ -102,7 +102,8 @@ class RasaCoreServer(object):
                 request.content.read().decode('utf-8', 'strict'))
         encoded_events = request_params.get("events", [])
         executed_action = request_params.get("executed_action", None)
-        events = convert_obj_2_tracker_events(encoded_events, self.agent.domain)
+        events = convert_obj_2_tracker_events(encoded_events,
+                                              self.agent.domain)
         response = self.agent.continue_message_handling(cid,
                                                         executed_action,
                                                         events)
