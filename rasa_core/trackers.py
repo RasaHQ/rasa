@@ -77,7 +77,8 @@ class DialogueStateTracker(object):
         return {
             "sender_id": self.sender_id,
             "slots": self.current_slot_values(),
-            "latest_message": self.latest_message.parse_data
+            "latest_message": self.latest_message.parse_data,
+            "paused": self.is_paused()
         }
 
     def current_slot_values(self):
