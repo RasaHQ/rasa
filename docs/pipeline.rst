@@ -80,7 +80,7 @@ intent_featurizer_mitie
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 :Short: MITIE intent featurizer
-:Outputs: nothing, used used as an input to intent classifiers that need intent features (e.g. ``intent_classifier_sklearn``)
+:Outputs: nothing, used as an input to intent classifiers that need intent features (e.g. ``intent_classifier_sklearn``)
 :Description:
     Creates feature for intent classification using the MITIE featurizer.
 
@@ -94,7 +94,7 @@ intent_featurizer_spacy
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 :Short: spacy intent featurizer
-:Outputs: nothing, used used as an input to intent classifiers that need intent features (e.g. ``intent_classifier_sklearn``)
+:Outputs: nothing, used as an input to intent classifiers that need intent features (e.g. ``intent_classifier_sklearn``)
 :Description:
     Creates feature for intent classification using the spacy featurizer.
 
