@@ -19,6 +19,7 @@ from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.model import Metadata
 from rasa_nlu.training_data import Message
+from rasa_nlu.extractors.duckling_extractor import extract_value
 
 logger = logging.getLogger(__name__)
 
@@ -92,11 +93,12 @@ class DucklingHTTPExtractor(EntityExtractor):
             matches = self._duckling_parse(message.text)
             relevant_matches = self._filter_irrelevant_matches(matches)
             for match in relevant_matches:
+                value = extract_value(match)
                 entity = {
                     "start": match["start"],
                     "end": match["end"],
                     "text": match["body"],
-                    "value": match["value"]["value"],
+                    "value": value,
                     "additional_info": match["value"],
                     "entity": match["dim"]}
 
