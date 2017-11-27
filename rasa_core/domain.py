@@ -411,7 +411,7 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
 
 class TemplateDomain(Domain):
     @classmethod
-    def load(cls, file_name):
+    def load(cls, file_name, action_factory=None):
         if not os.path.isfile(file_name):
             raise Exception(
                     "Failed to load domain specification from '{}'. "
@@ -420,7 +420,8 @@ class TemplateDomain(Domain):
         cls.validate_domain_yaml(file_name)
         data = read_yaml_file(file_name)
         utter_templates = cls.collect_templates(data.get("templates", {}))
-        action_factory = data.get("action_factory", None)
+        if not action_factory:
+            action_factory = data.get("action_factory", None)
         topics = [Topic(name) for name in data.get("topics", [])]
         slots = cls.collect_slots(data.get("slots", {}))
         additional_arguments = data.get("config", {})

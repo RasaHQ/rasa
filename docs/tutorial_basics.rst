@@ -165,6 +165,7 @@ There are two things we still need to do: train the dialogue model and run it.
 To train the dialogue model, run:
 
 .. code-block:: bash
+
    python -m rasa_core.train -s data/stories.md -d domain.yml -o models/dialogue --epochs 300
 
 This will train the dialogue model for ``300`` epochs and store it

@@ -131,7 +131,9 @@ class StoryStep(object):
             if isinstance(s, UserUttered):
                 result += "* {}\n".format(s.as_story_string())
             elif isinstance(s, Event):
-                result += "    - {}\n".format(s.as_story_string())
+                converted = s.as_story_string()
+                if converted:
+                    result += "    - {}\n".format(s.as_story_string())
             else:
                 raise Exception("Unexpected element in story step: " + s)
 

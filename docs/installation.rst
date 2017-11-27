@@ -3,8 +3,10 @@
 Installation
 ============
 
-Installation
-------------
+Install Rasa Core to get started with the Rasa stack.
+
+Install Rasa Core
+-----------------
 The recommended way to install Rasa Core is using pip:
 
 .. code-block:: bash
@@ -33,13 +35,20 @@ If you want to use the bleeding edge version of Rasa use github + setup.py:
         pip install -r dev-requirements.txt
 
 
-Additional Dependencies
------------------------
+Add Natural Language Understanding
+----------------------------------
 
-We use Rasa NLU for intent classification & entity extraction,
-but you are free to use other NLU services like wit.ai, api.ai, or LUIS.ai. If you
-want to use Rasa NLU make sure to follow the installation instructions of the
-`NLU docs <https://nlu.rasa.ai>`_ as well.
+We use Rasa NLU for intent classification & entity extraction. To get it, run
+
+
+.. code-block:: bash
+
+    pip install rasa_nlu
+
+
+Full instructions can be found `here <https://nlu.rasa.ai/installation.html>`_.
+
+You can also use other NLU services like wit.ai, dialogflow, or LUIS. 
 In fact, you don't need to use NLU at all, if your messaging app uses buttons
 rather than free text.
 

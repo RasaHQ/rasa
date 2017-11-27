@@ -18,7 +18,7 @@ from rasa_core.channels.direct import CollectingOutputChannel
 from rasa_core.dispatcher import Dispatcher
 from rasa_core.domain import Domain
 from rasa_core.events import Restarted, ReminderScheduled, Event
-from rasa_core.events import UserUttered, ActionExecuted
+from rasa_core.events import UserUttered, ActionExecuted, BotUttered
 from rasa_core.interpreter import (
     NaturalLanguageInterpreter,
     INTENT_MESSAGE_PREFIX)
@@ -119,7 +119,7 @@ class MessageProcessor(object):
         tracker = self._get_tracker(sender_id)
         if executed_action != ACTION_LISTEN_NAME:
             self._log_action_on_tracker(tracker, executed_action, events)
-        if self._should_predict_another_action(executed_action, events):
+        if self.should_predict_another_action(executed_action, events):
             return self._predict_next_and_return_state(tracker)
         else:
             self._save_tracker(tracker)
@@ -212,7 +212,7 @@ class MessageProcessor(object):
 
         parse_data = self._parse_message(message)
 
-        # don't ever directly mutate the tracker - instead pass it events to log
+        # don't ever directly mutate the tracker - instead pass its events to log
         tracker.update(UserUttered(message.text, parse_data["intent"],
                                    parse_data["entities"], parse_data))
         # store all entities as slots
@@ -264,9 +264,9 @@ class MessageProcessor(object):
         logger.debug("Current topic: {}".format(tracker.topic.name))
 
     @staticmethod
-    def _should_predict_another_action(action_name, events):
+    def should_predict_another_action(action_name, events):
         is_listen_action = action_name == ACTION_LISTEN_NAME
-        contains_restart = events and isinstance(events[0], Restarted)
+        contains_restart = any(isinstance(e, Restarted) for e in events)
         return not is_listen_action and not contains_restart
 
     def _schedule_reminders(self, events, dispatcher):
@@ -297,10 +297,23 @@ class MessageProcessor(object):
                          "code.".format(action.name()), )
             logger.error(e, exc_info=True)
             events = []
+        self.log_bot_utterances_on_tracker(tracker, dispatcher)
         self._log_action_on_tracker(tracker, action.name(), events)
         self._schedule_reminders(events, dispatcher)
 
-        return self._should_predict_another_action(action.name(), events)
+        return self.should_predict_another_action(action.name(), events)
+
+    @staticmethod
+    def log_bot_utterances_on_tracker(tracker, dispatcher):
+        # type: (DialogueStateTracker, Dispatcher) -> None
+
+        if dispatcher.latest_bot_messages:
+            for m in dispatcher.latest_bot_messages:
+                bot_utterance = BotUttered(text=m.text, data=m.data)
+                logger.debug("Bot utterance '{}'".format(bot_utterance))
+                tracker.update(bot_utterance)
+
+            dispatcher.latest_bot_messages = []
 
     @staticmethod
     def _log_action_on_tracker(tracker, action_name, events):

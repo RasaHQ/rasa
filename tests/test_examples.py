@@ -44,6 +44,7 @@ def test_remote_example():
     assert response.get("tracker") == {
         'slots': {'concerts': None, 'venues': None},
         'sender_id': 'default',
+        'paused': False,
         'latest_message': {
             'text': '/search_venues',
             'intent_ranking': [{'confidence': 1.0, 'name': 'search_venues'}],

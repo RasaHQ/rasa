@@ -21,6 +21,25 @@ Removed
 Fixed
 -----
 
+[0.7.6] - 2017-11-15
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- log bot utterances to tracker
+
+Fixed
+-----
+- documentation improvements in README
+- renamed interpreter argument to rasa core server
+
+[0.7.6] - 2017-11-15
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- moodbot example train command in docs
+
 
 [0.7.5] - 2017-11-14
 ^^^^^^^^^^^^^^^^^^^^
