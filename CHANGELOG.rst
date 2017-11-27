@@ -14,6 +14,9 @@ Added
 
 Changed
 -------
+- story file utterance format changed from ``* _intent_greet[name=Rasa]``
+  to ``* intent_greet{"name": "Rasa"}`` (old format is still supported but
+  deprecated)
 
 Removed
 -------
