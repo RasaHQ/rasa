@@ -1,4 +1,4 @@
-.PHONY: clean test lint init
+.PHONY: clean test lint init check-readme
 
 TEST_PATH=./
 
@@ -35,3 +35,7 @@ doctest: clean
 
 livedocs:
 	cd docs && make livehtml
+
+check-readme:
+	# if this runs through we can be sure the readme is properly shown on pypi
+	python setup.py check --restructuredtext --strict
