@@ -104,6 +104,11 @@ Alternatively, you can add an "entity_synonyms" array to define several synonyms
       ]
     }
   }
+  
+.. note::
+    Please note that adding synonyms using the above format does not improve the model's classification of those entities.
+    **Entities must be properly classified before they can be replaced with the synonym value.** 
+
 
 Regular Expression Features
 ---------------------------
