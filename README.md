@@ -4,20 +4,15 @@
 [![Coverage Status](https://coveralls.io/repos/github/RasaHQ/rasa_core/badge.svg?branch=master)](https://coveralls.io/github/RasaHQ/rasa_core?branch=master)
 [![PyPI version](https://img.shields.io/pypi/v/rasa_core.svg)](https://pypi.python.org/pypi/rasa-core)
 
-## What do Rasa Core & NLU do? 🤔
-[Read About the Rasa Stack](http://rasa.ai/products/rasa-stack/)
+- **What do Rasa Core & NLU do? 🤔** [Read About the Rasa Stack](http://rasa.ai/products/rasa-stack/)
 
-## I'd like to read the detailed docs 🤓
-[Read The Docs](https://core.rasa.ai)
+- **I'd like to read the detailed docs 🤓** [Read The Docs](https://core.rasa.ai)
 
-## I'm ready to install Rasa Core! 🚀
-[Installation](https://core.rasa.ai/installation.html)
+- **I'm ready to install Rasa Core! 🚀** [Installation](https://core.rasa.ai/installation.html)
 
-## I have a question ❓
-[Gitter channel](https://gitter.im/RasaHQ/rasa_core)
+- **I have a question ❓** [Gitter channel](https://gitter.im/RasaHQ/rasa_core)
 
-## I would like to contribute 🤗
-[How to contribute](#how-to-contribute)
+- **I would like to contribute 🤗** [How to contribute](#how-to-contribute)
 
 
 ## Introduction
@@ -49,7 +44,7 @@ questions.
 
 
 
-#### README Contents:
+### README Contents:
 - [How to contribute](#how-to-contribute)
 - [Development Internals](#development-internals)
 - [License](#license)
