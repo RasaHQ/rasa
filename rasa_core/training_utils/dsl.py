@@ -311,6 +311,30 @@ class StoryFileReader(object):
             raise ValueError("Invalid story file format.")
 
     @staticmethod
+    def _parameters_from_json_string(s, line):
+        # type: (Text, Text) -> Dict[Text, Any]
+        """Parse the passed string as json and create a parameter dict."""
+
+        if s is None or not s.strip():
+            # if there is no strings there are not going to be any parameters
+            return {}
+
+        try:
+            parsed_slots = json.loads(s)
+            if isinstance(parsed_slots, dict):
+                return parsed_slots
+            else:
+                raise Exception("Parsed value isn't a json object "
+                                "(instead parser found '{}')"
+                                ".".format(type(parsed_slots)))
+        except Exception as e:
+            raise ValueError("Invalid to parse arguments in line "
+                             "'{}'. Failed to decode parameters"
+                             "as a json object. Make sure the event"
+                             "name is followed by a proper json "
+                             "object. Error: {}".format(line, e))
+
+    @staticmethod
     def _parse_event_line(line):
         """Tries to parse a single line as an event with arguments."""
 
@@ -319,22 +343,8 @@ class StoryFileReader(object):
         if m is not None:
             event_name = m.group(1).strip()
             slots_str = m.group(2)
-            parameters = {}
-            if slots_str is not None and slots_str.strip():
-                try:
-                    parsed_slots = json.loads(slots_str)
-                    if isinstance(parsed_slots, dict):
-                        parameters = parsed_slots
-                    else:
-                        raise Exception("Parsed value isn't a json object "
-                                        "(instead parser found '{}')"
-                                        ".".format(type(parsed_slots)))
-                except Exception as e:
-                    raise ValueError("Invalid to parse arguments in line "
-                                     "'{}'. Failed to decode parameters"
-                                     "as a json object. Make sure the event"
-                                     "name is followed by a proper json "
-                                     "object. Error: {}".format(line, e))
+            parameters = StoryFileReader._parameters_from_json_string(slots_str,
+                                                                      line)
             return event_name, parameters
         else:
             warnings.warn("Failed to parse action line '{}'. "

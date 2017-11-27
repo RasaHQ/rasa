@@ -10,6 +10,7 @@ import re
 import os
 import requests
 from builtins import str
+from typing import Text, List, Dict, Any
 
 logger = logging.getLogger(__name__)
 
@@ -38,39 +39,59 @@ class RegexInterpreter(NaturalLanguageInterpreter):
         return INTENT_MESSAGE_PREFIX + "_"   # _ is deprecated but supported
 
     @staticmethod
-    def extract_intent_and_entities(user_input):
+    def _create_entities(parsed_entities, sidx, eidx):
+        entities = []
+        for k, vs in parsed_entities.items():
+            if not isinstance(vs, list):
+                vs = [vs]
+            for value in vs:
+                entities.append({
+                    "entity": k,
+                    "start": sidx,
+                    "end": eidx,  # can't be more specific
+                    "value": value
+                })
+        return entities
 
-        # the regex matches "slot{"a": 1}"
+    @staticmethod
+    def _parse_parameters(entitiy_str, sidx, eidx, user_input):
+        # type: (Text, int, int, Text) -> List[Dict[Text, Any]]
+        if entitiy_str is None or not entitiy_str.strip():
+            # if there is nothing to parse we will directly exit
+            return []
+
+        try:
+            parsed_entities = json.loads(entitiy_str)
+            if isinstance(parsed_entities, dict):
+                return RegexInterpreter._create_entities(parsed_entities,
+                                                         sidx, eidx)
+            else:
+                raise Exception("Parsed value isn't a json object "
+                                "(instead parser found '{}')"
+                                ".".format(type(parsed_entities)))
+        except Exception as e:
+            logger.warning("Invalid to parse arguments in line "
+                           "'{}'. Failed to decode parameters"
+                           "as a json object. Make sure the intent"
+                           "followed by a proper json object. "
+                           "Error: {}".format(user_input, e))
+            return []
+
+    @staticmethod
+    def extract_intent_and_entities(user_input):
+        # type: (Text) -> object
+        """Parse the user input using regexes to extract intent & entities."""
+
         prefixes = re.escape(RegexInterpreter.allowed_prefixes())
+        # the regex matches "slot{"a": 1}"
         m = re.search('^['+prefixes+']?([^{]+)([{].+)?', user_input)
         if m is not None:
             event_name = m.group(1).strip()
-            entitiy_str = m.group(2)
-            entities = []
-            if entitiy_str is not None and entitiy_str.strip():
-                try:
-                    parsed_entities = json.loads(entitiy_str)
-                    if isinstance(parsed_entities, dict):
-                        for k, vs in parsed_entities.items():
-                            if not isinstance(vs, list):
-                                vs = [vs]
-                            for value in vs:
-                                entities.append({
-                                    "entity": k,
-                                    "start": m.start(2),
-                                    "end": m.end(2),    # can't be more specific
-                                    "value": value
-                                })
-                    else:
-                        raise Exception("Parsed value isn't a json object "
-                                        "(instead parser found '{}')"
-                                        ".".format(type(parsed_entities)))
-                except Exception as e:
-                    logger.warning("Invalid to parse arguments in line "
-                                   "'{}'. Failed to decode parameters"
-                                   "as a json object. Make sure the intent"
-                                   "followed by a proper json object. "
-                                   "Error: {}".format(user_input, e))
+            entities = RegexInterpreter._parse_parameters(m.group(2),
+                                                          m.start(2),
+                                                          m.end(2),
+                                                          user_input)
+
             return event_name, entities
         else:
             logger.warning("Failed to parse intent end entities from "
@@ -79,6 +100,8 @@ class RegexInterpreter(NaturalLanguageInterpreter):
 
     @staticmethod
     def deprecated_extraction(user_input):
+        """DEPRECATED parse of user intput message."""
+
         value_assign_rx = '\s*(.+)\s*=\s*(.+)\s*'
         prefixes = re.escape(RegexInterpreter.allowed_prefixes())
         structured_message_rx = '^['+prefixes+']?([^\[]+)(\[(.+)\])?'
