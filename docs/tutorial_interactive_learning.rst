@@ -173,7 +173,7 @@ the following prompt:
        1.	Yes
        2.	No, intent is right but the action is wrong
        3.	The intent is wrong
-       0. Export current conversations as stories and quit
+       0.	Export current conversations as stories and quit
 
 
 This gives you all the info you should hopefully need to decide
@@ -209,7 +209,7 @@ We've just asked the bot to search for concerts, and now we're asking it to comp
        1.	Yes
        2.	No, intent is right but the action is wrong
        3.	The intent is wrong
-       0. Export current conversations as stories and quit
+       0.	Export current conversations as stories and quit
 
 
 Now we type ``2``, because it chose the wrong action,
