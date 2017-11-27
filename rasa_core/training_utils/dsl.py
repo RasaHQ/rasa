@@ -354,7 +354,7 @@ class StoryFileReader(object):
                 elif line.startswith("*"):  # reached a user message
                     user_messages = [el.strip() for el in
                                      line[1:].split(" OR ")]
-                    self.add_user_messages(user_messages)
+                    self.add_user_messages(user_messages, line_num)
                 else:  # reached an unknown type of line
                     logger.warn("Skipping line {}. No valid command found. "
                                 "Line Content: '{}'".format(line_num, line))
@@ -404,7 +404,7 @@ class StoryFileReader(object):
 
         self.current_step_builder.add_checkpoint(name, conditions)
 
-    def add_user_messages(self, messages):
+    def add_user_messages(self, messages, line_num):
         if not self.current_step_builder:
             raise StoryParseError("User message '{}' at invalid location. "
                                   "Expected story start.".format(messages))
@@ -412,10 +412,11 @@ class StoryFileReader(object):
         for m in messages:
             parse_data = self.interpreter.parse(m)
             utterance = UserUttered.from_parse_data(m, parse_data)
-            if utterance.intent.get("name") not in self.domain.intents:
-                logger.warn("Found unknown intent '{}'. Please, make sure "
-                            "that all intents are listed in your domain "
-                            "yaml.".format(utterance.intent.get("name")))
+            intent_name = utterance.intent.get("name") 
+            if intent_name not in self.domain.intents:
+                logger.warn("Found unknown intent '{}' on line {}. Please, "
+                            "make sure that all intents are listed in your "
+                            "domain yaml.".format(intent_name, line_num))
             parsed_messages.append(utterance)
         self.current_step_builder.add_user_messages(parsed_messages)
 
