@@ -7,6 +7,7 @@
   "max_training_processes": 1,
   "path": "projects",
   "response_log": "logs",
+  "storage": null,
   "config": "config.json",
   "log_level": "INFO",
   "port": 5000,
