@@ -131,7 +131,17 @@ class UserUttered(Event):
         return UserUttered(None)
 
     def as_dict(self):
-        raise NotImplementedError()
+        return {"event": self.type_name,
+                "text": self.text,
+                "parse_data": self.parse_data}
+
+    @classmethod
+    def _from_parameters(cls, event_name, parameters, domain):
+        try:
+            return UserUttered.from_parse_data(parameters.get("text"),
+                                               parameters.get("parse_data"))
+        except KeyError as e:
+            raise ValueError("Failed to parse bot uttered event. {}".format(e))
 
     def as_story_string(self):
         if self.intent:
@@ -179,7 +189,8 @@ class BotUttered(Event):
                    (other.text, other.data)
 
     def __str__(self):
-        return "BotUttered(text: {}, data: {})".format(self.text, json.dumps(self.data, indent=2))
+        return ("BotUttered(text: {}, data: {})"
+                "".format(self.text, json.dumps(self.data, indent=2)))
 
     def apply_to(self, tracker):
         # type: (DialogueStateTracker) -> None
@@ -197,10 +208,11 @@ class BotUttered(Event):
         return {"event": self.type_name,
                 "text": self.text,
                 "data": self.data}
+
     @classmethod
     def _from_parameters(cls, event_name, parameters, domain):
         try:
-            return BotUttered(parameters["text"], parameters["data"])
+            return BotUttered(parameters.get("text"), parameters.get("data"))
         except KeyError as e:
             raise ValueError("Failed to parse bot uttered event. {}".format(e))
 
@@ -243,7 +255,7 @@ class TopicSet(Event):
     @classmethod
     def _from_parameters(cls, event_name, parameters, domain):
         try:
-            return TopicSet(parameters["topic"])
+            return TopicSet(parameters.get("topic"))
         except KeyError as e:
             raise ValueError("Failed to parse set topic event. {}".format(e))
 
@@ -296,7 +308,7 @@ class SlotSet(Event):
     @classmethod
     def _from_parameters(cls, event_name, parameters, domain):
         try:
-            return SlotSet(parameters["name"], parameters["value"])
+            return SlotSet(parameters.get("name"), parameters.get("value"))
         except KeyError as e:
             raise ValueError("Failed to parse set slot event. {}".format(e))
 
@@ -438,8 +450,8 @@ class ReminderScheduled(Event):
     def _from_story_string(cls, event_name, parameters, domain):
         logger.info("Reminders will be ignored during training, "
                     "which should be ok.")
-        return ReminderScheduled(parameters["action"],
-                                 parameters["date_time"],
+        return ReminderScheduled(parameters.get("action"),
+                                 parameters.get("date_time"),
                                  parameters.get("name", None),
                                  parameters.get("kill_on_user_msg", True))
 

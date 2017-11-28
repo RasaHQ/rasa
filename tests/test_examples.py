@@ -43,6 +43,7 @@ def test_remote_example():
     assert response.get("next_action") == 'search_venues'
     assert response.get("tracker") == {
         'slots': {'concerts': None, 'venues': None},
+        'events': None,
         'sender_id': 'default',
         'paused': False,
         'latest_message': {

@@ -9,9 +9,11 @@ import logging
 
 from builtins import str
 from klein import Klein
+from typing import Union, Text, Optional
 
 from rasa_core.agent import Agent
 from rasa_core.events import Event
+from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.version import __version__
 from rasa_nlu.server import check_cors
 
@@ -87,7 +89,12 @@ class RasaCoreServer(object):
                                         action_factory)
 
     @staticmethod
-    def _create_agent(model_directory, interpreter, action_factory=None):
+    def _create_agent(
+            model_directory,  # type: Text
+            interpreter,  # type: Union[Text, NaturalLanguageInterpreter]
+            action_factory=None #type: Optional[Text]
+    ):
+        # type: (...) -> Agent
         return Agent.load(model_directory, interpreter,
                           action_factory=action_factory)
 
@@ -111,6 +118,49 @@ class RasaCoreServer(object):
                                                         executed_action,
                                                         events)
         return json.dumps(response)
+
+    @app.route("/conversations/<cid>/tracker/events", methods=['POST',
+                                                               'OPTIONS'])
+    @check_cors
+    def append_events(self, request, cid):
+        """Append a list of events to the state of a conversation"""
+        request.setHeader('Content-Type', 'application/json')
+        request_params = json.loads(
+                request.content.read().decode('utf-8', 'strict'))
+        events = convert_obj_2_tracker_events(request_params,
+                                              self.agent.domain)
+        tracker = self.agent.tracker_store.get_or_create_tracker(cid)
+        for e in events:
+            tracker.update(e)
+        self.agent.tracker_store.save(tracker)
+        return json.dumps(tracker.current_state())
+
+    @app.route("/conversations/<cid>/tracker", methods=['GET', 'OPTIONS'])
+    @check_cors
+    def retrieve_tracker(self, request, cid):
+        """Get a dump of a conversations tracker including its events."""
+
+        request.setHeader('Content-Type', 'application/json')
+        tracker = self.agent.tracker_store.get_or_create_tracker(cid)
+        return json.dumps(tracker.current_state(should_include_events=True))
+
+    @app.route("/conversations/<cid>/tracker", methods=['PUT', 'OPTIONS'])
+    @check_cors
+    def update_tracker(self, request, cid):
+        """Use a list of events to set a conversations tracker to a state."""
+
+        request.setHeader('Content-Type', 'application/json')
+        request_params = json.loads(
+                request.content.read().decode('utf-8', 'strict'))
+        events = convert_obj_2_tracker_events(request_params,
+                                              self.agent.domain)
+        tracker = self.agent.tracker_store.create_tracker(cid)
+        for e in events:
+            tracker.update(e)
+
+        # will override an existing tracker with the same id!
+        self.agent.tracker_store.save(tracker)
+        return json.dumps(tracker.current_state(should_include_events=True))
 
     @app.route("/conversations/<cid>/parse", methods=['GET', 'POST', 'OPTIONS'])
     @check_cors

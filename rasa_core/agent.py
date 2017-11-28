@@ -6,18 +6,18 @@ from __future__ import unicode_literals
 import os
 
 from builtins import str
-from typing import Text, List, Optional, Callable, Any, Dict
+from typing import Text, List, Optional, Callable, Any, Dict, Union
 
 from rasa_core.channels import UserMessage, InputChannel, OutputChannel
 from rasa_core.domain import TemplateDomain, Domain
 from rasa_core.events import Event
 from rasa_core.featurizers import Featurizer, BinaryFeaturizer
 from rasa_core.interpreter import NaturalLanguageInterpreter
-from rasa_core.policies import PolicyTrainer
+from rasa_core.policies import PolicyTrainer, Policy
 from rasa_core.policies.ensemble import SimplePolicyEnsemble, PolicyEnsemble
 from rasa_core.policies.memoization import MemoizationPolicy
-from rasa_core.policies.online_policy_trainer import OnlinePolicyTrainer, \
-    TrainingFinishedException
+from rasa_core.policies.online_policy_trainer import (
+    OnlinePolicyTrainer)
 from rasa_core.processor import MessageProcessor
 from rasa_core.tracker_store import InMemoryTrackerStore, TrackerStore
 
@@ -28,17 +28,19 @@ class Agent(object):
      This includes e.g. train an assistant, or handle messages
      with an assistant."""
 
-    def __init__(self,
-                 domain,
-                 policies=None,
-                 featurizer=None,
-                 interpreter=None,
-                 tracker_store=None):
+    def __init__(
+            self,
+            domain,  # type: Domain
+            policies=None,  # type: Optional[Union[PolicyEnsemble, List[Policy]]
+            featurizer=None,  # type: Optional[Featurizer]
+            interpreter=None,  # type: Optional[NaturalLanguageInterpreter]
+            tracker_store=None  # type: Optional[TrackerStore]
+    ):
         self.domain = self._create_domain(domain)
         self.featurizer = self._create_featurizer(featurizer)
         self.policy_ensemble = self._create_ensemble(policies)
         self.interpreter = NaturalLanguageInterpreter.create(interpreter)
-        self.tracker_store = self._create_tracker_store(
+        self.tracker_store = self.create_tracker_store(
                 tracker_store, self.domain)
 
     @classmethod
@@ -55,7 +57,7 @@ class Agent(object):
         featurizer = Featurizer.load(path)
         ensemble = PolicyEnsemble.load(path, featurizer)
         _interpreter = NaturalLanguageInterpreter.create(interpreter)
-        _tracker_store = cls._create_tracker_store(tracker_store, domain)
+        _tracker_store = cls.create_tracker_store(tracker_store, domain)
         return cls(domain, ensemble, featurizer, _interpreter, _tracker_store)
 
     def handle_message(
@@ -137,13 +139,14 @@ class Agent(object):
             if type(p) == MemoizationPolicy:
                 p.toggle(activate)
 
-    def train(self, filename=None, model_path=None, remove_duplicates=True, **kwargs):
+    def train(self, filename=None, model_path=None, remove_duplicates=True,
+              **kwargs):
         # type: (Optional[Text], Optional[Text], **Any) -> None
         """Train the policies / policy ensemble using dialogue data from file"""
 
         trainer = PolicyTrainer(self.policy_ensemble, self.domain,
                                 self.featurizer)
-        trainer.train(filename, **kwargs)
+        trainer.train(filename, remove_duplicates=remove_duplicates, **kwargs)
 
         if model_path:
             self.persist(model_path)
@@ -221,11 +224,15 @@ class Agent(object):
                     "type '{}' with value '{}'".format(type(domain), domain))
 
     @classmethod
-    def _create_tracker_store(cls, store, domain):
+    def create_tracker_store(cls, store, domain):
+        # type: (Optional[TrackerStore], Domain) -> TrackerStore
         return store if store is not None else InMemoryTrackerStore(domain)
 
     @staticmethod
-    def _create_interpreter(interp):
+    def _create_interpreter(
+            interp  # Optional[Union[Text, NaturalLanguageInterpreter]]
+    ):
+        # type: (...) -> NaturalLanguageInterpreter
         return NaturalLanguageInterpreter.create(interp)
 
     @staticmethod
