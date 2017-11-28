@@ -164,12 +164,12 @@ def _merge_equivalent_nodes(G, max_history):
                             _nodes_are_equivalent(G, i, j, max_history):
                         changed = True
                         # moves all outgoing edges to the other node
-                        j_outgoing_edges = G.out_edges(j, keys=True, data=True)
+                        j_outgoing_edges = G.copy().out_edges(j, keys=True, data=True)
                         for _, succ_node, k, d in j_outgoing_edges:
                             _add_edge(G, i, succ_node, k, d.get("label"))
                             G.remove_edge(j, succ_node)
                         # moves all incoming edges to the other node
-                        j_incoming_edges = G.in_edges(j, keys=True, data=True)
+                        j_incoming_edges = G.copy().in_edges(j, keys=True, data=True)
                         for prev_node, _, k, d in j_incoming_edges:
                             _add_edge(G, prev_node, i, k, d.get("label"))
                             G.remove_edge(prev_node, j)
@@ -191,7 +191,7 @@ def _replace_edge_labels_with_nodes(G, next_id, interpreter, training_data,
     else:
         message_generator = None
 
-    for s, e, k, d in G.edges(keys=True, data=True):
+    for s, e, k, d in G.copy().edges(keys=True, data=True):
         if k != EDGE_NONE_LABEL:
             if message_generator and d.get("label", k) is not None:
                 parsed_info = interpreter.parse(d.get("label", k))
