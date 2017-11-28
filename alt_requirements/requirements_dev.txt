@@ -21,6 +21,7 @@ pytest-twisted==1.5
 pytest==3.0.7
 requests==2.18.1
 treq==17.3.1
+mock==2.0.0
 # other
 google-cloud-storage==1.0.0
 # docs
