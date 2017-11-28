@@ -139,7 +139,7 @@ class DataRouter(object):
         elif mode.lower() == 'luis':
             from rasa_nlu.emulators.luis import LUISEmulator
             return LUISEmulator()
-        elif mode.lower() == 'api':
+        elif mode.lower() == 'dialogflow':
             from rasa_nlu.emulators.dialogflow import DialogflowEmulator
             return DialogflowEmulator()
         else:
