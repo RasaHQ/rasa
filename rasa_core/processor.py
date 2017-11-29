@@ -266,8 +266,7 @@ class MessageProcessor(object):
     @staticmethod
     def should_predict_another_action(action_name, events):
         is_listen_action = action_name == ACTION_LISTEN_NAME
-        contains_restart = any(isinstance(e, Restarted) for e in events)
-        return not is_listen_action and not contains_restart
+        return not is_listen_action
 
     def _schedule_reminders(self, events, dispatcher):
         # type: (List[Event], Dispatcher) -> None

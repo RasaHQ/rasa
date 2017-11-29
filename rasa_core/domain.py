@@ -24,7 +24,9 @@ from typing import Text
 from rasa_core import utils
 from rasa_core.actions import Action
 from rasa_core.actions.action import ActionListen, ActionRestart
-from rasa_core.actions.factories import action_factory_by_name
+from rasa_core.actions.factories import (
+    action_factory_by_name,
+    ensure_action_name_uniqueness)
 from rasa_core.conversation import DefaultTopic
 from rasa_core.conversation import Topic
 from rasa_core.events import ActionExecuted
@@ -288,7 +290,8 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         else:
             return {}
 
-    def get_parsing_features(self, tracker):
+    @staticmethod
+    def get_parsing_features(tracker):
         # type: (DialogueStateTracker) -> Dict[Text, float]
 
         feature_dict = {}
@@ -431,6 +434,7 @@ class TemplateDomain(Domain):
                 slots,
                 utter_templates,
                 data.get("actions", []),
+                data.get("action_names", []),
                 action_factory,
                 topics,
                 **additional_arguments
@@ -492,23 +496,27 @@ class TemplateDomain(Domain):
             templates[template_key] = validated_variations
         return templates
 
-    def __init__(self, intents, entities, slots, templates, action_names,
-                 action_factory, topics, **kwargs):
+    def __init__(self, intents, entities, slots, templates, action_classes,
+                 action_names, action_factory, topics, **kwargs):
         self._intents = intents
         self._entities = entities
         self._slots = slots
         self._templates = templates
+        self._action_classes = action_classes
         self._action_names = action_names
         self._factory_name = action_factory
         self._actions = self.instantiate_actions(
-                action_factory, action_names, templates)
+                action_factory, action_classes, action_names, templates)
         super(TemplateDomain, self).__init__(topics, **kwargs)
 
     @staticmethod
-    def instantiate_actions(facotry_name, action_names, templates):
-        default_actions = [a.name() for a in Domain.DEFAULT_ACTIONS]
-        action_factory = action_factory_by_name(facotry_name)
-        return action_factory(default_actions + action_names, templates)
+    def instantiate_actions(factory_name, action_classes, action_names,
+                            templates):
+        action_factory = action_factory_by_name(factory_name)
+        custom_actions = action_factory(action_classes, action_names, templates)
+        actions = Domain.DEFAULT_ACTIONS[:] + custom_actions
+        ensure_action_name_uniqueness(actions)
+        return actions
 
     def _slot_definitions(self):
         slots = {}
@@ -524,6 +532,7 @@ class TemplateDomain(Domain):
         additional_config = {
             "store_entities_as_slots": self.store_entities_as_slots}
         topic_names = [t.name for t in self.topics]
+        action_names = self.action_names[len(Domain.DEFAULT_ACTIONS):]
 
         domain_data = {
             "config": additional_config,
@@ -532,7 +541,8 @@ class TemplateDomain(Domain):
             "slots": self._slot_definitions(),
             "templates": self.templates,
             "topics": topic_names,
-            "actions": self._action_names,
+            "actions": self._action_classes,  # class names of the actions
+            "action_names": action_names,  # names in stories
             "action_factory": self._factory_name
         }
 

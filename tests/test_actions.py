@@ -7,8 +7,10 @@ import pytest
 
 from rasa_core.actions.factories import action_factory_by_name, RemoteAction
 
-from rasa_core.actions.action import ActionRestart, UtterAction, \
-    ActionListen, Action
+from rasa_core.actions.action import (
+    ActionRestart, UtterAction,
+    ActionListen, Action)
+from rasa_core.domain import TemplateDomain
 from rasa_core.events import Restarted
 from rasa_core.trackers import DialogueStateTracker
 
@@ -43,47 +45,74 @@ def test_action_factories():
 
 def test_local_action_factory_module_import():
     instantiated_actions = action_factory_by_name("local")(
-            ["action_listen", "rasa_core.actions.action.ActionRestart",
-             "utter_test"], ["utter_test"])
-    assert len(instantiated_actions) == 3
-    assert isinstance(instantiated_actions[0], ActionListen)
-    assert isinstance(instantiated_actions[1], ActionRestart)
-    assert isinstance(instantiated_actions[2], UtterAction)
+            ["rasa_core.actions.action.ActionRestart",
+             "utter_test"], None, ["utter_test"])
+    assert len(instantiated_actions) == 2
+    assert isinstance(instantiated_actions[0], ActionRestart)
+    assert isinstance(instantiated_actions[1], UtterAction)
 
 
 def test_remote_action_factory_module_import():
     instantiated_actions = action_factory_by_name("remote")(
-            ["action_listen", "random_name", "utter_test"], ["utter_test"])
-    assert len(instantiated_actions) == 3
-    assert isinstance(instantiated_actions[0], ActionListen)
+            ["random_name", "utter_test"], None,
+            ["utter_test"])
+    assert len(instantiated_actions) == 2
+    assert isinstance(instantiated_actions[0], RemoteAction)
     assert isinstance(instantiated_actions[1], RemoteAction)
-    assert isinstance(instantiated_actions[2], RemoteAction)
+
+
+def test_remote_action_factory_preferes_action_names():
+    instantiated_actions = action_factory_by_name("remote")(
+            ["my_module.ActionTest", "utter_test"],
+            ["action_test", "utter_test"],
+            ["utter_test"])
+    assert len(instantiated_actions) == 2
+    assert instantiated_actions[0].name() == "action_test"
+    assert instantiated_actions[1].name() == "utter_test"
+
+
+def test_domain_action_instantiation():
+    instantiated_actions = TemplateDomain.instantiate_actions(
+            "remote",
+            ["my_module.ActionTest", "utter_test"],
+            ["action_test", "utter_test"],
+            ["utter_test"])
+    assert len(instantiated_actions) == 4
+    assert instantiated_actions[0].name() == "action_listen"
+    assert instantiated_actions[1].name() == "action_restart"
+    assert instantiated_actions[2].name() == "action_test"
+    assert instantiated_actions[3].name() == "utter_test"
 
 
 def test_local_action_factory_module_import_fails_on_invalid():
     with pytest.raises(ValueError):
-        action_factory_by_name("local")(["random_name"], ["utter_test"])
+        action_factory_by_name("local")(["random_name"], None, ["utter_test"])
 
     with pytest.raises(ValueError):
-        action_factory_by_name("local")(["utter_default"], ["utter_test"])
+        action_factory_by_name("local")(["utter_default"], None, ["utter_test"])
 
     with pytest.raises(ValueError):
         action_factory_by_name("local")(["examples.UnavailableClass"],
+                                        None,
                                         ["utter_test"])
 
     with pytest.raises(ValueError):
         action_factory_by_name("local")(["nonexistant.UnavailableClass"],
+                                        None,
                                         ["utter_test"])
 
 
 def test_remote_action_factory_fails_on_duplicated_actions():
     with pytest.raises(ValueError):
-        action_factory_by_name("remote")(
-                ["action_listen", "random_name", "random_name"], ["utter_test"])
+        TemplateDomain.instantiate_actions(
+                "remote", ["action_listen", "random_name", "random_name"],
+                None, ["utter_test"])
 
 
 def test_local_action_factory_fails_on_duplicated_actions():
+    actions = ["action_listen",
+               "rasa_core.actions.action.ActionListen",
+               "utter_test"]
     with pytest.raises(ValueError):
-        action_factory_by_name("local")(
-                ["action_listen", "rasa_core.actions.action.ActionListen",
-                 "utter_test"], ["utter_test"])
+        TemplateDomain.instantiate_actions(
+                "local", actions, None, ["utter_test"])
