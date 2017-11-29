@@ -10,6 +10,7 @@ import json
 import logging
 import os
 import re
+import warnings
 from collections import deque
 
 from typing import Optional, List, Text, Any, Dict
@@ -114,8 +115,9 @@ class StoryStepBuilder(object):
             self.current_steps = []
 
     def _next_story_steps(self):
-        start_checkpoints = self._prev_end_checkpoints() or [
-            Checkpoint(STORY_START)]
+        start_checkpoints = self._prev_end_checkpoints()
+        if not start_checkpoints:
+            start_checkpoints = [Checkpoint(STORY_START)]
         current_turns = [StoryStep(block_name=self.name, start_checkpoint=s)
                          for s in start_checkpoints]
         return current_turns
@@ -142,32 +144,49 @@ class StoryFileReader(object):
             reader = StoryFileReader(domain, interpreter, template_variables)
             return reader.process_lines(lines)
         except Exception as e:
-            raise Exception("Failed to parse '{}'. {}".format(
-                    os.path.abspath(filename), e))
+            logger.exception("Failed to parse '{}'".format(
+                    os.path.abspath(filename)), e)
+            raise ValueError("Invalid story file format.")
 
     @staticmethod
-    def _parse_event_line(line, parameter_default_value=""):
+    def _parameters_from_json_string(s, line):
+        # type: (Text, Text) -> Dict[Text, Any]
+        """Parse the passed string as json and create a parameter dict."""
+
+        if s is None or not s.strip():
+            # if there is no strings there are not going to be any parameters
+            return {}
+
+        try:
+            parsed_slots = json.loads(s)
+            if isinstance(parsed_slots, dict):
+                return parsed_slots
+            else:
+                raise Exception("Parsed value isn't a json object "
+                                "(instead parser found '{}')"
+                                ".".format(type(parsed_slots)))
+        except Exception as e:
+            raise ValueError("Invalid to parse arguments in line "
+                             "'{}'. Failed to decode parameters"
+                             "as a json object. Make sure the event"
+                             "name is followed by a proper json "
+                             "object. Error: {}".format(line, e))
+
+    @staticmethod
+    def _parse_event_line(line):
         """Tries to parse a single line as an event with arguments."""
 
-        # the regex matches "slot{"a": 1}" as well as "slot["a"]"
-        m = re.search('^([^\[{]+)([\[{].+)?', line)
+        # the regex matches "slot{"a": 1}"
+        m = re.search('^([^{]+)([{].+)?', line)
         if m is not None:
             event_name = m.group(1).strip()
             slots_str = m.group(2)
-            parameters = {}
-            if slots_str is not None and slots_str.strip():
-                parsed_slots = json.loads(slots_str)
-                if isinstance(parsed_slots, list):
-                    for slot in parsed_slots:
-                        parameters[slot] = parameter_default_value
-                elif isinstance(parsed_slots, dict):
-                    parameters = parsed_slots
-                else:
-                    raise Exception(
-                            "Invalid slot string in line '{}'.".format(line))
+            parameters = StoryFileReader._parameters_from_json_string(slots_str,
+                                                                      line)
             return event_name, parameters
         else:
-            logger.debug("Failed to parse action line '{}'. ".format(line))
+            warnings.warn("Failed to parse action line '{}'. "
+                          "Ignoring this line.".format(line))
             return "", {}
 
     def process_lines(self, lines):
@@ -193,7 +212,7 @@ class StoryFileReader(object):
                 elif line.startswith("*"):  # reached a user message
                     user_messages = [el.strip() for el in
                                      line[1:].split(" OR ")]
-                    self.add_user_messages(user_messages)
+                    self.add_user_messages(user_messages, line_num)
                 else:  # reached an unknown type of line
                     logger.warn("Skipping line {}. No valid command found. "
                                 "Line Content: '{}'".format(line_num, line))
@@ -243,7 +262,7 @@ class StoryFileReader(object):
 
         self.current_step_builder.add_checkpoint(name, conditions)
 
-    def add_user_messages(self, messages):
+    def add_user_messages(self, messages, line_num):
         if not self.current_step_builder:
             raise StoryParseError("User message '{}' at invalid location. "
                                   "Expected story start.".format(messages))
@@ -251,10 +270,17 @@ class StoryFileReader(object):
         for m in messages:
             parse_data = self.interpreter.parse(m)
             utterance = UserUttered.from_parse_data(m, parse_data)
-            if utterance.intent.get("name") not in self.domain.intents:
-                logger.warn("Found unknown intent '{}'. Please, make sure "
-                            "that all intents are listed in your domain "
-                            "yaml.".format(utterance.intent.get("name")))
+            if m.startswith("_"):
+                c = utterance.as_story_string()
+                logger.warn("Stating user intents with a leading '_' is "
+                            "deprecated. The new format is "
+                            "'* {}'. Please update "
+                            "your example '{}' to the new format.".format(c, m))
+            intent_name = utterance.intent.get("name")
+            if intent_name not in self.domain.intents:
+                logger.warn("Found unknown intent '{}' on line {}. Please, "
+                            "make sure that all intents are listed in your "
+                            "domain yaml.".format(intent_name, line_num))
             parsed_messages.append(utterance)
         self.current_step_builder.add_user_messages(parsed_messages)
 

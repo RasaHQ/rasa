@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def action_factory_by_name(name):
-    if name == "local" or name is None:     # this is the default factory
+    if name == "local" or name is None:  # this is the default factory
         return local_action_factory
     elif name == "remote":
         return remote_action_factory
@@ -23,10 +23,21 @@ def action_factory_by_name(name):
         raise Exception("Unknown executor name '{}'.".format(name))
 
 
-def local_action_factory(action_names, utter_templates):
-    # type: (List[Text]) -> List[Action]
+def ensure_action_name_uniqueness(actions):
+    actual_action_names = set()  # used to collect unique action names
+    for a in actions:
+        if a.name() in actual_action_names:
+            raise ValueError(
+                    "Action names are not unique! Found two actions with name"
+                    " '{}'. Either rename or remove one of them."
+                    "".format(a.name()))
+        else:
+            actual_action_names.add(a.name())
+
+
+def local_action_factory(action_classes, action_names, utter_templates):
+    # type: (List[Text], List[Text], List[Text]) -> List[Action]
     """Converts the names of actions into class instances."""
-    from rasa_core.domain import Domain
 
     def _action_class(action_name):
         # type: (Text) -> Action
@@ -47,36 +58,29 @@ def local_action_factory(action_names, utter_templates):
                     "Remember to prefix actions that should utter a template "
                     "with `utter_`. Error: {}".format(action_name, e))
 
-    default_actions = {a.name(): a for a in Domain.DEFAULT_ACTIONS}
     actions = []
 
-    for name in action_names:
-        if name in default_actions:
-            actions.append(default_actions[name])
-        elif name in utter_templates:
+    for name in action_classes:
+        if name in utter_templates:
             actions.append(UtterAction(name))
         else:
             actions.append(_action_class(name))
 
-    # TODO: double check that action names are unique?
     return actions
 
 
-def remote_action_factory(action_names, utter_templates):
-    # type: (List[Text]) -> List[Action]
+def remote_action_factory(action_classes, action_names, utter_templates):
+    # type: (List[Text], List[Text], List[Text]) -> List[Action]
     """Converts the names of actions into class instances."""
-    from rasa_core.domain import Domain
 
-    default_actions = {a.name(): a for a in Domain.DEFAULT_ACTIONS}
-    actions = []
+    if action_names:
+        remote_action_ids = action_names
+    else:
+        # if we do not have action names - we use the class names as identifiers
+        # for the remote actions
+        remote_action_ids = action_classes
 
-    for name in action_names:
-        if name in default_actions:
-            actions.append(default_actions[name])
-        else:
-            actions.append(RemoteAction(name))
-
-    return actions
+    return [RemoteAction(aid) for aid in remote_action_ids]
 
 
 class RemoteAction(Action):

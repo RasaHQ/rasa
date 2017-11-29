@@ -136,6 +136,8 @@ class OnlinePolicyEnsemble(PolicyEnsemble):
             latest_message.intent = intent
             tracker.update(UserUtteranceReverted())
             tracker.update(latest_message)
+            for e in domain.slots_for_entities(latest_message.entities):
+                tracker.update(e)
             return self.probabilities_using_best_policy(tracker, domain)
         elif user_input == "0":
             self._export_stories(tracker)

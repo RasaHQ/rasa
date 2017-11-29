@@ -58,13 +58,13 @@ def create_argument_parser():
 def convert_obj_2_tracker_events(serialized_events, domain):
     # Example format: {"event": "set_slot", "value": 5, "name": "my_slot"}
 
-    deserialised = []
+    deserialized = []
     for e in serialized_events:
         etype = e.get("event")
         if etype is not None:
             del e["event"]
-            deserialised.append(Event.from_parameters(etype, e, domain))
-    return deserialised
+            deserialized.append(Event.from_parameters(etype, e, domain))
+    return deserialized
 
 
 class RasaCoreServer(object):
@@ -73,20 +73,23 @@ class RasaCoreServer(object):
     app = Klein()
 
     def __init__(self, model_directory,
-                 nlu_model=None,
+                 interpreter=None,
                  verbose=True,
                  log_file="rasa_core.log",
-                 cors_origins=None):
+                 cors_origins=None,
+                 action_factory=None):
         logging.basicConfig(filename=log_file,
                             level="DEBUG" if verbose else "INFO")
         logging.captureWarnings(True)
 
         self.config = {"cors_origins": cors_origins if cors_origins else []}
-        self.agent = self._create_agent(model_directory, nlu_model)
+        self.agent = self._create_agent(model_directory, interpreter,
+                                        action_factory)
 
     @staticmethod
-    def _create_agent(model_directory, nlu_model):
-        return Agent.load(model_directory, nlu_model)
+    def _create_agent(model_directory, interpreter, action_factory=None):
+        return Agent.load(model_directory, interpreter,
+                          action_factory=action_factory)
 
     @app.route("/", methods=['GET', 'OPTIONS'])
     @check_cors
@@ -102,7 +105,8 @@ class RasaCoreServer(object):
                 request.content.read().decode('utf-8', 'strict'))
         encoded_events = request_params.get("events", [])
         executed_action = request_params.get("executed_action", None)
-        events = convert_obj_2_tracker_events(encoded_events, self.agent.domain)
+        events = convert_obj_2_tracker_events(encoded_events,
+                                              self.agent.domain)
         response = self.agent.continue_message_handling(cid,
                                                         executed_action,
                                                         events)

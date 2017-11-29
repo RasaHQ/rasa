@@ -18,7 +18,7 @@ def test_story_visualization_script():
 
 def test_story_visualization(default_domain):
     story_steps = StoryFileReader.read_from_file(
-            "data/dsl_stories/stories.md", default_domain,
+            "data/test_stories/stories.md", default_domain,
             interpreter=RegexInterpreter())
     generated_graph = visualize_stories(story_steps, default_domain)
     assert len(generated_graph.nodes()) == 22

@@ -7,6 +7,7 @@ from __future__ import unicode_literals
 import logging
 
 import six.moves.cPickle as pickler
+from typing import Text, Optional
 
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.trackers import DialogueStateTracker, ActionExecuted
@@ -44,6 +45,7 @@ class TrackerStore(object):
         raise NotImplementedError()
 
     def retrieve(self, sender_id):
+        # type: (Text) -> Optional[DialogueStateTracker]
         raise NotImplementedError()
 
     @staticmethod
@@ -74,8 +76,8 @@ class InMemoryTrackerStore(TrackerStore):
                          'id \'{}\''.format(sender_id))
             return self.deserialise_tracker(sender_id, self.store[sender_id])
         else:
-            logger.debug('Could not find a tracker for '
-                         'id \'{}\''.format(sender_id))
+            logger.debug('Creating a new tracker for '
+                         'id \'{}\'.'.format(sender_id))
             return None
 
 

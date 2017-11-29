@@ -14,9 +14,9 @@ from typing import Generator, Dict, Text, Any, Optional, Iterator
 from typing import List
 
 from rasa_core import utils
-from rasa_core.conversation import Dialogue
+from rasa_core.conversation import Dialogue, Topic
 from rasa_core.events import UserUttered, TopicSet, ActionExecuted, \
-    Event, SlotSet, Restarted, ActionReverted, UserUtteranceReverted
+    Event, SlotSet, Restarted, ActionReverted, UserUtteranceReverted, BotUttered
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +63,7 @@ class DialogueStateTracker(object):
         self._topic_stack = None
         self.latest_action_name = None
         self.latest_message = None
+        self.latest_bot_utterance = None
         self.latest_restart_event = None
         self._reset()
 
@@ -76,7 +77,8 @@ class DialogueStateTracker(object):
         return {
             "sender_id": self.sender_id,
             "slots": self.current_slot_values(),
-            "latest_message": self.latest_message.parse_data
+            "latest_message": self.latest_message.parse_data,
+            "paused": self.is_paused()
         }
 
     def current_slot_values(self):
@@ -131,7 +133,7 @@ class DialogueStateTracker(object):
 
     @property
     def topic(self):
-        # type: () -> Text
+        # type: () -> Topic
         """Retrieves current topic, or default if no topic has been set yet."""
 
         return self._topic_stack.top
@@ -181,6 +183,7 @@ class DialogueStateTracker(object):
     def replay_events(self):
         # type: (int) -> None
         """Update the tracker based on a list of events."""
+
         applied_events = self._applied_events()
         for event in applied_events:
             event.apply_to(self)
@@ -247,6 +250,7 @@ class DialogueStateTracker(object):
         self._paused = False
         self.latest_action_name = None
         self.latest_message = UserUttered.empty()
+        self.latest_bot_utterance = BotUttered.empty()
         self.follow_up_action = None
         self._topic_stack = utils.TopicStack(self.topics, [],
                                              self.default_topic)

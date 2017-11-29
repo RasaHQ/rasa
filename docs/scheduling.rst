@@ -21,9 +21,9 @@ We want a confirmation to book a restaurant table - without it the reservation w
     :linenos:
 
     ## book a restaurant
-    * _start_booking
+    * start_booking
         - action_suggest_restaurant
-    * _select_restaurant[name=Papi's Pizza Place]
+    * select_restaurant{"name": "Papi's Pizza Place"}
         - action_confirm_booking
 
 
@@ -89,19 +89,19 @@ So in our stories we need to define what happens after the reminder was executed
     :linenos:
 
     ## book a restaurant
-    * _start_booking
+    * start_booking
         - action_suggest_restaurant
-    * _select_restaurant[name=Papi's Pizza Place]
+    * select_restaurant{"name": "Papi's Pizza Place"}
         - action_confirm_booking
 
     ## reminder_confirm
         - action_booking_reminder
-    * _agree
+    * agree
         - action_book_restaurant
 
     ## reminder_cancel
         - action_booking_reminder
-    * _deny
+    * deny
         - action_cancel_booking
 
 

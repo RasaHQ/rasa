@@ -22,13 +22,13 @@
         "name": "greet",
         "confidence": 1.0
       },
-      "text": "_greet[name=holger,location=central]",
+      "text": "/greet{\"name\": \"holger\", \"location\": \"central\"}",
       "parse_data": {
         "intent": {
           "name": "greet",
           "confidence": 1.0
         },
-        "text": "_greet[name=holger,location=central]",
+        "text": "/greet{\"name\": \"holger\", \"location\": \"central\"}",
         "entities": [
           {
             "entity": "name",

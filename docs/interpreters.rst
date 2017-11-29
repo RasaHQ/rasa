@@ -10,8 +10,10 @@ an interepreter at all. You can define your own ``Interpreter`` subclass which d
 logic you may need. You can look at the ``RegexInterpreter`` class as an example.
 
 
-To use something other than Rasa NLU, you just need to implement a subclass of ``Interpreter``
-which has a method ``parse(message)`` which takes a single string argument and returns a dict in the following format:
+To use something other than Rasa NLU, you just need to implement a
+subclass of ``Interpreter``
+which has a method ``parse(message)`` which takes a single string argument
+and returns a dict in the following format:
 
 
 .. code-block:: javascript
@@ -32,11 +34,30 @@ which has a method ``parse(message)`` which takes a single string argument and r
       ]
     }
 
-.. note: the ``"start"`` and ``"start"`` values in the entities are optional
+.. note:
 
+    The ``"start"`` and ``"end"`` values in the entities are optional
 
-Regex
-------
+.. _fixed_intent_format:
 
-For testing and for writing stories, Rasa Core has a ``RegexInterpreter``.
-This matches strings in the format ``_intent[entity1=value, entity2=value]``.
+Fixed intent & entity input
+---------------------------
+
+Sometimes, you want to make sure a message is treated as being of a fixed
+intent containing defined entities. To achieve that, you can specify the
+message in a markup format instead of using the text of the message.
+
+Instead of sending a message like ``Hello I am Rasa`` and hoping that gets
+classified correctly, you can circumvent the NLU and directly send the
+bot a message like ``/greet{"name": "Rasa"}``. Rasa Core will treat this
+incoming message like a normal message with the intent ``greet`` and the entity
+``name`` with value ``Rasa``.
+
+If you want to specify an input string, that contains multiple entity values of
+the same type you can use
+
+.. code-block::
+
+    /add_to_shopping_list{"item": ["milk", "salt"]}
+
+Which corresponds to a message ``"I want to add milk and salt to my list"``.

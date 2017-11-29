@@ -14,12 +14,44 @@ Added
 
 Changed
 -------
+- story file utterance format changed from ``* _intent_greet[name=Rasa]``
+  to ``* intent_greet{"name": "Rasa"}`` (old format is still supported but
+  deprecated)
+- persist action names in domain during model persistence
 
 Removed
 -------
 
 Fixed
 -----
+
+
+[0.7.9] - 2017-11-29
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- visualisation using Networkx version 2.x
+- add output about line of failing intent when parsing story files
+
+[0.7.8] - 2017-11-27
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Pypi readme rendering
+
+[0.7.7] - 2017-11-24
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- log bot utterances to tracker
+
+Fixed
+-----
+- documentation improvements in README
+- renamed interpreter argument to rasa core server
 
 [0.7.6] - 2017-11-15
 ^^^^^^^^^^^^^^^^^^^^
