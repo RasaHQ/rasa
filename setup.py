@@ -12,6 +12,7 @@ except (IOError, ImportError):
     readme = open('README.md').read()
 
 tests_requires = [
+    "pytest",
     "pytest-pep8",
     "pytest-services",
     "pytest-flask",
