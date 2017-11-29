@@ -21,6 +21,7 @@ Removed
 
 Fixed
 -----
+- visualisation using Networkx version 2.x
 
 [0.7.8] - 2017-11-27
 ^^^^^^^^^^^^^^^^^^^^
