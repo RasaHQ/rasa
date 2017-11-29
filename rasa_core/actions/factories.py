@@ -35,10 +35,9 @@ def ensure_action_name_uniqueness(actions):
             actual_action_names.add(a.name())
 
 
-def local_action_factory(action_names, utter_templates):
-    # type: (List[Text]) -> List[Action]
+def local_action_factory(action_classes, action_names, utter_templates):
+    # type: (List[Text], List[Text], List[Text]) -> List[Action]
     """Converts the names of actions into class instances."""
-    from rasa_core.domain import Domain
 
     def _action_class(action_name):
         # type: (Text) -> Action
@@ -59,37 +58,29 @@ def local_action_factory(action_names, utter_templates):
                     "Remember to prefix actions that should utter a template "
                     "with `utter_`. Error: {}".format(action_name, e))
 
-    default_actions = {a.name(): a for a in Domain.DEFAULT_ACTIONS}
     actions = []
 
-    for name in action_names:
-        if name in default_actions:
-            actions.append(default_actions[name])
-        elif name in utter_templates:
+    for name in action_classes:
+        if name in utter_templates:
             actions.append(UtterAction(name))
         else:
             actions.append(_action_class(name))
 
-    ensure_action_name_uniqueness(actions)
     return actions
 
 
-def remote_action_factory(action_names, utter_templates):
-    # type: (List[Text]) -> List[Action]
+def remote_action_factory(action_classes, action_names, utter_templates):
+    # type: (List[Text], List[Text], List[Text]) -> List[Action]
     """Converts the names of actions into class instances."""
-    from rasa_core.domain import Domain
 
-    default_actions = {a.name(): a for a in Domain.DEFAULT_ACTIONS}
-    actions = []
+    if action_names:
+        remote_action_ids = action_names
+    else:
+        # if we do not have action names - we use the class names as identifiers
+        # for the remote actions
+        remote_action_ids = action_classes
 
-    for name in action_names:
-        if name in default_actions:
-            actions.append(default_actions[name])
-        else:
-            actions.append(RemoteAction(name))
-
-    ensure_action_name_uniqueness(actions)
-    return actions
+    return [RemoteAction(aid) for aid in remote_action_ids]
 
 
 class RemoteAction(Action):

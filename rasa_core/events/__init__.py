@@ -11,7 +11,6 @@ import typing
 from builtins import str
 
 from rasa_core import utils
-from rasa_core.actions.action import ACTION_LISTEN_NAME
 
 if typing.TYPE_CHECKING:
     from rasa_core.trackers import DialogueStateTracker
@@ -325,9 +324,11 @@ class Restarted(Event):
         return self.type_name
 
     def apply_to(self, tracker):
+        from rasa_core.actions.action import ActionListen
         tracker._reset()
-        tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
-        tracker.latest_restart_event = len(tracker.events)
+        # will be the index of the first event after the restart
+        tracker.latest_restart_event = len(tracker.events) + 1
+        tracker.follow_up_action = ActionListen()
 
 
 # noinspection PyProtectedMember
