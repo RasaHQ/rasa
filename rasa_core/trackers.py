@@ -14,7 +14,7 @@ from typing import Generator, Dict, Text, Any, Optional, Iterator
 from typing import List
 
 from rasa_core import utils
-from rasa_core.conversation import Dialogue
+from rasa_core.conversation import Dialogue, Topic
 from rasa_core.events import UserUttered, TopicSet, ActionExecuted, \
     Event, SlotSet, Restarted, ActionReverted, UserUtteranceReverted, BotUttered
 
@@ -133,7 +133,7 @@ class DialogueStateTracker(object):
 
     @property
     def topic(self):
-        # type: () -> Text
+        # type: () -> Topic
         """Retrieves current topic, or default if no topic has been set yet."""
 
         return self._topic_stack.top
@@ -183,6 +183,7 @@ class DialogueStateTracker(object):
     def replay_events(self):
         # type: (int) -> None
         """Update the tracker based on a list of events."""
+
         applied_events = self._applied_events()
         for event in applied_events:
             event.apply_to(self)

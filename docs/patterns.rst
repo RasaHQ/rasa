@@ -72,11 +72,11 @@ you have some training stories where the appropriate responses take place, e.g.:
 
    # story1
    ...
-   * _inform[people=3]
+   * inform{"people": "3"}
    - action_book_table
    ...
    # story2
-   * _inform[people=9]
+   * inform{"people": "9"}
    - action_explain_table_limit
    
 

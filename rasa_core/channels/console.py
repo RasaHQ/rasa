@@ -10,6 +10,7 @@ from typing import Text
 from rasa_core.channels.channel import UserMessage
 from rasa_core.channels.channel import InputChannel, OutputChannel
 from rasa_core import utils
+from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
 
 
 class ConsoleOutputChannel(OutputChannel):
@@ -34,7 +35,7 @@ class ConsoleInputChannel(InputChannel):
             if six.PY2:
                 # in python 2 input doesn't return unicode values
                 text = text.decode("utf-8")
-            if text == '_stop':
+            if text == INTENT_MESSAGE_PREFIX + 'stop':
                 import os
                 # sys.exit(1)
                 os._exit(1)

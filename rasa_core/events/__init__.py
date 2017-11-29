@@ -135,13 +135,12 @@ class UserUttered(Event):
     def as_story_string(self):
         if self.intent:
             if self.entities:
-                entity_strs = ['{}={}'.format(ent['entity'], ent['value'])
-                               for ent in self.entities]
-                ent_string = "[" + ",".join(entity_strs) + "]"
+                ent_string = json.dumps({ent['entity']: ent['value']
+                                         for ent in self.entities})
             else:
                 ent_string = ""
 
-            return "_{intent}{entities}".format(
+            return "{intent}{entities}".format(
                     intent=self.intent.get("name", ""),
                     entities=ent_string)
         else:

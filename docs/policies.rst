@@ -85,7 +85,7 @@ What the ``train()`` method does is the following:
    b. ``X`` - a 2D array where each row represents the state of the tracker when an action was taken
 
 4. calls the policy's ``train()`` method to create a policy from these ``X, y``
-   state-action pairs (don't mind the ``ensamble`` it is just a collection of
+   state-action pairs (don't mind the ``ensemble`` it is just a collection of
    policies - e.g. you can combine multiple policies and train them all at
    once using the ensemble)
 

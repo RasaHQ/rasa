@@ -15,12 +15,13 @@ from rasa_core.events import Restarted
 from rasa_core.trackers import DialogueStateTracker
 
 
-def test_restart(default_dispatcher, default_domain):
+def test_restart(default_dispatcher_cmd, default_domain):
     tracker = DialogueStateTracker("default",
                                    default_domain.slots,
                                    default_domain.topics,
                                    default_domain.default_topic)
-    events = ActionRestart().run(default_dispatcher, tracker, default_domain)
+    events = ActionRestart().run(default_dispatcher_cmd, tracker,
+                                 default_domain)
     assert events == [Restarted()]
 
 

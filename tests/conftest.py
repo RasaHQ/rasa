@@ -10,6 +10,7 @@ import pytest
 
 from rasa_core.agent import Agent
 from rasa_core.channels.console import ConsoleOutputChannel
+from rasa_core.channels.direct import CollectingOutputChannel
 from rasa_core.dispatcher import Dispatcher
 from rasa_core.domain import TemplateDomain
 from rasa_core.featurizers import BinaryFeaturizer
@@ -28,7 +29,7 @@ logging.basicConfig(level="DEBUG")
 
 DEFAULT_DOMAIN_PATH = "data/test_domains/default_with_slots.yml"
 
-DEFAULT_STORIES_FILE = "data/dsl_stories/stories_defaultdomain.md"
+DEFAULT_STORIES_FILE = "data/test_stories/stories_defaultdomain.md"
 
 
 class CustomSlot(Slot):
@@ -52,8 +53,14 @@ def default_agent(default_domain):
 
 
 @pytest.fixture
-def default_dispatcher(default_domain):
+def default_dispatcher_cmd(default_domain):
     bot = ConsoleOutputChannel()
+    return Dispatcher("my-sender", bot, default_domain)
+
+
+@pytest.fixture
+def default_dispatcher_collecting(default_domain):
+    bot = CollectingOutputChannel()
     return Dispatcher("my-sender", bot, default_domain)
 
 
