@@ -173,9 +173,11 @@ def test_restart_event(default_domain):
 
     tracker.update(Restarted())
 
-    assert len(tracker.events) == 6
+    assert len(tracker.events) == 5
+    assert tracker.follow_up_action is not None
+    assert tracker.follow_up_action.name() == ACTION_LISTEN_NAME
     assert tracker.latest_message.text is None
-    assert len(list(tracker.generate_all_prior_states())) == 2
+    assert len(list(tracker.generate_all_prior_states())) == 1
 
     dialogue = tracker.as_dialogue()
 
@@ -185,9 +187,11 @@ def test_restart_event(default_domain):
     recovered.recreate_from_dialogue(dialogue)
 
     assert recovered.current_state() == tracker.current_state()
-    assert len(recovered.events) == 6
+    assert len(recovered.events) == 5
+    assert tracker.follow_up_action is not None
+    assert tracker.follow_up_action.name() == ACTION_LISTEN_NAME
     assert recovered.latest_message.text is None
-    assert len(list(recovered.generate_all_prior_states())) == 2
+    assert len(list(recovered.generate_all_prior_states())) == 1
 
 
 def test_revert_action_event(default_domain):
