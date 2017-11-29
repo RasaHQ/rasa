@@ -56,7 +56,7 @@ class PolicyTestCollection(object):
         loaded = trained_policy.__class__.load(tmpdir.strpath,
                                                trained_policy.featurizer,
                                                trained_policy.max_history)
-        trackers= extract_trackers_from_file(
+        trackers = extract_trackers_from_file(
                 DEFAULT_STORIES_FILE, default_domain, BinaryFeaturizer())
 
         for tracker in trackers:
