@@ -37,13 +37,31 @@ def create_argument_parser():
                         default=None,
                         help="path of the Rasa NLU training data, "
                              "used to insert example messages into the graph")
+
+    # arguments for logging configuration
+    parser.add_argument(
+            '--debug',
+            help="Print lots of debugging statements. "
+                 "Sets logging level to DEBUG",
+            action="store_const",
+            dest="loglevel",
+            const=logging.DEBUG,
+            default=logging.INFO,
+    )
+    parser.add_argument(
+            '-v', '--verbose',
+            help="Be verbose. Sets logging level to INFO",
+            action="store_const",
+            dest="loglevel",
+            const=logging.INFO,
+    )
     return parser
 
 
 if __name__ == '__main__':
     parser = create_argument_parser()
     args = parser.parse_args()
-    logging.basicConfig(level="DEBUG")
+    logging.basicConfig(level=args.loglevel)
 
     domain = TemplateDomain.load(args.domain)
     story_steps = StoryFileReader.read_from_file(args.stories, domain)
