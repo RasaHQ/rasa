@@ -21,7 +21,15 @@ Removed
 
 Fixed
 -----
+
+
+[0.7.9] - 2017-11-29
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
 - visualisation using Networkx version 2.x
+- add output about line of failing intent when parsing story files
 
 [0.7.8] - 2017-11-27
 ^^^^^^^^^^^^^^^^^^^^
