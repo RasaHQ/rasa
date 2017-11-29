@@ -40,6 +40,7 @@ install_requires = [
     'pymessenger',
     'pykwalify',
     'coloredlogs',
+    'ruamel.yaml',
 ]
 
 extras_requires = {
