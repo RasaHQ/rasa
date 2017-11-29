@@ -34,7 +34,7 @@ def create_argument_parser():
                         type=str,
                         help="filename of the output path, e.g. 'graph.png")
     parser.add_argument('-m', '--max_history',
-                        default=2,
+                        required=True,
                         type=int,
                         help="max history to consider when merging "
                              "paths in the output graph")

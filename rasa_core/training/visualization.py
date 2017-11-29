@@ -6,14 +6,15 @@ from __future__ import unicode_literals
 import random
 from collections import defaultdict, deque
 
-from typing import Any, Text, List, Dict
+from typing import Any, Text, List, Dict, Optional
 
 from rasa_core.actions.action import ACTION_LISTEN_NAME
+from rasa_core.domain import Domain
 from rasa_core.events import UserUttered, ActionExecuted
 from rasa_core.featurizers import BinaryFeaturizer
-from rasa_core.interpreter import RegexInterpreter
+from rasa_core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
 from rasa_core.training.generator import TrainingsDataGenerator
-from rasa_core.training.structures import StoryGraph
+from rasa_core.training.structures import StoryGraph, StoryStep
 from rasa_nlu.training_data import TrainingData
 
 EDGE_NONE_LABEL = "NONE"
@@ -167,12 +168,14 @@ def _merge_equivalent_nodes(G, max_history):
                             _nodes_are_equivalent(G, i, j, max_history):
                         changed = True
                         # moves all outgoing edges to the other node
-                        j_outgoing_edges = G.copy().out_edges(j, keys=True, data=True)
+                        j_outgoing_edges = list(G.out_edges(j, keys=True,
+                                                            data=True))
                         for _, succ_node, k, d in j_outgoing_edges:
                             _add_edge(G, i, succ_node, k, d.get("label"))
                             G.remove_edge(j, succ_node)
                         # moves all incoming edges to the other node
-                        j_incoming_edges = G.copy().in_edges(j, keys=True, data=True)
+                        j_incoming_edges = list(G.in_edges(j, keys=True,
+                                                           data=True))
                         for prev_node, _, k, d in j_incoming_edges:
                             _add_edge(G, prev_node, i, k, d.get("label"))
                             G.remove_edge(prev_node, j)
@@ -194,7 +197,8 @@ def _replace_edge_labels_with_nodes(G, next_id, interpreter, nlu_training_data,
     else:
         message_generator = None
 
-    for s, e, k, d in G.copy().edges(keys=True, data=True):
+    edges = list(G.edges(keys=True, data=True))
+    for s, e, k, d in edges:
         if k != EDGE_NONE_LABEL:
             if message_generator and d.get("label", k) is not None:
                 parsed_info = interpreter.parse(d.get("label", k))
@@ -220,13 +224,16 @@ def _persist_graph(G, output_file):
     A.draw(output_file)
 
 
-def visualize_stories(story_steps,
-                      domain,
-                      output_file=None,
-                      max_history=2,
-                      interpreter=RegexInterpreter(),
-                      nlu_training_data=None,
-                      fontsize=12):
+def visualize_stories(
+        story_steps,  # type: List[StoryStep]
+        domain,  # type: Domain
+        output_file,  # type: Optional[Text]
+        max_history,  # type: int
+        interpreter=RegexInterpreter(),  # type: NaturalLanguageInterpreter
+        nlu_training_data=None,  # type: Optional[TrainingData]
+        should_merge_nodes=True,  # type: bool
+        fontsize=12  # type: int
+):
     """Given a set of stories, generates a graph visualizing the flows in the
     stories.
 
@@ -300,7 +307,8 @@ def visualize_stories(story_steps,
         else:
             G.add_edge(current_node, -1, key=EDGE_NONE_LABEL)
 
-    _merge_equivalent_nodes(G, max_history)
+    if should_merge_nodes:
+        _merge_equivalent_nodes(G, max_history)
     _replace_edge_labels_with_nodes(G, next_node_idx, interpreter,
                                     nlu_training_data, fontsize)
 

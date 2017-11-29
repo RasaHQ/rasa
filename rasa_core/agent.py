@@ -184,8 +184,8 @@ class Agent(object):
 
     def visualize(self,
                   filename,
-                  output_file=None,
-                  max_history=2,
+                  output_file,
+                  max_history,
                   nlu_training_data=None,
                   fontsize=12
                   ):
@@ -193,9 +193,8 @@ class Agent(object):
         from rasa_core.training import StoryFileReader
 
         story_steps = StoryFileReader.read_from_file(filename, self.domain)
-        visualize_stories(story_steps, self.domain, output_file,
-                          max_history, self.interpreter, nlu_training_data,
-                          fontsize)
+        visualize_stories(story_steps, self.domain, output_file, max_history,
+                          self.interpreter, nlu_training_data, fontsize)
 
     def _ensure_agent_is_prepared(self):
         # type: () -> None
