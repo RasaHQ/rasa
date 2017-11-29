@@ -14,6 +14,7 @@ Added
 
 Changed
 -------
+- persist action names in domain during model persistence
 
 Removed
 -------
