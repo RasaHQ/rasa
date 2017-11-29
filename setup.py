@@ -39,6 +39,7 @@ install_requires = [
     'networkx',
     'pymessenger',
     'pykwalify',
+    'coloredlogs',
 ]
 
 extras_requires = {
