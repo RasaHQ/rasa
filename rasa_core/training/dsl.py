@@ -143,9 +143,9 @@ class StoryFileReader(object):
                 lines = f.readlines()
             reader = StoryFileReader(domain, interpreter, template_variables)
             return reader.process_lines(lines)
-        except Exception as e:
+        except Exception:
             logger.exception("Failed to parse '{}'".format(
-                    os.path.abspath(filename)), e)
+                    os.path.abspath(filename)))
             raise ValueError("Invalid story file format.")
 
     @staticmethod

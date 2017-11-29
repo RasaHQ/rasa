@@ -24,9 +24,9 @@ def test_can_read_test_story(default_domain):
     tracker = [t for t in trackers if len(t.events) == 5][0]
     assert tracker.events[0] == ActionExecuted("action_listen")
     assert tracker.events[1] == UserUttered(
-            "_simple",
+            "simple",
             intent={"name": "simple", "confidence": 1.0},
-            parse_data={'text': '_simple',
+            parse_data={'text': 'simple',
                         'intent_ranking': [{'confidence': 1.0,
                                             'name': 'simple'}],
                         'intent': {'confidence': 1.0, 'name': 'simple'},
@@ -47,7 +47,7 @@ def test_persist_and_read_test_story_graph(tmpdir, default_domain):
                                                     default_domain,
                                                     BinaryFeaturizer())
     existing_trackers = extract_trackers_from_file(
-        "data/dsl_stories/stories.md",
+        "data/test_stories/stories.md",
         default_domain,
         BinaryFeaturizer())
 
@@ -68,7 +68,7 @@ def test_persist_and_read_test_story(tmpdir, default_domain):
                                                     default_domain,
                                                     BinaryFeaturizer())
     existing_trackers = extract_trackers_from_file(
-            "data/dsl_stories/stories.md",
+            "data/test_stories/stories.md",
             default_domain,
             BinaryFeaturizer())
     existing_stories = {t.export_stories() for t in existing_trackers}

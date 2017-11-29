@@ -171,17 +171,18 @@ class BotUttered(Event):
         self.data = data
 
     def __hash__(self):
-        return hash((self.text, self.data))
+        return hash((self.text, jsonpickle.encode(self.data)))
 
     def __eq__(self, other):
         if not isinstance(other, BotUttered):
             return False
         else:
-            return (self.text, self.data) == \
-                   (other.text, other.data)
+            return (self.text, jsonpickle.encode(self.data)) == \
+                   (other.text, jsonpickle.encode(other.data))
 
     def __str__(self):
-        return "BotUttered(text: {}, data: {})".format(self.text, json.dumps(self.data, indent=2))
+        return ("BotUttered(text: {}, data: {})"
+                "".format(self.text, json.dumps(self.data, indent=2)))
 
     def apply_to(self, tracker):
         # type: (DialogueStateTracker) -> None
@@ -199,6 +200,7 @@ class BotUttered(Event):
         return {"event": self.type_name,
                 "text": self.text,
                 "data": self.data}
+
     @classmethod
     def _from_parameters(cls, event_name, parameters, domain):
         try:
@@ -271,7 +273,7 @@ class SlotSet(Event):
         return "SlotSet(key: {}, value: {})".format(self.key, self.value)
 
     def __hash__(self):
-        return hash((self.key, json.dumps(self.value)))
+        return hash((self.key, jsonpickle.encode(self.value)))
 
     def __eq__(self, other):
         if not isinstance(other, SlotSet):
