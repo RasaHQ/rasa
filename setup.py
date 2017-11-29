@@ -41,6 +41,7 @@ install_requires = [
     'pymessenger',
     'pykwalify',
     'coloredlogs',
+    'flask',
 ]
 
 extras_requires = {
