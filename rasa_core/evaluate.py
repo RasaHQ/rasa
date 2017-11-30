@@ -45,14 +45,28 @@ def create_argument_parser():
             type=str,
             help="nlu model to run with the server. None for regex interpreter")
     parser.add_argument(
-            '-v', '--verbose',
-            default=False,
-            help="use verbose logging")
-    parser.add_argument(
             '-o', '--output',
             type=str,
             default="story_confmat.pdf",
             help="output path for the created evaluation plot")
+
+    # arguments for logging configuration
+    parser.add_argument(
+            '--debug',
+            help="Print lots of debugging statements. "
+                 "Sets logging level to DEBUG",
+            action="store_const",
+            dest="loglevel",
+            const=logging.DEBUG,
+            default=logging.WARNING,
+    )
+    parser.add_argument(
+            '-v', '--verbose',
+            help="Be verbose. Sets logging level to INFO",
+            action="store_const",
+            dest="loglevel",
+            const=logging.INFO,
+    )
     return parser
 
 
@@ -170,7 +184,7 @@ if __name__ == '__main__':
     arg_parser = create_argument_parser()
     cmdline_args = arg_parser.parse_args()
 
-    logging.basicConfig(level="DEBUG" if cmdline_args.verbose else "INFO")
+    logging.basicConfig(level=cmdline_args.loglevel)
     run_story_evaluation(cmdline_args.stories,
                          cmdline_args.core,
                          cmdline_args.nlu,

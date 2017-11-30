@@ -36,11 +36,6 @@ def create_argument_parser():
             default=5005,
             help="port to run the server at")
     parser.add_argument(
-            '-v', '--verbose',
-            default=True,
-            action="store_true",
-            help="use verbose logging")
-    parser.add_argument(
             '--cors',
             nargs='*',
             type=str,
@@ -52,6 +47,23 @@ def create_argument_parser():
             default="rasa_core.log",
             help="store log file in specified file")
 
+    # arguments for logging configuration
+    parser.add_argument(
+            '--debug',
+            help="Print lots of debugging statements. "
+                 "Sets logging level to DEBUG",
+            action="store_const",
+            dest="loglevel",
+            const=logging.DEBUG,
+            default=logging.WARNING,
+    )
+    parser.add_argument(
+            '-v', '--verbose',
+            help="Be verbose. Sets logging level to INFO",
+            action="store_const",
+            dest="loglevel",
+            const=logging.INFO,
+    )
     return parser
 
 
@@ -74,12 +86,11 @@ class RasaCoreServer(object):
 
     def __init__(self, model_directory,
                  interpreter=None,
-                 verbose=True,
+                 loglevel="INFO",
                  log_file="rasa_core.log",
                  cors_origins=None,
                  action_factory=None):
-        logging.basicConfig(filename=log_file,
-                            level="DEBUG" if verbose else "INFO")
+        logging.basicConfig(filename=log_file, level=loglevel)
         logging.captureWarnings(True)
 
         self.config = {"cors_origins": cors_origins if cors_origins else []}
@@ -157,11 +168,11 @@ if __name__ == '__main__':
     arg_parser = create_argument_parser()
     cmdline_args = arg_parser.parse_args()
 
-    logging.basicConfig(level="DEBUG" if cmdline_args.verbose else "INFO")
+    logging.basicConfig(level=cmdline_args.loglevel)
 
     rasa = RasaCoreServer(cmdline_args.core,
                           cmdline_args.nlu,
-                          cmdline_args.verbose,
+                          cmdline_args.loglevel,
                           cmdline_args.log_file,
                           cmdline_args.cors)
 

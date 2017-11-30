@@ -39,10 +39,6 @@ def create_argument_parser():
             default=None,
             help="trained nlu model")
     parser.add_argument(
-            '-v', '--verbose',
-            default=True,
-            help="use verbose logging")
-    parser.add_argument(
             '--history',
             type=int,
             default=3,
@@ -68,6 +64,23 @@ def create_argument_parser():
             default=50,
             help="how much data augmentation to use during training")
 
+    # arguments for logging configuration
+    parser.add_argument(
+            '--debug',
+            help="Print lots of debugging statements. "
+                 "Sets logging level to DEBUG",
+            action="store_const",
+            dest="loglevel",
+            const=logging.DEBUG,
+            default=logging.WARNING,
+    )
+    parser.add_argument(
+            '-v', '--verbose',
+            help="Be verbose. Sets logging level to INFO",
+            action="store_const",
+            dest="loglevel",
+            const=logging.INFO,
+    )
     return parser
 
 
@@ -105,7 +118,7 @@ if __name__ == '__main__':
     arg_parser = create_argument_parser()
     cmdline_args = arg_parser.parse_args()
 
-    logging.basicConfig(level="DEBUG" if cmdline_args.verbose else "INFO")
+    logging.basicConfig(level=cmdline_args.loglevel)
 
     additional_arguments = {
         "max_history": cmdline_args.history,

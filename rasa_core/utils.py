@@ -111,14 +111,14 @@ def generate_id(prefix=""):
     return "{}{}".format(prefix, uuid.uuid4().hex)
 
 
-def configure_colored_logging(verbose):
+def configure_colored_logging(loglevel):
     import coloredlogs
     field_styles = coloredlogs.DEFAULT_FIELD_STYLES.copy()
     field_styles['asctime'] = {}
     level_styles = coloredlogs.DEFAULT_LEVEL_STYLES.copy()
     level_styles['debug'] = {}
     coloredlogs.install(
-            level="DEBUG" if verbose else "INFO",
+            level=loglevel,
             use_chroot=False,
             fmt='%(asctime)s %(levelname)-8s %(name)s  - %(message)s',
             level_styles=level_styles,

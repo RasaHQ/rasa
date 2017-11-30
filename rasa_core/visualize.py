@@ -43,16 +43,31 @@ def create_argument_parser():
                         type=str,
                         help="path of the Rasa NLU training data, "
                              "used to insert example messages into the graph")
-    parser.add_argument('-v', '--verbose',
-                        default=True,
-                        help="use verbose logging")
+
+    # arguments for logging configuration
+    parser.add_argument(
+            '--debug',
+            help="Print lots of debugging statements. "
+                 "Sets logging level to DEBUG",
+            action="store_const",
+            dest="loglevel",
+            const=logging.DEBUG,
+            default=logging.INFO,
+    )
+    parser.add_argument(
+            '-v', '--verbose',
+            help="Be verbose. Sets logging level to INFO",
+            action="store_const",
+            dest="loglevel",
+            const=logging.INFO,
+    )
     return parser
 
 
 if __name__ == '__main__':
     parser = create_argument_parser()
     args = parser.parse_args()
-    utils.configure_colored_logging(args.verbose)
+    utils.configure_colored_logging(args.loglevel)
 
     agent = Agent(args.domain, policies=[MemoizationPolicy(), KerasPolicy()])
 
