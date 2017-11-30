@@ -173,7 +173,7 @@ if __name__ == '__main__':
 
     rasa = RasaCoreServer(cmdline_args.core,
                           cmdline_args.nlu,
-                          cmdline_args.verbose,
+                          cmdline_args.loglevel,
                           cmdline_args.log_file,
                           cmdline_args.cors)
 
