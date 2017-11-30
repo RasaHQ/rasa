@@ -86,12 +86,11 @@ class RasaCoreServer(object):
 
     def __init__(self, model_directory,
                  interpreter=None,
-                 verbose=True,
+                 loglevel="INFO",
                  log_file="rasa_core.log",
                  cors_origins=None,
                  action_factory=None):
-        logging.basicConfig(filename=log_file,
-                            level="DEBUG" if verbose else "INFO")
+        logging.basicConfig(filename=log_file, level=loglevel)
         logging.captureWarnings(True)
 
         self.config = {"cors_origins": cors_origins if cors_origins else []}
