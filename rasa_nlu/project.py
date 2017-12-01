@@ -183,5 +183,4 @@ class Project(object):
             return []
         else:
             return [model
-                    for model in os.listdir(path)
-                    if model.startswith(MODEL_NAME_PREFIX)]
+                    for model in os.listdir(path)]
