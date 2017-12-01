@@ -274,7 +274,7 @@ class Interpreter(object):
         self.context = context if context is not None else {}
         self.model_metadata = model_metadata
 
-    def parse(self, text, time=None):
+    def parse(self, text, time=None, only_output_properties = True):
         # type: (Text) -> Dict[Text, Any]
         """Parse the input text, classify it and return pipeline result.
 
@@ -295,5 +295,5 @@ class Interpreter(object):
             component.process(message, **self.context)
 
         output = self.default_output_attributes()
-        output.update(message.as_dict(only_output_properties=True))
+        output.update(message.as_dict(only_output_properties=only_output_properties))
         return output
