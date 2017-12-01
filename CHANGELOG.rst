@@ -13,6 +13,9 @@ Added
 -----
 - ``--debug`` and ``--verbose`` flags to scripts (train.py, run.py, server.py)
   to set the log level
+- support for story cycles when using checkpoints
+- warn if action emits events when using a model that it did never emit in
+  any of the stories the model was trained on
 
 Changed
 -------
@@ -26,7 +29,8 @@ Removed
 
 Fixed
 -----
-
+- proper evaluation of stories with checkpoints
+- proper visualisation of stories with checkpoints
 
 [0.7.9] - 2017-11-29
 ^^^^^^^^^^^^^^^^^^^^
