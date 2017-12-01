@@ -13,7 +13,7 @@ from klein import Klein
 from rasa_core.agent import Agent
 from rasa_core.events import Event
 from rasa_core.version import __version__
-from rasa_nlu.server import check_cors
+from rasa_nlu.server import check_cors, requires_auth
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +41,11 @@ def create_argument_parser():
             type=str,
             help="enable CORS for the passed origin. "
                  "Use * to whitelist all origins")
+    parser.add_argument(
+            '--auth_token',
+            type=str,
+            help="Enable token based authentication. Requests need to provide "
+                 "the token to be accepted.")
     parser.add_argument(
             '-o', '--log_file',
             type=str,
@@ -89,11 +94,13 @@ class RasaCoreServer(object):
                  loglevel="INFO",
                  log_file="rasa_core.log",
                  cors_origins=None,
-                 action_factory=None):
+                 action_factory=None,
+                 auth_token=None):
         logging.basicConfig(filename=log_file, level=loglevel)
         logging.captureWarnings(True)
 
-        self.config = {"cors_origins": cors_origins if cors_origins else []}
+        self.config = {"cors_origins": cors_origins if cors_origins else [],
+                       "token": auth_token}
         self.agent = self._create_agent(model_directory, interpreter,
                                         action_factory)
 
@@ -110,6 +117,7 @@ class RasaCoreServer(object):
 
     @app.route("/conversations/<cid>/continue", methods=['POST', 'OPTIONS'])
     @check_cors
+    @requires_auth
     def continue_predicting(self, request, cid):
         request.setHeader('Content-Type', 'application/json')
         request_params = json.loads(
@@ -125,6 +133,7 @@ class RasaCoreServer(object):
 
     @app.route("/conversations/<cid>/parse", methods=['GET', 'POST', 'OPTIONS'])
     @check_cors
+    @requires_auth
     def parse(self, request, cid):
         request.setHeader('Content-Type', 'application/json')
         if request.method.decode('utf-8', 'strict') == 'GET':
@@ -174,7 +183,8 @@ if __name__ == '__main__':
                           cmdline_args.nlu,
                           cmdline_args.loglevel,
                           cmdline_args.log_file,
-                          cmdline_args.cors)
+                          cmdline_args.cors,
+                          auth_token=cmdline_args.auth_token)
 
     logger.info("Started http server on port %s" % cmdline_args.port)
     rasa.app.run("0.0.0.0", cmdline_args.port)
