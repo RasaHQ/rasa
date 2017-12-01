@@ -18,6 +18,14 @@ Changed
 Fixed
 -----
 
+[0.10.5] - 2017-12-01
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- read token in server from config instead of data router
+- fixed reading of models with none date name prefix in server
+
 [0.10.4] - 2017-10-27
 ^^^^^^^^^^^^^^^^^^^^^
 
