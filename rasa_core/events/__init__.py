@@ -264,10 +264,9 @@ class SlotSet(Event):
 
     type_name = "slot"
 
-    def __init__(self, key, value=None, automatically_generated=False):
+    def __init__(self, key, value=None):
         self.key = key
         self.value = value
-        self.automatically_generated = automatically_generated
 
     def __str__(self):
         return "SlotSet(key: {}, value: {})".format(self.key, self.value)

@@ -27,10 +27,14 @@ if typing.TYPE_CHECKING:
 
 
 class PolicyEnsemble(object):
-    def __init__(self, policies, known_slot_events=None):
+    def __init__(self, policies, action_fingerprints=None):
         self.policies = policies
         self.training_metadata = {}
-        self.known_slot_events = known_slot_events if known_slot_events else {}
+
+        if action_fingerprints:
+            self.action_fingerprints = action_fingerprints
+        else:
+            self.action_fingerprints = {}
 
     def train(self, training_data, domain, featurizer, **kwargs):
         # type: (DialogueTrainingData, Domain, Featurizer, **Any) -> None
@@ -59,26 +63,41 @@ class PolicyEnsemble(object):
     def probabilities_using_best_policy(self, tracker, domain):
         raise NotImplementedError
 
+    @staticmethod
+    def _create_action_fingerprints(training_events):
+        """Fingerprint each action using the events it created during train.
+
+        This allows us to emit warnings when the model is used
+        if an action does things it hasn't done during training."""
+
+        action_fingerprints = {}
+        for k, vs in training_events.items():
+            slots = list({v.key for v in vs if isinstance(v, SlotSet)})
+            action_fingerprints[k] = {"slots": slots}
+        return action_fingerprints
+
     def _persist_metadata(self, path, max_history):
         # type: (Text, Optional[int]) -> None
         """Persists the domain specification to storage."""
 
+        # make sure the directory we persist to exists
         domain_spec_path = os.path.join(path, 'policy_metadata.json')
         utils.create_dir_for_file(domain_spec_path)
-        policy_names = [p.__module__ + "." + p.__class__.__name__
+
+        policy_names = [utils.module_path_from_instance(p)
                         for p in self.policies]
-        meta_events = self.training_metadata.get("events", {})
-        slot_meta = {k: list({v.key for v in vs if isinstance(v, SlotSet)})
-                     for k, vs in meta_events.items()}
+        training_events = self.training_metadata.get("events", {})
+        action_fingerprints = self._create_action_fingerprints(training_events)
+
         metadata = {
-            "slot_meta": slot_meta,
+            "action_fingerprints": action_fingerprints,
             "rasa_core": rasa_core.__version__,
             "max_history": max_history,
             "ensemble_name": self.__module__ + "." + self.__class__.__name__,
             "policy_names": policy_names
         }
-        with io.open(domain_spec_path, 'w') as f:
-            f.write(str(json.dumps(metadata, indent=2)))
+
+        utils.dump_obj_as_json_to_file(domain_spec_path, metadata)
 
     def persist(self, path):
         # type: (Text) -> None
@@ -111,7 +130,8 @@ class PolicyEnsemble(object):
             policy = policy_cls.load(path, featurizer, metadata["max_history"])
             policies.append(policy)
         ensemble_cls = utils.class_from_module_path(metadata["ensemble_name"])
-        ensemble = ensemble_cls(policies, metadata.get("slot_meta", {}))
+        fingerprints = metadata.get("action_fingerprints", {})
+        ensemble = ensemble_cls(policies, fingerprints)
         return ensemble
 
 

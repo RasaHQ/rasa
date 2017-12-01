@@ -111,8 +111,7 @@ class MemoizationPolicy(Policy):
             "lookup": self.lookup
         }
         utils.create_dir_for_file(memorized_file)
-        with io.open(memorized_file, 'w') as f:
-            f.write(str(json.dumps(data, indent=2)))
+        utils.dump_obj_as_json_to_file(memorized_file, data)
 
     @classmethod
     def load(cls, path, featurizer, max_history):

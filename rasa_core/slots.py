@@ -22,6 +22,7 @@ class Slot(object):
         return 1
 
     def has_features(self):
+        """Indicate if the slot creates any features."""
         return self.feature_dimensionality() != 0
 
     def value_reset_delay(self):

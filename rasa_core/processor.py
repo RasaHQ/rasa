@@ -305,9 +305,14 @@ class MessageProcessor(object):
 
     def _warn_about_new_slots(self, tracker, action_name, events):
         # these are the events from that action we have seen during training
-        known = self.policy_ensemble.known_slot_events.get(action_name, {})
+
+        if action_name not in self.policy_ensemble.action_fingerprints:
+            return
+
+        fp = self.policy_ensemble.action_fingerprints[action_name]
+        slots_seen_during_train = fp.get("slots", set())
         for e in events:
-            if isinstance(e, SlotSet) and e.key not in known:
+            if isinstance(e, SlotSet) and e.key not in slots_seen_during_train:
                 s = tracker.slots.get(e.key)
                 if s and s.has_features():
                     logger.warn("Action '{0}' set a slot type '{1}' that "

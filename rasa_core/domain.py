@@ -347,11 +347,13 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         metadata = {
             "features": self.input_features
         }
-        with io.open(domain_spec_path, 'w') as f:
-            f.write(str(json.dumps(metadata, indent=2)))
+        utils.dump_obj_as_json_to_file(domain_spec_path, metadata)
 
     @classmethod
     def load_specification(cls, path):
+        # type: (Text) -> Dict[Text, Any]
+        """Load a domains specification from a dumped model directory."""
+
         matadata_path = os.path.join(path, 'domain.json')
         with io.open(matadata_path) as f:
             specification = json.loads(f.read())

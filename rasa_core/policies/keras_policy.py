@@ -113,18 +113,25 @@ class KerasPolicy(Policy):
                        verbose=0,
                        initial_epoch=self.current_epoch)
 
+    def _persist_configuration(self, config_file):
+        model_config = {
+            "arch": "keras_arch.json",
+            "weights": "keras_weights.h5",
+            "epochs": self.current_epoch}
+
+        utils.dump_obj_as_json_to_file(config_file, model_config)
+
     def persist(self, path):
         if self.model:
             arch_file = os.path.join(path, 'keras_arch.json')
             weights_file = os.path.join(path, 'keras_weights.h5')
+            config_file = os.path.join(path, 'keras_policy.json')
+
+            # makes sure the model directory exists
             utils.create_dir_for_file(weights_file)
-            with io.open(arch_file, 'w') as f:
-                f.write(str(self.model.to_json()))
-            with io.open(os.path.join(path, 'keras_policy.json'), 'w') as f:
-                f.write(str(json.dumps({
-                    "arch": "keras_arch.json",
-                    "weights": "keras_weights.h5",
-                    "epochs": self.current_epoch})))
+            utils.dump_obj_as_str_to_file(arch_file, self.model.to_json())
+
+            self._persist_configuration(config_file)
             self.model.save_weights(weights_file, overwrite=True)
         else:
             warnings.warn("Persist called without a trained model present. "
