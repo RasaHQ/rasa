@@ -178,7 +178,7 @@ Reset Slots
 Endpoints
 ---------
 
-.. http:get:: /conversations/(str:sender)/parse
+.. http:post:: /conversations/(str:sender)/parse
 
    Notify the dialogue engine that the user posted a new message. You must
    ``POST`` data in this format ``'{"query":"<your text to parse>"}'``,
@@ -220,7 +220,7 @@ Endpoints
    :statuscode 200: no error
 
 
-.. http:get:: /conversations/(str:sender)/continue
+.. http:post:: /conversations/(str:sender)/continue
 
    Continue the prediction loop for the conversation with id `user_id`. Should
    be called until the endpoint returns ``action_listen`` as the next action.
