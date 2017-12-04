@@ -7,7 +7,7 @@ from rasa_nlu.converters import load_data
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.model import Trainer, TrainingData, Interpreter
 
-from sklearn.model_selection import KFold, StratifiedKFold, train_test_split
+from sklearn.model_selection import StratifiedKFold
 from sklearn import metrics
 import numpy as np
 import logging
@@ -55,14 +55,13 @@ def prepare_data(data, cutoff = 5):
     return data
 
 
-def run_cv_evaluation(data, n_splits, nlu_config, component_builder=None):
+def run_cv_evaluation(data, n_folds, nlu_config):
     """stratified cross validation on data
 
     params:
-        :data: TODO
-        :n_splits: TODO
-        :nlu_config:
-        :component_builder: TODO
+        :data: input data as list of instances
+        :n_folds: integer, number of cv folds
+        :nlu_config: nlu config file
 
     returns:
         :results: dictionary with key, list structure, where each entry in list
@@ -74,13 +73,10 @@ def run_cv_evaluation(data, n_splits, nlu_config, component_builder=None):
 
     y_true = [e.get("intent") for e in data]
 
-    skf = StratifiedKFold(n_splits=n_splits, random_state=11, shuffle=True)
+    skf = StratifiedKFold(n_splits=n_folds, random_state=11, shuffle=True)
     counter = 1
     for train_index, test_index in skf.split(data, y_true):
 
-        #  train_index = list(train_index)
-        #  test_index = list(test_index)
-        #  test_index = list(train_index) # TODO debugging
         train = [data[i] for i in train_index]
         test = [data[i] for i in test_index]
 
@@ -90,7 +86,7 @@ def run_cv_evaluation(data, n_splits, nlu_config, component_builder=None):
         model_directory = trainer.persist("projects/")  # Returns the directory the model is stored in
 
         logger.info("Evaluation ...")
-        interpreter = Interpreter.load(model_directory, nlu_config, component_builder)
+        interpreter = Interpreter.load(model_directory, nlu_config)
         test_y = [e.get("intent") for e in test]
 
         preds = []
@@ -117,11 +113,12 @@ if __name__ == '__main__':
     nlu_config = RasaNLUConfig(args.config, os.environ, vars(args))
     logging.basicConfig(level=nlu_config['log_level'])
 
-    n_splits = 5
+    n_folds = 5
     data = load_data(args.data)
+    # clean data and convert to appropriate format
     data = prepare_data(data)
 
-    results = run_cv_evaluation(data, n_splits, nlu_config)
+    results = run_cv_evaluation(data, n_folds, nlu_config)
     logger.info(results)
     for key, value in results.items():
         logger.info("{0}: {1}".format(key, np.mean(value)))
