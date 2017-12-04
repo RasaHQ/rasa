@@ -524,12 +524,7 @@ class TemplateDomain(Domain):
         return actions
 
     def _slot_definitions(self):
-        slots = {}
-        for slot in self.slots:
-            d = slot.additional_persistence_info()
-            d["type"] = slot.type_name
-            slots[slot.name] = d
-        return slots
+        return {slot.name: slot.persistence_info() for slot in self.slots}
 
     def persist(self, filename):
         import yaml

@@ -196,7 +196,7 @@ class MessageProcessor(object):
                 warnings.warn(
                         "Parsing messages with leading `_` is deprecated and "
                         "will be removed. Instead, prepend your intents with "
-                        "`{0}`, e.g. `{0}mood_greet`  "
+                        "`{0}`, e.g. `{0}mood_greet` "
                         "or `{0}restart`.".format(INTENT_MESSAGE_PREFIX))
             parse_data = RegexInterpreter().parse(message.text)
         else:

@@ -64,8 +64,8 @@ class Slot(object):
                     "you are creating your own slot type, make sure its "
                     "module path is correct: {}.".format(type_name))
 
-    def additional_persistence_info(self):
-        return {}
+    def persistence_info(self):
+        return {"type": self.type_name, "initial_value": self.initial_value}
 
 
 class FloatSlot(Slot):
@@ -79,6 +79,20 @@ class FloatSlot(Slot):
         super(FloatSlot, self).__init__(name, initial_value, value_reset_delay)
         self.max_value = max_value
         self.min_value = min_value
+
+        if min_value >= max_value:
+            raise ValueError(
+                    "Float slot ('{}') created with an invalid range "
+                    "using min ({}) and max ({}) values. Make sure "
+                    "min is smaller than max."
+                    "".format(self.name, self.min_value, self.max_value))
+
+        if (initial_value is not None and
+                not (min_value <= initial_value <= max_value)):
+            logger.warn("Float slot ('{}') created with an initial value {}"
+                        "outside of configured min ({}) and max ({}) values."
+                        "".format(self.name, self.value, self.min_value,
+                                  self.max_value))
 
     def as_feature(self):
         try:
@@ -150,8 +164,10 @@ class CategoricalSlot(Slot):
                                               value_reset_delay)
         self.values = [str(v).lower() for v in values] if values else []
 
-    def additional_persistence_info(self):
-        return {"values": self.values}
+    def persistence_info(self):
+        d = super(CategoricalSlot, self).persistence_info()
+        d["values"] = self.values
+        return d
 
     def as_feature(self):
         r = [0.0] * self.feature_dimensionality()
