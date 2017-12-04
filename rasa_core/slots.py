@@ -65,7 +65,8 @@ class Slot(object):
                     "module path is correct: {}.".format(type_name))
 
     def persistence_info(self):
-        return {"type": self.type_name, "initial_value": self.initial_value}
+        return {"type": utils.module_path_from_instance(self),
+                "initial_value": self.initial_value}
 
 
 class FloatSlot(Slot):
