@@ -89,3 +89,21 @@ def test_duckling_entity_extractor_and_synonyms(component_builder):
     duckling.process(message)
     synonyms.process(message)  # checks that the synonym processor can handle entities that have int values
     assert message is not None
+
+
+def test_unintentional_synonyms_capitalized(component_builder):
+    _config = utilities.base_test_conf("all_components")
+    ner_syn = component_builder.create_component("ner_synonyms", _config)
+    examples = [
+        Message("Any Mexican restaurant will do", {
+            "intent": "restaurant_search",
+            "entities": [{"start": 4, "end": 11, "value": "Mexican", "entity": "cuisine"}]
+        }),
+        Message("I want Tacos!", {
+            "intent": "restaurant_search",
+            "entities": [{"start": 7, "end": 12, "value": "Mexican", "entity": "cuisine"}]
+        })
+    ]
+    ner_syn.train(TrainingData(training_examples=examples), _config)
+    assert ner_syn.synonyms.get("mexican") is None
+    assert ner_syn.synonyms.get("tacos") == "Mexican"
