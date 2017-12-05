@@ -59,7 +59,7 @@ def run_cv_evaluation(data, n_folds, nlu_config):
     """stratified cross validation on data
 
     params:
-        :data: input data as list of instances
+        :data: list of rasa_nlu.training_data.Message objects
         :n_folds: integer, number of cv folds
         :nlu_config: nlu config file
 
