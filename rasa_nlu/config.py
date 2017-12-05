@@ -33,8 +33,10 @@ DEFAULT_CONFIG = {
     "max_number_of_ngrams": 7,
     "pipeline": [],
     "response_log": "logs",
+    "storage": None,
     "aws_endpoint_url": None,
     "duckling_dimensions": None,
+    "duckling_http_url": None,
     "ner_crf": {
         "BILOU_flag": True,
         "features": [
@@ -62,7 +64,7 @@ class InvalidConfigError(ValueError):
 
 class RasaNLUConfig(object):
     DEFAULT_PROJECT_NAME = "default"
-    
+
     def __init__(self, filename=None, env_vars=None, cmdline_args=None):
 
         if filename is None and os.path.isfile(DEFAULT_CONFIG_LOCATION):
@@ -144,7 +146,9 @@ class RasaNLUConfig(object):
         return config
 
     def create_cmdline_config(self, cmdline_args):
-        cmdline_config = {k: v for k, v in list(cmdline_args.items()) if v is not None}
+        cmdline_config = {k: v
+                          for k, v in list(cmdline_args.items())
+                          if v is not None}
         cmdline_config = self.split_pipeline(cmdline_config)
         cmdline_config = self.split_arg(cmdline_config, "duckling_dimensions")
         return cmdline_config

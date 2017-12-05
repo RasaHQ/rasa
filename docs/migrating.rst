@@ -3,10 +3,10 @@
 Migrating an existing app
 =========================
 
-Rasa NLU is designed to make migrating from wit/LUIS/api.ai as simple as possible.
+Rasa NLU is designed to make migrating from wit/LUIS/Dialogflow as simple as possible.
 The TLDR instructions for migrating are: 
 
-- download an export of your app data from wit/LUIS/api.ai
+- download an export of your app data from wit/LUIS/Dialogflow
 - follow the :ref:`tutorial`, using your downloaded data instead of ``demo-rasa.json``
 
 
@@ -28,11 +28,11 @@ LUIS.ai
 
 Nothing special here. Downloading the data and importing it into Rasa NLU should work without issues
 
-api.ai
-^^^^^^
+Dialogflow
+^^^^^^^^^^
 
-api app exports generate multiple files rather than just one. 
-Put them all in a directory (see ``data/examples/api`` in the repo)
+Dialogflow exports generate multiple files rather than just one.
+Put them all in a directory (see ``data/examples/dialogflow`` in the repo)
 and pass that path to the trainer. 
 
 
@@ -40,7 +40,7 @@ and pass that path to the trainer.
 Emulation
 ---------
 
-To make Rasa NLU easy to try out with existing projects, the server can `emulate` wit, LUIS, or api.ai.
+To make Rasa NLU easy to try out with existing projects, the server can `emulate` wit, LUIS, or Dialogflow.
 In native mode, a request / response looks like this : 
 
 .. code-block:: console
@@ -92,7 +92,7 @@ similarly for LUIS, but with a slightly different response format
         }
     }
 
-and finally for api.ai
+and finally for Dialogflow
 
 .. code-block:: console
 

@@ -4,6 +4,7 @@ __version__ = None  # Avoids IDE errors, but actual version is read from version
 exec (open('rasa_nlu/version.py').read())
 
 tests_requires = [
+    "pytest",
     "pytest-pep8",
     "pytest-services",
     "pytest-cov",

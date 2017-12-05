@@ -167,6 +167,9 @@ class TrainingData(object):
         for intent, group in groupby(examples, lambda e: e.get("intent")):
             size = len(list(group))
             different_intents.append(intent)
+            if intent == "":
+                warnings.warn("Found empty intent, please check your training data."
+                              "This may result in wrong intent predictions.")
             if size < self.MIN_EXAMPLES_PER_INTENT:
                 template = "Intent '{}' has only {} training examples! minimum is {}, training may fail."
                 warnings.warn(template.format(intent, size, self.MIN_EXAMPLES_PER_INTENT))
