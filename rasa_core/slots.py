@@ -108,7 +108,7 @@ class FloatSlot(Slot):
                 covered_range = abs(self.max_value - self.min_value)
             else:
                 covered_range = 1
-            return [(capped_value - self.min_value) / covered_range]
+            return [capped_value - self.min_value / covered_range]
         except (TypeError, ValueError):
             return [0.0]
 
