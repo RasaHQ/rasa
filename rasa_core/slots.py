@@ -1,3 +1,8 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import logging
 
 from rasa_core import utils
@@ -103,9 +108,15 @@ class FloatSlot(Slot):
                 covered_range = abs(self.max_value - self.min_value)
             else:
                 covered_range = 1
-            return [capped_value - self.min_value / covered_range]
+            return [(capped_value - self.min_value) / covered_range]
         except (TypeError, ValueError):
             return [0.0]
+
+    def persistence_info(self):
+        d = super(FloatSlot, self).persistence_info()
+        d["max_value"] = self.max_value
+        d["min_value"] = self.min_value
+        return d
 
 
 class BooleanSlot(Slot):

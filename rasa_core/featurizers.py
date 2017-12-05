@@ -124,11 +124,16 @@ class BinaryFeaturizer(Featurizer):
 
         reversed_features = []
         for bf in feature_vec:
-            if np.sum(np.where(bf == 1)) > 0:
+            non_zero_feature_idxs = np.where((0 != bf) & (bf != -1))
+            if np.sum(non_zero_feature_idxs) > 0:
                 feature_tuples = []
-                feat_names = list(np.array(input_features)[np.where(bf == 1)])
-                for feat_name in feat_names:
-                    feature_tuples.append((feat_name, 1))
+                for feature_idx in np.nditer(non_zero_feature_idxs):
+                    feat_name = input_features[feature_idx]
+                    if ndigits is not None:
+                        feat_value = round(bf[feature_idx], ndigits)
+                    else:
+                        feat_value = bf[feature_idx]
+                    feature_tuples.append((feat_name, feat_value))
                 reversed_features.append(feature_tuples)
             else:
                 reversed_features.append(None)
