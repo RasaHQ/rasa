@@ -183,6 +183,6 @@ class Project(object):
         if not path or not os.path.isdir(path):
             return []
         else:
-            return [model
+            return [os.path.relpath(model, path)
                     for model in glob.glob(os.path.join(path, '*'))
                     if os.path.isdir(model)]
