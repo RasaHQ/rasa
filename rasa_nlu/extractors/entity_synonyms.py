@@ -90,6 +90,8 @@ class EntitySynonymMapper(EntityExtractor):
             if original != replacement:
                 original = original.lower()
                 if original in self.synonyms and self.synonyms[original] != replacement:
-                    warnings.warn("Overwriting existing synonym %s->%s with %s->%s" % 
-                                  (original, self.synonyms[original], original, replacement))
+                    warnings.warn("Found conflicting synonym definitions for %s. Overwriting "
+                                  "target %s with %s. Check your training data and remove conflicting "
+                                  "synonym definitions to prevent this from happening." %
+                                  (original, self.synonyms[original], replacement))
                 self.synonyms[original] = replacement

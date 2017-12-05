@@ -17,6 +17,7 @@ Changed
 
 Fixed
 -----
+- Preventing capitalized entities from becoming synonyms of the form lower-cased -> capitalized
 
 [0.10.5] - 2017-12-01
 ^^^^^^^^^^^^^^^^^^^^^
