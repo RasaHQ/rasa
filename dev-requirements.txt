@@ -11,6 +11,7 @@ pytest-services==1.2.1
 pytest-xdist==1.15.0
 pytest-twisted==1.5
 treq==17.3.1
+requests==2.18.1
 
 # other
 rasa_nlu==0.10.1
