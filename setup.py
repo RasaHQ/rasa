@@ -19,6 +19,7 @@ tests_requires = [
     "pytest-cov",
     "pytest-xdist",
     "pytest-twisted",
+    "treq",
 ]
 
 install_requires = [

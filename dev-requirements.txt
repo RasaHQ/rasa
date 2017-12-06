@@ -10,6 +10,7 @@ pytest-pep8==1.0.6
 pytest-services==1.2.1
 pytest-xdist==1.15.0
 pytest-twisted==1.5
+treq==17.3.1
 
 # other
 rasa_nlu==0.10.1
