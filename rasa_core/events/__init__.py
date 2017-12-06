@@ -572,6 +572,8 @@ class ActionExecuted(Event):
     It comprises an action and a list of events. operations will be appended
     to the latest ``Turn`` in the ``Tracker.turns``."""
 
+    type_name = "action"
+
     def __init__(self, action_name):
         self.action_name = action_name
         self.unpredictable = False
@@ -597,6 +599,14 @@ class ActionExecuted(Event):
             return ActionExecuted(event_name)
         else:
             return None
+
+    @classmethod
+    def _from_parameters(cls, event_name, parameters, domain):
+        return ActionExecuted(parameters.get("name"))
+
+    def as_dict(self):
+        return {"event": self.type_name,
+                "name": self.action_name}
 
     def apply_to(self, tracker):
         # type: (DialogueStateTracker) -> None

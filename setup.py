@@ -17,7 +17,8 @@ tests_requires = [
     "pytest-services",
     "pytest-flask",
     "pytest-cov",
-    "pytest-xdist"
+    "pytest-xdist",
+    "pytest-twisted",
 ]
 
 install_requires = [

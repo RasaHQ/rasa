@@ -9,6 +9,7 @@ pytest-flask==0.10.0
 pytest-pep8==1.0.6
 pytest-services==1.2.1
 pytest-xdist==1.15.0
+pytest-twisted==1.5
 
 # other
 rasa_nlu==0.10.1
