@@ -7,11 +7,11 @@ import json
 import logging
 import uuid
 
+import jsonpickle
 import typing
 from builtins import str
 
 from rasa_core import utils
-from rasa_core.actions.action import ACTION_LISTEN_NAME
 
 if typing.TYPE_CHECKING:
     from rasa_core.trackers import DialogueStateTracker
@@ -113,14 +113,17 @@ class UserUttered(Event):
                            parse_data)
 
     def __hash__(self):
-        return hash((self.text, self.intent, tuple(self.entities)))
+        return hash((self.text, self.intent.get("name"),
+                     jsonpickle.encode(self.entities)))
 
     def __eq__(self, other):
         if not isinstance(other, UserUttered):
             return False
         else:
-            return (self.text, self.intent, self.entities, self.parse_data) == \
-                   (other.text, other.intent, other.entities, other.parse_data)
+            return (self.text, self.intent.get("name"),
+                    jsonpickle.encode(self.entities), self.parse_data) == \
+                   (other.text, other.intent.get("name"),
+                    jsonpickle.encode(other.entities), other.parse_data)
 
     def __str__(self):
         return ("UserUttered(text: {}, intent: {}, "
@@ -146,13 +149,12 @@ class UserUttered(Event):
     def as_story_string(self):
         if self.intent:
             if self.entities:
-                entity_strs = ['{}={}'.format(ent['entity'], ent['value'])
-                               for ent in self.entities]
-                ent_string = "[" + ",".join(entity_strs) + "]"
+                ent_string = json.dumps({ent['entity']: ent['value']
+                                         for ent in self.entities})
             else:
                 ent_string = ""
 
-            return "_{intent}{entities}".format(
+            return "{intent}{entities}".format(
                     intent=self.intent.get("name", ""),
                     entities=ent_string)
         else:
@@ -179,14 +181,14 @@ class BotUttered(Event):
         self.data = data
 
     def __hash__(self):
-        return hash((self.text, self.data))
+        return hash((self.text, jsonpickle.encode(self.data)))
 
     def __eq__(self, other):
         if not isinstance(other, BotUttered):
             return False
         else:
-            return (self.text, self.data) == \
-                   (other.text, other.data)
+            return (self.text, jsonpickle.encode(self.data)) == \
+                   (other.text, jsonpickle.encode(other.data))
 
     def __str__(self):
         return ("BotUttered(text: {}, data: {})"
@@ -280,7 +282,7 @@ class SlotSet(Event):
         return "SlotSet(key: {}, value: {})".format(self.key, self.value)
 
     def __hash__(self):
-        return hash((self.key, self.value))
+        return hash((self.key, jsonpickle.encode(self.value)))
 
     def __eq__(self, other):
         if not isinstance(other, SlotSet):
@@ -337,9 +339,11 @@ class Restarted(Event):
         return self.type_name
 
     def apply_to(self, tracker):
+        from rasa_core.actions.action import ActionListen
         tracker._reset()
-        tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
-        tracker.latest_restart_event = len(tracker.events)
+        # will be the index of the first event after the restart
+        tracker.latest_restart_event = len(tracker.events) + 1
+        tracker.follow_up_action = ActionListen()
 
 
 # noinspection PyProtectedMember

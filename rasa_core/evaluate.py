@@ -5,7 +5,6 @@ from __future__ import unicode_literals
 
 import argparse
 import logging
-import random
 import uuid
 from difflib import SequenceMatcher
 
@@ -15,7 +14,8 @@ from tqdm import tqdm
 from rasa_core.agent import Agent
 from rasa_core.events import ActionExecuted, UserUttered
 from rasa_core.interpreter import RegexInterpreter, RasaNLUInterpreter
-from rasa_core.training_utils import extract_stories_from_file
+from rasa_core.training import (
+    extract_story_graph_from_file, TrainingsDataGenerator)
 from rasa_nlu.evaluate import plot_confusion_matrix, log_evaluation_table
 
 logger = logging.getLogger(__name__)
@@ -45,26 +45,29 @@ def create_argument_parser():
             type=str,
             help="nlu model to run with the server. None for regex interpreter")
     parser.add_argument(
-            '-v', '--verbose',
-            default=False,
-            help="use verbose logging")
-    parser.add_argument(
             '-o', '--output',
             type=str,
             default="story_confmat.pdf",
             help="output path for the created evaluation plot")
+
+    # arguments for logging configuration
+    parser.add_argument(
+            '--debug',
+            help="Print lots of debugging statements. "
+                 "Sets logging level to DEBUG",
+            action="store_const",
+            dest="loglevel",
+            const=logging.DEBUG,
+            default=logging.WARNING,
+    )
+    parser.add_argument(
+            '-v', '--verbose',
+            help="Be verbose. Sets logging level to INFO",
+            action="store_const",
+            dest="loglevel",
+            const=logging.INFO,
+    )
     return parser
-
-
-def _get_stories(story_file, domain, max_stories=None, shuffle_stories=True):
-    """Retrieve the stories from a file."""
-    stories = extract_stories_from_file(story_file, domain)
-    if shuffle_stories:
-        random.Random(42).shuffle(stories)
-    if max_stories is not None:
-        return stories[:max_stories]
-    else:
-        return stories
 
 
 def _min_list_distance(pred, actual):
@@ -103,22 +106,32 @@ def collect_story_predictions(story_file, policy_model_path, nlu_model_path,
         interpreter = RegexInterpreter()
 
     agent = Agent.load(policy_model_path, interpreter=interpreter)
-    stories = _get_stories(story_file, agent.domain,
-                           max_stories=max_stories,
-                           shuffle_stories=shuffle_stories)
+    story_graph = extract_story_graph_from_file(story_file, agent.domain,
+                                                interpreter)
     preds = []
     actual = []
 
-    logger.info("Evaluating {} stories\nProgress:".format(len(stories)))
+    max_history = agent.policy_ensemble.policies[0].max_history
 
-    for s in tqdm(stories):
+    g = TrainingsDataGenerator(story_graph, agent.domain,
+                               agent.featurizer,
+                               max_history=max_history,
+                               use_story_concatenation=False,
+                               tracker_limit=100)
+    data = g.generate()
+
+    completed_trackers = data.metadata["trackers"]
+    logger.info(
+            "Evaluating {} stories\nProgress:".format(len(completed_trackers)))
+
+    for tracker in tqdm(completed_trackers):
         sender_id = "default-" + uuid.uuid4().hex
 
-        dialogue = s.as_dialogue(sender_id, agent.domain)
+        events = list(tracker.events)
         actions_between_utterances = []
         last_prediction = []
 
-        for i, event in enumerate(dialogue.events[1:]):
+        for i, event in enumerate(events[1:]):
             if isinstance(event, UserUttered):
                 p, a = _min_list_distance(last_prediction,
                                           actions_between_utterances)
@@ -171,7 +184,7 @@ if __name__ == '__main__':
     arg_parser = create_argument_parser()
     cmdline_args = arg_parser.parse_args()
 
-    logging.basicConfig(level="DEBUG" if cmdline_args.verbose else "INFO")
+    logging.basicConfig(level=cmdline_args.loglevel)
     run_story_evaluation(cmdline_args.stories,
                          cmdline_args.core,
                          cmdline_args.nlu,

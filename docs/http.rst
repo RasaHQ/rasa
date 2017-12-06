@@ -178,7 +178,7 @@ Reset Slots
 Endpoints
 ---------
 
-.. http:get:: /conversations/(str:sender)/parse
+.. http:post:: /conversations/(str:sender)/parse
 
    Notify the dialogue engine that the user posted a new message. You must
    ``POST`` data in this format ``'{"query":"<your text to parse>"}'``,
@@ -220,7 +220,7 @@ Endpoints
    :statuscode 200: no error
 
 
-.. http:get:: /conversations/(str:sender)/continue
+.. http:post:: /conversations/(str:sender)/continue
 
    Continue the prediction loop for the conversation with id `user_id`. Should
    be called until the endpoint returns ``action_listen`` as the next action.
@@ -287,3 +287,25 @@ Endpoints
       }
 
    :statuscode 200: no error
+
+
+Security Considerations
+-----------------------
+
+We recommend to not expose the Rasa Core server to the outside world but
+rather connect to it from your backend over a private connection (e.g.
+between docker containers).
+
+Nevertheless, there is build in token authentication. If you specify a token
+when starting the server, that token needs to be passed with every request:
+
+.. code-block:: bash
+
+    $ python -m rasa_core.server --auth_token thisismysecret -d examples/babi/models/policy/current -u examples/babi/models/nlu/current_py2 -o out.log
+
+Your requests should pass the token, in our case ``thisismysecret``,
+as a parameter:
+
+.. code-block:: bash
+
+    $ curl -XPOST localhost:5005/conversations/default/parse?token=thisismysecret -d '{"query":"hello there"}'

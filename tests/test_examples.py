@@ -20,10 +20,10 @@ def test_moodbot_example():
                                False, None, {})
     agent = run.main("examples/moodbot/models/dialogue")
 
-    responses = agent.handle_message("_greet")
+    responses = agent.handle_message("/greet")
     assert responses[0] == 'Hey! How are you?'
 
-    responses.extend(agent.handle_message("_mood_unhappy"))
+    responses.extend(agent.handle_message("/mood_unhappy"))
     assert responses[-1] in {"Did that help you?"}
 
     # (there is a 'I am on it' message in the middle we are not checking)
@@ -39,7 +39,7 @@ def test_remote_example():
                                False, None, {})
     agent = run.main("examples/remotebot/models/dialogue")
 
-    response = agent.start_message_handling("_search_venues")
+    response = agent.start_message_handling("/search_venues")
     assert response.get("next_action") == 'search_venues'
     assert response.get("tracker") == {
         'slots': {'concerts': None, 'venues': None},
@@ -47,7 +47,7 @@ def test_remote_example():
         'sender_id': 'default',
         'paused': False,
         'latest_message': {
-            'text': '_search_venues',
+            'text': '/search_venues',
             'intent_ranking': [{'confidence': 1.0, 'name': 'search_venues'}],
             'intent': {'confidence': 1.0, 'name': 'search_venues'},
             'entities': []}}
@@ -66,7 +66,7 @@ def test_restaurantbot_example():
                            os.path.join(p, "models", "dialogue"),
                            os.path.join(p, "data", "babi_stories.md"))
 
-    responses = agent.handle_message("_greet")
+    responses = agent.handle_message("/greet")
     assert responses[0] == 'how can I help you?'
 
 
@@ -86,7 +86,7 @@ def test_concerts_online_example():
     training_file = os.path.join("examples", "concertbot", "data", "stories.md")
     agent = run_concertbot_online(input_channel, RegexInterpreter(),
                                   domain_file, training_file)
-    responses = agent.handle_message("_greet")
+    responses = agent.handle_message("/greet")
     assert responses[-1] in {"hey there!",
                              "how can I help you?",
                              "default message"}

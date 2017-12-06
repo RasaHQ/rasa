@@ -24,7 +24,7 @@ class FileInputChannel(InputChannel):
     first capturing group will be used as the user message."""
 
     def __init__(self,
-                 file_name,
+                 filename,
                  output_channel=None,
                  message_line_pattern=".*",
                  max_messages=None):
@@ -32,7 +32,7 @@ class FileInputChannel(InputChannel):
         from rasa_core.channels.console import ConsoleOutputChannel
 
         self.message_filter = re.compile(message_line_pattern)
-        self.file_name = file_name
+        self.filename = filename
         self.max_messages = max_messages
         if output_channel:
             self.output_channel = output_channel
@@ -40,7 +40,7 @@ class FileInputChannel(InputChannel):
             self.output_channel = ConsoleOutputChannel()
 
     def _record_messages(self, on_message):
-        with io.open(self.file_name, 'r') as f:
+        with io.open(self.filename, 'r') as f:
             for i, line in enumerate(f):
                 m = self.message_filter.match(line)
                 if m is not None:

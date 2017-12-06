@@ -10,6 +10,7 @@ from builtins import object
 
 from rasa_core.domain import check_domain_sanity
 from rasa_core.interpreter import RegexInterpreter
+from rasa_core.training.data import DialogueTrainingData
 
 logger = logging.getLogger(__name__)
 
@@ -44,13 +45,13 @@ class PolicyTrainer(object):
         logger.debug("Policy trainer got kwargs: {}".format(kwargs))
         check_domain_sanity(self.domain)
 
-        X, y = self._prepare_training_data(filename, max_history,
+        training_data = self._prepare_training_data(filename, max_history,
                                            augmentation_factor,
                                            max_training_samples,
                                            max_number_of_trackers,
                                            remove_duplicates)
 
-        self.ensemble.train(X, y, self.domain, self.featurizer, **kwargs)
+        self.ensemble.train(training_data, self.domain, self.featurizer, **kwargs)
 
     def _prepare_training_data(self, filename, max_history, augmentation_factor,
                                max_training_samples=None,
@@ -58,22 +59,20 @@ class PolicyTrainer(object):
                                remove_duplicates=True):
         """Reads training data from file and prepares it for the training."""
 
-        from rasa_core.training_utils import extract_training_data_from_file
+        from rasa_core.training import extract_training_data_from_file
 
         if filename:
-            X, y = extract_training_data_from_file(
+            training_data = extract_training_data_from_file(
                     filename,
+                    self.domain,
+                    self.featurizer,
+                    interpreter=RegexInterpreter(),
                     augmentation_factor=augmentation_factor,
                     max_history=max_history,
                     remove_duplicates=remove_duplicates,
-                    domain=self.domain,
-                    featurizer=self.featurizer,
-                    interpreter=RegexInterpreter(),
                     max_number_of_trackers=max_number_of_trackers)
             if max_training_samples is not None:
-                X = X[:max_training_samples, :]
-                y = y[:max_training_samples]
+                training_data.limit_training_data_to(max_training_samples)
+            return training_data
         else:
-            X = np.zeros((0, self.domain.num_features))
-            y = np.zeros(self.domain.num_actions)
-        return X, y
+            return DialogueTrainingData.empty(self.domain)

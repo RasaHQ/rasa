@@ -14,7 +14,7 @@ from typing import Generator, Dict, Text, Any, Optional, Iterator
 from typing import List
 
 from rasa_core import utils
-from rasa_core.conversation import Dialogue
+from rasa_core.conversation import Dialogue, Topic
 from rasa_core.events import UserUttered, TopicSet, ActionExecuted, \
     Event, SlotSet, Restarted, ActionReverted, UserUtteranceReverted, BotUttered
 
@@ -139,7 +139,7 @@ class DialogueStateTracker(object):
 
     @property
     def topic(self):
-        # type: () -> Text
+        # type: () -> Topic
         """Retrieves current topic, or default if no topic has been set yet."""
 
         return self._topic_stack.top
@@ -189,6 +189,7 @@ class DialogueStateTracker(object):
     def replay_events(self):
         # type: (int) -> None
         """Update the tracker based on a list of events."""
+
         applied_events = self._applied_events()
         for event in applied_events:
             event.apply_to(self)
@@ -230,7 +231,7 @@ class DialogueStateTracker(object):
         event.apply_to(self)
 
     def export_stories(self):
-        from rasa_core.training_utils.dsl import StoryStep, Story
+        from rasa_core.training.structures import StoryStep, Story
 
         story_step = StoryStep()
         for event in self._applied_events():
@@ -268,7 +269,9 @@ class DialogueStateTracker(object):
         if key in self.slots:
             self.slots[key].value = value
         else:
-            logger.warn("Tried to set non existent slot '{}'".format(key))
+            logger.error("Tried to set non existent slot '{}'. Make sure you "
+                         "added all your slots to your domain file."
+                         "".format(key))
 
     def _create_events(self, events):
         # type: (List[Event]) -> deque

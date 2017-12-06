@@ -84,20 +84,20 @@ any context. That comes later.
 .. code-block:: md
 
    ## greet
-   * _greet
+   * greet
        - action_greet
 
    ## happy
-   * _thankyou
+   * thankyou
        - action_youarewelcome
    ...
 
    ## compare_reviews_venues
-   * _compare_reviews
+   * compare_reviews
        - action_show_venue_reviews
 
    ## compare_reviews_concerts
-   * _compare_reviews
+   * compare_reviews
        - action_show_concert_reviews
 
 
@@ -117,7 +117,7 @@ You should be able to have a conversation similar to the one below
 .. note::
     we haven't connected an NLU tool here,
     so when you type messages to the bot you have to
-    type the intent starting with a `_`.
+    type the intent starting with a `/`. (see :ref:`fixed_intent_format`)
     If you want to use Rasa NLU / wit.ai / Lex you
     can just swap the `Interpreter` class in `run.py`.
 
@@ -125,12 +125,12 @@ You should be able to have a conversation similar to the one below
 .. code-block:: text
 
    Bot loaded. Type hello and press enter :
-   _greet
+   /greet
    hey there!
-   _search_concerts
+   /search_concerts
    Here's what I found:
    Katy Perry, Foo Fighters
-   _goodbye
+   /goodbye
    goodbye :(
 
 
@@ -150,17 +150,18 @@ It then runs the bot so that you can provide feedback to train it:
 **Happy paths**
 
 We can start talking to the bot as before,
-directly entering the intents. For example, if we type ``_greet``, we get the following prompt:
+directly entering the intents. For example, if we type ``/greet``, we get
+the following prompt:
 
 .. code-block:: text
 
-   _greet
+   /greet
    ------
    Chat history:
 
         bot did:	action_listen
 
-        user said:	_greet
+        user said:	/greet
 
         	   whose intent is:	greet
 
@@ -172,6 +173,7 @@ directly entering the intents. For example, if we type ``_greet``, we get the fo
        1.	Yes
        2.	No, intent is right but the action is wrong
        3.	The intent is wrong
+       0.	Export current conversations as stories and quit
 
 
 This gives you all the info you should hopefully need to decide
@@ -185,7 +187,7 @@ We've just asked the bot to search for concerts, and now we're asking it to comp
 
 .. code-block:: text
 
-   _compare_reviews
+   /compare_reviews
    ------
    Chat history:
 
@@ -195,7 +197,7 @@ We've just asked the bot to search for concerts, and now we're asking it to comp
 
         bot did:	action_listen
 
-        user said:	_compare_reviews
+        user said:	/compare_reviews
 
         	   whose intent is:	compare_reviews
 
@@ -207,6 +209,7 @@ We've just asked the bot to search for concerts, and now we're asking it to comp
        1.	Yes
        2.	No, intent is right but the action is wrong
        3.	The intent is wrong
+       0.	Export current conversations as stories and quit
 
 
 Now we type ``2``, because it chose the wrong action,
@@ -239,6 +242,7 @@ In this case, the bot should ``show_film_reviews`` (rather than cinema reviews!)
    You can also export all of the conversations you have with the bot so you can add these as training stories in the future.
 
 Now we can keep talking to the bot for as long as we like
-to create a longer conversation. At any point you can type ``_export``
-and the bot will write the current conversation to a file,
-which you can then add as a training example for the future.
+to create a longer conversation. At any point you can type ``0``
+and the bot will write the current conversation to a file and exit
+the conversation. Make sure to combine the dumped story with your original
+training data for the next training.

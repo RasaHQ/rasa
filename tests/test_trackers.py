@@ -8,17 +8,15 @@ import glob
 import pytest
 
 from rasa_core.actions.action import ActionListen, ACTION_LISTEN_NAME
-from rasa_core.agent import Agent
 from rasa_core.conversation import Topic
 from rasa_core.domain import TemplateDomain
-from rasa_core.events import UserUttered, TopicSet, ActionExecuted, SlotSet, \
-    Restarted, ActionReverted
+from rasa_core.events import (
+    UserUttered, TopicSet, ActionExecuted, SlotSet,
+    Restarted, ActionReverted)
 from rasa_core.featurizers import BinaryFeaturizer
-from rasa_core.interpreter import NaturalLanguageInterpreter
-from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.tracker_store import InMemoryTrackerStore, RedisTrackerStore
 from rasa_core.trackers import DialogueStateTracker
-from rasa_core.training_utils import extract_stories_from_file, STORY_START
+from rasa_core.training import STORY_START, extract_trackers_from_file
 from tests.utilities import tracker_from_dialogue_file, read_dialogue_file
 
 domain = TemplateDomain.load("data/test_domains/default_with_topic.yml")
@@ -66,7 +64,7 @@ def test_tracker_store_storage_and_retrieval(store):
 
     # lets log a test message
     intent = {"name": "greet", "confidence": 1.0}
-    tracker.update(UserUttered("_greet", intent, []))
+    tracker.update(UserUttered("/greet", intent, []))
     assert tracker.latest_message.intent.get("name") == "greet"
     store.save(tracker)
 
@@ -97,25 +95,25 @@ def test_tracker_write_to_story(tmpdir, default_domain):
             "data/test_dialogues/enter_name.json", default_domain)
     p = tmpdir.join("export.md")
     tracker.export_stories_to_file(p.strpath)
-    stories = extract_stories_from_file(p.strpath, default_domain)
-    assert len(stories) == 1
-    assert len(stories[0].story_steps) == 1
-    assert len(stories[0].story_steps[0].events) == 4
-    assert stories[0].story_steps[0].start_checkpoint_name() == STORY_START
-    assert stories[0].story_steps[0].events[3] == SlotSet("location", "central")
+    trackers = extract_trackers_from_file(p.strpath, default_domain,
+                                          BinaryFeaturizer())
+    assert len(trackers) == 1
+    recovered = trackers[0]
+    assert len(recovered.events) == 8
+    assert recovered.events[6] == SlotSet("location", "central")
 
 
 def test_tracker_state_regression_without_bot_utterance(default_agent):
     sender_id = "test_tracker_state_regression_without_bot_utterance"
     for i in range(0, 2):
-        default_agent.handle_message("_greet", sender_id=sender_id)
+        default_agent.handle_message("/greet", sender_id=sender_id)
     tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
 
     # Ensures that the tracker has changed between the utterances
     # (and wasn't reset in between them)
     expected = ("action_listen;"
-                "_greet;utter_greet;action_listen;"
-                "_greet;action_listen")
+                "greet;utter_greet;action_listen;"
+                "greet;action_listen")
     assert ";".join([e.as_story_string() for e in
                      tracker.events if e.as_story_string()]) == expected
 
@@ -123,11 +121,11 @@ def test_tracker_state_regression_without_bot_utterance(default_agent):
 def test_tracker_state_regression_with_bot_utterance(default_agent):
     sender_id = "test_tracker_state_regression_with_bot_utterance"
     for i in range(0, 2):
-        default_agent.handle_message("_greet", sender_id=sender_id)
+        default_agent.handle_message("/greet", sender_id=sender_id)
     tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
 
-    expected = ["action_listen", "_greet", None, "utter_greet",
-                "action_listen", "_greet", "action_listen"]
+    expected = ["action_listen", "greet", None, "utter_greet",
+                "action_listen", "greet", "action_listen"]
     print([e.as_story_string() for e in tracker.events])
     for e in tracker.events:
         print(e)
@@ -143,7 +141,7 @@ def test_tracker_entity_retrieval(default_domain):
     assert list(tracker.get_latest_entity_values("entity_name")) == []
 
     intent = {"name": "greet", "confidence": 1.0}
-    tracker.update(UserUttered("_greet", intent, [{
+    tracker.update(UserUttered("/greet", intent, [{
           "start": 1,
           "end": 5,
           "value": "greet",
@@ -163,19 +161,21 @@ def test_restart_event(default_domain):
 
     intent = {"name": "greet", "confidence": 1.0}
     tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
-    tracker.update(UserUttered("_greet", intent, []))
+    tracker.update(UserUttered("/greet", intent, []))
     tracker.update(ActionExecuted("my_action"))
     tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
 
     assert len(tracker.events) == 4
-    assert tracker.latest_message.text == "_greet"
+    assert tracker.latest_message.text == "/greet"
     assert len(list(tracker.generate_all_prior_states())) == 4
 
     tracker.update(Restarted())
 
-    assert len(tracker.events) == 6
+    assert len(tracker.events) == 5
+    assert tracker.follow_up_action is not None
+    assert tracker.follow_up_action.name() == ACTION_LISTEN_NAME
     assert tracker.latest_message.text is None
-    assert len(list(tracker.generate_all_prior_states())) == 2
+    assert len(list(tracker.generate_all_prior_states())) == 1
 
     dialogue = tracker.as_dialogue()
 
@@ -185,9 +185,11 @@ def test_restart_event(default_domain):
     recovered.recreate_from_dialogue(dialogue)
 
     assert recovered.current_state() == tracker.current_state()
-    assert len(recovered.events) == 6
+    assert len(recovered.events) == 5
+    assert tracker.follow_up_action is not None
+    assert tracker.follow_up_action.name() == ACTION_LISTEN_NAME
     assert recovered.latest_message.text is None
-    assert len(list(recovered.generate_all_prior_states())) == 2
+    assert len(list(recovered.generate_all_prior_states())) == 1
 
 
 def test_revert_action_event(default_domain):
@@ -199,7 +201,7 @@ def test_revert_action_event(default_domain):
 
     intent = {"name": "greet", "confidence": 1.0}
     tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
-    tracker.update(UserUttered("_greet", intent, []))
+    tracker.update(UserUttered("/greet", intent, []))
     tracker.update(ActionExecuted("my_action"))
     tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
 

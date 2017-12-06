@@ -9,7 +9,7 @@
         "name": "inform_addresschange",
         "confidence": 1.0
       },
-      "text": "_inform_addresschange"
+      "text": "/inform_addresschange"
     },
     {
       "py/object": "rasa_core.events.ActionExecuted",
@@ -28,7 +28,7 @@
         "name": "deny",
         "confidence": 1.0
       },
-      "text": "_deny"
+      "text": "/deny"
     },
     {
       "py/object": "rasa_core.events.ActionExecuted",

@@ -6,23 +6,27 @@ from __future__ import unicode_literals
 import random
 from collections import defaultdict, deque
 
-from typing import Any, Text, List, Dict
+from typing import Any, Text, List, Dict, Optional
 
+from rasa_core.actions.action import ACTION_LISTEN_NAME
+from rasa_core.domain import Domain
 from rasa_core.events import UserUttered, ActionExecuted
-from rasa_core.interpreter import RegexInterpreter
-from rasa_core.training_utils import STORY_START
-from rasa_core.training_utils.story_graph import StoryGraph
+from rasa_core.featurizers import BinaryFeaturizer
+from rasa_core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
+from rasa_core.training.generator import TrainingsDataGenerator
+from rasa_core.training.structures import StoryGraph, StoryStep
 from rasa_nlu.training_data import TrainingData
 
 EDGE_NONE_LABEL = "NONE"
 
 
 class UserMessageGenerator(object):
-    def __init__(self, training_data):
-        self.training_data = training_data
-        self.mapping = self._create_reverse_mapping(self.training_data)
+    def __init__(self, nlu_training_data):
+        self.nlu_training_data = nlu_training_data
+        self.mapping = self._create_reverse_mapping(self.nlu_training_data)
 
-    def _create_reverse_mapping(self, data):
+    @staticmethod
+    def _create_reverse_mapping(data):
         # type: (TrainingData) -> Dict[Text, List[Dict[Text, Any]]]
         """Create a mapping from intent to messages
 
@@ -164,19 +168,21 @@ def _merge_equivalent_nodes(G, max_history):
                             _nodes_are_equivalent(G, i, j, max_history):
                         changed = True
                         # moves all outgoing edges to the other node
-                        j_outgoing_edges = G.out_edges(j, keys=True, data=True)
+                        j_outgoing_edges = list(G.out_edges(j, keys=True,
+                                                            data=True))
                         for _, succ_node, k, d in j_outgoing_edges:
                             _add_edge(G, i, succ_node, k, d.get("label"))
                             G.remove_edge(j, succ_node)
                         # moves all incoming edges to the other node
-                        j_incoming_edges = G.in_edges(j, keys=True, data=True)
+                        j_incoming_edges = list(G.in_edges(j, keys=True,
+                                                           data=True))
                         for prev_node, _, k, d in j_incoming_edges:
                             _add_edge(G, prev_node, i, k, d.get("label"))
                             G.remove_edge(prev_node, j)
                         G.remove_node(j)
 
 
-def _replace_edge_labels_with_nodes(G, next_id, interpreter, training_data,
+def _replace_edge_labels_with_nodes(G, next_id, interpreter, nlu_training_data,
                                     fontsize):
     """User messages are created as edge labels. This removes the labels and
     creates nodes instead.
@@ -186,12 +192,13 @@ def _replace_edge_labels_with_nodes(G, next_id, interpreter, training_data,
     looks better if in the final graphs the user messages are nodes instead
     of edge labels."""
 
-    if training_data:
-        message_generator = UserMessageGenerator(training_data)
+    if nlu_training_data:
+        message_generator = UserMessageGenerator(nlu_training_data)
     else:
         message_generator = None
 
-    for s, e, k, d in G.edges(keys=True, data=True):
+    edges = list(G.edges(keys=True, data=True))
+    for s, e, k, d in edges:
         if k != EDGE_NONE_LABEL:
             if message_generator and d.get("label", k) is not None:
                 parsed_info = interpreter.parse(d.get("label", k))
@@ -217,12 +224,16 @@ def _persist_graph(G, output_file):
     A.draw(output_file)
 
 
-def visualize_stories(story_steps,
-                      output_file=None,
-                      max_history=2,
-                      interpreter=RegexInterpreter(),
-                      training_data=None,
-                      fontsize=12):
+def visualize_stories(
+        story_steps,  # type: List[StoryStep]
+        domain,  # type: Domain
+        output_file,  # type: Optional[Text]
+        max_history,  # type: int
+        interpreter=RegexInterpreter(),  # type: NaturalLanguageInterpreter
+        nlu_training_data=None,  # type: Optional[TrainingData]
+        should_merge_nodes=True,  # type: bool
+        fontsize=12  # type: int
+):
     """Given a set of stories, generates a graph visualizing the flows in the
     stories.
 
@@ -260,48 +271,46 @@ def visualize_stories(story_steps,
     G.add_node(-1, label="END", fillcolor="red", style="filled",
                fontsize=fontsize)
 
-    checkpoint_indices = defaultdict(list)
-    checkpoint_indices[STORY_START] = [(0, None)]
+    data = TrainingsDataGenerator(story_graph, domain, BinaryFeaturizer(),
+                                  max_history=max_history,
+                                  use_story_concatenation=False,
+                                  tracker_limit=100).generate()
 
-    for step in story_graph.ordered_steps():
-        current_nodes = checkpoint_indices[step.start_checkpoint_name()]
+    completed_trackers = data.metadata["trackers"]
+    for tracker in completed_trackers:
         message = None
-        for el in step.events:
+        current_node = 0
+        for el in tracker.events:
             if isinstance(el, UserUttered):
                 message = interpreter.parse(el.text)
-            elif isinstance(el, ActionExecuted):
+            elif (isinstance(el, ActionExecuted) and
+                    el.action_name != ACTION_LISTEN_NAME):
                 next_node_idx += 1
                 G.add_node(next_node_idx, label=el.action_name,
                            fontsize=fontsize)
 
-                for current_node, tailing_message in current_nodes:
-                    msg = message if message else tailing_message
-                    if msg:
-                        message_key = msg.get("intent", {}).get("name", None)
-                        message_label = msg.get("text", None)
-                    else:
-                        message_key = None
-                        message_label = None
-
-                    _add_edge(G, current_node, next_node_idx, message_key,
-                              message_label)
-
-                current_nodes = [(next_node_idx, None)]
-                message = None
-        if not step.end_checkpoint_name():
-            for current_node, _ in current_nodes:
                 if message:
-                    G.add_edge(current_node, -1,
-                               key=EDGE_NONE_LABEL, label=message)
+                    message_key = message.get("intent", {}).get("name", None)
+                    message_label = message.get("text", None)
                 else:
-                    G.add_edge(current_node, -1, key=EDGE_NONE_LABEL)
-        else:
-            updated_nodes = [(c, message) for c, _ in current_nodes]
-            checkpoint_indices[step.end_checkpoint_name()].extend(updated_nodes)
+                    message_key = None
+                    message_label = None
 
-    _merge_equivalent_nodes(G, max_history)
+                _add_edge(G, current_node, next_node_idx, message_key,
+                          message_label)
+                current_node = next_node_idx
+
+                message = None
+        if message:
+            G.add_edge(current_node, -1,
+                       key=EDGE_NONE_LABEL, label=message)
+        else:
+            G.add_edge(current_node, -1, key=EDGE_NONE_LABEL)
+
+    if should_merge_nodes:
+        _merge_equivalent_nodes(G, max_history)
     _replace_edge_labels_with_nodes(G, next_node_idx, interpreter,
-                                    training_data, fontsize)
+                                    nlu_training_data, fontsize)
 
     if output_file:
         _persist_graph(G, output_file)

@@ -17,6 +17,7 @@ from rasa_core.events import UserUtteranceReverted, UserUttered, StoryExported
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.policies import PolicyTrainer
 from rasa_core.policies.ensemble import PolicyEnsemble
+from rasa_core.training.data import DialogueTrainingData
 
 logger = logging.getLogger(__name__)
 
@@ -34,15 +35,18 @@ class OnlinePolicyTrainer(PolicyTrainer):
         logger.debug("Policy trainer got kwargs: {}".format(kwargs))
         check_domain_sanity(self.domain)
 
-        X, y = self._prepare_training_data(filename, max_history,
+        training_data = self._prepare_training_data(filename, max_history,
                                            augmentation_factor,
                                            max_training_samples,
                                            max_number_of_trackers)
 
-        self.ensemble.train(X, y, self.domain, self.featurizer, **kwargs)
+        self.ensemble.train(training_data, self.domain, self.featurizer,
+                            **kwargs)
+
+        training_data.reset_metadata()  # online learning doesn't support it yet
 
         ensemble = OnlinePolicyEnsemble(self.ensemble, self.featurizer,
-                                        max_history, (X, y))
+                                        max_history, training_data)
         self.run_online_training(ensemble, self.domain, interpreter,
                                  input_channel)
 
@@ -152,23 +156,24 @@ class OnlinePolicyEnsemble(PolicyEnsemble):
         logger.info("Stories got exported to '{}'.".format(
                 os.path.abspath(exported.path)))
 
+    def continue_training(self, training_data, domain):
+        for p in self.policies:
+            p.continue_training(training_data, domain)
+
     def _fit_example(self, X, y, domain):
         # takes the new example labelled and learns it
         # via taking `epochs` samples of n_batch-1 parts of the training data,
         # inserting our new example and learning them. this means that we can
         # ask the network to fit the example without overemphasising
         # its importance (and therefore throwing off the biases)
-        train_X, train_y = self.train_data
-        for i in range(self.epochs):
-            padding_idx = np.random.choice(range(len(train_y)),
-                                           replace=False,
-                                           size=min(self.batch_size - 1,
-                                                    len(train_y) - 1))
-            batch_X = np.vstack((train_X[padding_idx, :, :], X))
-            batch_y = np.hstack((train_y[padding_idx], y))
-            for p in self.policies:
-                p.continue_training(batch_X, np.array(batch_y), domain)
-        self.train_data = (np.vstack((train_X, X)), np.hstack((train_y, y)))
+        num_samples = self.batch_size - 1
+        for _ in range(self.epochs):
+            sampled_X, sampled_y = self.train_data.random_samples(num_samples)
+            batch_X = np.vstack((sampled_X, X))
+            batch_y = np.hstack((sampled_y, y))
+            data = DialogueTrainingData(batch_X, batch_y)
+            self.continue_training(data, domain)
+        self.train_data.append(X, y)
 
     def write_out_story(self, tracker):
         # takes our new example and writes it in markup story format
@@ -258,49 +263,3 @@ class OnlinePolicyEnsemble(PolicyEnsemble):
         print("thanks! The bot will now "
               "[{}]\n -----------".format(domain.action_for_index(out).name()))
         return out
-
-    def test(self, X, y, max_training_samples, num_actions, **kwargs):
-        n_test_epochs = 7
-        n_examples = len(y)
-        i = max_training_samples
-        valid_idxs = np.random.choice(range(n_examples), size=200)
-        j = 0
-        scores = []
-        js = []
-
-        while True:
-            if i not in valid_idxs:
-                self._fit_example([X[i, :]], y[i], num_actions)
-            i += 1
-            j += 1
-            if i == n_examples:
-                i = max_training_samples
-                n_test_epochs -= 1
-                if n_test_epochs == 0:
-                    break
-            if j % 10 == 0 and self.use_visualization:
-                import matplotlib.pyplot as plt
-                js.append(j + max_training_samples)
-                scores.append(self.score(X[valid_idxs, :], y[valid_idxs]))
-                plt.clf()
-                plt.plot(js, scores)
-                plt.ylabel("percentage of correct next-actions in "
-                           "held-out test set")
-                plt.xlabel("number of examples in training set")
-                plt.ylim((0, 1))
-                max_epochs = int(np.floor(j / (n_examples - len(valid_idxs))))
-                for epoch in range(max_epochs):
-                    plt.axvline((epoch + 1) * (n_examples - len(valid_idxs)),
-                                linestyle='--')
-                plt.savefig("training_score_with_slots{}.jpg".format(
-                        kwargs.get("epochs", 10)))
-
-    def score(self, X, y):
-        all_outs = []
-        for idx in range(np.shape(X)[0]):
-            x = X[[idx], :, :]
-            pred_out = self.base_ensemble.predict_next_action(x)
-            all_outs.append(pred_out)
-        # all_outs == y is a boolean array, np.mean() treats True=1, False=0
-        score = np.mean(all_outs == y)
-        return score

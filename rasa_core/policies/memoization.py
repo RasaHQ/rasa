@@ -18,6 +18,7 @@ from typing import Optional, List, Any
 
 from rasa_core.policies.policy import Policy
 from rasa_core import utils
+from rasa_core.training.data import DialogueTrainingData
 
 logger = logging.getLogger(__name__)
 
@@ -35,12 +36,9 @@ class MemoizationPolicy(Policy):
     def toggle(self, activate):
         self.is_enabled = activate
 
-    def memorise(self, X, y, domain):
-        assert X.shape[1] == self.max_history, \
-            ("Trying to mem featurized data with {} historic turns. "
-             "Expected {}".format(X.shape[1], self.max_history))
+    def memorise(self, training_data, domain):
         self.lookup = {}
-        self.add(X, y, domain)
+        self.add(training_data, domain)
 
     def _create_partial_histories(self, x):
         augmented = [np.array(x)]
@@ -50,11 +48,12 @@ class MemoizationPolicy(Policy):
             augmented.append(np.array(original_x))
         return augmented
 
-    def add(self, X, y, domain):
-        assert X.shape[1] == self.max_history, \
-            ("Trying to mem featurized data with {} historic turns. "
-             "Expected {}".format(X.shape[1], self.max_history))
-        for _x, _y in zip(X, y):
+    def add(self, training_data, domain):
+        assert training_data.max_history() == self.max_history, \
+            ("Trying to mem featurized data with {} historic turns. Expected: "
+             "{}".format(training_data.max_history(), self.max_history))
+
+        for _x, _y in zip(training_data.X, training_data.y):
             for _x_augmented in self._create_partial_histories(_x):
                 feature_key = self._feature_vector_to_str(_x_augmented, domain)
                 self.lookup[feature_key] = _y.item()
@@ -76,15 +75,15 @@ class MemoizationPolicy(Policy):
             x = np.squeeze(x, axis=(0,))
         return self.lookup.get(self._feature_vector_to_str(x, domain))
 
-    def train(self, X, y, domain, **kwargs):
-        # type: (ndarray, List[int], Domain, **Any) -> None
+    def train(self, training_data, domain, **kwargs):
+        # type: (DialogueTrainingData, Domain, **Any) -> None
         """Trains the policy on given training data."""
 
-        self.memorise(X, y, domain)
+        self.memorise(training_data, domain)
 
-    def continue_training(self, X, y, domain, **kwargs):
+    def continue_training(self, training_data, domain, **kwargs):
         # fit to one extra example
-        self.add(X, y, domain)
+        self.add(training_data, domain)
 
     def predict_action_probabilities(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> (float, Optional[int])
@@ -112,8 +111,7 @@ class MemoizationPolicy(Policy):
             "lookup": self.lookup
         }
         utils.create_dir_for_file(memorized_file)
-        with io.open(memorized_file, 'w') as f:
-            f.write(str(json.dumps(data, indent=2)))
+        utils.dump_obj_as_json_to_file(memorized_file, data)
 
     @classmethod
     def load(cls, path, featurizer, max_history):

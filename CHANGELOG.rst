@@ -11,15 +11,34 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+- ``--debug`` and ``--verbose`` flags to scripts (train.py, run.py, server.py)
+  to set the log level
+- support for story cycles when using checkpoints
+- warn if action emits events when using a model that it did never emit in
+  any of the stories the model was trained on
 
 Changed
 -------
+- story file utterance format changed from ``* _intent_greet[name=Rasa]``
+  to ``* intent_greet{"name": "Rasa"}`` (old format is still supported but
+  deprecated)
+- persist action names in domain during model persistence
 
 Removed
 -------
 
 Fixed
 -----
+- proper evaluation of stories with checkpoints
+- proper visualisation of stories with checkpoints
+
+[0.7.9] - 2017-11-29
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- visualisation using Networkx version 2.x
+- add output about line of failing intent when parsing story files
 
 [0.7.8] - 2017-11-27
 ^^^^^^^^^^^^^^^^^^^^

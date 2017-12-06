@@ -4,7 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from rasa_core.agent import Agent
-from rasa_core.interpreter import RegexInterpreter
+from rasa_core.interpreter import RegexInterpreter, INTENT_MESSAGE_PREFIX
 from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.policies.scoring_policy import ScoringPolicy
 from rasa_core.tracker_store import InMemoryTrackerStore
@@ -38,6 +38,7 @@ def test_agent_train(tmpdir, default_domain):
 
 
 def test_agent_handle_message(default_agent):
-    result = default_agent.handle_message("_greet[name=Rasa]",
+    message = INTENT_MESSAGE_PREFIX + 'greet{"name":"Rasa"}'
+    result = default_agent.handle_message(message,
                                           sender_id="test_agent_handle_message")
     assert result == ["hey there Rasa!"]

@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import os
 
+import logging
 from builtins import str
 from typing import Text, List, Optional, Callable, Any, Dict, Union
 
@@ -20,6 +21,8 @@ from rasa_core.policies.online_policy_trainer import (
     OnlinePolicyTrainer)
 from rasa_core.processor import MessageProcessor
 from rasa_core.tracker_store import InMemoryTrackerStore, TrackerStore
+
+logger = logging.getLogger(__name__)
 
 
 class Agent(object):
@@ -184,6 +187,23 @@ class Agent(object):
         self.domain.persist(os.path.join(model_path, "domain.yml"))
         self.domain.persist_specification(model_path)
         self.featurizer.persist(model_path)
+
+        logger.info("Persisted model to '{}'"
+                    "".format(os.path.abspath(model_path)))
+
+    def visualize(self,
+                  filename,
+                  output_file,
+                  max_history,
+                  nlu_training_data=None,
+                  fontsize=12
+                  ):
+        from rasa_core.training.visualization import visualize_stories
+        from rasa_core.training import StoryFileReader
+
+        story_steps = StoryFileReader.read_from_file(filename, self.domain)
+        visualize_stories(story_steps, self.domain, output_file, max_history,
+                          self.interpreter, nlu_training_data, fontsize)
 
     def _ensure_agent_is_prepared(self):
         # type: () -> None
