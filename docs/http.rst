@@ -287,3 +287,25 @@ Endpoints
       }
 
    :statuscode 200: no error
+
+
+Security Considerations
+-----------------------
+
+We recommend to not expose the Rasa Core server to the outside world but
+rather connect to it from your backend over a private connection (e.g.
+between docker containers).
+
+Nevertheless, there is build in token authentication. If you specify a token
+when starting the server, that token needs to be passed with every request:
+
+.. code-block:: bash
+
+    $ python -m rasa_core.server --auth_token thisismysecret -d examples/babi/models/policy/current -u examples/babi/models/nlu/current_py2 -o out.log
+
+Your requests should pass the token, in our case ``thisismysecret``,
+as a parameter:
+
+.. code-block:: bash
+
+    $ curl -XPOST localhost:5005/conversations/default/parse?token=thisismysecret -d '{"query":"hello there"}'
