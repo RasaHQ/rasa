@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import os
 import io
+import re
 import json
 import logging
 import typing
@@ -53,7 +54,7 @@ class DucklingExtractor(EntityExtractor):
                 for m in getmembers(Dim)
                 if not m[0].startswith("__") and not m[0].endswith("__")]
 
-    def __init__(self, duckling, dimensions=None):
+    def __init__(self, duckling, dimensions=None, model_dir=None):
         # type: (DucklingWrapper, Optional[List[Text]]) -> None
 
         super(DucklingExtractor, self).__init__()
@@ -63,6 +64,9 @@ class DucklingExtractor(EntityExtractor):
             self.dimensions = dimensions
         else:
             self.dimensions = self.available_dimensions()
+
+        if model_dir is not None:
+            self.model_dir = model_dir
 
     @classmethod
     def required_packages(cls):
@@ -127,6 +131,14 @@ class DucklingExtractor(EntityExtractor):
                                 "duckling. Error: {}"
                                 "".format(message.time, ref_time, e))
 
+        # replace message text synonyms with basic form
+        if os.path.isfile(os.path.join(self.model_dir, "entity_synonyms.json")):
+            with open(os.path.join(self.model_dir, "entity_synonyms.json")) as f:
+                data = json.load(f)
+            for word in re.split('[ .!?]', message.text):
+                if word in data:
+                    message.text = message.text.replace(word, data[word], 1)
+
         matches = self.duckling.parse(message.text, reference_time=ref_time)
         relevant_matches = [match
                             for match in matches
@@ -153,7 +165,7 @@ class DucklingExtractor(EntityExtractor):
         file_name = self.name + ".json"
         full_name = os.path.join(model_dir, file_name)
         with io.open(full_name, 'w') as f:
-            f.write(str(json.dumps({"dimensions": self.dimensions})))
+            f.write(str(json.dumps({"dimensions": self.dimensions, "model_dir": model_dir})))
         return {"ner_duckling_persisted": file_name}
 
     @classmethod
@@ -176,5 +188,5 @@ class DucklingExtractor(EntityExtractor):
         if os.path.isfile(persisted):
             with io.open(persisted, encoding='utf-8') as f:
                 persisted_data = json.loads(f.read())
-                return DucklingExtractor(duckling, persisted_data["dimensions"])
+                return DucklingExtractor(duckling, persisted_data["dimensions"], persisted_data["model_dir"])
         return DucklingExtractor(duckling)
