@@ -25,19 +25,20 @@ class TrackerStore(object):
             tracker = self.create_tracker(sender_id)
         return tracker
 
-    def _init_tracker(self, sender_id):
+    def init_tracker(self, sender_id):
         return DialogueStateTracker(sender_id,
                                        self.domain.slots,
                                        self.domain.topics,
                                        self.domain.default_topic)
 
-    def create_tracker(self, sender_id):
+    def create_tracker(self, sender_id, append_action_listen=True):
         """Creates a new tracker for the sender_id.
 
         The tracker is initially listening."""
 
-        tracker = self._init_tracker(sender_id)
-        tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
+        tracker = self.init_tracker(sender_id)
+        if append_action_listen:
+            tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
         self.save(tracker)
         return tracker
 
@@ -55,7 +56,7 @@ class TrackerStore(object):
 
     def deserialise_tracker(self, sender_id, _json):
         dialogue = pickler.loads(_json)
-        tracker = self._init_tracker(sender_id)
+        tracker = self.init_tracker(sender_id)
         tracker.recreate_from_dialogue(dialogue)
         return tracker
 

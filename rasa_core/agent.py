@@ -33,7 +33,7 @@ class Agent(object):
 
     def __init__(
             self,
-            domain,  # type: Domain
+            domain,  # type: Union[Text, Domain]
             policies=None,  # type: Optional[Union[PolicyEnsemble, List[Policy]]
             featurizer=None,  # type: Optional[Featurizer]
             interpreter=None,  # type: Optional[NaturalLanguageInterpreter]

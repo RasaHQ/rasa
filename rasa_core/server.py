@@ -173,9 +173,11 @@ class RasaCoreServer(object):
                 request.content.read().decode('utf-8', 'strict'))
         events = convert_obj_2_tracker_events(request_params,
                                               self.agent.domain)
-        tracker = self.agent.tracker_store.create_tracker(cid)
+
+        tracker = self.agent.tracker_store.init_tracker(cid)
         for e in events:
             tracker.update(e)
+        self.agent.tracker_store.save(tracker)
 
         # will override an existing tracker with the same id!
         self.agent.tracker_store.save(tracker)
