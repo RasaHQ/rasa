@@ -33,6 +33,8 @@ Fixed
 -----
 - proper evaluation of stories with checkpoints
 - proper visualisation of stories with checkpoints
+- fixed float slot min max value handling
+- fixed non integer feature decoding, e.g. used for memoization policy
 
 [0.7.9] - 2017-11-29
 ^^^^^^^^^^^^^^^^^^^^
