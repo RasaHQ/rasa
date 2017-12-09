@@ -44,6 +44,7 @@ install_requires = [
     'coloredlogs',
     'ruamel.yaml',
     'flask',
+    'scikit-learn',
     'rasa_nlu',
 ]
 
