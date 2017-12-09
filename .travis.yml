@@ -15,8 +15,7 @@ install:
 - pip install --only-binary=numpy,scipy,scikit-learn numpy scipy scikit-learn
 - pip install -r dev-requirements.txt
 - pip install spacy sklearn-crfsuite==0.3.5
-- pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-1.2.0/en_core_web_sm-1.2.0.tar.gz
-  --no-cache-dir > jnk
+- pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-1.2.0/en_core_web_sm-1.2.0.tar.gz > jnk
 - python -m spacy link en_core_web_sm en
 - pip install -e .
 - pip list
