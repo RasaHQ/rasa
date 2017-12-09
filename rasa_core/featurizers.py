@@ -27,8 +27,37 @@ class Featurizer(object):
                                   "encode features to a vector")
 
     def decode(self, feature_vec, input_feature_map, ndigits=8):
-        raise NotImplementedError("Featurizer must be able to "
-                                  "decode features from a vector")
+        """Reverse operation to binary_encoded_features
+
+        :param feature_vec: binary feature vector
+        :param input_feature_map: map of all features
+        :param ndigits: number of digits to round to
+        :return: dictionary of active features
+        """
+
+        reversed_features = []
+        for bf in feature_vec:
+            non_zero_feature_idxs = np.where((0 != bf) & (bf != -1))
+            if np.any(non_zero_feature_idxs):
+                feature_tuples = []
+                for feature_idx in np.nditer(non_zero_feature_idxs):
+                    feat_name = input_feature_map[feature_idx]
+
+                    # round if necessary
+                    if ndigits is not None:
+                        feat_value = round(bf[feature_idx], ndigits)
+                    else:
+                        feat_value = bf[feature_idx]
+
+                    # convert numpy types to primitives
+                    if isinstance(feat_value, np.generic):
+                        feat_value = np.asscalar(feat_value)
+
+                    feature_tuples.append((feat_name, feat_value))
+                reversed_features.append(feature_tuples)
+            else:
+                reversed_features.append(None)
+        return reversed_features
 
     def persist(self, path):
         featurizer_file = os.path.join(path, "featurizer.json")
@@ -113,32 +142,6 @@ class BinaryFeaturizer(Featurizer):
             else:
                 return used_features
 
-    def decode(self, feature_vec, input_features, ndigits=8):
-        """Reverse operation to binary_encoded_features
-
-        :param feature_vec: binary feature vector
-        :param input_features: list of all features
-        :param ndigits: ignored
-        :return: dictionary of active features
-        """
-
-        reversed_features = []
-        for bf in feature_vec:
-            non_zero_feature_idxs = np.where((0 != bf) & (bf != -1))
-            if np.sum(non_zero_feature_idxs) > 0:
-                feature_tuples = []
-                for feature_idx in np.nditer(non_zero_feature_idxs):
-                    feat_name = input_features[feature_idx]
-                    if ndigits is not None:
-                        feat_value = round(bf[feature_idx], ndigits)
-                    else:
-                        feat_value = bf[feature_idx]
-                    feature_tuples.append((feat_name, feat_value))
-                reversed_features.append(feature_tuples)
-            else:
-                reversed_features.append(None)
-        return reversed_features
-
 
 class ProbabilisticFeaturizer(Featurizer):
     """Uses intent probabilities of the NLU and feeds them into the model."""
@@ -175,27 +178,3 @@ class ProbabilisticFeaturizer(Featurizer):
                             "Found feature not in feature map. "
                             "Name: {} Value: {}".format(active_feature, value))
             return used_features
-
-    def decode(self, feature_vec, input_features, ndigits=8):
-        """Reverse operation to binary_encoded_features
-
-        :param feature_vec: binary feature vector
-        :return: dictionary of active features, with their associated confidence
-        """
-
-        reversed_features = []
-        for bf in feature_vec:
-            if np.sum(np.where(bf > 0.)) > 0:
-                active_features = np.argwhere(bf > 0.)
-                feature_tuples = []
-                for feature in active_features:
-                    feat_name = list(input_features)[feature[0]]
-                    if ndigits is not None:
-                        feat_value = round(bf[feature[0]], ndigits)
-                    else:
-                        feat_value = bf[feature[0]]
-                    feature_tuples.append((feat_name, feat_value))
-                reversed_features.append(feature_tuples)
-            else:
-                reversed_features.append(None)
-        return reversed_features
