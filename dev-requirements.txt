@@ -6,7 +6,7 @@ python-coveralls==2.9.1
 pytest==3.2.1
 pytest-cov==2.5.1
 pytest-pep8==1.0.6
-pytest-services==1.1.14
+pytest-services==1.2.1
 pytest-xdist==1.15.0
 pytest-twisted==1.5
 treq==17.3.1
