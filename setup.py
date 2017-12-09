@@ -44,6 +44,7 @@ install_requires = [
     'coloredlogs',
     'ruamel.yaml',
     'flask',
+    'rasa_nlu',
 ]
 
 extras_requires = {
