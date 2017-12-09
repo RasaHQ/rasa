@@ -15,7 +15,6 @@ tests_requires = [
     "pytest",
     "pytest-pep8",
     "pytest-services",
-    "pytest-flask",
     "pytest-cov",
     "pytest-xdist",
     "pytest-twisted",

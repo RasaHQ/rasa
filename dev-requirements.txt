@@ -5,7 +5,6 @@
 python-coveralls==2.9.1
 pytest==3.2.1
 pytest-cov==2.5.1
-pytest-flask==0.10.0
 pytest-pep8==1.0.6
 pytest-services==1.1.14
 pytest-xdist==1.15.0
