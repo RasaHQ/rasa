@@ -16,6 +16,7 @@ Added
 - support for story cycles when using checkpoints
 - warn if action emits events when using a model that it did never emit in
   any of the stories the model was trained on
+- support for event pushing and endpoints to retrieve the tracker state from the server
 
 Changed
 -------
@@ -23,6 +24,7 @@ Changed
   to ``* intent_greet{"name": "Rasa"}`` (old format is still supported but
   deprecated)
 - persist action names in domain during model persistence
+- improved travis build speed by not using miniconda
 
 Removed
 -------

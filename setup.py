@@ -15,9 +15,10 @@ tests_requires = [
     "pytest",
     "pytest-pep8",
     "pytest-services",
-    "pytest-flask",
     "pytest-cov",
-    "pytest-xdist"
+    "pytest-xdist",
+    "pytest-twisted",
+    "treq",
 ]
 
 install_requires = [
@@ -43,6 +44,8 @@ install_requires = [
     'coloredlogs',
     'ruamel.yaml',
     'flask',
+    'scikit-learn',
+    'rasa_nlu',
 ]
 
 extras_requires = {

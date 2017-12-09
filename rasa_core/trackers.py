@@ -70,15 +70,21 @@ class DialogueStateTracker(object):
     ###
     # Public tracker interface
     ###
-    def current_state(self):
-        # type: () -> Dict[Text, Any]
+    def current_state(self, should_include_events=False):
+        # type: (bool) -> Dict[Text, Any]
         """Returns the current tracker state as an object."""
+
+        if should_include_events:
+            events = [e.as_dict() for e in self.events]
+        else:
+            events = None
 
         return {
             "sender_id": self.sender_id,
             "slots": self.current_slot_values(),
             "latest_message": self.latest_message.parse_data,
-            "paused": self.is_paused()
+            "paused": self.is_paused(),
+            "events": events
         }
 
     def current_slot_values(self):
