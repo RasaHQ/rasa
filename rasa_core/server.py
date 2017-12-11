@@ -86,6 +86,14 @@ def convert_obj_2_tracker_events(serialized_events, domain):
     return deserialized
 
 
+def _configure_logging(loglevel, logfile):
+    if logfile:
+        fh = logging.FileHandler(logfile)
+        fh.setLevel(loglevel)
+        logging.getLogger('').addHandler(fh)
+    logging.captureWarnings(True)
+
+
 class RasaCoreServer(object):
     """Class representing a Rasa Core HTTP server."""
 
@@ -94,12 +102,12 @@ class RasaCoreServer(object):
     def __init__(self, model_directory,
                  interpreter=None,
                  loglevel="INFO",
-                 log_file="rasa_core.log",
+                 logfile="rasa_core.log",
                  cors_origins=None,
                  action_factory=None,
                  auth_token=None):
-        logging.basicConfig(filename=log_file, level=loglevel)
-        logging.captureWarnings(True)
+
+        _configure_logging(loglevel, logfile)
 
         self.config = {"cors_origins": cors_origins if cors_origins else [],
                        "token": auth_token}
@@ -110,7 +118,7 @@ class RasaCoreServer(object):
     def _create_agent(
             model_directory,  # type: Text
             interpreter,  # type: Union[Text, NaturalLanguageInterpreter]
-            action_factory=None #type: Optional[Text]
+            action_factory=None  # type: Optional[Text]
     ):
         # type: (...) -> Agent
         return Agent.load(model_directory, interpreter,
