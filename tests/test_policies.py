@@ -3,8 +3,10 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from unittest.mock import patch
-
+try:  # py3
+    from unittest.mock import patch
+except ImportError:  # py2
+    from mock import patch
 import numpy as np
 import pytest
 
