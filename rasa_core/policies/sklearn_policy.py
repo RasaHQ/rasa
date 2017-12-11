@@ -13,6 +13,7 @@ from sklearn.base import clone
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import LabelEncoder
+from sklearn.utils import shuffle as sklearn_shuffle
 
 from rasa_core.policies import Policy
 
@@ -32,7 +33,7 @@ class SklearnPolicy(Policy):
       data. *cv* should then conform to the sklearn standard
       (e.g. *cv=5* for a 5-fold cross-validation).
 
-    :param param_grid:
+    :param dict param_grid:
       If *param_grid* is not None and *cv* is given, a grid search on
       the given *param_grid* is performed
       (e.g. *param_grid={'n_estimators': [50, 100]}*).
@@ -44,6 +45,9 @@ class SklearnPolicy(Policy):
       Encoder for the labels. Must implement an *inverse_transform*
       method.
 
+    :param bool shuffle:
+      Whether to shuffle training data.
+
     """
     def __init__(
             self,
@@ -54,6 +58,7 @@ class SklearnPolicy(Policy):
             param_grid=None,
             scoring='accuracy',
             label_encoder=LabelEncoder(),
+            shuffle=True,
     ):
         self.featurizer = featurizer
         self.max_history = max_history
@@ -62,6 +67,7 @@ class SklearnPolicy(Policy):
         self.param_grid = param_grid
         self.scoring = scoring
         self.label_encoder = label_encoder
+        self.shuffle = shuffle
 
         # attributes that need to be restored after loading
         self._pickle_params = [
@@ -106,9 +112,16 @@ class SklearnPolicy(Policy):
         print("Best params:", search.best_params_)
         return search.best_estimator_, search.best_score_
 
-    def train(self, X, y, domain, **kwargs):
+    def _extract_training_data(self, training_data):
+        X, y = training_data.X, training_data.y
+        if self.shuffle:
+            X, y = sklearn_shuffle(X, y)
+        return X, y
+
+    def train(self, training_data, domain, **kwargs):
         # Note: clone is called throughout to avoid mutating default
         # arguments.
+        X, y = self._extract_training_data(training_data)
         model = self.model_architecture(domain, **kwargs)
         score = None
         self.label_encoder = clone(self.label_encoder).fit(y)
@@ -126,7 +139,8 @@ class SklearnPolicy(Policy):
         if score is not None:
             logger.info("Cross validation score: {:.5f}".format(score))
 
-    def continue_training(self, X, y, domain, **kwargs):
+    def continue_training(self, training_data, domain, **kwargs):
+        X, y = self._extract_training_data(training_data)
         Xt, yt = self._preprocess_data(X, y)
         if not hasattr(self.model, 'partial_fit'):
             raise TypeError("Continuing training is only possible with "

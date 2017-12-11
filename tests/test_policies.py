@@ -17,6 +17,7 @@ from rasa_core.policies.scoring_policy import ScoringPolicy
 from rasa_core.policies.sklearn_policy import SklearnPolicy
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training import (
+    DialogueTrainingData,
     extract_training_data_from_file,
     extract_trackers_from_file)
 from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
@@ -140,7 +141,7 @@ class TestSklearnPolicy(PolicyTestCollection):
 
     @pytest.fixture
     def tracker(self, default_domain):
-        return DialogueStateTracker(UserMessage.DEFAULT_SENDER,
+        return DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
                                     default_domain.slots,
                                     default_domain.topics,
                                     default_domain.default_topic)
@@ -156,7 +157,7 @@ class TestSklearnPolicy(PolicyTestCollection):
             max_history=self.max_history,
             cv=None,
         )
-        policy.train(*data, domain=default_domain)
+        policy.train(data, domain=default_domain)
 
         assert mock_search.call_count == 0
         assert policy.model != 'mockmodel'
@@ -168,7 +169,7 @@ class TestSklearnPolicy(PolicyTestCollection):
             max_history=self.max_history,
             cv=3,
         )
-        policy.train(*data, domain=default_domain)
+        policy.train(data, domain=default_domain)
 
         assert mock_search.call_count > 0
         assert mock_search.call_args_list[0][1]['cv'] == 3
@@ -184,7 +185,7 @@ class TestSklearnPolicy(PolicyTestCollection):
             cv=3,
             param_grid=param_grid,
         )
-        policy.train(*data, domain=default_domain)
+        policy.train(data, domain=default_domain)
 
         assert mock_search.call_count > 0
         assert mock_search.call_args_list[0][1]['cv'] == 3
@@ -198,10 +199,10 @@ class TestSklearnPolicy(PolicyTestCollection):
             max_history=self.max_history,
             cv=None,
         )
-        policy.train(*data, domain=default_domain)
+        policy.train(data, domain=default_domain)
 
         with pytest.raises(TypeError) as exc:
-            policy.continue_training(*data, domain=default_domain)
+            policy.continue_training(data, domain=default_domain)
 
         assert exc.value.args[0] == (
             "Continuing training is only possible with "
@@ -217,11 +218,12 @@ class TestSklearnPolicy(PolicyTestCollection):
             max_history=self.max_history,
             cv=None,
         )
-        X = data[0]
+        X = data.X
         classes = [3, 4, 7]
         y = np.asarray([np.random.choice(classes) for _ in X])
+        data = DialogueTrainingData(X, y)
 
-        policy.train(X, y, domain=default_domain)
+        policy.train(data, domain=default_domain)
         predicted_probabilities = policy.predict_action_probabilities(
             tracker, default_domain)
 
@@ -239,5 +241,10 @@ class TestSklearnPolicy(PolicyTestCollection):
             max_history=self.max_history,
             cv=None,
         )
-        policy.train(*data, domain=default_domain, C=123)
+        policy.train(data, domain=default_domain, C=123)
         assert policy.model.C == 123
+
+    def test_train_with_shuffle_false(self, default_domain, data):
+        policy = self.create_policy(shuffle=False)
+        # does not raise
+        policy.train(data, domain=default_domain)
