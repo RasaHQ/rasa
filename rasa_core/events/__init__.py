@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import json
 import logging
 import uuid
+import time
 
 import jsonpickle
 import typing
@@ -98,6 +99,7 @@ class UserUttered(Event):
         self.text = text
         self.intent = intent if intent else {}
         self.entities = entities if entities else []
+        self.time = time.time()
 
         if parse_data:
             self.parse_data = parse_data
@@ -179,6 +181,7 @@ class BotUttered(Event):
     def __init__(self, text=None, data=None):
         self.text = text
         self.data = data
+        self.time = time.time()
 
     def __hash__(self):
         return hash((self.text, jsonpickle.encode(self.data)))
