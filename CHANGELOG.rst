@@ -35,6 +35,7 @@ Fixed
 - proper visualisation of stories with checkpoints
 - fixed float slot min max value handling
 - fixed non integer feature decoding, e.g. used for memoization policy
+- properly log to specified file when starting Rasa Core server
 
 [0.7.9] - 2017-11-29
 ^^^^^^^^^^^^^^^^^^^^
