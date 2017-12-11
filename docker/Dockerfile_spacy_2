@@ -1,0 +1,43 @@
+FROM python:2.7-slim
+
+ENV RASA_NLU_DOCKER="YES" \
+    RASA_NLU_HOME=/app \
+    RASA_NLU_PYTHON_PACKAGES=/usr/local/lib/python2.7/dist-packages
+
+# Run updates, install basics and cleanup
+# - build-essential: Compile specific dependencies
+# - git-core: Checkout git repos
+RUN apt-get update -qq \
+    && apt-get install -y --no-install-recommends build-essential git-core \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+WORKDIR ${RASA_NLU_HOME}
+
+COPY . ${RASA_NLU_HOME}
+
+# use bash always
+RUN rm /bin/sh && ln -s /bin/bash /bin/sh
+
+RUN pip install -r alt_requirements/requirements_spacy_2.txt
+
+RUN pip install -e .
+
+RUN pip install -U spacy \
+    && python -m spacy download en \
+    && python -m spacy download de \
+    && python -m spacy download es \
+    && python -m spacy download pt \
+    && python -m spacy download fr \
+    && python -m spacy download it \
+    && python -m spacy download nl \
+    && python -m spacy download xx
+
+COPY sample_configs/config_spacy.json ${RASA_NLU_HOME}/config.json
+
+VOLUME ["/app/projects", "/app/logs", "/app/data"]
+
+EXPOSE 5000
+
+ENTRYPOINT ["./entrypoint.sh"]
+CMD ["start", "-c", "config.json"]
