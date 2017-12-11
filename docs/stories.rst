@@ -14,20 +14,39 @@ Here's an example from the bAbi data:
 .. code-block:: md
 
    ## story_07715946                     <!-- name of the story - just for debugging -->
-   * _greet
+   * greet
       - action_ask_howcanhelp
-   * _inform[location=rome,price=cheap]
+   * inform{"location": "rome", "price": "cheap"}
       - action_on_it                     <!-- user utterance, in format _intent[entities] -->
       - action_ask_cuisine
-   * _inform[cuisine=spanish]
+   * inform{"cuisine": "spanish"}
       - action_ask_numpeople             <!-- action of the bot to execute -->
-   * _inform[people=six]
+   * inform{"people": "six"}
       - action_ack_dosearch
 
 
 This is what we call a **story**. A story starts with a name preceded by two
 hashes ``## story_03248462``, this is arbitrary but can be used for debugging.
 The end of a story is denoted by a newline, and then a new story starts again with ``##``.
+
+You can use ``> checkpoints`` to modularize and simplify your training data:
+
+.. code-block:: md
+
+    ## first story
+    * hello
+       - action_ask_user_question
+    > check_asked_question
+
+    ## user affirms question
+    > check_asked_question
+    * affirm
+      - action_handle_affirmation
+
+    ## user denies question
+    > check_asked_question
+    * deny
+      - action_handle_denial
 
 .. _story-visualization:
 
@@ -70,7 +89,7 @@ Which will create the same image as the above python script call. The shown
 graph is still very simple, but the graphs can get quite complex.
 
 If you want to replace the messages from the stories file, which usually look
-like ``_greet`` with real messages e.g. ``hello``, you can pass in a Rasa
+like ``greet`` with real messages e.g. ``Hello``, you can pass in a Rasa
 NLU training data instance to replace them with messages from your training
 data.
 

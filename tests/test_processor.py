@@ -5,31 +5,32 @@ from __future__ import unicode_literals
 
 from rasa_core.channels import UserMessage
 from rasa_core.channels.direct import CollectingOutputChannel
-from rasa_core.featurizers import BinaryFeaturizer
-from rasa_core.interpreter import RegexInterpreter
-from rasa_core.channels.console import ConsoleOutputChannel
-from rasa_core.policies import PolicyTrainer
-from rasa_core.policies.ensemble import SimplePolicyEnsemble
-from rasa_core.policies.scoring_policy import ScoringPolicy
-from rasa_core.processor import MessageProcessor
-from rasa_core.tracker_store import InMemoryTrackerStore
+from rasa_core.dispatcher import Button
 
 
-def test_message_processor(default_domain, capsys):
-    story_filename = "data/dsl_stories/stories_defaultdomain.md"
-    ensemble = SimplePolicyEnsemble([ScoringPolicy()])
-    interpreter = RegexInterpreter()
-
-    PolicyTrainer(ensemble, default_domain, BinaryFeaturizer()).train(
-            story_filename,
-            max_history=3)
-
-    tracker_store = InMemoryTrackerStore(default_domain)
-    processor = MessageProcessor(interpreter,
-                                 ensemble,
-                                 default_domain,
-                                 tracker_store)
-
+def test_message_processor(default_processor):
     out = CollectingOutputChannel()
-    processor.handle_message(UserMessage("_greet[name=Core]", out))
+    default_processor.handle_message(UserMessage('/greet{"name":"Core"}', out))
     assert ("default", "hey there Core!") == out.latest_output()
+
+
+def test_logging_of_bot_utterances_on_tracker(default_processor,
+                                              default_dispatcher_collecting,
+                                              default_agent):
+    sender_id = "test_logging_of_bot_utterances_on_tracker"
+    tracker = default_agent.tracker_store.get_or_create_tracker(sender_id)
+    buttons = [
+        Button(title="Btn1", payload="_btn1"),
+        Button(title="Btn2", payload="_btn2")
+    ]
+
+    default_dispatcher_collecting.utter_template("utter_goodbye")
+    default_dispatcher_collecting.utter_attachment("http://my-attachment")
+    default_dispatcher_collecting.utter_message("my test message")
+    default_dispatcher_collecting.utter_button_message("my message", buttons)
+
+    assert len(default_dispatcher_collecting.latest_bot_messages) == 4
+
+    default_processor.log_bot_utterances_on_tracker(
+            tracker, default_dispatcher_collecting)
+    assert not default_dispatcher_collecting.latest_bot_messages

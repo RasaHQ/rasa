@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
+import warnings
 from types import LambdaType
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -16,9 +17,12 @@ from rasa_core.channels import UserMessage, InputChannel
 from rasa_core.channels.direct import CollectingOutputChannel
 from rasa_core.dispatcher import Dispatcher
 from rasa_core.domain import Domain
-from rasa_core.events import Restarted, ReminderScheduled, Event
-from rasa_core.events import UserUttered, ActionExecuted
-from rasa_core.interpreter import NaturalLanguageInterpreter
+from rasa_core.events import ReminderScheduled, Event
+from rasa_core.events import SlotSet
+from rasa_core.events import UserUttered, ActionExecuted, BotUttered
+from rasa_core.interpreter import (
+    NaturalLanguageInterpreter,
+    INTENT_MESSAGE_PREFIX)
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.policies.ensemble import PolicyEnsemble
 from rasa_core.tracker_store import TrackerStore
@@ -116,9 +120,10 @@ class MessageProcessor(object):
         tracker = self._get_tracker(sender_id)
         if executed_action != ACTION_LISTEN_NAME:
             self._log_action_on_tracker(tracker, executed_action, events)
-        if self._should_predict_another_action(executed_action, events):
+        if self.should_predict_another_action(executed_action, events):
             return self._predict_next_and_return_state(tracker)
         else:
+            self._save_tracker(tracker)
             return {"next_action": None,
                     "info": "You do not need to call continue after action "
                             "listen got returned for the previous continue "
@@ -160,7 +165,7 @@ class MessageProcessor(object):
                     return True
             return True  # tracker has probably been restarted
 
-        tracker = self._get_tracker(dispatcher.sender)
+        tracker = self._get_tracker(dispatcher.sender_id)
 
         if (reminder_event.kill_on_user_message and
                 has_message_after_reminder(tracker)):
@@ -176,7 +181,7 @@ class MessageProcessor(object):
             if should_continue:
                 user_msg = UserMessage(None,
                                        dispatcher.output_channel,
-                                       dispatcher.sender)
+                                       dispatcher.sender_id)
                 self._predict_and_execute_next_action(user_msg, tracker)
             # save tracker state to continue conversation from this state
             self._save_tracker(tracker)
@@ -185,15 +190,22 @@ class MessageProcessor(object):
         # for testing - you can short-cut the NLU part with a message
         # in the format _intent[entity1=val1,entity=val2]
         # parse_data is a dict of intent & entities
-        if message.text.startswith('_'):
+        if (message.text.startswith(INTENT_MESSAGE_PREFIX) or
+                message.text.startswith("_")):
+            if RegexInterpreter.is_using_deprecated_format(message.text):
+                warnings.warn(
+                        "Parsing messages with leading `_` is deprecated and "
+                        "will be removed. Instead, prepend your intents with "
+                        "`{0}`, e.g. `{0}mood_greet` "
+                        "or `{0}restart`.".format(INTENT_MESSAGE_PREFIX))
             parse_data = RegexInterpreter().parse(message.text)
         else:
             parse_data = self.interpreter.parse(message.text)
 
         logger.debug("Received user message '{}' with intent '{}' "
-                     "and entities  '{}'".format(message.text,
-                                                 parse_data["intent"],
-                                                 parse_data["entities"]))
+                     "and entities '{}'".format(message.text,
+                                                parse_data["intent"],
+                                                parse_data["entities"]))
         return parse_data
 
     def _handle_message_with_tracker(self, message, tracker):
@@ -201,7 +213,7 @@ class MessageProcessor(object):
 
         parse_data = self._parse_message(message)
 
-        # don't ever directly mutate the tracker - instead pass it events to log
+        # don't ever directly mutate the tracker - instead pass its events to log
         tracker.update(UserUttered(message.text, parse_data["intent"],
                                    parse_data["entities"], parse_data))
         # store all entities as slots
@@ -229,9 +241,9 @@ class MessageProcessor(object):
         self._log_slots(tracker)
 
         # action loop. predicts actions until we hit action listen
-        while should_predict_another_action and \
-                self._should_handle_message(tracker) and \
-                num_predicted_actions < self.max_number_of_predictions:
+        while (should_predict_another_action
+               and self._should_handle_message(tracker)
+               and num_predicted_actions < self.max_number_of_predictions):
             # this actually just calls the policy's method by the same name
             action = self._get_next_action(tracker)
 
@@ -240,8 +252,8 @@ class MessageProcessor(object):
                                                              dispatcher)
             num_predicted_actions += 1
 
-        if num_predicted_actions == self.max_number_of_predictions and \
-                should_predict_another_action:
+        if (num_predicted_actions == self.max_number_of_predictions and
+                should_predict_another_action):
             # circuit breaker was tripped
             logger.warn(
                     "Circuit breaker tripped. Stopped predicting "
@@ -252,10 +264,10 @@ class MessageProcessor(object):
 
         logger.debug("Current topic: {}".format(tracker.topic.name))
 
-    def _should_predict_another_action(self, action_name, events):
+    @staticmethod
+    def should_predict_another_action(action_name, events):
         is_listen_action = action_name == ACTION_LISTEN_NAME
-        contains_restart = events and isinstance(events[0], Restarted)
-        return not is_listen_action and not contains_restart
+        return not is_listen_action
 
     def _schedule_reminders(self, events, dispatcher):
         # type: (List[Event], Dispatcher) -> None
@@ -276,11 +288,55 @@ class MessageProcessor(object):
     def _run_action(self, action, tracker, dispatcher):
         # events and return values are used to update
         # the tracker state after an action has been taken
-        events = action.run(dispatcher, tracker, self.domain)
+        try:
+            events = action.run(dispatcher, tracker, self.domain)
+        except Exception as e:
+            logger.error("Encountered an exception while running action '{}'. "
+                         "Bot will continue, but the actions events are lost. "
+                         "Make sure to fix the exception in your custom "
+                         "code.".format(action.name()), )
+            logger.error(e, exc_info=True)
+            events = []
+        self.log_bot_utterances_on_tracker(tracker, dispatcher)
         self._log_action_on_tracker(tracker, action.name(), events)
         self._schedule_reminders(events, dispatcher)
 
-        return self._should_predict_another_action(action.name(), events)
+        return self.should_predict_another_action(action.name(), events)
+
+    def _warn_about_new_slots(self, tracker, action_name, events):
+        # these are the events from that action we have seen during training
+
+        if action_name not in self.policy_ensemble.action_fingerprints:
+            return
+
+        fp = self.policy_ensemble.action_fingerprints[action_name]
+        slots_seen_during_train = fp.get("slots", set())
+        for e in events:
+            if isinstance(e, SlotSet) and e.key not in slots_seen_during_train:
+                s = tracker.slots.get(e.key)
+                if s and s.has_features():
+                    logger.warn("Action '{0}' set a slot type '{1}' that "
+                                "it never set during the training. This "
+                                "can throw of the prediction. Make sure to"
+                                "include training examples in your stories "
+                                "for the different types of slots this"
+                                "action can return. Remember: you need to "
+                                "set the slots manually in the stories by "
+                                "adding '- slot{{\"{1}\": \"{2}\"}}' "
+                                "after the action."
+                                "".format(action_name, e.key, e.value))
+
+    @staticmethod
+    def log_bot_utterances_on_tracker(tracker, dispatcher):
+        # type: (DialogueStateTracker, Dispatcher) -> None
+
+        if dispatcher.latest_bot_messages:
+            for m in dispatcher.latest_bot_messages:
+                bot_utterance = BotUttered(text=m.text, data=m.data)
+                logger.debug("Bot utterance '{}'".format(bot_utterance))
+                tracker.update(bot_utterance)
+
+            dispatcher.latest_bot_messages = []
 
     def _log_action_on_tracker(self, tracker, action_name, events):
         # Ensures that the code still works even if a lazy programmer missed
@@ -292,16 +348,19 @@ class MessageProcessor(object):
         logger.debug("Action '{}' ended with events '{}'".format(
                 action_name, ['{}'.format(e) for e in events]))
 
-        # log the action and its produced events
-        tracker.update(ActionExecuted(action_name))
+        self._warn_about_new_slots(tracker, action_name, events)
+
+        if action_name is not None:
+            # log the action and its produced events
+            tracker.update(ActionExecuted(action_name))
 
         for e in events:
             tracker.update(e)
 
-    def _get_tracker(self, sender):
+    def _get_tracker(self, sender_id):
         # type: (Text) -> DialogueStateTracker
 
-        sender_id = sender or UserMessage.DEFAULT_SENDER
+        sender_id = sender_id or UserMessage.DEFAULT_SENDER_ID
         tracker = self.tracker_store.get_or_create_tracker(sender_id)
         return tracker
 
@@ -323,8 +382,8 @@ class MessageProcessor(object):
                         "Instead of running that, we will ignore the action "
                         "and predict the next action.".format(follow_up_action))
 
-        if tracker.latest_message.intent.get("name") == \
-                self.domain.restart_intent:
+        if (tracker.latest_message.intent.get("name") ==
+                self.domain.restart_intent):
             return ActionRestart()
 
         idx = self.policy_ensemble.predict_next_action(tracker, self.domain)

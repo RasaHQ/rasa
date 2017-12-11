@@ -7,6 +7,7 @@ from __future__ import unicode_literals
 import logging
 
 import six.moves.cPickle as pickler
+from typing import Text, Optional
 
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.trackers import DialogueStateTracker, ActionExecuted
@@ -24,19 +25,20 @@ class TrackerStore(object):
             tracker = self.create_tracker(sender_id)
         return tracker
 
-    def _init_tracker(self, sender_id):
+    def init_tracker(self, sender_id):
         return DialogueStateTracker(sender_id,
                                        self.domain.slots,
                                        self.domain.topics,
                                        self.domain.default_topic)
 
-    def create_tracker(self, sender_id):
-        """Creates a new tracker for the sender.
+    def create_tracker(self, sender_id, append_action_listen=True):
+        """Creates a new tracker for the sender_id.
 
         The tracker is initially listening."""
 
-        tracker = self._init_tracker(sender_id)
-        tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
+        tracker = self.init_tracker(sender_id)
+        if append_action_listen:
+            tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
         self.save(tracker)
         return tracker
 
@@ -44,6 +46,7 @@ class TrackerStore(object):
         raise NotImplementedError()
 
     def retrieve(self, sender_id):
+        # type: (Text) -> Optional[DialogueStateTracker]
         raise NotImplementedError()
 
     @staticmethod
@@ -53,7 +56,7 @@ class TrackerStore(object):
 
     def deserialise_tracker(self, sender_id, _json):
         dialogue = pickler.loads(_json)
-        tracker = self._init_tracker(sender_id)
+        tracker = self.init_tracker(sender_id)
         tracker.recreate_from_dialogue(dialogue)
         return tracker
 
@@ -74,8 +77,8 @@ class InMemoryTrackerStore(TrackerStore):
                          'id \'{}\''.format(sender_id))
             return self.deserialise_tracker(sender_id, self.store[sender_id])
         else:
-            logger.debug('Could not find a tracker for '
-                         'id \'{}\''.format(sender_id))
+            logger.debug('Creating a new tracker for '
+                         'id \'{}\'.'.format(sender_id))
             return None
 
 

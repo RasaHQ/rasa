@@ -12,23 +12,10 @@ python:
 - '3.6'
 install:
 - sudo apt-get update
-- if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
-  -O miniconda.sh; else wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
-  -O miniconda.sh; fi
-- bash miniconda.sh -b -f -p $HOME/miniconda
-- export PATH="$HOME/miniconda/bin:$PATH"
-- hash -r
-- conda config --set always_yes yes --set changeps1 no
-- conda update -q conda
-- conda info -a
-- conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION scipy=0.19.0 numpy=1.12.1
-  scikit-learn=0.18.1
-- source activate test-environment
-- pip install pypandoc==1.4
+- pip install --only-binary=numpy,scipy,scikit-learn numpy scipy scikit-learn
 - pip install -r dev-requirements.txt
 - pip install spacy sklearn-crfsuite==0.3.5
-- pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-1.2.0/en_core_web_sm-1.2.0.tar.gz
-  --no-cache-dir > jnk
+- pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-1.2.0/en_core_web_sm-1.2.0.tar.gz > jnk
 - python -m spacy link en_core_web_sm en
 - pip install -e .
 - pip list
@@ -42,20 +29,9 @@ after_success:
 jobs:
   include:
   - stage: docs
+    if: fork = false
     install:
     - sudo apt-get update
-    - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
-      -O miniconda.sh; else wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
-      -O miniconda.sh; fi
-    - bash miniconda.sh -b -f -p $HOME/miniconda
-    - export PATH="$HOME/miniconda/bin:$PATH"
-    - hash -r
-    - conda config --set always_yes yes --set changeps1 no
-    - conda update -q conda
-    - conda info -a
-    - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION scipy=0.19.0 numpy=1.12.1
-      scikit-learn=0.18.1
-    - source activate test-environment
     - pip install sphinx==1.5.2 sphinx-autobuild==0.6.0 sphinxcontrib-versioning==2.2.1 sphinxcontrib-httpdomain==1.5.0
       nbsphinx==0.2.13
     - pip install -e git://github.com/RasaHQ/sphinx_rtd_theme.git#egg=sphinx_rtd_theme

@@ -12,11 +12,13 @@ except (IOError, ImportError):
     readme = open('README.md').read()
 
 tests_requires = [
+    "pytest",
     "pytest-pep8",
     "pytest-services",
-    "pytest-flask",
     "pytest-cov",
-    "pytest-xdist"
+    "pytest-xdist",
+    "pytest-twisted",
+    "treq",
 ]
 
 install_requires = [
@@ -39,6 +41,11 @@ install_requires = [
     'networkx',
     'pymessenger',
     'pykwalify',
+    'coloredlogs',
+    'ruamel.yaml',
+    'flask',
+    'scikit-learn',
+    'rasa_nlu',
 ]
 
 extras_requires = {

@@ -6,6 +6,8 @@ from __future__ import unicode_literals
 import copy
 
 from typing import Text, List, Dict, Any
+from collections import namedtuple
+
 import copy
 
 from rasa_core.domain import Domain
@@ -24,6 +26,9 @@ class Element(dict):
         super(Element, self).__init__(*args, **kwargs)
 
 
+BotMessage = namedtuple("BotMessage", "text data")
+
+
 class Button(dict):
     # TODO: Decide if this should do more
     pass
@@ -32,13 +37,14 @@ class Button(dict):
 class Dispatcher(object):
     """Send messages back to user"""
 
-    def __init__(self, sender, output_channel, domain):
+    def __init__(self, sender_id, output_channel, domain):
         # type: (Text, OutputChannel, Domain) -> None
 
-        self.sender = sender
+        self.sender_id = sender_id
         self.output_channel = output_channel
         self.domain = domain
         self.send_messages = []
+        self.latest_bot_messages = []
 
     def utter_response(self, message):
         # type: (Dict[Text, Any]) -> None
@@ -58,28 +64,35 @@ class Dispatcher(object):
         # type: (Text) -> None
         """"Send a text to the output channel"""
 
-        if self.sender is not None and self.output_channel is not None:
+        self.latest_bot_messages.append(BotMessage(text=text,
+                                                   data=None))
+        if self.sender_id is not None and self.output_channel is not None:
             for message_part in text.split("\n\n"):
-                self.output_channel.send_text_message(self.sender, message_part)
+                self.output_channel.send_text_message(self.sender_id, message_part)
                 self.send_messages.append(message_part)
 
     def utter_custom_message(self, *elements):
         # type: (*Dict[Text, Any]) -> None
         """Sends a message with custom elements to the output channel."""
 
-        self.output_channel.send_custom_message(self.sender, elements)
+        self.latest_bot_messages.append(BotMessage(text=None,
+                                                   data={"elements": elements}))
+        self.output_channel.send_custom_message(self.sender_id, elements)
 
     def utter_button_message(self, text, buttons, **kwargs):
         # type: (Text, List[Dict[Text, Any]], **Any) -> None
         """Sends a message with buttons to the output channel."""
-
-        self.output_channel.send_text_with_buttons(self.sender, text, buttons,
+        self.latest_bot_messages.append(BotMessage(text=None,
+                                                   data={"buttons": buttons}))
+        self.output_channel.send_text_with_buttons(self.sender_id, text, buttons,
                                                    **kwargs)
 
     def utter_attachment(self, attachment):
         # type: (Text) -> None
-        """Send a message to the client with attachements."""
-        self.output_channel.send_image_url(self.sender, attachment)
+        """Send a message to the client with attachments."""
+        self.latest_bot_messages.append(BotMessage(text=None,
+                                                   data={"attachment": attachment}))
+        self.output_channel.send_image_url(self.sender_id, attachment)
 
     def utter_button_template(self, template, buttons, filled_slots=None, **kwargs):
         # type: (Text, List[Dict[Text, Any]], **Any) -> None

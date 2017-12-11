@@ -16,16 +16,16 @@ from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.policies.scoring_policy import ScoringPolicy
 from rasa_core.policies.sklearn_policy import SklearnPolicy
 from rasa_core.trackers import DialogueStateTracker
-from rasa_core.training_utils import extract_training_data_from_file, \
-    extract_stories_from_file
+from rasa_core.training import (
+    extract_training_data_from_file,
+    extract_trackers_from_file)
 from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 
 
 def train_data(max_history, domain):
     return extract_training_data_from_file(
-            "data/dsl_stories/stories_defaultdomain.md",
-            domain=domain, max_history=max_history, remove_duplicates=True,
-            featurizer=BinaryFeaturizer())
+            DEFAULT_STORIES_FILE, domain,
+            BinaryFeaturizer(), max_history=max_history, remove_duplicates=True)
 
 
 # We are going to use class style testing here since unfortunately pytest
@@ -48,10 +48,10 @@ class PolicyTestCollection(object):
     def trained_policy(self):
         default_domain = TemplateDomain.load(DEFAULT_DOMAIN_PATH)
         policy = self.create_policy()
-        X, y = train_data(self.max_history, default_domain)
+        training_data = train_data(self.max_history, default_domain)
         policy.max_history = self.max_history
         policy.featurizer = BinaryFeaturizer()
-        policy.train(X, y, default_domain)
+        policy.train(training_data, default_domain)
         return policy
 
     def test_persist_and_load(self, trained_policy, default_domain, tmpdir):
@@ -59,13 +59,10 @@ class PolicyTestCollection(object):
         loaded = trained_policy.__class__.load(tmpdir.strpath,
                                                trained_policy.featurizer,
                                                trained_policy.max_history)
-        stories = extract_stories_from_file(
-                DEFAULT_STORIES_FILE, default_domain)
+        trackers = extract_trackers_from_file(
+                DEFAULT_STORIES_FILE, default_domain, BinaryFeaturizer())
 
-        for story in stories:
-            tracker = DialogueStateTracker("default", default_domain.slots)
-            dialogue = story.as_dialogue("default", default_domain)
-            tracker.recreate_from_dialogue(dialogue)
+        for tracker in trackers:
             predicted_probabilities = loaded.predict_action_probabilities(
                     tracker, default_domain)
             actual_probabilities = trained_policy.predict_action_probabilities(
@@ -73,7 +70,7 @@ class PolicyTestCollection(object):
             assert predicted_probabilities == actual_probabilities
 
     def test_prediction_on_empty_tracker(self, trained_policy, default_domain):
-        tracker = DialogueStateTracker(UserMessage.DEFAULT_SENDER,
+        tracker = DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
                                        default_domain.slots,
                                        default_domain.topics,
                                        default_domain.default_topic)
@@ -112,11 +109,13 @@ class TestMemoizationPolicy(PolicyTestCollection):
         return p
 
     def test_memorise(self, trained_policy, default_domain):
-        X, y = train_data(self.max_history, default_domain)
-        trained_policy.train(X, y, default_domain)
+        training_data = train_data(self.max_history, default_domain)
+        trained_policy.train(training_data, default_domain)
 
-        for ii in range(X.shape[0]):
-            assert trained_policy.recall(X[ii, :, :], default_domain) == y[ii]
+        for ii in range(training_data.num_examples()):
+            recalled = trained_policy.recall(training_data.X[ii, :, :],
+                                             default_domain)
+            assert recalled == training_data.y[ii]
 
         random_feature = np.random.randn(default_domain.num_features)
         assert trained_policy.recall(random_feature, default_domain) is None

@@ -55,9 +55,9 @@ class CustomInput(HttpInputComponent):
         @custom_webhook.route("/webhook", methods=['POST'])
         def receive():
             payload = request.json
-            sender = payload.get("sender", None)
+            sender_id = payload.get("sender", None)
             text = payload.get("message", None)
-            on_new_message(UserMessage(text, self.out_channel, sender))
+            on_new_message(UserMessage(text, self.out_channel, sender_id))
             return "success"
 
         return custom_webhook

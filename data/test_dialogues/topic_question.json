@@ -8,7 +8,7 @@
         "name": "ask_question",
         "confidence": 1.0
       },
-      "text": "_ask_question"
+      "text": "/ask_question"
     },
     {
       "py/object": "rasa_core.events.ActionExecuted",

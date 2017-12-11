@@ -11,15 +11,85 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+- ``--debug`` and ``--verbose`` flags to scripts (train.py, run.py, server.py)
+  to set the log level
+- support for story cycles when using checkpoints
+- warn if action emits events when using a model that it did never emit in
+  any of the stories the model was trained on
+- support for event pushing and endpoints to retrieve the tracker state from the server
 
 Changed
 -------
+- story file utterance format changed from ``* _intent_greet[name=Rasa]``
+  to ``* intent_greet{"name": "Rasa"}`` (old format is still supported but
+  deprecated)
+- persist action names in domain during model persistence
+- improved travis build speed by not using miniconda
 
 Removed
 -------
 
 Fixed
 -----
+- proper evaluation of stories with checkpoints
+- proper visualisation of stories with checkpoints
+- fixed float slot min max value handling
+- fixed non integer feature decoding, e.g. used for memoization policy
+
+[0.7.9] - 2017-11-29
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- visualisation using Networkx version 2.x
+- add output about line of failing intent when parsing story files
+
+[0.7.8] - 2017-11-27
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Pypi readme rendering
+
+[0.7.7] - 2017-11-24
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- log bot utterances to tracker
+
+Fixed
+-----
+- documentation improvements in README
+- renamed interpreter argument to rasa core server
+
+[0.7.6] - 2017-11-15
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- moodbot example train command in docs
+
+
+[0.7.5] - 2017-11-14
+^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+- "sender_id" (and "DEFAULT_SENDER_ID") keyword consistency issue #56
+
+Fixed
+-----
+- improved moodbot example - more nlu examples as well as better fitting of dialogue model
+
+
+[0.7.4] - 2017-11-09
+^^^^^^^^^^^^^^^^^^^^
+
+Changed
+-------
+
+- added method to tracker to retrieve the latest entities #68
 
 [0.7.3] - 2017-10-31
 ^^^^^^^^^^^^^^^^^^^^

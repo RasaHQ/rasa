@@ -1,3 +1,8 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import logging
 
 from rasa_core import utils
@@ -20,6 +25,10 @@ class Slot(object):
         The dimensionality of the array returned by `as_feature` needs
         to correspond to this value."""
         return 1
+
+    def has_features(self):
+        """Indicate if the slot creates any features."""
+        return self.feature_dimensionality() != 0
 
     def value_reset_delay(self):
         """After how many turns the slot should be reset to the initial_value.
@@ -60,8 +69,9 @@ class Slot(object):
                     "you are creating your own slot type, make sure its "
                     "module path is correct: {}.".format(type_name))
 
-    def additional_persistence_info(self):
-        return {}
+    def persistence_info(self):
+        return {"type": utils.module_path_from_instance(self),
+                "initial_value": self.initial_value}
 
 
 class FloatSlot(Slot):
@@ -76,6 +86,20 @@ class FloatSlot(Slot):
         self.max_value = max_value
         self.min_value = min_value
 
+        if min_value >= max_value:
+            raise ValueError(
+                    "Float slot ('{}') created with an invalid range "
+                    "using min ({}) and max ({}) values. Make sure "
+                    "min is smaller than max."
+                    "".format(self.name, self.min_value, self.max_value))
+
+        if (initial_value is not None and
+                not (min_value <= initial_value <= max_value)):
+            logger.warn("Float slot ('{}') created with an initial value {}"
+                        "outside of configured min ({}) and max ({}) values."
+                        "".format(self.name, self.value, self.min_value,
+                                  self.max_value))
+
     def as_feature(self):
         try:
             capped_value = max(self.min_value,
@@ -84,9 +108,15 @@ class FloatSlot(Slot):
                 covered_range = abs(self.max_value - self.min_value)
             else:
                 covered_range = 1
-            return [capped_value - self.min_value / covered_range]
+            return [(capped_value - self.min_value) / covered_range]
         except (TypeError, ValueError):
             return [0.0]
+
+    def persistence_info(self):
+        d = super(FloatSlot, self).persistence_info()
+        d["max_value"] = self.max_value
+        d["min_value"] = self.min_value
+        return d
 
 
 class BooleanSlot(Slot):
@@ -146,8 +176,10 @@ class CategoricalSlot(Slot):
                                               value_reset_delay)
         self.values = [str(v).lower() for v in values] if values else []
 
-    def additional_persistence_info(self):
-        return {"values": self.values}
+    def persistence_info(self):
+        d = super(CategoricalSlot, self).persistence_info()
+        d["values"] = self.values
+        return d
 
     def as_feature(self):
         r = [0.0] * self.feature_dimensionality()

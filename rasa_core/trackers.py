@@ -10,13 +10,13 @@ from collections import deque
 
 import jsonpickle
 import typing
-from typing import Generator, Dict, Text, Any, Optional
+from typing import Generator, Dict, Text, Any, Optional, Iterator
 from typing import List
 
 from rasa_core import utils
-from rasa_core.conversation import Dialogue
+from rasa_core.conversation import Dialogue, Topic
 from rasa_core.events import UserUttered, TopicSet, ActionExecuted, \
-    Event, SlotSet, Restarted, ActionReverted, UserUtteranceReverted
+    Event, SlotSet, Restarted, ActionReverted, UserUtteranceReverted, BotUttered
 
 logger = logging.getLogger(__name__)
 
@@ -63,20 +63,28 @@ class DialogueStateTracker(object):
         self._topic_stack = None
         self.latest_action_name = None
         self.latest_message = None
+        self.latest_bot_utterance = None
         self.latest_restart_event = None
         self._reset()
 
     ###
     # Public tracker interface
     ###
-    def current_state(self):
-        # type: () -> Dict[Text, Any]
+    def current_state(self, should_include_events=False):
+        # type: (bool) -> Dict[Text, Any]
         """Returns the current tracker state as an object."""
+
+        if should_include_events:
+            events = [e.as_dict() for e in self.events]
+        else:
+            events = None
 
         return {
             "sender_id": self.sender_id,
             "slots": self.current_slot_values(),
-            "latest_message": self.latest_message.parse_data
+            "latest_message": self.latest_message.parse_data,
+            "paused": self.is_paused(),
+            "events": events
         }
 
     def current_slot_values(self):
@@ -92,6 +100,18 @@ class DialogueStateTracker(object):
         else:
             logger.info("Tried to access non existent slot '{}'".format(key))
             return None
+
+    def get_latest_entity_values(self, entity_type):
+        # type: (Text) -> Iterator[Text]
+        """Get entity values found for the passed entity name in latest msg.
+
+        If you are only interested in the first entity of a given type use
+        `next(tracker.get_latest_entity_values("my_entity_name"), None)`.
+        If no entity is found `None` is the default result."""
+
+        return (x.get("value")
+                for x in self.latest_message.entities
+                if x.get("entity") == entity_type)
 
     def is_paused(self):
         # type: () -> bool
@@ -119,7 +139,7 @@ class DialogueStateTracker(object):
 
     @property
     def topic(self):
-        # type: () -> Text
+        # type: () -> Topic
         """Retrieves current topic, or default if no topic has been set yet."""
 
         return self._topic_stack.top
@@ -131,7 +151,7 @@ class DialogueStateTracker(object):
         The resulting array is representing the state before each action."""
         from rasa_core.channels import UserMessage
 
-        tracker = DialogueStateTracker(UserMessage.DEFAULT_SENDER,
+        tracker = DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
                                        self.slots.values(),
                                        self.topics,
                                        self.default_topic)
@@ -169,6 +189,7 @@ class DialogueStateTracker(object):
     def replay_events(self):
         # type: (int) -> None
         """Update the tracker based on a list of events."""
+
         applied_events = self._applied_events()
         for event in applied_events:
             event.apply_to(self)
@@ -210,7 +231,7 @@ class DialogueStateTracker(object):
         event.apply_to(self)
 
     def export_stories(self):
-        from rasa_core.training_utils.dsl import StoryStep, Story
+        from rasa_core.training.structures import StoryStep, Story
 
         story_step = StoryStep()
         for event in self._applied_events():
@@ -233,8 +254,9 @@ class DialogueStateTracker(object):
 
         self._reset_slots()
         self._paused = False
-        self.latest_action_name = []
+        self.latest_action_name = None
         self.latest_message = UserUttered.empty()
+        self.latest_bot_utterance = BotUttered.empty()
         self.follow_up_action = None
         self._topic_stack = utils.TopicStack(self.topics, [],
                                              self.default_topic)
@@ -247,7 +269,9 @@ class DialogueStateTracker(object):
         if key in self.slots:
             self.slots[key].value = value
         else:
-            logger.warn("Tried to set non existent slot '{}'".format(key))
+            logger.error("Tried to set non existent slot '{}'. Make sure you "
+                         "added all your slots to your domain file."
+                         "".format(key))
 
     def _create_events(self, events):
         # type: (List[Event]) -> deque

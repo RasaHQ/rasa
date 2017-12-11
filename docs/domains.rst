@@ -65,9 +65,12 @@ your bot would execute the action ``ActionCheckRestaurants``, which might look l
 
    class ActionCheckRestaurants(Action):
       def name(self):
+         # type: () -> Text
          return "check_restaurants"
 
       def run(self, dispatcher, tracker, domain):
+         # type: (Dispatcher, DialogueStateTracker, Domain) -> List[Event]
+
          cuisine = tracker.get_slot('cuisine')
          q = "select * from restaurants where cuisine='{0}' limit 1".format(cuisine)
          result = db.query(q)

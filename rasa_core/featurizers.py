@@ -27,8 +27,37 @@ class Featurizer(object):
                                   "encode features to a vector")
 
     def decode(self, feature_vec, input_feature_map, ndigits=8):
-        raise NotImplementedError("Featurizer must be able to "
-                                  "decode features from a vector")
+        """Reverse operation to binary_encoded_features
+
+        :param feature_vec: binary feature vector
+        :param input_feature_map: map of all features
+        :param ndigits: number of digits to round to
+        :return: dictionary of active features
+        """
+
+        reversed_features = []
+        for bf in feature_vec:
+            non_zero_feature_idxs = np.where((0 != bf) & (bf != -1))
+            if np.any(non_zero_feature_idxs):
+                feature_tuples = []
+                for feature_idx in np.nditer(non_zero_feature_idxs):
+                    feat_name = input_feature_map[feature_idx]
+
+                    # round if necessary
+                    if ndigits is not None:
+                        feat_value = round(bf[feature_idx], ndigits)
+                    else:
+                        feat_value = bf[feature_idx]
+
+                    # convert numpy types to primitives
+                    if isinstance(feat_value, np.generic):
+                        feat_value = np.asscalar(feat_value)
+
+                    feature_tuples.append((feat_name, feat_value))
+                reversed_features.append(feature_tuples)
+            else:
+                reversed_features.append(None)
+        return reversed_features
 
     def persist(self, path):
         featurizer_file = os.path.join(path, "featurizer.json")
@@ -113,27 +142,6 @@ class BinaryFeaturizer(Featurizer):
             else:
                 return used_features
 
-    def decode(self, feature_vec, input_features, ndigits=8):
-        """Reverse operation to binary_encoded_features
-
-        :param feature_vec: binary feature vector
-        :param input_features: list of all features
-        :param ndigits: ignored
-        :return: dictionary of active features
-        """
-
-        reversed_features = []
-        for bf in feature_vec:
-            if np.sum(np.where(bf == 1)) > 0:
-                feature_tuples = []
-                feat_names = list(np.array(input_features)[np.where(bf == 1)])
-                for feat_name in feat_names:
-                    feature_tuples.append((feat_name, 1))
-                reversed_features.append(feature_tuples)
-            else:
-                reversed_features.append(None)
-        return reversed_features
-
 
 class ProbabilisticFeaturizer(Featurizer):
     """Uses intent probabilities of the NLU and feeds them into the model."""
@@ -144,11 +152,11 @@ class ProbabilisticFeaturizer(Featurizer):
 
         Given a dictionary of active_features (e.g. 'intent_greet',
         'prev_action_listen',...) and intent probabilities
-        from rasa_nlu, will a binary vector indicating which features of
-        `self.input_features` are active.
+        from rasa_nlu, will be a binary vector indicating which features
+        of `self.input_features` are active.
 
-        For example with two active features and an uncertain intent out of
-        five possible features this would return a vector
+        For example with two active features and two uncertain intents out
+        of five possible features this would return a vector
         like `[0.3, 0.7, 1, 0, 1]`.
 
         If this is just a padding vector we set all values to `-1`.
@@ -160,10 +168,6 @@ class ProbabilisticFeaturizer(Featurizer):
             return np.ones(num_features, dtype=np.int32) * -1
         else:
 
-            intent_probs = {key: value
-                            for key, value in active_features.items()
-                            if key.startswith('intent_')}
-
             used_features = np.zeros(num_features, dtype=np.float)
             for active_feature, value in active_features.items():
                 if active_feature in input_feature_map:
@@ -173,30 +177,4 @@ class ProbabilisticFeaturizer(Featurizer):
                     logger.debug(
                             "Found feature not in feature map. "
                             "Name: {} Value: {}".format(active_feature, value))
-            for intent, probability in intent_probs.values():
-                used_features[input_feature_map[intent]] = probability
             return used_features
-
-    def decode(self, feature_vec, input_features, ndigits=8):
-        """Reverse operation to binary_encoded_features
-
-        :param feature_vec: binary feature vector
-        :return: dictionary of active features, with their associated confidence
-        """
-
-        reversed_features = []
-        for bf in feature_vec:
-            if np.sum(np.where(bf > 0.)) > 0:
-                active_features = np.argwhere(bf > 0.)
-                feature_tuples = []
-                for feature in active_features:
-                    feat_name = list(input_features)[feature[0]]
-                    if ndigits is not None:
-                        feat_value = round(bf[feature[0]], ndigits)
-                    else:
-                        feat_value = bf[feature[0]]
-                    feature_tuples.append((feat_name, feat_value))
-                reversed_features.append(feature_tuples)
-            else:
-                reversed_features.append(None)
-        return reversed_features

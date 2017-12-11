@@ -16,6 +16,7 @@ from typing import Text
 from rasa_core.domain import Domain
 from rasa_core.featurizers import Featurizer
 from rasa_core.trackers import DialogueStateTracker
+from rasa_core.training.data import DialogueTrainingData
 
 logger = logging.getLogger(__name__)
 
@@ -50,13 +51,14 @@ class Policy(object):
         self.featurizer = featurizer
         self.max_history = max_history
 
-    def train(self, X, y, domain, **kwargs):
-        # type: (ndarray, List[int], Domain, **Any) -> None
+    def train(self, training_data, domain, **kwargs):
+        # type: (DialogueTrainingData, Domain, **Any) -> None
         """Trains the policy on given training data."""
 
         raise NotImplementedError
 
-    def continue_training(self, X, y, domain, **kwargs):
+    def continue_training(self, training_data, domain, **kwargs):
+        # type: (DialogueTrainingData, Domain, **Any) -> None
         """Continues training an already trained policy.
 
         This doesn't need to be supported by every policy. If it is supported,

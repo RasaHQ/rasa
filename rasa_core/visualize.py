@@ -5,12 +5,14 @@ from __future__ import unicode_literals
 
 import argparse
 import logging
-
 import os
 
-from rasa_core.domain import TemplateDomain
-from rasa_core.training_utils.dsl import StoryFileReader
-from rasa_core.training_utils.visualization import visualize_stories
+from builtins import str
+
+from rasa_core import utils
+from rasa_core.agent import Agent
+from rasa_core.policies.keras_policy import KerasPolicy
+from rasa_core.policies.memoization import MemoizationPolicy
 
 logger = logging.getLogger(__name__)
 
@@ -21,12 +23,15 @@ def create_argument_parser():
 
     parser.add_argument('-s', '--stories',
                         required=True,
+                        type=str,
                         help="story file")
     parser.add_argument('-d', '--domain',
                         required=True,
+                        type=str,
                         help="domain file")
     parser.add_argument('-o', '--output',
                         required=True,
+                        type=str,
                         help="filename of the output path, e.g. 'graph.png")
     parser.add_argument('-m', '--max_history',
                         default=2,
@@ -35,18 +40,36 @@ def create_argument_parser():
                              "paths in the output graph")
     parser.add_argument('-nlu', '--nlu_data',
                         default=None,
+                        type=str,
                         help="path of the Rasa NLU training data, "
                              "used to insert example messages into the graph")
+
+    # arguments for logging configuration
+    parser.add_argument(
+            '--debug',
+            help="Print lots of debugging statements. "
+                 "Sets logging level to DEBUG",
+            action="store_const",
+            dest="loglevel",
+            const=logging.DEBUG,
+            default=logging.INFO,
+    )
+    parser.add_argument(
+            '-v', '--verbose',
+            help="Be verbose. Sets logging level to INFO",
+            action="store_const",
+            dest="loglevel",
+            const=logging.INFO,
+    )
     return parser
 
 
 if __name__ == '__main__':
     parser = create_argument_parser()
     args = parser.parse_args()
-    logging.basicConfig(level="DEBUG")
+    utils.configure_colored_logging(args.loglevel)
 
-    domain = TemplateDomain.load(args.domain)
-    story_steps = StoryFileReader.read_from_file(args.stories, domain)
+    agent = Agent(args.domain, policies=[MemoizationPolicy(), KerasPolicy()])
 
     # this is optional, only needed if the `_greet` type of
     # messages in the stories should be replaced with actual
@@ -59,8 +82,8 @@ if __name__ == '__main__':
         nlu_data = None
 
     logger.info("Starting to visualize stories...")
-    visualize_stories(story_steps, args.output, args.max_history,
-                      training_data=nlu_data)
+    agent.visualize(args.stories, args.output, args.max_history,
+                    nlu_training_data=nlu_data)
 
     logger.info("Finished graph creation. Saved into {}".format(
             os.path.abspath(args.output)))

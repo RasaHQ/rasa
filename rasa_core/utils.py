@@ -4,18 +4,21 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import errno
+import json
 import os, io
 from collections import deque
 from hashlib import sha1
+from random import Random
 
 import six
 import yaml
 from builtins import input, range, str
 from numpy import all, array
-from typing import Text
+from typing import Text, Any, List, Optional
 
 
 def class_from_module_path(module_path):
+    # type: (Text) -> Any
     """Given the module name and path of a class, tries to retrieve the class.
 
     The loaded class can be used to instantiate new objects. """
@@ -31,14 +34,37 @@ def class_from_module_path(module_path):
         return globals()[module_path]
 
 
+def module_path_from_instance(inst):
+    # type: (Any) -> Text
+    """Return the module path of an instances class."""
+    return inst.__module__ + "." + inst.__class__.__name__
+
+
 def all_subclasses(cls):
+    # type: (Any) -> List[Any]
     """Returns all known (imported) subclasses of a class."""
 
     return cls.__subclasses__() + [g for s in cls.__subclasses__()
                                    for g in all_subclasses(s)]
 
 
+def dump_obj_as_json_to_file(filename, obj):
+    # type: (Text, Any) -> None
+    """Dump an object as a json string to a file."""
+
+    dump_obj_as_str_to_file(filename, json.dumps(obj, indent=2))
+
+
+def dump_obj_as_str_to_file(filename, text):
+    # type: (Text, Text) -> None
+    """Dump a text to a file."""
+
+    with io.open(filename, 'w') as f:
+        f.write(str(text))
+
+
 def subsample_array(arr, max_values, can_modify_incoming_array=True, rand=None):
+    # type: (List[Any], bool, Optional[Random]) -> List[Any]
     """Shuffles the array and returns `max_values` number of elements."""
     import random
 
@@ -52,6 +78,7 @@ def subsample_array(arr, max_values, can_modify_incoming_array=True, rand=None):
 
 
 def is_int(value):
+    # type: (Any) -> bool
     """Checks if a value is an integer.
 
     The type of the value is not important, it might be an int or a float."""
@@ -104,6 +131,25 @@ def one_hot(hot_idx, length, dtype=None):
 
 def str_range_list(start, end):
     return [str(e) for e in range(start, end)]
+
+
+def generate_id(prefix=""):
+    import uuid
+    return "{}{}".format(prefix, uuid.uuid4().hex)
+
+
+def configure_colored_logging(loglevel):
+    import coloredlogs
+    field_styles = coloredlogs.DEFAULT_FIELD_STYLES.copy()
+    field_styles['asctime'] = {}
+    level_styles = coloredlogs.DEFAULT_LEVEL_STYLES.copy()
+    level_styles['debug'] = {}
+    coloredlogs.install(
+            level=loglevel,
+            use_chroot=False,
+            fmt='%(asctime)s %(levelname)-8s %(name)s  - %(message)s',
+            level_styles=level_styles,
+            field_styles=field_styles)
 
 
 def request_input(valid_values=None, prompt=None, max_suggested=3):

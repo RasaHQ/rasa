@@ -7,11 +7,11 @@ import json
 import logging
 import uuid
 
+import jsonpickle
 import typing
 from builtins import str
 
 from rasa_core import utils
-from rasa_core.actions.action import ACTION_LISTEN_NAME
 
 if typing.TYPE_CHECKING:
     from rasa_core.trackers import DialogueStateTracker
@@ -26,7 +26,7 @@ class Event(object):
     - the topic has been set
     - the bot has taken an action
 
-    Events are logged by the Tracker's log_event method.
+    Events are logged by the Tracker's update method.
     This updates the list of turns so that the current state
     can be recovered by consuming the list of turns."""
 
@@ -54,6 +54,9 @@ class Event(object):
     def _from_story_string(cls, event_name, parameters, domain):
         """Called to convert a parsed story line into an event."""
         return cls()
+
+    def as_dict(self):
+        return {"event": self.type_name}
 
     @classmethod
     def _from_parameters(cls, event_name, parameters, domain):
@@ -110,14 +113,17 @@ class UserUttered(Event):
                            parse_data)
 
     def __hash__(self):
-        return hash((self.text, self.intent, tuple(self.entities)))
+        return hash((self.text, self.intent.get("name"),
+                     jsonpickle.encode(self.entities)))
 
     def __eq__(self, other):
         if not isinstance(other, UserUttered):
             return False
         else:
-            return (self.text, self.intent, self.entities, self.parse_data) == \
-                   (other.text, other.intent, other.entities, other.parse_data)
+            return (self.text, self.intent.get("name"),
+                    jsonpickle.encode(self.entities), self.parse_data) == \
+                   (other.text, other.intent.get("name"),
+                    jsonpickle.encode(other.entities), other.parse_data)
 
     def __str__(self):
         return ("UserUttered(text: {}, intent: {}, "
@@ -127,16 +133,28 @@ class UserUttered(Event):
     def empty():
         return UserUttered(None)
 
+    def as_dict(self):
+        return {"event": self.type_name,
+                "text": self.text,
+                "parse_data": self.parse_data}
+
+    @classmethod
+    def _from_parameters(cls, event_name, parameters, domain):
+        try:
+            return UserUttered.from_parse_data(parameters.get("text"),
+                                               parameters.get("parse_data"))
+        except KeyError as e:
+            raise ValueError("Failed to parse bot uttered event. {}".format(e))
+
     def as_story_string(self):
         if self.intent:
             if self.entities:
-                entity_strs = ['{}={}'.format(ent['entity'], ent['value'])
-                               for ent in self.entities]
-                ent_string = "[" + ",".join(entity_strs) + "]"
+                ent_string = json.dumps({ent['entity']: ent['value']
+                                         for ent in self.entities})
             else:
                 ent_string = ""
 
-            return "_{intent}{entities}".format(
+            return "{intent}{entities}".format(
                     intent=self.intent.get("name", ""),
                     entities=ent_string)
         else:
@@ -146,6 +164,59 @@ class UserUttered(Event):
         # type: (DialogueStateTracker) -> None
 
         tracker.latest_message = self
+
+
+# noinspection PyProtectedMember
+class BotUttered(Event):
+    """The bot has said something to the user.
+
+    This class is not used in the story training as it is contained in the
+
+    ``ActionExecuted`` class. An entry is made in the ``Tracker``."""
+
+    type_name = "bot"
+
+    def __init__(self, text=None, data=None):
+        self.text = text
+        self.data = data
+
+    def __hash__(self):
+        return hash((self.text, jsonpickle.encode(self.data)))
+
+    def __eq__(self, other):
+        if not isinstance(other, BotUttered):
+            return False
+        else:
+            return (self.text, jsonpickle.encode(self.data)) == \
+                   (other.text, jsonpickle.encode(other.data))
+
+    def __str__(self):
+        return ("BotUttered(text: {}, data: {})"
+                "".format(self.text, json.dumps(self.data, indent=2)))
+
+    def apply_to(self, tracker):
+        # type: (DialogueStateTracker) -> None
+
+        tracker.latest_bot_utterance = self
+
+    def as_story_string(self):
+        return None
+
+    @staticmethod
+    def empty():
+        return BotUttered()
+
+    def as_dict(self):
+        return {"event": self.type_name,
+                "text": self.text,
+                "data": self.data}
+
+    @classmethod
+    def _from_parameters(cls, event_name, parameters, domain):
+        try:
+            return BotUttered(parameters.get("text"), parameters.get("data"))
+        except KeyError as e:
+            raise ValueError("Failed to parse bot uttered event. {}".format(e))
 
 
 # noinspection PyProtectedMember
@@ -179,10 +250,14 @@ class TopicSet(Event):
         topic = list(parameters.keys())[0] if parameters else ""
         return TopicSet(topic)
 
+    def as_dict(self):
+        return {"event": self.type_name,
+                "topic": self.topic}
+
     @classmethod
     def _from_parameters(cls, event_name, parameters, domain):
         try:
-            return TopicSet(parameters["topic"])
+            return TopicSet(parameters.get("topic"))
         except KeyError as e:
             raise ValueError("Failed to parse set topic event. {}".format(e))
 
@@ -207,7 +282,7 @@ class SlotSet(Event):
         return "SlotSet(key: {}, value: {})".format(self.key, self.value)
 
     def __hash__(self):
-        return hash((self.key, self.value))
+        return hash((self.key, jsonpickle.encode(self.value)))
 
     def __eq__(self, other):
         if not isinstance(other, SlotSet):
@@ -227,10 +302,15 @@ class SlotSet(Event):
         else:
             return None
 
+    def as_dict(self):
+        return {"event": self.type_name,
+                "name": self.key,
+                "value": self.value}
+
     @classmethod
     def _from_parameters(cls, event_name, parameters, domain):
         try:
-            return SlotSet(parameters["name"], parameters["value"])
+            return SlotSet(parameters.get("name"), parameters.get("value"))
         except KeyError as e:
             raise ValueError("Failed to parse set slot event. {}".format(e))
 
@@ -259,9 +339,11 @@ class Restarted(Event):
         return self.type_name
 
     def apply_to(self, tracker):
+        from rasa_core.actions.action import ActionListen
         tracker._reset()
-        tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
-        tracker.latest_restart_event = len(tracker.events)
+        # will be the index of the first event after the restart
+        tracker.latest_restart_event = len(tracker.events) + 1
+        tracker.follow_up_action = ActionListen()
 
 
 # noinspection PyProtectedMember
@@ -365,12 +447,15 @@ class ReminderScheduled(Event):
             "kill_on_user_msg": self.kill_on_user_message})
         return "{name}{props}".format(name=self.type_name, props=props)
 
+    def as_dict(self):
+        raise NotImplementedError()
+
     @classmethod
     def _from_story_string(cls, event_name, parameters, domain):
         logger.info("Reminders will be ignored during training, "
                     "which should be ok.")
-        return ReminderScheduled(parameters["action"],
-                                 parameters["date_time"],
+        return ReminderScheduled(parameters.get("action"),
+                                 parameters.get("date_time"),
                                  parameters.get("name", None),
                                  parameters.get("kill_on_user_msg", True))
 
@@ -487,6 +572,8 @@ class ActionExecuted(Event):
     It comprises an action and a list of events. operations will be appended
     to the latest ``Turn`` in the ``Tracker.turns``."""
 
+    type_name = "action"
+
     def __init__(self, action_name):
         self.action_name = action_name
         self.unpredictable = False
@@ -512,6 +599,14 @@ class ActionExecuted(Event):
             return ActionExecuted(event_name)
         else:
             return None
+
+    @classmethod
+    def _from_parameters(cls, event_name, parameters, domain):
+        return ActionExecuted(parameters.get("name"))
+
+    def as_dict(self):
+        return {"event": self.type_name,
+                "name": self.action_name}
 
     def apply_to(self, tracker):
         # type: (DialogueStateTracker) -> None
