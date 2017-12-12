@@ -41,16 +41,24 @@ def test_remote_example():
 
     response = agent.start_message_handling("/search_venues")
     assert response.get("next_action") == 'search_venues'
-    assert response.get("tracker") == {
+    
+    reference = {
         'slots': {'concerts': None, 'venues': None},
         'events': None,
         'sender_id': 'default',
         'paused': False,
+        'latest_message_time': 1513023382.101372,
         'latest_message': {
             'text': '/search_venues',
             'intent_ranking': [{'confidence': 1.0, 'name': 'search_venues'}],
             'intent': {'confidence': 1.0, 'name': 'search_venues'},
             'entities': []}}
+    result = response.get("tracker")
+
+    assert reference.keys() == result.keys()
+    del reference['latest_message_time']
+    del result['latest_message_time']
+    assert reference == result
 
     next_response = agent.continue_message_handling("default", "search_venues",
                                                     [])
