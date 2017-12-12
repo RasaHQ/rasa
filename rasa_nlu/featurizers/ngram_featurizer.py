@@ -150,7 +150,7 @@ class NGramFeaturizer(Featurizer):
         cleaned_tokens = []
         for token in example.get("spacy_doc"):
             if (not token.has_vector and not token.like_url
-                    and token.like_num and not token.like_email
+                    and not token.like_num and not token.like_email
                     and not token.is_punct):
                 cleaned_tokens.append(token)
 
