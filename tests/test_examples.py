@@ -41,7 +41,7 @@ def test_remote_example():
 
     response = agent.start_message_handling("/search_venues")
     assert response.get("next_action") == 'search_venues'
-    
+
     reference = {
         'slots': {'concerts': None, 'venues': None},
         'events': None,
