@@ -25,7 +25,6 @@ known_duckling_dimensions = {"amount-of-money", "distance", "duration", "email",
                              "ordinal", "phone-number", "timezone", "temperature", "time", "url", "volume"}
 entity_processors = {"ner_synonyms"}
 
-
 def create_argparser():  # pragma: no cover
     import argparse
     parser = argparse.ArgumentParser(
@@ -127,6 +126,29 @@ def remove_empty_intent_examples(targets, predictions):
     targets = targets[mask]
     predictions = np.array(predictions)[mask]
     return targets, predictions
+
+
+def prepare_data(data, cutoff = 5):
+    """Remove intent groups with less than cutoff instances."""
+    data = data.sorted_intent_examples()
+    logger.info("Raw data intent examples: {}".format(len(data)))
+
+    # count intents
+    list_intents = []
+    n_intents = []
+    for intent, group in itertools.groupby(data, lambda e: e.get("intent")):
+        size = len(list(group))
+        n_intents.append(size)
+        list_intents.append(intent)
+
+    # only include intents with enough traing data
+    prep_data = []
+    good_intents = [list_intents[i] for i, _ in enumerate(list_intents) if n_intents[i] >= cutoff]
+    for ind, _ in enumerate(data):
+        if data[ind].get("intent") in good_intents:
+            prep_data.append(data[ind])
+
+    return prep_data
 
 
 def evaluate_intents(targets, predictions):  # pragma: no cover
