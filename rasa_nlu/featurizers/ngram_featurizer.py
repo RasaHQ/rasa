@@ -149,22 +149,29 @@ class NGramFeaturizer(Featurizer):
 
         cleaned_tokens = []
         for token in example.get("spacy_doc"):
-            if not token.has_vector and not token.like_url and \
-                    not token.like_num and not token.like_email and not token.is_punct:
+            if (not token.has_vector and not token.like_url
+                    and token.like_num and not token.like_email
+                    and not token.is_punct):
                 cleaned_tokens.append(token)
 
         # keep only out-of-vocab 'non_word' words
         non_words = ' '.join([t.text for t in cleaned_tokens])
 
         # remove digits and extra spaces
-        non_words = ''.join([letter for letter in non_words if not letter.isdigit()])
-        non_words = ' '.join([word for word in non_words.split(' ') if word != ''])
+        non_words = ''.join([letter
+                             for letter in non_words
+                             if not letter.isdigit()])
+        non_words = ' '.join([word
+                              for word in non_words.split(' ')
+                              if word != ''])
 
         # add cleaned sentence to list of these sentences
         return non_words
 
     def _sort_applicable_ngrams(self, list_of_ngrams, examples, labels):
-        """Given an intent classification problem and a list of ngrams, creates ordered list of most useful ngrams."""
+        """Given an intent classification problem and a list of ngrams,
+
+        creates ordered list of most useful ngrams."""
 
         if list_of_ngrams:
             from sklearn import linear_model, preprocessing
