@@ -9,7 +9,16 @@ import io
 import json
 import logging
 import os
+import six
+
+# because standard py2's warnings library can't handle unicode message
+# correctly, a patched version of warnings library will be used
+if six.PY2:
+    from .py2_patched_warnings import py2_monkey_patch_warnings
+    py2_monkey_patch_warnings()
+
 import warnings
+
 from itertools import groupby
 
 from builtins import object, str
