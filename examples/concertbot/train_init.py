@@ -3,14 +3,13 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import logging
-
+from rasa_core import utils
 from rasa_core.agent import Agent
 from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.memoization import MemoizationPolicy
 
 if __name__ == '__main__':
-    logging.basicConfig(level="INFO")
+    utils.configure_colored_logging(loglevel="INFO")
 
     training_data_file = 'data/stories.md'
     model_path = 'models/dialogue'

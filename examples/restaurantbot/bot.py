@@ -5,8 +5,6 @@ from __future__ import unicode_literals
 
 import argparse
 import logging
-
-import sys
 import warnings
 
 from rasa_core import utils
@@ -104,7 +102,7 @@ def run(serve_forever=True):
 
 
 if __name__ == '__main__':
-    utils.configure_colored_logging(verbose=True)
+    utils.configure_colored_logging(loglevel="DEBUG")
 
     parser = argparse.ArgumentParser(
             description='starts the bot')
