@@ -1,0 +1,606 @@
+{
+    "openapi": "3.0.0",
+    "servers": [
+        {
+            "url": "http://localhost:5000/"
+        },
+        {
+            "url": "https://localhost:5000/"
+        }
+    ],
+    "info": {
+        "version": "1.0.0",
+        "title": "Rasa Server API",
+        "description": "Rasa Server REST API"
+    },
+    "paths": {
+        "/parse": {
+            "post": {
+                "description": "Parses an input sentence for intent classification.",
+                "operationId": "parse",
+                "parameters": [
+                    {
+                        "name": "token",
+                        "in": "query",
+                        "description": "To protect your Rasa server, you can specify a token in the Rasa NLU configuration. If it is specified, it should be sent as a query parameter with each request to the Rasa server.",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "intent classification",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/intentClassification"
+                                }
+                            }
+                        }
+                    }
+                },
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/inputSentence"
+                            }
+                        }
+                    },
+                    "description": "The input sentence that needs to be parsed.",
+                    "required": true
+                }
+            }
+        },
+        "/train": {
+            "post": {
+                "description": "Accept training data to train a new model for a project.",
+                "operationId": "train",
+                "parameters": [
+                    {
+                        "name": "token",
+                        "in": "query",
+                        "description": "To protect your Rasa server, you can specify a token in the Rasa NLU configuration. If it is specified, it should be sent as a query parameter with each request to the Rasa server.",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "project",
+                        "in": "query",
+                        "description": "The name of the project on the Rasa server.",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "info message",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/infoMessage"
+                                }
+                            }
+                        }
+                    }
+                },
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/trainingData"
+                            }
+                        }
+                    },
+                    "description": "The training data.",
+                    "required": true
+                }
+            }
+        },
+        "/status": {
+            "get": {
+                "description": "Returns all the currently available projects, their status (training or ready) and their models loaded in memory.",
+                "operationId": "status",
+                "parameters": [
+                    {
+                        "name": "token",
+                        "in": "query",
+                        "description": "To protect your Rasa server, you can specify a token in the Rasa NLU configuration. If it is specified, it should be sent as a query parameter with each request to the Rasa server.",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "rasa instance status",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/serverStatus"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/version": {
+            "get": {
+                "description": "Returns the current version of the Rasa NLU instance.",
+                "operationId": "version",
+                "parameters": [
+                    {
+                        "name": "token",
+                        "in": "query",
+                        "description": "To protect your Rasa server, you can specify a token in the Rasa NLU configuration. If it is specified, it should be sent as a query parameter with each request to the Rasa server.",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "rasa instance version",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/version"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/config": {
+            "get": {
+                "description": "Returns the config of the Rasa NLU instance.",
+                "operationId": "config",
+                "parameters": [
+                    {
+                        "name": "token",
+                        "in": "query",
+                        "description": "To protect your Rasa server, you can specify a token in the Rasa NLU configuration. If it is specified, it should be sent as a query parameter with each request to the Rasa server.",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "rasa instance configuration",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/configuration"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "inputSentence": {
+                "required": [
+                    "q"
+                ],
+                "properties": {
+                    "q": {
+                        "type": "string",
+                        "description": "The sentence that will be parsed for intent classification.",
+                        "example": "show me chinese restaurants"
+                    },
+                    "project": {
+                        "type": "string",
+                        "description": "The project on the Rasa server that should be used for parsing the query.",
+                        "example": "myRasaProject"
+                    },
+                    "model": {
+                        "type": "string",
+                        "description": "The model within the project that should be used for parsing the query.",
+                        "example": "model_20171031_134544"
+                    }
+                }
+            },
+            "intentClassification": {
+                "required": [
+                    "text"
+                ],
+                "properties": {
+                    "text": {
+                        "type": "string",
+                        "description": "The sentence that was parsed.",
+                        "example": "show me chinese restaurants"
+                    },
+                    "entities": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/entity"
+                        }
+                    },
+                    "intent": {
+                        "$ref": "#/components/schemas/intent"
+                    },
+                    "intent_ranking": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/intent"
+                        }
+                    }
+                }
+            },
+            "entity": {
+                "required": [
+                    "start",
+                    "end",
+                    "value",
+                    "entity"
+                ],
+                "properties": {
+                    "start": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 8
+                    },
+                    "end": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 15
+                    },
+                    "value": {
+                        "type": "string",
+                        "example": "chinese"
+                    },
+                    "entity": {
+                        "type": "string",
+                        "example": "cuisine"
+                    },
+                    "extractor": {
+                        "type": "string",
+                        "example": "ner_spacy"
+                    }
+                }
+            },
+            "intent": {
+                "required": [
+                    "confidence",
+                    "name"
+                ],
+                "properties": {
+                    "confidence": {
+                        "type": "number",
+                        "format": "double",
+                        "example": 0.6485910906220309
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "restaurant_search"
+                    }
+                }
+            },
+            "commonExample": {
+                "description": "Common examples represent the samples on which your model will be trained.",
+                "required": [
+                    "text",
+                    "intent"
+                ],
+                "properties": {
+                    "text": {
+                        "type": "string",
+                        "example": "show me chinese restaurants"
+                    },
+                    "intent": {
+                        "type": "string",
+                        "example": "restaurant_search"
+                    },
+                    "entities": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/entity"
+                        }
+                    }
+                }
+            },
+            "entitySynonym": {
+                "description": "If you define entities as having the same value they will be treated as synonyms.",
+                "required": [
+                    "value",
+                    "synonyms"
+                ],
+                "properties": {
+                    "value": {
+                        "type": "string",
+                        "example": "New York City"
+                    },
+                    "synonyms": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "NYC",
+                            "nyc",
+                            "the big apple"
+                        ]
+                    }
+                }
+            },
+            "regexFeature": {
+                "description": "Regular expressions can be used to support the intent classification and entity extraction. E.g. if your entity has a certain structure as in a zipcode, you can use a regular expression to ease detection of that entity.",
+                "required": [
+                    "name",
+                    "pattern"
+                ],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "example": "zipcode"
+                    },
+                    "pattern": {
+                        "type": "string",
+                        "example": "[0-9]{5}"
+                    }
+                }
+            },
+            "trainingData": {
+                "required": [
+                    "rasa_nlu_data"
+                ],
+                "properties": {
+                    "rasa_nlu_data": {
+                        "$ref": "#/components/schemas/rasaNluData"
+                    }
+                }
+            },
+            "rasaNluData": {
+                "required": [
+                    "common_examples"
+                ],
+                "properties": {
+                    "common_examples": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/commonExample"
+                        }
+                    },
+                    "regex_features": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/regexFeature"
+                        }
+                    },
+                    "entity_synonyms": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/entitySynonym"
+                        }
+                    }
+                }
+            },
+            "project": {
+                "required": [
+                    "status",
+                    "available_models"
+                ],
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "example": "ready"
+                    },
+                    "available_models": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "model_20171024_134544",
+                            "model_20171031_134544"
+                        ]
+                    }
+                }
+            },
+            "serverStatus": {
+                "required": [
+                    "available_projects"
+                ],
+                "properties": {
+                    "available_projects": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "$ref": "#/components/schemas/project"
+                        }
+                    }
+                }
+            },
+            "version": {
+                "required": [
+                    "version"
+                ],
+                "properties": {
+                    "version": {
+                        "type": "string",
+                        "example": "0.8.2"
+                    }
+                }
+            },
+            "configuration": {
+                "properties": {
+                    "project": {
+                        "type": "string",
+                        "description": "Defines a project name to train new models for and to refer to when using the http server. The default value is null which will lead to using the default project \"default\".",
+                        "example": "myRasaProject"
+                    },
+                    "fixed_model_name": {
+                        "type": "string",
+                        "description": "Instead of generating model names (e.g. model_20170922_234435) a fixed model name will be used.",
+                        "example": "my_model_name"
+                    },
+                    "pipeline": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "The pipeline used for training.",
+                        "example": [
+                            "nlp_spacy",
+                            "ner_spacy",
+                            "ner_synonyms"
+                        ]
+                    },
+                    "language": {
+                        "type": "string",
+                        "description": "Language the model is trained in.",
+                        "example": "en"
+                    },
+                    "num_threads": {
+                        "type": "integer",
+                        "format": "int32",
+                        "example": 1
+                    },
+                    "max_training_processes": {
+                        "type": "integer",
+                        "format": "int32",
+                        "description": "Number of processes used to handle training requests.",
+                        "example": 1
+                    },
+                    "path": {
+                        "type": "string",
+                        "description": "Projects directory where trained models will be saved to.",
+                        "example": "projects/"
+                    },
+                    "response_log": {
+                        "type": "string",
+                        "description": "Directory where logs will be saved (containing queries and responses).",
+                        "example": "logs/"
+                    },
+                    "config": {
+                        "type": "string",
+                        "example": "config.json",
+                        "description": "Location of the configuration file."
+                    },
+                    "log_level": {
+                        "type": "string",
+                        "description": "Log level used to output messages from the framework internals.",
+                        "example": "INFO"
+                    },
+                    "port": {
+                        "type": "integer",
+                        "format": "int32",
+                        "description": "Port on which to run the http server.",
+                        "example": 5000
+                    },
+                    "data": {
+                        "type": "string",
+                        "description": "Location of the training data."
+                    },
+                    "emulate": {
+                        "type": "string",
+                        "description": "Format to be returned by the http server. If null (default) the rasa NLU internal format will be used. Otherwise, the output will be formatted according to the API specified(wit, luis,..).",
+                        "example": "wit"
+                    },
+                    "log_file": {
+                        "type": "string"
+                    },
+                    "mitie_file": {
+                        "type": "string",
+                        "description": "File containing total_word_feature_extractor.dat",
+                        "example": "data/total_word_feature_extractor.dat"
+                    },
+                    "spacy_model_name": {
+                        "type": "string",
+                        "description": "If the spacy model to be used has a name that is different from the language tag (\"en\", \"de\", etc.), the model name can be specified using this configuration variable. The name will be passed to spacy.load(name).",
+                        "example": "en_core_web_sm"
+                    },
+                    "token": {
+                        "type": "string",
+                        "description": "set, all requests to server must have a ?token=<token> query param.",
+                        "example": "jkk768!!_FDF"
+                    },
+                    "cors_origins": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "List of domain patterns from where CORS (cross-origin resource sharing) calls are allowed. The default value is [] which forbids all CORS requests.",
+                        "example": [
+                            "mydomain.com",
+                            "api.domain2.net",
+                            "editor.swagger.io"
+                        ]
+                    },
+                    "aws_endpoint_url": {
+                        "type": "string",
+                        "description": "Optional endpoint of the custom S3 compatible storage provider.",
+                        "example": "http://10.0.0.1:9000"
+                    },
+                    "aws_region": {
+                        "type": "string",
+                        "description": "Name of the aws region to use.",
+                        "example": "us-east-1"
+                    },
+                    "max_number_of_ngrams": {
+                        "type": "integer",
+                        "format": "int32",
+                        "description": "Maximum number of ngrams to use when augmenting feature vectors with character ngrams.",
+                        "example": 10
+                    },
+                    "duckling_dimensions": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "time",
+                            "number",
+                            "amount-of-money",
+                            "distance"
+                        ]
+                    },
+                    "duckling_http_url": {
+                        "type": "string"
+                    },
+                    "storage": {
+                        "type": "string",
+                        "description": "Storage type for persistor.",
+                        "example": "aws"
+                    },
+                    "bucket_name": {
+                        "type": "string",
+                        "description": "Name of the bucket in the cloud to store the models.",
+                        "example": "my_models"
+                    },
+                    "ner_crf": {
+                        "type": "object"
+                    },
+                    "intent_classifier_sklearn": {
+                        "type": "object"
+                    }
+                }
+            },
+            "infoMessage": {
+                "required": [
+                    "info"
+                ],
+                "properties": {
+                    "info": {
+                        "type": "string",
+                        "example": "new model trained: model_20171031-163040"
+                    }
+                }
+            }
+        }
+    }
+}

@@ -11,6 +11,7 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 Added
 -----
+- Swagger and OpenAPI specs for the RASA NLU instance REST API.
 
 Changed
 -------
