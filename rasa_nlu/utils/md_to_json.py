@@ -15,9 +15,14 @@ ent_regex_with_value = re.compile('\[(?P<synonym>[^\]]+)'
 intent_regex = re.compile('##\s*intent:(.+)')
 synonym_regex = re.compile('##\s*synonym:(.+)')
 example_regex = re.compile('\s*-\s*(.+)')
+comment_regex = re.compile('\s*<!--.*-->\s*')
 
 INTENT_PARSING_STATE = "intent"
 SYNONYM_PARSING_STATE = "synonym"
+
+def strip_comments(comment_regex,text): 
+    """ Removes comments defined by `comment_regex` from `text`. """ 
+    return re.sub(comment_regex,'',text)
 
 
 class MarkdownToJson(object):
@@ -36,6 +41,7 @@ class MarkdownToJson(object):
 
         with io.open(self.file_name, 'rU', encoding="utf-8-sig") as f:
             for row in f:
+                row = strip_comments(comment_regex,row) # Strip the comments from the line
                 intent_match = re.search(intent_regex, row)
                 if intent_match is not None:
                     self._set_current_state(
