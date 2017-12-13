@@ -151,7 +151,7 @@ class RasaNLUConfig(object):
         return cmdline_config
 
     def create_env_config(self, env_vars):
-        keys = [key for key in env_vars.keys() if "RASA" in key]
+        keys = [key for key in env_vars.keys() if "RASA_" in key]
         env_config = {key.split('RASA_')[1].lower(): env_vars[key] for key in keys}
         env_config = self.split_pipeline(env_config)
         env_config = self.split_arg(env_config, "duckling_dimensions")
