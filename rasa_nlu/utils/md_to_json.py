@@ -21,8 +21,7 @@ INTENT_PARSING_STATE = "intent"
 SYNONYM_PARSING_STATE = "synonym"
 
 def strip_comments(comment_regex,text): 
-    """ Removes comments defined by the argument 'comment_regex' from the 
-    given text"""
+    """ Removes comments defined by `comment_regex` from `text`. """ 
     return re.sub(comment_regex,'',text)
 
 
