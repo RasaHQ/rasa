@@ -72,12 +72,12 @@ class SpacyNLP(Component):
         # type: (TrainingData) -> Dict[Text, Any]
 
         for example in training_data.training_examples:
-            example.set("spacy_doc", self.nlp(example.text))
+            example.set("spacy_doc", self.nlp(example.text.lower()))
 
     def process(self, message, **kwargs):
         # type: (Message, **Any) -> None
 
-        message.set("spacy_doc", self.nlp(message.text))
+        message.set("spacy_doc", self.nlp(message.text.lower()))
 
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]
