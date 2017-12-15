@@ -79,7 +79,6 @@ class DataRouter(object):
         self.config = config
         self.responses = self._create_query_logger(config)
         self.model_dir = config['path']
-        self.token = config['token']
         self.emulator = self._create_emulator()
         self.component_builder = component_builder if component_builder else ComponentBuilder(use_cache=True)
         self.project_store = self._create_project_store()

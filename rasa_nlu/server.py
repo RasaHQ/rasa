@@ -94,7 +94,7 @@ def requires_auth(f):
             token = request.args.get(b'token', [b''])[0].decode("utf8")
         else:
             token = str(request.args.get('token', [''])[0])
-        if self.data_router.token is None or token == self.data_router.token:
+        if self.config['token'] is None or token == self.config['token']:
             return f(*args, **kwargs)
         request.setResponseCode(401)
         return 'unauthorized'
