@@ -68,7 +68,8 @@ class Persistor(object):
         raise NotImplementedError
 
     def list_projects(self):
-        # type: (Text) -> List[Text]
+        # type: () -> List[Text]
+        """Lists all projects."""
 
         raise NotImplementedError
 
