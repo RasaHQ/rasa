@@ -32,6 +32,22 @@ def test_list_projects_method_in_AWSPersistor():
     assert result == ['project']
 
 
+def test_list_projects_method_raise_exeception_in_AWSPersistor():
+    def mocked_init(self, *args, **kwargs):
+        self.bucket = Object()
+        self.bucket.objects = Object()
+
+        def mocked_filter():
+            raise ValueError
+
+        self.bucket.objects.filter = mocked_filter
+
+    with mock.patch.object(persistor.AWSPersistor, "__init__", mocked_init):
+        result = persistor.AWSPersistor("", "", "").list_projects()
+
+    assert result == []
+
+
 def test_list_projects_method_in_GCSPersistor():
     def mocked_init(self, *args, **kwargs):
         self._project_and_model_from_filename = lambda x: {'blob_name': ('project', )}[x]
@@ -48,3 +64,19 @@ def test_list_projects_method_in_GCSPersistor():
         result = persistor.GCSPersistor("").list_projects()
 
     assert result == ['project']
+
+
+def test_list_projects_method_raise_exeception_in_GCSPersistor():
+    def mocked_init(self, *args, **kwargs):
+        self._project_and_model_from_filename = lambda x: {'blob_name': ('project', )}[x]
+        self.bucket = Object()
+
+        def mocked_list_blobs():
+            raise ValueError
+
+        self.bucket.list_blobs = mocked_list_blobs
+
+    with mock.patch.object(persistor.GCSPersistor, "__init__", mocked_init):
+        result = persistor.GCSPersistor("").list_projects()
+
+    assert result == []
