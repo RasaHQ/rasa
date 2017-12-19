@@ -56,7 +56,7 @@ incoming message like a normal message with the intent ``greet`` and the entity
 If you want to specify an input string, that contains multiple entity values of
 the same type you can use
 
-.. code-block::
+.. code-block:: bash
 
     /add_to_shopping_list{"item": ["milk", "salt"]}
 

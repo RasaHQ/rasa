@@ -124,16 +124,27 @@ class RasaCoreServer(object):
         return Agent.load(model_directory, interpreter,
                           action_factory=action_factory)
 
-    @app.route("/", methods=['GET', 'OPTIONS'])
+    @app.route("/",
+               methods=['GET', 'OPTIONS'])
     @check_cors
     def hello(self, request):
         """Check if the server is running and responds with the version."""
         return "hello from Rasa Core: " + __version__
 
-    @app.route("/conversations/<cid>/continue", methods=['POST', 'OPTIONS'])
+    @app.route("/conversations/<sender_id>/continue",
+               methods=['POST', 'OPTIONS'])
     @check_cors
     @requires_auth
-    def continue_predicting(self, request, cid):
+    def continue_predicting(self, request, sender_id):
+        """Continue a prediction started with parse.
+
+        Caller should have executed the action returned from the parse
+        endpoint. The events returned from that executed action are
+        passed to continue which will trigger the next action prediction.
+
+        If continue predicts action listen, the caller should wait for the
+        next user message."""
+
         request.setHeader('Content-Type', 'application/json')
         request_params = json.loads(
                 request.content.read().decode('utf-8', 'strict'))
@@ -141,39 +152,50 @@ class RasaCoreServer(object):
         executed_action = request_params.get("executed_action", None)
         events = convert_obj_2_tracker_events(encoded_events,
                                               self.agent.domain)
-        response = self.agent.continue_message_handling(cid,
-                                                        executed_action,
-                                                        events)
+        try:
+            response = self.agent.continue_message_handling(sender_id,
+                                                            executed_action,
+                                                            events)
+        except ValueError as e:
+            request.setResponseCode(400)
+            return json.dumps({"error": e.message})
+        except Exception as e:
+            request.setResponseCode(500)
+            logger.exception(e)
+            return json.dumps({"error": "Server failure. Error: {}".format(e)})
         return json.dumps(response)
 
-    @app.route("/conversations/<cid>/tracker/events", methods=['POST',
-                                                               'OPTIONS'])
+    @app.route("/conversations/<sender_id>/tracker/events",
+               methods=['POST', 'OPTIONS'])
     @check_cors
-    def append_events(self, request, cid):
+    def append_events(self, request, sender_id):
         """Append a list of events to the state of a conversation"""
+
         request.setHeader('Content-Type', 'application/json')
         request_params = json.loads(
                 request.content.read().decode('utf-8', 'strict'))
         events = convert_obj_2_tracker_events(request_params,
                                               self.agent.domain)
-        tracker = self.agent.tracker_store.get_or_create_tracker(cid)
+        tracker = self.agent.tracker_store.get_or_create_tracker(sender_id)
         for e in events:
             tracker.update(e)
         self.agent.tracker_store.save(tracker)
         return json.dumps(tracker.current_state())
 
-    @app.route("/conversations/<cid>/tracker", methods=['GET', 'OPTIONS'])
+    @app.route("/conversations/<sender_id>/tracker",
+               methods=['GET', 'OPTIONS'])
     @check_cors
-    def retrieve_tracker(self, request, cid):
+    def retrieve_tracker(self, request, sender_id):
         """Get a dump of a conversations tracker including its events."""
 
         request.setHeader('Content-Type', 'application/json')
-        tracker = self.agent.tracker_store.get_or_create_tracker(cid)
+        tracker = self.agent.tracker_store.get_or_create_tracker(sender_id)
         return json.dumps(tracker.current_state(should_include_events=True))
 
-    @app.route("/conversations/<cid>/tracker", methods=['PUT', 'OPTIONS'])
+    @app.route("/conversations/<sender_id>/tracker",
+               methods=['PUT', 'OPTIONS'])
     @check_cors
-    def update_tracker(self, request, cid):
+    def update_tracker(self, request, sender_id):
         """Use a list of events to set a conversations tracker to a state."""
 
         request.setHeader('Content-Type', 'application/json')
@@ -182,7 +204,7 @@ class RasaCoreServer(object):
         events = convert_obj_2_tracker_events(request_params,
                                               self.agent.domain)
 
-        tracker = self.agent.tracker_store.init_tracker(cid)
+        tracker = self.agent.tracker_store.init_tracker(sender_id)
         for e in events:
             tracker.update(e)
         self.agent.tracker_store.save(tracker)
@@ -191,10 +213,11 @@ class RasaCoreServer(object):
         self.agent.tracker_store.save(tracker)
         return json.dumps(tracker.current_state(should_include_events=True))
 
-    @app.route("/conversations/<cid>/parse", methods=['GET', 'POST', 'OPTIONS'])
+    @app.route("/conversations/<sender_id>/parse",
+               methods=['GET', 'POST', 'OPTIONS'])
     @check_cors
     @requires_auth
-    def parse(self, request, cid):
+    def parse(self, request, sender_id):
         request.setHeader('Content-Type', 'application/json')
         if request.method.decode('utf-8', 'strict') == 'GET':
             request_params = {
@@ -210,11 +233,11 @@ class RasaCoreServer(object):
         elif 'q' in request_params:
             message = request_params.pop('q')
         else:
-            request.setResponseCode(404)
+            request.setResponseCode(400)
             return json.dumps({"error": "Invalid parse parameter specified"})
 
         try:
-            response = self.agent.start_message_handling(message, cid)
+            response = self.agent.start_message_handling(message, sender_id)
             request.setResponseCode(200)
             return json.dumps(response)
         except Exception as e:
@@ -223,7 +246,8 @@ class RasaCoreServer(object):
                          "parse: {}".format(e), exc_info=1)
             return json.dumps({"error": "{}".format(e)})
 
-    @app.route("/version", methods=['GET', 'OPTIONS'])
+    @app.route("/version",
+               methods=['GET', 'OPTIONS'])
     @check_cors
     def version(self, request):
         """Respond with the version number of the installed Rasa Core."""
