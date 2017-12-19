@@ -149,22 +149,29 @@ class NGramFeaturizer(Featurizer):
 
         cleaned_tokens = []
         for token in example.get("spacy_doc"):
-            if not token.has_vector and not token.like_url and \
-                    not token.like_num and not token.like_email and not token.is_punct:
+            if (not token.has_vector and not token.like_url
+                    and not token.like_num and not token.like_email
+                    and not token.is_punct):
                 cleaned_tokens.append(token)
 
         # keep only out-of-vocab 'non_word' words
         non_words = ' '.join([t.text for t in cleaned_tokens])
 
         # remove digits and extra spaces
-        non_words = ''.join([letter for letter in non_words if not letter.isdigit()])
-        non_words = ' '.join([word for word in non_words.split(' ') if word != ''])
+        non_words = ''.join([letter
+                             for letter in non_words
+                             if not letter.isdigit()])
+        non_words = ' '.join([word
+                              for word in non_words.split(' ')
+                              if word != ''])
 
         # add cleaned sentence to list of these sentences
         return non_words
 
     def _sort_applicable_ngrams(self, list_of_ngrams, examples, labels):
-        """Given an intent classification problem and a list of ngrams, creates ordered list of most useful ngrams."""
+        """Given an intent classification problem and a list of ngrams,
+
+        creates ordered list of most useful ngrams."""
 
         if list_of_ngrams:
             from sklearn import linear_model, preprocessing
@@ -269,11 +276,12 @@ class NGramFeaturizer(Featurizer):
         return [item for sublist in list(features.values()) for item in sublist]
 
     def _cross_validation(self, examples, labels, max_ngrams):
-        """choose the best number of ngrams to include in bow.
+        """Choose the best number of ngrams to include in bow.
 
-        Given an intent classification problem and a set of ordered ngrams (ordered in terms
-        of importance by pick_applicable_ngrams) we choose the best number of ngrams to include
-        in our bow vecs by cross validation."""
+        Given an intent classification problem and a set of ordered ngrams
+        (ordered in terms of importance by pick_applicable_ngrams) we
+        choose the best number of ngrams to include in our bow vecs
+        by cross validation."""
 
         from sklearn import preprocessing
         from sklearn.linear_model import LogisticRegression
@@ -281,15 +289,21 @@ class NGramFeaturizer(Featurizer):
         import numpy as np
 
         if examples:
-            collected_features = [e.get("text_features") for e in examples if e.get("text_features") is not None]
+            collected_features = [e.get("text_features")
+                                  for e in examples
+                                  if e.get("text_features") is not None]
         else:
             collected_features = []
 
-        existing_text_features = np.stack(collected_features) if collected_features else None
+        if collected_features:
+            existing_text_features = np.stack(collected_features)
+        else:
+            existing_text_features = None
 
         def features_with_ngrams(max_ngrams):
             ngrams_to_use = self._ngrams_to_use(max_ngrams)
-            extras = np.array(self._ngrams_in_sentences(examples, ngrams_to_use))
+            extras = np.array(self._ngrams_in_sentences(examples,
+                                                        ngrams_to_use))
             if existing_text_features is not None:
                 return np.hstack((existing_text_features, extras))
             else:
@@ -301,11 +315,14 @@ class NGramFeaturizer(Featurizer):
         y = intent_encoder.transform(labels)
         cv_splits = min(10, np.min(np.bincount(y))) if y.size > 0 else 0
         if cv_splits >= 3:
-            logger.debug("Started ngram cross-validation to find best number of ngrams to use...")
-            num_ngrams = np.unique(list(map(int, np.floor(np.linspace(1, max_ngrams, 8)))))
+            logger.debug("Started ngram cross-validation to find b"
+                         "est number of ngrams to use...")
+            possible_ngrams = np.linspace(1, max_ngrams, 8)
+            num_ngrams = np.unique(list(map(int, np.floor(possible_ngrams))))
             if existing_text_features is not None:
                 no_ngrams_X = features_with_ngrams(max_ngrams=0)
-                no_ngrams_score = np.mean(cross_val_score(clf2, no_ngrams_X, y, cv=cv_splits))
+                no_ngrams_score = np.mean(cross_val_score(clf2, no_ngrams_X, y,
+                                                          cv=cv_splits))
             else:
                 no_ngrams_score = 0.0
             scores = []
@@ -313,11 +330,16 @@ class NGramFeaturizer(Featurizer):
                 X = features_with_ngrams(max_ngrams=n)
                 score = np.mean(cross_val_score(clf2, X, y, cv=cv_splits))
                 scores.append(score)
-                logger.debug("Evaluating usage of {} ngrams. Score: {}".format(n, score))
+                logger.debug("Evaluating usage of {} ngrams. "
+                             "Score: {}".format(n, score))
             n_top = num_ngrams[np.argmax(scores)]
-            logger.debug("Score without ngrams: {}".format(no_ngrams_score))
-            logger.info("Best score with {} ngrams: {}".format(n_top, np.max(scores)))
+            logger.debug("Score without ngrams: "
+                         "{}".format(no_ngrams_score))
+            logger.info("Best score with {} ngrams: "
+                        "{}".format(n_top, np.max(scores)))
             return n_top
         else:
-            warnings.warn("Can't cross-validate ngram featurizer. There aren't enough examples per intent (at least 3)")
+            warnings.warn("Can't cross-validate ngram featurizer. "
+                          "There aren't enough examples per intent "
+                          "(at least 3)")
             return max_ngrams

@@ -45,7 +45,9 @@ class Message(object):
 
     def as_dict(self, only_output_properties=False):
         if only_output_properties:
-            d = {key: value for key, value in self.data.items() if key in self.output_properties}
+            d = {key: value
+                 for key, value in self.data.items()
+                 if key in self.output_properties}
         else:
             d = self.data
         return dict(d, text=self.text)
@@ -54,7 +56,8 @@ class Message(object):
         if not isinstance(other, Message):
             return False
         else:
-            return (other.text, ordered(other.data)) == (self.text, ordered(self.data))
+            return ((other.text, ordered(other.data)) ==
+                    (self.text, ordered(self.data)))
 
     def __hash__(self):
         return hash((self.text, str(ordered(self.data))))
@@ -67,10 +70,16 @@ class TrainingData(object):
     MIN_EXAMPLES_PER_INTENT = 2
     MIN_EXAMPLES_PER_ENTITY = 2
 
-    def __init__(self, training_examples=None, entity_synonyms=None, regex_features=None):
+    def __init__(self,
+                 training_examples=None,
+                 entity_synonyms=None,
+                 regex_features=None):
         # type: (Optional[List[Message]], Optional[Dict[Text, Text]]) -> None
 
-        self.training_examples = self.sanitice_examples(training_examples) if training_examples else []
+        if training_examples:
+            self.training_examples = self.sanitice_examples(training_examples)
+        else:
+            self.training_examples = []
         self.entity_synonyms = entity_synonyms if entity_synonyms else {}
         self.regex_features = regex_features if regex_features else []
 
@@ -78,7 +87,8 @@ class TrainingData(object):
 
     def sanitice_examples(self, examples):
         # type: (List[Message]) -> List[Message]
-        """Makes sure the training data is cleaned, e.q. removes trailing whitespaces from intent annotations."""
+        """Makes sure the training data is cleaned, e.q. removes trailing
+        whitespaces from intent annotations."""
 
         for e in examples:
             if e.get("intent") is not None:
@@ -88,19 +98,26 @@ class TrainingData(object):
     @lazyproperty
     def intent_examples(self):
         # type: () -> List[Message]
-        return [e for e in self.training_examples if e.get("intent") is not None]
+        return [e
+                for e in self.training_examples
+                if e.get("intent") is not None]
 
     @lazyproperty
     def entity_examples(self):
         # type: () -> List[Message]
-        return [e for e in self.training_examples if e.get("entities") is not None]
+        return [e
+                for e in self.training_examples
+                if e.get("entities") is not None]
 
     @lazyproperty
     def num_entity_examples(self):
         # type: () -> int
-        """Returns the number of proper entity training examples (containing at least one annotated entity)."""
+        """Returns the number of proper entity training examples
+        (containing at least one annotated entity)."""
 
-        return len([e for e in self.training_examples if len(e.get("entities", [])) > 0])
+        return len([e
+                    for e in self.training_examples
+                    if len(e.get("entities", [])) > 0])
 
     @lazyproperty
     def num_intent_examples(self):
@@ -111,30 +128,40 @@ class TrainingData(object):
 
     def as_json(self, **kwargs):
         # type: (**Any) -> str
-        """Represent this set of training examples as json adding the passed meta information."""
+        """Represent this set of training examples as json adding
+        the passed meta information."""
 
         js_entity_synonyms = defaultdict(list)
         for k, v in self.entity_synonyms.items():
             if k != v:
                 js_entity_synonyms[v].append(k)
 
+        formatted_synonyms = [{'value': value, 'synonyms': syns}
+                              for value, syns in js_entity_synonyms.items()]
+
+        formatted_examples = [example.as_dict()
+                              for example in self.training_examples]
+
         return str(json.dumps({
             "rasa_nlu_data": {
-                "common_examples": [example.as_dict() for example in self.training_examples],
+                "common_examples": formatted_examples,
                 "regex_features": self.regex_features,
-                "entity_synonyms": [{'value': value, 'synonyms': syns} for value, syns in js_entity_synonyms.items()]
+                "entity_synonyms": formatted_synonyms
             }
         }, **kwargs))
 
     def as_markdown(self, **kwargs):
         # type: (**Any) -> str
-        """Represent this set of training examples as markdown adding the passed meta information."""
+        """Represent this set of training examples as markdown adding
+        the passed meta information."""
 
-        return JsonToMd(self.training_examples, self.entity_synonyms).to_markdown()
+        return JsonToMd(self.training_examples,
+                        self.entity_synonyms).to_markdown()
 
     def persist(self, dir_name):
         # type: (Text) -> Dict[Text, Any]
-        """Persists this training data to disk and returns necessary information to load it again."""
+        """Persists this training data to disk and returns necessary
+        information to load it again."""
 
         data_file = os.path.join(dir_name, "training_data.json")
         with io.open(data_file, 'w') as f:
@@ -148,8 +175,10 @@ class TrainingData(object):
         # type: () -> List[Message]
         """Sorts the entity examples by the annotated entity."""
 
-        return sorted([entity for ex in self.entity_examples for entity in ex.get("entities")],
-                      key=lambda e: e["entity"])
+        entity_examples = [entity
+                           for ex in self.entity_examples
+                           for entity in ex.get("entities")]
+        return sorted(entity_examples, key=lambda e: e["entity"])
 
     def sorted_intent_examples(self):
         # type: () -> List[Message]
@@ -159,7 +188,9 @@ class TrainingData(object):
 
     def validate(self):
         # type: () -> None
-        """Ensures that the loaded training data is valid, e.g. has a minimum of certain training examples."""
+        """Ensures that the loaded training data is valid, e.g.
+
+        has a minimum of certain training examples."""
 
         logger.debug("Validating training data...")
         examples = self.sorted_intent_examples()
@@ -168,24 +199,33 @@ class TrainingData(object):
             size = len(list(group))
             different_intents.append(intent)
             if intent == "":
-                warnings.warn("Found empty intent, please check your training data."
-                              "This may result in wrong intent predictions.")
+                warnings.warn("Found empty intent, please check your "
+                              "training data. This may result in wrong "
+                              "intent predictions.")
             if size < self.MIN_EXAMPLES_PER_INTENT:
-                template = "Intent '{}' has only {} training examples! minimum is {}, training may fail."
-                warnings.warn(template.format(intent, size, self.MIN_EXAMPLES_PER_INTENT))
+                template = ("Intent '{}' has only {} training examples! "
+                            "minimum is {}, training may fail.")
+                warnings.warn(template.format(repr(intent),
+                                              size,
+                                              self.MIN_EXAMPLES_PER_INTENT))
 
         different_entities = []
-        for entity, group in groupby(self.sorted_entity_examples(), lambda e: e["entity"]):
+        for entity, group in groupby(self.sorted_entity_examples(),
+                                     lambda e: e["entity"]):
             size = len(list(group))
             different_entities.append(entity)
             if size < self.MIN_EXAMPLES_PER_ENTITY:
-                template = "Entity '{}' has only {} training examples! minimum is {}, training may fail."
-                warnings.warn(template.format(entity, size, self.MIN_EXAMPLES_PER_ENTITY))
+                template = ("Entity '{}' has only {} training examples! "
+                            "minimum is {}, training may fail.")
+                warnings.warn(template.format(repr(entity), size,
+                                              self.MIN_EXAMPLES_PER_ENTITY))
 
         logger.info("Training data stats: \n" +
                     "\t- intent examples: {} ({} distinct intents)\n".format(
                             self.num_intent_examples, len(different_intents)) +
-                    "\t- found intents: {}\n".format(list_to_str(different_intents)) +
+                    "\t- found intents: {}\n".format(
+                            list_to_str(different_intents)) +
                     "\t- entity examples: {} ({} distinct entities)\n".format(
                             self.num_entity_examples, len(different_entities)) +
-                    "\t- found entities: {}\n".format(list_to_str(different_entities)))
+                    "\t- found entities: {}\n".format(
+                            list_to_str(different_entities)))
