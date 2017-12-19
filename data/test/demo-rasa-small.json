@@ -49,8 +49,8 @@
     ],
     "entity_synonyms": [
       {
-        "value": "three",
-        "synonyms": ["trhee"]
+        "value": "tomorrow",
+        "synonyms": ["tomrrow"]
       }
     ]
   }
