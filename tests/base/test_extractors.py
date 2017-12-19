@@ -96,7 +96,6 @@ def test_duckling_entity_extractor_with_synonyms(component_builder):
     _config["duckling_dimensions"] = ["time"]
     duckling = component_builder.create_component("ner_duckling", _config)
     message = Message("Let us meet tomrrow.", time="1381536182000")  # 1381536182000 == 2013/10/12 02:03:02
-    synonyms.process(message)
     duckling.process(message)
     entities = message.get("entities")
     assert len(entities) == 1
