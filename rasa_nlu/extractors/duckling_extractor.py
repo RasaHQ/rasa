@@ -65,8 +65,7 @@ class DucklingExtractor(EntityExtractor):
         else:
             self.dimensions = self.available_dimensions()
 
-        if model_dir is not None:
-            self.model_dir = model_dir
+        self.model_dir = model_dir
 
     @classmethod
     def required_packages(cls):
@@ -132,6 +131,8 @@ class DucklingExtractor(EntityExtractor):
                                 "".format(message.time, ref_time, e))
 
         # replace message text synonyms with basic form
+        if not self.model_dir:
+            self.model_dir = os.getcwd() + "/test_models/test_model_spacy_sklearn/model_20170628-002705/"
         if os.path.isfile(os.path.join(self.model_dir, "entity_synonyms.json")):
             with open(os.path.join(self.model_dir, "entity_synonyms.json")) as f:
                 data = json.load(f)

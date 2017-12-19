@@ -91,6 +91,18 @@ def test_duckling_entity_extractor_and_synonyms(component_builder):
     assert message is not None
 
 
+def test_duckling_entity_extractor_with_synonyms(component_builder):
+    _config = utilities.base_test_conf("all_components")
+    _config["duckling_dimensions"] = ["number"]
+    duckling = component_builder.create_component("ner_duckling", _config)
+    message = Message("there were trhee things left")
+    duckling.process(message)
+    entities = message.get("entities")
+    assert len(entities) == 1
+    assert entities[0]["text"] == "three"
+    assert entities[0]["value"] == "3"
+
+
 def test_unintentional_synonyms_capitalized(component_builder):
     _config = utilities.base_test_conf("all_components")
     ner_syn = component_builder.create_component("ner_synonyms", _config)

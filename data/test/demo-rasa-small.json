@@ -46,6 +46,12 @@
           }
         ]
       }
+    ],
+    "entity_synonyms": [
+      {
+        "value": "three",
+        "synonyms": ["trhee"]
+      }
     ]
   }
 }
