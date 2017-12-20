@@ -333,6 +333,8 @@ scv_show_banner = True
 scv_banner_greatest_tag = True
 scv_sort = ('semver',)
 scv_whitelist_branches = ('master', 'latest')
-scv_whitelist_tags = (re.compile(r'^\d+\.\d+\.\d+$'), '0.6.9')
+scv_whitelist_tags = (re.compile(r'^[123456789]+\.[789]+\.\d+$'),
+                      re.compile(r'^0\.[789]+\.\d+$'),
+                      '0.6.9')
 scv_grm_exclude = ('README.md', '.gitignore', '.nojekyll', 'CNAME')
 scv_greatest_tag = True
