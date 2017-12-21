@@ -36,7 +36,7 @@ In this tutorial we'll build a model which does exactly that.
 Preparing the Training Data
 ---------------------------
 
-The training data is essential to develop chatbots. It should include texts to be interpreted and the structured data (intent/entities) we expect chatbots to convert the texts into. The best way to get training texts is from *real users*, and the best way to get the structured data is to `pretend to be the bot yourself <https://conversations.golastmile.com/put-on-your-robot-costume-and-be-the-minimum-viable-bot-yourself-3e48a5a59308#.d4tmdan68>`_. But to help get you started, we have some `data saved <https://github.com/RasaHQ/rasa_nlu/blob/master/data/examples/rasa/demo-rasa.json>`_.
+The training data is essential to develop chatbots. It should include texts to be interpreted and the structured data (intent/entities) we expect chatbots to convert the texts into. The best way to get training texts is from *real users*, and the best way to get the structured data is to `pretend to be the bot yourself <https://medium.com/rasa-blog/put-on-your-robot-costume-and-be-the-minimum-viable-bot-yourself-3e48a5a59308>`_. But to help get you started, we have some `data saved <https://github.com/RasaHQ/rasa_nlu/blob/master/data/examples/rasa/demo-rasa.json>`_.
 
 Download the file (json format) and open it, and you'll see a list of training examples, each composed of ``"text"``, ``"intent"`` and ``"entities"``, as shown below. In your working directory, create a ``data`` folder, and copy this ``demo-rasa.json`` file there.
 
