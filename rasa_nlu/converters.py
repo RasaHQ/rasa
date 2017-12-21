@@ -160,12 +160,16 @@ def load_wit_data(filename):
     return TrainingData(training_examples)
 
 
-def load_markdown_data(filename):
-    # type: (Text) -> TrainingData
+def load_markdown_data(filenames):
+    # type: (List[Text]) -> TrainingData
     """Loads training data stored in markdown data format."""
     from rasa_nlu.utils.md_to_json import MarkdownToJson
-    data = MarkdownToJson(filename)
-    return TrainingData(data.common_examples,
+
+    common_examples = list()
+    for filename in filenames:
+        data = MarkdownToJson(filename)
+        common_examples += data.common_examples
+    return TrainingData(common_examples,
                         get_entity_synonyms_dict(data.entity_synonyms))
 
 
@@ -357,7 +361,7 @@ def load_data(resource_name, language='en', fformat=None):
     elif fformat == RASA_FILE_FORMAT:
         return load_rasa_data(files)
     elif fformat == MARKDOWN_FILE_FORMAT:
-        return load_markdown_data(files[0])
+        return load_markdown_data(files)
     else:
         raise ValueError("unknown training file format : {} for "
                          "file {}".format(fformat, resource_name))
