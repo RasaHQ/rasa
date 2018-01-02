@@ -17,11 +17,13 @@ from collections import defaultdict
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.converters import load_data
 from rasa_nlu.model import Interpreter
-from rasa_nlu.model import Metadata
 
 logger = logging.getLogger(__name__)
 
 duckling_extractors = {"ner_duckling", "ner_duckling_http"}
+known_duckling_dimensions = {"AmountOfMoney", "Distance", "Duration", "Email", "Numeral",
+                             "Ordinal", "PhoneNumber", "Quantity", "Temperature", "Time", "Url", "Volume"}
+entity_processors = {"ner_synonyms"}
 
 
 def create_argparser():
@@ -117,13 +119,10 @@ def evaluate_entities(targets, predictions, tokens, extractors):
     merged_targets = np.array(list(itertools.chain(*[ap["target_labels"]
                                                      for ap in aligned_predictions])))
 
-    has_entities = merged_targets != "O"
-
     for extractor in extractors:
         merged_predictions = np.array(list(itertools.chain(*[ap["extractor_labels"][extractor]
                                                              for ap in aligned_predictions])))
         logger.info("Eval Entities: %s" % extractor)
-        # log_evaluation_table(merged_targets[has_entities], merged_predictions[has_entities])
         log_evaluation_table(merged_targets, merged_predictions)
 
 
@@ -197,18 +196,18 @@ def determine_token_labels(token, entities):
         return candidates[best_fit]["entity"]
 
 
-def align_entity_predictions(targets, predictions, tokens, used_extractors):
+def align_entity_predictions(targets, predictions, tokens, extractors):
     """
     Determines for every token the true label based on the prediction targets and
     the label assigned by each single extractor
     :param targets: list of target entities
     :param predictions: list of predicted entities
     :param tokens: message tokens as used by the extractors
-    :param used_extractors: the extractors that should be considered
+    :param extractors: the entity extractors that should be considered
     :return: dictionary containing the true token labels and token labels from the extractors
     """
     true_token_labels = []
-    entities_by_extractors = {extractor: [] for extractor in used_extractors}
+    entities_by_extractors = {extractor: [] for extractor in extractors}
     for p in predictions:
         entities_by_extractors[p["extractor"]].append(p)
     extractor_labels = defaultdict(list)
@@ -249,11 +248,10 @@ def get_entity_extractors(interpreter):
     Processors are removed since they do not detect the boundaries themselves
     """
     extractors = set([c.name for c in interpreter.pipeline if "entities" in c.provides])
-    processors = {"ner_synonyms"}
-    return extractors - processors
+    return extractors - entity_processors
 
 
-def combine_extractor_and_dim(extractor, dim):
+def combine_extractor_and_dimension_name(extractor, dim):
     return "%s (%s)" % (extractor, dim)
 
 
@@ -261,14 +259,16 @@ def patch_duckling_extractors(interpreter, extractors):
     """
     Removes the basic duckling extractor from the set of extractors and adds dimension-suffixed ones
     """
-    patched_extractors = extractors.copy()
-    for extractor in duckling_extractors:
-        if extractor in patched_extractors:
-            duckling_component = [c for c in interpreter.pipeline if c.name == extractor][0]
-            patched_extractors.remove(extractor)
-            for dim in duckling_component.dimensions:
-                patched_extractors.add(combine_extractor_and_dim(extractor, dim))
-    return patched_extractors
+    extractors = extractors.copy()
+    for duckling_extractor in duckling_extractors:
+        if duckling_extractor in extractors:
+            duckling_component = [c for c in interpreter.pipeline if c.name == duckling_extractor][0]
+            extractors.remove(duckling_extractor)
+
+            dimensions = duckling_component.dimensions if duckling_component.dimensions else known_duckling_dimensions
+            for dim in dimensions:
+                extractors.add(combine_extractor_and_dimension_name(duckling_extractor, dim))
+    return extractors
 
 
 def patch_duckling_entities(entity_predictions):
@@ -280,7 +280,7 @@ def patch_duckling_entities(entity_predictions):
     for entities in patched_entity_predictions:
         for e in entities:
             if e["extractor"] in duckling_extractors:
-                e["extractor"] = combine_extractor_and_dim(e["extractor"], e["entity"])
+                e["extractor"] = combine_extractor_and_dimension_name(e["extractor"], e["entity"])
     return patched_entity_predictions
 
 
