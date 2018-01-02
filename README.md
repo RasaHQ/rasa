@@ -134,6 +134,11 @@ cd rasa_nlu
 pip install -r requirements.txt
 ```
 
+For local development make sure you install the development requirements:
+```
+pip install -r alt_requirements/requirements_dev.txt
+```
+
 To test the installation use (this will run a very stupid default model. you need to [train your own model](https://rasahq.github.io/rasa_nlu/tutorial.html) to do something useful!):
 
 ### Advanced Docker
@@ -156,6 +161,18 @@ Warning! setting up Docker Cloud is quite involved - this method isn't recommend
 
 [![Deploy to Docker Cloud](https://files.cloud.docker.com/images/deploy-to-dockercloud.svg)](https://cloud.docker.com/stack/deploy/?repo=https://github.com/RasaHQ/rasa_nlu/tree/master/docker)
 
+### Install Pretrained Models for Spacy & Mitie
+In order to use the Spacy or Mitie backends make sure you have one of their pretrained models installed.
+```
+python -m spacy download en
+```
+
+```
+wget https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2
+tar jxf MITIE-models-v0.2.tar.bz2
+cp MITIE-models/english/total_word_feature_extractor.dat <rasa_nlu_root>/data/
+```
+
 # Development Internals
 
 ### Steps to release a new version
@@ -174,6 +191,13 @@ Releasing a new version is quite simple, as the packages are build and distribut
     git checkout -b 0.7.x
     git push origin 0.7.x
     ```
+
+### Running the Tests
+In order to run the tests make sure that you have the development requirements installed.
+```
+make test
+```
+
 ## License
 Licensed under the Apache License, Version 2.0. Copyright 2017 Rasa Technologies GmbH. [Copy of the license](LICENSE.txt).
 
