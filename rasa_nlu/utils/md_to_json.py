@@ -14,16 +14,16 @@ ent_regex_with_value = re.compile(r'\[(?P<synonym>[^\]]+)'
                                   r'(?P<value>[^)]+)\)')  # [open](open:1)
 intent_regex = re.compile(r'##\s*intent:(.+)')
 synonym_regex = re.compile(r'##\s*synonym:(.+)')
-example_regex = re.compile(r'\s*-\s*(.+)')
-comment_regex = re.compile(r'<!--[\s\S]*?--!*>',re.MULTILINE)
+example_regex = re.compile(r'\s*[-\*]\s*(.+)')
+comment_regex = re.compile(r'<!--[\s\S]*?--!*>', re.MULTILINE)
 
 INTENT_PARSING_STATE = "intent"
 SYNONYM_PARSING_STATE = "synonym"
 
-def strip_comments(comment_regex,text): 
-    """ Removes comments defined by `comment_regex` from `text`. """ 
-    text = re.sub(comment_regex,'',text)
-    text = text.splitlines()# Split into lines
+def strip_comments(comment_regex, text):
+    """ Removes comments defined by `comment_regex` from `text`. """
+    text = re.sub(comment_regex, '', text)
+    text = text.splitlines()  # Split into lines
     return text
 
 
@@ -42,10 +42,10 @@ class MarkdownToJson(object):
         """Parse the content of the actual .md file."""
 
         with io.open(self.file_name, 'rU', encoding="utf-8-sig") as f:
-            f_com_rmved = strip_comments(comment_regex,f.read())# Strip comments
+            f_com_rmved = strip_comments(comment_regex, f.read())  # Strip comments
             for row in f_com_rmved:
                 # Remove white-space which may have crept in due to comments
-                row = row.strip() 
+                row = row.strip()
                 intent_match = re.search(intent_regex, row)
                 if intent_match is not None:
                     self._set_current_state(
