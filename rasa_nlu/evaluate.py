@@ -26,7 +26,7 @@ duckling_extractors = {"ner_duckling", "ner_duckling_http"}
 
 def create_argparser():
     parser = argparse.ArgumentParser(
-            description='evaluate a trained Rasa NLU pipeline')
+        description='evaluate a trained Rasa NLU pipeline')
 
     parser.add_argument('-d', '--data', default=None,
                         help="file containing evaluation data")
@@ -92,6 +92,14 @@ def evaluate_intents(targets, predictions):
     from sklearn.metrics import confusion_matrix
     from sklearn.utils.multiclass import unique_labels
 
+    # remove empty intent targets
+    num_examples = len(targets)
+    targets = np.array(targets)
+    mask = targets != ""
+    targets = targets[mask]
+    predictions = np.array(predictions)[mask]
+    logger.info("Intent Evaluation: Only considering those %d examples that "
+                "have a defined intent out of %d examples" % (targets.size, num_examples))
     log_evaluation_table(targets, predictions)
 
     cnf_matrix = confusion_matrix(targets, predictions)
@@ -100,23 +108,24 @@ def evaluate_intents(targets, predictions):
 
     plt.show()
 
-def evaluate_entities(targets, predictions, tokens, extractors):
 
+def evaluate_entities(targets, predictions, tokens, extractors):
     aligned_predictions = []
     for ts, ps, tks in zip(targets, predictions, tokens):
         aligned_predictions.append(align_entity_predictions(ts, ps, tks, extractors))
 
     merged_targets = np.array(list(itertools.chain(*[ap["target_labels"]
-                                                            for ap in aligned_predictions])))
+                                                     for ap in aligned_predictions])))
 
     has_entities = merged_targets != "O"
 
     for extractor in extractors:
         merged_predictions = np.array(list(itertools.chain(*[ap["extractor_labels"][extractor]
-                                                            for ap in aligned_predictions])))
+                                                             for ap in aligned_predictions])))
         logger.info("Eval Entities: %s" % extractor)
         # log_evaluation_table(merged_targets[has_entities], merged_predictions[has_entities])
         log_evaluation_table(merged_targets, merged_predictions)
+
 
 def is_token_within_entity(token, entity):
     """
@@ -124,12 +133,14 @@ def is_token_within_entity(token, entity):
     """
     return determine_intersection(token, entity) == len(token.text)
 
+
 def does_token_cross_borders(token, entity):
     """
     Checks if a token crosses the boundaries of an entity
     """
     num_intersect = determine_intersection(token, entity)
     return num_intersect > 0 and num_intersect < len(token.text)
+
 
 def determine_intersection(token, entity):
     """
@@ -139,19 +150,21 @@ def determine_intersection(token, entity):
     pos_entity = set(range(entity["start"], entity["end"]))
     return len(pos_token.intersection(pos_entity))
 
+
 def do_entities_overlap(entities):
     """
     Checks if entities overlap, i.e. cross each others start and end boundaries
     :param entities: list of entities
     :return: boolean
     """
-    sorted_entities = sorted(entities, key = lambda e: e["start"])
+    sorted_entities = sorted(entities, key=lambda e: e["start"])
     for i in range(len(sorted_entities) - 1):
-        if sorted_entities[i+1]["start"] < sorted_entities[i]["end"]\
-                and sorted_entities[i+1]["entity"] != sorted_entities[i]["entity"]:
+        if sorted_entities[i + 1]["start"] < sorted_entities[i]["end"] \
+                and sorted_entities[i + 1]["entity"] != sorted_entities[i]["entity"]:
             return True
 
     return False
+
 
 def determine_token_labels(token, entities):
     """
@@ -172,8 +185,8 @@ def determine_token_labels(token, entities):
             candidates.append(e)
         elif does_token_cross_borders(token, e):
             candidates.append(e)
-            logger.debug("Token boundary error for token %s(%d, %d) and entity %s" % (token.text, token.offset, token.end, e))
-
+            logger.debug(
+                "Token boundary error for token %s(%d, %d) and entity %s" % (token.text, token.offset, token.end, e))
 
     if len(candidates) == 0:
         return "O"
@@ -182,6 +195,7 @@ def determine_token_labels(token, entities):
     else:
         best_fit = np.argmax([determine_intersection(token, c) for c in candidates])
         return candidates[best_fit]["entity"]
+
 
 def align_entity_predictions(targets, predictions, tokens, used_extractors):
     """
@@ -203,7 +217,6 @@ def align_entity_predictions(targets, predictions, tokens, used_extractors):
         for extractor, entities in entities_by_extractors.items():
             extractor_labels[extractor].append(determine_token_labels(t, entities))
 
-
     return {"target_labels": true_token_labels, "extractor_labels": dict(extractor_labels)}
 
 
@@ -211,7 +224,7 @@ def get_targets(test_data):
     """
     Extracts targets from the test data
     """
-    intent_targets = [e.get("intent") for e in test_data.training_examples]
+    intent_targets = [e.get("intent", "") for e in test_data.training_examples]
     entity_targets = [e.get("entities", []) for e in test_data.training_examples]
 
     return intent_targets, entity_targets
@@ -229,6 +242,7 @@ def get_predictions(interpreter, test_data):
         tokens.append(res["tokens"])
     return intent_predictions, entity_predictions, tokens
 
+
 def get_entity_extractors(interpreter):
     """
     Finds the names of entity extractors used by the interpreter
@@ -238,8 +252,10 @@ def get_entity_extractors(interpreter):
     processors = {"ner_synonyms"}
     return extractors - processors
 
+
 def combine_extractor_and_dim(extractor, dim):
     return "%s (%s)" % (extractor, dim)
+
 
 def patch_duckling_extractors(interpreter, extractors):
     """
