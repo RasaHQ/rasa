@@ -40,7 +40,7 @@ install_requires = [
     'tqdm',
     'ConfigArgParse',
     'networkx',
-    'pymessenger',
+    'pymessenger2',
     'pykwalify',
     'coloredlogs',
     'ruamel.yaml',
