@@ -24,7 +24,7 @@ If you want to use the bleeding edge version of Rasa use github + setup.py:
     git clone https://github.com/RasaHQ/rasa_core.git
     cd rasa_core
     pip install -r requirements.txt
-    python setup.py install
+    pip install -e .
 
 .. note::
     If you want to change the Rasa Core code and want to run the tests or
