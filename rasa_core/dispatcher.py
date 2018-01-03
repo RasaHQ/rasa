@@ -82,7 +82,7 @@ class Dispatcher(object):
     def utter_button_message(self, text, buttons, **kwargs):
         # type: (Text, List[Dict[Text, Any]], **Any) -> None
         """Sends a message with buttons to the output channel."""
-        self.latest_bot_messages.append(BotMessage(text=None,
+        self.latest_bot_messages.append(BotMessage(text=text,
                                                    data={"buttons": buttons}))
         self.output_channel.send_text_with_buttons(self.sender_id, text, buttons,
                                                    **kwargs)
