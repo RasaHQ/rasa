@@ -132,11 +132,13 @@ From github:
 git clone git@github.com:RasaHQ/rasa_nlu.git
 cd rasa_nlu
 pip install -r requirements.txt
+pip install -e .
 ```
 
 For local development make sure you install the development requirements:
 ```
 pip install -r alt_requirements/requirements_dev.txt
+pip install -e .
 ```
 
 To test the installation use (this will run a very stupid default model. you need to [train your own model](https://rasahq.github.io/rasa_nlu/tutorial.html) to do something useful!):
@@ -167,11 +169,20 @@ In order to use the Spacy or Mitie backends make sure you have one of their pret
 python -m spacy download en
 ```
 
+To download the Mitie model run and place it in a location that you can 
+reference in your configuration during model training:
 ```
 wget https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2
 tar jxf MITIE-models-v0.2.tar.bz2
-cp MITIE-models/english/total_word_feature_extractor.dat <rasa_nlu_root>/data/
 ```
+
+If you want to run the tests, you need to copy the model into the Rasa folder:
+
+```
+cp MITIE-models/english/total_word_feature_extractor.dat RASA_NLU_ROOT/data/
+``` 
+
+Where `RASA_NLU_ROOT` points to your Rasa installation directory.
 
 # Development Internals
 

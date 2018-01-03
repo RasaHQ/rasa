@@ -101,6 +101,8 @@ RUN  wget -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_e
 
 RUN pip install -r alt_requirements/requirements_dev.txt
 
+RUN pip install -e .
+
 RUN  sed -i -e 's/backend      : tkagg/backend      : PDF/' /usr/local/lib/python2.7/site-packages/matplotlib/mpl-data/matplotlibrc
 
 VOLUME ["/app/projects", "/app/logs", "/app/data"]
