@@ -14,6 +14,7 @@ Added
 
 Changed
 -------
+- removed ``-e .`` from requirements files - if you want to install the app use ``pip install -e .``
 
 Fixed
 -----
