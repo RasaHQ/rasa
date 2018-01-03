@@ -1,4 +1,9 @@
 # coding=utf-8
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import pytest
 import logging
 
@@ -12,31 +17,31 @@ logging.basicConfig(level="DEBUG")
 
 # Chinese Example
 # "对面食过敏" -> To be allergic to wheat-based food
-CH_wrong_segmentation = [Token(u"对面", 0), Token(u"食", 2), Token(u"过敏", 3)]  # opposite, food, allergy
-CH_correct_segmentation = [Token(u"对", 0), Token(u"面食", 1), Token(u"过敏", 3)]  # towards, wheat-based food, allergy
+CH_wrong_segmentation = [Token("对面", 0), Token("食", 2), Token("过敏", 3)]  # opposite, food, allergy
+CH_correct_segmentation = [Token("对", 0), Token("面食", 1), Token("过敏", 3)]  # towards, wheat-based food, allergy
 CH_wrong_entity = {
     "start": 0,
     "end": 2,
-    "value": u"对面",
+    "value": "对面",
     "entity": "direction"
 
 }
 CH_correct_entity = {
     "start": 1,
     "end": 3,
-    "value": u"面食",
+    "value": "面食",
     "entity": "food_type"
 }
 
-#EN example
-#"Hey Robot, I would like to eat pizza near Alexanderplatz tonight"
+# EN example
+# "Hey Robot, I would like to eat pizza near Alexanderplatz tonight"
 EN_indices = [0, 4, 9, 11, 13, 19, 24, 27, 31, 37, 42, 57]
 EN_tokens = ["Hey", "Robot", ",", "I", "would", "like", "to", "eat", "pizza", "near", "Alexanderplatz", "tonight"]
 EN_tokens = [Token(t, i) for t, i in zip(EN_tokens, EN_indices)]
 
 EN_targets = [
     {
-       "start": 31,
+        "start": 31,
         "end": 36,
         "value": "pizza",
         "entity": "food"
@@ -86,6 +91,7 @@ EN_predicted = [
     }
 ]
 
+
 def test_token_entity_intersection():
     # included
     assert determine_intersection(CH_correct_segmentation[1], CH_correct_entity) == len(CH_correct_segmentation[1].text)
@@ -96,8 +102,9 @@ def test_token_entity_intersection():
     # border crossing
     assert determine_intersection(CH_correct_segmentation[1], CH_wrong_entity) == 1
 
+
 def test_token_entity_boundaries():
-    #smaller and included
+    # smaller and included
     assert is_token_within_entity(CH_wrong_segmentation[1], CH_correct_entity) == True
     assert does_token_cross_borders(CH_wrong_segmentation[1], CH_correct_entity) == False
 
@@ -115,7 +122,8 @@ def test_token_entity_boundaries():
 
 
 def test_evaluate_entities():
-    result = align_entity_predictions(EN_targets, EN_predicted, EN_tokens, ["A", "B"])
+    mock_extractors = ["A", "B"]
+    result = align_entity_predictions(EN_targets, EN_predicted, EN_tokens, mock_extractors)
     assert result == {
         "target_labels": ["O", "O", "O", "O", "O", "O", "O", "O", "food", "location", "location", "datetime"],
         "extractor_labels": {
@@ -123,6 +131,3 @@ def test_evaluate_entities():
             "B": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "movie", "movie"]
         }
     }, "Wrong entity prediction alignment"
-
-
-

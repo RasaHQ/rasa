@@ -8,7 +8,6 @@ import itertools
 import logging
 import os
 import numpy as np
-import copy
 
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
@@ -165,19 +164,13 @@ def do_entities_overlap(entities):
     return False
 
 
-def determine_token_labels(token, entities):
+def find_intersecting_entites(token, entities):
     """
-    Determines the token label given entities that do not overlap
+    Finds the entities that intersect with a token
     :param token: a single token
     :param entities: entities found by a single extractor
-    :return: token label string (entity type)
+    :return: list of entities
     """
-    if len(entities) == 0:
-        return "O"
-
-    if do_entities_overlap(entities):
-        raise ValueError("The possible entities should not overlap")
-
     candidates = []
     for e in entities:
         if is_token_within_entity(token, e):
@@ -186,7 +179,16 @@ def determine_token_labels(token, entities):
             candidates.append(e)
             logger.debug(
                 "Token boundary error for token %s(%d, %d) and entity %s" % (token.text, token.offset, token.end, e))
+    return candidates
 
+
+def pick_best_entity_fit(token, candidates):
+    """
+    Determines the token label given intersecting entities
+    :param token: a single token
+    :param entities: entities found by a single extractor
+    :return: entity type
+    """
     if len(candidates) == 0:
         return "O"
     elif len(candidates) == 1:
@@ -194,6 +196,23 @@ def determine_token_labels(token, entities):
     else:
         best_fit = np.argmax([determine_intersection(token, c) for c in candidates])
         return candidates[best_fit]["entity"]
+
+
+def determine_token_labels(token, entities):
+    """
+    Determines the token label given entities that do not overlap
+    :param token: a single token
+    :param entities: entities found by a single extractor
+    :return: entity type
+    """
+    if len(entities) == 0:
+        return "O"
+
+    if do_entities_overlap(entities):
+        raise ValueError("The possible entities should not overlap")
+
+    candidates = find_intersecting_entites(token, entities)
+    return pick_best_entity_fit(token, candidates)
 
 
 def align_entity_predictions(targets, predictions, tokens, extractors):
@@ -229,6 +248,16 @@ def get_targets(test_data):
     return intent_targets, entity_targets
 
 
+def extract_intent(result):
+    """Extracts the intent from a parsing result"""
+    return result['intent'].get('name') if 'intent' in result else None
+
+
+def extract_entities(result):
+    """Extracts entities from a parsing result"""
+    return result['entities'] if 'entities' in result else []
+
+
 def get_predictions(interpreter, test_data):
     """
     Runs the model for the test set and extracts predictions and tokens
@@ -236,8 +265,8 @@ def get_predictions(interpreter, test_data):
     intent_predictions, entity_predictions, tokens = [], [], []
     for e in test_data.training_examples:
         res = interpreter.parse(e.text, only_output_properties=False)
-        intent_predictions.append(res['intent'].get('name') if 'intent' in res else None)
-        entity_predictions.append(res['entities'] if 'entities' in res else [])
+        intent_predictions.append(extract_intent(res))
+        entity_predictions.append(extract_entities(res))
         tokens.append(res["tokens"])
     return intent_predictions, entity_predictions, tokens
 
@@ -252,23 +281,44 @@ def get_entity_extractors(interpreter):
 
 
 def combine_extractor_and_dimension_name(extractor, dim):
+    """Joins the duckling extractor name with a dimension's name"""
     return "%s (%s)" % (extractor, dim)
+
+
+def get_duckling_dimensions(interpreter, duckling_extractor_name):
+    """Gets the activated dimensions of a duckling extractor, or all known dimensions as a fallback"""
+    component = get_duckling_component(interpreter, duckling_extractor_name)
+    return component.dimensions if component.dimensions else known_duckling_dimensions
+
+
+def get_duckling_component(interpreter, duckling_extractor_name):
+    """Finds the duckling component in a pipeline"""
+    return [c for c in interpreter.pipeline if c.name == duckling_extractor_name][0]
 
 
 def patch_duckling_extractors(interpreter, extractors):
     """
     Removes the basic duckling extractor from the set of extractors and adds dimension-suffixed ones
+    :param interpreter: a rasa nlu interpreter object
+    :param extractors: a set of entity extractor names used in the interpreter
     """
     extractors = extractors.copy()
-    for duckling_extractor in duckling_extractors:
-        if duckling_extractor in extractors:
-            duckling_component = [c for c in interpreter.pipeline if c.name == duckling_extractor][0]
-            extractors.remove(duckling_extractor)
-
-            dimensions = duckling_component.dimensions if duckling_component.dimensions else known_duckling_dimensions
-            for dim in dimensions:
-                extractors.add(combine_extractor_and_dimension_name(duckling_extractor, dim))
+    used_duckling_extractors = duckling_extractors.intersection(extractors)
+    for duckling_extractor in used_duckling_extractors:
+        extractors.remove(duckling_extractor)
+        for dim in get_duckling_dimensions(interpreter, duckling_extractor):
+            new_extractor_name = combine_extractor_and_dimension_name(duckling_extractor, dim)
+            extractors.add(new_extractor_name)
     return extractors
+
+
+def patch_duckling_entity(entity):
+    """Patches a single entity by combining extractor and dimension name"""
+    if entity["extractor"] in duckling_extractors:
+        entity = entity.copy()
+        entity["extractor"] = combine_extractor_and_dimension_name(entity["extractor"], entity["entity"])
+
+    return entity
 
 
 def patch_duckling_entities(entity_predictions):
@@ -276,11 +326,13 @@ def patch_duckling_entities(entity_predictions):
     Adds the duckling dimension as a suffix to the extractor name to make sure
     there only is one prediction per token per extractor name
     """
-    patched_entity_predictions = copy.deepcopy(entity_predictions)
-    for entities in patched_entity_predictions:
+    patched_entity_predictions = []
+    for entities in entity_predictions:
+        patched_entities = []
         for e in entities:
-            if e["extractor"] in duckling_extractors:
-                e["extractor"] = combine_extractor_and_dimension_name(e["extractor"], e["entity"])
+            patched_entities.append(patch_duckling_entity(e))
+        patched_entity_predictions.append(patched_entities)
+
     return patched_entity_predictions
 
 
