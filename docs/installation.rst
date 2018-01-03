@@ -21,7 +21,7 @@ If you want to use the bleeding edge version use github + setup.py:
     git clone https://github.com/RasaHQ/rasa_nlu.git
     cd rasa_nlu
     pip install -r requirements.txt
-    python setup.py install
+    pip install -e .
 
 rasa NLU allows you to use components to process your messages. E.g. there is a component for intent classification and
 there are several different components for entity recognition. The different components
@@ -38,7 +38,7 @@ installed and tell you which are missing, if any.
 
         pip install -r alt_requirements/requirements_full.txt
 
-    to install all requirements.
+    instead of ``requirements.txt`` to install all requirements.
 
 Setting up a backend
 ~~~~~~~~~~~~~~~~~~~~
