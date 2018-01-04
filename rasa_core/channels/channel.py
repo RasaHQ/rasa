@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 
 from types import LambdaType
 
-from typing import Text, List, Dict, Any, Optional
+from typing import Text, List, Dict, Any, Optional, Iterable
 
 
 class UserMessage(object):
@@ -80,7 +80,7 @@ class OutputChannel(object):
             self.send_text_message(recipient_id, button_msg)
 
     def send_custom_message(self, recipient_id, elements):
-        # type: (Text, List[Dict[Text, Any]]) -> None
+        # type: (Text, Iterable[Dict[Text, Any]]) -> None
         """Sends elements to the output.
 
         Default implementation will just post the elements as a string."""
