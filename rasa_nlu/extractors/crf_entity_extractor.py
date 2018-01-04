@@ -166,11 +166,11 @@ class CRFEntityExtractor(EntityExtractor):
                                 entities[ent_word_idx][2:] != entity[2:]:
                             # words are not tagged the same entity class
                             logger.debug(
-                                "Inconsistent BILOU tagging found, B- tag, "
-                                "L- tag pair encloses multiple "
-                                "entity classes.i.e. ['B-a','I-b','L-a'] "
-                                "instead of ['B-a','I-a','L-a'].\n"
-                                "Assuming B- class is correct.")
+                                    "Inconsistent BILOU tagging found, B- tag, "
+                                    "L- tag pair encloses multiple "
+                                    "entity classes.i.e. ['B-a','I-b','L-a'] "
+                                    "instead of ['B-a','I-a','L-a'].\n"
+                                    "Assuming B- class is correct.")
                         if len(entities) > ent_word_idx and \
                                 entities[ent_word_idx].startswith('L-'):
                             # end of the entity
@@ -184,11 +184,11 @@ class CRFEntityExtractor(EntityExtractor):
                             finished = True
                             ent_word_idx -= 1
                             logger.debug(
-                                "Inconsistent BILOU tagging found, B- tag "
-                                "not closed by L- tag, "
-                                "i.e ['B-a','I-a','O'] instead of "
-                                "['B-a','L-a','O'].\n"
-                                "Assuming last tag is L-")
+                                    "Inconsistent BILOU tagging found, B- tag "
+                                    "not closed by L- tag, "
+                                    "i.e ['B-a','I-a','O'] instead of "
+                                    "['B-a','L-a','O'].\n"
+                                    "Assuming last tag is L-")
                     end = sentence_doc[word_idx:ent_word_idx + 1].end_char
                     ent_value = sentence_doc[word_idx:ent_word_idx + 1].text
                     ent = {'start': word.idx,
@@ -328,11 +328,11 @@ class CRFEntityExtractor(EntityExtractor):
         X_train = [self._sentence_to_features(sent) for sent in df_train]
         y_train = [self._sentence_to_labels(sent) for sent in df_train]
         self.ent_tagger = sklearn_crfsuite.CRF(
-            algorithm='lbfgs',
-            c1=self.L1_C,  # coefficient for L1 penalty
-            c2=self.L2_C,  # coefficient for L2 penalty
-            max_iterations=self.max_iterations,  # stop earlier
-            all_possible_transitions=True  # include transitions that are possible, but not observed
+                algorithm='lbfgs',
+                c1=self.L1_C,  # coefficient for L1 penalty
+                c2=self.L2_C,  # coefficient for L2 penalty
+                max_iterations=self.max_iterations,  # stop earlier
+                all_possible_transitions=True  # include transitions that are possible, but not observed
         )
         self.ent_tagger.fit(X_train, y_train)
 
@@ -367,8 +367,8 @@ def bio_classification_report(y_true, y_pred):
     class_indices = {cls: idx for idx, cls in enumerate(lb.classes_)}
 
     return classification_report(
-        y_true_combined,
-        y_pred_combined,
-        labels=[class_indices[cls] for cls in tagset],
-        target_names=tagset,
+            y_true_combined,
+            y_pred_combined,
+            labels=[class_indices[cls] for cls in tagset],
+            target_names=tagset,
     )
