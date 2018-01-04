@@ -310,7 +310,7 @@ class CRFEntityExtractor(EntityExtractor):
 
     def __tag_of_token(selfself, token):
         import spacy
-        if spacy.__version__ > "2" and token._.has("tag"):
+        if spacy.about.__version__ > "2" and token._.has("tag"):
             return token._.get("tag")
         else:
             return token.tag_
