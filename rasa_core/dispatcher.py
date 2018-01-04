@@ -4,14 +4,12 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import copy
-
-from typing import Text, List, Dict, Any
 from collections import namedtuple
 
-import copy
+from typing import Text, List, Dict, Any
 
-from rasa_core.domain import Domain
 from rasa_core.channels import OutputChannel
+from rasa_core.domain import Domain
 
 
 class Element(dict):
