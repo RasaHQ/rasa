@@ -28,4 +28,3 @@ sphinx-autobuild==0.6.0
 sphinxcontrib-versioning==2.2.1
 nbsphinx==0.2.13
 -e git://github.com/RasaHQ/sphinx_rtd_theme.git#egg=sphinx_rtd_theme
--e .
