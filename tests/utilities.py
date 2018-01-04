@@ -31,7 +31,7 @@ def base_test_conf(pipeline_template):
 
 def write_file_config(file_config):
     with tempfile.NamedTemporaryFile("w+", suffix="_tmp_config_file.json", delete=False) as f:
-        f.write(json.dumps(file_config))
+        f.write(json.dumps(file_config, ensure_ascii=False))
         f.flush()
         return f
 

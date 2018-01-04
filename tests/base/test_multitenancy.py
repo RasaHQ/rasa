@@ -109,7 +109,7 @@ def test_get_parse_invalid_model(app, response_test):
 ])
 @pytest.inlineCallbacks
 def test_post_parse(app, response_test):
-    response = yield app.post(response_test.endpoint, data=json.dumps(response_test.payload),
+    response = yield app.post(response_test.endpoint, data=json.dumps(response_test.payload, ensure_ascii=False),
                               content_type='application/json')
     rjs = yield response.json()
     assert response.code == 200
@@ -123,7 +123,8 @@ def test_post_parse_specific_model(app):
     model = sjs["available_projects"]["test_project_mitie"]["available_models"][0]
     query = ResponseTest("http://dummy_uri/parse", {"entities": [], "intent": "affirm", "text": "food"},
                          payload={"q": "food", "project": "test_project_mitie", "model": model})
-    response = yield app.post(query.endpoint, data=json.dumps(query.payload), content_type='application/json')
+    response = yield app.post(query.endpoint, data=json.dumps(query.payload, ensure_ascii=False),
+                              content_type='application/json')
     assert response.code == 200
 
 
@@ -141,7 +142,7 @@ def test_post_parse_specific_model(app):
 ])
 @pytest.inlineCallbacks
 def test_post_parse_invalid_model(app, response_test):
-    response = yield app.post(response_test.endpoint, data=json.dumps(response_test.payload),
+    response = yield app.post(response_test.endpoint, data=json.dumps(response_test.payload, ensure_ascii=False),
                               content_type='application/json')
     rjs = yield response.json()
     assert response.code == 404

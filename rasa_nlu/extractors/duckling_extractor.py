@@ -153,7 +153,7 @@ class DucklingExtractor(EntityExtractor):
         file_name = self.name + ".json"
         full_name = os.path.join(model_dir, file_name)
         with io.open(full_name, 'w') as f:
-            f.write(str(json.dumps({"dimensions": self.dimensions})))
+            f.write(str(json.dumps({"dimensions": self.dimensions}, ensure_ascii=False)))
         return {"ner_duckling_persisted": file_name}
 
     @classmethod

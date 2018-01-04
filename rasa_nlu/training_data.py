@@ -148,7 +148,7 @@ class TrainingData(object):
                 "regex_features": self.regex_features,
                 "entity_synonyms": formatted_synonyms
             }
-        }, **kwargs))
+        }, ensure_ascii=False, **kwargs))
 
     def as_markdown(self, **kwargs):
         # type: (**Any) -> str
