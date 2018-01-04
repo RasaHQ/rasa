@@ -11,6 +11,7 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 Added
 -----
+- support for splitting training data into multiple files (markdown and JSON only)
 
 Changed
 -------
