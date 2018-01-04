@@ -114,7 +114,7 @@ class DucklingHTTPExtractor(EntityExtractor):
 
         file_name = self.name + ".json"
         with io.open(os.path.join(model_dir, file_name), 'w') as f:
-            dumped = str(simplejson.dumps({"dimensions": self.dimensions}))
+            dumped = str(simplejson.dumps({"dimensions": self.dimensions}, ensure_ascii=False))
             f.write(dumped)
         return {self.name: file_name}
 

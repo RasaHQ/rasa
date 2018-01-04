@@ -126,7 +126,7 @@ def test_get_parse(app, response_test):
 ])
 @pytest.inlineCallbacks
 def test_post_parse(app, response_test):
-    response = yield app.post(response_test.endpoint, data=json.dumps(response_test.payload),
+    response = yield app.post(response_test.endpoint, data=json.dumps(response_test.payload, ensure_ascii=False),
                               content_type='application/json')
     rjs = yield response.json()
     assert response.code == 200
@@ -137,7 +137,7 @@ def test_post_parse(app, response_test):
 @utilities.slowtest
 @pytest.inlineCallbacks
 def test_post_train(app, rasa_default_train_data):
-    response = app.post("http://dummy_uri/train", data=json.dumps(rasa_default_train_data),
+    response = app.post("http://dummy_uri/train", data=json.dumps(rasa_default_train_data, ensure_ascii=False),
                         content_type='application/json')
     time.sleep(3)
     app.flush()
@@ -151,7 +151,7 @@ def test_post_train(app, rasa_default_train_data):
 @pytest.inlineCallbacks
 def test_post_train_internal_error(app, rasa_default_train_data):
     response = app.post("http://dummy_uri/train?project=test",
-                        data=json.dumps({"data": "dummy_data_for_triggering_an_error"}),
+                        data=json.dumps({"data": "dummy_data_for_triggering_an_error"}, ensure_ascii=False),
                         content_type='application/json')
     time.sleep(3)
     app.flush()
@@ -168,7 +168,7 @@ def test_model_hot_reloading(app, rasa_default_train_data):
     assert response.code == 404, "Project should not exist yet"
     train_u = "http://dummy_uri/train?project=my_keyword_model&pipeline=keyword"
     response = app.post(train_u,
-                        data=json.dumps(rasa_default_train_data),
+                        data=json.dumps(rasa_default_train_data, ensure_ascii=False),
                         content_type='application/json')
     time.sleep(3)
     app.flush()

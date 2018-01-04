@@ -131,7 +131,7 @@ class RasaNLUConfig(object):
         return dict(list(self.items()))
 
     def view(self):
-        return simplejson.dumps(self.__dict__, indent=4)
+        return simplejson.dumps(self.__dict__, indent=4, ensure_ascii=False)
 
     def split_arg(self, config, arg_name):
         if arg_name in config and isinstance(config[arg_name], six.string_types):

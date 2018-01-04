@@ -108,7 +108,7 @@ class RegexFeaturizer(Featurizer):
         if self.known_patterns:
             regex_file = os.path.join(model_dir, "regex_featurizer.json")
             with io.open(regex_file, 'w') as f:
-                f.write(str(json.dumps(self.known_patterns, indent=4)))
+                f.write(str(json.dumps(self.known_patterns, indent=4, ensure_ascii=False)))
             return {"regex_featurizer": "regex_featurizer.json"}
         else:
             return {"regex_featurizer": None}
