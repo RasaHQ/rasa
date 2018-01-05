@@ -79,16 +79,15 @@ class DialogueStateTracker(object):
         else:
             events = None
 
-        latest_message_time = None
-        timestamps = [e.time for e in self.events if hasattr(e,'time')]
-        if len(timestamps) > 0:
-            latest_message_time = max(timestamps)
+        latest_event_time = None
+        if len(self.events) > 0:
+            latest_event_time = self.events[-1].time
 
         return {
             "sender_id": self.sender_id,
             "slots": self.current_slot_values(),
             "latest_message": self.latest_message.parse_data,
-            "latest_message_time": latest_message_time,
+            "latest_event_time": latest_event_time,
             "paused": self.is_paused(),
             "events": events
         }
