@@ -9,4 +9,4 @@ of your app from one of these services it should look like one of these files.
 
 [examples/wit](examples/wit): in wit format
 
-[examples/api](examples/api): this is a dir and in api.ai format
+[examples/api](examples/api): this is a dir and in Dialogflow format
