@@ -119,7 +119,16 @@ class MessageProcessor(object):
 
         tracker = self._get_tracker(sender_id)
         if executed_action != ACTION_LISTEN_NAME:
-            self._log_action_on_tracker(tracker, executed_action, events)
+            if(executed_action in self.domain.action_names
+                    or executed_action is None):
+                self._log_action_on_tracker(tracker, executed_action, events)
+            else:
+                raise ValueError("Can not execute action '{}' as it is not "
+                                 "listed in the domains 'actions' section in"
+                                 "the domain YAML file. Make sure you have "
+                                 "added all actions to the domain file."
+                                 "".format(executed_action))
+
         if self.should_predict_another_action(executed_action, events):
             return self._predict_next_and_return_state(tracker)
         else:
@@ -213,7 +222,8 @@ class MessageProcessor(object):
 
         parse_data = self._parse_message(message)
 
-        # don't ever directly mutate the tracker - instead pass its events to log
+        # don't ever directly mutate the tracker
+        # - instead pass its events to log
         tracker.update(UserUttered(message.text, parse_data["intent"],
                                    parse_data["entities"], parse_data))
         # store all entities as slots

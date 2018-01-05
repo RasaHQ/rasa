@@ -11,7 +11,7 @@
 #
 # All configuration values have a default; values that are commented out
 # serve to show the default.
-
+import re
 import sys
 import os
 import sphinx_rtd_theme
@@ -333,5 +333,8 @@ scv_show_banner = True
 scv_banner_greatest_tag = True
 scv_sort = ('semver',)
 scv_whitelist_branches = ('master', 'latest')
+scv_whitelist_tags = (re.compile(r'^[123456789]+\.[789]+\.\d+$'),
+                      re.compile(r'^0\.[789]+\.\d+$'),
+                      '0.6.9')
 scv_grm_exclude = ('README.md', '.gitignore', '.nojekyll', 'CNAME')
 scv_greatest_tag = True

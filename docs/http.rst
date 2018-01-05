@@ -63,9 +63,9 @@ The different parameters are:
 
 Starting a conversation
 -----------------------
-You need to do a ``POST`` to the ``/conversation/<sender>/parse`` endpoint. ``<sender>``
-is the conversation id (e.g. ``default`` if you just have one user, or the facebook user id or any
-other identifier).
+You need to do a ``POST`` to the ``/conversation/<sender_id>/parse`` endpoint.
+``<sender_id>`` is the conversation id (e.g. ``default`` if you just have one
+user, or the facebook user id or any other identifier).
 
 .. code-block:: bash
 
@@ -147,7 +147,7 @@ You can return multiple events as part of your query, e.g.:
         '{"executed_action": "search_restaurants", "events": [{"event": "slot", "name": "cuisine", "value": "mexican"}, {"event": "slot", "name": "people", "value": 5}]}'
 
 Here is a list of all available events you can append to the ``events`` array in
-your call to ``/conversation/<sender>/continue``.
+your call to ``/conversation/<sender_id>/continue``.
 
 Set a slot
 ::::::::::
@@ -178,7 +178,7 @@ Reset Slots
 Endpoints
 ---------
 
-.. http:post:: /conversations/(str:sender)/parse
+.. http:post:: /conversations/(str:sender_id)/parse
 
    Notify the dialogue engine that the user posted a new message. You must
    ``POST`` data in this format ``'{"query":"<your text to parse>"}'``,
@@ -220,7 +220,7 @@ Endpoints
    :statuscode 200: no error
 
 
-.. http:post:: /conversations/(str:sender)/continue
+.. http:post:: /conversations/(str:sender_id)/continue
 
    Continue the prediction loop for the conversation with id `user_id`. Should
    be called until the endpoint returns ``action_listen`` as the next action.
@@ -263,6 +263,179 @@ Endpoints
 
    :statuscode 200: no error
 
+
+.. http:get:: /conversations/(str:sender_id)/tracker
+
+   Retrieves the current tracker state for the conversation with ``sender_id``.
+   This includes the set slots as well as the latest message and all previous
+   events.
+
+   **Example request**:
+
+   .. sourcecode:: bash
+
+      curl http://localhost:5005/conversations/default/tracker | python -mjson.tool
+
+   **Example response**:
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Vary: Accept
+      Content-Type: text/javascript
+
+      {
+          "events": [
+              {
+                  "event": "action",
+                  "name": "action_listen"
+              },
+              {
+                  "event": "user",
+                  "parse_data": {
+                      "entities": [],
+                      "intent": {
+                          "confidence": 0.7561643619088745,
+                          "name": "affirm"
+                      },
+                      "intent_ranking": [
+                          ...
+                      ],
+                      "text": "hello there"
+                  },
+                  "text": "hello there"
+              }
+          ],
+          "latest_message": {
+              "entities": [],
+              "intent": {
+                  "confidence": 0.7561643619088745,
+                  "name": "affirm"
+              },
+              "intent_ranking": [
+                  ...
+              ],
+              "text": "hello there"
+          },
+          "paused": false,
+          "sender_id": "default",
+          "slots": {
+              "cuisine": null,
+              "info": null,
+              "location": null,
+              "matches": null,
+              "people": null,
+              "price": null
+          }
+      }
+
+   :statuscode 200: no error
+
+.. http:put:: /conversations/(str:sender_id)/tracker
+
+   Replace the tracker state using events. Any existing tracker for
+   ``sender_id`` will be discarded. A new tracker will be created and the
+   passed events will be applied to create a new state.
+
+   The format of the passed events is the same as for the ``/continue``
+   endpoint.
+
+   **Example request**:
+
+   .. sourcecode:: bash
+
+      curl -XPUT http://localhost:5005/conversations/default/tracker -d \
+        '[{"event": "slot", "name": "cuisine", "value": "mexican"},{"event": "action", "name": "action_listen"}]' | python -mjson.tool
+
+   **Example response**:
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Vary: Accept
+      Content-Type: text/javascript
+
+      {
+          "events": [
+              {
+                  "event": "slot",
+                  "name": "cuisine",
+                  "value": "mexican"
+              },
+              {
+                  "event": "action",
+                  "name": "action_listen"
+              }
+          ],
+          "latest_message": {
+              "entities": [],
+              "intent": {},
+              "text": null
+          },
+          "paused": false,
+          "sender_id": "default",
+          "slots": {
+              "cuisine": "mexican",
+              "info": null,
+              "location": null,
+              "matches": null,
+              "people": null,
+              "price": null
+          }
+      }
+
+   :statuscode 200: no error
+
+.. http:post:: /conversations/(str:sender_id)/tracker/events
+
+   Append the tracker state of the conversation with events. Any existing
+   events will be kept and the new events will be appended, updating the
+   existing state.
+
+   The format of the passed events is the same as for the ``/continue``
+   endpoint.
+
+   **Example request**:
+
+   .. sourcecode:: bash
+
+      curl -XPOST http://localhost:5005/conversations/default/tracker/events -d \
+        '[{"event": "slot", "name": "cuisine", "value": "mexican"},{"event": "action", "name": "action_listen"}]' | python -mjson.tool
+
+   **Example response**:
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Vary: Accept
+      Content-Type: text/javascript
+
+      {
+          "events": null,
+          "latest_message": {
+              "entities": [],
+              "intent": {
+                  "confidence": 0.7561643619088745,
+                  "name": "affirm"
+              },
+              "intent_ranking": [
+                  ...
+              ],
+              "text": "hello there"
+          },
+          "paused": false,
+          "sender_id": "default",
+          "slots": {
+              "cuisine": "mexican",
+              "info": null,
+              "location": null,
+              "matches": null,
+              "people": null,
+              "price": null
+          }
+      }
+
+   :statuscode 200: no error
 
 .. http:get:: /version
 

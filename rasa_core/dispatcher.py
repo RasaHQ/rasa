@@ -4,14 +4,12 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import copy
-
-from typing import Text, List, Dict, Any
 from collections import namedtuple
 
-import copy
+from typing import Text, List, Dict, Any
 
-from rasa_core.domain import Domain
 from rasa_core.channels import OutputChannel
+from rasa_core.domain import Domain
 
 
 class Element(dict):
@@ -82,7 +80,7 @@ class Dispatcher(object):
     def utter_button_message(self, text, buttons, **kwargs):
         # type: (Text, List[Dict[Text, Any]], **Any) -> None
         """Sends a message with buttons to the output channel."""
-        self.latest_bot_messages.append(BotMessage(text=None,
+        self.latest_bot_messages.append(BotMessage(text=text,
                                                    data={"buttons": buttons}))
         self.output_channel.send_text_with_buttons(self.sender_id, text, buttons,
                                                    **kwargs)

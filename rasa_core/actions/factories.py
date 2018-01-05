@@ -5,11 +5,11 @@ from __future__ import unicode_literals
 
 import logging
 
-from rasa_core.actions.action import UtterAction
-from typing import Text, Optional, List
+from typing import Text, List
 
-from rasa_core.actions import Action
 from rasa_core import utils
+from rasa_core.actions import Action
+from rasa_core.actions.action import UtterAction
 
 logger = logging.getLogger(__name__)
 

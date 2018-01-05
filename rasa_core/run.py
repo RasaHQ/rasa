@@ -6,7 +6,6 @@ from __future__ import unicode_literals
 import argparse
 import logging
 
-import coloredlogs as coloredlogs
 from builtins import str
 
 from rasa_core import utils

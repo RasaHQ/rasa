@@ -14,6 +14,8 @@ Added
 - ``--debug`` and ``--verbose`` flags to scripts (train.py, run.py, server.py)
   to set the log level
 - support for story cycles when using checkpoints
+- added a new machine learning policy `SklearnPolicy` that uses an sklearn 
+  classifier to predict actions (logistic regression by default)
 - warn if action emits events when using a model that it did never emit in
   any of the stories the model was trained on
 - support for event pushing and endpoints to retrieve the tracker state from the server
@@ -35,6 +37,7 @@ Fixed
 - proper visualisation of stories with checkpoints
 - fixed float slot min max value handling
 - fixed non integer feature decoding, e.g. used for memoization policy
+- properly log to specified file when starting Rasa Core server
 
 [0.7.9] - 2017-11-29
 ^^^^^^^^^^^^^^^^^^^^

@@ -4,8 +4,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import logging
-
+from rasa_core import utils
 from rasa_core.agent import Agent
 from rasa_core.channels.console import ConsoleInputChannel
 from rasa_core.interpreter import RegexInterpreter
@@ -21,5 +20,5 @@ def run_concerts(serve_forever=True):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level="INFO")
+    utils.configure_colored_logging(loglevel="INFO")
     run_concerts()
