@@ -81,7 +81,7 @@ class DialogueStateTracker(object):
 
         latest_event_time = None
         if len(self.events) > 0:
-            latest_event_time = self.events[-1].time
+            latest_event_time = self.events[-1].timestamp
 
         return {
             "sender_id": self.sender_id,
