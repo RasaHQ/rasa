@@ -4,16 +4,17 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import copy
-import logging, os
+import logging
+import os
 
 import numpy as np
-from builtins import input, range
+from builtins import range
 
 from rasa_core import utils
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.channels.console import ConsoleInputChannel
 from rasa_core.domain import check_domain_sanity
-from rasa_core.events import UserUtteranceReverted, UserUttered, StoryExported
+from rasa_core.events import UserUtteranceReverted, StoryExported
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.policies import PolicyTrainer
 from rasa_core.policies.ensemble import PolicyEnsemble
