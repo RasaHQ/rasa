@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import json
 import logging
 import uuid
+import time
 
 import jsonpickle
 import typing
@@ -31,6 +32,9 @@ class Event(object):
     can be recovered by consuming the list of turns."""
 
     type_name = "event"
+
+    def __init__(self):
+        self.time = time.time()
 
     def __ne__(self, other):
         # Not strictly necessary, but to avoid having both x==y and x!=y
@@ -99,6 +103,7 @@ class UserUttered(Event):
         self.intent = intent if intent else {}
         self.entities = entities if entities else []
 
+
         if parse_data:
             self.parse_data = parse_data
         else:
@@ -106,6 +111,7 @@ class UserUttered(Event):
                 "intent": self.intent,
                 "entities": self.entities,
                 "text": text}
+        super(UserUttered, self).__init__()
 
     @staticmethod
     def from_parse_data(text, parse_data):
@@ -179,6 +185,7 @@ class BotUttered(Event):
     def __init__(self, text=None, data=None):
         self.text = text
         self.data = data
+        super(BotUttered, self).__init__()
 
     def __hash__(self):
         return hash((self.text, jsonpickle.encode(self.data)))
@@ -229,6 +236,7 @@ class TopicSet(Event):
 
     def __init__(self, topic):
         self.topic = topic
+        super(TopicSet, self).__init__()
 
     def __str__(self):
         return "TopicSet(topic: {})".format(self.topic)
@@ -277,6 +285,7 @@ class SlotSet(Event):
     def __init__(self, key, value=None):
         self.key = key
         self.value = value
+        super(SlotSet, self).__init__()
 
     def __str__(self):
         return "SlotSet(key: {}, value: {})".format(self.key, self.value)
@@ -424,6 +433,7 @@ class ReminderScheduled(Event):
         self.trigger_date_time = trigger_date_time
         self.kill_on_user_message = kill_on_user_message
         self.name = name if name is not None else str(uuid.uuid1())
+        super(ReminderScheduled, self).__init__()
 
     def __hash__(self):
         return hash(self.name)
@@ -496,6 +506,7 @@ class StoryExported(Event):
 
     def __init__(self, path=None):
         self.path = path if path else "stories.md"
+        super(StoryExported, self).__init__()
 
     def __hash__(self):
         return hash(32143124319)
@@ -577,6 +588,7 @@ class ActionExecuted(Event):
     def __init__(self, action_name):
         self.action_name = action_name
         self.unpredictable = False
+        super(ActionExecuted, self).__init__()
 
     def __str__(self):
         return "ActionExecuted(action: {})".format(self.action_name)
