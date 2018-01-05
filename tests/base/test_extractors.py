@@ -91,6 +91,18 @@ def test_duckling_entity_extractor_and_synonyms(component_builder):
     assert message is not None
 
 
+def test_duckling_entity_extractor_with_synonyms(component_builder):
+    _config = utilities.base_test_conf("all_components")
+    _config["duckling_dimensions"] = ["time"]
+    duckling = component_builder.create_component("ner_duckling", _config)
+    message = Message("Let us meet tomrrow.", time="1381536182000")  # 1381536182000 == 2013/10/12 02:03:02
+    duckling.process(message)
+    entities = message.get("entities")
+    assert len(entities) == 1
+    assert entities[0]["text"] == "tomorrow"
+    assert entities[0]["value"] == "2013-10-13T00:00:00.000Z"
+
+
 def test_unintentional_synonyms_capitalized(component_builder):
     _config = utilities.base_test_conf("all_components")
     ner_syn = component_builder.create_component("ner_synonyms", _config)

@@ -46,6 +46,12 @@
           }
         ]
       }
+    ],
+    "entity_synonyms": [
+      {
+        "value": "tomorrow",
+        "synonyms": ["tomrrow"]
+      }
     ]
   }
 }
