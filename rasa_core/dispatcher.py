@@ -130,25 +130,29 @@ class Dispatcher(object):
         template_vars.update(kwargs.items())
         return template_vars
 
-    def retrieve_template(self, template, filled_slots=None, **kwargs):
+    def _fill_template_text(self, template, filled_slots=None, **kwargs):
+        template_vars = self._template_variables(filled_slots, kwargs)
+        if template_vars:
+            try:
+                template["text"] = template["text"].format(**template_vars)
+            except KeyError as e:
+                logger.exception(
+                        "Failed to fill utterance template '{}'. "
+                        "Tried to replace '{}' but could not find "
+                        "a value for it. There is no slot with this "
+                        "name nor did you pass the value explicitly "
+                        "when calling the template. Return template "
+                        "without filling the template. "
+                        "".format(template, e.args[0]))
+        return template
+
+    def retrieve_template(self, template_name, filled_slots=None, **kwargs):
         # type: (Text, **Any) -> Dict[Text, Any]
         """Retrieve a named template from the domain."""
 
-        r = copy.deepcopy(self.domain.random_template_for(template))
+        r = copy.deepcopy(self.domain.random_template_for(template_name))
         if r is not None:
-            template_vars = self._template_variables(filled_slots, kwargs)
-            if template_vars:
-                try:
-                    r["text"] = r["text"].format(**template_vars)
-                except KeyError as e:
-                    logger.exception(
-                            "Failed to fill utterance template '{}'. "
-                            "Tried to replace '{}' but could not find "
-                            "a value for it. There is no slot with this "
-                            "name nor did you pass the value explicitly "
-                            "when calling the template. Return template "
-                            "without filling the template. "
-                            "".format(template, e.args[0]))
-            return r
+            return self._fill_template_text(r, filled_slots, **kwargs)
         else:
-            return {"text": "Undefined utter template <{}>".format(template)}
+            return {"text": "Undefined utter template <{}>."
+                            "".format(template_name)}
