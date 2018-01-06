@@ -20,6 +20,7 @@ tests_requires = [
     "pytest-xdist",
     "pytest-twisted",
     "treq",
+    "freezegun",
 ]
 
 install_requires = [
