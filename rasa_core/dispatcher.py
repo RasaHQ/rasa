@@ -4,12 +4,15 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import copy
+import logging
 from collections import namedtuple
 
 from typing import Text, List, Dict, Any
 
 from rasa_core.channels import OutputChannel
 from rasa_core.domain import Domain
+
+logger = logging.getLogger(__name__)
 
 
 class Element(dict):
@@ -66,15 +69,17 @@ class Dispatcher(object):
                                                    data=None))
         if self.sender_id is not None and self.output_channel is not None:
             for message_part in text.split("\n\n"):
-                self.output_channel.send_text_message(self.sender_id, message_part)
+                self.output_channel.send_text_message(self.sender_id,
+                                                      message_part)
                 self.send_messages.append(message_part)
 
     def utter_custom_message(self, *elements):
         # type: (*Dict[Text, Any]) -> None
         """Sends a message with custom elements to the output channel."""
 
-        self.latest_bot_messages.append(BotMessage(text=None,
-                                                   data={"elements": elements}))
+        bot_message = BotMessage(text=None,
+                                 data={"elements": elements})
+        self.latest_bot_messages.append(bot_message)
         self.output_channel.send_custom_message(self.sender_id, elements)
 
     def utter_button_message(self, text, buttons, **kwargs):
@@ -82,17 +87,22 @@ class Dispatcher(object):
         """Sends a message with buttons to the output channel."""
         self.latest_bot_messages.append(BotMessage(text=text,
                                                    data={"buttons": buttons}))
-        self.output_channel.send_text_with_buttons(self.sender_id, text, buttons,
+        self.output_channel.send_text_with_buttons(self.sender_id, text,
+                                                   buttons,
                                                    **kwargs)
 
     def utter_attachment(self, attachment):
         # type: (Text) -> None
         """Send a message to the client with attachments."""
-        self.latest_bot_messages.append(BotMessage(text=None,
-                                                   data={"attachment": attachment}))
+
+        bot_message = BotMessage(text=None,
+                                 data={"attachment": attachment})
+        self.latest_bot_messages.append(bot_message)
         self.output_channel.send_image_url(self.sender_id, attachment)
 
-    def utter_button_template(self, template, buttons, filled_slots=None, **kwargs):
+    def utter_button_template(self, template, buttons,
+                              filled_slots=None,
+                              **kwargs):
         # type: (Text, List[Dict[Text, Any]], **Any) -> None
         """Sends a message template with buttons to the output channel."""
 
@@ -120,15 +130,29 @@ class Dispatcher(object):
         template_vars.update(kwargs.items())
         return template_vars
 
-    def retrieve_template(self, template, filled_slots=None, **kwargs):
+    def _fill_template_text(self, template, filled_slots=None, **kwargs):
+        template_vars = self._template_variables(filled_slots, kwargs)
+        if template_vars:
+            try:
+                template["text"] = template["text"].format(**template_vars)
+            except KeyError as e:
+                logger.exception(
+                        "Failed to fill utterance template '{}'. "
+                        "Tried to replace '{}' but could not find "
+                        "a value for it. There is no slot with this "
+                        "name nor did you pass the value explicitly "
+                        "when calling the template. Return template "
+                        "without filling the template. "
+                        "".format(template, e.args[0]))
+        return template
+
+    def retrieve_template(self, template_name, filled_slots=None, **kwargs):
         # type: (Text, **Any) -> Dict[Text, Any]
         """Retrieve a named template from the domain."""
 
-        r = copy.deepcopy(self.domain.random_template_for(template))
+        r = copy.deepcopy(self.domain.random_template_for(template_name))
         if r is not None:
-            template_vars = self._template_variables(filled_slots, kwargs)
-            if template_vars:
-                r["text"] = r["text"].format(**template_vars)
-            return r
+            return self._fill_template_text(r, filled_slots, **kwargs)
         else:
-            return {"text": "Undefined utter template <{}>".format(template)}
+            return {"text": "Undefined utter template <{}>."
+                            "".format(template_name)}
