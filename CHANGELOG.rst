@@ -19,6 +19,7 @@ Added
 - warn if action emits events when using a model that it did never emit in
   any of the stories the model was trained on
 - support for event pushing and endpoints to retrieve the tracker state from the server
+- Timestamp to every event
 
 Changed
 -------
