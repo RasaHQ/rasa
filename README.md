@@ -80,7 +80,7 @@ You can now change the docs locally and the web page will automatically reload
 and apply your changes.
 
 ## License
-Licensed under the Apache License, Version 2.0. Copyright 2017 Rasa Technologies GmbH. [Copy of the license](LICENSE.txt).
+Licensed under the Apache License, Version 2.0. Copyright 2018 Rasa Technologies GmbH. [Copy of the license](LICENSE.txt).
 
 As a reference, the following contains a listing of the licenses of the different dependencies as of this writing. 
 Licenses of the dependencies:
