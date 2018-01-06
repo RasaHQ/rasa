@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 
 from types import LambdaType
 
-from typing import Text, List, Dict, Any, Optional
+from typing import Text, List, Dict, Any, Optional, Callable
 
 
 class UserMessage(object):
@@ -43,7 +43,7 @@ class InputChannel(object):
         raise Exception("Input channel doesn't support async listening.")
 
     def start_sync_listening(self, message_handler):
-        # type: (LambdaType) -> None
+        # type: (Callable[[UserMessage], None]) -> None
         """Should call the message handler for every incoming message."""
         raise Exception("Input channel doesn't support sync listening.")
 

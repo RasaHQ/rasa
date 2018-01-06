@@ -5,9 +5,10 @@ from __future__ import unicode_literals
 
 import logging
 
-from builtins import str
+from fbmessenger import (
+    BaseMessenger, elements, MessengerClient, attachments)
 from flask import Blueprint, request, jsonify
-from pymessenger.bot import Bot
+from typing import Text, List, Dict, Any, Callable
 
 from rasa_core.channels.channel import UserMessage, OutputChannel
 from rasa_core.channels.rest import HttpInputComponent
@@ -15,63 +16,203 @@ from rasa_core.channels.rest import HttpInputComponent
 logger = logging.getLogger(__name__)
 
 
-class MessengerBot(Bot, OutputChannel):
+class Messenger(BaseMessenger):
+    """Implement a fbmessenger to parse incoming webhooks and send msgs."""
+
+    def __init__(self, page_access_token, on_new_message):
+        # type: (Text, Callable[[UserMessage], None]) -> None
+
+        self.page_access_token = page_access_token
+        self.on_new_message = on_new_message
+        super(Messenger, self).__init__(self.page_access_token)
+
+    @staticmethod
+    def _is_audio_message(message):
+        # type: (Dict[Text, Any]) -> bool
+        """Check if the users message is a recorced voice message."""
+        return (message.get('message') and
+                message['message'].get('attachments') and
+                message['message']['attachments'][0]['type'] == 'audio')
+
+    @staticmethod
+    def _is_user_message(message):
+        # type: (Dict[Text, Any]) -> bool
+        """Check if the message is a message from the user"""
+        return (message.get('message') and
+                message['message'].get('text') and
+                not message['message'].get("is_echo"))
+
+    def message(self, message):
+        # type: (Dict[Text, Any]) -> None
+        """Handle an incoming event from the fb webhook."""
+
+        if self._is_user_message(message):
+            text = message['message']['text']
+        elif self._is_audio_message(message):
+            attachment = message['message']['attachments'][0]
+            text = attachment['payload']['url']
+        else:
+            logger.warn("Received a message from facebook that we can not "
+                        "handle. Message: {}".format(message))
+            return
+
+        self._handle_user_message(text, self.get_user_id())
+
+    def postback(self, message):
+        # type: (Dict[Text, Any]) -> None
+        """Handle a postback (e.g. quick reply button)."""
+
+        text = message['postback']['payload']
+        self._handle_user_message(text, self.get_user_id())
+
+    def _handle_user_message(self, text, sender_id):
+        # type: (Text, Text) -> None
+        """Pass on the text to the dialogue engine for processing."""
+
+        out_channel = MessengerBot(self.client)
+        user_msg = UserMessage(text, out_channel, sender_id)
+
+        try:
+            self.on_new_message(user_msg)
+        except Exception as e:
+            logger.exception("Exception when trying to handle webhook "
+                             "for facebook message.")
+            pass
+
+    def delivery(self, message):
+        # type: (Dict[Text, Any]) -> None
+        """Do nothing. Method to handle `message_deliveries`"""
+        pass
+
+    def read(self, message):
+        # type: (Dict[Text, Any]) -> None
+        """Do nothing. Method to handle `message_reads`"""
+        pass
+
+    def account_linking(self, message):
+        # type: (Dict[Text, Any]) -> None
+        """Do nothing. Method to handle `account_linking`"""
+        pass
+
+    def optin(self, message):
+        # type: (Dict[Text, Any]) -> None
+        """Do nothing. Method to handle `messaging_optins`"""
+        pass
+
+
+class MessengerBot(OutputChannel):
     """A bot that uses fb-messenger to communicate."""
 
-    def __init__(self, access_token):
-        super(MessengerBot, self).__init__(access_token)
+    def __init__(self, messenger_client):
+        # type: (MessengerClient) -> None
+
+        self.messenger_client = messenger_client
+        super(MessengerBot, self).__init__()
+
+    def send(self, recipient_id, element):
+        # type: (Text, Any) -> None
+        """Sends a message to the recipient using the messenger client."""
+
+        # this is a bit hacky, but the client doesn't have a proper API to
+        # send messages but instead expects the incoming sender to be present
+        # which we don't have as it is stored in the input channel.
+        self.messenger_client.send(element.to_dict(),
+                                   {"sender": {"id": recipient_id}})
+
+    def send_text_message(self, recipient_id, message):
+        # type: (Text, Text) -> None
+        """Send a message through this channel."""
+
+        logger.info("Sending message: " + message)
+
+        self.send(recipient_id, elements.Text(text=message))
+
+    def send_image_url(self, recipient_id, image_url):
+        # type: (Text, Text) -> None
+        """Sends an image. Default will just post the url as a string."""
+
+        self.send(recipient_id, attachments.Image(url=image_url))
 
     def send_text_with_buttons(self, recipient_id, text, buttons, **kwargs):
+        # type: (Text, Text, List[Dict[Text, Any]], **Any) -> None
+        """Sends buttons to the output."""
+
         # buttons is a list of tuples: [(option_name,payload)]
         if len(buttons) > 3:
             logger.warn("Facebook API currently allows only up to 3 buttons. "
                         "If you add more, all will be ignored.")
-            return self.send_text_message(recipient_id, text)
+            self.send_text_message(recipient_id, text)
         else:
             self._add_postback_info(buttons)
-            return self.send_button_message(recipient_id, text, buttons)
 
-    def _add_postback_info(self, buttons):
+            # Currently there is no predefined way to create a message with
+            # buttons in the fbmessenger framework - so we need to create the
+            # payload on our own
+            payload = {
+                "attachment": {
+                    "type": "template",
+                    "payload": {
+                        "template_type": "button",
+                        "text": text,
+                        "buttons": buttons
+                    }
+                }
+            }
+            self.messenger_client.send(payload,
+                                       {"sender": {"id": recipient_id}})
+
+    def send_custom_message(self, recipient_id, elements):
+        # type: (Text, List[Dict[Text, Any]]) -> None
+        """Sends elements to the output."""
+
+        for element in elements:
+            self._add_postback_info(element['buttons'])
+
+        payload = {
+            "attachment": {
+                "type": "template",
+                "payload": {
+                    "template_type": "generic",
+                    "elements": elements
+                }
+            }
+        }
+        self.messenger_client.send(payload,
+                                   self._recipient_json(recipient_id))
+
+    @staticmethod
+    def _add_postback_info(buttons):
+        # type: (List[Dict[Text, Any]]) -> None
+        """Set the button type to postback for all buttons. Happens in place."""
         for button in buttons:
             button['type'] = "postback"
 
-    def send_custom_message(self, recipient_id, elements):
-        for element in elements:
-            self._add_postback_info(element['buttons'])
-        return self.send_generic_message(recipient_id, elements)
+    @staticmethod
+    def _recipient_json(recipient_id):
+        # type: (Text) -> Dict[Text, Dict[Text, Text]]
+        """Generate the response json for the recipient expected by FB."""
+        return {"sender": {"id": recipient_id}}
 
 
 class FacebookInput(HttpInputComponent):
-    def __init__(self, fb_verify, fb_secret, fb_tokens, debug_mode):
+    """Facebook input channel implementation. Based on the HTTPInputChannel."""
+
+    def __init__(self, fb_verify, fb_secret, fb_access_token):
+        # type: (Text, Text, Text) -> None
+        """Create a facebook input channel.
+
+        Needs a couple of settings to properly authenticate and validate
+        messages. Details to setup:
+
+        https://github.com/rehabstudio/fbmessenger#facebook-app-setup
+        :param fb_verify: FB Verification string
+                          (can be chosen by yourself on webhook creation)
+        :param fb_secret: facebook application secret
+        :param fb_access_token: access token to post in the name of the FB page
+        """
         self.fb_verify = fb_verify
         self.fb_secret = fb_secret
-        self.debug_mode = debug_mode
-        self.fb_tokens = {str(k): v for k, v in fb_tokens.items()}
-
-    @staticmethod
-    def _is_user_message(fb_event):
-        return (fb_event.get('message') and
-                fb_event['message'].get('text') and
-                not fb_event['message'].get("is_echo"))
-
-    @staticmethod
-    def _is_audio_message(fb_event):
-        return (fb_event.get('message') and
-                fb_event['message'].get('attachments') and
-                fb_event['message']['attachments'][0]['type'] == 'audio')
-
-    @staticmethod
-    def _get_audio_attachment_url(fb_event):
-        attachment = fb_event['message']['attachments'][0]
-        return attachment['payload']['url']
-
-    @staticmethod
-    def _is_quick_reply(fb_event):
-        return fb_event.get('postback') and fb_event['postback'].get('payload')
-
-    @staticmethod
-    def _get_quick_reply(fb_event):
-        return fb_event['postback']['payload']
+        self.fb_access_token = fb_access_token
 
     def blueprint(self, on_new_message):
         from pymessenger.utils import validate_hub_signature
@@ -82,54 +223,27 @@ class FacebookInput(HttpInputComponent):
         def health():
             return jsonify({"status": "ok"})
 
-        @fb_webhook.route("/webhook", methods=['GET', 'POST'])
-        def hello():
-            if request.method == 'GET':
-                if request.args.get("hub.verify_token") == self.fb_verify:
-                    return request.args.get("hub.challenge")
-                else:
-                    logger.warn("Invalid fb verify token! Make sure this matches "
-                                "your webhook settings on the facebook app.")
-                    return "failure, invalid token"
-            if request.method == 'POST':
+        @fb_webhook.route("/webhook", methods=['GET'])
+        def token_verification():
+            if request.args.get("hub.verify_token") == self.fb_verify:
+                return request.args.get("hub.challenge")
+            else:
+                logger.warn("Invalid fb verify token! Make sure this matches "
+                            "your webhook settings on the facebook app.")
+                return "failure, invalid token"
 
-                signature = request.headers.get("X-Hub-Signature") or ''
-                if not validate_hub_signature(self.fb_secret, request.data,
-                                              signature):
-                    logger.warn("Wrong fb secret! Make sure this matches the "
-                                 "secret in your facebook app settings")
-                    return "not validated"
+        @fb_webhook.route("/webhook", methods=['POST'])
+        def webhook():
+            signature = request.headers.get("X-Hub-Signature") or ''
+            if not validate_hub_signature(self.fb_secret, request.data,
+                                          signature):
+                logger.warn("Wrong fb secret! Make sure this matches the "
+                            "secret in your facebook app settings")
+                return "not validated"
 
-                output = request.json
-                page_id = output['entry'][0]['id']
-                event = output['entry'][0]['messaging']
-                for x in event:
-                    if self._is_user_message(x):
-                        text = x['message']['text']
-                    elif self._is_audio_message(x):
-                        text = self._get_audio_attachment_url(x)
-                    elif self._is_quick_reply(x):
-                        text = self._get_quick_reply(x)
-                    else:
-                        continue
-                    try:
-                        sender_id = x['sender']['id']
-                        if page_id in self.fb_tokens:
-                            out_channel = MessengerBot(self.fb_tokens[page_id])
-                            user_msg = UserMessage(text, out_channel, sender_id)
-                            on_new_message(user_msg)
-                        else:
-                            raise Exception("Unknown page id '{}'. Make sure to"
-                                            " add a page token to the "
-                                            "configuration.".format(page_id))
-                    except Exception as e:
-                        logger.error("Exception when trying to handle "
-                                     "message.{0}".format(e))
-                        logger.error(e,exc_info=True)
-                        if self.debug_mode:
-                            raise
-                        pass
+            messenger = Messenger(self.fb_access_token, on_new_message)
 
-                return "success"
+            messenger.handle(request.get_json(force=True))
+            return "success"
 
         return fb_webhook
