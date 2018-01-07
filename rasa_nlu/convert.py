@@ -6,6 +6,7 @@ import argparse
 import io
 
 from rasa_nlu.converters import load_data
+from rasa_nlu.utils import write_to_file
 
 
 def create_argparser():
@@ -24,11 +25,8 @@ def create_argparser():
 
 def convert_training_data(data_file, out_file, output_format, language):
     td = load_data(data_file, language)
-    with io.open(out_file, "w", encoding='utf-8') as f:
-        if output_format == 'md':
-            f.write(td.as_markdown())
-        else:
-            f.write(td.as_json(indent=2))
+    output = td.as_markdown() if output_format == 'md' else td.as_json(indent=2)
+    write_to_file(out_file, output)
 
 
 if __name__ == "__main__":
