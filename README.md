@@ -101,7 +101,7 @@ Licenses of the dependencies:
 | redis            | MIT                  |
 | tensorflow       | Apache Licence 2.0   |
 | networkx         | BSD                  |
-| pymessenger      | MIT                  |
+| fbmessenger      | Apache Licence 2.0   |
 | tqdm             | MIT                  |
 | ConfigArgParse   | MIT                  |
 

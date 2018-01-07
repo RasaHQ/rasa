@@ -3,8 +3,11 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import hashlib
+import hmac
 import logging
 
+import six
 from fbmessenger import (
     BaseMessenger, elements, MessengerClient, attachments)
 from flask import Blueprint, request, jsonify
@@ -14,6 +17,36 @@ from rasa_core.channels.channel import UserMessage, OutputChannel
 from rasa_core.channels.rest import HttpInputComponent
 
 logger = logging.getLogger(__name__)
+
+
+def validate_hub_signature(app_secret, request_payload, hub_signature_header):
+    """Makes sure the incoming webhook requests are properly signed.
+
+    :param app_secret: Secret Key for application
+    :param request_payload: request body
+    :param hub_signature_header: X-Hub-Signature header sent with request
+    :return: boolean indicated that hub signature is validated
+    """
+
+    try:
+        hash_method, hub_signature = hub_signature_header.split('=')
+    except Exception:
+        pass
+    else:
+        digest_module = getattr(hashlib, hash_method)
+        if six.PY2:
+            # noinspection PyCompatibility
+            hmac_object = hmac.new(
+                    str(app_secret),
+                    unicode(request_payload), digest_module)
+        else:
+            hmac_object = hmac.new(
+                    bytearray(app_secret, 'utf8'),
+                    str(request_payload).encode('utf8'), digest_module)
+        generated_hash = hmac_object.hexdigest()
+        if hub_signature == generated_hash:
+            return True
+    return False
 
 
 class Messenger(BaseMessenger):
@@ -215,7 +248,6 @@ class FacebookInput(HttpInputComponent):
         self.fb_access_token = fb_access_token
 
     def blueprint(self, on_new_message):
-        from pymessenger.utils import validate_hub_signature
 
         fb_webhook = Blueprint('fb_webhook', __name__)
 
