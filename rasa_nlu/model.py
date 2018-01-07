@@ -25,7 +25,7 @@ from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.persistor import Persistor
 from rasa_nlu.training_data import TrainingData, Message
-from rasa_nlu.utils import create_dir
+from rasa_nlu.utils import create_dir, write_json_to_file
 
 logger = logging.getLogger(__name__)
 
@@ -95,8 +95,8 @@ class Metadata(object):
             "rasa_nlu_version": rasa_nlu.__version__,
         })
 
-        with io.open(os.path.join(model_dir, 'metadata.json'), 'w') as f:
-            f.write(str(json.dumps(metadata, indent=4)))
+        filename = os.path.join(model_dir, 'metadata.json')
+        write_json_to_file(filename, metadata, indent=4)
 
 
 class Trainer(object):

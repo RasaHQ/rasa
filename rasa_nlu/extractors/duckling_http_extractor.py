@@ -20,6 +20,7 @@ from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.model import Metadata
 from rasa_nlu.training_data import Message
 from rasa_nlu.extractors.duckling_extractor import extract_value
+from rasa_nlu.utils import write_json_to_file
 
 logger = logging.getLogger(__name__)
 
@@ -113,9 +114,8 @@ class DucklingHTTPExtractor(EntityExtractor):
         # type: (Text) -> Dict[Text, Any]
 
         file_name = self.name + ".json"
-        with io.open(os.path.join(model_dir, file_name), 'w') as f:
-            dumped = str(simplejson.dumps({"dimensions": self.dimensions}))
-            f.write(dumped)
+        full_name = os.path.join(model_dir, file_name)
+        write_json_to_file(full_name, {"dimensions": self.dimensions})
         return {self.name: file_name}
 
     @classmethod
