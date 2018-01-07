@@ -19,36 +19,6 @@ from rasa_core.channels.rest import HttpInputComponent
 logger = logging.getLogger(__name__)
 
 
-def validate_hub_signature(app_secret, request_payload, hub_signature_header):
-    """Makes sure the incoming webhook requests are properly signed.
-
-    :param app_secret: Secret Key for application
-    :param request_payload: request body
-    :param hub_signature_header: X-Hub-Signature header sent with request
-    :return: boolean indicated that hub signature is validated
-    """
-
-    try:
-        hash_method, hub_signature = hub_signature_header.split('=')
-    except Exception:
-        pass
-    else:
-        digest_module = getattr(hashlib, hash_method)
-        if six.PY2:
-            # noinspection PyCompatibility
-            hmac_object = hmac.new(
-                    str(app_secret),
-                    unicode(request_payload), digest_module)
-        else:
-            hmac_object = hmac.new(
-                    bytearray(app_secret, 'utf8'),
-                    str(request_payload).encode('utf8'), digest_module)
-        generated_hash = hmac_object.hexdigest()
-        if hub_signature == generated_hash:
-            return True
-    return False
-
-
 class Messenger(BaseMessenger):
     """Implement a fbmessenger to parse incoming webhooks and send msgs."""
 
@@ -267,8 +237,8 @@ class FacebookInput(HttpInputComponent):
         @fb_webhook.route("/webhook", methods=['POST'])
         def webhook():
             signature = request.headers.get("X-Hub-Signature") or ''
-            if not validate_hub_signature(self.fb_secret, request.data,
-                                          signature):
+            if not self.validate_hub_signature(self.fb_secret, request.data,
+                                               signature):
                 logger.warn("Wrong fb secret! Make sure this matches the "
                             "secret in your facebook app settings")
                 return "not validated"
@@ -279,3 +249,34 @@ class FacebookInput(HttpInputComponent):
             return "success"
 
         return fb_webhook
+
+    @staticmethod
+    def validate_hub_signature(app_secret, request_payload,
+                               hub_signature_header):
+        """Makes sure the incoming webhook requests are properly signed.
+
+        :param app_secret: Secret Key for application
+        :param request_payload: request body
+        :param hub_signature_header: X-Hub-Signature header sent with request
+        :return: boolean indicated that hub signature is validated
+        """
+
+        try:
+            hash_method, hub_signature = hub_signature_header.split('=')
+        except Exception:
+            pass
+        else:
+            digest_module = getattr(hashlib, hash_method)
+            if six.PY2:
+                # noinspection PyCompatibility
+                hmac_object = hmac.new(
+                        str(app_secret),
+                        unicode(request_payload), digest_module)
+            else:
+                hmac_object = hmac.new(
+                        bytearray(app_secret, 'utf8'),
+                        str(request_payload).encode('utf8'), digest_module)
+            generated_hash = hmac_object.hexdigest()
+            if hub_signature == generated_hash:
+                return True
+        return False
