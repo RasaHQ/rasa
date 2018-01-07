@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from rasa_core.channels.console import ConsoleOutputChannel
 from rasa_core.channels.direct import CollectingOutputChannel
 from rasa_core.dispatcher import Button, Element, Dispatcher
 from rasa_core.domain import TemplateDomain
@@ -24,6 +25,20 @@ def test_dispatcher_handle_unknown_template(default_dispatcher_collecting):
     default_dispatcher_collecting.utter_template("my_made_up_template")
     collected = default_dispatcher_collecting.output_channel.latest_output()
     assert collected[1].startswith("Undefined utter template")
+
+
+def test_dispatcher_template_invalid_vars():
+    domain = TemplateDomain(
+            [], [], [], {
+                "my_made_up_template": [{
+                    "text": "a template referencing an invalid {variable}."}]},
+            [], [], None, [])
+    bot = CollectingOutputChannel()
+    dispatcher = Dispatcher("my-sender", bot, domain)
+    dispatcher.utter_template("my_made_up_template")
+    collected = dispatcher.output_channel.latest_output()
+    assert collected[1].startswith(
+            "a template referencing an invalid {variable}.")
 
 
 def test_dispatcher_utter_buttons(default_dispatcher_collecting):

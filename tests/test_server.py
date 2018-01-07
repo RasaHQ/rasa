@@ -9,6 +9,7 @@ import uuid
 from builtins import str
 
 import pytest
+from freezegun import freeze_time
 from treq.testing import StubTreq
 
 import rasa_core
@@ -68,6 +69,7 @@ def test_version(app):
     assert content.get("version") == rasa_core.__version__
 
 
+@freeze_time("2018-01-01")
 @pytest.inlineCallbacks
 def test_requesting_non_existent_tracker(app):
     response = yield app.get("http://dummy/conversations/madeupid/tracker")
@@ -76,7 +78,9 @@ def test_requesting_non_existent_tracker(app):
     assert content["paused"] is False
     assert content["slots"] == {"location": None, "cuisine": None}
     assert content["sender_id"] == "madeupid"
-    assert content["events"] == [{"event": "action", "name": "action_listen"}]
+    assert content["events"] == [{"event": "action",
+                                  "name": "action_listen",
+                                  "timestamp": 1514764800}]
     assert content["latest_message"] == {"text": None,
                                          "intent": {},
                                          "entities": []}

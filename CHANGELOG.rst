@@ -19,6 +19,7 @@ Added
 - warn if action emits events when using a model that it did never emit in
   any of the stories the model was trained on
 - support for event pushing and endpoints to retrieve the tracker state from the server
+- Timestamp to every event
 
 Changed
 -------
@@ -28,6 +29,8 @@ Changed
   deprecated)
 - persist action names in domain during model persistence
 - improved travis build speed by not using miniconda
+- don't fail with an exception but with a helpful error message if an
+  utterance template contains a variable that can not be filled
 
 Removed
 -------
