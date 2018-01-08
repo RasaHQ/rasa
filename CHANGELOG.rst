@@ -9,6 +9,9 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 .. note:: This version is not yet released and is under active development.
 
+This is a major version change. Make sure to take a look at the migrations
+guide in the documentation for advice on how to update existing projects.
+
 Added
 -----
 - ``--debug`` and ``--verbose`` flags to scripts (train.py, run.py, server.py)
