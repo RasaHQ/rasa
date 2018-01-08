@@ -79,4 +79,5 @@ Welcome to the Rasa Documentation!
    interpreters
    policies
    state
+   migrations
    changelog

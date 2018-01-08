@@ -86,8 +86,7 @@ def _create_facebook_channel(channel, port, credentials_file):
     input_blueprint = FacebookInput(
             credentials.get("verify"),
             credentials.get("secret"),
-            credentials.get("page-tokens"),
-            debug_mode=True)
+            credentials.get("page-access-token"))
 
     return HttpInputChannel(port, None, input_blueprint)
 
