@@ -187,8 +187,7 @@ class RasaNLU(object):
     @check_cors
     def status(self, request):
         request.setHeader('Content-Type', 'application/json')
-        self.string = json_to_string(self.data_router.get_status())
-        return self.string
+        return json_to_string(self.data_router.get_status())
 
     @app.route("/train", methods=['POST', 'OPTIONS'])
     @requires_auth
