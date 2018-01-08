@@ -20,12 +20,12 @@ from rasa_nlu.model import Interpreter
 logger = logging.getLogger(__name__)
 
 duckling_extractors = {"ner_duckling", "ner_duckling_http"}
-known_duckling_dimensions = {"AmountOfMoney", "Distance", "Duration", "Email", "Numeral",
-                             "Ordinal", "PhoneNumber", "Quantity", "Temperature", "Time", "Url", "Volume"}
+known_duckling_dimensions = {"amount-of-money", "distance", "duration", "email", "number",
+                             "ordinal", "phone-number", "timezone", "temperature", "time", "url", "volume"}
 entity_processors = {"ner_synonyms"}
 
 
-def create_argparser():
+def create_argparser():  # pragma: no cover
     parser = argparse.ArgumentParser(
             description='evaluate a trained Rasa NLU pipeline')
 
@@ -42,7 +42,7 @@ def plot_confusion_matrix(cm, classes,
                           normalize=False,
                           title='Confusion matrix',
                           cmap=None,
-                          zmin=1):
+                          zmin=1):  # pragma: no cover
     """Print and plot the confusion matrix for the intent classification.
 
     Normalization can be applied by setting `normalize=True`.
@@ -75,7 +75,7 @@ def plot_confusion_matrix(cm, classes,
     plt.xlabel('Predicted label')
 
 
-def log_evaluation_table(test_y, preds):
+def log_evaluation_table(test_y, preds):  # pragma: no cover
     from sklearn import metrics
 
     report = metrics.classification_report(test_y, preds)
@@ -90,7 +90,16 @@ def log_evaluation_table(test_y, preds):
     logger.info("Classification report: \n{}".format(report))
 
 
-def evaluate_intents(targets, predictions):
+def remove_empty_intent_examples(targets, predictions):
+    """Removes those examples without intent."""
+    targets = np.array(targets)
+    mask = targets != ""
+    targets = targets[mask]
+    predictions = np.array(predictions)[mask]
+    return targets, predictions
+
+
+def evaluate_intents(targets, predictions):  # pragma: no cover
     """Creates a confusion matrix and summary statistics for intent predictions.
 
     Only considers those examples with a set intent. Others are filtered out.
@@ -100,10 +109,7 @@ def evaluate_intents(targets, predictions):
 
     # remove empty intent targets
     num_examples = len(targets)
-    targets = np.array(targets)
-    mask = targets != ""
-    targets = targets[mask]
-    predictions = np.array(predictions)[mask]
+    targets, predictions = remove_empty_intent_examples(targets, predictions)
     logger.info("Intent Evaluation: Only considering those {} examples that "
                 "have a defined intent out of {} examples".format(targets.size, num_examples))
     log_evaluation_table(targets, predictions)
@@ -130,7 +136,7 @@ def merge_labels(aligned_predictions, extractor=None):
     return np.array(flattened)
 
 
-def evaluate_entities(targets, predictions, tokens, extractors):
+def evaluate_entities(targets, predictions, tokens, extractors):  # pragma: no cover
     """Creates summary statistics for each entity extractor.
 
     Logs precision, recall, and F1 per entity type for each extractor.
@@ -193,9 +199,8 @@ def find_intersecting_entites(token, entities):
             candidates.append(e)
         elif does_token_cross_borders(token, e):
             candidates.append(e)
-            logger.debug(
-                    "Token boundary error for token {}({}, {}) and entity {}".format(
-                            token.text, token.offset, token.end, e))
+            logger.debug("Token boundary error for token {}({}, {}) and entity {}".format(
+                    token.text, token.offset, token.end, e))
     return candidates
 
 
@@ -256,7 +261,7 @@ def align_entity_predictions(targets, predictions, tokens, extractors):
     return {"target_labels": true_token_labels, "extractor_labels": dict(extractor_labels)}
 
 
-def get_targets(test_data):
+def get_targets(test_data):  # pragma: no cover
     """Extracts targets from the test data."""
     intent_targets = [e.get("intent", "") for e in test_data.training_examples]
     entity_targets = [e.get("entities", []) for e in test_data.training_examples]
@@ -264,17 +269,17 @@ def get_targets(test_data):
     return intent_targets, entity_targets
 
 
-def extract_intent(result):
+def extract_intent(result):  # pragma: no cover
     """Extracts the intent from a parsing result."""
     return result['intent'].get('name') if 'intent' in result else None
 
 
-def extract_entities(result):
+def extract_entities(result):  # pragma: no cover
     """Extracts entities from a parsing result."""
     return result['entities'] if 'entities' in result else []
 
 
-def get_predictions(interpreter, test_data):
+def get_predictions(interpreter, test_data):  # pragma: no cover
     """Runs the model for the test set and extracts predictions and tokens."""
     intent_predictions, entity_predictions, tokens = [], [], []
     for e in test_data.training_examples:
@@ -301,16 +306,16 @@ def combine_extractor_and_dimension_name(extractor, dim):
 
 def get_duckling_dimensions(interpreter, duckling_extractor_name):
     """Gets the activated dimensions of a duckling extractor, or all known dimensions as a fallback."""
-    component = get_duckling_component(interpreter, duckling_extractor_name)
+    component = find_component(interpreter, duckling_extractor_name)
     return component.dimensions if component.dimensions else known_duckling_dimensions
 
 
-def get_duckling_component(interpreter, duckling_extractor_name):
-    """Finds the duckling component in a pipeline."""
-    return [c for c in interpreter.pipeline if c.name == duckling_extractor_name][0]
+def find_component(interpreter, component_name):
+    """Finds a component in a pipeline."""
+    return [c for c in interpreter.pipeline if c.name == component_name][0]
 
 
-def patch_duckling_extractors(interpreter, extractors):
+def patch_duckling_extractors(interpreter, extractors):  # pragma: no cover
     """Removes the basic duckling extractor from the set of extractors and adds dimension-suffixed ones.
 
     :param interpreter: a rasa nlu interpreter object
@@ -350,7 +355,7 @@ def patch_duckling_entities(entity_predictions):
     return patched_entity_predictions
 
 
-def run_evaluation(config, model_path, component_builder=None):
+def run_evaluation(config, model_path, component_builder=None):  # pragma: no cover
     """Evaluate intent classification and entity extraction."""
     # get the metadata config from the package data
     test_data = load_data(config['data'], config['language'])
@@ -367,7 +372,7 @@ def run_evaluation(config, model_path, component_builder=None):
     evaluate_entities(entity_targets, entity_predictions, tokens, extractors)
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     parser = create_argparser()
     args = parser.parse_args()
     nlu_config = RasaNLUConfig(args.config, os.environ, vars(args))

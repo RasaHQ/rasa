@@ -7,13 +7,25 @@ from __future__ import unicode_literals
 import pytest
 import logging
 
-from rasa_nlu.evaluate import is_token_within_entity
+from rasa_nlu.evaluate import is_token_within_entity, do_entities_overlap, merge_labels, patch_duckling_entities, \
+    remove_empty_intent_examples, get_entity_extractors, get_duckling_dimensions, known_duckling_dimensions, \
+    find_component, patch_duckling_extractors
 from rasa_nlu.evaluate import does_token_cross_borders
 from rasa_nlu.evaluate import align_entity_predictions
 from rasa_nlu.evaluate import determine_intersection
 from rasa_nlu.tokenizers import Token
+from tests import utilities
 
 logging.basicConfig(level="DEBUG")
+
+
+@pytest.fixture(scope="module")
+def duckling_interpreter(component_builder):
+    _conf = utilities.base_test_conf("")
+    _conf["pipeline"] = ["ner_duckling"]
+    _conf["data"] = "./data/examples/rasa/demo-rasa.json"
+    return utilities.interpreter_for(component_builder, _conf)
+
 
 # Chinese Example
 # "对面食过敏" -> To be allergic to wheat-based food
@@ -121,6 +133,69 @@ def test_token_entity_boundaries():
     assert does_token_cross_borders(CH_wrong_segmentation[0], CH_correct_entity) == True
 
 
+def test_entity_overlap():
+    assert do_entities_overlap([CH_correct_entity, CH_wrong_entity]) == True
+    assert do_entities_overlap(EN_targets) == False
+
+
+def test_label_merging():
+    aligned_predictions = [
+        {"target_labels": ["O", "O"], "extractor_labels": {"A": ["O", "O"]}},
+        {"target_labels": ["LOC", "O", "O"], "extractor_labels": {"A": ["O", "O", "O"]}}
+    ]
+
+    assert all(merge_labels(aligned_predictions) == ["O", "O", "LOC", "O", "O"])
+    assert all(merge_labels(aligned_predictions, "A") == ["O", "O", "O", "O", "O"])
+
+
+def test_duckling_patching():
+    entities = [[
+        {
+            "start": 37,
+            "end": 56,
+            "value": "near Alexanderplatz",
+            "entity": "location",
+            "extractor": "ner_crf"
+        },
+        {
+            "start": 57,
+            "end": 64,
+            "value": "tonight",
+            "entity": "Time",
+            "extractor": "ner_duckling"
+
+        }
+    ]]
+    patched = [[
+        {
+            "start": 37,
+            "end": 56,
+            "value": "near Alexanderplatz",
+            "entity": "location",
+            "extractor": "ner_crf"
+        },
+        {
+            "start": 57,
+            "end": 64,
+            "value": "tonight",
+            "entity": "Time",
+            "extractor": "ner_duckling (Time)"
+
+        }
+    ]]
+    assert patch_duckling_entities(entities) == patched
+
+
+def test_empty_intent_removal():
+    targets = ["", "greet"]
+    predicted = ["restaurant_search", "greet"]
+
+    targets_r, predicted_r = remove_empty_intent_examples(targets, predicted)
+
+    assert targets_r == ["greet"]
+    assert predicted_r == ["greet"]
+
+
 def test_evaluate_entities():
     mock_extractors = ["A", "B"]
     result = align_entity_predictions(EN_targets, EN_predicted, EN_tokens, mock_extractors)
@@ -131,3 +206,21 @@ def test_evaluate_entities():
             "B": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "movie", "movie"]
         }
     }, "Wrong entity prediction alignment"
+
+
+def test_get_entity_extractors(duckling_interpreter):
+    assert get_entity_extractors(duckling_interpreter) == {"ner_duckling"}
+
+
+def test_get_duckling_dimensions(duckling_interpreter):
+    assert set(get_duckling_dimensions(duckling_interpreter, "ner_duckling")) == known_duckling_dimensions
+
+
+def test_find_component(duckling_interpreter):
+    assert find_component(duckling_interpreter, "ner_duckling").name == "ner_duckling"
+
+
+def test_patch_duckling_extractors(duckling_interpreter):
+    target = {"ner_duckling ({})".format(dim) for dim in known_duckling_dimensions}
+    patched = patch_duckling_extractors(duckling_interpreter, {"ner_duckling"})
+    assert patched == target
