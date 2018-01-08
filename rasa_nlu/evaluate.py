@@ -27,7 +27,7 @@ entity_processors = {"ner_synonyms"}
 
 def create_argparser():
     parser = argparse.ArgumentParser(
-        description='evaluate a trained Rasa NLU pipeline')
+            description='evaluate a trained Rasa NLU pipeline')
 
     parser.add_argument('-d', '--data', default=None,
                         help="file containing evaluation data")
@@ -99,8 +99,8 @@ def evaluate_intents(targets, predictions):
     mask = targets != ""
     targets = targets[mask]
     predictions = np.array(predictions)[mask]
-    logger.info("Intent Evaluation: Only considering those %d examples that "
-                "have a defined intent out of %d examples" % (targets.size, num_examples))
+    logger.info("Intent Evaluation: Only considering those {} examples that "
+                "have a defined intent out of {} examples".format(targets.size, num_examples))
     log_evaluation_table(targets, predictions)
 
     cnf_matrix = confusion_matrix(targets, predictions)
@@ -121,7 +121,7 @@ def evaluate_entities(targets, predictions, tokens, extractors):
     for extractor in extractors:
         merged_predictions = np.array(list(itertools.chain(*[ap["extractor_labels"][extractor]
                                                              for ap in aligned_predictions])))
-        logger.info("Eval Entities: %s" % extractor)
+        logger.info("Evaluation for entity extractor: {}".format(extractor))
         log_evaluation_table(merged_targets, merged_predictions)
 
 
@@ -178,7 +178,8 @@ def find_intersecting_entites(token, entities):
         elif does_token_cross_borders(token, e):
             candidates.append(e)
             logger.debug(
-                "Token boundary error for token %s(%d, %d) and entity %s" % (token.text, token.offset, token.end, e))
+                    "Token boundary error for token {}({}, {}) and entity {}".format(
+                            token.text, token.offset, token.end, e))
     return candidates
 
 
@@ -282,7 +283,7 @@ def get_entity_extractors(interpreter):
 
 def combine_extractor_and_dimension_name(extractor, dim):
     """Joins the duckling extractor name with a dimension's name"""
-    return "%s (%s)" % (extractor, dim)
+    return "{} ({})".format(extractor, dim)
 
 
 def get_duckling_dimensions(interpreter, duckling_extractor_name):
