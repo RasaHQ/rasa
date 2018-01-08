@@ -45,7 +45,8 @@ def plot_confusion_matrix(cm, classes,
                           zmin=1):
     """Print and plot the confusion matrix for the intent classification.
 
-    Normalization can be applied by setting `normalize=True`."""
+    Normalization can be applied by setting `normalize=True`.
+    """
     import numpy as np
 
     zmax = cm.max()
@@ -90,6 +91,10 @@ def log_evaluation_table(test_y, preds):
 
 
 def evaluate_intents(targets, predictions):
+    """Creates a confusion matrix and summary statistics for intent predictions.
+
+    Only considers those examples with a set intent. Others are filtered out.
+    """
     from sklearn.metrics import confusion_matrix
     from sklearn.utils.multiclass import unique_labels
 
@@ -110,48 +115,59 @@ def evaluate_intents(targets, predictions):
     plt.show()
 
 
+def merge_labels(aligned_predictions, extractor=None):
+    """Concatenates all labels of the aligned predictions.
+
+    Takes the aligned prediction labels which are grouped for each message
+    and concatenates them.
+    """
+    if extractor:
+        label_lists = [ap["extractor_labels"][extractor] for ap in aligned_predictions]
+    else:
+        label_lists = [ap["target_labels"] for ap in aligned_predictions]
+
+    flattened = list(itertools.chain(*label_lists))
+    return np.array(flattened)
+
+
 def evaluate_entities(targets, predictions, tokens, extractors):
+    """Creates summary statistics for each entity extractor.
+
+    Logs precision, recall, and F1 per entity type for each extractor.
+    """
     aligned_predictions = []
     for ts, ps, tks in zip(targets, predictions, tokens):
         aligned_predictions.append(align_entity_predictions(ts, ps, tks, extractors))
 
-    merged_targets = np.array(list(itertools.chain(*[ap["target_labels"]
-                                                     for ap in aligned_predictions])))
+    merged_targets = merge_labels(aligned_predictions)
 
     for extractor in extractors:
-        merged_predictions = np.array(list(itertools.chain(*[ap["extractor_labels"][extractor]
-                                                             for ap in aligned_predictions])))
+        merged_predictions = merge_labels(aligned_predictions, extractor)
         logger.info("Evaluation for entity extractor: {}".format(extractor))
         log_evaluation_table(merged_targets, merged_predictions)
 
 
 def is_token_within_entity(token, entity):
-    """
-    Checks if a token is within the boundaries of an entity
-    """
+    """Checks if a token is within the boundaries of an entity."""
     return determine_intersection(token, entity) == len(token.text)
 
 
 def does_token_cross_borders(token, entity):
-    """
-    Checks if a token crosses the boundaries of an entity
-    """
+    """Checks if a token crosses the boundaries of an entity."""
     num_intersect = determine_intersection(token, entity)
     return num_intersect > 0 and num_intersect < len(token.text)
 
 
 def determine_intersection(token, entity):
-    """
-    Calculates how many characters a given token and entity share
-    """
+    """Calculates how many characters a given token and entity share."""
     pos_token = set(range(token.offset, token.end))
     pos_entity = set(range(entity["start"], entity["end"]))
     return len(pos_token.intersection(pos_entity))
 
 
 def do_entities_overlap(entities):
-    """
-    Checks if entities overlap, i.e. cross each others start and end boundaries
+    """Checks if entities overlap, i.e. cross each others start and end boundaries.
+
     :param entities: list of entities
     :return: boolean
     """
@@ -165,8 +181,8 @@ def do_entities_overlap(entities):
 
 
 def find_intersecting_entites(token, entities):
-    """
-    Finds the entities that intersect with a token
+    """Finds the entities that intersect with a token.
+
     :param token: a single token
     :param entities: entities found by a single extractor
     :return: list of entities
@@ -184,8 +200,8 @@ def find_intersecting_entites(token, entities):
 
 
 def pick_best_entity_fit(token, candidates):
-    """
-    Determines the token label given intersecting entities
+    """Determines the token label given intersecting entities.
+
     :param token: a single token
     :param entities: entities found by a single extractor
     :return: entity type
@@ -200,8 +216,8 @@ def pick_best_entity_fit(token, candidates):
 
 
 def determine_token_labels(token, entities):
-    """
-    Determines the token label given entities that do not overlap
+    """Determines the token label given entities that do not overlap.
+
     :param token: a single token
     :param entities: entities found by a single extractor
     :return: entity type
@@ -217,12 +233,13 @@ def determine_token_labels(token, entities):
 
 
 def align_entity_predictions(targets, predictions, tokens, extractors):
-    """
+    """Aligns entity predictions to the message tokens.
+
     Determines for every token the true label based on the prediction targets and
-    the label assigned by each single extractor
+    the label assigned by each single extractor.
     :param targets: list of target entities
     :param predictions: list of predicted entities
-    :param tokens: message tokens as used by the extractors
+    :param tokens: original message tokens
     :param extractors: the entity extractors that should be considered
     :return: dictionary containing the true token labels and token labels from the extractors
     """
@@ -240,9 +257,7 @@ def align_entity_predictions(targets, predictions, tokens, extractors):
 
 
 def get_targets(test_data):
-    """
-    Extracts targets from the test data
-    """
+    """Extracts targets from the test data."""
     intent_targets = [e.get("intent", "") for e in test_data.training_examples]
     entity_targets = [e.get("entities", []) for e in test_data.training_examples]
 
@@ -250,19 +265,17 @@ def get_targets(test_data):
 
 
 def extract_intent(result):
-    """Extracts the intent from a parsing result"""
+    """Extracts the intent from a parsing result."""
     return result['intent'].get('name') if 'intent' in result else None
 
 
 def extract_entities(result):
-    """Extracts entities from a parsing result"""
+    """Extracts entities from a parsing result."""
     return result['entities'] if 'entities' in result else []
 
 
 def get_predictions(interpreter, test_data):
-    """
-    Runs the model for the test set and extracts predictions and tokens
-    """
+    """Runs the model for the test set and extracts predictions and tokens."""
     intent_predictions, entity_predictions, tokens = [], [], []
     for e in test_data.training_examples:
         res = interpreter.parse(e.text, only_output_properties=False)
@@ -273,33 +286,33 @@ def get_predictions(interpreter, test_data):
 
 
 def get_entity_extractors(interpreter):
-    """
-    Finds the names of entity extractors used by the interpreter
-    Processors are removed since they do not detect the boundaries themselves
+    """Finds the names of entity extractors used by the interpreter.
+
+    Processors are removed since they do not detect the boundaries themselves.
     """
     extractors = set([c.name for c in interpreter.pipeline if "entities" in c.provides])
     return extractors - entity_processors
 
 
 def combine_extractor_and_dimension_name(extractor, dim):
-    """Joins the duckling extractor name with a dimension's name"""
+    """Joins the duckling extractor name with a dimension's name."""
     return "{} ({})".format(extractor, dim)
 
 
 def get_duckling_dimensions(interpreter, duckling_extractor_name):
-    """Gets the activated dimensions of a duckling extractor, or all known dimensions as a fallback"""
+    """Gets the activated dimensions of a duckling extractor, or all known dimensions as a fallback."""
     component = get_duckling_component(interpreter, duckling_extractor_name)
     return component.dimensions if component.dimensions else known_duckling_dimensions
 
 
 def get_duckling_component(interpreter, duckling_extractor_name):
-    """Finds the duckling component in a pipeline"""
+    """Finds the duckling component in a pipeline."""
     return [c for c in interpreter.pipeline if c.name == duckling_extractor_name][0]
 
 
 def patch_duckling_extractors(interpreter, extractors):
-    """
-    Removes the basic duckling extractor from the set of extractors and adds dimension-suffixed ones
+    """Removes the basic duckling extractor from the set of extractors and adds dimension-suffixed ones.
+
     :param interpreter: a rasa nlu interpreter object
     :param extractors: a set of entity extractor names used in the interpreter
     """
@@ -314,7 +327,7 @@ def patch_duckling_extractors(interpreter, extractors):
 
 
 def patch_duckling_entity(entity):
-    """Patches a single entity by combining extractor and dimension name"""
+    """Patches a single entity by combining extractor and dimension name."""
     if entity["extractor"] in duckling_extractors:
         entity = entity.copy()
         entity["extractor"] = combine_extractor_and_dimension_name(entity["extractor"], entity["entity"])
@@ -323,9 +336,9 @@ def patch_duckling_entity(entity):
 
 
 def patch_duckling_entities(entity_predictions):
-    """
-    Adds the duckling dimension as a suffix to the extractor name to make sure
-    there only is one prediction per token per extractor name
+    """Adds the duckling dimension as a suffix to the extractor name.
+
+    As a result, there is only is one prediction per token per extractor name.
     """
     patched_entity_predictions = []
     for entities in entity_predictions:
@@ -338,6 +351,7 @@ def patch_duckling_entities(entity_predictions):
 
 
 def run_evaluation(config, model_path, component_builder=None):
+    """Evaluate intent classification and entity extraction."""
     # get the metadata config from the package data
     test_data = load_data(config['data'], config['language'])
     interpreter = Interpreter.load(model_path, config, component_builder)
