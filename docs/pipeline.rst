@@ -367,4 +367,4 @@ component can retrieve these feature vectors from the context and do intent clas
 
 Initially the context is filled with all configuration values, the arrows in the image show the call order
 and visualize the path of the passed context. After all components are trained and persisted, the
-final context dictionary is used to persist the models metadata.
+final context dictionary is used to persist the model's metadata.
