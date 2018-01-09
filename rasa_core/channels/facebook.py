@@ -275,7 +275,7 @@ class FacebookInput(HttpInputComponent):
             else:
                 hmac_object = hmac.new(
                         bytearray(app_secret, 'utf8'),
-                        str(request_payload).encode('utf8'), digest_module)
+                        request_payload, digest_module)
             generated_hash = hmac_object.hexdigest()
             if hub_signature == generated_hash:
                 return True
