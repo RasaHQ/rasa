@@ -127,7 +127,7 @@ You can then test your new model by sending a request. Open a new tab/window on 
 
 .. code-block:: console
 
-    $ curl -XPOST localhost:5000/parse -d '{"q":"I am looking for Chinese food"}' | python -mjson.tool
+    $ curl -X POST localhost:5000/parse -d '{"q":"I am looking for Chinese food"}' | python -m json.tool
 
 which should return 
 
@@ -181,7 +181,7 @@ With very little data, rasa NLU can in certain cases already generalise concepts
 
 .. code-block:: console
 
-    $ curl -XPOST localhost:5000/parse -d '{"q":"I want some italian food"}' | python -mjson.tool
+    $ curl -X POST localhost:5000/parse -d '{"q":"I want some italian food"}' | python -m json.tool
     {
         "text": "I want some italian food",
         "entities": [
