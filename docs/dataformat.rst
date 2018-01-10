@@ -19,6 +19,8 @@ The ``common_examples`` are used to train both the entity and the intent models.
 examples in the ``common_examples`` array. The next section describes in detail how an example looks like.
 Regex features are a tool to help the classifier detect entities or intents and improve the performance.
 
+You can use `Chatito <https://rodrigopivi.github.io/Chatito/>`__ , a tool for generating training datasets in rasa's format using a simple DSL.
+
 Common Examples
 ---------------
 
