@@ -29,37 +29,10 @@ if typing.TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _read_dev_requirements(file_name):
-    """Reads the dev requirements and groups the pinned versions into sections indicated by comments in the file.
-
-    The dev requirements should be grouped by preceeding comments. The comment should start with `#` followed by
-    the name of the requirement, e.g. `# sklearn`. All following lines till the next line starting with `#` will be
-    required to be installed if the name `sklearn` is requested to be available."""
-
-    # pragma: no cover
-    try:
-        import pkg_resources
-        req_lines = pkg_resources.resource_string("rasa_nlu", "../" + file_name).split("\n")
-    except Exception as e:
-        logger.info("Couldn't read dev-requirements.txt. Error: {}".format(e))
-        req_lines = []
-    return _requirements_from_lines(req_lines)
-
-
-def _requirements_from_lines(req_lines):
-    requirements = defaultdict(list)
-    current_name = None
-    for req_line in req_lines:
-        if req_line.startswith("#"):
-            current_name = req_line[1:].strip(' \n')
-        elif current_name is not None:
-            requirements[current_name].append(req_line.strip(' \n'))
-    return requirements
-
-
 def find_unavailable_packages(package_names):
     # type: (List[Text]) -> Set[Text]
-    """Tries to import all the package names and returns the packages where it failed."""
+    """Tries to import all the package names and returns
+    the packages where it failed."""
     import importlib
 
     failed_imports = set()
@@ -71,53 +44,54 @@ def find_unavailable_packages(package_names):
     return failed_imports
 
 
-def validate_requirements(component_names, dev_requirements_file="alt_requirements/requirements_dev.txt"):
+def validate_requirements(component_names):
     # type: (List[Text], Text) -> None
-    """Ensures that all required python packages are installed to instantiate and used the passed components."""
+    """Ensures that all required python packages are installed to
+    instantiate and used the passed components."""
     from rasa_nlu import registry
 
     # Validate that all required packages are installed
     failed_imports = set()
     for component_name in component_names:
         component_class = registry.get_component_class(component_name)
-        failed_imports.update(find_unavailable_packages(component_class.required_packages()))
+        failed_imports.update(find_unavailable_packages(
+                component_class.required_packages()))
     if failed_imports:  # pragma: no cover
-        # if available, use the development file to figure out the correct version numbers for each requirement
-        all_requirements = _read_dev_requirements(dev_requirements_file)
-        if all_requirements:
-            missing_requirements = [r for i in failed_imports for r in all_requirements[i]]
-            raise Exception("Not all required packages are installed. " +
-                            "Failed to find the following imports {}. ".format(", ".join(failed_imports)) +
-                            "To use this pipeline, you need to install the missing dependencies, e.g. by running:\n\t" +
-                            "> pip install {}".format(" ".join(missing_requirements)))
-        else:
-            raise Exception("Not all required packages are installed. " +
-                            "To use this pipeline, you need to install the missing dependencies. " +
-                            "Please install {}".format(", ".join(failed_imports)))
+        # if available, use the development file to figure out the correct
+        # version numbers for each requirement
+        raise Exception("Not all required packages are installed. " +
+                        "To use this pipeline, you need to install the "
+                        "missing dependencies. " +
+                        "Please install {}".format(", ".join(failed_imports)))
 
 
 def validate_arguments(pipeline, context, allow_empty_pipeline=False):
     # type: (List[Component], Dict[Text, Any], bool) -> None
-    """Validates a pipeline before it is run. Ensures, that all arguments are present to train the pipeline."""
+    """Validates a pipeline before it is run. Ensures, that all
+    arguments are present to train the pipeline."""
 
     # Ensure the pipeline is not empty
     if not allow_empty_pipeline and len(pipeline) == 0:
-        raise ValueError("Can not train an empty pipeline. " +
-                         "Make sure to specify a proper pipeline in the configuration using the `pipeline` key." +
-                         "The `backend` configuration key is NOT supported anymore.")
+        raise ValueError("Can not train an empty pipeline. "
+                         "Make sure to specify a proper pipeline in "
+                         "the configuration using the `pipeline` key." +
+                         "The `backend` configuration key is "
+                         "NOT supported anymore.")
 
     provided_properties = set(context.keys())
 
     for component in pipeline:
         for r in component.requires:
             if r not in provided_properties:
-                raise Exception("Failed to validate at component '{}'. Missing property: '{}'".format(
-                    component.name, r))
+                raise Exception("Failed to validate at component "
+                                "'{}'. Missing property: '{}'"
+                                "".format(component.name, r))
         provided_properties.update(component.provides)
 
 
 class MissingArgumentError(ValueError):
-    """Raised when a function is called and not all parameters can be filled from the context / config.
+    """Raised when a function is called and not all parameters can be
+    filled from the context / config.
 
     Attributes:
         message -- explanation of which parameter is missing
