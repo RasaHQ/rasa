@@ -272,3 +272,6 @@ In this case messages will be retrieved from the command line because we specifi
 the ``ConsoleInputChannel``. Responses are printed to the command line as well. You
 can find a complete example of how to load an agent and chat with it on the
 command line in ``examples/restaurantbot/run.py``.
+
+.. raw:: html 
+   :file: poll.html
