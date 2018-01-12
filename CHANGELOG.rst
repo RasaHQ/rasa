@@ -11,10 +11,14 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 Added
 -----
+- non ascii character support for anything that gets json dumped (e.g.
+  training data received over HTTP endpoint)
 
 Changed
 -------
 - removed ``-e .`` from requirements files - if you want to install the app use ``pip install -e .``
+- fixed http duckling parsing for non ``en`` languages
+- fixed parsing of entities from markdown training data files
 
 Fixed
 -----
