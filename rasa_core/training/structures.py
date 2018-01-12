@@ -211,31 +211,64 @@ class StoryGraph(object):
         # type: () -> StoryGraph
         """Create a graph with the cyclic edges removed from this graph."""
 
+        if not self.cyclic_edge_ids:
+            return self
+
         story_end_checkpoints = self.story_end_checkpoints.copy()
-        cyclic_edges = self.cyclic_edges()
+        cyclic_edge_ids = self.cyclic_edge_ids
         # we need to remove the start steps and replace them with steps ending
         # in a special end checkpoint
-        steps_to_be_removed = {start.id for start, _ in cyclic_edges}
-        story_steps = [s
-                       for s in self.story_steps
-                       if s.id not in steps_to_be_removed]
+        story_steps = {s.id: s.create_copy(use_new_id=False)
+                       for s in self.story_steps}
 
-        # add changed start steps again
-        for s, e in cyclic_edges:
-            cid = utils.generate_id()
-            start_cid = "CYCLE_S_" + cid
-            end_cid = "CYCLE_E_" + cid
-            story_end_checkpoints[start_cid] = end_cid
+        # we are going to do this in a recursive way. we are going to remove
+        # one cycle and then we are going to let the cycle detection run again
+        # this is not inherently necessary so if this becomes a performance
+        # issue, we can change it. It is actually enough to run the cycle
+        # detection only once and then remove one cycle after another, but
+        # since removing the cycle is done by adding / removing edges and nodes
+        # the logic is a lot easier if we only need to make sure the change is
+        # consistent if we only change one compared to changing all of them.
 
-            modified_start = s.create_copy(use_new_id=True)
-            modified_start.end_checkpoint = Checkpoint(start_cid)
-            story_steps.append(modified_start)
+        s, e = cyclic_edge_ids.pop()
 
-            modified_end = e.create_copy(use_new_id=True)
-            modified_end.start_checkpoint = Checkpoint(end_cid)
-            story_steps.append(modified_end)
+        cid = utils.generate_id()
+        start_cid = "CYCLE_S_" + cid
+        connector_cid = "CYCLE_C_" + cid
+        end_cid = "CYCLE_E_" + cid
+        story_end_checkpoints[start_cid] = end_cid
 
-        return StoryGraph(story_steps, story_end_checkpoints)
+        # changed all starts
+        start = story_steps[s]
+        original_end = start.end_checkpoint
+        start.end_checkpoint = Checkpoint(start_cid)
+
+        needs_connector = False
+
+        for k, step in story_steps.items()[:]:
+            if (step.start_checkpoint
+                    and step.start_checkpoint.name == original_end.name):
+
+                if k == e:
+                    cid = end_cid
+                else:
+                    cid = connector_cid
+                    needs_connector = True
+
+                modified = step.create_copy(use_new_id=True)
+                modified.start_checkpoint = Checkpoint(
+                        cid,
+                        step.start_checkpoint.conditions)
+                story_steps[modified.id] = modified
+
+        if needs_connector:
+            modified = start.create_copy(use_new_id=True)
+            modified.end_checkpoint = Checkpoint(connector_cid)
+            story_steps[modified.id] = modified
+
+        # remove next cycles in another call (will create a new graph!)
+        return StoryGraph(story_steps.values(),
+                          story_end_checkpoints).with_cycles_removed()
 
     def get(self, step_id):
         # type: (Text) -> Optional[StoryStep]

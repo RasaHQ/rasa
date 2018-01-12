@@ -8,6 +8,7 @@ import logging
 
 from builtins import str
 
+from rasa_core import utils
 from rasa_core.agent import Agent
 from rasa_core.channels.console import ConsoleInputChannel
 from rasa_core.interpreter import RasaNLUInterpreter, RegexInterpreter
@@ -118,7 +119,7 @@ if __name__ == '__main__':
     arg_parser = create_argument_parser()
     cmdline_args = arg_parser.parse_args()
 
-    logging.basicConfig(level=cmdline_args.loglevel)
+    utils.configure_colored_logging(cmdline_args.loglevel)
 
     additional_arguments = {
         "max_history": cmdline_args.history,
