@@ -152,7 +152,7 @@
         ]
       },
       {
-        "text": "show me chines restaurants",
+        "text": "show me chines restaurants in the north",
         "intent": "restaurant_search",
         "entities": [
           {
@@ -160,6 +160,12 @@
             "end": 14,
             "value": "chinese",
             "entity": "cuisine"
+          },
+          {
+            "start": 34,
+            "end": 39,
+            "value": "north",
+            "entity": "location"
           }
         ]
       },
