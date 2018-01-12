@@ -48,7 +48,8 @@ class SpacyNLP(Component):
         spacy_model_name = config["spacy_model_name"]
         if spacy_model_name is None:
             spacy_model_name = config["language"]
-        logger.info("Trying to load spacy model with name '{}'".format(spacy_model_name))
+        logger.info("Trying to load spacy model with "
+                    "name '{}'".format(spacy_model_name))
         nlp = spacy.load(spacy_model_name, parser=False)
         cls.ensure_proper_language_model(nlp)
         return SpacyNLP(nlp, config["language"], spacy_model_name)
@@ -59,7 +60,8 @@ class SpacyNLP(Component):
 
         spacy_model_name = model_metadata.metadata.get("spacy_model_name")
         if spacy_model_name is None:
-            # Fallback, use the language name, e.g. "en", as the model name if no explicit name is defined
+            # Fallback, use the language name, e.g. "en",
+            # as the model name if no explicit name is defined
             spacy_model_name = model_metadata.language
         return cls.name + "-" + spacy_model_name
 
@@ -88,7 +90,11 @@ class SpacyNLP(Component):
         }
 
     @classmethod
-    def load(cls, model_dir=None, model_metadata=None, cached_component=None, **kwargs):
+    def load(cls,
+             model_dir=None,
+             model_metadata=None,
+             cached_component=None,
+             **kwargs):
         # type: (Text, Metadata, Optional[SpacyNLP], **Any) -> SpacyNLP
         import spacy
 
