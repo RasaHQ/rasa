@@ -7,11 +7,9 @@ import re
 import io
 from rasa_nlu.training_data import Message
 
-ent_regex = re.compile(r'\[(?P<value>[^\]]+)]'
-                       r'\((?P<entity>[^:)]+)\)')  # [restaurant](what)
-ent_regex_with_value = re.compile(r'\[(?P<synonym>[^\]]+)'
-                                  r'\]\((?P<entity>\w*?):'
-                                  r'(?P<value>[^)]+)\)')  # [open](open:1)
+ent_regex = re.compile(r'\[(?P<synonym>[^\]]+)'
+                       r'\]\((?P<entity>\w*?)'
+                       r'(?:\:(?P<value>[^)]+))?\)')  # [open](open:1)
 intent_regex = re.compile(r'##\s*intent:(.+)')
 synonym_regex = re.compile(r'##\s*synonym:(.+)')
 example_regex = re.compile(r'\s*[-\*]\s*(.+)')
@@ -19,6 +17,7 @@ comment_regex = re.compile(r'<!--[\s\S]*?--!*>', re.MULTILINE)
 
 INTENT_PARSING_STATE = "intent"
 SYNONYM_PARSING_STATE = "synonym"
+
 
 def strip_comments(comment_regex, text):
     """ Removes comments defined by `comment_regex` from `text`. """
@@ -79,24 +78,27 @@ class MarkdownToJson(object):
     def _parse_intent_example(self, example_in_md):
         entities = []
         utter = example_in_md
-        for regex in [ent_regex, ent_regex_with_value]:
-            utter = re.sub(regex, r"\1", utter)  # [text](entity) -> text
-            ent_matches = re.finditer(regex, example_in_md)
-            for matchNum, match in enumerate(ent_matches):
-                if 'synonym' in match.groupdict():
-                    entity_value_in_utter = match.groupdict()['synonym']
-                else:
-                    entity_value_in_utter = match.groupdict()['value']
+        match = re.search(ent_regex, utter)
+        while match is not None:
+            entity_synonym = match.groupdict()['synonym']
+            entity_entity = match.groupdict()['entity']
+            entity_value = match.groupdict()['value']
 
-                start_index = utter.index(entity_value_in_utter)
-                end_index = start_index + len(entity_value_in_utter)
+            if match.groupdict()['value'] is None:
+                entity_value = entity_synonym
 
-                entities.append({
-                    'entity': match.groupdict()['entity'],
-                    'value': match.groupdict()['value'],
-                    'start': start_index,
-                    'end': end_index
-                })
+            start_index = match.start()
+            end_index = start_index + len(entity_synonym)
+
+            entities.append({
+                'entity': entity_entity,
+                'value': entity_value,
+                'start': start_index,
+                'end': end_index
+            })
+
+            utter = utter[:match.start()] + entity_synonym + utter[match.end():]
+            match = re.search(ent_regex, utter)
 
         message = Message(utter, {'intent': self.current_intent})
         if len(entities) > 0:
