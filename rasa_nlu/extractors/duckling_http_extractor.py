@@ -33,7 +33,7 @@ class DucklingHTTPExtractor(EntityExtractor):
     provides = ["entities"]
 
     def __init__(self, duckling_url, language, dimensions=None):
-        # type: (Text, Optional[List[Text]]) -> None
+        # type: (Text, Text, Optional[List[Text]]) -> None
 
         super(DucklingHTTPExtractor, self).__init__()
         self.dimensions = dimensions
@@ -52,7 +52,8 @@ class DucklingHTTPExtractor(EntityExtractor):
         """Sends the request to the duckling server and parses the result."""
 
         try:
-            payload = {"text": text, "lang": self.language}
+            locale = "{}_{}".format(self.language, self.language.upper())
+            payload = {"text": text, "locale": locale}
             headers = {"Content-Type": "application/x-www-form-urlencoded; "
                                        "charset=UTF-8"}
             response = requests.post(self.duckling_url + "/parse",
@@ -104,6 +105,10 @@ class DucklingHTTPExtractor(EntityExtractor):
                     "entity": match["dim"]}
 
                 extracted.append(entity)
+        else:
+            logger.warn("Duckling HTTP component in pipeline, but no "
+                        "`duckling_http_url` configuration in the config "
+                        "file.")
 
         extracted = self.add_extractor_name(extracted)
         message.set("entities",
