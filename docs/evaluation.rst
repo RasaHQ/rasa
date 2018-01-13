@@ -8,7 +8,7 @@ entity recognition. You invoke this script supplying test data, model, and confi
 
 .. code-block:: bash
 
-    evaluate.py -d data/my_test.json -m models/my_model -c my_nlu_config.json
+    python -m rasa_nlu.evaluate -d data/my_test.json -m models/my_model -c my_nlu_config.json
 
 
 Intent Classification
