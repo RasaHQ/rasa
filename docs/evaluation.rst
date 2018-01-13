@@ -19,19 +19,19 @@ Furthermore, it creates a confusion matrix for you to see which intents are mist
 Entity Extraction
 -----------------
 For each entity extractor, the evaluation script logs its performance per entity type in your training data.
-So if you use :code:`ner_crf` and :code:`ner_duckling` in your pipeline, it will log two evaluation tables
+So if you use ``ner_crf`` and ``ner_duckling`` in your pipeline, it will log two evaluation tables
 containing recall, precision, and f1 measure for each entity type.
 
-In the case :code:`ner_duckling` we actually run the evaluation for each defined
-duckling dimension. If you use the :code:`time` and :code:`ordinal` dimensions, you would
-get two evaluation tables: one for :code:`ner_duckling (Time)` and one for
-:code:`ner_duckling (Ordinal)`.
+In the case ``ner_duckling`` we actually run the evaluation for each defined
+duckling dimension. If you use the ``time`` and ``ordinal`` dimensions, you would
+get two evaluation tables: one for ``ner_duckling (Time)`` and one for
+``ner_duckling (Ordinal)``.
 
-:code:`ner_synomyms` does not create an evaluation table, because it only changes the value of the found
+``ner_synomyms`` does not create an evaluation table, because it only changes the value of the found
 entities and does not find entity boundaries itself.
 
 Finally, keep in mind that entity types in your testing data have to match the output
-of the extraction components. This is particularly important for :code:`ner_duckling`, because it is not
+of the extraction components. This is particularly important for ``ner_duckling``, because it is not
 fitted to your training data.
 
 
