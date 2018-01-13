@@ -22,13 +22,15 @@ class SlackBot(SlackClient, OutputChannel):
         super(SlackBot, self).__init__(token)
 
     def send_text_message(self, recipient_id, message):
-        super(SlackBot, self).api_call("chat.postMessage", channel=recipient_id,
+        super(SlackBot, self).api_call("chat.postMessage",
+                                       channel=recipient_id,
                                        as_user=True, text=message)
 
     def send_image_url(self, recipient_id, image_url, message=""):
         image_attachment = [{"image_url": image_url,
                              "text": message}]
-        super(SlackBot, self).api_call("chat.postMessage", channel=recipient_id,
+        super(SlackBot, self).api_call("chat.postMessage",
+                                       channel=recipient_id,
                                        as_user=True,
                                        attachments=image_attachment)
 
@@ -45,7 +47,8 @@ class SlackBot(SlackClient, OutputChannel):
 
         button_attachment = [{"fallback": message,
                               "callback_id": message.replace(' ', '_')[:20],
-                              "actions": self._convert_to_slack_buttons(buttons)}]
+                              "actions": self._convert_to_slack_buttons(
+                                  buttons)}]
 
         super(SlackBot, self).api_call("chat.postMessage",
                                        channel=recipient_id,
@@ -65,10 +68,12 @@ class SlackInput(HttpInputComponent):
         messages. Details to setup:
 
         https://github.com/slackapi/python-slackclient
-        :param slack_token: Your Slack Authentication token. You can find or generate a test token
-            `here <https://api.slack.com/docs/oauth-test-tokens>`_.
-        :param slack_channel: the string identifier for a channel to which the bot posts,
-            or channel name (e.g. 'C1234ABC', 'bot-test' or '#bot-test')
+        :param slack_token: Your Slack Authentication token. You can find or
+            generate a test token
+             `here <https://api.slack.com/docs/oauth-test-tokens>`_.
+        :param slack_channel: the string identifier for a channel to which
+            the bot posts, or channel name
+            (e.g. 'C1234ABC', 'bot-test' or '#bot-test')
         """
         self.slack_token = slack_token
         self.slack_channel = slack_channel
@@ -114,7 +119,8 @@ class SlackInput(HttpInputComponent):
                 output = dict(request.form)
                 if self._is_button_reply(output):
                     text = self._get_button_reply(output)
-                    sender_id = json.loads(output['payload'][0]).get('user').get('id')
+                    sender_id = json.loads(output['payload'][0]).get(
+                        'user').get('id')
                 else:
                     return make_response()
             else:
