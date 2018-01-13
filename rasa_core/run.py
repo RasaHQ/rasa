@@ -13,6 +13,7 @@ from rasa_core.agent import Agent
 from rasa_core.channels.console import ConsoleInputChannel
 from rasa_core.channels.facebook import FacebookInput
 from rasa_core.channels.rest import HttpInputChannel
+from rasa_core.channels.slack import SlackInput
 from rasa_core.utils import read_yaml_file
 
 logger = logging.getLogger()  # get the root logger
@@ -50,7 +51,7 @@ def create_argument_parser():
     parser.add_argument(
             '-c', '--connector',
             default="cmdline",
-            choices=["facebook", "cmdline"],
+            choices=["facebook", "slack", "cmdline"],
             help="service to connect to")
 
     # arguments for logging configuration
@@ -81,7 +82,7 @@ def _create_facebook_channel(channel, port, credentials_file):
                         "The argument should be a file path pointing to"
                         "a yml file containing the facebook authentication"
                         "information. Details in the docs: "
-                        "https://core.rasa.ai/facebook.html")
+                        "https://core.rasa.ai/connectors.html#facebook-messenger-setup")
     credentials = read_yaml_file(credentials_file)
     input_blueprint = FacebookInput(
             credentials.get("verify"),
@@ -91,11 +92,29 @@ def _create_facebook_channel(channel, port, credentials_file):
     return HttpInputChannel(port, None, input_blueprint)
 
 
+def _create_slack_channel(channel, port, credentials_file):
+    if credentials_file is None:
+        raise Exception("To use the slack input channel, you need to "
+                        "pass a credentials file using '--credentials'. "
+                        "The argument should be a file path pointing to"
+                        "a yml file containing the slack authentication"
+                        "information. Details in the docs: "
+                        "https://core.rasa.ai/connectors.html#slack-setup")
+    credentials = read_yaml_file(credentials_file)
+    input_blueprint = SlackInput(
+            credentials.get("slack_token"),
+            credentials.get("slack_channel"))
+
+    return HttpInputChannel(port, None, input_blueprint)
+
+
 def create_input_channel(channel, port, credentials_file):
     """Instantiate the chosen input channel."""
 
     if channel == "facebook":
         return _create_facebook_channel(channel, port, credentials_file)
+    elif channel == "slack":
+        return _create_slack_channel(channel, port, credentials_file)
     elif channel == "cmdline":
         return ConsoleInputChannel()
     else:

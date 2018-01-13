@@ -16,8 +16,11 @@ train-nlu:
 train-core:
 	python -m rasa_core.train -s data/stories.md -d domain.yml -o models/dialogue --epochs 300
 
-run:
-	python -m rasa_core.run -d models/dialogue -u models/nlu/current -p 5002 -c facebook --credentials credentials.yml
+run-fb:
+	python -m rasa_core.run -d models/dialogue -u models/nlu/current -p 5002 -c facebook --credentials fb_credentials.yml
+
+run-slack:
+	python -m rasa_core.run -d models/dialogue -u models/nlu/current -p 5002 -c slack --credentials slack_credentials.yml
 
 run-cmdline:
 	python -m rasa_core.run -d models/dialogue -u models/nlu/current
