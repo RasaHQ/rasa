@@ -8,6 +8,8 @@ import simplejson
 import os
 import six
 
+from rasa_nlu.utils import json_to_string
+
 # Describes where to search for the config file if no location is specified
 from typing import Text
 
@@ -131,7 +133,7 @@ class RasaNLUConfig(object):
         return dict(list(self.items()))
 
     def view(self):
-        return simplejson.dumps(self.__dict__, indent=4)
+        return json_to_string(self.__dict__, indent=4)
 
     def split_arg(self, config, arg_name):
         if arg_name in config and isinstance(config[arg_name], six.string_types):

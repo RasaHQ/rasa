@@ -15,6 +15,7 @@ from rasa_nlu.project import Project
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.model import Interpreter, Metadata
 from rasa_nlu.train import do_train
+from rasa_nlu.utils import json_to_string
 
 slowtest = pytest.mark.slowtest
 
@@ -31,7 +32,7 @@ def base_test_conf(pipeline_template):
 
 def write_file_config(file_config):
     with tempfile.NamedTemporaryFile("w+", suffix="_tmp_config_file.json", delete=False) as f:
-        f.write(json.dumps(file_config))
+        f.write(json_to_string(file_config))
         f.flush()
         return f
 
