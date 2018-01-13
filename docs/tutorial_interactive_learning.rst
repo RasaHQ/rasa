@@ -38,7 +38,8 @@ Also, from a practical perspective Rasa Core developers should be able to train
 via the `Wizard of Oz <https://en.wikipedia.org/wiki/Wizard_of_Oz_experiment>`_
 method. I.e. if you want a bot to do a certain task, you can simply
 pretend to be a bot for a little while and at the end it will learn how
-to respond. This is a good way of learning how to make natural and flowing
+to respond. This is a good way of learning how to make the conversation
+natural and flowing.
 
 
 The Bot
@@ -112,10 +113,10 @@ This creates a training set of conversations by randomly combining the
 stories we've provided into longer dialogues, and then trains the policy on that dataset.
 
 Then, run the script ``run.py`` to talk to the bot.
-You should be able to have a conversation similar to the one below
+You should be able to have a conversation similar to the one below.
 
 .. note::
-    we haven't connected an NLU tool here,
+    We haven't connected an NLU tool here,
     so when you type messages to the bot you have to
     type the intent starting with a `/`. (see :ref:`fixed_intent_format`)
     If you want to use Rasa NLU / wit.ai / Lex you
