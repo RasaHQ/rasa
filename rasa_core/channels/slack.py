@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class SlackBot(SlackClient, OutputChannel):
-    """A slack communication channel"""
+    """A Slack communication channel"""
 
     def __init__(self, token):
         super(SlackBot, self).__init__(token)
@@ -59,7 +59,7 @@ class SlackInput(HttpInputComponent):
 
     def __init__(self, slack_token, slack_channel):
         # type: (Text, Text) -> None
-        """Create a slack input channel.
+        """Create a Slack input channel.
 
         Needs a couple of settings to properly authenticate and validate
         messages. Details to setup:
@@ -67,7 +67,7 @@ class SlackInput(HttpInputComponent):
         https://github.com/slackapi/python-slackclient
         :param slack_token: Your Slack Authentication token. You can find or generate a test token
             `here <https://api.slack.com/docs/oauth-test-tokens>`_.
-        :param slack_channel: the string identifier for a channel to which the bot posts
+        :param slack_channel: the string identifier for a channel to which the bot posts,
             or channel name (e.g. 'C1234ABC', 'bot-test' or '#bot-test')
         """
         self.slack_token = slack_token
