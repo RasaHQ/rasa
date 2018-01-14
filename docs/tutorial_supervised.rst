@@ -15,12 +15,10 @@ Supervised Learning Tutorial
    This tutorial will cover how to use Rasa Core directly from python. We will
    dive a bit deeper into the different concepts and overall structure of the
    library. You should already be familiar with the terms domain, stories, and
-   have some knowledge of NLU (if not, head `here <http://nlu.rasa
-   .ai/tutorial.html#tutorial-a-simple-restaurant-
-    search-bot>`_ first.
+   have some knowledge of NLU (if not,
+   head `here <http://nlu.rasa.ai/tutorial.html#tutorial-a-simple-restaurant-search-bot>`_ first).
 
-   Here, we'll be using the `Example Code on GitHub <https://github
-   .com/RasaHQ/rasa_core/tree/master/examples/restaurantbot>`_.
+   Here, we'll be using the `Example Code on GitHub <https://github.com/RasaHQ/rasa_core/tree/master/examples/restaurantbot>`_.
 
 Goal
 ^^^^
@@ -100,7 +98,8 @@ for the restaurant bot are define. One example story looks as follows:
      - action_ack_dosearch
      ...
 
-See :ref:`training_data_details` to get more information about this training
+See :ref:`training_data_details` below to get more information about this
+training
 data.
 
 3. Training your bot
@@ -238,11 +237,11 @@ The Details
 
 .. _training_data_details:
 
-The Training Data
------------------
+Training Data
+-------------
 
-The training conversations come from the `bAbI dialog task
-<https://research.fb.com/downloads/babi/>`_. However, the messages in these
+The training conversations come from the `bAbI dialog task <https://research
+.fb.com/downloads/babi/>`_. However, the messages in these
 dialogues are machine generated, so we will augment this dataset with real
 user messages from the `DSTC dataset <http://camdial.org/~mh521/dstc/>`_.
 Lucky for us, this dataset is also in the restaurant domain.

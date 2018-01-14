@@ -4,15 +4,14 @@ Interactive Learning
 ====================
 
 .. note::
-This is the place to start if you have a great idea for a bot but you
+
+    This is the place to start if you have a great idea for a bot but you
     don't have any conversations to use as training data. We will assume that
     you've already thought of what intents and entities you need (check out the
-    `Rasa NLU <http://nlu.rasa.ai/tutorial.html#tutorial-a-simple-restaurant-
-    search-bot>`_ docs if you don't know what those are).
+    `Rasa NLU <http://nlu.rasa.ai/tutorial.html#tutorial-a-simple-restaurant-search-bot>`_
+    docs if you don't know what those are).
 
-    We're using this `Example Code on GitHub <https://github
-    .com/RasaHQ/rasa_core/tree/master/
-    examples/concertbot>`_.
+    We're using this `Example Code on GitHub <https://github.com/RasaHQ/rasa_core/tree/master/examples/concertbot>`_.
 
 
 The Problem
@@ -102,7 +101,8 @@ where the learning *becomes interactive*):
 **Happy paths**
 
 .. note::
-We haven't connected an NLU tool here,
+
+    We haven't connected an NLU tool here,
     so when you type messages to the bot you have to
     type the intent starting with a ``/`` (see :ref:`fixed_intent_format`).
     If you want to use Rasa NLU / wit.ai / Lex you
@@ -190,7 +190,8 @@ In this case, the bot should ``show_film_reviews`` (rather than cinema
 reviews!) so we type ``16`` and hit enter.
 
 .. note::
-The policy model will get updated *on-the-fly*,
+
+    The policy model will get updated *on-the-fly*,
     so that it's less likely to make the same mistake again.
     You can also export all of the conversations you have with the bot so
     you can add these as training stories in the future.
@@ -223,8 +224,8 @@ ground truth every time. This has been shown to have issues when trying
 to predict sequences multiple steps into the future.
 
 Also, from a practical perspective, Rasa Core developers should be able to
-train via the `Wizard of Oz <https://en.wikipedia.org/wiki/
-Wizard_of_Oz_experiment>`_ method. This means that if you want a
+train via the `Wizard of Oz <https://en.wikipedia.org/wiki/Wizard_of_Oz_experiment>`_
+method. This means that if you want a
 bot to do a certain task, you can simply pretend to be a bot for a little
 while and at the end it will learn how to respond. This is a good way of
 learning how to make the conversation natural and flowing.
