@@ -7,7 +7,7 @@ Here's how to connect your conversational AI to the outside world.
 
 Input channels are defined in the ``rasa_core.channels`` module.
 Currently, there is an implementation for the command line as well as
-connection to facebook.
+connection to Facebook.
 
 .. _facebook_connector:
 
@@ -16,7 +16,7 @@ Facebook Messenger Setup
 
 Using run script
 ^^^^^^^^^^^^^^^^
-If you want to connect to the facebook using the run script, e.g. using
+If you want to connect to the Facebook using the run script, e.g. using
 
 .. code-block:: bash
 
@@ -51,18 +51,18 @@ Code to create a Messenger-compatible webserver looks like this:
     agent = Agent.load("dialogue", interpreter=RegexInterpreter())
 
     input_channel = FacebookInput(
-       fb_verify="YOUR_FB_VERIFY",  # you need tell facebook this token, to confirm your URL
+       fb_verify="YOUR_FB_VERIFY",  # you need tell Facebook this token, to confirm your URL
        fb_secret="YOUR_FB_SECRET",  # your app secret
-       fb_access_token="YOUR_FB_PAGE_ACCESS_TOKEN"},   # token for the page you subscribed to
-       debug_mode=True    # enable debug mode for underlying fb library
+       fb_access_token="YOUR_FB_PAGE_ACCESS_TOKEN"}   # token for the page you subscribed to
     )
 
     agent.handle_channel(HttpInputChannel(5004, "/app", input_channel))
 
-The arguments for the ``HttpInputChannel`` are the port, the url prefix, and the input channel.
-The default endpoint for receiving facebook messenger messages is ``/webhook``, so the example
-above would listen for messages on ``/app/webhook``. This is the url you should add in the
-facebook developer portal.
+The arguments for the ``HttpInputChannel`` are the port, the url prefix, and
+the input channel. The default endpoint for receiving Facebook Messenger
+messages is ``/webhook``, so the example above would listen for messages on
+``/app/webhook``. This is the url you should add in the Facebook developer
+portal.
 
 .. note::
 
@@ -70,7 +70,7 @@ facebook developer portal.
 
       1. To create the app go to: https://developers.facebook.com/ and click on *"Add a new app"*.
       2. go onto the dashboard for the app and under *Products*, click *Add Product* and *add Messenger*. Under the settings for Messenger, scroll down to *Token Generation* and click on the link to create a new page for your app.
-      3. Use the collected ``verify``, ``secret`` and ``access token`` to connect your bot to facebook.
+      3. Use the collected ``verify``, ``secret`` and ``access token`` to connect your bot to Facebook.
 
    For more detailed steps, visit the
    `messenger docs <https://developers.facebook.com/docs/graph-api/webhooks>`_.
