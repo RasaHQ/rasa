@@ -10,15 +10,19 @@ from rasa_nlu.utils import write_to_file
 
 
 def create_argparser():
-    parser = argparse.ArgumentParser(description='train a custom language parser')
+    parser = argparse.ArgumentParser(description='Convert training data formats '
+                                                 'into one another')
     parser.add_argument('-d', '--data_file',
+                        required=True,
                         help='file or dir containing training data')
     parser.add_argument('-o', '--out_file',
+                        required=True,
                         help='file where to save training data in rasa format')
     parser.add_argument('-l', '--language',
                         default='en',
                         help='language of the data')
     parser.add_argument('-f', '--format',
+                        required=True,
                         help="output format. 'json' or 'md'")
     return parser
 
