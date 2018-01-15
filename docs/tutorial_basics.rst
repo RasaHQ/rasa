@@ -4,15 +4,17 @@ Building a Simple Bot
 =====================
 
 
-.. note:: 
-   This tutorial will show you the different parts needed to build a bot. Be
-   aware that this is a small example to get started quickly, it doesn't
-   include a lot of training data, so there is some room for improvement of
-   the final bot performance.
+.. note::
 
-   `Example Code on GitHub <https://github.com/RasaHQ/rasa_core/tree/master/examples/moodbot>`_
+    This tutorial will show you the different parts needed to build a bot. Be
+    aware that this is a small example to get started quickly. It doesn't
+    include a lot of training data, so there is some room for improvement of
+    the final bot performance.
 
-Here we show how to create your first bot the relevant classes in an application.
+    `Example Code on GitHub <https://github.com/RasaHQ/rasa_core/tree/master/examples/moodbot>`_
+
+Here we show how to create your first bot and the relevant classes in an
+application.
 This might be easier to follow if you also look at :ref:`plumbing`.
 
 Goal
@@ -20,7 +22,7 @@ Goal
 
 We will create a very simple bot that checks our current mood and tries to
 cheer us up if we are feeling sad. It will query our mood and based on our
-response will respond with a funny image or a message.
+reply will respond with a funny image or a message.
 
 Let's start by creating a project folder:
 
@@ -28,9 +30,9 @@ Let's start by creating a project folder:
 
    mkdir moodbot && cd moodbot
 
-We need to create two data files (dialogue stories as well as nlu examples)
-as well as two configuration files (dialogue domain and nlu config). The final
-structure should look like this:
+We need to create two data files (dialogue stories and NLU examples),
+as well as two configuration files (dialogue domain and NLU config). The
+final structure should look like this:
 
 .. code-block:: text
 
@@ -53,9 +55,10 @@ Here is an example domain for our moodbot, ``domain.yml``:
 
 
 .. literalinclude:: ../examples/moodbot/domain.yml
-   :linenos:
-   :language: yaml
-   :name: domain.yml
+    :language: yaml
+    :name: domain.yml
+    :linenos:
+
 
 So what do the different parts mean?
 
@@ -99,18 +102,19 @@ Language Understanding (NLU) and transforms the message into structured output.
 In this example we are going to use Rasa NLU for this purpose.
 
 In Rasa NLU, we need to define the user messages our bot should be able to
-handle in the `Rasa NLU training format <https://nlu.rasa.ai/dataformat
-.html>`_. Let's create some intent examples in ``data/nlu.md``:
+handle in the `Rasa NLU training data format <https://nlu.rasa.ai/dataformat.html>`_.
+Let's create some intent examples in ``data/nlu.md``:
 
 .. literalinclude:: ../examples/moodbot/data/nlu.md
-   :linenos:
-   :language: md
+    :linenos:
+    :language: md
+
 
 Furthermore, we need a configuration file, ``nlu_model_config.json``, for the
 NLU model:
 
 .. literalinclude:: ../examples/moodbot/nlu_model_config.json
-   :linenos:
+    :linenos:
 
 We can now train an NLU model using our examples (make sure to
 `install Rasa NLU <http://nlu.rasa.ai/installation.html#setting-up-rasa-nlu>`_
@@ -150,8 +154,8 @@ care needs to be taken when using slots, as they need to be properly set in the
 stories. But enough talking, let's head over to to our stories:
 
 .. literalinclude:: ../examples/moodbot/data/stories.md
-   :linenos:
-   :language: md
+    :linenos:
+    :language: md
 
 Stories begin with ``##`` and a string as an identifier. User actions start
 with an asterisk, and bot actions are specified by lines beginning with a
@@ -191,7 +195,8 @@ containing the information to connect to facebook. Let's put that
 into ``credentials.yml``:
 
 .. literalinclude:: ../examples/moodbot/credentials.yml
-   :linenos:
+    :linenos:
+
 
 If you are new to Facebook Messenger bots, head over to
 :ref:`facebook_connector` for an explanation of the different values.

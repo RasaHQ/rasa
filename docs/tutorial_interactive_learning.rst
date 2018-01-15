@@ -17,10 +17,11 @@ Interactive Learning
 The Problem
 ^^^^^^^^^^^
 
-The conversations your bot should be able to have usually have well-defined
-goals. There are numerous ways the conversation could develop before getting
-to this stage. We'll teach you how to how to use Rasa Core to bootstrap
-full-blown conversations from minimal to no training data.
+Your bot usually has well-defined goals it should reach when talking to a
+user. There are often numerous different ways the conversation could
+develop before reaching this final stage. We'll teach you how to use
+Rasa Core to bootstrap full-blown conversations from minimal to no training
+data.
 
 
 The Bot
@@ -33,7 +34,7 @@ without writing a flow chart. For example, if our user asks the question:
 *which of those has better reviews?*, our bot should know whether they want
 to compare *musicians* or *venues*.
 
-Let's go!
+Head over to ``examples/concertbot`` for this example. Let's go!
 
 The Domain
 ^^^^^^^^^^
@@ -41,16 +42,16 @@ The Domain
 We will keep the concert domain simple, and won't add any slots just yet.
 We'll also only support these intents:
 ``"greet", "thankyou", "goodbye", "search_concerts", "search_venues",
-"compare_reviews"``. Here is the domain definition:
+"compare_reviews"``. Here is the domain definition (``concert_domain.yml``):
 
 .. literalinclude:: ../examples/concertbot/concert_domain.yml
-:linenos:
+    :linenos:
 
 Stateless Stories
 ^^^^^^^^^^^^^^^^^
 
 We start by training a stateless model on some simple dialogues in the
-Rasa story format. This means that we define simple conversations with
+Rasa story format. This means we define conversations with
 one user utterance and only a few (typically one) bot action in response. We
 will use these stateless stories as a starting point for interactive learning.
 
@@ -61,10 +62,13 @@ always "you're welcome".
 
 Below is an excerpt of the stories.
 
-Notice that below, we've defined two stories, showing that
-``action_show_venue_reviews`` and ``action_show_concert_reviews``
-are both possible responses to the ``compare_reviews`` intent, but neither
-references any context. That comes later.
+
+.. note::
+
+    Notice that below, we've defined two stories, showing that
+    ``action_show_venue_reviews`` and ``action_show_concert_reviews``
+    are both possible responses to the ``compare_reviews`` intent, but neither
+    references any context. That comes later.
 
 
 .. code-block:: md
@@ -217,15 +221,15 @@ successful state through a number of different means.
 
 Secondly, the utterances from users will be strongly affected by the
 actions of the bot. That means that a network trained on pre-collected
-data will suffer from `exposure bias <https://arxiv.org/abs/1511.06732>`_,
-this is when a system is trained to make predictions but is never given the
+data will suffer from `exposure bias <https://arxiv.org/abs/1511.06732>`_.
+This is when a system is trained to make predictions but is never given the
 ability to train on its own predictions, instead being given the
 ground truth every time. This has been shown to have issues when trying
-to predict sequences multiple steps into the future.
+to predict sequences of multiple steps into the future.
 
-Also, from a practical perspective, Rasa Core developers should be able to
-train via the `Wizard of Oz <https://en.wikipedia.org/wiki/Wizard_of_Oz_experiment>`_
-method. This means that if you want a
+Furthermore, from a practical perspective, Rasa Core developers should be
+able to train via the `Wizard of Oz <https://en.wikipedia
+.org/wiki/Wizard_of_Oz_experiment>`_ method. This means that if you want a
 bot to do a certain task, you can simply pretend to be a bot for a little
 while and at the end it will learn how to respond. This is a good way of
 learning how to make the conversation natural and flowing.

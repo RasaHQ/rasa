@@ -23,19 +23,19 @@ Supervised Learning Tutorial
 Goal
 ^^^^
 
-In this example we will create a restaurant search bot, by training a
+In this example we will create a restaurant search bot by training a
 neural network on example conversations. A user can contact the bot with
 something close to ``"I want a mexican restaurant!"`` and the bot will ask
 more details until it is ready to suggest a restaurant.
 
-Let's start by heading over to the directory for our restaurant bot:
+Let's start by heading over to the directory for our restaurant bot. All
+example code snippets assume you are running the code from within that
+project directory:
 
 .. code-block:: bash
 
    cd examples/restaurantbot
 
-All example code snippets assume you are running the code from within that
-project directory.
 
 1. The Domain
 ^^^^^^^^^^^^^
@@ -49,7 +49,7 @@ definition in ``restaurant_domain.yml``:
 
 Our ``Domain`` has clearly defined ``slots`` (in our case it stores
 the criterion for the target restaurant) and ``intents`` (what the user can
-send). It also requires ``templates`` to have text to use to respond given
+send). It also requires ``templates``, defining text utterances used in
 a certain ``action``.
 
 Each of these ``actions`` must either be named after an utterance (dropping
@@ -75,7 +75,7 @@ calls or internal bot dynamics.
 
 But a domain alone doesn't make a bot; we need some training data to tell the
 bot which actions it should execute at what point in the conversation. So
-let's create conversation training data- the *stories*!
+let's create conversation training data - the *stories*!
 
 2. The Training Data
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -99,27 +99,24 @@ for the restaurant bot are define. One example story looks as follows:
      ...
 
 See :ref:`training_data_details` below to get more information about this
-training
-data.
+training data.
 
 3. Training your bot
 ^^^^^^^^^^^^^^^^^^^^
 
 We can go directly from data to bot with only a few steps:
 
-1. Train a Rasa NLU model to extract intents and entities. Read more about
- that in the `NLU docs <http://rasa-nlu.readthedocs.io/>`_.
+1. Train a Rasa NLU model to extract intents and entities. Read more about that in the `NLU docs <http://rasa-nlu.readthedocs.io/>`_.
 2. Train a dialogue policy which will learn to choose the correct actions.
-3. Set up an agent which has both model 1 (the NLU) and model 2 (the dialogue)
-working together to go directly from **user input** to **action**.
+3. Set up an agent which has both model 1 (the NLU) and model 2 (the dialogue) working together to go directly from **user input** to **action**.
 
 We will go through these steps one by one.
 
 NLU model
 ---------
 
-To train our Rasa NLU model, we need a configuration file, which you can find
-``nlu_model_config.json``:
+To train our Rasa NLU model, we need a configuration file, which you can
+find in ``nlu_model_config.json``:
 
 .. literalinclude:: ../examples/restaurantbot/nlu_model_config.json
    :linenos:
@@ -170,17 +167,16 @@ Now let's train it:
    :linenos:
    :pyobject: train_dialogue
 
-This code creates the policies to be trained and uses the story training data
-to train and persist (store) a model. The goal of the trained policy is to
-   predict the next action, given the current state of the bot.
 
-To train it from the command line, run
+This code creates the policies to be trained and uses the story training
+data to train and persist (store) a model. The goal of the trained policy
+is to predict the next action, given the current state of the bot.
+
+To train the dialogue policy from the command line, run
 
 .. code-block:: bash
 
    python bot.py train-dialogue
-
-to get our trained policy.
 
 *Training the dialogue model takes roughly 12 minutes on a 2014 MacBook Pro*
 
@@ -188,7 +184,7 @@ to get our trained policy.
 ^^^^^^^^^^^^^^^^
 
 Now we're going to glue some pieces together to create an actual bot.
-We instantiate an ``Agent``, which owns our NLU ``Interpreter``, a our
+We instantiate an ``Agent``, which owns our NLU ``Interpreter``, our
 trained ``Policy``, and a ``Domain``.
 
 For this demonstration, we will send messages directly to the bot out of a
@@ -257,7 +253,7 @@ Lucky for us, this dataset is also in the restaurant domain.
 
 
 We have converted the bAbI dialogue training set into the Rasa stories
-format,  you can download the stories training data from `GitHub
+format, and you can download the stories training data from `GitHub
 <https://raw.githubusercontent.com/RasaHQ/rasa_core/master/examples/
 restaurantbot/data/babi_stories.md>`_. That file is stored in
 ``data/babi_stories.md``.
