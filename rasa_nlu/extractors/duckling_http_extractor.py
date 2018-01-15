@@ -52,6 +52,9 @@ class DucklingHTTPExtractor(EntityExtractor):
         """Sends the request to the duckling server and parses the result."""
 
         try:
+            # TODO: this is king of a quick fix to generate a proper locale
+            #       for duckling. and might not always create correct
+            #       locales. We should rather introduce a new config value.
             locale = "{}_{}".format(self.language, self.language.upper())
             payload = {"text": text, "locale": locale}
             headers = {"Content-Type": "application/x-www-form-urlencoded; "
