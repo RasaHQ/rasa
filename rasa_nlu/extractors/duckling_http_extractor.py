@@ -20,6 +20,7 @@ from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.model import Metadata
 from rasa_nlu.training_data import Message
 from rasa_nlu.extractors.duckling_extractor import extract_value
+from rasa_nlu.utils import write_json_to_file
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ class DucklingHTTPExtractor(EntityExtractor):
     provides = ["entities"]
 
     def __init__(self, duckling_url, language, dimensions=None):
-        # type: (Text, Optional[List[Text]]) -> None
+        # type: (Text, Text, Optional[List[Text]]) -> None
 
         super(DucklingHTTPExtractor, self).__init__()
         self.dimensions = dimensions
@@ -51,7 +52,8 @@ class DucklingHTTPExtractor(EntityExtractor):
         """Sends the request to the duckling server and parses the result."""
 
         try:
-            payload = {"text": text, "lang": self.language}
+            locale = "{}_{}".format(self.language, self.language.upper())
+            payload = {"text": text, "locale": locale}
             headers = {"Content-Type": "application/x-www-form-urlencoded; "
                                        "charset=UTF-8"}
             response = requests.post(self.duckling_url + "/parse",
@@ -103,6 +105,10 @@ class DucklingHTTPExtractor(EntityExtractor):
                     "entity": match["dim"]}
 
                 extracted.append(entity)
+        else:
+            logger.warn("Duckling HTTP component in pipeline, but no "
+                        "`duckling_http_url` configuration in the config "
+                        "file.")
 
         extracted = self.add_extractor_name(extracted)
         message.set("entities",
@@ -113,9 +119,8 @@ class DucklingHTTPExtractor(EntityExtractor):
         # type: (Text) -> Dict[Text, Any]
 
         file_name = self.name + ".json"
-        with io.open(os.path.join(model_dir, file_name), 'w') as f:
-            dumped = str(simplejson.dumps({"dimensions": self.dimensions}))
-            f.write(dumped)
+        full_name = os.path.join(model_dir, file_name)
+        write_json_to_file(full_name, {"dimensions": self.dimensions})
         return {self.name: file_name}
 
     @classmethod

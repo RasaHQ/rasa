@@ -132,6 +132,13 @@ From github:
 git clone git@github.com:RasaHQ/rasa_nlu.git
 cd rasa_nlu
 pip install -r requirements.txt
+pip install -e .
+```
+
+For local development make sure you install the development requirements:
+```
+pip install -r alt_requirements/requirements_dev.txt
+pip install -e .
 ```
 
 To test the installation use (this will run a very stupid default model. you need to [train your own model](https://rasahq.github.io/rasa_nlu/tutorial.html) to do something useful!):
@@ -156,6 +163,27 @@ Warning! setting up Docker Cloud is quite involved - this method isn't recommend
 
 [![Deploy to Docker Cloud](https://files.cloud.docker.com/images/deploy-to-dockercloud.svg)](https://cloud.docker.com/stack/deploy/?repo=https://github.com/RasaHQ/rasa_nlu/tree/master/docker)
 
+### Install Pretrained Models for Spacy & Mitie
+In order to use the Spacy or Mitie backends make sure you have one of their pretrained models installed.
+```
+python -m spacy download en
+```
+
+To download the Mitie model run and place it in a location that you can 
+reference in your configuration during model training:
+```
+wget https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2
+tar jxf MITIE-models-v0.2.tar.bz2
+```
+
+If you want to run the tests, you need to copy the model into the Rasa folder:
+
+```
+cp MITIE-models/english/total_word_feature_extractor.dat RASA_NLU_ROOT/data/
+``` 
+
+Where `RASA_NLU_ROOT` points to your Rasa installation directory.
+
 # Development Internals
 
 ### Steps to release a new version
@@ -174,8 +202,15 @@ Releasing a new version is quite simple, as the packages are build and distribut
     git checkout -b 0.7.x
     git push origin 0.7.x
     ```
+
+### Running the Tests
+In order to run the tests make sure that you have the development requirements installed.
+```
+make test
+```
+
 ## License
-Licensed under the Apache License, Version 2.0. Copyright 2017 Rasa Technologies GmbH. [Copy of the license](LICENSE.txt).
+Licensed under the Apache License, Version 2.0. Copyright 2018 Rasa Technologies GmbH. [Copy of the license](LICENSE.txt).
 
 As a reference, the following contains a listing of the licenses of the different dependencies as of this writing. 
 Licenses of minimal dependencies:

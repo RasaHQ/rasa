@@ -90,6 +90,7 @@ rasa is a set of tools for building more advanced bots, developed by `Rasa <http
    persist
    languages
    pipeline
+   evaluation
    faq
    migrations
    license

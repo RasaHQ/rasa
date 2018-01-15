@@ -23,6 +23,7 @@ from rasa_nlu.model import Metadata
 from inspect import getmembers
 
 from rasa_nlu.training_data import Message
+from rasa_nlu.utils import write_json_to_file
 
 if typing.TYPE_CHECKING:
     from duckling import DucklingWrapper
@@ -152,8 +153,7 @@ class DucklingExtractor(EntityExtractor):
 
         file_name = self.name + ".json"
         full_name = os.path.join(model_dir, file_name)
-        with io.open(full_name, 'w') as f:
-            f.write(str(json.dumps({"dimensions": self.dimensions})))
+        write_json_to_file(full_name, {"dimensions": self.dimensions})
         return {"ner_duckling_persisted": file_name}
 
     @classmethod
