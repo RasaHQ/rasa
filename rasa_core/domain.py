@@ -288,7 +288,7 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
                         "Please make sure all actions are listed in the "
                         "domains action list. If you recently removed an "
                         "action, don't worry about this warning. It "
-                        "should stop to appear after a while. "
+                        "should stop appearing after a while. "
                         "".format(latest_action))
         else:
             return {}
