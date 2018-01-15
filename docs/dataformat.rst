@@ -37,13 +37,13 @@ That way you can map syonyms, or misspellings, to the same ``value``.
 .. code-block:: json
 
     {
-      "text": "show me chinese restaurants", 
-      "intent": "restaurant_search", 
+      "text": "show me chinese restaurants",
+      "intent": "restaurant_search",
       "entities": [
         {
-          "start": 8, 
-          "end": 15, 
-          "value": "chinese", 
+          "start": 8,
+          "end": 15,
+          "value": "chinese",
           "entity": "cuisine"
         }
       ]
@@ -104,10 +104,10 @@ Alternatively, you can add an "entity_synonyms" array to define several synonyms
       ]
     }
   }
-  
+
 .. note::
     Please note that adding synonyms using the above format does not improve the model's classification of those entities.
-    **Entities must be properly classified before they can be replaced with the synonym value.** 
+    **Entities must be properly classified before they can be replaced with the synonym value.**
 
 
 Regular Expression Features
@@ -152,7 +152,7 @@ for these extractors. Currently, all intent classifiers make use of available re
 Markdown Format
 ---------------------------
 
-Alternatively training data can be used in the following markdown format (Regex features not supported yet):
+Alternatively training data can be used in the following markdown format (Regex features not supported yet). Examples are listed using the unordered list syntax, e.g. minus ``-`` or asterisk ``*``:
 
 .. code-block:: markdown
 

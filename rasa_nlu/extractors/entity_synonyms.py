@@ -19,6 +19,7 @@ from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.model import Metadata
 from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
+from rasa_nlu.utils import write_json_to_file
 
 
 class EntitySynonymMapper(EntityExtractor):
@@ -55,9 +56,8 @@ class EntitySynonymMapper(EntityExtractor):
         if self.synonyms:
             entity_synonyms_file = os.path.join(model_dir,
                                                 "entity_synonyms.json")
-            with io.open(entity_synonyms_file, 'w') as f:
-                f.write(str(json.dumps(self.synonyms, indent=2,
-                                       separators=(',', ': '))))
+            write_json_to_file(entity_synonyms_file, self.synonyms, separators=(',', ': '))
+
             return {"entity_synonyms": "entity_synonyms.json"}
         else:
             return {"entity_synonyms": None}

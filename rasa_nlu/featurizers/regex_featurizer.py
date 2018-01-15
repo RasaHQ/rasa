@@ -22,6 +22,7 @@ from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.featurizers import Featurizer
 from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
+from rasa_nlu.utils import write_json_to_file
 
 logger = logging.getLogger(__name__)
 
@@ -107,8 +108,7 @@ class RegexFeaturizer(Featurizer):
 
         if self.known_patterns:
             regex_file = os.path.join(model_dir, "regex_featurizer.json")
-            with io.open(regex_file, 'w') as f:
-                f.write(str(json.dumps(self.known_patterns, indent=4)))
+            write_json_to_file(regex_file, self.known_patterns, indent=4)
             return {"regex_featurizer": "regex_featurizer.json"}
         else:
             return {"regex_featurizer": None}

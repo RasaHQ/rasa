@@ -4,10 +4,13 @@ from __future__ import division
 from __future__ import absolute_import
 import os
 
+from builtins import str
 import errno
 from typing import List
 from typing import Optional
 from typing import Text
+import json
+import io
 
 
 def relative_normpath(f, path):
@@ -123,3 +126,24 @@ def class_from_module_path(module_path):
         return getattr(m, class_name)
     else:
         return globals()[module_path]
+
+
+def json_to_string(obj, **kwargs):
+    indent = kwargs.pop("indent", 2)
+    ensure_ascii = kwargs.pop("ensure_ascii", False)
+    return json.dumps(obj, indent=indent, ensure_ascii=ensure_ascii, **kwargs)
+
+
+def write_json_to_file(filename, obj, **kwargs):
+    # type: (Text, Any) -> None
+    """Write an object as a json string to a file."""
+
+    write_to_file(filename, json_to_string(obj, **kwargs))
+
+
+def write_to_file(filename, text):
+    # type: (Text, Text) -> None
+    """Write a text to a file."""
+
+    with io.open(filename, 'w', encoding="utf-8") as f:
+        f.write(str(text))

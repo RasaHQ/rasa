@@ -21,6 +21,7 @@ from rasa_nlu.data_router import DataRouter, InvalidProjectError, \
     AlreadyTrainingError
 from rasa_nlu.train import TrainingException
 from rasa_nlu.version import __version__
+from rasa_nlu.utils import json_to_string
 
 logger = logging.getLogger(__name__)
 
@@ -146,8 +147,7 @@ class RasaNLU(object):
 
         if 'q' not in request_params:
             request.setResponseCode(404)
-            dumped = simplejson.dumps({
-                "error": "Invalid parse parameter specified"})
+            dumped = json_to_string({"error": "Invalid parse parameter specified"})
             returnValue(dumped)
         else:
             data = self.data_router.extract(request_params)
@@ -155,14 +155,14 @@ class RasaNLU(object):
                 request.setResponseCode(200)
                 response = yield (self.data_router.parse(data) if self._testing
                                   else threads.deferToThread(self.data_router.parse, data))
-                returnValue(simplejson.dumps(response))
+                returnValue(json_to_string(response))
             except InvalidProjectError as e:
                 request.setResponseCode(404)
-                returnValue(simplejson.dumps({"error": "{}".format(e)}))
+                returnValue(json_to_string({"error": "{}".format(e)}))
             except Exception as e:
                 request.setResponseCode(500)
                 logger.exception(e)
-                returnValue(simplejson.dumps({"error": "{}".format(e)}))
+                returnValue(json_to_string({"error": "{}".format(e)}))
 
     @app.route("/version", methods=['GET', 'OPTIONS'])
     @requires_auth
@@ -171,7 +171,7 @@ class RasaNLU(object):
         """Returns the Rasa server's version"""
 
         request.setHeader('Content-Type', 'application/json')
-        return simplejson.dumps({'version': __version__})
+        return json_to_string({'version': __version__})
 
     @app.route("/config", methods=['GET', 'OPTIONS'])
     @requires_auth
@@ -180,14 +180,14 @@ class RasaNLU(object):
         """Returns the in-memory configuration of the Rasa server"""
 
         request.setHeader('Content-Type', 'application/json')
-        return simplejson.dumps(self.config.as_dict())
+        return json_to_string(self.config.as_dict())
 
     @app.route("/status", methods=['GET', 'OPTIONS'])
     @requires_auth
     @check_cors
     def status(self, request):
         request.setHeader('Content-Type', 'application/json')
-        return simplejson.dumps(self.data_router.get_status())
+        return json_to_string(self.data_router.get_status())
 
     @app.route("/train", methods=['POST', 'OPTIONS'])
     @requires_auth
@@ -203,20 +203,16 @@ class RasaNLU(object):
             request.setResponseCode(200)
             response = yield self.data_router.start_train_process(
                     data_string, kwargs)
-            returnValue(simplejson.dumps(
-                    {'info': 'new model trained: {}'.format(response)}))
+            returnValue(json_to_string({'info': 'new model trained: {}'.format(response)}))
         except AlreadyTrainingError as e:
             request.setResponseCode(403)
-            returnValue(simplejson.dumps(
-                    {"error": "{}".format(e)}))
+            returnValue(json_to_string({"error": "{}".format(e)}))
         except InvalidProjectError as e:
             request.setResponseCode(404)
-            returnValue(simplejson.dumps(
-                    {"error": "{}".format(e)}))
+            returnValue(json_to_string({"error": "{}".format(e)}))
         except TrainingException as e:
             request.setResponseCode(500)
-            returnValue(simplejson.dumps(
-                    {"error": "{}".format(e)}))
+            returnValue(json_to_string({"error": "{}".format(e)}))
 
 
 if __name__ == '__main__':

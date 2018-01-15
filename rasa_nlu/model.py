@@ -25,7 +25,7 @@ from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.persistor import Persistor
 from rasa_nlu.training_data import TrainingData, Message
-from rasa_nlu.utils import create_dir
+from rasa_nlu.utils import create_dir, write_json_to_file
 
 logger = logging.getLogger(__name__)
 
@@ -95,8 +95,8 @@ class Metadata(object):
             "rasa_nlu_version": rasa_nlu.__version__,
         })
 
-        with io.open(os.path.join(model_dir, 'metadata.json'), 'w') as f:
-            f.write(str(json.dumps(metadata, indent=4)))
+        filename = os.path.join(model_dir, 'metadata.json')
+        write_json_to_file(filename, metadata, indent=4)
 
 
 class Trainer(object):
@@ -274,7 +274,7 @@ class Interpreter(object):
         self.context = context if context is not None else {}
         self.model_metadata = model_metadata
 
-    def parse(self, text, time=None):
+    def parse(self, text, time=None, only_output_properties = True):
         # type: (Text) -> Dict[Text, Any]
         """Parse the input text, classify it and return pipeline result.
 
@@ -295,5 +295,5 @@ class Interpreter(object):
             component.process(message, **self.context)
 
         output = self.default_output_attributes()
-        output.update(message.as_dict(only_output_properties=True))
+        output.update(message.as_dict(only_output_properties=only_output_properties))
         return output
