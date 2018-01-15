@@ -59,27 +59,21 @@ class Checkpoint(object):
 class StoryStep(object):
     def __init__(self,
                  block_name=None,  # type: Optional[Text]
-                 start_checkpoint=None,  # type: Optional[Checkpoint]
-                 end_checkpoint=None,  # type: Optional[Checkpoint]
+                 start_checkpoints=None,  # type: Optional[List[Checkpoint]]
+                 end_checkpoints=None,  # type: Optional[List[Checkpoint]]
                  events=None  # type: Optional[List[Event]]
                  ):
         # type: (...) -> None
 
-        self.end_checkpoint = end_checkpoint
-        self.start_checkpoint = start_checkpoint
+        self.end_checkpoints = end_checkpoints if end_checkpoints else []
+        self.start_checkpoints = start_checkpoints if start_checkpoints else []
         self.events = events if events else []
         self.block_name = block_name
         self.id = uuid.uuid4().hex  # type: Text
 
-    def start_checkpoint_name(self):
-        return self.start_checkpoint.name if self.start_checkpoint else None
-
-    def end_checkpoint_name(self):
-        return self.end_checkpoint.name if self.end_checkpoint else None
-
     def create_copy(self, use_new_id):
-        copied = StoryStep(self.block_name, self.start_checkpoint,
-                           self.end_checkpoint,
+        copied = StoryStep(self.block_name, self.start_checkpoints,
+                           self.end_checkpoints,
                            self.events[:])
         if not use_new_id:
             copied.id = self.id
@@ -106,9 +100,9 @@ class StoryStep(object):
             result = ""
         else:
             result = "\n## {}\n".format(self.block_name)
-            if self.start_checkpoint_name() != STORY_START:
-                cp = self.start_checkpoint.as_story_string()
-                result += "> {}\n".format(cp)
+            for s in self.start_checkpoints:
+                if s.name != STORY_START:
+                    result += "> {}\n".format(s.as_story_string())
         for s in self.events:
             if isinstance(s, UserUttered):
                 result += "* {}\n".format(s.as_story_string())
@@ -121,9 +115,8 @@ class StoryStep(object):
                                 "{}".format(s))
 
         if not flat:
-            if self.end_checkpoint != STORY_END:
-                cp = self.end_checkpoint.as_story_string()
-                result += "> {}\n".format(cp)
+            for e in self.end_checkpoints:
+                result += "> {}\n".format(e.as_story_string())
         return result
 
     def explicit_events(self, domain, should_append_final_listen=True):
@@ -145,7 +138,7 @@ class StoryStep(object):
             else:
                 events.append(e)
 
-        if self.end_checkpoint == STORY_END and should_append_final_listen:
+        if not self.end_checkpoints and should_append_final_listen:
             events.append(ActionExecuted(ACTION_LISTEN_NAME))
         return events
 
@@ -207,6 +200,10 @@ class StoryGraph(object):
         return [(self.get(source), self.get(target))
                 for source, target in self.cyclic_edge_ids]
 
+    @staticmethod
+    def overlapping_checkpoint_names(cps, other_cps):
+        return {cp.name for cp in cps} & {cp.name for cp in other_cps}
+
     def with_cycles_removed(self):
         # type: () -> StoryGraph
         """Create a graph with the cyclic edges removed from this graph."""
@@ -218,8 +215,7 @@ class StoryGraph(object):
         cyclic_edge_ids = self.cyclic_edge_ids
         # we need to remove the start steps and replace them with steps ending
         # in a special end checkpoint
-        story_steps = {s.id: s.create_copy(use_new_id=False)
-                       for s in self.story_steps}
+        story_steps = {s.id: s for s in self.story_steps}
 
         # we are going to do this in a recursive way. we are going to remove
         # one cycle and then we are going to let the cycle detection run again
@@ -230,45 +226,50 @@ class StoryGraph(object):
         # the logic is a lot easier if we only need to make sure the change is
         # consistent if we only change one compared to changing all of them.
 
-        s, e = cyclic_edge_ids.pop()
+        for s, e in cyclic_edge_ids:
+            cid = utils.generate_id()
+            sink_cid = "CYCLE_SINK_" + cid
+            connector_cid = "CYCLE_CONNECT_" + cid
+            source_cid = "CYCLE_SOURCE_" + cid
+            story_end_checkpoints[sink_cid] = source_cid
 
-        cid = utils.generate_id()
-        start_cid = "CYCLE_S_" + cid
-        connector_cid = "CYCLE_C_" + cid
-        end_cid = "CYCLE_E_" + cid
-        story_end_checkpoints[start_cid] = end_cid
+            overlapping_cps = self.overlapping_checkpoint_names(
+                    story_steps[s].end_checkpoints,
+                    story_steps[e].start_checkpoints)
 
-        # changed all starts
-        start = story_steps[s]
-        original_end = start.end_checkpoint
-        start.end_checkpoint = Checkpoint(start_cid)
+            # changed all starts
+            start = story_steps[s].create_copy(use_new_id=False)
+            start.end_checkpoints = [cp
+                                     for cp in start.end_checkpoints
+                                     if cp.name not in overlapping_cps]
+            start.end_checkpoints.append(Checkpoint(sink_cid))
+            story_steps[s] = start
 
-        needs_connector = False
+            needs_connector = False
 
-        for k, step in story_steps.items()[:]:
-            if (step.start_checkpoint
-                    and step.start_checkpoint.name == original_end.name):
+            for k, step in story_steps.items()[:]:
+                additional_ends = []
+                for original_cp in overlapping_cps:
+                    for cp in step.start_checkpoints:
+                        if cp.name == original_cp:
+                            if k == e:
+                                cid = source_cid
+                            else:
+                                cid = connector_cid
+                                needs_connector = True
 
-                if k == e:
-                    cid = end_cid
-                else:
-                    cid = connector_cid
-                    needs_connector = True
+                            additional_ends.append(Checkpoint(cid,
+                                                              cp.conditions))
+                if additional_ends:
+                    updated = step.create_copy(use_new_id=False)
+                    updated.start_checkpoints.extend(additional_ends)
+                    story_steps[k] = updated
 
-                modified = step.create_copy(use_new_id=True)
-                modified.start_checkpoint = Checkpoint(
-                        cid,
-                        step.start_checkpoint.conditions)
-                story_steps[modified.id] = modified
+            if needs_connector:
+                start.end_checkpoints.append(Checkpoint(connector_cid))
 
-        if needs_connector:
-            modified = start.create_copy(use_new_id=True)
-            modified.end_checkpoint = Checkpoint(connector_cid)
-            story_steps[modified.id] = modified
-
-        # remove next cycles in another call (will create a new graph!)
         return StoryGraph(story_steps.values(),
-                          story_end_checkpoints).with_cycles_removed()
+                          story_end_checkpoints)
 
     def get(self, step_id):
         # type: (Text) -> Optional[StoryStep]
@@ -291,8 +292,9 @@ class StoryGraph(object):
         """Topological sort of the steps returning the ids of the steps."""
 
         checkpoints = StoryGraph._group_by_start_checkpoint(story_steps)
-        graph = {s.id: [other.id
-                        for other in checkpoints[s.end_checkpoint_name()]]
+        graph = {s.id: {other.id
+                        for end in s.end_checkpoints
+                        for other in checkpoints[end.name]}
                  for s in story_steps}
         return StoryGraph.topological_sort(graph)
 
@@ -303,12 +305,13 @@ class StoryGraph(object):
 
         checkpoints = defaultdict(list)
         for step in story_steps:
-            checkpoints[step.start_checkpoint_name()].append(step)
+            for start in step.start_checkpoints:
+                checkpoints[start.name].append(step)
         return checkpoints
 
     @staticmethod
     def topological_sort(
-            graph  # type: Dict[Text, List[Text]]
+            graph  # type: Dict[Text, Set[Text]]
     ):
         # type: (...) -> Tuple[Deque[Text], Set[Tuple[Text, Text]]]
         """Creates a top sort of a directed graph. This is an unstable sorting!
@@ -319,12 +322,12 @@ class StoryGraph(object):
         The graph should be represented as a dictionary, e.g.:
 
         >>> example_graph = {
-        ...         "a": ["b", "c", "d"],
-        ...         "b": [],
-        ...         "c": ["d"],
-        ...         "d": [],
-        ...         "e": ["f"],
-        ...         "f": []}
+        ...         "a": set("b", "c", "d"),
+        ...         "b": set(),
+        ...         "c": set("d"),
+        ...         "d": set(),
+        ...         "e": set("f"),
+        ...         "f": set()}
         >>> StoryGraph.topological_sort(example_graph)
         (deque([u'e', u'f', u'a', u'c', u'd', u'b']), [])
         """
@@ -338,7 +341,7 @@ class StoryGraph(object):
 
         def dfs(node):
             visited_nodes[node] = GRAY
-            for k in graph.get(node, ()):
+            for k in graph.get(node, set()):
                 sk = visited_nodes.get(k, None)
                 if sk == GRAY:
                     removed_edges.add((node, k))
