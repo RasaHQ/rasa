@@ -19,6 +19,7 @@ Community Open Source Tools/Software
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 Below is a list of tools and applications written around or for Rasa NLU using a permissive license.
+
 - Postgres backed UI for interacting with Rasa NLU
     - `Rasa UI <https://github.com/paschmann/rasa-ui>`_
 
