@@ -56,4 +56,4 @@ If you found an issue with the framework, please file a report on `github issues
 including all the information needed to reproduce the problem.
 
 .. toctree::
-:maxdepth: 1
+    :maxdepth: 1
