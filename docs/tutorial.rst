@@ -92,15 +92,15 @@ Create a file called ``config_spacy.json`` or ``config_mitie.json``, depending o
 
  
 .. literalinclude:: ../sample_configs/config_spacy.json
-    :language: json
+:language: json
 
-or if you've installed the MITIE backend instead:
+    or if you've installed the MITIE backend instead:
 
 
 .. literalinclude:: ../sample_configs/config_mitie.json
-    :language: json
+:language: json
 
-Now we can train a spacy model by running:
+    Now we can train a spacy model by running:
 
 .. code-block:: console
 
@@ -110,6 +110,8 @@ If you want to know more about the parameters, there is an overview of the :ref:
 rasa NLU will finish training, and you'll see a new folder named as 
 ``projects/default/model_YYYYMMDD-HHMMSS`` with the timestamp when training finished.
 
+
+.. _tutorial_using_your_model:
 
 Using Your Model
 ----------------
@@ -171,7 +173,7 @@ You can use this to do some error handling in your chatbot (ex: asking the user 
 and it's also helpful for prioritising which intents need more training data.
 
 .. note::
-    The output may contain other or less attributes, depending on the pipeline you are using. For
+The output may contain other or less attributes, depending on the pipeline you are using. For
     example, the ``mitie`` pipeline doesn't include the ``"intent_ranking"`` whereas the ``spacy_sklearn``
     pipeline does.
 
