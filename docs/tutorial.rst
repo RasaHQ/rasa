@@ -94,7 +94,7 @@ Create a file called ``config_spacy.json`` or ``config_mitie.json``, depending o
 .. literalinclude:: ../sample_configs/config_spacy.json
     :language: json
 
-    or if you've installed the MITIE backend instead:
+or if you've installed the MITIE backend instead:
 
 
 .. literalinclude:: ../sample_configs/config_mitie.json
