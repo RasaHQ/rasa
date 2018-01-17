@@ -5,7 +5,6 @@ from __future__ import unicode_literals
 
 import logging
 
-import numpy as np
 from builtins import object
 
 from rasa_core.domain import check_domain_sanity

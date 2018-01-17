@@ -53,7 +53,7 @@ Code to create a Messenger-compatible webserver looks like this:
     input_channel = FacebookInput(
        fb_verify="YOUR_FB_VERIFY",  # you need tell facebook this token, to confirm your URL
        fb_secret="YOUR_FB_SECRET",  # your app secret
-       fb_tokens={"YOUR_FB_PAGE_ID": "YOUR_FB_PAGE_TOKEN"},   # page ids + tokens you subscribed to
+       fb_access_token="YOUR_FB_PAGE_ACCESS_TOKEN"},   # token for the page you subscribed to
        debug_mode=True    # enable debug mode for underlying fb library
     )
 
@@ -70,7 +70,7 @@ facebook developer portal.
 
       1. To create the app go to: https://developers.facebook.com/ and click on *"Add a new app"*.
       2. go onto the dashboard for the app and under *Products*, click *Add Product* and *add Messenger*. Under the settings for Messenger, scroll down to *Token Generation* and click on the link to create a new page for your app.
-      3. Go to the facebook page you just created and copy the *page id* from the url.
+      3. Use the collected ``verify``, ``secret`` and ``access token`` to connect your bot to facebook.
 
    For more detailed steps, visit the
    `messenger docs <https://developers.facebook.com/docs/graph-api/webhooks>`_.

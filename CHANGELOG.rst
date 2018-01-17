@@ -9,6 +9,9 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 .. note:: This version is not yet released and is under active development.
 
+This is a major version change. Make sure to take a look at the migrations
+guide in the documentation for advice on how to update existing projects.
+
 Added
 -----
 - ``--debug`` and ``--verbose`` flags to scripts (train.py, run.py, server.py)
@@ -19,14 +22,20 @@ Added
 - warn if action emits events when using a model that it did never emit in
   any of the stories the model was trained on
 - support for event pushing and endpoints to retrieve the tracker state from the server
+- Timestamp to every event
 
 Changed
 -------
+- rewrite of the whole FB connector: replaced pymessenger library with fbmessenger
 - story file utterance format changed from ``* _intent_greet[name=Rasa]``
   to ``* intent_greet{"name": "Rasa"}`` (old format is still supported but
   deprecated)
 - persist action names in domain during model persistence
 - improved travis build speed by not using miniconda
+- don't fail with an exception but with a helpful error message if an
+  utterance template contains a variable that can not be filled
+- domain doesn't fail on unknown actions but emits a warning instead. this is to support reading 
+  logs from older conversation if one recently removed an action from the domain
 
 Removed
 -------

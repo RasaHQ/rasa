@@ -3,9 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from types import LambdaType
-
-from typing import Text, List, Dict, Any, Optional
+from typing import Text, List, Dict, Any, Optional, Callable, Iterable
 
 
 class UserMessage(object):
@@ -43,7 +41,7 @@ class InputChannel(object):
         raise Exception("Input channel doesn't support async listening.")
 
     def start_sync_listening(self, message_handler):
-        # type: (LambdaType) -> None
+        # type: (Callable[[UserMessage], None]) -> None
         """Should call the message handler for every incoming message."""
         raise Exception("Input channel doesn't support sync listening.")
 
@@ -80,7 +78,7 @@ class OutputChannel(object):
             self.send_text_message(recipient_id, button_msg)
 
     def send_custom_message(self, recipient_id, elements):
-        # type: (Text, List[Dict[Text, Any]]) -> None
+        # type: (Text, Iterable[Dict[Text, Any]]) -> None
         """Sends elements to the output.
 
         Default implementation will just post the elements as a string."""

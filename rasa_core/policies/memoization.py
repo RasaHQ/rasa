@@ -12,7 +12,6 @@ import zlib
 
 import numpy as np
 from builtins import str, bytes
-from numpy import ndarray
 from rasa_core.trackers import DialogueStateTracker
 from typing import Optional, List, Any
 
