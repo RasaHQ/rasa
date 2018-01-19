@@ -75,17 +75,27 @@ def create_argument_parser():
     return parser
 
 
+def _raise_missing_credentials_Exception(channel):
+    if channel == "facebook":
+        channel_doc_link = "facebook-messenger"
+    elif channel == "slack":
+        channel_doc_link = "slack"
+    else:
+        channel_doc_link = ""
+
+    raise Exception("To use the slack input channel, you need to "
+                    "pass a credentials file using '--credentials'. "
+                    "The argument should be a file path pointing to"
+                    "a yml file containing the {} authentication"
+                    "information. Details in the docs: "
+                    "https://core.rasa.ai/connectors.html#{}-setup".
+                    format(channel, channel_doc_link))
+
+
 def _create_external_channel(channel, port, credentials_file):
     if credentials_file is None:
-        channel_doc_link = "facebook-messenger" \
-            if channel == "facebook" else "slack"
-        raise Exception("To use the slack input channel, you need to "
-                        "pass a credentials file using '--credentials'. "
-                        "The argument should be a file path pointing to"
-                        "a yml file containing the {} authentication"
-                        "information. Details in the docs: "
-                        "https://core.rasa.ai/connectors.html#{}-setup".
-                        format(channel, channel_doc_link))
+        _raise_missing_credentials_Exception(channel)
+
     credentials = read_yaml_file(credentials_file)
     if channel == "facebook":
         input_blueprint = FacebookInput(
@@ -96,6 +106,9 @@ def _create_external_channel(channel, port, credentials_file):
         input_blueprint = SlackInput(
             credentials.get("slack_token"),
             credentials.get("slack_channel"))
+    else:
+        Exception("This script currently only supports the facebook "
+                  "and slack connectors.")
 
     return HttpInputChannel(port, None, input_blueprint)
 
@@ -103,7 +116,7 @@ def _create_external_channel(channel, port, credentials_file):
 def create_input_channel(channel, port, credentials_file):
     """Instantiate the chosen input channel."""
 
-    if channel == "facebook" or "slack":
+    if channel == "facebook" or channel == "slack":
         return _create_external_channel(channel, port, credentials_file)
     elif channel == "cmdline":
         return ConsoleInputChannel()
