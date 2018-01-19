@@ -365,7 +365,7 @@ class StoryGraph(object):
             dfs(unprocessed.pop())
         return ordered, removed_edges
 
-    def visualize(self, output_file):
+    def visualize(self, output_file=None):
         import networkx as nx
         from rasa_core.training import visualization
 
