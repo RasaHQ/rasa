@@ -151,7 +151,7 @@ For this example, we are going to create the stories by writing them directly
 to ``stories.md``. But be aware, although it is a bit faster to write
 stories directly by hand instead of using interactive learning, special
 care needs to be taken when using slots, as they need to be properly set in the
-stories. But enough talking, let's head over to to our stories:
+stories. But enough talking, let's head over to our stories:
 
 .. literalinclude:: ../examples/moodbot/data/stories.md
     :linenos:
