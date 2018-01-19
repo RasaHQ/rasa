@@ -126,5 +126,5 @@ def test_visualize_training_data_graph(tmpdir, default_domain):
 
     # we can't check the exact topology - but this should be enough to ensure
     # the visualisation created a sane graph
-    assert set(G.nodes) == set(range(-1, 14))
-    assert len(G.edges) == 16
+    assert set(G.nodes()) == set(range(-1, 14))
+    assert len(G.edges()) == 16
