@@ -259,19 +259,12 @@ class TrainingsDataGenerator(object):
         # if flows get very long and have a lot of forks we
         # get into trouble by collecting to many trackers
         # hence the sub sampling
-        if phase_idx == 0:
-            if self.config.max_number_of_trackers is not None:
-                return utils.subsample_array(incoming_trackers,
-                                             self.config.max_number_of_trackers,
-                                             self.config.rand)
-            else:
-                return incoming_trackers
-        else:
-            # after the first phase we always sample max
-            # `augmentation_factor` samples
+        if self.config.max_number_of_trackers is not None:
             return utils.subsample_array(incoming_trackers,
-                                         self.config.augmentation_factor,
+                                         self.config.max_number_of_trackers,
                                          self.config.rand)
+        else:
+            return incoming_trackers
 
     def _create_start_trackers(self, active_trackers):
         # type: (TrackerLookupDict) -> TrackerLookupDict

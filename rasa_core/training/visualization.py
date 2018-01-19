@@ -213,7 +213,7 @@ def _replace_edge_labels_with_nodes(G, next_id, interpreter, nlu_training_data,
             G.add_edge(next_id, e)
 
 
-def _persist_graph(G, output_file):
+def persist_graph(G, output_file):
     """Plots the graph and persists it into a file. Uses graphviz (needs to
     be installed!)."""
     import networkx as nx
@@ -313,5 +313,5 @@ def visualize_stories(
                                     nlu_training_data, fontsize)
 
     if output_file:
-        _persist_graph(G, output_file)
+        persist_graph(G, output_file)
     return G
