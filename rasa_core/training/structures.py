@@ -255,7 +255,7 @@ class StoryGraph(object):
 
             needs_connector = False
 
-            for k, step in story_steps.items()[:]:
+            for k, step in list(story_steps.items()):
                 additional_ends = []
                 for original_cp in overlapping_cps:
                     for cp in step.start_checkpoints:
