@@ -233,3 +233,6 @@ able to train via the `Wizard of Oz <https://en.wikipedia
 bot to do a certain task, you can simply pretend to be a bot for a little
 while and at the end it will learn how to respond. This is a good way of
 learning how to make the conversation natural and flowing.
+
+.. raw:: html 
+   :file: poll.html

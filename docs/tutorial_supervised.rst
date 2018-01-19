@@ -270,6 +270,5 @@ charts get complicated quite quickly. Nevertheless, they can be a helpful
 tool in debugging a bot. More information can be found in
 :ref:`story-visualization`.
 
-
-
-
+.. raw:: html 
+   :file: poll.html

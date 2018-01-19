@@ -209,3 +209,6 @@ After setting that up, we can now run the bot using
       --port 5002 --connector facebook --credentials credentials.yml
 
 and it will now handle messages users send to the Facebook page.
+
+.. raw:: html 
+   :file: poll.html

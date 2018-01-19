@@ -138,3 +138,6 @@ you have run on your end.
 
 A detailed explanation including examples you can use with your running server
 can be found in :ref:`http_start_conversation`.
+
+.. raw:: html 
+   :file: poll.html
