@@ -121,8 +121,12 @@ def test_visualize_training_data_graph(tmpdir, default_domain):
 
     graph = graph.with_cycles_removed()
 
+    out_path = tmpdir.join("graph.png").strpath
+
     # this will be the plotted networkx graph
-    G = graph.visualize()
+    G = graph.visualize(out_path)
+
+    assert os.path.exists(out_path)
 
     # we can't check the exact topology - but this should be enough to ensure
     # the visualisation created a sane graph
