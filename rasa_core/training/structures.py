@@ -365,40 +365,41 @@ class StoryGraph(object):
             dfs(unprocessed.pop())
         return ordered, removed_edges
 
+    def visualize(self, output_file):
+        import networkx as nx
+        from rasa_core.training import visualization
 
-def visualize_story_graph(graph, output_file):
-    import networkx as nx
-    from rasa_core.training import visualization
+        G = nx.MultiDiGraph()
+        next_node_idx = [0]
+        nodes = {"STORY_START": 0, "STORY_END": -1}
 
-    G = nx.MultiDiGraph()
-    next_node_idx = [0]
-    nodes = {"STORY_START": 0, "STORY_END": -1}
+        def ensure_checkpoint_is_drawn(c):
+            if c.name not in nodes:
+                next_node_idx[0] += 1
+                nodes[c.name] = next_node_idx[0]
+                G.add_node(next_node_idx[0], label=c.name[:16])
 
-    def ensure_checkpoint_is_drawn(c):
-        if c.name not in nodes:
+        G.add_node(nodes["STORY_START"],
+                   label="START", fillcolor="green", style="filled")
+        G.add_node(nodes["STORY_END"],
+                   label="END", fillcolor="red", style="filled")
+
+        for step in self.story_steps:
             next_node_idx[0] += 1
-            nodes[c.name] = next_node_idx[0]
-            G.add_node(next_node_idx[0], label=c.name[:16])
+            step_idx = next_node_idx[0]
+            G.add_node(next_node_idx[0], label=step.block_name, style="filled",
+                       fillcolor="lightblue", shape="box")
+            for c in step.start_checkpoints:
+                ensure_checkpoint_is_drawn(c)
+                G.add_edge(nodes[c.name], step_idx)
+            for c in step.end_checkpoints:
+                ensure_checkpoint_is_drawn(c)
+                G.add_edge(step_idx, nodes[c.name])
 
-    G.add_node(nodes["STORY_START"],
-               label="START", fillcolor="green", style="filled")
-    G.add_node(nodes["STORY_END"],
-               label="END", fillcolor="red", style="filled")
+            if not step.end_checkpoints:
+                G.add_edge(step_idx, nodes["STORY_END"])
 
-    for step in graph.story_steps:
-        next_node_idx[0] += 1
-        step_idx = next_node_idx[0]
-        G.add_node(next_node_idx[0], label=step.block_name, style="filled",
-                   fillcolor="lightblue", shape="box")
-        for c in step.start_checkpoints:
-            ensure_checkpoint_is_drawn(c)
-            G.add_edge(nodes[c.name], step_idx)
-        for c in step.end_checkpoints:
-            ensure_checkpoint_is_drawn(c)
-            G.add_edge(step_idx, nodes[c.name])
+        if output_file:
+            visualization.persist_graph(G, output_file)
 
-        if not step.end_checkpoints:
-            G.add_edge(step_idx, nodes["STORY_END"])
-
-    if output_file:
-        visualization.persist_graph(G, output_file)
+        return G

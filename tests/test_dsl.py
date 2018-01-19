@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import io
+import os
 
 import numpy as np
 
@@ -111,3 +112,23 @@ def test_generate_training_data_with_cycles(tmpdir, default_domain):
     np.testing.assert_array_equal(
             training_data.y,
             [2, 4, 0, 2, 4, 0, 1, 0, 2, 4, 0, 1, 0, 0, 3])
+
+
+def test_visualize_training_data_graph(tmpdir, default_domain):
+    graph = extract_story_graph_from_file(
+            "data/test_stories/stories_with_cycle.md",
+            default_domain)
+
+    graph = graph.with_cycles_removed()
+
+    out_path = tmpdir.join("graph.png").strpath
+
+    # this will be the plotted networkx graph
+    G = graph.visualize(out_path)
+
+    assert os.path.exists(out_path)
+
+    # we can't check the exact topology - but this should be enough to ensure
+    # the visualisation created a sane graph
+    assert set(G.nodes) == set(range(-1, 14))
+    assert len(G.edges) == 16
