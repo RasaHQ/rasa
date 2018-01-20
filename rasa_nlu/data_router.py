@@ -170,7 +170,7 @@ class DataRouter(object):
     @staticmethod
     def _list_projects(path):
         """List the projects in the path, ignoring hidden directories."""
-        return [fn
+        return [os.path.relpath(fn, path)
                 for fn in glob.glob(os.path.join(path, '*'))
                 if os.path.isdir(fn)]
 
