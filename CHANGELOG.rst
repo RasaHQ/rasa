@@ -23,6 +23,7 @@ Added
   any of the stories the model was trained on
 - support for event pushing and endpoints to retrieve the tracker state from the server
 - Timestamp to every event
+- added a Slack channel that allows Rasa Core to communicate via a Slack app
 
 Changed
 -------

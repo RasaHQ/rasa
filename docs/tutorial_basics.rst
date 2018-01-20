@@ -186,9 +186,9 @@ Bonus: Handle messages from facebook
 If you want to handle input from facebook instead of the command line, you can
 specify that as part of the run command, after creating a credentials file
 containing the information to connect to facebook. Let's put that
-into ``credentials.yml``:
+into ``fb_credentials.yml``:
 
-.. literalinclude:: ../examples/moodbot/credentials.yml
+.. literalinclude:: ../examples/moodbot/fb_credentials.yml
    :linenos:
 
 If you are new to facebook messenger bots, head over to
@@ -199,7 +199,7 @@ After setting that up, we can now run the bot using
 .. code-block:: bash
 
    python -m rasa_core.run -d models/dialogue -u models/nlu/current \
-      --port 5002 --connector facebook --credentials credentials.yml
+      --port 5002 --connector facebook --credentials fb_credentials.yml
 
 and it will now handle messages users send to the facebook page!
 
