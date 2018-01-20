@@ -1,5 +1,4 @@
 ## Setup py requirements
--e .
 apscheduler==3.3.1
 fakeredis==0.8.2
 future==0.16.0
@@ -22,4 +21,5 @@ coloredlogs==7.3
 ruamel.yaml==0.15.34
 flask==0.12
 scikit-learn==0.19.1
+slackclient==1.1.0
 rasa_nlu

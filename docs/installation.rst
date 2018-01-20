@@ -33,6 +33,7 @@ If you want to use the bleeding edge version of Rasa use github + setup.py:
     .. code-block:: bash
 
         pip install -r dev-requirements.txt
+        pip install -e .
 
 
 Add Natural Language Understanding
