@@ -125,6 +125,9 @@ More information about starting the server can be found in :ref:`section_http`.
 
 You can then test your new model by sending a request. Open a new tab/window on your terminal and run
 
+.. note::
+    **For windows users** the windows command line interface doesn't like single quotes. Use doublequotes and escape where necessary. ``curl -X POST "localhost:5000/parse" -d "{/"q/":/"I am looking for Chinese food/"}" | python -m json.tool``
+
 .. code-block:: console
 
     $ curl -X POST localhost:5000/parse -d '{"q":"I am looking for Chinese food"}' | python -m json.tool
