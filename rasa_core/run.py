@@ -12,6 +12,7 @@ from rasa_core import utils
 from rasa_core.agent import Agent
 from rasa_core.channels.console import ConsoleInputChannel
 from rasa_core.channels.facebook import FacebookInput
+from rasa_core.channels.telegram import TelegramInput
 from rasa_core.channels.rest import HttpInputChannel
 from rasa_core.channels.slack import SlackInput
 from rasa_core.utils import read_yaml_file
@@ -51,7 +52,7 @@ def create_argument_parser():
     parser.add_argument(
         '-c', '--connector',
         default="cmdline",
-        choices=["facebook", "slack", "cmdline"],
+        choices=["facebook", "slack", "telegram", "cmdline"],
         help="service to connect to")
 
     # arguments for logging configuration
@@ -75,17 +76,29 @@ def create_argument_parser():
     return parser
 
 
+def _raise_missing_credentials_Exception(channel):
+    if channel == "facebook":
+        channel_doc_link = "facebook-messenger"
+    elif channel == "slack":
+        channel_doc_link = "slack"
+    elif channel == "telegram":
+        channel_doc_link = "telegram"
+    else:
+        channel_doc_link = ""
+
+    raise Exception("To use the {} input channel, you need to "
+                    "pass a credentials file using '--credentials'. "
+                    "The argument should be a file path pointing to"
+                    "a yml file containing the {} authentication"
+                    "information. Details in the docs: "
+                    "https://core.rasa.ai/connectors.html#{}-setup".
+                    format(channel, channel, channel_doc_link))
+
+
 def _create_external_channel(channel, port, credentials_file):
     if credentials_file is None:
-        channel_doc_link = "facebook-messenger" \
-            if channel == "facebook" else "slack"
-        raise Exception("To use the slack input channel, you need to "
-                        "pass a credentials file using '--credentials'. "
-                        "The argument should be a file path pointing to"
-                        "a yml file containing the {} authentication"
-                        "information. Details in the docs: "
-                        "https://core.rasa.ai/connectors.html#{}-setup".
-                        format(channel, channel_doc_link))
+        _raise_missing_credentials_Exception(channel)
+
     credentials = read_yaml_file(credentials_file)
     if channel == "facebook":
         input_blueprint = FacebookInput(
@@ -96,6 +109,11 @@ def _create_external_channel(channel, port, credentials_file):
         input_blueprint = SlackInput(
             credentials.get("slack_token"),
             credentials.get("slack_channel"))
+    elif channel == "telegram":
+        input_blueprint = TelegramInput(
+            credentials.get("access_token"),
+            credentials.get("verify"),
+            credentials.get("webhook_url"))
 
     return HttpInputChannel(port, None, input_blueprint)
 
@@ -103,7 +121,7 @@ def _create_external_channel(channel, port, credentials_file):
 def create_input_channel(channel, port, credentials_file):
     """Instantiate the chosen input channel."""
 
-    if channel == "facebook" or "slack":
+    if channel == "facebook" or "slack" or "telegram":
         return _create_external_channel(channel, port, credentials_file)
     elif channel == "cmdline":
         return ConsoleInputChannel()
