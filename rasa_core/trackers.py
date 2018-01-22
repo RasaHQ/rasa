@@ -129,7 +129,7 @@ class DialogueStateTracker(object):
         else:
             return 0
 
-    def _events_after_latest_restart(self):
+    def events_after_latest_restart(self):
         return list(self.events)[self._idx_after_latest_restart():]
 
     @property
@@ -137,7 +137,7 @@ class DialogueStateTracker(object):
         # type: () -> Optional[Text]
         """Retrieves the topic that was set before the current one."""
 
-        for event in reversed(self._events_after_latest_restart()):
+        for event in reversed(self.events_after_latest_restart()):
             if isinstance(event, TopicSet):
                 return event.topic
         return None

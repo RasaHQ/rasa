@@ -114,6 +114,9 @@ def _create_external_channel(channel, port, credentials_file):
             credentials.get("access_token"),
             credentials.get("verify"),
             credentials.get("webhook_url"))
+    else:
+        Exception("This script currently only supports the facebook,"
+                  ", telegram and slack connectors.")
 
     return HttpInputChannel(port, None, input_blueprint)
 

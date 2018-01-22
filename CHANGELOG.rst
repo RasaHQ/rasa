@@ -36,6 +36,8 @@ Changed
 - improved travis build speed by not using miniconda
 - don't fail with an exception but with a helpful error message if an
   utterance template contains a variable that can not be filled
+- domain doesn't fail on unknown actions but emits a warning instead. this is to support reading 
+  logs from older conversation if one recently removed an action from the domain
 
 Removed
 -------
