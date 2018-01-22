@@ -25,15 +25,23 @@ To use Rasa, *you have to provide some training data*.
 That is, a set of messages which you've already labelled with their intents and entities.
 Rasa then uses machine learning to pick up patterns and generalise to unseen sentences. 
 
-You can think of Rasa NLU as a set of high level APIs for building your own language parser using existing NLP and ML libraries. Find out more on the [homepage of the project](https://rasa.ai/), where you can also sign up for the mailing list.
-
-**Extended documentation:**
-- [stable](https://rasahq.github.io/rasa_nlu/) (if you install from **X.X.X** [docker](https://hub.docker.com/r/rasa/rasa_nlu/tags/) image or **pypi**)
-- [latest](https://rasahq.github.io/rasa_nlu/master/)&nbsp; (if you install from **latest** [docker](https://hub.docker.com/r/rasa/rasa_nlu/tags/) image or **github**)
+You can think of Rasa NLU as a set of high level APIs for building your own language parser using existing NLP and ML libraries.
 
 If you are new to Rasa NLU and want to create a bot, you should start with the [**tutorial**](https://rasahq.github.io/rasa_nlu/tutorial.html).
 
-# Install
+- **What does Rasa NLU do? 🤔** [Read About the Rasa Stack](http://rasa.ai/products/rasa-stack/)
+
+- **I'd like to read the detailed docs 🤓** [Read The Docs](https://nlu.rasa.ai)
+
+- **I'm ready to install Rasa NLU! 🚀** [Installation](https://nlu.rasa.ai/installation.html)
+
+- **I have a question ❓** [Gitter channel](https://gitter.im/RasaHQ/rasa_nlu)
+
+- **I would like to contribute 🤗** [How to contribute](#how-to-contribute)
+
+# Quick Install
+
+Fur the full installation instructions, please head over to the documenation: [Installation](https://nlu.rasa.ai/installation.html)
 
 **Via Docker Image**
 From docker hub:
