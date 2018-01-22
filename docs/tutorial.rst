@@ -111,6 +111,8 @@ rasa NLU will finish training, and you'll see a new folder named as
 ``projects/default/model_YYYYMMDD-HHMMSS`` with the timestamp when training finished.
 
 
+.. _tutorial_using_your_model:
+
 Using Your Model
 ----------------
 
