@@ -116,7 +116,7 @@ def _create_external_channel(channel, port, credentials_file):
             credentials.get("webhook_url"))
     else:
         Exception("This script currently only supports the facebook,"
-                  ", telegram and slack connectors.")
+                  " telegram and slack connectors.")
 
     return HttpInputChannel(port, None, input_blueprint)
 
@@ -124,7 +124,7 @@ def _create_external_channel(channel, port, credentials_file):
 def create_input_channel(channel, port, credentials_file):
     """Instantiate the chosen input channel."""
 
-    if channel == "facebook" or "slack" or "telegram":
+    if channel in ['facebook', 'slack', 'telegram']:
         return _create_external_channel(channel, port, credentials_file)
     elif channel == "cmdline":
         return ConsoleInputChannel()
