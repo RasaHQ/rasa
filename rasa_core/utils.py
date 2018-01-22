@@ -11,7 +11,6 @@ from hashlib import sha1
 from random import Random
 
 import six
-import yaml
 from builtins import input, range, str
 from numpy import all, array
 from typing import Text, Any, List, Optional
@@ -286,7 +285,7 @@ class HashableNDArray(object):
 
 def fix_yaml_loader():
     """Ensure that any string read by yaml is represented as unicode."""
-    from yaml import Loader, SafeLoader
+    from ruamel.yaml import Loader, SafeLoader
 
     def construct_yaml_str(self, node):
         # Override the default string handling function
@@ -298,9 +297,35 @@ def fix_yaml_loader():
 
 
 def read_yaml_file(filename):
-    fix_yaml_loader()
+    """Read contents of `filename` interpreting them as yaml."""
+    import ruamel.yaml
+
+    #fix_yaml_loader()
+
     with io.open(filename, encoding="utf-8") as f:
-        return yaml.load(f.read())
+        return ruamel.yaml.load(f.read())
+
+
+def fix_yaml_writer():
+    """Makes sure we omit UTF 8 tags in the yaml file."""
+    import ruamel.yaml
+
+    def my_unicode_repr(self, data):
+        return self.represent_str(data.encode('utf-8'))
+
+    ruamel.yaml.add_representer(unicode, my_unicode_repr)
+
+
+def dump_obj_as_yaml_to_file(filename, obj):
+    """Writes data (python dict) to the filename in yaml repr."""
+    import ruamel.yaml
+
+    fix_yaml_writer()
+
+    with io.open(filename, 'w', encoding="utf-8") as yaml_file:
+        ruamel.yaml.dump(obj, yaml_file,
+                         allow_unicode=True,
+                         default_flow_style=False)
 
 
 def is_training_data_empty(X):

@@ -449,9 +449,6 @@ class TemplateDomain(Domain):
     def validate_domain_yaml(cls, filename):
         """Validate domain yaml."""
         from pykwalify.core import Core
-        import ruamel
-        import warnings
-        warnings.simplefilter('ignore', ruamel.yaml.error.UnsafeLoaderWarning)
 
         log = logging.getLogger('pykwalify')
         log.setLevel(logging.WARN)
@@ -530,8 +527,6 @@ class TemplateDomain(Domain):
         return {slot.name: slot.persistence_info() for slot in self.slots}
 
     def persist(self, filename):
-        import yaml
-
         additional_config = {
             "store_entities_as_slots": self.store_entities_as_slots}
         topic_names = [t.name for t in self.topics]
@@ -549,10 +544,7 @@ class TemplateDomain(Domain):
             "action_factory": self._factory_name
         }
 
-        with io.open(filename, 'w', encoding="utf-8") as yaml_file:
-            yaml.safe_dump(domain_data, yaml_file,
-                           default_flow_style=False,
-                           allow_unicode=True)
+        utils.dump_obj_as_yaml_to_file(filename, domain_data)
 
     @utils.lazyproperty
     def templates(self):

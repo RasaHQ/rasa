@@ -15,7 +15,7 @@ templates:
   utter_greet:
     - "hey there {name}!"    # variable will be filled by slot with the same name or by custom code
   utter_goodbye:
-    - "goodbye :("
+    - "goodbye 😢"
     - "bye bye"              # multiple templates will allow the bot to randomly pick from them
   utter_default:
     - "default message"
