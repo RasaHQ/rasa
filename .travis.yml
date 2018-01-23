@@ -34,7 +34,7 @@ jobs:
   - stage: docs
     if: fork = false
     install:
-    - pip install sphinx==1.6.6 sphinx-autobuild==0.7.1 sphinxcontrib-versioning==2.2.1
+    - pip install sphinx==1.5.2 sphinx-autobuild==0.7.1 sphinxcontrib-versioning==2.2.1
       nbsphinx==0.2.18
     - pip install -e git://github.com/RasaHQ/sphinx_rtd_theme.git#egg=sphinx_rtd_theme
     script:
