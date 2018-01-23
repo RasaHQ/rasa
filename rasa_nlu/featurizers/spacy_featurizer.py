@@ -21,26 +21,14 @@ if typing.TYPE_CHECKING:
 
 def ndim(spacy_nlp):
     """Number of features used to represent a document / sentence."""
-    # type: (Language) -> int
+    # type: Language -> int
     return spacy_nlp.vocab.vectors_length
 
 
 def features_for_doc(doc):
     """Feature vector for a single document / sentence."""
-    # type: (Doc) -> np.ndarray
+    # type: Doc -> np.ndarray
     return doc.vector
-
-
-def features_for_sentences(sentences, spacy_nlp):
-    """Return a feature matrix where each row represents one sentence."""
-    # type: (List[Text], Language, int) -> np.ndarray
-    import numpy as np
-
-    X = np.zeros((len(sentences), ndim(spacy_nlp)))
-    for idx, sentence in enumerate(sentences):
-        doc = spacy_nlp(sentence)
-        X[idx, :] = features_for_doc(doc)
-    return X
 
 
 class SpacyFeaturizer(Featurizer):
