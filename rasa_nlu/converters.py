@@ -64,14 +64,15 @@ def load_dialogflow_data(files, language):
                     end = start + len(e["text"])
                     val = text[start:end]
                     entity_type = e["alias"] if "alias" in e else e["meta"]
-                    entities.append(
-                        {
-                            "entity": entity_type,
-                            "value": val,
-                            "start": start,
-                            "end": end
-                        }
-                    )
+                    if entity_type != u'@sys.ignore':
+                        entities.append(
+                            {
+                                "entity": entity_type,
+                                "value": val,
+                                "start": start,
+                                "end": end
+                            }
+                        )
                 data = {}
                 if intent:
                     data["intent"] = intent
