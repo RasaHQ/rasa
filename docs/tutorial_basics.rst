@@ -13,9 +13,12 @@ Building a Simple Bot
 
     `Example Code on GitHub <https://github.com/RasaHQ/rasa_core/tree/master/examples/moodbot>`_
 
-Here we show how to create your first bot and the relevant classes in an
-application.
+Here we show how to create your first bot, adding all the pieces of a Rasa application.
 This might be easier to follow if you also look at :ref:`plumbing`.
+
+
+.. image:: _static/images/mood_bot.png
+
 
 Goal
 ^^^^
