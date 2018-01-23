@@ -16,8 +16,7 @@ Supervised Learning Tutorial
    dive a bit deeper into the different concepts and overall structure of the
    library. You should already be familiar with the terms domain, stories, and
    have some knowledge of NLU (if not,
-   head `here <http://nlu.rasa.ai/tutorial.html#tutorial-a-simple-restaurant-search-bot>`_ first).
-
+   head :ref:`tutorial_basics` first).
    Here, we'll be using the `Example Code on GitHub <https://github.com/RasaHQ/rasa_core/tree/master/examples/restaurantbot>`_.
 
 Goal
@@ -27,6 +26,10 @@ In this example we will create a restaurant search bot by training a
 neural network on example conversations. A user can contact the bot with
 something close to ``"I want a mexican restaurant!"`` and the bot will ask
 more details until it is ready to suggest a restaurant.
+
+
+First Steps
+^^^^^^^^^^^
 
 Let's start by heading over to the directory for our restaurant bot. All
 example code snippets assume you are running the code from within that
@@ -40,47 +43,52 @@ project directory:
 1. The Domain
 ^^^^^^^^^^^^^
 
-Our restaurant domain contains a handful of slots as well as a number of
-intents, entities, utterance templates and actions. Let's inspect the domain
+Let's inspect the domain
 definition in ``restaurant_domain.yml``:
+
+There are two sections: ``entities`` and ``slots``, which you haven't seen in the basic tutorial.
+
+``slots`` are used to store user preferences, like the cuisine and price range of a restaurant. 
+``entities`` are closely related to slots. Slots are updated over time, and entities are the raw
+information that's picked up from user messages. But slots can also be used to store information about
+the outside world, like the results of API calls, or a user profile read from a database. 
+Here we have a slot called ``matches`` which stores the matching restaurants returned by an API.
 
 .. literalinclude:: ../examples/restaurantbot/restaurant_domain.yml
 
-Our ``Domain`` has clearly defined ``slots`` (in our case it stores
-the criterion for the target restaurant) and ``intents`` (what the user can
-send). It also requires ``templates``, defining text utterances used in
-a certain ``action``.
+Custom Actions
+--------------
 
-Each of these ``actions`` must either be named after an utterance (dropping
-the ``utter_`` prefix) or must be a module path to an action. Here is the
-code for one the two custom actions:
+In this example we also have custom actions. 
+An action can do much more than just send a message.
+Here's a small example of a custom action which calls an API.
+Notice that the ``run`` method can use the values of the slots, which are stored in the tracker.
 
 .. testcode::
 
     from rasa_core.actions import Action
+    from rasa_core.events import SlotSet
 
     class ActionSearchRestaurants(Action):
         def name(self):
             return 'search_restaurants'
 
         def run(self, dispatcher, tracker, domain):
+            restaurants = restaurant_api.search(tracker.get_slot("cuisine"))
             dispatcher.utter_message("here's what I found")
-            return []
+            dispatcher.utter_message(restaurants)
+            return [SlotSet("matches", restaurants)]
 
-
-The ``name`` method is to match up actions to utterances, and the ``run``
-command is executed whenever the action is called. This may involve API
-calls or internal bot dynamics.
 
 But a domain alone doesn't make a bot; we need some training data to tell the
-bot which actions it should execute at what point in the conversation. So
-let's create conversation training data - the *stories*!
+bot which actions it should execute at what point in the conversation.
+We need some conversation training data - the *stories*!
 
 2. The Training Data
-^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
 
 Take a look at ``data/babi_stories.md``, where the training conversations
-for the restaurant bot are define. One example story looks as follows:
+for the restaurant bot are defined. One example story looks as follows:
 
 .. code-block:: md
 
@@ -131,8 +139,8 @@ or using python code
 
 *Training NLU takes approximately 18 seconds on a 2014 MacBook Pro.*
 
-Dialogue Policy
----------------
+A Custom Dialogue Policy
+------------------------
 
 Now our bot needs to learn what to do in response to user messages. We do
 this by training one or multiple Rasa Core policies.
@@ -142,6 +150,10 @@ For this bot, we came up with our own policy. Check out the
 
 .. literalinclude:: ../examples/restaurantbot/bot.py
    :pyobject: RestaurantPolicy
+
+Because we've created a custom policy, we can't train the bot by running ``rasa_core.train``
+like in the :ref:`tutorial_basics`. The ``bot.py`` script shows how you can
+train a bot that uses a custom policy and actions.
 
 .. note::
 
