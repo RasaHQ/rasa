@@ -17,12 +17,14 @@ Added
 - ``--debug`` and ``--verbose`` flags to scripts (train.py, run.py, server.py)
   to set the log level
 - support for story cycles when using checkpoints
-- added a new machine learning policy `SklearnPolicy` that uses an sklearn 
+- added a new machine learning policy `SklearnPolicy` that uses an sklearn
   classifier to predict actions (logistic regression by default)
 - warn if action emits events when using a model that it did never emit in
   any of the stories the model was trained on
 - support for event pushing and endpoints to retrieve the tracker state from the server
 - Timestamp to every event
+- added a Slack channel that allows Rasa Core to communicate via a Slack app
+- added a Telegram channel that allows Rasa Core to communicate via a Telegram bot
 
 Changed
 -------
@@ -34,6 +36,8 @@ Changed
 - improved travis build speed by not using miniconda
 - don't fail with an exception but with a helpful error message if an
   utterance template contains a variable that can not be filled
+- domain doesn't fail on unknown actions but emits a warning instead. this is to support reading 
+  logs from older conversation if one recently removed an action from the domain
 
 Removed
 -------

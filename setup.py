@@ -48,6 +48,8 @@ install_requires = [
     'flask',
     'scikit-learn',
     'rasa_nlu',
+    'slackclient',
+    'python-telegram-bot'
 ]
 
 extras_requires = {
