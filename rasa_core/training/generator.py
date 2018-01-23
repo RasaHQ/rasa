@@ -22,7 +22,7 @@ from rasa_core.events import ActionExecuted, UserUttered, Event, ActionReverted
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.data import DialogueTrainingData
 from rasa_core.training.structures import (
-    StoryGraph, STORY_END, STORY_START, StoryStep)
+    StoryGraph, STORY_END, STORY_START, StoryStep, GENERATED_CHECKPOINT_PREFIX)
 
 logger = logging.getLogger(__name__)
 
@@ -450,5 +450,6 @@ class TrainingsDataGenerator(object):
                     # This indicates a start checkpoint that doesn't exist
                     collected.add((start.name, step.block_name))
         for cp, block_name in collected:
-            logger.warn("Unsatisfied start checkpoint '{}' "
-                        "in block '{}'".format(cp, block_name))
+            if not cp.startswith(GENERATED_CHECKPOINT_PREFIX):
+                logger.warn("Unsatisfied start checkpoint '{}' "
+                            "in block '{}'".format(cp, block_name))

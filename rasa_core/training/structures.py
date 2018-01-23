@@ -28,6 +28,8 @@ STORY_START = "STORY_START"
 # Checkpoint id used to identify story end blocks
 STORY_END = None
 
+GENERATED_CHECKPOINT_PREFIX = "CYCLE_"
+
 
 class Checkpoint(object):
     def __init__(self, name, conditions=None):
@@ -236,9 +238,9 @@ class StoryGraph(object):
 
         for s, e in cyclic_edge_ids:
             cid = utils.generate_id()
-            sink_cid = "CYCLE_SINK_" + cid
-            connector_cid = "CYCLE_CONNECT_" + cid
-            source_cid = "CYCLE_SOURCE_" + cid
+            sink_cid = GENERATED_CHECKPOINT_PREFIX + "SINK_" + cid
+            connector_cid = GENERATED_CHECKPOINT_PREFIX + "CONNECT_" + cid
+            source_cid = GENERATED_CHECKPOINT_PREFIX + "SOURCE_" + cid
             story_end_checkpoints[sink_cid] = source_cid
 
             overlapping_cps = self.overlapping_checkpoint_names(
