@@ -308,6 +308,13 @@ class CRFEntityExtractor(EntityExtractor):
         else:
             return None
 
+    def __tag_of_token(selfself, token):
+        import spacy
+        if spacy.about.__version__ > "2" and token._.has("tag"):
+            return token._.get("tag")
+        else:
+            return token.tag_
+
     def _from_text_to_crf(self, message, entities=None):
         # type: (Message, List[Text]) -> List[Tuple[Text, Text, Text, Text]]
         """Takes a sentence and switches it to crfsuite format."""
@@ -316,7 +323,8 @@ class CRFEntityExtractor(EntityExtractor):
         for i, token in enumerate(message.get("spacy_doc")):
             pattern = self.__pattern_of_token(message, i)
             entity = entities[i] if entities else "N/A"
-            crf_format.append((token.text, token.tag_, entity, pattern))
+            tag = self.__tag_of_token(token)
+            crf_format.append((token.text, tag, entity, pattern))
         return crf_format
 
     def _train_model(self, df_train):
