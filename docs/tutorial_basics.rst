@@ -177,7 +177,8 @@ To train the dialogue model, run:
 
 This will train the dialogue model for ``300`` epochs and store it
 into ``models/dialogue``. Now we can use that trained dialogue model
-and the previously created NLU model to run our bot:
+and the previously created NLU model to run our bot. 
+Here we'll just talk to the bot on the command line:
 
 .. code-block:: bash
 
