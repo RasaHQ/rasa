@@ -290,6 +290,7 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
                         "action, don't worry about this warning. It "
                         "should stop appearing after a while. "
                         "".format(latest_action))
+                return {}
         else:
             return {}
 

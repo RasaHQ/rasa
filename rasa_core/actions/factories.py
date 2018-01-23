@@ -47,10 +47,17 @@ def local_action_factory(action_classes, action_names, utter_templates):
             cls = utils.class_from_module_path(action_name)
             return cls()
         except ImportError as e:
-            raise ValueError(
+            if (e.message.startswith("No module named ")
+                    and e.message[16:] in action_name):
+                # we only want to capture exceptions that are raised by the
+                # class itself, not by other packages that fail to import
+                raise ValueError(
                     "Action '{}' doesn't correspond to a template / action. "
                     "Remember to prefix actions that should utter a template "
                     "with `utter_`. Error: {}".format(action_name, e))
+            else:
+                # raises the original exception again
+                raise
         except (AttributeError, KeyError) as e:
             raise ValueError(
                     "Action '{}' doesn't correspond to a template / action. "
