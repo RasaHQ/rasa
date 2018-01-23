@@ -48,6 +48,7 @@ install_requires = [
     'flask',
     'scikit-learn',
     'rasa_nlu',
+    'slackclient',
 ]
 
 extras_requires = {
