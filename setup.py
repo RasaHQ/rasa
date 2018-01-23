@@ -31,7 +31,11 @@ install_requires = [
 
 extras_requires = {
     'test': tests_requires,
-    'spacy': ["sklearn", "scipy"],
+    'spacy': ["scikit-learn",
+              "sklearn-crfsuite",
+              "scipy",
+              "spacy>2.0",
+              ],
     'mitie': ["mitie"],
 }
 
