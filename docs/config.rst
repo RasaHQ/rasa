@@ -138,7 +138,7 @@ cors_origins
 ~~~~
 
 :Type: ``list``
-:Examples: ``['*']``, ``['*.mydomain.com', 'api.domain2.net']``
+:Examples: ``["*"]``, ``["*.mydomain.com", "api.domain2.net"]``
 :Description:
     List of domain patterns from where CORS (cross-origin resource sharing) calls are allowed.
     The default value is ``[]`` which forbids all CORS requests.
