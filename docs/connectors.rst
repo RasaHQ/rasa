@@ -26,7 +26,6 @@ If you want to connect to facebook using the run script, e.g. using
 you need to supply a ``fb_credentials.yml`` with the following content:
 
 .. literalinclude:: ../examples/moodbot/fb_credentials.yml
-   :linenos:
 
 
 Directly using python
@@ -40,7 +39,6 @@ Code to create a Messenger-compatible webserver looks like this:
 
 
 .. code-block:: python
-    :linenos:
 
     from rasa_core.channels import HttpInputChannel
     from rasa_core.channels.facebook import FacebookInput
@@ -92,7 +90,6 @@ If you want to connect to the slack input channel using the run script, e.g. usi
 you need to supply a ``slack_credentials.yml`` with the following content:
 
 .. literalinclude:: ../examples/moodbot/slack_credentials.yml
-   :linenos:
 
 
 Directly using python
@@ -106,7 +103,6 @@ Code to create a Messenger-compatible webserver looks like this:
 
 
 .. code-block:: python
-    :linenos:
 
     from rasa_core.channels import HttpInputChannel
     from rasa_core.channels.slack import SlackInput
@@ -163,7 +159,6 @@ If you want to connect to the slack input channel using the run script, e.g. usi
 you need to supply a ``telegram_credentials.yml`` with the following content:
 
 .. literalinclude:: ../examples/moodbot/telegram_credentials.yml
-    :linenos:
 
 
 Directly using python
@@ -176,7 +171,6 @@ from your webserver creation logic.
 Code to create a Messenger-compatible webserver looks like this:
 
 .. code-block:: python
-    :linenos:
 
     from rasa_core.channels import HttpInputChannel
     from rasa_core.channels.telegram import TelegramInput

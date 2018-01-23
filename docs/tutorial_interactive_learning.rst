@@ -45,7 +45,6 @@ We'll also only support these intents:
 "compare_reviews"``. Here is the domain definition (``concert_domain.yml``):
 
 .. literalinclude:: ../examples/concertbot/concert_domain.yml
-    :linenos:
 
 Stateless Stories
 ^^^^^^^^^^^^^^^^^

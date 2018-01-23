@@ -18,7 +18,6 @@ Let's make our example a bit more specific:
 We want a confirmation to book a restaurant table - without it the reservation won't be made.
 
 .. code-block:: md
-    :linenos:
 
     ## book a restaurant
     * start_booking
@@ -86,7 +85,6 @@ empty message.
 So in our stories we need to define what happens after the reminder was executed:
 
 .. code-block:: md
-    :linenos:
 
     ## book a restaurant
     * start_booking

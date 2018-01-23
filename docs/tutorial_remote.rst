@@ -51,7 +51,6 @@ Here is an example domain for our remotebot, ``concert_domain_remote.yml``:
 
 
 .. literalinclude:: ../examples/remotebot/concert_domain_remote.yml
-   :linenos:
    :language: yaml
 
 One important difference is ``action_factory: remote``. This tells Rasa that
@@ -70,14 +69,12 @@ We are going to use Rasa NLU as an interpreter, so let's create
 some intent examples in ``data/concert_messages.md``:
 
 .. literalinclude:: ../examples/remotebot/data/concert_messages.md
-   :linenos:
    :language: md
 
 Furthermore, we need a configuration file ``nlu_model_config.json`` for the
 NLU model:
 
 .. literalinclude:: ../examples/remotebot/nlu_model_config.json
-   :linenos:
 
 We can now train a NLU model using our examples (make sure to
 `install Rasa NLU <http://nlu.rasa.ai/installation.html#setting-up-rasa-nlu>`_
@@ -106,7 +103,6 @@ get to the interesting part of running in remote mode). Let's put them into
 ``data/stories.md``:
 
 .. literalinclude:: ../examples/remotebot/data/stories.md
-   :linenos:
    :language: md
 
 To train the dialogue model, run:

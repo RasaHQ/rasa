@@ -45,7 +45,6 @@ intents, entities, utterance templates and actions. Let's inspect the domain
 definition in ``restaurant_domain.yml``:
 
 .. literalinclude:: ../examples/restaurantbot/restaurant_domain.yml
-    :linenos:
 
 Our ``Domain`` has clearly defined ``slots`` (in our case it stores
 the criterion for the target restaurant) and ``intents`` (what the user can
@@ -84,7 +83,6 @@ Take a look at ``data/babi_stories.md``, where the training conversations
 for the restaurant bot are define. One example story looks as follows:
 
 .. code-block:: md
-    :linenos:
 
     ## story_07715946
     * greet
@@ -119,7 +117,6 @@ To train our Rasa NLU model, we need a configuration file, which you can
 find in ``nlu_model_config.json``:
 
 .. literalinclude:: ../examples/restaurantbot/nlu_model_config.json
-   :linenos:
 
 We can train the NLU model using
 
@@ -130,7 +127,6 @@ We can train the NLU model using
 or using python code
 
 .. literalinclude:: ../examples/restaurantbot/bot.py
-   :linenos:
    :pyobject: train_nlu
 
 *Training NLU takes approximately 18 seconds on a 2014 MacBook Pro.*
@@ -145,7 +141,6 @@ For this bot, we came up with our own policy. Check out the
 ``RestaurantPolicy`` class in ``bot.py`` for the gory details:
 
 .. literalinclude:: ../examples/restaurantbot/bot.py
-   :linenos:
    :pyobject: RestaurantPolicy
 
 .. note::
@@ -164,7 +159,6 @@ network has access to to make a classification.
 Now let's train it:
 
 .. literalinclude:: ../examples/restaurantbot/bot.py
-   :linenos:
    :pyobject: train_dialogue
 
 
