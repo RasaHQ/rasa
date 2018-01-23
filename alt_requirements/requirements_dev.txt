@@ -13,7 +13,7 @@ treq==17.8.0
 google-cloud-storage==1.7.0
 
 # docs
-sphinx==1.6.6
+sphinx==1.5.2
 sphinx-autobuild==0.7.1
 sphinxcontrib-versioning==2.2.1
 nbsphinx==0.2.18
