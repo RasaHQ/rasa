@@ -55,6 +55,7 @@ the outside world, like the results of API calls, or a user profile read from a 
 Here we have a slot called ``matches`` which stores the matching restaurants returned by an API.
 
 .. literalinclude:: ../examples/restaurantbot/restaurant_domain.yml
+    :linenos:
 
 Custom Actions
 --------------
@@ -91,6 +92,7 @@ Take a look at ``data/babi_stories.md``, where the training conversations
 for the restaurant bot are defined. One example story looks as follows:
 
 .. code-block:: md
+    :linenos:
 
     ## story_07715946
     * greet
@@ -125,6 +127,7 @@ To train our Rasa NLU model, we need a configuration file, which you can
 find in ``nlu_model_config.json``:
 
 .. literalinclude:: ../examples/restaurantbot/nlu_model_config.json
+   :linenos:
 
 We can train the NLU model using
 
@@ -135,6 +138,7 @@ We can train the NLU model using
 or using python code
 
 .. literalinclude:: ../examples/restaurantbot/bot.py
+   :linenos:
    :pyobject: train_nlu
 
 *Training NLU takes approximately 18 seconds on a 2014 MacBook Pro.*
@@ -149,6 +153,7 @@ For this bot, we came up with our own policy. Check out the
 ``RestaurantPolicy`` class in ``bot.py`` for the gory details:
 
 .. literalinclude:: ../examples/restaurantbot/bot.py
+   :linenos:
    :pyobject: RestaurantPolicy
 
 Because we've created a custom policy, we can't train the bot by running ``rasa_core.train``
@@ -171,6 +176,7 @@ network has access to to make a classification.
 Now let's train it:
 
 .. literalinclude:: ../examples/restaurantbot/bot.py
+   :linenos:
    :pyobject: train_dialogue
 
 

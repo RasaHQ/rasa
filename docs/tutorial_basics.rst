@@ -17,18 +17,15 @@ Here we show how to create your first bot, adding all the pieces of a Rasa appli
 This might be easier to follow if you also look at :ref:`plumbing`.
 
 
+.. image:: _static/images/mood_bot.png
+
 
 Goal
 ^^^^
 
-We will create a very simple bot that asks about our mood and tries to
-cheer us up if we are feeling sad.
-
-.. image:: _static/images/mood_bot.png
-
-First Steps
-^^^^^^^^^^^
-
+We will create a very simple bot that checks our current mood and tries to
+cheer us up if we are feeling sad. It will query our mood and based on our
+reply will respond with a funny image or a message.
 
 Let's start by creating a project folder:
 
@@ -63,6 +60,7 @@ Here is an example domain for our moodbot, ``domain.yml``:
 .. literalinclude:: ../examples/moodbot/domain.yml
     :language: yaml
     :name: domain.yml
+    :linenos:
 
 
 So what do the different parts mean?
@@ -111,6 +109,7 @@ handle in the `Rasa NLU training data format <https://nlu.rasa.ai/dataformat.htm
 Let's create some intent examples in ``data/nlu.md``:
 
 .. literalinclude:: ../examples/moodbot/data/nlu.md
+    :linenos:
     :language: md
 
 
@@ -118,6 +117,7 @@ Furthermore, we need a configuration file, ``nlu_model_config.json``, for the
 NLU model:
 
 .. literalinclude:: ../examples/moodbot/nlu_model_config.json
+    :linenos:
 
 We can now train an NLU model using our examples (make sure to
 `install Rasa NLU <http://nlu.rasa.ai/installation.html#setting-up-rasa-nlu>`_
@@ -157,6 +157,7 @@ care needs to be taken when using slots, as they need to be properly set in the
 stories. But enough talking, let's head over to our stories:
 
 .. literalinclude:: ../examples/moodbot/data/stories.md
+    :linenos:
     :language: md
 
 Stories begin with ``##`` and a string as an identifier. User actions start
@@ -198,6 +199,7 @@ containing the information to connect to facebook. Let's put that
 into ``fb_credentials.yml``:
 
 .. literalinclude:: ../examples/moodbot/fb_credentials.yml
+   :linenos:
 
 If you are new to Facebook Messenger bots, head over to
 :ref:`facebook_connector` for an explanation of the different values.
