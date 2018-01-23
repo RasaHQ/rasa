@@ -62,11 +62,12 @@ visit the `spacy docu <https://spacy.io/docs/usage/>`_):
 .. code-block:: bash
 
     pip install rasa_nlu[spacy]
-    python -m spacy download en_core_web_lg
-    python -m spacy link en_core_web_lg en
+    python -m spacy download en_core_web_md
+    python -m spacy link en_core_web_md en
 
-We highly recommend using the "large" models instead of the spacy's default
-``en_core_web_sm``. Small models will work as well, the downside is that
+We highly recommend using at least the "medium" sized models (``_md``)instead of
+the spacy's default small ``en_core_web_sm`` model. Small models will
+work as well, the downside is that
 they have worse performance during intent classification.
 
 .. note::

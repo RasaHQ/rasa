@@ -88,8 +88,8 @@ RUN apt-get update -qq \
     && apt-get remove -y wget \
     && apt-get autoremove -y
 
-RUN pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-2.0.0/en_core_web_lg-2.0.0.tar.gz --no-cache-dir > /dev/null \
-    && python -m spacy link en_core_web_lg en \
+RUN pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.0.0/en_core_web_md-2.0.0.tar.gz --no-cache-dir > /dev/null \
+    && python -m spacy link en_core_web_md en \
     && pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.0.0/de_core_news_sm-2.0.0.tar.gz --no-cache-dir > /dev/null \
     && python -m spacy link de_core_news_sm de
 

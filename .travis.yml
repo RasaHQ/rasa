@@ -13,9 +13,9 @@ install:
 - pip install git+https://github.com/tmbo/MITIE.git
 - pip install -r alt_requirements/requirements_dev.txt
 - pip install -e .
-- pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-2.0.0/en_core_web_lg-2.0.0.tar.gz
+- pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.0.0/en_core_web_md-2.0.0.tar.gz
   --no-cache-dir > jnk
-- python -m spacy link en_core_web_lg en
+- python -m spacy link en_core_web_md en
 - pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.0.0/de_core_news_sm-2.0.0.tar.gz
   --no-cache-dir > jnk
 - python -m spacy link de_core_news_sm de
