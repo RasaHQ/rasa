@@ -49,6 +49,8 @@ Fixed
 - fixed float slot min max value handling
 - fixed non integer feature decoding, e.g. used for memoization policy
 - properly log to specified file when starting Rasa Core server
+- properly calculate offset of last reset event after loading tracker from
+  tracker store
 
 [0.7.9] - 2017-11-29
 ^^^^^^^^^^^^^^^^^^^^
