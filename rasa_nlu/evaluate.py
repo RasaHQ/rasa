@@ -3,7 +3,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import argparse
 import itertools
 import logging
 import os
@@ -16,6 +15,8 @@ from collections import defaultdict
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.converters import load_data
 from rasa_nlu.model import Interpreter
+from rasa_nlu.model import Metadata
+from rasa_nlu.model import Trainer, TrainingData
 
 logger = logging.getLogger(__name__)
 
@@ -24,17 +25,22 @@ known_duckling_dimensions = {"amount-of-money", "distance", "duration", "email",
                              "ordinal", "phone-number", "timezone", "temperature", "time", "url", "volume"}
 entity_processors = {"ner_synonyms"}
 
-
 def create_argparser():  # pragma: no cover
+    import argparse
     parser = argparse.ArgumentParser(
-            description='evaluate a trained Rasa NLU pipeline')
+            description='evaluate a Rasa NLU pipeline with cross validation or on external data')
 
-    parser.add_argument('-d', '--data', default=None,
-                        help="file containing evaluation data")
-    parser.add_argument('-m', '--model', required=True,
-                        help="path to model")
+    parser.add_argument('-d', '--data', required=True,
+                        help="file containing training/evaluation data")
+    parser.add_argument('--mode', required=True,
+                        help="evaluation|crossvalidation (evaluate pretrained model or train model by crossvalidation)")
     parser.add_argument('-c', '--config', required=True,
                         help="config file")
+
+    parser.add_argument('-m', '--model', required=False,
+                        help="path to model (evaluation only)")
+    parser.add_argument('-f', '--folds', required=False, default=10,
+                        help="number of CV folds (crossvalidation only)")
     return parser
 
 
@@ -89,7 +95,6 @@ def log_evaluation_table(test_y, preds):  # pragma: no cover
     logger.info("Accuracy:  {}".format(accuracy))
     logger.info("Classification report: \n{}".format(report))
 
-
 def remove_empty_intent_examples(targets, predictions):
     """Removes those examples without intent."""
     targets = np.array(targets)
@@ -97,6 +102,29 @@ def remove_empty_intent_examples(targets, predictions):
     targets = targets[mask]
     predictions = np.array(predictions)[mask]
     return targets, predictions
+
+
+def prepare_data(data, cutoff = 5):
+    """Remove intent groups with less than cutoff instances."""
+    data = data.sorted_intent_examples()
+    logger.info("Raw data intent examples: {}".format(len(data)))
+
+    # count intents
+    list_intents = []
+    n_intents = []
+    for intent, group in itertools.groupby(data, lambda e: e.get("intent")):
+        size = len(list(group))
+        n_intents.append(size)
+        list_intents.append(intent)
+
+    # only include intents with enough traing data
+    prep_data = []
+    good_intents = [list_intents[i] for i, _ in enumerate(list_intents) if n_intents[i] >= cutoff]
+    for ind, _ in enumerate(data):
+        if data[ind].get("intent") in good_intents:
+            prep_data.append(data[ind])
+
+    return prep_data
 
 
 def evaluate_intents(targets, predictions):  # pragma: no cover
@@ -372,11 +400,81 @@ def run_evaluation(config, model_path, component_builder=None):  # pragma: no co
     evaluate_entities(entity_targets, entity_predictions, tokens, extractors)
 
 
+def run_cv_evaluation(data, n_folds, nlu_config):
+    from sklearn import metrics
+    from sklearn.model_selection import StratifiedKFold
+    from collections import defaultdict
+    # type: (List[rasa_nlu.training_data.Message], int, RasaNLUConfig) -> Dict[Text, List[float]]
+    """Stratified cross validation on data
+
+    :param data: list of rasa_nlu.training_data.Message objects
+    :param n_folds: integer, number of cv folds
+    :param nlu_config: nlu config file
+    :return: dictionary with key, list structure, where each entry in list
+              corresponds to the relevant result for one fold
+
+    """
+    trainer = Trainer(nlu_config)
+    results = defaultdict(list)
+
+    y_true = [e.get("intent") for e in data]
+
+    skf = StratifiedKFold(n_splits=n_folds, random_state=11, shuffle=True)
+    counter = 1
+    logger.info("Evaluation started")
+    for train_index, test_index in skf.split(data, y_true):
+
+        train = [data[i] for i in train_index]
+        test = [data[i] for i in test_index]
+
+        logger.debug("Fold: {}".format(counter))
+        logger.debug("Training ...")
+        trainer.train(TrainingData(training_examples=train))
+        model_directory = trainer.persist("projects/")  # Returns the directory the model is stored in
+
+        logger.debug("Evaluation ...")
+        interpreter = Interpreter.load(model_directory, nlu_config)
+        test_y = [e.get("intent") for e in test]
+
+        preds = []
+        for e in test:
+            res = interpreter.parse(e.text)
+            if res.get('intent'):
+                preds.append(res['intent'].get('name'))
+            else:
+                preds.append(None)
+
+        # compute fold metrics
+        results["Accuracy"].append(metrics.accuracy_score(test_y, preds))
+        results["F1-score"].append(metrics.f1_score(test_y, preds, average='weighted'))
+        results["Precision"] = metrics.precision_score(test_y, preds, average='weighted')
+
+        # increase fold counter
+        counter += 1
+
+    return dict(results)
+
 if __name__ == '__main__':  # pragma: no cover
     parser = create_argparser()
     args = parser.parse_args()
+
+    # manual check argument dependency
+    if args.mode == "crossvalidation":
+        if args.model is not None:
+            parser.error("Crossvalidation will train a new model \
+                         - do not specify external model")
+
     nlu_config = RasaNLUConfig(args.config, os.environ, vars(args))
     logging.basicConfig(level=nlu_config['log_level'])
 
-    run_evaluation(nlu_config, args.model)
+    if args.mode == "crossvalidation":
+        data = load_data(args.data)
+        data = prepare_data(data, cutoff = 5)
+        results = run_cv_evaluation(data, int(args.folds), nlu_config)
+        logger.info("CV evaluation (n={})".format(args.folds))
+        for k,v in results.items():
+            logger.info("{}: {:.3f} ({:.3f})".format(k, np.mean(v), np.std(v)))
+    elif args.mode == "evaluation":
+        run_evaluation(nlu_config, args.model)
+
     logger.info("Finished evaluation")
