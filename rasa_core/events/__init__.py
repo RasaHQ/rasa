@@ -375,8 +375,6 @@ class Restarted(Event):
     def apply_to(self, tracker):
         from rasa_core.actions.action import ActionListen
         tracker._reset()
-        # will be the index of the first event after the restart
-        tracker.latest_restart_event = len(tracker.events) + 1
         tracker.follow_up_action = ActionListen()
 
 
