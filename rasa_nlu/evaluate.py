@@ -32,7 +32,7 @@ def create_argparser():  # pragma: no cover
 
     parser.add_argument('-d', '--data', required=True,
                         help="file containing training/evaluation data")
-    parser.add_argument('--mode', required=True,
+    parser.add_argument('--mode', required=False, default="evaluation",
                         help="evaluation|crossvalidation (evaluate pretrained model or train model by crossvalidation)")
     parser.add_argument('-c', '--config', required=True,
                         help="config file")
