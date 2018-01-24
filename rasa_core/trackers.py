@@ -64,7 +64,6 @@ class DialogueStateTracker(object):
         self.latest_action_name = None
         self.latest_message = None
         self.latest_bot_utterance = None
-        self.latest_restart_event = None
         self._reset()
 
     ###
@@ -79,10 +78,15 @@ class DialogueStateTracker(object):
         else:
             events = None
 
+        latest_event_time = None
+        if len(self.events) > 0:
+            latest_event_time = self.events[-1].timestamp
+
         return {
             "sender_id": self.sender_id,
             "slots": self.current_slot_values(),
             "latest_message": self.latest_message.parse_data,
+            "latest_event_time": latest_event_time,
             "paused": self.is_paused(),
             "events": events
         }
@@ -118,21 +122,22 @@ class DialogueStateTracker(object):
         """States whether the tracker is currently paused."""
         return self._paused
 
-    def _idx_after_latest_restart(self):
-        if self.latest_restart_event is not None:
-            return self.latest_restart_event
-        else:
-            return 0
+    def idx_after_latest_restart(self):
+        idx = 0
+        for i, event in enumerate(self.events):
+            if isinstance(event, Restarted):
+                idx = i + 1
+        return idx
 
-    def _events_after_latest_restart(self):
-        return list(self.events)[self._idx_after_latest_restart():]
+    def events_after_latest_restart(self):
+        return list(self.events)[self.idx_after_latest_restart():]
 
     @property
     def previous_topic(self):
         # type: () -> Optional[Text]
         """Retrieves the topic that was set before the current one."""
 
-        for event in reversed(self._events_after_latest_restart()):
+        for event in reversed(self.events_after_latest_restart()):
             if isinstance(event, TopicSet):
                 return event.topic
         return None

@@ -4,24 +4,19 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import copy
 import io
 import json
 import logging
 import os
 import re
 import warnings
-from collections import deque
 
 from typing import Optional, List, Text, Any, Dict
 
 from rasa_core import utils
-from rasa_core.channels import UserMessage
-from rasa_core.domain import Domain
 from rasa_core.events import (
-    ActionExecuted, UserUttered, Event, ActionReverted)
+    ActionExecuted, UserUttered, Event)
 from rasa_core.interpreter import RegexInterpreter
-from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.structures import (
     Checkpoint, STORY_END, STORY_START, StoryStep)
 

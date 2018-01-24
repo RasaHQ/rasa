@@ -20,6 +20,7 @@ tests_requires = [
     "pytest-xdist",
     "pytest-twisted",
     "treq",
+    "freezegun",
 ]
 
 install_requires = [
@@ -40,13 +41,15 @@ install_requires = [
     'tqdm',
     'ConfigArgParse',
     'networkx',
-    'pymessenger',
+    'fbmessenger',
     'pykwalify',
     'coloredlogs',
     'ruamel.yaml',
     'flask',
     'scikit-learn',
     'rasa_nlu',
+    'slackclient',
+    'python-telegram-bot'
 ]
 
 extras_requires = {

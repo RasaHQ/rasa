@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import json
 import logging
 import uuid
+import time
 
 import jsonpickle
 import typing
@@ -32,6 +33,9 @@ class Event(object):
 
     type_name = "event"
 
+    def __init__(self, timestamp=None):
+        self.timestamp = timestamp if timestamp else time.time()
+
     def __ne__(self, other):
         # Not strictly necessary, but to avoid having both x==y and x!=y
         # True at the same time
@@ -53,10 +57,13 @@ class Event(object):
     @classmethod
     def _from_story_string(cls, event_name, parameters, domain):
         """Called to convert a parsed story line into an event."""
-        return cls()
+        return cls(parameters.get("timestamp"))
 
     def as_dict(self):
-        return {"event": self.type_name}
+        return {
+            "event": self.type_name,
+            "timestamp": self.timestamp,
+        }
 
     @classmethod
     def _from_parameters(cls, event_name, parameters, domain):
@@ -94,7 +101,11 @@ class UserUttered(Event):
 
     type_name = "user"
 
-    def __init__(self, text, intent=None, entities=None, parse_data=None):
+    def __init__(self, text,
+                 intent=None,
+                 entities=None,
+                 parse_data=None,
+                 timestamp=None):
         self.text = text
         self.intent = intent if intent else {}
         self.entities = entities if entities else []
@@ -105,12 +116,16 @@ class UserUttered(Event):
             self.parse_data = {
                 "intent": self.intent,
                 "entities": self.entities,
-                "text": text}
+                "text": text,
+            }
+
+        super(UserUttered, self).__init__(timestamp)
 
     @staticmethod
-    def from_parse_data(text, parse_data):
+    def from_parse_data(text, parse_data, timestamp=None):
         return UserUttered(text, parse_data["intent"], parse_data["entities"],
-                           parse_data)
+                           parse_data,
+                           timestamp)
 
     def __hash__(self):
         return hash((self.text, self.intent.get("name"),
@@ -134,15 +149,19 @@ class UserUttered(Event):
         return UserUttered(None)
 
     def as_dict(self):
-        return {"event": self.type_name,
-                "text": self.text,
-                "parse_data": self.parse_data}
+        d = super(UserUttered, self).as_dict()
+        d.update({
+            "text": self.text,
+            "parse_data": self.parse_data,
+        })
+        return d
 
     @classmethod
     def _from_parameters(cls, event_name, parameters, domain):
         try:
             return UserUttered.from_parse_data(parameters.get("text"),
-                                               parameters.get("parse_data"))
+                                               parameters.get("parse_data"),
+                                               parameters.get("timestamp"))
         except KeyError as e:
             raise ValueError("Failed to parse bot uttered event. {}".format(e))
 
@@ -176,9 +195,10 @@ class BotUttered(Event):
 
     type_name = "bot"
 
-    def __init__(self, text=None, data=None):
+    def __init__(self, text=None, data=None, timestamp=None):
         self.text = text
         self.data = data
+        super(BotUttered, self).__init__(timestamp)
 
     def __hash__(self):
         return hash((self.text, jsonpickle.encode(self.data)))
@@ -207,14 +227,19 @@ class BotUttered(Event):
         return BotUttered()
 
     def as_dict(self):
-        return {"event": self.type_name,
-                "text": self.text,
-                "data": self.data}
+        d = super(BotUttered, self).as_dict()
+        d.update({
+            "text": self.text,
+            "data": self.data,
+        })
+        return d
 
     @classmethod
     def _from_parameters(cls, event_name, parameters, domain):
         try:
-            return BotUttered(parameters.get("text"), parameters.get("data"))
+            return BotUttered(parameters.get("text"),
+                              parameters.get("data"),
+                              parameters.get("timestamp"))
         except KeyError as e:
             raise ValueError("Failed to parse bot uttered event. {}".format(e))
 
@@ -227,8 +252,9 @@ class TopicSet(Event):
 
     type_name = "topic"
 
-    def __init__(self, topic):
+    def __init__(self, topic, timestamp=None):
         self.topic = topic
+        super(TopicSet, self).__init__(timestamp)
 
     def __str__(self):
         return "TopicSet(topic: {})".format(self.topic)
@@ -251,13 +277,15 @@ class TopicSet(Event):
         return TopicSet(topic)
 
     def as_dict(self):
-        return {"event": self.type_name,
-                "topic": self.topic}
+        d = super(TopicSet, self).as_dict()
+        d.update({"topic": self.topic})
+        return d
 
     @classmethod
     def _from_parameters(cls, event_name, parameters, domain):
         try:
-            return TopicSet(parameters.get("topic"))
+            return TopicSet(parameters.get("topic"),
+                            parameters.get("timestamp"))
         except KeyError as e:
             raise ValueError("Failed to parse set topic event. {}".format(e))
 
@@ -274,9 +302,10 @@ class SlotSet(Event):
 
     type_name = "slot"
 
-    def __init__(self, key, value=None):
+    def __init__(self, key, value=None, timestamp=None):
         self.key = key
         self.value = value
+        super(SlotSet, self).__init__(timestamp)
 
     def __str__(self):
         return "SlotSet(key: {}, value: {})".format(self.key, self.value)
@@ -303,14 +332,19 @@ class SlotSet(Event):
             return None
 
     def as_dict(self):
-        return {"event": self.type_name,
-                "name": self.key,
-                "value": self.value}
+        d = super(SlotSet, self).as_dict()
+        d.update({
+            "name": self.key,
+            "value": self.value,
+        })
+        return d
 
     @classmethod
     def _from_parameters(cls, event_name, parameters, domain):
         try:
-            return SlotSet(parameters.get("name"), parameters.get("value"))
+            return SlotSet(parameters.get("name"),
+                           parameters.get("value"),
+                           parameters.get("timestamp"))
         except KeyError as e:
             raise ValueError("Failed to parse set slot event. {}".format(e))
 
@@ -341,8 +375,6 @@ class Restarted(Event):
     def apply_to(self, tracker):
         from rasa_core.actions.action import ActionListen
         tracker._reset()
-        # will be the index of the first event after the restart
-        tracker.latest_restart_event = len(tracker.events) + 1
         tracker.follow_up_action = ActionListen()
 
 
@@ -408,7 +440,7 @@ class ReminderScheduled(Event):
     type_name = "reminder"
 
     def __init__(self, action_name, trigger_date_time, name=None,
-                 kill_on_user_message=True):
+                 kill_on_user_message=True, timestamp=None):
         """Creates the reminder
 
         :param action_name: name of the action to be scheduled
@@ -424,6 +456,7 @@ class ReminderScheduled(Event):
         self.trigger_date_time = trigger_date_time
         self.kill_on_user_message = kill_on_user_message
         self.name = name if name is not None else str(uuid.uuid1())
+        super(ReminderScheduled, self).__init__(timestamp)
 
     def __hash__(self):
         return hash(self.name)
@@ -457,7 +490,8 @@ class ReminderScheduled(Event):
         return ReminderScheduled(parameters.get("action"),
                                  parameters.get("date_time"),
                                  parameters.get("name", None),
-                                 parameters.get("kill_on_user_msg", True))
+                                 parameters.get("kill_on_user_msg", True),
+                                 parameters.get("timestamp"))
 
 
 # noinspection PyProtectedMember
@@ -494,8 +528,9 @@ class StoryExported(Event):
 
     type_name = "export"
 
-    def __init__(self, path=None):
+    def __init__(self, path=None, timestamp=None):
         self.path = path if path else "stories.md"
+        super(StoryExported, self).__init__(timestamp)
 
     def __hash__(self):
         return hash(32143124319)
@@ -574,9 +609,10 @@ class ActionExecuted(Event):
 
     type_name = "action"
 
-    def __init__(self, action_name):
+    def __init__(self, action_name, timestamp=None):
         self.action_name = action_name
         self.unpredictable = False
+        super(ActionExecuted, self).__init__(timestamp)
 
     def __str__(self):
         return "ActionExecuted(action: {})".format(self.action_name)
@@ -596,17 +632,19 @@ class ActionExecuted(Event):
     @classmethod
     def _from_story_string(cls, event_name, parameters, domain):
         if event_name in domain.action_names:
-            return ActionExecuted(event_name)
+            return ActionExecuted(event_name, parameters.get("timestamp"))
         else:
             return None
 
     @classmethod
     def _from_parameters(cls, event_name, parameters, domain):
-        return ActionExecuted(parameters.get("name"))
+        return ActionExecuted(parameters.get("name"),
+                              parameters.get("timestamp"))
 
     def as_dict(self):
-        return {"event": self.type_name,
-                "name": self.action_name}
+        d = super(ActionExecuted, self).as_dict()
+        d.update({"name": self.action_name})
+        return d
 
     def apply_to(self, tracker):
         # type: (DialogueStateTracker) -> None

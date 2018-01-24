@@ -283,10 +283,14 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
             if prev_action_name in self.input_feature_map:
                 return {prev_action_name: 1}
             else:
-                raise Exception(
+                logger.warn(
                         "Failed to use action '{}' in history. "
                         "Please make sure all actions are listed in the "
-                        "domains action list.".format(latest_action))
+                        "domains action list. If you recently removed an "
+                        "action, don't worry about this warning. It "
+                        "should stop appearing after a while. "
+                        "".format(latest_action))
+                return {}
         else:
             return {}
 

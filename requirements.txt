@@ -1,5 +1,4 @@
 ## Setup py requirements
--e .
 apscheduler==3.3.1
 fakeredis==0.8.2
 future==0.16.0
@@ -14,7 +13,7 @@ six==1.10.0
 tensorflow==1.1.0
 typing==3.6.2
 networkx==1.11
-pymessenger==0.0.7.0
+fbmessenger==4.3.1
 tqdm==4.11.2
 ConfigArgParse==0.12.0
 pykwalify==1.6.0
@@ -22,4 +21,6 @@ coloredlogs==7.3
 ruamel.yaml==0.15.34
 flask==0.12
 scikit-learn==0.19.1
+slackclient==1.1.0
+python-telegram-bot==8.1.1
 rasa_nlu

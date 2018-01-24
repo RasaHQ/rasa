@@ -9,24 +9,35 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 .. note:: This version is not yet released and is under active development.
 
+This is a major version change. Make sure to take a look at the migrations
+guide in the documentation for advice on how to update existing projects.
+
 Added
 -----
 - ``--debug`` and ``--verbose`` flags to scripts (train.py, run.py, server.py)
   to set the log level
 - support for story cycles when using checkpoints
-- added a new machine learning policy `SklearnPolicy` that uses an sklearn 
+- added a new machine learning policy `SklearnPolicy` that uses an sklearn
   classifier to predict actions (logistic regression by default)
 - warn if action emits events when using a model that it did never emit in
   any of the stories the model was trained on
 - support for event pushing and endpoints to retrieve the tracker state from the server
+- Timestamp to every event
+- added a Slack channel that allows Rasa Core to communicate via a Slack app
+- added a Telegram channel that allows Rasa Core to communicate via a Telegram bot
 
 Changed
 -------
+- rewrite of the whole FB connector: replaced pymessenger library with fbmessenger
 - story file utterance format changed from ``* _intent_greet[name=Rasa]``
   to ``* intent_greet{"name": "Rasa"}`` (old format is still supported but
   deprecated)
 - persist action names in domain during model persistence
 - improved travis build speed by not using miniconda
+- don't fail with an exception but with a helpful error message if an
+  utterance template contains a variable that can not be filled
+- domain doesn't fail on unknown actions but emits a warning instead. this is to support reading 
+  logs from older conversation if one recently removed an action from the domain
 
 Removed
 -------
@@ -38,6 +49,8 @@ Fixed
 - fixed float slot min max value handling
 - fixed non integer feature decoding, e.g. used for memoization policy
 - properly log to specified file when starting Rasa Core server
+- properly calculate offset of last reset event after loading tracker from
+  tracker store
 
 [0.7.9] - 2017-11-29
 ^^^^^^^^^^^^^^^^^^^^

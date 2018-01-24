@@ -6,7 +6,6 @@ from __future__ import unicode_literals
 import io
 import json
 import logging
-import random
 import uuid
 from collections import deque, defaultdict
 
