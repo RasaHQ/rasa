@@ -8,8 +8,6 @@ import logging
 import os
 import numpy as np
 
-import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm
 from collections import defaultdict
 
 from rasa_nlu.config import RasaNLUConfig
@@ -54,6 +52,8 @@ def plot_confusion_matrix(cm, classes,
     Normalization can be applied by setting `normalize=True`.
     """
     import numpy as np
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import LogNorm
 
     zmax = cm.max()
     plt.clf()
@@ -134,6 +134,7 @@ def evaluate_intents(targets, predictions):  # pragma: no cover
     """
     from sklearn.metrics import confusion_matrix
     from sklearn.utils.multiclass import unique_labels
+    import matplotlib.pyplot as plt
 
     # remove empty intent targets
     num_examples = len(targets)
