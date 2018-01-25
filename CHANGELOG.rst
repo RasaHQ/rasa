@@ -15,6 +15,7 @@ Added
   training data received over HTTP endpoint)
 - evaluation of entity extraction performance in ``evaluation.py``
 - support for spacy 2.0
+- evaluation of intent classification with crossvalidation in ``evaluation.py``
 
 Changed
 -------

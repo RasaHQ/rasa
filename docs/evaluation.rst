@@ -3,13 +3,17 @@
 Evaluation
 ==========
 
-The evaluation script `evaluate.py` allows you to test your models performance for intent classification and
-entity recognition. You invoke this script supplying test data, model, and config file arguments:
+The evaluation script `evaluate.py` allows you to test your models performance for intent classification and entity recognition. You invoke this script supplying test data, model, and config file arguments:
 
 .. code-block:: bash
 
-    python -m rasa_nlu.evaluate -d data/my_test.json -m models/my_model -c my_nlu_config.json
+    python -m rasa_nlu.evaluate -d data/my_test.json -m models/my_model -c my_nlu_config.json 
 
+If you would like to evaluate your pipeline using crossvalidation, you can run the evaluation script with the mode crossvalidation flag. This gives you an estimate of how accurately a predictive model will perform in practice. Note that you cannot specify a model in this mode, as a new model will be trained on part of the data for every crossvalidation loop. An example invocation of your script would be:
+
+.. code-block:: bash
+
+    python -m rasa_nlu.evaluate -d data/examples/rasa/demo-rasa.json -c sample_configs/config_spacy.json --mode crossvalidation
 
 Intent Classification
 ---------------------
