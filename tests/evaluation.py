@@ -231,9 +231,9 @@ def test_run_cv_evaluation():
     rel_tol=1e-09
     abs_tol=0.01
 
-    a = np.mean(results["accuracy"])
-    b = 0.65 # expected result
-    assert(abs(a-b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol))
+    acc = np.mean(results["accuracy"])
+    exp_acc = 0.65 # expected result
+    np.testing.assert_approx_equal(acc, exp_acc, significant=5)
 
 
 def test_empty_intent_removal():
