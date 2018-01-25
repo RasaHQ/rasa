@@ -12,7 +12,7 @@ from rasa_core.conversation import Topic
 from rasa_core.domain import TemplateDomain
 from rasa_core.events import (
     UserUttered, TopicSet, ActionExecuted, SlotSet,
-    Restarted, ActionReverted)
+    Restarted, ActionReverted, UserUtteranceReverted)
 from rasa_core.featurizers import BinaryFeaturizer
 from rasa_core.tracker_store import InMemoryTrackerStore, RedisTrackerStore
 from rasa_core.trackers import DialogueStateTracker
@@ -205,11 +205,18 @@ def test_revert_action_event(default_domain):
     tracker.update(ActionExecuted("my_action"))
     tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
 
+    # Expecting count of 4:
+    #   +3 executed actions
+    #   +1 final state
     assert tracker.latest_action_name == ACTION_LISTEN_NAME
     assert len(list(tracker.generate_all_prior_states())) == 4
 
     tracker.update(ActionReverted())
 
+    # Expecting count of 3:
+    #   +3 executed actions
+    #   +1 final state
+    #   -1 reverted action
     assert tracker.latest_action_name == "my_action"
     assert len(list(tracker.generate_all_prior_states())) == 3
 
@@ -222,4 +229,51 @@ def test_revert_action_event(default_domain):
 
     assert recovered.current_state() == tracker.current_state()
     assert tracker.latest_action_name == "my_action"
+    assert len(list(tracker.generate_all_prior_states())) == 3
+
+
+def test_revert_user_utterance_event(default_domain):
+    tracker = DialogueStateTracker("default", default_domain.slots,
+                                   default_domain.topics,
+                                   default_domain.default_topic)
+    # the retrieved tracker should be empty
+    assert len(tracker.events) == 0
+
+    intent1 = {"name": "greet", "confidence": 1.0}
+    tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
+    tracker.update(UserUttered("/greet", intent1, []))
+    tracker.update(ActionExecuted("my_action_1"))
+    tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
+
+    intent2 = {"name": "goodbye", "confidence": 1.0}
+    tracker.update(UserUttered("/goodbye", intent2, []))
+    tracker.update(ActionExecuted("my_action_2"))
+    tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
+
+
+    print("USER - {}".format(list(tracker.generate_all_prior_states())))
+
+    # Expecting count of 6: 5 executed actions + 1 final state.
+    assert tracker.latest_action_name == ACTION_LISTEN_NAME
+    assert len(list(tracker.generate_all_prior_states())) == 6
+
+    tracker.update(UserUtteranceReverted())
+
+    # Expecting count of 6:
+    #   +5 executed actions
+    #   +1 final state
+    #   -2 rewound actions associated with the /goodbye
+    #   -1 rewound action from the listen right before /goodbye
+    assert tracker.latest_action_name == "my_action_1"
+    assert len(list(tracker.generate_all_prior_states())) == 3
+
+    dialogue = tracker.as_dialogue()
+
+    recovered = DialogueStateTracker("default", default_domain.slots,
+                                     default_domain.topics,
+                                     default_domain.default_topic)
+    recovered.recreate_from_dialogue(dialogue)
+
+    assert recovered.current_state() == tracker.current_state()
+    assert tracker.latest_action_name == "my_action_1"
     assert len(list(tracker.generate_all_prior_states())) == 3
