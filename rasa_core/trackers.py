@@ -162,7 +162,6 @@ class DialogueStateTracker(object):
                                        self.default_topic)
 
         for event in self._applied_events():
-            logger.info("Event: {}".format(event))
             if isinstance(event, ActionExecuted):
                 yield tracker
             tracker.update(event)

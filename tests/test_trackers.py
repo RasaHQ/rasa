@@ -250,16 +250,15 @@ def test_revert_user_utterance_event(default_domain):
     tracker.update(ActionExecuted("my_action_2"))
     tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
 
-
-    print("USER - {}".format(list(tracker.generate_all_prior_states())))
-
-    # Expecting count of 6: 5 executed actions + 1 final state.
+    # Expecting count of 6:
+    #   +5 executed actions
+    #   +1 final state
     assert tracker.latest_action_name == ACTION_LISTEN_NAME
     assert len(list(tracker.generate_all_prior_states())) == 6
 
     tracker.update(UserUtteranceReverted())
 
-    # Expecting count of 6:
+    # Expecting count of 3:
     #   +5 executed actions
     #   +1 final state
     #   -2 rewound actions associated with the /goodbye
