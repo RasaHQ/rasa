@@ -11,13 +11,13 @@ from rasa_nlu import data_router
 from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.config import RasaNLUConfig
 
-pytest_plugins = str("pytest_twisted")
 
 logging.basicConfig(level="DEBUG")
 
 CONFIG_DEFAULTS_PATH = "sample_configs/config_defaults.json"
 
-# see `rasa_nlu.data_router` for details. avoids deadlock in `deferred_from_future` function during tests
+# see `rasa_nlu.data_router` for details. avoids deadlock in
+# `deferred_from_future` function during tests
 data_router.DEFERRED_RUN_IN_REACTOR_THREAD = False
 
 

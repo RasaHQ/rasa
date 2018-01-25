@@ -274,7 +274,7 @@ class Interpreter(object):
         self.context = context if context is not None else {}
         self.model_metadata = model_metadata
 
-    def parse(self, text, time=None, only_output_properties = True):
+    def parse(self, text, time=None, only_output_properties=True):
         # type: (Text) -> Dict[Text, Any]
         """Parse the input text, classify it and return pipeline result.
 

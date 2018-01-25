@@ -14,6 +14,7 @@ Added
 - non ascii character support for anything that gets json dumped (e.g.
   training data received over HTTP endpoint)
 - evaluation of entity extraction performance in ``evaluation.py``
+- support for spacy 2.0
 
 Changed
 -------
