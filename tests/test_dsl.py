@@ -4,12 +4,15 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import io
+import os
 
-from rasa_core.events import SlotSet, ActionExecuted, UserUttered
+import numpy as np
+
+from rasa_core.events import ActionExecuted, UserUttered
 from rasa_core.featurizers import BinaryFeaturizer
 from rasa_core.training import (
     extract_trackers_from_file,
-    extract_story_graph_from_file)
+    extract_story_graph_from_file, extract_training_data_from_file)
 from rasa_core.training.structures import Story
 
 
@@ -47,9 +50,9 @@ def test_persist_and_read_test_story_graph(tmpdir, default_domain):
                                                     default_domain,
                                                     BinaryFeaturizer())
     existing_trackers = extract_trackers_from_file(
-        "data/test_stories/stories.md",
-        default_domain,
-        BinaryFeaturizer())
+            "data/test_stories/stories.md",
+            default_domain,
+            BinaryFeaturizer())
 
     existing_stories = {t.export_stories() for t in existing_trackers}
     for t in recovered_trackers:
@@ -76,3 +79,56 @@ def test_persist_and_read_test_story(tmpdir, default_domain):
         story_str = t.export_stories()
         assert story_str in existing_stories
         existing_stories.discard(story_str)
+
+
+def test_read_story_file_with_cycles(tmpdir, default_domain):
+    graph = extract_story_graph_from_file(
+            "data/test_stories/stories_with_cycle.md",
+            default_domain)
+
+    assert len(graph.story_steps) == 5
+
+    graph_without_cycles = graph.with_cycles_removed()
+
+    assert graph.cyclic_edge_ids != set()
+    assert graph_without_cycles.cyclic_edge_ids == set()
+
+    assert len(graph.story_steps) == len(graph_without_cycles.story_steps) == 5
+
+    assert len(graph_without_cycles.story_end_checkpoints) == 2
+
+
+def test_generate_training_data_with_cycles(tmpdir, default_domain):
+    featurizer = BinaryFeaturizer()
+    training_data = extract_training_data_from_file(
+            "data/test_stories/stories_with_cycle.md",
+            default_domain,
+            featurizer,
+            augmentation_factor=0,
+            max_history=4)
+
+    assert training_data.num_examples() == 15
+
+    np.testing.assert_array_equal(
+            training_data.y,
+            [2, 4, 0, 2, 4, 0, 1, 0, 2, 4, 0, 1, 0, 0, 3])
+
+
+def test_visualize_training_data_graph(tmpdir, default_domain):
+    graph = extract_story_graph_from_file(
+            "data/test_stories/stories_with_cycle.md",
+            default_domain)
+
+    graph = graph.with_cycles_removed()
+
+    out_path = tmpdir.join("graph.png").strpath
+
+    # this will be the plotted networkx graph
+    G = graph.visualize(out_path)
+
+    assert os.path.exists(out_path)
+
+    # we can't check the exact topology - but this should be enough to ensure
+    # the visualisation created a sane graph
+    assert set(G.nodes()) == set(range(-1, 14))
+    assert len(G.edges()) == 16
