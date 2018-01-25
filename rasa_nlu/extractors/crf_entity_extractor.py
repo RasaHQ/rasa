@@ -42,6 +42,7 @@ class CRFEntityExtractor(EntityExtractor):
         'title': lambda doc: doc[0].istitle(),
         'word3': lambda doc: doc[0][-3:],
         'word2': lambda doc: doc[0][-2:],
+        'word1': lambda doc: doc[0][-1:],
         'pos': lambda doc: doc[1],
         'pos2': lambda doc: doc[1][:2],
         'bias': lambda doc: 'bias',
@@ -73,6 +74,8 @@ class CRFEntityExtractor(EntityExtractor):
                 ['low', 'title', 'upper', 'pos', 'pos2']
             ]
         else:
+            if len(entity_crf_features) % 2 != 1:
+                raise ValueError("Need an odd number of crf feature lists to have a center word.")
             self.crf_features = entity_crf_features
 
     @classmethod
@@ -255,19 +258,23 @@ class CRFEntityExtractor(EntityExtractor):
         sentence_features = []
         for word_idx in range(len(sentence)):
             # word before(-1), current word(0), next word(+1)
-            prefixes = ['-1', '0', '+1']
+            feature_span = len(self.crf_features)
+            half_span = feature_span // 2
+            feature_range = range(- half_span, half_span + 1)
+            prefixes = [str(i) for i in feature_range]
             word_features = {}
-            for i in range(3):
-                if word_idx == len(sentence) - 1 and i == 2:
+            for f_i in feature_range:
+                if word_idx + f_i >= len(sentence):
                     word_features['EOS'] = True
                     # End Of Sentence
-                elif word_idx == 0 and i == 0:
+                elif word_idx + f_i < 0:
                     word_features['BOS'] = True
                     # Beginning Of Sentence
                 else:
-                    word = sentence[word_idx - 1 + i]
-                    prefix = prefixes[i]
-                    features = self.crf_features[i]
+                    word = sentence[word_idx + f_i]
+                    f_i_from_zero = f_i + half_span
+                    prefix = prefixes[f_i_from_zero]
+                    features = self.crf_features[f_i_from_zero]
                     for feature in features:
                         # append each feature to a feature vector
                         value = self.function_dict[feature](word)
