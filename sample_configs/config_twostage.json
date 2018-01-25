@@ -1,0 +1,11 @@
+{
+  "pipeline": [ "nlp_spacy",
+                "tokenizer_spacy",
+                "intent_featurizer_spacy",
+                "intent_entity_featurizer_regex",
+                "ner_crf",
+                "ner_synonyms",
+                "intent_classifier_twostage"],
+  "path" : "./projects",
+  "data" : "./data/examples/rasa/demo-rasa.json"
+}

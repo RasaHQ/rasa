@@ -15,6 +15,7 @@ from typing import List
 from typing import Text
 from typing import Tuple
 
+from rasa_nlu.classifiers.intent_classifier import IntentClassifier
 from rasa_nlu.components import Component
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.model import Metadata
@@ -34,7 +35,7 @@ if typing.TYPE_CHECKING:
     import numpy as np
 
 
-class SklearnIntentClassifier(Component):
+class SklearnIntentClassifier(IntentClassifier):
     """Intent classifier using the sklearn framework"""
 
     name = "intent_classifier_sklearn"
@@ -47,33 +48,13 @@ class SklearnIntentClassifier(Component):
         # type: (sklearn.model_selection.GridSearchCV, sklearn.preprocessing.LabelEncoder) -> None
         """Construct a new intent classifier using the sklearn framework."""
         from sklearn.preprocessing import LabelEncoder
+        super(SklearnIntentClassifier, self).__init__()
 
         if le is not None:
             self.le = le
         else:
             self.le = LabelEncoder()
         self.clf = clf
-
-    @classmethod
-    def required_packages(cls):
-        # type: () -> List[Text]
-        return ["numpy", "sklearn"]
-
-    def transform_labels_str2num(self, labels):
-        # type: (List[Text]) -> np.ndarray
-        """Transforms a list of strings into numeric label representation.
-
-        :param labels: List of labels to convert to numeric representation"""
-
-        return self.le.fit_transform(labels)
-
-    def transform_labels_num2str(self, y):
-        # type: (np.ndarray) -> np.ndarray
-        """Transforms a list of strings into numeric label representation.
-
-        :param y: List of labels to convert to numeric representation"""
-
-        return self.le.inverse_transform(y)
 
     def train(self, training_data, config, **kwargs):
         # type: (TrainingData, RasaNLUConfig, **Any) -> None
@@ -156,31 +137,3 @@ class SklearnIntentClassifier(Component):
         sorted_indices = np.fliplr(np.argsort(pred_result, axis=1))
         return sorted_indices, pred_result[:, sorted_indices]
 
-    @classmethod
-    def load(cls, model_dir=None, model_metadata=None, cached_component=None, **kwargs):
-        # type: (Text, Metadata, Optional[Component], **Any) -> SklearnIntentClassifier
-        import cloudpickle
-
-        if model_dir and model_metadata.get("intent_classifier_sklearn"):
-            classifier_file = os.path.join(model_dir, model_metadata.get("intent_classifier_sklearn"))
-            with io.open(classifier_file, 'rb') as f:  # pragma: no test
-                if PY3:
-                    return cloudpickle.load(f, encoding="latin-1")
-                else:
-                    return cloudpickle.load(f)
-        else:
-            return SklearnIntentClassifier()
-
-    def persist(self, model_dir):
-        # type: (Text) -> Dict[Text, Any]
-        """Persist this model into the passed directory. Returns the metadata necessary to load the model again."""
-
-        import cloudpickle
-
-        classifier_file = os.path.join(model_dir, "intent_classifier.pkl")
-        with io.open(classifier_file, 'wb') as f:
-            cloudpickle.dump(self, f)
-
-        return {
-            "intent_classifier_sklearn": "intent_classifier.pkl"
-        }
