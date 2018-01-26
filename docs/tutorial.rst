@@ -128,47 +128,58 @@ More information about starting the server can be found in :ref:`section_http`.
 You can then test your new model by sending a request. Open a new tab/window on your terminal and run
 
 .. note::
-    **For windows users** the windows command line interface doesn't like single quotes. Use doublequotes and escape where necessary. ``curl -X POST "localhost:5000/parse" -d "{/"q/":/"I am looking for Chinese food/"}" | python -m json.tool``
+    **For windows users** the windows command line interface doesn't like single quotes. Use doublequotes and escape where necessary. ``curl -X POST "localhost:5000/parse" -d "{/"q/":/"I am looking for Mexican food/"}" | python -m json.tool``
 
 .. code-block:: console
 
-    $ curl -X POST localhost:5000/parse -d '{"q":"I am looking for Chinese food"}' | python -m json.tool
+    $ curl -X POST localhost:5000/parse -d '{"q":"I am looking for Mexican food"}' | python -m json.tool
 
 which should return 
 
 .. code-block:: json
 
     {
-        "text": "I am looking for Chinese food",
+        "intent": {
+        "name": "restaurant_search",
+        "confidence": 0.8231117999072759
+        },
         "entities": [
             {
-              "start": 8,
-              "end": 15,
-              "value": "chinese",
-              "entity": "cuisine",
-              "extractor": "ner_spacy"
+                "start": 17,
+                "end": 24,
+                "value": "mexican",
+                "entity": "cuisine",
+                "extractor": "ner_crf"
             }
         ],
-        "intent": {
-            "confidence": 0.6485910906220309,
-            "name": "restaurant_search"
-        },
         "intent_ranking": [
             {
-                "confidence": 0.6485910906220309,
-                "name": "restaurant_search"
+                "name": "restaurant_search",
+                "confidence": 0.8231117999072759
             },
             {
-                "confidence": 0.14161531595656784,
-                "name": "affirm"
+                "name": "affirm",
+                "confidence": 0.07618757211779097
+            },
+            {
+                "name": "goodbye",
+                "confidence": 0.06298664363805719
+            },
+            {
+                "name": "greet",
+                "confidence": 0.03771398433687609
             }
-        ]
+        ],
+        "text": "I am looking for Mexican food"
     }
 
 If you are using the ``spacy_sklearn`` backend and the entities aren't found, don't panic!
 This tutorial is just a toy example, with far too little training data to expect good performance.
 
-rasa NLU will also print a ``confidence`` value for the intent classification. For models using spacy
+.. note::
+    Intent classification is independent of entity extraction, e.g. in "I am looking for Chinese food" the entities are not extracted, though intent classification is correct.
+
+Rasa NLU will also print a ``confidence`` value for the intent classification. For models using spacy
 intent classification this will be a probability. For MITIE models this is just a score, which **might be
 greater than 1**.
 
@@ -176,9 +187,7 @@ You can use this to do some error handling in your chatbot (ex: asking the user 
 and it's also helpful for prioritising which intents need more training data.
 
 .. note::
-    The output may contain other or less attributes, depending on the pipeline you are using. For
-    example, the ``mitie`` pipeline doesn't include the ``"intent_ranking"`` whereas the ``spacy_sklearn``
-    pipeline does.
+    The output may contain other or less attributes, depending on the pipeline you are using. For example, the ``mitie`` pipeline doesn't include the ``"intent_ranking"`` (see example below) whereas the ``spacy_sklearn`` pipeline does (see example above).
 
 
 With very little data, rasa NLU can in certain cases already generalise concepts, for example:
@@ -188,30 +197,20 @@ With very little data, rasa NLU can in certain cases already generalise concepts
 
     $ curl -X POST localhost:5000/parse -d '{"q":"I want some italian food"}' | python -m json.tool
     {
-        "text": "I want some italian food",
+        "intent": {
+            "name": "restaurant_search",
+            "confidence": 0.5792111723774511
+        },
         "entities": [
             {
-              "end": 19,
-              "entity": "cuisine",
-              "start": 12,
-              "value": "italian",
-              "extrator": "ner_mitie"
+                "entity": "cuisine",
+                "value": "italian",
+                "start": 12,
+                "end": 19,
+                "extractor": "ner_mitie"
             }
         ],
-        "intent": {
-            "confidence": 0.5192305466357352,
-            "name": "restaurant_search"
-        },
-        "intent_ranking": [
-            {
-                "confidence": 0.5192305466357352,
-                "name": "restaurant_search"
-            },
-            {
-                "confidence": 0.2066287604378098,
-                "name": "affirm"
-            }
-        ]
+        "text": "I want some italian food"
     }
 
 even though there's nothing quite like this sentence in the examples used to train the model. 

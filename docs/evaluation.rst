@@ -31,7 +31,7 @@ duckling dimension. If you use the ``time`` and ``ordinal`` dimensions, you woul
 get two evaluation tables: one for ``ner_duckling (Time)`` and one for
 ``ner_duckling (Ordinal)``.
 
-``ner_synomyms`` does not create an evaluation table, because it only changes the value of the found
+``ner_synonyms`` does not create an evaluation table, because it only changes the value of the found
 entities and does not find entity boundaries itself.
 
 Finally, keep in mind that entity types in your testing data have to match the output
