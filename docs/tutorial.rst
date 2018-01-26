@@ -177,9 +177,7 @@ If you are using the ``spacy_sklearn`` backend and the entities aren't found, do
 This tutorial is just a toy example, with far too little training data to expect good performance.
 
 .. note::
-    Intent classification is independent of entity extraction, e.g. in
-    "I am looking for Chinese food" the entities are not extracted,
-    though intent classification is correct.
+    Intent classification is independent of entity extraction, e.g. in "I am looking for Chinese food" the entities are not extracted, though intent classification is correct.
 
 Rasa NLU will also print a ``confidence`` value for the intent classification. For models using spacy
 intent classification this will be a probability. For MITIE models this is just a score, which **might be
@@ -189,9 +187,7 @@ You can use this to do some error handling in your chatbot (ex: asking the user 
 and it's also helpful for prioritising which intents need more training data.
 
 .. note::
-    The output may contain other or less attributes, depending on the pipeline you are using. For
-    example, the ``mitie`` pipeline doesn't include the ``"intent_ranking"`` (see example below)
-    whereas the ``spacy_sklearn`` pipeline does (see example above).
+    The output may contain other or less attributes, depending on the pipeline you are using. For example, the ``mitie`` pipeline doesn't include the ``"intent_ranking"`` (see example below) whereas the ``spacy_sklearn`` pipeline does (see example above).
 
 
 With very little data, rasa NLU can in certain cases already generalise concepts, for example:
