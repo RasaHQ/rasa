@@ -16,6 +16,8 @@ Added
 - evaluation of entity extraction performance in ``evaluation.py``
 - support for spacy 2.0
 - evaluation of intent classification with crossvalidation in ``evaluation.py``
+- support for inline entity synonyms in markdown training format
+- support for regex features in markdown training format
 
 Changed
 -------

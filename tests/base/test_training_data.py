@@ -64,6 +64,9 @@ def test_rasa_data():
     assert td.regex_features[0]["name"] == "zipcode"
     assert td.regex_features[0]["pattern"] == "[0-9]{5}"
 
+    assert td.regex_features[1]["name"] == "greet"
+    assert td.regex_features[1]["pattern"] == "hey[^\s]*"
+
 
 def test_dialogflow_data():
     td = load_data('data/examples/dialogflow/')
@@ -81,6 +84,9 @@ def test_markdown_data():
 
     assert td.regex_features[0]["name"] == "zipcode"
     assert td.regex_features[0]["pattern"] == "[0-9]{5}"
+
+    assert td.regex_features[1]["name"] == "greet"
+    assert td.regex_features[1]["pattern"] == "hey[^\s]*"
 
 def test_compare_markdown_to_json():
     td_md = load_data('data/examples/rasa/demo-rasa.md')

@@ -129,7 +129,7 @@ the zipcode example it might look like this:
                 },
                 {
                     "name": "greet",
-                    "pattern": "hey[^\s]*"
+                    "pattern": "hey[^\\s]*"
                 },
             ]
         }
@@ -154,7 +154,8 @@ for these extractors. Currently, all intent classifiers make use of available re
 Markdown Format
 ---------------------------
 
-Alternatively training data can be used in the following markdown format (Regex features not supported yet). Examples are listed using the unordered list syntax, e.g. minus ``-`` or asterisk ``*``:
+Alternatively training data can be used in the following markdown format. Examples are listed using the unordered
+list syntax, e.g. minus ``-``, asterisk ``*``, or plus ``+``:
 
 .. code-block:: markdown
 
@@ -169,3 +170,6 @@ Alternatively training data can be used in the following markdown format (Regex 
 
     ## synonym:savings   <!-- synonyms, method 2 -->
     - pink pig
+
+    ## regex:zipcode
+    - [0-9]{5}

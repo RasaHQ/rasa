@@ -46,7 +46,7 @@ class MarkdownToJson(object):
         self.current_section = None
         self.common_examples = []
         self.entity_synonyms = defaultdict(set)
-        self.regex_patterns = defaultdict(list)
+        self.regex_patterns = []
 
     def find_section_header(self, line):
         """Checks if the current line contains a section header and returns the section and the title."""
@@ -58,16 +58,12 @@ class MarkdownToJson(object):
 
     def make_json(self):
         """Combines the parsed data into the json training data format."""
-        regex_features = []
-        for name, patterns in self.regex_patterns.items():
-            for pattern in patterns:
-                regex_features.append({"name": name, "pattern": pattern})
         return {
             "rasa_nlu_data": {
                 "common_examples": self.common_examples,
                 "entity_synonyms": [{"value": val, "synonyms": list(syns)}
                                     for val, syns in self.entity_synonyms.items()],
-                "regex_features": regex_features
+                "regex_features": self.regex_patterns
             }
         }
 
@@ -97,9 +93,7 @@ class MarkdownToJson(object):
             elif self.current_section == SYNONYM:
                 self.entity_synonyms[self.current_title].add(example)
             else:
-                if len(self.regex_patterns[self.current_title]) > 0:
-                    raise ValueError("Regex Feature: {} defines multiple patterns".format(self.current_title))
-                self.regex_patterns[self.current_title].append(example)
+                self.regex_patterns.append({"name": self.current_title, "pattern": example})
 
     def _find_entities_in_intent_example(self, example):
         """Extracts entities from a markdown intent example."""
