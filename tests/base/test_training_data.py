@@ -18,7 +18,8 @@ from rasa_nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 
 
 def test_example_training_data_is_valid():
-    with io.open('data/examples/rasa/demo-rasa.json', encoding="utf-8-sig") as f:
+    demo_json = 'data/examples/rasa/demo-rasa.json'
+    with io.open(demo_json, encoding="utf-8-sig") as f:
         data = json.loads(f.read())
     validate_rasa_nlu_data(data)
 
@@ -26,10 +27,13 @@ def test_example_training_data_is_valid():
 @pytest.mark.parametrize("invalid_data", [
     {"wrong_top_level": []},
     ["this is not a toplevel dict"],
-    {"rasa_nlu_data": {"common_examples": [{"intent": "some example without text"}]}},
     {"rasa_nlu_data": {
         "common_examples": [{
-            "text": "mytext", "entities": [{"start": "INVALID", "end": 0, "entity": "x"}]
+            "intent": "some example without text"}]}},
+    {"rasa_nlu_data": {
+        "common_examples": [{
+            "text": "mytext", "entities": [
+                {"start": "INVALID", "end": 0, "entity": "x"}]
         }]
     }},
 ])
@@ -56,35 +60,49 @@ def test_rasa_data():
     td = load_data('data/examples/rasa/demo-rasa.json')
     assert td.entity_examples != []
     assert td.intent_examples != []
-    assert len(td.sorted_entity_examples()) >= len([e for e in td.entity_examples if e.get("entities")])
+
+    num_entities = len([e for e in td.entity_examples if e.get("entities")])
+    assert len(td.sorted_entity_examples()) >= num_entities
     assert len(td.sorted_intent_examples()) == len(td.intent_examples)
-    assert td.entity_synonyms == {u'Chines': u'chinese', u'Chinese': u'chinese', u'chines': u'chinese',
-                                  u'vegg': u'vegetarian', u'veggie': u'vegetarian'}
+    assert td.entity_synonyms == {'Chines': 'chinese',
+                                  'Chinese': 'chinese',
+                                  'chines': 'chinese',
+                                  'vegg': 'vegetarian',
+                                  'veggie': 'vegetarian'}
+
 
 def test_rasa_data_multiple():
     # Load the reference data
     td_reference = load_data('data/examples/rasa/demo-rasa.json')
 
     # Load and check the multi-file data
-    td = load_data('data/examples/rasa/multiple_files_json')
+    td = load_data('data/test/multiple_files_json')
     assert td.entity_examples != []
     assert td.intent_examples != []
-    assert len(td.sorted_entity_examples()) >= len([e for e in td.entity_examples if e.get("entities")])
+
+    num_entities = len([e for e in td.entity_examples if e.get("entities")])
+    assert len(td.sorted_entity_examples()) >= num_entities
     assert len(td.sorted_intent_examples()) == len(td.intent_examples)
-    assert td.entity_synonyms == {u'Chines': u'chinese', u'Chinese': u'chinese', u'chines': u'chinese',
-                                  u'vegg': u'vegetarian', u'veggie': u'vegetarian'}
+    assert td.entity_synonyms == {'Chines': 'chinese',
+                                  'Chinese': 'chinese',
+                                  'chines': 'chinese',
+                                  'vegg': 'vegetarian',
+                                  'veggie': 'vegetarian'}
 
     # Check the number of entries
     assert td.num_entity_examples == td_reference.num_entity_examples
     assert td.num_intent_examples == td_reference.num_intent_examples
 
     # Compare the multi-file data with the reference
-    intents_reference  = [i.as_dict()['intent'] for i in td_reference.intent_examples]
-    examples_reference = [i.as_dict()['text']   for i in td_reference.intent_examples]
-    intents  = [i.as_dict()['intent'] for i in td.intent_examples]
-    examples = [i.as_dict()['text']   for i in td.intent_examples]
-    assert set(intents)  == set(intents_reference)
+    intents_reference = [i.as_dict()['intent']
+                         for i in td_reference.intent_examples]
+    examples_reference = [i.as_dict()['text']
+                          for i in td_reference.intent_examples]
+    intents = [i.as_dict()['intent'] for i in td.intent_examples]
+    examples = [i.as_dict()['text'] for i in td.intent_examples]
+    assert set(intents) == set(intents_reference)
     assert set(examples) == set(examples_reference)
+
 
 def test_dialogflow_data():
     td = load_data('data/examples/dialogflow/')
@@ -95,33 +113,47 @@ def test_dialogflow_data():
 
 def test_markdown_data():
     td = load_data('data/examples/rasa/demo-rasa.md')
-    assert len(td.sorted_entity_examples()) >= len([e for e in td.entity_examples if e.get("entities")])
+
+    num_entities = len([e for e in td.entity_examples if e.get("entities")])
+    assert len(td.sorted_entity_examples()) >= num_entities
     assert len(td.sorted_intent_examples()) == len(td.intent_examples)
-    assert td.entity_synonyms == {u'Chines': u'chinese', u'Chinese': u'chinese', u'chines': u'chinese',
-                                  u'vegg': u'vegetarian', u'veggie': u'vegetarian'}
+    assert td.entity_synonyms == {'Chines': 'chinese',
+                                  'Chinese': 'chinese',
+                                  'chines': 'chinese',
+                                  'vegg': 'vegetarian',
+                                  'veggie': 'vegetarian'}
+
 
 def test_markdown_data_multiple():
     # Load the reference data
     td_reference = load_data('data/examples/rasa/demo-rasa.md')
 
     # Load and check the multi-file data
-    td = load_data('data/examples/rasa/multiple_files_markdown')
-    assert len(td.sorted_entity_examples()) >= len([e for e in td.entity_examples if e.get("entities")])
+    td = load_data('data/test/multiple_files_markdown')
+
+    num_entities = len([e for e in td.entity_examples if e.get("entities")])
+    assert len(td.sorted_entity_examples()) >= num_entities
     assert len(td.sorted_intent_examples()) == len(td.intent_examples)
-    assert td.entity_synonyms == {u'Chines': u'chinese', u'Chinese': u'chinese', u'chines': u'chinese',
-                                  u'vegg': u'vegetarian', u'veggie': u'vegetarian'}
+    assert td.entity_synonyms == {'Chines': 'chinese',
+                                  'Chinese': 'chinese',
+                                  'chines': 'chinese',
+                                  'vegg': 'vegetarian',
+                                  'veggie': 'vegetarian'}
 
     # Check the number of entries
     assert td.num_entity_examples == td_reference.num_entity_examples
     assert td.num_intent_examples == td_reference.num_intent_examples
 
     # Compare the multi-file data with the reference
-    intents_reference  = [i.as_dict()['intent'] for i in td_reference.intent_examples]
-    examples_reference = [i.as_dict()['text']   for i in td_reference.intent_examples]
-    intents  = [i.as_dict()['intent'] for i in td.intent_examples]
-    examples = [i.as_dict()['text']   for i in td.intent_examples]
-    assert set(intents)  == set(intents_reference)
+    intents_reference = [i.as_dict()['intent']
+                         for i in td_reference.intent_examples]
+    examples_reference = [i.as_dict()['text']
+                          for i in td_reference.intent_examples]
+    intents = [i.as_dict()['intent'] for i in td.intent_examples]
+    examples = [i.as_dict()['text'] for i in td.intent_examples]
+    assert set(intents) == set(intents_reference)
     assert set(examples) == set(examples_reference)
+
 
 def test_compare_markdown_to_json():
     td_md = load_data('data/examples/rasa/demo-rasa.md')
@@ -131,10 +163,15 @@ def test_compare_markdown_to_json():
 
 def test_markdown_data_asterisks_format():
     td = load_data('data/test/demo-rasa-small.md')
-    assert len(td.sorted_entity_examples()) >= len([e for e in td.entity_examples if e.get("entities")])
+
+    num_entities = len([e for e in td.entity_examples if e.get("entities")])
+    assert len(td.sorted_entity_examples()) >= num_entities
     assert len(td.sorted_intent_examples()) == len(td.intent_examples)
-    assert td.entity_synonyms == {u'Chines': u'chinese', u'Chinese': u'chinese', u'chines': u'chinese',
-                                  u'vegg': u'vegetarian', u'veggie': u'vegetarian'}
+    assert td.entity_synonyms == {'Chines': 'chinese',
+                                  'Chinese': 'chinese',
+                                  'chines': 'chinese',
+                                  'vegg': 'vegetarian',
+                                  'veggie': 'vegetarian'}
 
 
 def test_repeated_entities():
@@ -166,7 +203,9 @@ def test_repeated_entities():
         entities = example.get("entities")
         assert len(entities) == 1
         tokens = WhitespaceTokenizer().tokenize(example.text)
-        start, end = MitieEntityExtractor.find_entity(entities[0], example.text, tokens)
+        start, end = MitieEntityExtractor.find_entity(entities[0],
+                                                      example.text,
+                                                      tokens)
         assert start == 9
         assert end == 10
 
@@ -200,7 +239,9 @@ def test_multiword_entities():
         entities = example.get("entities")
         assert len(entities) == 1
         tokens = WhitespaceTokenizer().tokenize(example.text)
-        start, end = MitieEntityExtractor.find_entity(entities[0], example.text, tokens)
+        start, end = MitieEntityExtractor.find_entity(entities[0],
+                                                      example.text,
+                                                      tokens)
         assert start == 4
         assert end == 7
 
@@ -297,19 +338,34 @@ def cmp_dict_list(firsts, seconds):
                 del seconds[idx]
                 break
         else:
-            assert False, "Failed to find message {} in {}".format(a.text, ", ".join([e.text for e in seconds]))
+            others = ", ".join([e.text for e in seconds])
+            assert False, "Failed to find message {} in {}".format(a.text,
+                                                                   others)
     return not seconds
 
 
-@pytest.mark.parametrize("data_file,gold_standard_file,output_format,language", [
-    ("data/examples/wit/demo-flights.json", "data/test/wit_converted_to_rasa.json", "json", None),
-    ("data/examples/luis/demo-restaurants.json", "data/test/luis_converted_to_rasa.json", "json", None),
-    ("data/examples/dialogflow/", "data/test/dialogflow_en_converted_to_rasa.json", "json", "en"),
-    ("data/examples/dialogflow/", "data/test/dialogflow_es_converted_to_rasa.json", "json", "es"),
-    ("data/examples/rasa/demo-rasa.md", "data/test/md_converted_to_json.json", "json", None),
-    ("data/examples/rasa/demo-rasa.json", "data/test/json_converted_to_md.md", "md", None)
-])
-def test_training_data_conversion(tmpdir, data_file, gold_standard_file, output_format, language):
+@pytest.mark.parametrize("data_file,gold_standard_file,output_format,language",
+                         [
+                             ("data/examples/wit/demo-flights.json",
+                              "data/test/wit_converted_to_rasa.json", "json",
+                              None),
+                             ("data/examples/luis/demo-restaurants.json",
+                              "data/test/luis_converted_to_rasa.json", "json",
+                              None),
+                             ("data/examples/dialogflow/",
+                              "data/test/dialogflow_en_converted_to_rasa.json",
+                              "json", "en"),
+                             ("data/examples/dialogflow/",
+                              "data/test/dialogflow_es_converted_to_rasa.json",
+                              "json", "es"),
+                             ("data/examples/rasa/demo-rasa.md",
+                              "data/test/md_converted_to_json.json", "json",
+                              None),
+                             ("data/examples/rasa/demo-rasa.json",
+                              "data/test/json_converted_to_md.md", "md", None)
+                         ])
+def test_training_data_conversion(tmpdir, data_file, gold_standard_file,
+                                  output_format, language):
     out_path = tmpdir.join("rasa_nlu_data.json")
     convert_training_data(data_file, out_path.strpath, output_format, language)
     td = load_data(out_path.strpath, language)
@@ -321,7 +377,8 @@ def test_training_data_conversion(tmpdir, data_file, gold_standard_file, output_
     cmp_message_list(td.intent_examples, gold_standard.intent_examples)
     assert td.entity_synonyms == gold_standard.entity_synonyms
 
-    # converting the converted file back to original file format and performing the same tests
+    # converting the converted file back to original
+    # file format and performing the same tests
     rto_path = tmpdir.join("data_in_original_format.txt")
     convert_training_data(out_path.strpath, rto_path.strpath, 'json', language)
     rto = load_data(rto_path.strpath, language)
@@ -329,6 +386,7 @@ def test_training_data_conversion(tmpdir, data_file, gold_standard_file, output_
     cmp_message_list(gold_standard.intent_examples, rto.intent_examples)
     assert gold_standard.entity_synonyms == rto.entity_synonyms
 
-    # If the above assert fails - this can be used to dump to the file and diff using git
+    # If the above assert fails - this can be used
+    # to dump to the file and diff using git
     # with io.open(gold_standard_file) as f:
     #     f.write(td.as_json(indent=2))

@@ -167,11 +167,13 @@ def load_markdown_data(filenames):
     from rasa_nlu.utils.md_to_json import MarkdownToJson
 
     common_examples = list()
+    known_synonyms = {}
     for filename in filenames:
         data = MarkdownToJson(filename)
         common_examples += data.common_examples
-    return TrainingData(common_examples,
-                        get_entity_synonyms_dict(data.entity_synonyms))
+        known_synonyms = get_entity_synonyms_dict(data.entity_synonyms,
+                                                  known_synonyms)
+    return TrainingData(common_examples, known_synonyms)
 
 
 def rasa_nlu_data_schema():
@@ -289,10 +291,10 @@ def load_rasa_data(filenames):
     return TrainingData(training_examples, entity_synonyms, regex_features)
 
 
-def get_entity_synonyms_dict(synonyms):
+def get_entity_synonyms_dict(synonyms, known_synonyms=None):
     # type: (List[Dict]) -> Dict
     """build entity_synonyms dictionary"""
-    entity_synonyms = {}
+    entity_synonyms = {} if not known_synonyms else known_synonyms
     for s in synonyms:
         if "value" in s and "synonyms" in s:
             for synonym in s["synonyms"]:
