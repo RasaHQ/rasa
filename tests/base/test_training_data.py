@@ -88,6 +88,7 @@ def test_markdown_data():
     assert td.regex_features[1]["name"] == "greet"
     assert td.regex_features[1]["pattern"] == "hey[^\s]*"
 
+
 def test_compare_markdown_to_json():
     td_md = load_data('data/examples/rasa/demo-rasa.md')
     td_json = load_data('data/examples/rasa/demo-rasa.json')
