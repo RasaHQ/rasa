@@ -6,18 +6,28 @@ from __future__ import unicode_literals
 import re
 import io
 from rasa_nlu.training_data import Message
+from collections import defaultdict
 
-ent_regex = re.compile(r'\[(?P<synonym>[^\]]+)'
+INTENT = "intent"
+SYNONYM = "synonym"
+REGEX = "regex"
+available_sections = [INTENT, SYNONYM, REGEX]
+ent_regex = re.compile(r'\[(?P<entity_text>[^\]]+)'
                        r'\]\((?P<entity>\w*?)'
                        r'(?:\:(?P<value>[^)]+))?\)')  # [open](open:1)
-intent_regex = re.compile(r'##\s*intent:(.+)')
-synonym_regex = re.compile(r'##\s*synonym:(.+)')
-example_regex = re.compile(r'\s*[-\*]\s*(.+)')
+
+example_regex = re.compile(r'\s*[-\*+]\s*(.+)')
 comment_regex = re.compile(r'<!--[\s\S]*?--!*>', re.MULTILINE)
 
-INTENT_PARSING_STATE = "intent"
-SYNONYM_PARSING_STATE = "synonym"
 
+
+def create_section_regexes(section_names):
+    def make_regex(section_name):
+        return re.compile(r'##\s*{}:(.+)'.format(section_name))
+
+    return {sn: make_regex(sn) for sn in section_names}
+
+section_regexes = create_section_regexes(available_sections)
 
 def strip_comments(comment_regex, text):
     """ Removes comments defined by `comment_regex` from `text`. """
@@ -32,63 +42,77 @@ class MarkdownToJson(object):
     def __init__(self, file_name):
         self.file_name = file_name
         # set when parsing examples from a given intent
-        self.current_intent = None
+        self.current_title = None
+        self.current_section = None
         self.common_examples = []
-        self.entity_synonyms = []
-        self.load()
+        self.entity_synonyms = defaultdict(set)
+        self.regex_patterns = defaultdict(list)
 
-    def load(self):
-        """Parse the content of the actual .md file."""
+    def find_section_header(self, line):
+        """Checks if the current line contains a section header and returns the section and the title."""
+        for name, regex in section_regexes.items():
+            match = re.search(regex, line)
+            if match is not None:
+                return name, match.group(1)
+        return None
 
-        with io.open(self.file_name, 'rU', encoding="utf-8-sig") as f:
-            f_com_rmved = strip_comments(comment_regex, f.read())  # Strip comments
-            for row in f_com_rmved:
-                # Remove white-space which may have crept in due to comments
-                row = row.strip()
-                intent_match = re.search(intent_regex, row)
-                if intent_match is not None:
-                    self._set_current_state(
-                            INTENT_PARSING_STATE, intent_match.group(1))
-                    continue
-
-                synonym_match = re.search(synonym_regex, row)
-                if synonym_match is not None:
-                    self._set_current_state(
-                            SYNONYM_PARSING_STATE, synonym_match.group(1))
-                    continue
-
-                self._parse_intent_or_synonym_example(row)
+    def make_json(self):
+        """Combines the parsed data into the json training data format."""
+        regex_features = []
+        for name, patterns in self.regex_patterns.items():
+            for pattern in patterns:
+                regex_features.append({"name": name, "pattern": pattern})
         return {
             "rasa_nlu_data": {
                 "common_examples": self.common_examples,
-                "entity_synonyms": self.entity_synonyms
+                "entity_synonyms": [{"value": val, "synonyms": list(syns)}
+                                    for val, syns in self.entity_synonyms.items()],
+                "regex_features": regex_features
             }
         }
 
-    def _parse_intent_or_synonym_example(self, row):
+    def load(self):
+        """Parse the content of the actual .md file."""
+        with io.open(self.file_name, 'rU', encoding="utf-8-sig") as f:
+            f_com_rmved = strip_comments(comment_regex, f.read())  # Strip comments
+            for line in f_com_rmved:
+                # Remove white-space which may have crept in due to comments
+                line = line.strip()
+                header = self.find_section_header(line)
+                if header:
+                    self._set_current_section(header[0], header[1])
+                else:
+                    self._parse_example(line)
+
+        return self.make_json()
+
+    def _parse_example(self, row):
+        """Parses an md row based on the current section type."""
         example_match = re.finditer(example_regex, row)
         for matchIndex, match in enumerate(example_match):
-            example_line = match.group(1)
-            if self._current_state() == INTENT_PARSING_STATE:
-                parsed = self._parse_intent_example(example_line)
+            example = match.group(1)
+            if self.current_section == INTENT:
+                parsed = self._parse_intent_example(example)
                 self.common_examples.append(parsed)
+            elif self.current_section == SYNONYM:
+                self.entity_synonyms[self.current_title].add(example)
             else:
-                self.entity_synonyms[-1]['synonyms'].append(example_line)
+                if len(self.regex_patterns[self.current_title]) > 0:
+                    raise ValueError("Regex Feature: {} defines multiple patterns".format(self.current_title))
+                self.regex_patterns[self.current_title].append(example)
 
-    def _parse_intent_example(self, example_in_md):
+    def _find_entities_in_intent_example(self, example):
+        """Extracts entities from a markdown intent example."""
         entities = []
-        utter = example_in_md
-        match = re.search(ent_regex, utter)
-        while match is not None:
-            entity_synonym = match.groupdict()['synonym']
+        offset = 0
+        for match in re.finditer(ent_regex, example):
+            entity_text = match.groupdict()['entity_text']
             entity_entity = match.groupdict()['entity']
-            entity_value = match.groupdict()['value']
+            entity_value = match.groupdict()['value'] if match.groupdict()['value'] else entity_text
 
-            if match.groupdict()['value'] is None:
-                entity_value = entity_synonym
-
-            start_index = match.start()
-            end_index = start_index + len(entity_synonym)
+            start_index = match.start() - offset
+            end_index = start_index + len(entity_text)
+            offset += len(match.group(0)) - len(entity_text)
 
             entities.append({
                 'entity': entity_entity,
@@ -97,30 +121,30 @@ class MarkdownToJson(object):
                 'end': end_index
             })
 
-            utter = utter[:match.start()] + entity_synonym + utter[match.end():]
-            match = re.search(ent_regex, utter)
+        return entities
 
-        message = Message(utter, {'intent': self.current_intent})
+    def _add_synonyms(self, plain_text, entities):
+        """Adds synonyms found in intent examples"""
+        for e in entities:
+            e_text = plain_text[e['start']:e['end']]
+            if e_text != e['value']:
+                self.entity_synonyms[e['value']].add(e_text)
+
+    def _parse_intent_example(self, example):
+        """Extract entities and synonyms, and convert to plain text."""
+        entities = self._find_entities_in_intent_example(example)
+        plain_text = re.sub(ent_regex, lambda m: m.groupdict()['entity_text'], example)
+        self._add_synonyms(plain_text, entities)
+        message = Message(plain_text, {'intent': self.current_title})
         if len(entities) > 0:
             message.set('entities', entities)
         return message
 
-    def _set_current_state(self, state, value):
-        """Switch between 'intent' and 'synonyms' mode."""
+    def _set_current_section(self, section, title):
+        """Update parsing mode."""
+        if section not in available_sections:
+            raise ValueError("Found markdown section {} which is not "
+                             "in the allowed sections {},".format(section, ",".join(available_sections)))
 
-        if state == INTENT_PARSING_STATE:
-            self.current_intent = value
-        elif state == SYNONYM_PARSING_STATE:
-            self.current_intent = None
-            self.entity_synonyms.append({'value': value, 'synonyms': []})
-        else:
-            raise ValueError("State must be either '{}' or '{}'".format(
-                    INTENT_PARSING_STATE, SYNONYM_PARSING_STATE))
-
-    def _current_state(self):
-        """Informs whether we are currently loading intents or synonyms."""
-
-        if self.current_intent is not None:
-            return INTENT_PARSING_STATE
-        else:
-            return SYNONYM_PARSING_STATE
+        self.current_section = section
+        self.current_title = title

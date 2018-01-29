@@ -61,6 +61,9 @@ def test_rasa_data():
     assert td.entity_synonyms == {u'Chines': u'chinese', u'Chinese': u'chinese', u'chines': u'chinese',
                                   u'vegg': u'vegetarian', u'veggie': u'vegetarian'}
 
+    assert td.regex_features[0]["name"] == "zipcode"
+    assert td.regex_features[0]["pattern"] == "[0-9]{5}"
+
 
 def test_dialogflow_data():
     td = load_data('data/examples/dialogflow/')
@@ -76,19 +79,13 @@ def test_markdown_data():
     assert td.entity_synonyms == {u'Chines': u'chinese', u'Chinese': u'chinese', u'chines': u'chinese',
                                   u'vegg': u'vegetarian', u'veggie': u'vegetarian'}
 
+    assert td.regex_features[0]["name"] == "zipcode"
+    assert td.regex_features[0]["pattern"] == "[0-9]{5}"
 
 def test_compare_markdown_to_json():
     td_md = load_data('data/examples/rasa/demo-rasa.md')
     td_json = load_data('data/examples/rasa/demo-rasa.json')
     assert td_md.sorted_entity_examples() == td_json.sorted_entity_examples()
-
-
-def test_markdown_data_asterisks_format():
-    td = load_data('data/test/demo-rasa-small.md')
-    assert len(td.sorted_entity_examples()) >= len([e for e in td.entity_examples if e.get("entities")])
-    assert len(td.sorted_intent_examples()) == len(td.intent_examples)
-    assert td.entity_synonyms == {u'Chines': u'chinese', u'Chinese': u'chinese', u'chines': u'chinese',
-                                  u'vegg': u'vegetarian', u'veggie': u'vegetarian'}
 
 
 def test_repeated_entities():

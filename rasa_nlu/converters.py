@@ -165,9 +165,11 @@ def load_markdown_data(filename):
     # type: (Text) -> TrainingData
     """Loads training data stored in markdown data format."""
     from rasa_nlu.utils.md_to_json import MarkdownToJson
-    data = MarkdownToJson(filename)
-    return TrainingData(data.common_examples,
-                        get_entity_synonyms_dict(data.entity_synonyms))
+    data = MarkdownToJson(filename).load()
+    data = data["rasa_nlu_data"]
+    return TrainingData(data["common_examples"],
+                        get_entity_synonyms_dict(data["entity_synonyms"]),
+                        data["regex_features"])
 
 
 def rasa_nlu_data_schema():
