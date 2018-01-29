@@ -61,6 +61,30 @@ def test_rasa_data():
     assert td.entity_synonyms == {u'Chines': u'chinese', u'Chinese': u'chinese', u'chines': u'chinese',
                                   u'vegg': u'vegetarian', u'veggie': u'vegetarian'}
 
+def test_rasa_data_multiple():
+    # Load the reference data
+    td_reference = load_data('data/examples/rasa/demo-rasa.json')
+
+    # Load and check the multi-file data
+    td = load_data('data/examples/rasa/multiple_files_json')
+    assert td.entity_examples != []
+    assert td.intent_examples != []
+    assert len(td.sorted_entity_examples()) >= len([e for e in td.entity_examples if e.get("entities")])
+    assert len(td.sorted_intent_examples()) == len(td.intent_examples)
+    assert td.entity_synonyms == {u'Chines': u'chinese', u'Chinese': u'chinese', u'chines': u'chinese',
+                                  u'vegg': u'vegetarian', u'veggie': u'vegetarian'}
+
+    # Check the number of entries
+    assert td.num_entity_examples == td_reference.num_entity_examples
+    assert td.num_intent_examples == td_reference.num_intent_examples
+
+    # Compare the multi-file data with the reference
+    intents_reference  = [i.as_dict()['intent'] for i in td_reference.intent_examples]
+    examples_reference = [i.as_dict()['text']   for i in td_reference.intent_examples]
+    intents  = [i.as_dict()['intent'] for i in td.intent_examples]
+    examples = [i.as_dict()['text']   for i in td.intent_examples]
+    assert set(intents)  == set(intents_reference)
+    assert set(examples) == set(examples_reference)
 
 def test_dialogflow_data():
     td = load_data('data/examples/dialogflow/')
@@ -76,6 +100,28 @@ def test_markdown_data():
     assert td.entity_synonyms == {u'Chines': u'chinese', u'Chinese': u'chinese', u'chines': u'chinese',
                                   u'vegg': u'vegetarian', u'veggie': u'vegetarian'}
 
+def test_markdown_data_multiple():
+    # Load the reference data
+    td_reference = load_data('data/examples/rasa/demo-rasa.md')
+
+    # Load and check the multi-file data
+    td = load_data('data/examples/rasa/multiple_files_markdown')
+    assert len(td.sorted_entity_examples()) >= len([e for e in td.entity_examples if e.get("entities")])
+    assert len(td.sorted_intent_examples()) == len(td.intent_examples)
+    assert td.entity_synonyms == {u'Chines': u'chinese', u'Chinese': u'chinese', u'chines': u'chinese',
+                                  u'vegg': u'vegetarian', u'veggie': u'vegetarian'}
+
+    # Check the number of entries
+    assert td.num_entity_examples == td_reference.num_entity_examples
+    assert td.num_intent_examples == td_reference.num_intent_examples
+
+    # Compare the multi-file data with the reference
+    intents_reference  = [i.as_dict()['intent'] for i in td_reference.intent_examples]
+    examples_reference = [i.as_dict()['text']   for i in td_reference.intent_examples]
+    intents  = [i.as_dict()['intent'] for i in td.intent_examples]
+    examples = [i.as_dict()['text']   for i in td.intent_examples]
+    assert set(intents)  == set(intents_reference)
+    assert set(examples) == set(examples_reference)
 
 def test_compare_markdown_to_json():
     td_md = load_data('data/examples/rasa/demo-rasa.md')

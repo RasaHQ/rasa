@@ -161,12 +161,16 @@ def load_wit_data(filename):
     return TrainingData(training_examples)
 
 
-def load_markdown_data(filename):
-    # type: (Text) -> TrainingData
+def load_markdown_data(filenames):
+    # type: (List[Text]) -> TrainingData
     """Loads training data stored in markdown data format."""
     from rasa_nlu.utils.md_to_json import MarkdownToJson
-    data = MarkdownToJson(filename)
-    return TrainingData(data.common_examples,
+
+    common_examples = list()
+    for filename in filenames:
+        data = MarkdownToJson(filename)
+        common_examples += data.common_examples
+    return TrainingData(common_examples,
                         get_entity_synonyms_dict(data.entity_synonyms))
 
 
@@ -247,26 +251,32 @@ def validate_rasa_nlu_data(data):
         raise e
 
 
-def load_rasa_data(filename):
-    # type: (Text) -> TrainingData
+def load_rasa_data(filenames):
+    # type: (List[Text]) -> TrainingData
     """Loads training data stored in the rasa NLU data format."""
 
-    data = _read_json_from_file(filename)
-    validate_rasa_nlu_data(data)
+    common = list()
+    intent = list()
+    entity = list()
+    regex_features = list()
+    synonyms = list()
+    for filename in filenames:
+        data = _read_json_from_file(filename)
+        validate_rasa_nlu_data(data)
 
-    common = data['rasa_nlu_data'].get("common_examples", list())
-    intent = data['rasa_nlu_data'].get("intent_examples", list())
-    entity = data['rasa_nlu_data'].get("entity_examples", list())
-    regex_features = data['rasa_nlu_data'].get("regex_features", list())
-    synonyms = data['rasa_nlu_data'].get("entity_synonyms", list())
+        common += data['rasa_nlu_data'].get("common_examples", list())
+        intent += data['rasa_nlu_data'].get("intent_examples", list())
+        entity += data['rasa_nlu_data'].get("entity_examples", list())
+        regex_features += data['rasa_nlu_data'].get("regex_features", list())
+        synonyms += data['rasa_nlu_data'].get("entity_synonyms", list())
 
     entity_synonyms = get_entity_synonyms_dict(synonyms)
 
     if intent or entity:
-        logger.warn("DEPRECATION warning: Data file contains 'intent_examples' "
+        logger.warn("DEPRECATION warning: Data file \"{}\" contains 'intent_examples' "
                     "or 'entity_examples' which will be "
                     "removed in the future. Consider putting all your examples "
-                    "into the 'common_examples' section.")
+                    "into the 'common_examples' section.".format(filename))
 
     all_examples = common + intent + entity
     training_examples = []
@@ -350,9 +360,9 @@ def load_data(resource_name, language='en', fformat=None):
     elif fformat == DIALOGFLOW_FILE_FORMAT:
         return load_dialogflow_data(files, language)
     elif fformat == RASA_FILE_FORMAT:
-        return load_rasa_data(files[0])
+        return load_rasa_data(files)
     elif fformat == MARKDOWN_FILE_FORMAT:
-        return load_markdown_data(files[0])
+        return load_markdown_data(files)
     else:
         raise ValueError("unknown training file format : {} for "
                          "file {}".format(fformat, resource_name))

@@ -16,6 +16,7 @@ Added
 - evaluation of entity extraction performance in ``evaluation.py``
 - support for spacy 2.0
 - evaluation of intent classification with crossvalidation in ``evaluation.py``
+- support for splitting training data into multiple files (markdown and JSON only)
 
 Changed
 -------

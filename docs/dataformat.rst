@@ -169,3 +169,15 @@ Alternatively training data can be used in the following markdown format (Regex 
 
     ## synonym:savings   <!-- synonyms, method 2 -->
     - pink pig
+
+Organization
+---------------------------
+
+The training data can either be stored in a single file or split into multiple files.
+For larger training examples splitting the training data into multiple files (e.g. one per intent) might be
+beneficial in terms of maintainability.
+
+Storing files with different file formats (e.g. markdown and JSON) in one directory is currently not supported.
+
+.. note::
+    Splitting the training data into multiple files currently only words for markdown and JSON data. For other file formats you have to use the single-file approach.

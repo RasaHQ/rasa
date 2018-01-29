@@ -1,0 +1,61 @@
+{
+  "rasa_nlu_data": {
+    "common_examples": [
+      {
+        "text": "yes", 
+        "intent": "affirm", 
+        "entities": []
+      }, 
+      {
+        "text": "yep", 
+        "intent": "affirm", 
+        "entities": []
+      }, 
+      {
+        "text": "yeah", 
+        "intent": "affirm", 
+        "entities": []
+      },
+      {
+        "text": "indeed",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
+        "text": "that's right",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
+        "text": "ok",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
+        "text": "great",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
+        "text": "right, thank you",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
+        "text": "correct",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
+        "text": "great choice",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
+        "text": "sounds really good",
+        "intent": "affirm",
+        "entities": []
+      }
+    ]
+  }
+}
