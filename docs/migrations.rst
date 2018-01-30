@@ -1,3 +1,5 @@
+.. _migration:
+
 Migration Guide
 ===============
 This page contains information about changes between major versions and
