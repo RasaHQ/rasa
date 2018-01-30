@@ -51,6 +51,7 @@ Fixed
 - properly log to specified file when starting Rasa Core server
 - properly calculate offset of last reset event after loading tracker from
   tracker store
+- UserUtteranceReverted action incorrectly triggered actions to be replayed
 
 [0.7.9] - 2017-11-29
 ^^^^^^^^^^^^^^^^^^^^
