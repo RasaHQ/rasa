@@ -4,8 +4,8 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
-[Unreleased] - `master 0.9.0.aX`_
-^^^^^^^^^^^^^^^^^^^^^^^^
+[Unreleased 0.9.0.aX] - `master`_
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. note:: This version is not yet released and is under active development.
 
@@ -25,7 +25,7 @@ Fixed
 ^^^^^^^^^^^^^^^^^^^^
 
 This is a major version change. Make sure to take a look at the
-:doc:`migration` in the documentation for advice on how to
+:ref:`migration` in the documentation for advice on how to
 update existing projects.
 
 Added
