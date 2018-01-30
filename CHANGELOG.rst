@@ -25,6 +25,7 @@ Changed
 - removed ``-e .`` from requirements files - if you want to install the app use ``pip install -e .``
 - fixed http duckling parsing for non ``en`` languages
 - fixed parsing of entities from markdown training data files
+- Regex features are now sorted internally. **retrain your model if you use regex features**
 
 Fixed
 -----
