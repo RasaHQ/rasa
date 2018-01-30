@@ -29,7 +29,7 @@ You can think of Rasa NLU as a set of high level APIs for building your own lang
 
 If you are new to Rasa NLU and want to create a bot, you should start with the [**tutorial**](https://rasahq.github.io/rasa_nlu/tutorial.html).
 
-- **What does Rasa NLU do? 🤔** [Read About the Rasa Stack](http://rasa.ai/products/rasa-stack/)
+- **What does Rasa NLU do? 🤔** [Read About the Rasa Stack](http://rasa.com/products/rasa-stack/)
 
 - **I'd like to read the detailed docs 🤓** [Read The Docs](https://nlu.rasa.ai)
 
