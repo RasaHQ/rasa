@@ -4,10 +4,22 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
-[Unreleased] - `master 0.11.0.aX`_
+[Unreleased] - `master 0.12.0.aX`_
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. note:: This version is not yet released and is under active development.
+
+Added
+-----
+
+Changed
+-------
+
+Fixed
+-----
+
+[0.11.0] - 2018-01-30
+^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
@@ -16,16 +28,16 @@ Added
 - evaluation of entity extraction performance in ``evaluation.py``
 - support for spacy 2.0
 - evaluation of intent classification with crossvalidation in ``evaluation.py``
-- support for splitting training data into multiple files (markdown and JSON only)
+- support for splitting training data into multiple files
+  (markdown and JSON only)
 
 Changed
 -------
-- removed ``-e .`` from requirements files - if you want to install the app use ``pip install -e .``
+- removed ``-e .`` from requirements files - if you want to install
+  the app use ``pip install -e .``
 - fixed http duckling parsing for non ``en`` languages
 - fixed parsing of entities from markdown training data files
 
-Fixed
------
 
 [0.10.6] - 2018-01-02
 ^^^^^^^^^^^^^^^^^^^^^
@@ -36,7 +48,8 @@ Added
 
 Fixed
 -----
-- Preventing capitalized entities from becoming synonyms of the form lower-cased -> capitalized
+- Preventing capitalized entities from becoming synonyms of the form
+  lower-cased -> capitalized
 
 
 [0.10.5] - 2017-12-01
@@ -60,8 +73,9 @@ Fixed
 Added
 -----
 - support for new dialogflow data format (previously api.ai)
-- improved support for custom components (components are stored by class name in stored
-  metadata to allow for components that are not mentioned in the Rasa NLU registry)
+- improved support for custom components (components are
+  stored by class name in stored metadata to allow for components
+  that are not mentioned in the Rasa NLU registry)
 - language option to convert script
 
 Fixed
@@ -84,25 +98,36 @@ Fixed
 Added
 -----
 - Support for training data in Markdown format
-- Cors support. You can now specify allowed cors origins within your configuration file.
-- The HTTP server is now backed by Klein (Twisted) instead of Flask. The server is now asynchronous but is no more WSGI compatible
+- Cors support. You can now specify allowed cors origins
+  within your configuration file.
+- The HTTP server is now backed by Klein (Twisted) instead of Flask.
+  The server is now asynchronous but is no more WSGI compatible
 - Improved Docker automated builds
-- Rasa NLU now works with projects instead of models. A project can be the basis for a restaurant search bot in German or a customer service bot in English. A model can be seen as a snapshot of a project.
+- Rasa NLU now works with projects instead of models. A project can
+  be the basis for a restaurant search bot in German or a customer
+  service bot in English. A model can be seen as a snapshot of a project.
 
 Changed
 -------
-- Root project directories have been slightly rearranged to clean up new docker support
-- use ``Interpreter.create(metadata, ...)`` to create interpreter from dict and ``Interpreter.load(file_name, ...)`` to create interpreter with metadata from a file
+- Root project directories have been slightly rearranged to
+  clean up new docker support
+- use ``Interpreter.create(metadata, ...)`` to create interpreter
+  from dict and ``Interpreter.load(file_name, ...)`` to create
+  interpreter with metadata from a file
 - Renamed ``name`` parameter to ``project``
-- Docs hosted on GitHub pages now: `Documentation <https://rasahq.github.io/rasa_nlu>`_
-- Adapted remote cloud storages to support projects (backwards incompatible!)
+- Docs hosted on GitHub pages now:
+  `Documentation <https://rasahq.github.io/rasa_nlu>`_
+- Adapted remote cloud storages to support projects
+  (backwards incompatible!)
 
 Fixed
 -----
 - Fixed training data persistence. Fixes #510
 - Fixed UTF-8 character handling when training through HTTP interface
-- Invalid handling of numbers extracted from duckling during synonym handling. Fixes #517
-- Only log a warning (instead of throwing an exception) on misaligned entities during mitie NER
+- Invalid handling of numbers extracted from duckling
+  during synonym handling. Fixes #517
+- Only log a warning (instead of throwing an exception) on
+  misaligned entities during mitie NER
 
 [0.9.2] - 2017-08-16
 ^^^^^^^^^^^^^^^^^^^^
@@ -116,7 +141,8 @@ Fixed
 
 Fixed
 -----
-- removed obsolete ``--output`` parameter of ``train.py``. use ``--path`` instead. fixes #473
+- removed obsolete ``--output`` parameter of ``train.py``.
+  use ``--path`` instead. fixes #473
 
 [0.9.0] - 2017-07-07
 ^^^^^^^^^^^^^^^^^^^^
@@ -124,30 +150,41 @@ Fixed
 Added
 -----
 - increased test coverage to avoid regressions (ongoing)
-- added regex featurization to support intent classification and entity extraction (``intent_entity_featurizer_regex``)
+- added regex featurization to support intent classification
+  and entity extraction (``intent_entity_featurizer_regex``)
 
 Changed
 -------
-- replaced existing CRF library (python-crfsuite) with sklearn-crfsuite (due to better windows support)
+- replaced existing CRF library (python-crfsuite) with
+  sklearn-crfsuite (due to better windows support)
 - updated to spacy 1.8.2
 - logging format of logged request now includes model name and timestamp
 - use module specific loggers instead of default python root logger
-- output format of the duckling extractor changed. the ``value`` field now includes the complete value from duckling instead of just text (so this is an property is an object now instead of just text). includes granularity information now.
-- deprecated ``intent_examples`` and ``entity_examples`` sections in training data. all examples should go into the ``common_examples`` section
-- weight training samples based on class distribution during ner_crf cross validation and sklearn intent classification training
-- large refactoring of the internal training data structure and pipeline architecture
+- output format of the duckling extractor changed. the ``value``
+  field now includes the complete value from duckling instead of
+  just text (so this is an property is an object now instead of just text).
+  includes granularity information now.
+- deprecated ``intent_examples`` and ``entity_examples`` sections in
+  training data. all examples should go into the ``common_examples`` section
+- weight training samples based on class distribution during ner_crf
+  cross validation and sklearn intent classification training
+- large refactoring of the internal training data structure and
+  pipeline architecture
 - numpy is now a required dependency
 
 Removed
 -------
-- luis data tokenizer configuration value (not used anymore, luis exports char offsets now)
+- luis data tokenizer configuration value (not used anymore,
+  luis exports char offsets now)
 
 Fixed
 -----
 - properly update coveralls coverage report from travis
 - persistence of duckling dimensions
-- changed default response of untrained ``intent_classifier_sklearn`` from ``"intent": None`` to ``"intent": {"name": None, "confidence": 0.0}``
-- ``/status`` endpoint showing all available models instead of only those whose name starts with *model*
+- changed default response of untrained ``intent_classifier_sklearn``
+  from ``"intent": None`` to ``"intent": {"name": None, "confidence": 0.0}``
+- ``/status`` endpoint showing all available models instead of only
+  those whose name starts with *model*
 - properly return training process ids #391
 
 [0.8.12] - 2017-06-29
@@ -185,7 +222,8 @@ Fixed
 
 Fixed
 -----
-- /status endpoint showing all available models instead of only those whose name starts with *model*
+- ``/status`` endpoint showing all available models instead of only
+  those whose name starts with *model*
 
 [0.8.7] - 2017-05-24
 ^^^^^^^^^^^^^^^^^^^^
@@ -242,21 +280,27 @@ Added
 -----
 - ngram character featurizer (allows better handling of out-of-vocab words)
 - replaced pre-wired backends with more flexible pipeline definitions
-- return top 10 intents with sklearn classifier `#199 <https://github.com/RasaHQ/rasa_nlu/pull/199>`_
+- return top 10 intents with sklearn classifier
+  `#199 <https://github.com/RasaHQ/rasa_nlu/pull/199>`_
 - python type annotations for nearly all public functions
 - added alternative method of defining entity synonyms
 - support for arbitrary spacy language model names
 - duckling components to provide normalized output for structured entities
-- Conditional random field entity extraction (Markov model for entity tagging, better named entity recognition with low and medium data and similarly well at big data level)
+- Conditional random field entity extraction (Markov model for entity
+  tagging, better named entity recognition with low and medium data and
+  similarly well at big data level)
 - allow naming of trained models instead of generated model names
-- dynamic check of requirements for the different components & error messages on missing dependencies
+- dynamic check of requirements for the different components & error
+  messages on missing dependencies
 - support for using multiple entity extractors and combining results downstream
 
 Changed
 -------
-- unified tokenizers, classifiers and feature extractors to implement common component interface
+- unified tokenizers, classifiers and feature extractors to implement
+  common component interface
 - ``src`` directory renamed to ``rasa_nlu``
-- when loading data in a foreign format (api.ai, luis, wit) the data gets properly split into intent & entity examples
+- when loading data in a foreign format (api.ai, luis, wit) the data
+  gets properly split into intent & entity examples
 - Configuration:
     - added ``max_number_of_ngrams``
     - removed ``backend`` and added ``pipeline`` as a replacement
@@ -274,7 +318,8 @@ Changed
     where ``extractor`` denotes the entity extractor that originally found an entity, and ``processor`` denotes components that alter entities, such as the synonym component.
 - camel cased MITIE classes (e.g. ``MITIETokenizer`` → ``MitieTokenizer``)
 - model metadata changed, see migration guide
-- updated to spacy 1.7 and dropped training and loading capabilities for the spacy component (breaks existing spacy models!)
+- updated to spacy 1.7 and dropped training and loading capabilities for
+  the spacy component (breaks existing spacy models!)
 - introduced compatibility with both Python 2 and 3
 
 Removed
@@ -282,17 +327,22 @@ Removed
 
 Fixed
 -----
-- properly parse ``str`` additionally to ``unicode`` `#210 <https://github.com/RasaHQ/rasa_nlu/issues/210>`_
-- support entity only training `#181 <https://github.com/RasaHQ/rasa_nlu/issues/181>`_
-- resolved conflicts between metadata and configuration values `#219 <https://github.com/RasaHQ/rasa_nlu/issues/219>`_
-- removed tokenization when reading Luis.ai data (they changed their format) `#241 <https://github.com/RasaHQ/rasa_nlu/issues/241>`_
+- properly parse ``str`` additionally to ``unicode``
+  `#210 <https://github.com/RasaHQ/rasa_nlu/issues/210>`_
+- support entity only training
+  `#181 <https://github.com/RasaHQ/rasa_nlu/issues/181>`_
+- resolved conflicts between metadata and configuration values
+  `#219 <https://github.com/RasaHQ/rasa_nlu/issues/219>`_
+- removed tokenization when reading Luis.ai data (they changed their format)
+  `#241 <https://github.com/RasaHQ/rasa_nlu/issues/241>`_
 
 [0.7.4] - 2017-03-27
 ^^^^^^^^^^^^^^^^^^^^
 
 Fixed
 -----
-- fixed failed loading of example data after renaming attributes, i.e. "KeyError: 'entities'"
+- fixed failed loading of example data after renaming attributes,
+  i.e. "KeyError: 'entities'"
 
 [0.7.3] - 2017-03-15
 ^^^^^^^^^^^^^^^^^^^^
@@ -314,13 +364,16 @@ Fixed
 
 Fixed
 -----
-- mitie tokenization value generation `#207 <https://github.com/RasaHQ/rasa_nlu/pull/207>`_, thanks @cristinacaputo
-- changed log file extension from ``.json`` to ``.log``, since the contained text is not proper json
+- mitie tokenization value generation
+  `#207 <https://github.com/RasaHQ/rasa_nlu/pull/207>`_, thanks @cristinacaputo
+- changed log file extension from ``.json`` to ``.log``,
+  since the contained text is not proper json
 
 
 [0.7.0] - 2017-03-10
 ^^^^^^^^^^^^^^^^^^^^
-This is a major version update. Please also have a look at the `Migration Guide <https://rasahq.github.io/rasa_nlu/migrations.html>`_.
+This is a major version update. Please also have a look at the
+`Migration Guide <https://rasahq.github.io/rasa_nlu/migrations.html>`_.
 
 Added
 -----
@@ -331,7 +384,8 @@ Added
 - mitie_sklearn backend using mitie tokenization and sklearn classification
 - option to fine-tune spacy NER models
 - multithreading support of build in REST server (e.g. using gunicorn)
-- multitenancy implementation to allow loading multiple models which share the same backend
+- multitenancy implementation to allow loading multiple models which
+  share the same backend
 
 Fixed
 -----
