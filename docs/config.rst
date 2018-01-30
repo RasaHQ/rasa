@@ -132,7 +132,7 @@ data
 :Type: ``str``
 :Examples: ``"data/example.json"``
 :Description:
-    Location of the training data.
+    Location of the training data. For JSON and markdown data, this can either be a single file or a directory containing multiple training data files.
 
 cors_origins
 ~~~~

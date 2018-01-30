@@ -171,5 +171,19 @@ list syntax, e.g. minus ``-``, asterisk ``*``, or plus ``+``:
     ## synonym:savings   <!-- synonyms, method 2 -->
     - pink pig
 
+
     ## regex:zipcode
     - [0-9]{5}
+
+Organization
+---------------------------
+
+The training data can either be stored in a single file or split into multiple files.
+For larger training examples, splitting the training data into multiple files, e.g. one per intent, increases maintainability.
+
+Storing files with different file formats, i.e. mixing markdown and JSON, is currently not supported.
+
+.. note::
+    Splitting the training data into multiple files currently only works for markdown and JSON data.
+    For other file formats you have to use the single-file approach.
+

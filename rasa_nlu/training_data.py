@@ -83,6 +83,7 @@ class TrainingData(object):
             self.training_examples = []
         self.entity_synonyms = entity_synonyms if entity_synonyms else {}
         self.regex_features = regex_features if regex_features else []
+        self.sort_regex_features()
 
         self.validate()
 
@@ -126,6 +127,11 @@ class TrainingData(object):
         """Returns the number of intent examples."""
 
         return len(self.intent_examples)
+
+    def sort_regex_features(self):
+        """Sorts regex features lexicographically by name+pattern"""
+        self.regex_features = sorted(self.regex_features,
+                                     key=lambda e: "{}+{}".format(e['name'], e['pattern']))
 
     def as_json(self, **kwargs):
         # type: (**Any) -> str

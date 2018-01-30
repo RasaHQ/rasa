@@ -3,7 +3,7 @@ sudo: required
 cache:
   directories:
   - $HOME/.cache/pip
-  - $HOME/build/RasaHQ/rasa_nlu/data
+  - /tmp/cached/
 python:
 - '2.7'
 - '3.5'
@@ -18,8 +18,9 @@ install:
 - pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.0.0/de_core_news_sm-2.0.0.tar.gz
   --no-cache-dir > jnk
 - python -m spacy link de_core_news_sm de
-- if [[ ! -f data/total_word_feature_extractor.dat ]]; then wget -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat;
+- if [[ ! -f /tmp/cached/total_word_feature_extractor.dat ]]; then wget -P /tmp/cached/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat;
   fi
+- mv /tmp/cached/total_word_feature_extractor.dat data/total_word_feature_extractor.dat
 - pip list
 before_script:
 - mkdir $HOME/tmp

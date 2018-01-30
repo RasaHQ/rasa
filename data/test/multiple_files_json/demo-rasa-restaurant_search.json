@@ -1,0 +1,191 @@
+{
+  "rasa_nlu_data": {
+    "regex_features": [
+      {
+        "name": "greet",
+        "pattern": "hey[^\\s]*"
+      }
+    ],
+    "entity_synonyms": [
+      {
+        "value": "chinese",
+        "synonyms": ["Chinese", "Chines", "chines"]
+      },
+      {
+        "value": "vegetarian",
+        "synonyms": ["veggie", "vegg"]
+      }
+    ],
+    "common_examples": [
+      {
+        "text": "i'm looking for a place to eat",
+        "intent": "restaurant_search",
+        "entities": []
+      },
+      {
+        "text": "I want to grab lunch",
+        "intent": "restaurant_search",
+        "entities": []
+      },
+      {
+        "text": "I am searching for a dinner spot",
+        "intent": "restaurant_search",
+        "entities": []
+      },
+      {
+        "text": "i'm looking for a place in the north of town",
+        "intent": "restaurant_search",
+        "entities": [
+          {
+            "start": 31,
+            "end": 36,
+            "value": "north",
+            "entity": "location"
+          }
+        ]
+      },
+      {
+        "text": "show me chinese restaurants",
+        "intent": "restaurant_search",
+        "entities": [
+          {
+            "start": 8,
+            "end": 15,
+            "value": "chinese",
+            "entity": "cuisine"
+          }
+        ]
+      },
+      {
+        "text": "show me chines restaurants in the north",
+        "intent": "restaurant_search",
+        "entities": [
+          {
+            "start": 8,
+            "end": 14,
+            "value": "chinese",
+            "entity": "cuisine"
+          },
+          {
+            "start": 34,
+            "end": 39,
+            "value": "north",
+            "entity": "location"
+          }
+        ]
+      },
+      {
+        "text": "show me a mexican place in the centre", 
+        "intent": "restaurant_search", 
+        "entities": [
+          {
+            "start": 31, 
+            "end": 37, 
+            "value": "centre", 
+            "entity": "location"
+          }, 
+          {
+            "start": 10, 
+            "end": 17, 
+            "value": "mexican", 
+            "entity": "cuisine"
+          }
+        ]
+      },
+      {
+        "text": "i am looking for an indian spot called olaolaolaolaolaola",
+        "intent": "restaurant_search",
+        "entities": [
+          {
+            "start": 20,
+            "end": 26,
+            "value": "indian",
+            "entity": "cuisine"
+          }
+        ]
+      },     {
+        "text": "search for restaurants",
+        "intent": "restaurant_search",
+        "entities": []
+      },
+      {
+        "text": "anywhere in the west",
+        "intent": "restaurant_search",
+        "entities": [
+          {
+            "start": 16,
+            "end": 20,
+            "value": "west",
+            "entity": "location"
+          }
+        ]
+      },
+      {
+        "text": "anywhere near 18328",
+        "intent": "restaurant_search",
+        "entities": [
+          {
+            "start": 14,
+            "end": 19,
+            "value": "18328",
+            "entity": "location"
+          }
+        ]
+      },
+      {
+        "text": "I am looking for asian fusion food",
+        "intent": "restaurant_search",
+        "entities": [
+          {
+            "start": 17,
+            "end": 29,
+            "value": "asian fusion",
+            "entity": "cuisine"
+          }
+        ]
+      },
+      {
+        "text": "I am looking a restaurant in 29432",
+        "intent": "restaurant_search",
+        "entities": [
+          {
+            "start": 29,
+            "end": 34,
+            "value": "29432",
+            "entity": "location"
+          }
+        ]
+      },
+      {
+        "text": "I am looking for mexican indian fusion",
+        "intent": "restaurant_search",
+        "entities": [
+          {
+            "start": 17,
+            "end": 38,
+            "value": "mexican indian fusion",
+            "entity": "cuisine"
+          }
+        ]
+      },
+      {
+        "text": "central indian restaurant",
+        "intent": "restaurant_search",
+        "entities": [
+          {
+            "start": 0,
+            "end": 7,
+            "value": "central",
+            "entity": "location"
+          },
+          {
+            "start": 8,
+            "end": 14,
+            "value": "indian",
+            "entity": "cuisine"
+          }
+        ]
+      }
+    ]
+  }
+}

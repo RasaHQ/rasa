@@ -30,7 +30,7 @@ def test_train_model(pipeline_template, component_builder):
 @utilities.slowtest
 def test_train_model_noents(component_builder):
     _config = utilities.base_test_conf("all_components")
-    _config['data'] = "./data/examples/rasa/demo-rasa-noents.json"
+    _config['data'] = "./data/test/demo-rasa-noents.json"
     (trained, persisted_path) = utilities.run_train(_config, component_builder)
     assert trained.pipeline
     loaded = utilities.load_interpreter_for_model(_config, persisted_path, component_builder)
