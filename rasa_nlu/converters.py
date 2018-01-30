@@ -15,7 +15,7 @@ from typing import Optional
 from typing import Text
 
 from rasa_nlu import utils
-from rasa_nlu.training_data import TrainingData, Message
+from rasa_nlu.training_data import TrainingData, Message, transform_entity_synonyms
 
 logger = logging.getLogger(__name__)
 
@@ -164,20 +164,11 @@ def load_wit_data(filename):
 def load_markdown_data(filenames):
     # type: (List[Text]) -> TrainingData
     """Loads training data stored in markdown data format."""
-    from rasa_nlu.utils.md_to_json import MarkdownToJson
-
-    common_examples = []
-    known_synonyms = {}
-    regex_features = []
+    training_data_unmerged = []
     for filename in filenames:
-        data = MarkdownToJson(filename).load()
-        data = data["rasa_nlu_data"]
-        common_examples.extend(data["common_examples"])
-        known_synonyms = get_entity_synonyms_dict(data["entity_synonyms"],
-                                                  known_synonyms)
-        regex_features.extend(data["regex_features"])
-    return TrainingData(common_examples, known_synonyms, regex_features)
+        training_data_unmerged.append(TrainingData.from_markdown(filename))
 
+    return training_data_unmerged[0].merge(training_data_unmerged[1:])
 
 def rasa_nlu_data_schema():
     training_example_schema = {
@@ -275,7 +266,7 @@ def load_rasa_data(filenames):
         regex_features += data['rasa_nlu_data'].get("regex_features", list())
         synonyms += data['rasa_nlu_data'].get("entity_synonyms", list())
 
-    entity_synonyms = get_entity_synonyms_dict(synonyms)
+    entity_synonyms = transform_entity_synonyms(synonyms)
 
     if intent or entity:
         logger.warn("DEPRECATION warning: Data file \"{}\" contains 'intent_examples' "
@@ -292,17 +283,6 @@ def load_rasa_data(filenames):
         training_examples.append(Message(e["text"], data))
 
     return TrainingData(training_examples, entity_synonyms, regex_features)
-
-
-def get_entity_synonyms_dict(synonyms, known_synonyms=None):
-    # type: (List[Dict]) -> Dict
-    """build entity_synonyms dictionary"""
-    entity_synonyms = {} if not known_synonyms else known_synonyms
-    for s in synonyms:
-        if "value" in s and "synonyms" in s:
-            for synonym in s["synonyms"]:
-                entity_synonyms[synonym] = s["value"]
-    return entity_synonyms
 
 
 def guess_format(files):

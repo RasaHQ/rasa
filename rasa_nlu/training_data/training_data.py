@@ -5,63 +5,26 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import io
-import json
 import logging
 import os
 import warnings
 from itertools import groupby
 
+from copy import deepcopy
 from builtins import object, str
 from collections import defaultdict
 
-from rasa_nlu.utils.json_to_md import JsonToMd
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Text
 
-from rasa_nlu.utils import lazyproperty, ordered, write_to_file
+from rasa_nlu.utils import lazyproperty, write_to_file
 from rasa_nlu.utils import list_to_str
 from rasa_nlu.utils import json_to_string
 
 logger = logging.getLogger(__name__)
-
-
-class Message(object):
-    def __init__(self, text, data=None, output_properties=None, time=None):
-        self.text = text
-        self.time = time
-        self.data = data if data else {}
-        self.output_properties = output_properties if output_properties else set()
-
-    def set(self, prop, info, add_to_output=False):
-        self.data[prop] = info
-        if add_to_output:
-            self.output_properties.add(prop)
-
-    def get(self, prop, default=None):
-        return self.data.get(prop, default)
-
-    def as_dict(self, only_output_properties=False):
-        if only_output_properties:
-            d = {key: value
-                 for key, value in self.data.items()
-                 if key in self.output_properties}
-        else:
-            d = self.data
-        return dict(d, text=self.text)
-
-    def __eq__(self, other):
-        if not isinstance(other, Message):
-            return False
-        else:
-            return ((other.text, ordered(other.data)) ==
-                    (self.text, ordered(self.data)))
-
-    def __hash__(self):
-        return hash((self.text, str(ordered(self.data))))
 
 
 class TrainingData(object):
@@ -78,7 +41,7 @@ class TrainingData(object):
         # type: (Optional[List[Message]], Optional[Dict[Text, Text]]) -> None
 
         if training_examples:
-            self.training_examples = self.sanitice_examples(training_examples)
+            self.training_examples = self.sanitize_examples(training_examples)
         else:
             self.training_examples = []
         self.entity_synonyms = entity_synonyms if entity_synonyms else {}
@@ -87,10 +50,38 @@ class TrainingData(object):
 
         self.validate()
 
-    def sanitice_examples(self, examples):
+    def merge(self, others):
+        """Merges a TrainingData instance with others and creates a new one."""
+        common_examples = deepcopy(self.training_examples)
+        entity_synonyms = self.entity_synonyms.copy()
+        regex_features = deepcopy(self.regex_features)
+
+        def extend_with(training_data):
+            common_examples.extend(deepcopy(training_data.training_examples))
+            regex_features.extend(deepcopy(training_data.regex_features))
+
+            for text, syn in training_data.entity_synonyms.items():
+                if text in entity_synonyms and entity_synonyms[text] != syn:
+                    logger.warning("Inconsistent entity synonyms, overwriting {0}->{1}"
+                                   "with {0}->{2} during merge".format(text, entity_synonyms[text], syn))
+
+            entity_synonyms.update(training_data.entity_synonyms)
+
+        if isinstance(others, TrainingData):
+            extend_with(others)
+        elif isinstance(others, list) and all([isinstance(e, TrainingData) for e in others]):
+            for o in others:
+                extend_with(o)
+        else:
+            raise ValueError("Merging requires another TrainingData instance or a list of them")
+
+        return TrainingData(common_examples, entity_synonyms, regex_features)
+
+    def sanitize_examples(self, examples):
         # type: (List[Message]) -> List[Message]
-        """Makes sure the training data is cleaned, e.q. removes trailing
-        whitespaces from intent annotations."""
+        """Makes sure the training data is clean.
+
+        removes trailing whitespaces from intent annotations."""
 
         for e in examples:
             if e.get("intent") is not None:
@@ -157,13 +148,20 @@ class TrainingData(object):
             }
         }, **kwargs))
 
-    def as_markdown(self, **kwargs):
-        # type: (**Any) -> str
+    def as_markdown(self):
+        # type: () -> str
         """Represent this set of training examples as markdown adding
         the passed meta information."""
+        from rasa_nlu.training_data import MarkdownWriter
+        mdw = MarkdownWriter()
+        return mdw.to_markdown(self)
 
-        return JsonToMd(self.training_examples,
-                        self.entity_synonyms).to_markdown()
+    @staticmethod
+    def from_markdown(markdown_file):
+        """Creates a TrainingData object from a markdown file."""
+        from rasa_nlu.training_data import MarkdownReader
+        mdr = MarkdownReader()
+        return mdr.read(markdown_file)
 
     def persist(self, dir_name):
         # type: (Text) -> Dict[Text, Any]
