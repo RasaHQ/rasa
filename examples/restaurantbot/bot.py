@@ -14,15 +14,15 @@ from rasa_core.channels.console import ConsoleInputChannel
 from rasa_core.interpreter import RasaNLUInterpreter
 from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.memoization import MemoizationPolicy
+from rasa_core.events import SlotSet
 
 logger = logging.getLogger(__name__)
-
-from rasa_core.events import SlotSet
 
 
 class RestaurantAPI:
     def search(self, info):
         return "papi's pizza place"
+
 
 class ActionSearchRestaurants(Action):
     def name(self):
@@ -42,8 +42,8 @@ class ActionSuggest(Action):
     def run(self, dispatcher, tracker, domain):
         dispatcher.utter_message("here's what I found:")
         dispatcher.utter_message(tracker.get_slot("matches"))
-        dispatcher.utter_message("is it ok for you? hint: I'm not going to find anything else :)")
-        
+        dispatcher.utter_message(
+                "is it ok for you? hint: I'm not going to find anything else :)")
         return []
 
 
@@ -113,7 +113,7 @@ def run(serve_forever=True):
 
 if __name__ == '__main__':
     utils.configure_colored_logging(loglevel="INFO")
-    
+
     parser = argparse.ArgumentParser(
             description='starts the bot')
 
