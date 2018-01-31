@@ -10,7 +10,7 @@ slots:
   info:
     type: text
   matches:
-    type: list
+    type: unfeaturized
 
 entities:
 - location
@@ -40,17 +40,18 @@ templates:
   utter_ack_findalternatives:
     - "ok let me see what else there is"
   utter_ack_makereservation:
-    - "ok making a reservation"
+    - text: "ok making a reservation"
+      buttons:
+        - title: "thank you"
+          payload: "thank you"
   utter_ask_cuisine: 
     - "what kind of cuisine would you like?"
-  utter_ask_helpmore:
-    - "is there anything more that I can help with?"
   utter_ask_howcanhelp:
     - "how can I help you?"
   utter_ask_location:
-    - "in which city?"
+    - "where?"
   utter_ask_moreupdates: 
-    - "anything else you'd like to modify?"
+    - "if you'd like to modify anything else, please tell me what"
   utter_ask_numpeople:
     - "for how many people?"
   utter_ask_price: 
@@ -71,7 +72,6 @@ actions:
 - utter_ack_findalternatives
 - utter_ack_makereservation
 - utter_ask_cuisine
-- utter_ask_helpmore
 - utter_ask_howcanhelp
 - utter_ask_location
 - utter_ask_moreupdates

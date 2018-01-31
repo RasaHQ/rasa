@@ -66,20 +66,9 @@ An action can do much more than just send a message.
 Here's a small example of a custom action which calls an API.
 Notice that the ``run`` method can use the values of the slots, which are stored in the tracker.
 
-.. testcode::
-
-    from rasa_core.actions import Action
-    from rasa_core.events import SlotSet
-
-    class ActionSearchRestaurants(Action):
-        def name(self):
-            return 'action_search_restaurants'
-
-        def run(self, dispatcher, tracker, domain):
-            restaurants = restaurant_api.search(tracker.get_slot("cuisine"))
-            dispatcher.utter_message("here's what I found")
-            dispatcher.utter_message(restaurants)
-            return [SlotSet("matches", restaurants)]
+.. literalinclude:: ../examples/restaurantbot/bot.py
+    :linenos:
+    :pyobject: ActionSearchRestaurants
 
 
 But a domain alone doesn't make a bot; we need some training data to tell the
@@ -259,6 +248,11 @@ To run the bot from the command line, call
 
     python bot.py run
 
+If the bot appears to be stuck or answers incorrectly, do not worry.
+Provided dataset is not diverse enough to handle all possible inputs,
+as can be seen from visualization of the training data below.
+One can use :ref:`tutorial_interactive_learning` to augment the training data
+with custom stories.
 
 The Details
 ^^^^^^^^^^^
@@ -299,7 +293,8 @@ similar to a flow chart:
 The graph shows all of the actions executed in the training data, and the
 user messages (if any) that occurred between them. As you can see, flow
 charts get complicated quite quickly. Nevertheless, they can be a helpful
-tool in debugging a bot. More information can be found in
+tool in debugging a bot. For example, it can be clearly seen that there is
+not enough data for handling reservation. To learn how to build this chart go to
 :ref:`story-visualization`.
 
 .. raw:: html 

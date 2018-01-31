@@ -17,14 +17,22 @@ from rasa_core.policies.memoization import MemoizationPolicy
 
 logger = logging.getLogger(__name__)
 
+from rasa_core.events import SlotSet
+
+
+class RestaurantAPI:
+    def search(self, info):
+        return "papi's pizza place"
 
 class ActionSearchRestaurants(Action):
     def name(self):
         return 'action_search_restaurants'
 
     def run(self, dispatcher, tracker, domain):
-        dispatcher.utter_message("here's what I found")
-        return []
+        dispatcher.utter_message("looking for restaurants")
+        restaurant_api = RestaurantAPI()
+        restaurants = restaurant_api.search(tracker.get_slot("cuisine"))
+        return [SlotSet("matches", restaurants)]
 
 
 class ActionSuggest(Action):
@@ -32,7 +40,10 @@ class ActionSuggest(Action):
         return 'action_suggest'
 
     def run(self, dispatcher, tracker, domain):
-        dispatcher.utter_message("papi's pizza place")
+        dispatcher.utter_message("here's what I found:")
+        dispatcher.utter_message(tracker.get_slot("matches"))
+        dispatcher.utter_message("is it ok for you? hint: I'm not going to find anything else :)")
+        
         return []
 
 
@@ -69,9 +80,8 @@ def train_dialogue(domain_file="restaurant_domain.yml",
     agent.train(
             training_data_file,
             max_history=3,
-            epochs=100,
-            batch_size=50,
-            augmentation_factor=50,
+            epochs=400,
+            batch_size=100,
             validation_split=0.2
     )
 
@@ -102,8 +112,8 @@ def run(serve_forever=True):
 
 
 if __name__ == '__main__':
-    utils.configure_colored_logging(loglevel="DEBUG")
-
+    utils.configure_colored_logging(loglevel="INFO")
+    
     parser = argparse.ArgumentParser(
             description='starts the bot')
 
