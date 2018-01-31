@@ -20,6 +20,7 @@ from typing import List
 from typing import Optional
 from typing import Text
 
+from rasa_nlu.training_data import check_duplicate_synonym
 from rasa_nlu.utils import lazyproperty, write_to_file
 from rasa_nlu.utils import list_to_str
 from rasa_nlu.utils import json_to_string
@@ -50,32 +51,22 @@ class TrainingData(object):
 
         self.validate()
 
-    def merge(self, others):
-        """Merges a TrainingData instance with others and creates a new one."""
-        common_examples = deepcopy(self.training_examples)
+    def merge(self, *others):
+        """Merges the TrainingData instance with others and creates a new one."""
+        training_examples = deepcopy(self.training_examples)
         entity_synonyms = self.entity_synonyms.copy()
         regex_features = deepcopy(self.regex_features)
 
-        def extend_with(training_data):
-            common_examples.extend(deepcopy(training_data.training_examples))
-            regex_features.extend(deepcopy(training_data.regex_features))
+        for o in others:
+            training_examples.extend(deepcopy(o.training_examples))
+            regex_features.extend(deepcopy(o.regex_features))
 
-            for text, syn in training_data.entity_synonyms.items():
-                if text in entity_synonyms and entity_synonyms[text] != syn:
-                    logger.warning("Inconsistent entity synonyms, overwriting {0}->{1}"
-                                   "with {0}->{2} during merge".format(text, entity_synonyms[text], syn))
+            for text, syn in o.entity_synonyms.items():
+                check_duplicate_synonym(entity_synonyms, text, syn, "merging training data")
 
-            entity_synonyms.update(training_data.entity_synonyms)
+            entity_synonyms.update(o.entity_synonyms)
 
-        if isinstance(others, TrainingData):
-            extend_with(others)
-        elif isinstance(others, list) and all([isinstance(e, TrainingData) for e in others]):
-            for o in others:
-                extend_with(o)
-        else:
-            raise ValueError("Merging requires another TrainingData instance or a list of them")
-
-        return TrainingData(common_examples, entity_synonyms, regex_features)
+        return TrainingData(training_examples, entity_synonyms, regex_features)
 
     def sanitize_examples(self, examples):
         # type: (List[Message]) -> List[Message]
@@ -124,6 +115,7 @@ class TrainingData(object):
         self.regex_features = sorted(self.regex_features,
                                      key=lambda e: "{}+{}".format(e['name'], e['pattern']))
 
+    #TODO: extract into RasaJson writer
     def as_json(self, **kwargs):
         # type: (**Any) -> str
         """Represent this set of training examples as json adding
@@ -150,18 +142,14 @@ class TrainingData(object):
 
     def as_markdown(self):
         # type: () -> str
-        """Represent this set of training examples as markdown adding
-        the passed meta information."""
+        """Generates the markdown representation of the TrainingData."""
         from rasa_nlu.training_data import MarkdownWriter
-        mdw = MarkdownWriter()
-        return mdw.to_markdown(self)
+        return self._as_format(MarkdownWriter)
 
-    @staticmethod
-    def from_markdown(markdown_file):
-        """Creates a TrainingData object from a markdown file."""
-        from rasa_nlu.training_data import MarkdownReader
-        mdr = MarkdownReader()
-        return mdr.read(markdown_file)
+    def _as_format(self, writer_clz):
+        """Generates a string representation of the TrainingData given a writer class."""
+        writer = writer_clz()
+        writer.dumps(self)
 
     def persist(self, dir_name):
         # type: (Text) -> Dict[Text, Any]

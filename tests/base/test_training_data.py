@@ -12,9 +12,10 @@ import pytest
 from jsonschema import ValidationError
 
 from rasa_nlu.convert import convert_training_data
-from rasa_nlu.converters import load_data, validate_rasa_nlu_data
+from rasa_nlu.converters import validate_rasa_nlu_data
 from rasa_nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa_nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
+from rasa_nlu.training_data import DataLoader
 
 
 def test_example_training_data_is_valid():
@@ -43,21 +44,21 @@ def test_validation_is_throwing_exceptions(invalid_data):
 
 
 def test_luis_data():
-    td = load_data('data/examples/luis/demo-restaurants.json')
+    td = DataLoader.load('data/examples/luis/demo-restaurants.json')
     assert td.entity_examples != []
     assert td.intent_examples != []
     assert td.entity_synonyms == {}
 
 
 def test_wit_data():
-    td = load_data('data/examples/wit/demo-flights.json')
+    td = DataLoader.load('data/examples/wit/demo-flights.json')
     assert td.entity_examples != []
     assert td.intent_examples != []
     assert td.entity_synonyms == {}
 
 
 def test_rasa_data():
-    td = load_data('data/examples/rasa/demo-rasa.json')
+    td = DataLoader.load('data/examples/rasa/demo-rasa.json')
     assert td.entity_examples != []
     assert td.intent_examples != []
 
@@ -79,10 +80,10 @@ def test_rasa_data():
 
 def test_rasa_data_multiple():
     # Load the reference data
-    td_reference = load_data('data/examples/rasa/demo-rasa.json')
+    td_reference = DataLoader.load('data/examples/rasa/demo-rasa.json')
 
     # Load and check the multi-file data
-    td = load_data('data/test/multiple_files_json')
+    td = DataLoader.load('data/test/multiple_files_json')
     assert td.entity_examples != []
     assert td.intent_examples != []
 
@@ -117,14 +118,14 @@ def test_rasa_data_multiple():
 
 
 def test_dialogflow_data():
-    td = load_data('data/examples/dialogflow/')
+    td = DataLoader.load('data/examples/dialogflow/')
     assert td.entity_examples != []
     assert td.intent_examples != []
     assert td.entity_synonyms != {}
 
 
 def test_markdown_data():
-    td = load_data('data/examples/rasa/demo-rasa.md')
+    td = DataLoader.load('data/examples/rasa/demo-rasa.md')
 
     num_entities = len([e for e in td.entity_examples if e.get("entities")])
     assert len(td.sorted_entity_examples()) >= num_entities
@@ -144,10 +145,10 @@ def test_markdown_data():
 
 def test_markdown_data_multiple():
     # Load the reference data
-    td_reference = load_data('data/examples/rasa/demo-rasa.md')
+    td_reference = DataLoader.load('data/examples/rasa/demo-rasa.md')
 
     # Load and check the multi-file data
-    td = load_data('data/test/multiple_files_markdown')
+    td = DataLoader.load('data/test/multiple_files_markdown')
 
     num_entities = len([e for e in td.entity_examples if e.get("entities")])
     assert len(td.sorted_entity_examples()) >= num_entities
@@ -180,8 +181,8 @@ def test_markdown_data_multiple():
 
 
 def test_compare_markdown_to_json():
-    td_md = load_data('data/examples/rasa/demo-rasa.md')
-    td_json = load_data('data/examples/rasa/demo-rasa.json')
+    td_md = DataLoader.load('data/examples/rasa/demo-rasa.md')
+    td_json = DataLoader.load('data/examples/rasa/demo-rasa.json')
     assert td_md.sorted_entity_examples() == td_json.sorted_entity_examples()
 
 
@@ -208,7 +209,7 @@ def test_repeated_entities():
     with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
         f.write(data.encode("utf-8"))
         f.flush()
-        td = load_data(f.name)
+        td = DataLoader.load(f.name)
         assert len(td.entity_examples) == 1
         example = td.entity_examples[0]
         entities = example.get("entities")
@@ -244,7 +245,7 @@ def test_multiword_entities():
     with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
         f.write(data.encode("utf-8"))
         f.flush()
-        td = load_data(f.name)
+        td = DataLoader.load(f.name)
         assert len(td.entity_examples) == 1
         example = td.entity_examples[0]
         entities = example.get("entities")
@@ -278,7 +279,7 @@ def test_nonascii_entities():
     with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
         f.write(data.encode("utf-8"))
         f.flush()
-        td = load_data(f.name)
+        td = DataLoader.load(f.name)
         assert len(td.entity_examples) == 1
         example = td.entity_examples[0]
         entities = example.get("entities")
@@ -331,7 +332,7 @@ def test_entities_synonyms():
     with tempfile.NamedTemporaryFile(suffix="_tmp_training_data.json") as f:
         f.write(data.encode("utf-8"))
         f.flush()
-        td = load_data(f.name)
+        td = DataLoader.load(f.name)
         assert td.entity_synonyms["New York City"] == "nyc"
 
 
@@ -379,11 +380,11 @@ def test_training_data_conversion(tmpdir, data_file, gold_standard_file,
                                   output_format, language):
     out_path = tmpdir.join("rasa_nlu_data.json")
     convert_training_data(data_file, out_path.strpath, output_format, language)
-    td = load_data(out_path.strpath, language)
+    td = DataLoader.load(out_path.strpath, language)
     assert td.entity_examples != []
     assert td.intent_examples != []
 
-    gold_standard = load_data(gold_standard_file, language)
+    gold_standard = DataLoader.load(gold_standard_file, language)
     cmp_message_list(td.entity_examples, gold_standard.entity_examples)
     cmp_message_list(td.intent_examples, gold_standard.intent_examples)
     assert td.entity_synonyms == gold_standard.entity_synonyms
@@ -392,7 +393,7 @@ def test_training_data_conversion(tmpdir, data_file, gold_standard_file,
     # file format and performing the same tests
     rto_path = tmpdir.join("data_in_original_format.txt")
     convert_training_data(out_path.strpath, rto_path.strpath, 'json', language)
-    rto = load_data(rto_path.strpath, language)
+    rto = DataLoader.load(rto_path.strpath, language)
     cmp_message_list(gold_standard.entity_examples, rto.entity_examples)
     cmp_message_list(gold_standard.intent_examples, rto.intent_examples)
     assert gold_standard.entity_synonyms == rto.entity_synonyms

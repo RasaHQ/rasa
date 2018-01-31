@@ -13,11 +13,11 @@ from typing import Tuple
 from typing import Optional
 
 from rasa_nlu.components import ComponentBuilder
-from rasa_nlu.converters import load_data
 from rasa_nlu.model import Interpreter
 from rasa_nlu.model import Trainer
 
 from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu.training_data import DataLoader
 
 logger = logging.getLogger(__name__)
 
@@ -110,7 +110,7 @@ def do_train(config,  # type: RasaNLUConfig
     # trained in another subprocess
     trainer = Trainer(config, component_builder)
     persistor = create_persistor(config)
-    training_data = load_data(config['data'], config['language'])
+    training_data = DataLoader.load(config['data'], config['language'])
     interpreter = trainer.train(training_data)
     persisted_path = trainer.persist(config['path'], persistor,
                                      config['project'],

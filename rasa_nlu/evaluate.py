@@ -11,10 +11,9 @@ import numpy as np
 from collections import defaultdict
 
 from rasa_nlu.config import RasaNLUConfig
-from rasa_nlu.converters import load_data
 from rasa_nlu.model import Interpreter
-from rasa_nlu.model import Metadata
 from rasa_nlu.model import Trainer, TrainingData
+from rasa_nlu.training_data import DataLoader
 
 logger = logging.getLogger(__name__)
 
@@ -469,7 +468,7 @@ if __name__ == '__main__':  # pragma: no cover
     logging.basicConfig(level=nlu_config['log_level'])
 
     if args.mode == "crossvalidation":
-        data = load_data(args.data)
+        data = DataLoader.load(args.data)
         data = prepare_data(data, cutoff = 5)
         results = run_cv_evaluation(data, int(args.folds), nlu_config)
         logger.info("CV evaluation (n={})".format(args.folds))

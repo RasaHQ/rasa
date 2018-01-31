@@ -5,10 +5,16 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import logging
+
 from rasa_nlu.training_data.message import Message
 from rasa_nlu.training_data.training_data import TrainingData
-from rasa_nlu.training_data.markdown_writer import MarkdownWriter
-from rasa_nlu.training_data.markdown_reader import MarkdownReader
+from rasa_nlu.training_data.data_loader import DataLoader
+
+
+
+
+logger = logging.getLogger(__name__)
 
 
 def transform_entity_synonyms(synonyms, known_synonyms=None):
@@ -19,3 +25,11 @@ def transform_entity_synonyms(synonyms, known_synonyms=None):
             for synonym in s["synonyms"]:
                 entity_synonyms[synonym] = s["value"]
     return entity_synonyms
+
+
+def check_duplicate_synonym(entity_synonyms, text, syn, context_str=""):
+    if text in entity_synonyms and entity_synonyms[text] != syn:
+        logger.warning("Found inconsistent entity synonyms while {0}, overwriting {1}->{2}"
+                       "with {1}->{2} during merge".format(context_str, text, entity_synonyms[text], syn))
+
+

@@ -7,10 +7,9 @@ import os
 import numpy as np
 import pytest
 
-from rasa_nlu.converters import load_data
 from rasa_nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa_nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
-from rasa_nlu.training_data import Message
+from rasa_nlu.training_data import Message, DataLoader
 
 
 @pytest.mark.parametrize("sentence, expected", [
@@ -100,7 +99,7 @@ def test_spacy_featurizer_casing(spacy_nlp):
     # retrieves vectors. For compressed spacy models (e.g. models
     # ending in _sm) this test will most likely fail.
 
-    td = load_data('data/examples/rasa/demo-rasa.json')
+    td = DataLoader.load('data/examples/rasa/demo-rasa.json')
     for e in td.intent_examples:
         doc = spacy_nlp(e.text)
         doc_capitalized = spacy_nlp(e.text.capitalize())
