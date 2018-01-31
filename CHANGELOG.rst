@@ -17,6 +17,7 @@ Changed
 
 Fixed
 -----
+- fixed project loading for newly added projects to a running server
 
 [0.11.0] - 2018-01-30
 ^^^^^^^^^^^^^^^^^^^^^
