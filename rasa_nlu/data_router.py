@@ -9,6 +9,7 @@ import io
 import logging
 import os
 import tempfile
+import traceback
 
 from builtins import object
 from typing import Text, Dict, Any
@@ -138,7 +139,7 @@ class DataRouter(object):
             else:
                 return []
         except Exception as e:
-            logger.warning("Failed to list projects. {}".format(e))
+            logger.warning("Failed to list projects. {}".format(traceback.format_exc()))
             return []
 
     def _create_emulator(self):
