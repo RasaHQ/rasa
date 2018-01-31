@@ -46,7 +46,7 @@ project directory:
 Let's inspect the domain
 definition in ``restaurant_domain.yml``:
 
-In addition to previous example, there are two sections: ``slots`` and ``entities``.
+In addition to the previous example, there are two sections: ``slots`` and ``entities``.
 
 ``slots`` are used to store user preferences, like the cuisine and price range of a restaurant. 
 ``entities`` are closely related to slots. Slots are updated over time, and entities are the raw
@@ -159,8 +159,8 @@ Check out the
 
 The parameters ``max_history_len`` and ``n_hidden``
 may be altered dependent on the task complexity and the amount of data one
-has. ``max_history_len`` is important as it is the amount of story steps the
-network has access to to make a classification.
+has. ``max_history_len`` is important as it is the amount of previous story steps the
+network has access to make a classification.
 
 Because we've created a custom policy, we can't train the bot by running ``rasa_core.train``
 like in the :ref:`tutorial_basics`. The ``bot.py`` script shows how you can
@@ -198,7 +198,7 @@ To train the dialogue policy from the command line, run
 ^^^^^^^^^^^^^^^^
 
 Now we're going to glue some pieces together to create an actual bot.
-We instantiate an ``Agent``, which owns our trained ``Policy`` and a ``Domain`` from ``models/dialogue``,
+We instantiate an ``Agent``, which owns our trained ``Policy``, a ``Domain`` from ``models/dialogue``,
 and our NLU ``Interpreter`` from ``models/nlu/default/current``.
 
 For this demonstration, we will send messages directly to the bot out of a
@@ -249,7 +249,7 @@ To run the bot from the command line, call
     python bot.py run
 
 If the bot appears to be stuck or answers incorrectly, do not worry.
-Provided dataset is not diverse enough to handle all possible inputs,
+The provided dataset is not diverse enough to handle all possible inputs,
 as can be seen from visualization of the training data below.
 One can use :ref:`tutorial_interactive_learning` to augment the training data
 with custom stories.

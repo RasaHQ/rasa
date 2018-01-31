@@ -78,7 +78,7 @@ So what do the different parts mean?
 | ``templates`` | template strings for the things your bot can say                                                     |
 +---------------+------------------------------------------------------------------------------------------------------+
 
-In our simple example we don't need ``slots`` and ``entities``, so these sections doesn't appear
+In our simple example we don't need ``slots`` and ``entities``, so these sections don't appear
 in our definition.
 
 **How does this fit together?**

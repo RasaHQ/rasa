@@ -139,7 +139,7 @@ example, if we type ``/greet``, we get the following prompt:
 This gives you all the info you should hopefully need to decide
 what the bot *should* have done. In this case, the bot chose the right
 action ('utter_greet'), so we type ``1`` and hit enter.
-Then we type ``1`` again, because 'action_listen' is correct action after greeting.
+Then we type ``1`` again, because 'action_listen' is the correct action after greeting.
 We continue this loop until the bot chooses the wrong action.
 
 **Providing feedback on errors**
