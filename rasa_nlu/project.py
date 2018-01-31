@@ -56,8 +56,7 @@ class Project(object):
             self._writer_lock.release()
         self._reader_lock.release()
 
-    def _dynamic_load_model(self, requested_model_name=None):
-        # type: (Text) -> Text
+    def _load_local_model(self, requested_model_name=None):
         if requested_model_name is None:  # user want latest model
             # NOTE: for better parse performance, currently although user may want
             # latest model by set requested_model_name explicitly to None, we are
@@ -74,18 +73,32 @@ class Project(object):
         elif requested_model_name in self._models:  # model exists in cache
             return requested_model_name
 
-        else:  # model not exists in model list cache
-            # refresh model list from local and cloud
-            # NOTE: if a malicious user sent lots of requests
-            # with not existing model will cause performance issue.
-            self._search_for_models()
+        return None  # local model loading failed!
 
-            if requested_model_name in self._models:  # if model exists now
-                return requested_model_name
-            else:
-                # although requested model is invalid, still return latest model as fallback
-                logger.warn("Invalid model requested. Using default")
-                return self._latest_project_model()
+    def _dynamic_load_model(self, requested_model_name=None):
+        # type: (Text) -> Text
+
+        # first try load from local cache
+        local_model = self._load_local_model(requested_model_name)
+        if local_model:
+            return local_model
+
+        # now model not exists in model list cache
+        # refresh model list from local and cloud
+
+        # NOTE: if a malicious user sent lots of requests
+        # with not existing model will cause performance issue.
+        # because get anything from cloud is a time-consuming task
+        self._search_for_models()
+
+        # retry after re-fresh model cache
+        local_model = self._load_local_model(requested_model_name)
+        if local_model:
+            return local_model
+
+        # still not found user specified model
+        logger.warn("Invalid model requested. Using default")
+        return self._latest_project_model()
 
     def parse(self, text, time=None, requested_model_name=None):
         self._begin_read()
