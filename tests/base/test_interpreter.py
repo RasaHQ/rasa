@@ -28,7 +28,15 @@ def test_samples(pipeline_template, component_builder):
             "i am looking for an indian spot",
             {
                 'intent': 'restaurant_search',
-                'entities': [{"start": 20, "end": 26, "value": "indian", "entity": "cuisine"}]
+                'entities': [
+                    {"start": 20,
+                     "end": 26,
+                     "value": "indian",
+                     "entity": "cuisine"},
+                    {"end": 26,
+                     "entity": "NORP",
+                     "start": 20,
+                     "value": "indian"}]
             }
         )
     ]

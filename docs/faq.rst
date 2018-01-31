@@ -3,6 +3,22 @@
 Frequently Asked Questions
 ==========================
 
+How many training examples do I need?
+-------------------------------------
+Unfortunately, there is no cookie-cutter answer to this question. It depends on your intents and your entities.
+
+If you have intents that are easily confusable, you will need more training data. Accordingly, as you add more
+intents, you also want to add more training examples for each intent. If you quickly write 20-30 unique expressions for
+each intent, you should be good for the beginning.
+
+The same holds true for entities. the number of training examples you will need depends on how closely related your different entity types are and how clearly
+entities are distinguishable from non-entities in your use case.
+
+To assess your model's performance, :ref:`run the server and manually test some messages <tutorial_using_your_model>`
+, or use the :ref:`evaluation script <section_evaluation>`.
+
+
+
 Does it run with python 3?
 --------------------------
 Yes it does, rasa NLU supports python 2.7 as well as python 3.5 and 3.6. If there are any issues with a specific python version, feel free to create an issue or directly provide a fix.

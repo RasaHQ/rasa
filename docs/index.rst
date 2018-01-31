@@ -66,7 +66,7 @@ The setup process is designed to be as simple as possible. If you're currently u
 rasa NLU is written in Python, but it you can use it from any language through :ref:`section_http`.
 If your project *is* written in Python you can simply import the relevant classes.
 
-rasa is a set of tools for building more advanced bots, developed by `Rasa <https://rasa.ai>`_ . This is the natural language understanding module, and the first component to be open sourced.
+rasa is a set of tools for building more advanced bots, developed by `Rasa <https://rasa.com>`_ . This is the natural language understanding module, and the first component to be open sourced.
 
 
 .. toctree::

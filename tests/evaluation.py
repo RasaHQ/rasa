@@ -4,20 +4,22 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import pytest
 import logging
+
+import pytest
 
 from rasa_nlu.evaluate import is_token_within_entity, do_entities_overlap, merge_labels, patch_duckling_entities, \
     remove_empty_intent_examples, get_entity_extractors, get_duckling_dimensions, known_duckling_dimensions, \
-    find_component, patch_duckling_extractors
+    find_component, patch_duckling_extractors, prepare_data, run_cv_evaluation
 from rasa_nlu.evaluate import does_token_cross_borders
 from rasa_nlu.evaluate import align_entity_predictions
 from rasa_nlu.evaluate import determine_intersection
+from rasa_nlu.converters import load_data
+from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.tokenizers import Token
 from tests import utilities
 
 logging.basicConfig(level="DEBUG")
-
 
 @pytest.fixture(scope="module")
 def duckling_interpreter(component_builder):
@@ -29,8 +31,12 @@ def duckling_interpreter(component_builder):
 
 # Chinese Example
 # "对面食过敏" -> To be allergic to wheat-based food
-CH_wrong_segmentation = [Token("对面", 0), Token("食", 2), Token("过敏", 3)]  # opposite, food, allergy
-CH_correct_segmentation = [Token("对", 0), Token("面食", 1), Token("过敏", 3)]  # towards, wheat-based food, allergy
+CH_wrong_segmentation = [Token("对面", 0),
+                         Token("食", 2),
+                         Token("过敏", 3)]  # opposite, food, allergy
+CH_correct_segmentation = [Token("对", 0),
+                           Token("面食", 1),
+                           Token("过敏", 3)]  # towards, wheat-based food, allergy
 CH_wrong_entity = {
     "start": 0,
     "end": 2,
@@ -48,7 +54,8 @@ CH_correct_entity = {
 # EN example
 # "Hey Robot, I would like to eat pizza near Alexanderplatz tonight"
 EN_indices = [0, 4, 9, 11, 13, 19, 24, 27, 31, 37, 42, 57]
-EN_tokens = ["Hey", "Robot", ",", "I", "would", "like", "to", "eat", "pizza", "near", "Alexanderplatz", "tonight"]
+EN_tokens = ["Hey", "Robot", ",", "I", "would", "like", "to", "eat", "pizza",
+             "near", "Alexanderplatz", "tonight"]
 EN_tokens = [Token(t, i) for t, i in zip(EN_tokens, EN_indices)]
 
 EN_targets = [
@@ -106,46 +113,63 @@ EN_predicted = [
 
 def test_token_entity_intersection():
     # included
-    assert determine_intersection(CH_correct_segmentation[1], CH_correct_entity) == len(CH_correct_segmentation[1].text)
+    intsec = determine_intersection(CH_correct_segmentation[1],
+                                    CH_correct_entity)
+    assert intsec == len(CH_correct_segmentation[1].text)
 
     # completely outside
-    assert determine_intersection(CH_correct_segmentation[2], CH_correct_entity) == 0
+    intsec = determine_intersection(CH_correct_segmentation[2],
+                                    CH_correct_entity)
+    assert intsec == 0
 
     # border crossing
-    assert determine_intersection(CH_correct_segmentation[1], CH_wrong_entity) == 1
+    intsec = determine_intersection(CH_correct_segmentation[1],
+                                    CH_wrong_entity)
+    assert intsec == 1
 
 
 def test_token_entity_boundaries():
     # smaller and included
-    assert is_token_within_entity(CH_wrong_segmentation[1], CH_correct_entity) == True
-    assert does_token_cross_borders(CH_wrong_segmentation[1], CH_correct_entity) == False
+    assert is_token_within_entity(CH_wrong_segmentation[1],
+                                  CH_correct_entity)
+    assert not does_token_cross_borders(CH_wrong_segmentation[1],
+                                        CH_correct_entity)
 
     # exact match
-    assert is_token_within_entity(CH_correct_segmentation[1], CH_correct_entity) == True
-    assert does_token_cross_borders(CH_correct_segmentation[1], CH_correct_entity) == False
+    assert is_token_within_entity(CH_correct_segmentation[1],
+                                  CH_correct_entity)
+    assert not does_token_cross_borders(CH_correct_segmentation[1],
+                                        CH_correct_entity)
 
     # completely outside
-    assert is_token_within_entity(CH_correct_segmentation[0], CH_correct_entity) == False
-    assert does_token_cross_borders(CH_correct_segmentation[0], CH_correct_entity) == False
+    assert not is_token_within_entity(CH_correct_segmentation[0],
+                                      CH_correct_entity)
+    assert not does_token_cross_borders(CH_correct_segmentation[0],
+                                        CH_correct_entity)
 
     # border crossing
-    assert is_token_within_entity(CH_wrong_segmentation[0], CH_correct_entity) == False
-    assert does_token_cross_borders(CH_wrong_segmentation[0], CH_correct_entity) == True
+    assert not is_token_within_entity(CH_wrong_segmentation[0],
+                                      CH_correct_entity)
+    assert does_token_cross_borders(CH_wrong_segmentation[0], CH_correct_entity)
 
 
 def test_entity_overlap():
-    assert do_entities_overlap([CH_correct_entity, CH_wrong_entity]) == True
-    assert do_entities_overlap(EN_targets) == False
+    assert do_entities_overlap([CH_correct_entity, CH_wrong_entity])
+    assert not do_entities_overlap(EN_targets)
 
 
 def test_label_merging():
     aligned_predictions = [
-        {"target_labels": ["O", "O"], "extractor_labels": {"A": ["O", "O"]}},
-        {"target_labels": ["LOC", "O", "O"], "extractor_labels": {"A": ["O", "O", "O"]}}
+        {"target_labels": ["O", "O"], "extractor_labels":
+            {"A": ["O", "O"]}},
+        {"target_labels": ["LOC", "O", "O"], "extractor_labels":
+            {"A": ["O", "O", "O"]}}
     ]
 
-    assert all(merge_labels(aligned_predictions) == ["O", "O", "LOC", "O", "O"])
-    assert all(merge_labels(aligned_predictions, "A") == ["O", "O", "O", "O", "O"])
+    assert all(merge_labels(aligned_predictions) ==
+               ["O", "O", "LOC", "O", "O"])
+    assert all(merge_labels(aligned_predictions, "A") ==
+               ["O", "O", "O", "O", "O"])
 
 
 def test_duckling_patching():
@@ -185,6 +209,32 @@ def test_duckling_patching():
     ]]
     assert patch_duckling_entities(entities) == patched
 
+def test_prepare_data():
+    td = load_data('data/examples/rasa/demo-rasa.json')
+    clean_data = prepare_data(td, 0)
+    unique_intents = sorted(set([i.data["intent"] for i in clean_data]))
+    assert(unique_intents == ['affirm', 'goodbye', 'greet', 'restaurant_search'])
+
+    clean_data = prepare_data(td, 10)
+    unique_intents = sorted(set([i.data["intent"] for i in clean_data]))
+    assert(unique_intents == ['affirm', 'restaurant_search'])
+
+def test_run_cv_evaluation():
+    import numpy as np
+    td = load_data('data/examples/rasa/demo-rasa.json')
+    n_folds = 3
+    nlu_config = RasaNLUConfig("sample_configs/config_defaults.json")
+
+    np.seed(2018)
+    results = run_cv_evaluation(td, n_folds, nlu_config)
+
+    rel_tol=1e-09
+    abs_tol=0.01
+
+    acc = np.mean(results["accuracy"])
+    exp_acc = 0.65 # expected result
+    np.testing.assert_approx_equal(acc, exp_acc, significant=5)
+
 
 def test_empty_intent_removal():
     targets = ["", "greet"]
@@ -198,12 +248,16 @@ def test_empty_intent_removal():
 
 def test_evaluate_entities():
     mock_extractors = ["A", "B"]
-    result = align_entity_predictions(EN_targets, EN_predicted, EN_tokens, mock_extractors)
+    result = align_entity_predictions(EN_targets, EN_predicted,
+                                      EN_tokens, mock_extractors)
     assert result == {
-        "target_labels": ["O", "O", "O", "O", "O", "O", "O", "O", "food", "location", "location", "datetime"],
+        "target_labels": ["O", "O", "O", "O", "O", "O", "O", "O", "food",
+                          "location", "location", "datetime"],
         "extractor_labels": {
-            "A": ["O", "person", "O", "O", "O", "O", "O", "O", "food", "O", "location", "O"],
-            "B": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "movie", "movie"]
+            "A": ["O", "person", "O", "O", "O", "O", "O", "O", "food",
+                  "O", "location", "O"],
+            "B": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O",
+                  "movie", "movie"]
         }
     }, "Wrong entity prediction alignment"
 
@@ -213,14 +267,18 @@ def test_get_entity_extractors(duckling_interpreter):
 
 
 def test_get_duckling_dimensions(duckling_interpreter):
-    assert set(get_duckling_dimensions(duckling_interpreter, "ner_duckling")) == known_duckling_dimensions
+    dims = get_duckling_dimensions(duckling_interpreter, "ner_duckling")
+    assert set(dims) == known_duckling_dimensions
 
 
 def test_find_component(duckling_interpreter):
-    assert find_component(duckling_interpreter, "ner_duckling").name == "ner_duckling"
+    name = find_component(duckling_interpreter, "ner_duckling").name
+    assert name == "ner_duckling"
 
 
 def test_patch_duckling_extractors(duckling_interpreter):
-    target = {"ner_duckling ({})".format(dim) for dim in known_duckling_dimensions}
+    target = {"ner_duckling ({})".format(dim)
+              for dim in known_duckling_dimensions}
+
     patched = patch_duckling_extractors(duckling_interpreter, {"ner_duckling"})
     assert patched == target

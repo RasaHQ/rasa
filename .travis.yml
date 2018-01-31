@@ -3,37 +3,24 @@ sudo: required
 cache:
   directories:
   - $HOME/.cache/pip
-  - $HOME/build/RasaHQ/rasa_nlu/data
-  - $HOME/google-cloud-sdk/
+  - /tmp/cached/
 python:
 - '2.7'
 - '3.5'
 - '3.6'
 install:
-- sudo apt-get update
-- if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh
-  -O miniconda.sh; else wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
-  -O miniconda.sh; fi
-- bash miniconda.sh -b -f -p $HOME/miniconda
-- export PATH="$HOME/miniconda/bin:$PATH"
-- hash -r
-- conda config --set always_yes yes --set changeps1 no
-- conda update -q conda
-- conda info -a
-- conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION scipy=0.19.0 numpy=1.13.1
-  scikit-learn=0.18.1
-- source activate test-environment
 - pip install git+https://github.com/tmbo/MITIE.git
 - pip install -r alt_requirements/requirements_dev.txt
 - pip install -e .
-- pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-1.2.0/en_core_web_sm-1.2.0.tar.gz
+- pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.0.0/en_core_web_md-2.0.0.tar.gz
   --no-cache-dir > jnk
-- python -m spacy link en_core_web_sm en
-- pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_md-1.0.0/de_core_news_md-1.0.0.tar.gz
+- python -m spacy link en_core_web_md en
+- pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.0.0/de_core_news_sm-2.0.0.tar.gz
   --no-cache-dir > jnk
-- python -m spacy link de_core_news_md de
-- if [[ ! -f data/total_word_feature_extractor.dat ]]; then wget -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat;
+- python -m spacy link de_core_news_sm de
+- if [[ ! -f /tmp/cached/total_word_feature_extractor.dat ]]; then wget -P /tmp/cached/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat;
   fi
+- mv /tmp/cached/total_word_feature_extractor.dat data/total_word_feature_extractor.dat
 - pip list
 before_script:
 - mkdir $HOME/tmp
@@ -48,9 +35,8 @@ jobs:
   - stage: docs
     if: fork = false
     install:
-    - sudo apt-get update
-    - pip install sphinx==1.5.2 sphinx-autobuild==0.6.0 sphinxcontrib-versioning==2.2.1
-      nbsphinx==0.2.13
+    - pip install sphinx==1.5.2 sphinx-autobuild==0.7.1 sphinxcontrib-versioning==2.2.1
+      nbsphinx==0.2.18
     - pip install -e git://github.com/RasaHQ/sphinx_rtd_theme.git#egg=sphinx_rtd_theme
     script:
     - eval "$(ssh-agent -s)"; touch docs/key; chmod 0600 docs/key

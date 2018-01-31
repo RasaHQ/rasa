@@ -55,22 +55,18 @@ ENV JAVA_DEBIAN_VERSION 8u141-b15-1~deb9u1
 ENV CA_CERTIFICATES_JAVA_VERSION 20170531+nmu1
 
 RUN set -ex; \
-	\
 # deal with slim variants not having man page directories (which causes "update-alternatives" to fail)
 	if [ ! -d /usr/share/man/man1 ]; then \
 		mkdir -p /usr/share/man/man1; \
 	fi; \
-	\
 	apt-get update; \
 	apt-get install -y -t jessie-backports\
 		openjdk-8-jdk \
 		ca-certificates-java \
 	; \
 	rm -rf /var/lib/apt/lists/*; \
-	\
 # verify that "docker-java-home" returns what we expect
 	[ "$(readlink -f "$JAVA_HOME")" = "$(docker-java-home)" ]; \
-	\
 # update-alternatives so that future installs of other OpenJDK versions don't change /usr/bin/java
 	update-alternatives --get-selections | awk -v home="$(readlink -f "$JAVA_HOME")" 'index($3, home) == 1 { $2 = "manual"; print | "update-alternatives --set-selections" }'; \
 # ... and verify that it actually worked for one of the alternatives we care about
@@ -92,10 +88,10 @@ RUN apt-get update -qq \
     && apt-get remove -y wget \
     && apt-get autoremove -y
 
-RUN pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-1.2.0/en_core_web_sm-1.2.0.tar.gz --no-cache-dir > /dev/null \
-    && python -m spacy link en_core_web_sm en \
-    && pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_md-1.0.0/de_core_news_md-1.0.0.tar.gz --no-cache-dir > /dev/null \
-    && python -m spacy link de_core_news_md de
+RUN pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.0.0/en_core_web_md-2.0.0.tar.gz --no-cache-dir > /dev/null \
+    && python -m spacy link en_core_web_md en \
+    && pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.0.0/de_core_news_sm-2.0.0.tar.gz --no-cache-dir > /dev/null \
+    && python -m spacy link de_core_news_sm de
 
 COPY sample_configs/config_spacy_duckling.json ${RASA_NLU_HOME}/config.json
 

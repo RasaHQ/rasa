@@ -132,13 +132,13 @@ data
 :Type: ``str``
 :Examples: ``"data/example.json"``
 :Description:
-    Location of the training data.
+    Location of the training data. For JSON and markdown data, this can either be a single file or a directory containing multiple training data files.
 
 cors_origins
 ~~~~
 
 :Type: ``list``
-:Examples: ``['*']``, ``['*.mydomain.com', 'api.domain2.net']``
+:Examples: ``["*"]``, ``["*.mydomain.com", "api.domain2.net"]``
 :Description:
     List of domain patterns from where CORS (cross-origin resource sharing) calls are allowed.
     The default value is ``[]`` which forbids all CORS requests.
@@ -164,7 +164,7 @@ spacy_model_name
 ~~~~~~~~~~~~~~~~
 
 :Type: ``str``
-:Examples: ``"en_core_web_sm"``
+:Examples: ``"en_core_web_md"``
 :Description:
     If the spacy model to be used has a name that is different from the language tag (``"en"``, ``"de"``, etc.),
     the model name can be specified using this configuration variable. The name will be passed to ``spacy.load(name)``.

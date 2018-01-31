@@ -19,6 +19,8 @@ The ``common_examples`` are used to train both the entity and the intent models.
 examples in the ``common_examples`` array. The next section describes in detail how an example looks like.
 Regex features are a tool to help the classifier detect entities or intents and improve the performance.
 
+You can use `Chatito <https://rodrigopivi.github.io/Chatito/>`__ , a tool for generating training datasets in rasa's format using a simple DSL.
+
 Common Examples
 ---------------
 
@@ -167,3 +169,15 @@ Alternatively training data can be used in the following markdown format (Regex 
 
     ## synonym:savings   <!-- synonyms, method 2 -->
     - pink pig
+
+Organization
+---------------------------
+
+The training data can either be stored in a single file or split into multiple files.
+For larger training examples splitting the training data into multiple files (e.g. one per intent) might be
+beneficial in terms of maintainability.
+
+Storing files with different file formats (e.g. markdown and JSON) in one directory is currently not supported.
+
+.. note::
+    Splitting the training data into multiple files currently only words for markdown and JSON data. For other file formats you have to use the single-file approach.
