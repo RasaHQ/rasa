@@ -10,6 +10,9 @@ backend        supported languages
 spacy-sklearn  english (``en``),
                german (``de``),
                spanish (``es``),
+               portuguese (``pt``),
+               italian (``it``),
+               dutch (``nl``),
                french (``fr``)
 MITIE          english (``en``)
 =============  ==============================

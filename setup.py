@@ -64,7 +64,7 @@ setup(
     description="Rasa NLU a natural language parser for bots",
     author='Alan Nichol',
     author_email='alan@rasa.ai',
-    url="https://rasa.ai",
+    url="https://rasa.com",
     keywords=["nlp", "machine-learning", "machine-learning-library", "bot",
               "bots",
               "botkit", "rasa", "conversational-agents",
