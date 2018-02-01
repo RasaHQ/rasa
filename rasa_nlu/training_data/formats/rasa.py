@@ -5,9 +5,12 @@ from __future__ import unicode_literals
 
 import logging
 
+from collections import defaultdict
+
 from rasa_nlu.training_data import Message, TrainingData
-from rasa_nlu.training_data.formats.readerwriter import JsonTrainingDataReader
+from rasa_nlu.training_data.formats.readerwriter import JsonTrainingDataReader, TrainingDataWriter
 from rasa_nlu.training_data.util import transform_entity_synonyms
+from rasa_nlu.utils import json_to_string
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +42,28 @@ class RasaReader(JsonTrainingDataReader):
             training_examples.append(msg)
 
         return TrainingData(training_examples, entity_synonyms, regex_features)
+
+class RasaWriter(TrainingDataWriter):
+    def dumps(self, training_data, **kwargs):
+        """Writes Training Data to a string in json format."""
+        js_entity_synonyms = defaultdict(list)
+        for k, v in training_data.entity_synonyms.items():
+            if k != v:
+                js_entity_synonyms[v].append(k)
+
+        formatted_synonyms = [{'value': value, 'synonyms': syns}
+                              for value, syns in js_entity_synonyms.items()]
+
+        formatted_examples = [example.as_dict()
+                              for example in training_data.training_examples]
+
+        return json_to_string({
+            "rasa_nlu_data": {
+                "common_examples": formatted_examples,
+                "regex_features": training_data.regex_features,
+                "entity_synonyms": formatted_synonyms
+            }
+        }, **kwargs)
 
 
 def validate_rasa_nlu_data(data):

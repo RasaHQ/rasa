@@ -36,44 +36,25 @@ _json_format_heuristics = {
 
 def _from_dialogflow_file(filename, language, fformat):
     if fformat in {DIALOGFLOW_INTENT, DIALOGFLOW_ENTITIES}:
-        return _from_file(DialogflowReader, filename, language=language, fformat=fformat)
+        return DialogflowReader().read(filename, language=language, fformat=fformat)
     else:
         return None
 
 
-def _from_rasa_file(filename):
-    return _from_file(RasaReader, filename)
-
-# TODO: don't pass around things, just instantiate them and use them
-def from_wit_file(filename):
-    return _from_file(WitReader, filename)
+def from_rasa_file(filename, **kwargs):
+    return RasaReader().read(filename, **kwargs)
 
 
-def from_luis_file(filename):
-    return _from_file(LuisReader, filename)
+def from_wit_file(filename, **kwargs):
+    return WitReader().read(filename, **kwargs)
 
 
-def from_markdown_file(filename):
-    return _from_file(MarkdownReader, filename)
+def from_luis_file(filename, **kwargs):
+    return LuisReader().read(filename, **kwargs)
 
 
-def from_markdown_string(s):
-    return _from_string(MarkdownReader, s)
-
-
-def _from_file(reader_cls, filename, **kwargs):
-    reader = reader_cls()
-    return reader.read(filename, **kwargs)
-
-
-def _from_string(reader_cls, s, **kwargs):
-    reader = reader_cls()
-    return reader.reads(s, **kwargs)
-
-
-def _from_json(reader_cls, js, **kwargs):
-    reader = reader_cls()
-    return reader.read_from_json(js, **kwargs)
+def from_markdown_file(filename, **kwargs):
+    return MarkdownReader().read(filename, **kwargs)
 
 
 def load_data(resource_name, language='en'):
@@ -106,7 +87,7 @@ def _load(filename, language='en'):
     elif fformat.startswith("dialogflow"):
         return _from_dialogflow_file(filename, language, fformat)
     elif fformat == RASA:
-        return _from_rasa_file(filename)
+        return from_rasa_file(filename)
     elif fformat == MARKDOWN:
         return from_markdown_file(filename)
     else:

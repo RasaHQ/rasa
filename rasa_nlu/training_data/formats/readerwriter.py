@@ -37,5 +37,3 @@ class JsonTrainingDataReader(TrainingDataReader):
     def read_from_json(self, js, **kwargs):
         """Reads TrainingData from a json object."""
         raise NotImplementedError
-
-# TODO: possibly make these methods class methods, so you don't need to instantiate the classes

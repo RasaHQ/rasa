@@ -22,7 +22,6 @@ from typing import Text
 
 from rasa_nlu.utils import lazyproperty, write_to_file
 from rasa_nlu.utils import list_to_str
-from rasa_nlu.utils import json_to_string
 from rasa_nlu.training_data.util import check_duplicate_synonym
 
 logger = logging.getLogger(__name__)
@@ -115,41 +114,17 @@ class TrainingData(object):
         self.regex_features = sorted(self.regex_features,
                                      key=lambda e: "{}+{}".format(e['name'], e['pattern']))
 
-    #TODO: extract into RasaJson writer
     def as_json(self, **kwargs):
         # type: (**Any) -> str
-        """Represent this set of training examples as json adding
-        the passed meta information."""
-
-        js_entity_synonyms = defaultdict(list)
-        for k, v in self.entity_synonyms.items():
-            if k != v:
-                js_entity_synonyms[v].append(k)
-
-        formatted_synonyms = [{'value': value, 'synonyms': syns}
-                              for value, syns in js_entity_synonyms.items()]
-
-        formatted_examples = [example.as_dict()
-                              for example in self.training_examples]
-
-        return str(json_to_string({
-            "rasa_nlu_data": {
-                "common_examples": formatted_examples,
-                "regex_features": self.regex_features,
-                "entity_synonyms": formatted_synonyms
-            }
-        }, **kwargs))
+        """Represent this set of training examples as json."""
+        from rasa_nlu.training_data.formats import RasaWriter
+        return RasaWriter().dumps(self)
 
     def as_markdown(self):
         # type: () -> str
         """Generates the markdown representation of the TrainingData."""
         from rasa_nlu.training_data.formats import MarkdownWriter
-        return self._as_format(MarkdownWriter)
-
-    def _as_format(self, writer_clz):
-        """Generates a string representation of the TrainingData given a writer class."""
-        writer = writer_clz()
-        return writer.dumps(self)
+        return MarkdownWriter().dumps(self)
 
     def persist(self, dir_name):
         # type: (Text) -> Dict[Text, Any]
