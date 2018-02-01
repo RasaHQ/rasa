@@ -46,7 +46,7 @@ project directory:
 Let's inspect the domain
 definition in ``restaurant_domain.yml``:
 
-There are two sections: ``entities`` and ``slots``, which you haven't seen in the basic tutorial.
+In addition to the previous example, there are two sections: ``slots`` and ``entities``.
 
 ``slots`` are used to store user preferences, like the cuisine and price range of a restaurant. 
 ``entities`` are closely related to slots. Slots are updated over time, and entities are the raw
@@ -60,25 +60,15 @@ Here we have a slot called ``matches`` which stores the matching restaurants ret
 Custom Actions
 --------------
 
-In this example we also have custom actions. 
+In this example we also have custom actions: ``bot.ActionSearchRestaurants`` and ``bot.ActionSuggest``,
+where ``bot.`` stands for the name of the module where this action is defined.
 An action can do much more than just send a message.
 Here's a small example of a custom action which calls an API.
 Notice that the ``run`` method can use the values of the slots, which are stored in the tracker.
 
-.. testcode::
-
-    from rasa_core.actions import Action
-    from rasa_core.events import SlotSet
-
-    class ActionSearchRestaurants(Action):
-        def name(self):
-            return 'search_restaurants'
-
-        def run(self, dispatcher, tracker, domain):
-            restaurants = restaurant_api.search(tracker.get_slot("cuisine"))
-            dispatcher.utter_message("here's what I found")
-            dispatcher.utter_message(restaurants)
-            return [SlotSet("matches", restaurants)]
+.. literalinclude:: ../examples/restaurantbot/bot.py
+    :linenos:
+    :pyobject: ActionSearchRestaurants
 
 
 But a domain alone doesn't make a bot; we need some training data to tell the
@@ -94,16 +84,16 @@ for the restaurant bot are defined. One example story looks as follows:
 .. code-block:: md
     :linenos:
 
-    ## story_07715946
+    ## story_00914561
     * greet
-     - action_ask_howcanhelp
-    * inform{"location": "rome", "price": "cheap"}
-     - action_on_it
-     - action_ask_cuisine
-    * inform{"cuisine": "spanish"}
-     - action_ask_numpeople
-    * inform{"people": "six"}077
-     - action_ack_dosearch
+     - utter_ask_howcanhelp
+    * inform{"cuisine": "italian"}
+     - utter_on_it
+     - utter_ask_location
+    * inform{"location": "paris"}
+     - utter_ask_numpeople
+    * inform{"people": "six"}
+     - utter_ask_price
      ...
 
 See :ref:`training_data_details` below to get more information about this
@@ -129,6 +119,8 @@ find in ``nlu_model_config.json``:
 .. literalinclude:: ../examples/restaurantbot/nlu_model_config.json
    :linenos:
 
+And training data ``franken_data.json`` (see <https://nlu.rasa.ai/dataformat.html>`_ for details).
+
 We can train the NLU model using
 
 .. code-block:: bash
@@ -141,6 +133,12 @@ or using python code
    :linenos:
    :pyobject: train_nlu
 
+and calling
+
+.. code-block:: bash
+
+    python bot.py train-nlu
+
 *Training NLU takes approximately 18 seconds on a 2014 MacBook Pro.*
 
 A Custom Dialogue Policy
@@ -149,12 +147,20 @@ A Custom Dialogue Policy
 Now our bot needs to learn what to do in response to user messages. We do
 this by training one or multiple Rasa Core policies.
 
-For this bot, we came up with our own policy. Check out the
+For this bot, we came up with our own policy.
+This policy extends the Keras policy modifying the ML architecture of the
+underlying neural network.
+Check out the
 ``RestaurantPolicy`` class in ``bot.py`` for the gory details:
 
 .. literalinclude:: ../examples/restaurantbot/bot.py
    :linenos:
    :pyobject: RestaurantPolicy
+
+The parameters ``max_history_len`` and ``n_hidden``
+may be altered dependent on the task complexity and the amount of data one
+has. ``max_history_len`` is important as it is the amount of previous story steps the
+network has access to make a classification.
 
 Because we've created a custom policy, we can't train the bot by running ``rasa_core.train``
 like in the :ref:`tutorial_basics`. The ``bot.py`` script shows how you can
@@ -167,11 +173,7 @@ train a bot that uses a custom policy and actions.
    Nevertheless, you can always fine tune them for your use case. Read
    :ref:`plumbing` for more info.
 
-This policy extends the Keras policy modifying the ML architecture of the
-underlying neural network. The parameters ``max_history_len`` and ``n_hidden``
-may be altered dependent on the task complexity and the amount of data one
-as. ``max_history_len`` is important as it is the amount of story steps the
-network has access to to make a classification.
+
 
 Now let's train it:
 
@@ -196,8 +198,8 @@ To train the dialogue policy from the command line, run
 ^^^^^^^^^^^^^^^^
 
 Now we're going to glue some pieces together to create an actual bot.
-We instantiate an ``Agent``, which owns our NLU ``Interpreter``, our
-trained ``Policy``, and a ``Domain``.
+We instantiate an ``Agent``, which owns our trained ``Policy``, a ``Domain`` from ``models/dialogue``,
+and our NLU ``Interpreter`` from ``models/nlu/default/current``.
 
 For this demonstration, we will send messages directly to the bot out of a
 python console. You can look at how to build a command line bot and a
@@ -208,7 +210,7 @@ facebook bot by checking out the :ref:`connectors`.
    from rasa_core.interpreter import RasaNLUInterpreter
    from rasa_core.agent import Agent
 
-   agent = Agent.load("models/dialogue", interpreter=RasaNLUInterpreter("models/nlu/current"))
+   agent = Agent.load("models/dialogue", interpreter=RasaNLUInterpreter("models/nlu/default/current"))
 
 We can then try sending it a message:
 
@@ -236,9 +238,21 @@ e.g.:
    agent.handle_channel(ConsoleInputChannel())
 
 In this case messages will be retrieved from the command line because we specified
-the ``ConsoleInputChannel``. Responses are printed to the command line as well. You
-can find a complete example of how to load an agent and chat with it on the
-command line in the restaurant bot's ``run.py``.
+the ``ConsoleInputChannel``. Responses are printed to the command line as well.
+
+You can find a complete example of how to load an agent and chat with it on the
+command line in the restaurant bot's ``bot.py`` ``run`` method.
+To run the bot from the command line, call
+
+.. code-block:: bash
+
+    python bot.py run
+
+If the bot appears to be stuck or answers incorrectly, do not worry.
+The provided dataset is not diverse enough to handle all possible inputs,
+as can be seen from visualization of the training data below.
+One can use :ref:`tutorial_interactive_learning` to augment the training data
+with custom stories.
 
 The Details
 ^^^^^^^^^^^
@@ -279,7 +293,8 @@ similar to a flow chart:
 The graph shows all of the actions executed in the training data, and the
 user messages (if any) that occurred between them. As you can see, flow
 charts get complicated quite quickly. Nevertheless, they can be a helpful
-tool in debugging a bot. More information can be found in
+tool in debugging a bot. For example, it can be clearly seen that there is
+not enough data for handling reservation. To learn how to build this chart go to
 :ref:`story-visualization`.
 
 .. raw:: html 

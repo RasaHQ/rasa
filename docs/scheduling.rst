@@ -50,7 +50,7 @@ Here is an example implementation for our ``action_confirm_booking``:
 
     class ActionConfirmBooking(Action):
         def name(self):
-            return "confirm_booking"
+            return "action_confirm_booking"
 
         def run(self, dispatcher, tracker, domain):
             dispatcher.utter_message("Do you want to confirm your booking at Papi's pizza?")
@@ -71,7 +71,7 @@ example could look like this:
 
     class ActionBookingReminder(Action):
         def name(self):
-            return "booking_reminder"
+            return "action_booking_reminder"
 
         def run(self, dispatcher, tracker, domain):
             dispatcher.utter_message("You have an unconfirmed booking at Papi's pizza, would you like to confirm it?")

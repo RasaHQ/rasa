@@ -75,11 +75,11 @@ Below is an excerpt of the stories.
 
    ## greet
    * greet
-       - action_greet
+       - utter_greet
 
    ## happy
    * thankyou
-       - action_youarewelcome
+       - utter_youarewelcome
    ...
 
    ## compare_reviews_venues
@@ -94,8 +94,7 @@ Below is an excerpt of the stories.
 Interactive Learning
 ^^^^^^^^^^^^^^^^^^^^
 
-Run the script ``train_online.py``. This first runs the
-``train_init`` script, creating a stateless policy by combining the stories
+Run the script ``train_online.py``. This first creats a stateless policy by combining the stories
 we've provided into longer dialogues, and then trains the policy on that
 dataset.
 
@@ -110,7 +109,7 @@ where the learning *becomes interactive*):
     so when you type messages to the bot you have to
     type the intent starting with a ``/`` (see :ref:`fixed_intent_format`).
     If you want to use Rasa NLU / wit.ai / Lex you
-    can just swap the ``Interpreter`` class in ``run.py``.
+    can just swap the ``Interpreter`` class in ``run.py`` and ``train_online.py``.
 
 We now start talking to the bot by directly entering the intents. For
 example, if we type ``/greet``, we get the following prompt:
@@ -121,13 +120,15 @@ example, if we type ``/greet``, we get the following prompt:
    ------
    Chat history:
 
+        bot did:    None
         bot did:	action_listen
         user said:	/greet
-        	   whose intent is:	greet
 
-   we currently have slots: {'location': None}
+                whose intent is:	greet
+
+   we currently have slots: concerts: None, venues: None
    ------
-   The bot wants to [greet] due to the intent. Is this correct?
+   The bot wants to [utter_greet] due to the intent. Is this correct?
 
        1.	Yes
        2.	No, intent is right but the action is wrong
@@ -137,13 +138,14 @@ example, if we type ``/greet``, we get the following prompt:
 
 This gives you all the info you should hopefully need to decide
 what the bot *should* have done. In this case, the bot chose the right
-action ('greet'), so we type ``1`` and hit enter. We continue this loop
-until the bot chooses the wrong action.
+action ('utter_greet'), so we type ``1`` and hit enter.
+Then we type ``1`` again, because 'action_listen' is the correct action after greeting.
+We continue this loop until the bot chooses the wrong action.
 
 **Providing feedback on errors**
 
-We've just asked the bot to search for concerts, and now we're asking it to
-compare reviews. The bot happens to choose the wrong one out of the two
+If you ask ``/search_concerts``, the bot should suggest ``action_search_concerts`` and then ``action_listen``.
+Now let's ask it to ``/compare_reviews``. The bot happens to choose the wrong one out of the two
 possibilities we wrote in the stories:
 
 .. code-block:: text
@@ -153,15 +155,14 @@ possibilities we wrote in the stories:
    Chat history:
 
         bot did:	action_search_concerts
-        bot did:	action_suggest
         bot did:	action_listen
         user said:	/compare_reviews
 
         	   whose intent is:	compare_reviews
 
-   we currently have slots: {'location': None}
+   we currently have slots: concerts: [{'artist': 'Foo Fighters', 'reviews': 4.5}, {'artist': 'Katy Perry', 'reviews': 5.0}], venues: None
    ------
-   The bot wants to [show_venue_reviews] due to the intent. Is this correct?
+   The bot wants to [action_show_venue_reviews] due to the intent. Is this correct?
 
        1.	Yes
        2.	No, intent is right but the action is wrong
@@ -176,22 +177,21 @@ model has assigned to each of the actions.
 .. code-block:: text
    what is the next action for the bot?
 
-        0	default	 0.00148131744936
-        1	greet	 0.0970264300704
-        2	goodbye	 0.0288009047508
-        3	listen	 0.00123148341663
-        6	search_cinemas	0.000627864559647
-        8	search_films	0.0367559418082
-        9	suggest		0.0261212754995
-        11	youarewelcome	0.594935178757
-        13	explain_options	0.0516758263111
-        14	store_slot	0.00145904591773
-        15	show_cinema_reviews	0.00887114647776
-        16	show_film_reviews	0.0870243906975
+        0                           action_listen    0.19
+        1                          action_restart    0.00
+        2                           utter_default    0.00
+        3                             utter_greet    0.03
+        4                           utter_goodbye    0.03
+        5                     utter_youarewelcome    0.02
+        6                  action_search_concerts    0.09
+        7                    action_search_venues    0.02
+        8             action_show_concert_reviews    0.29
+        9               action_show_venue_reviews    0.33
 
 
-In this case, the bot should ``show_film_reviews`` (rather than cinema
-reviews!) so we type ``16`` and hit enter.
+
+In this case, the bot should ``action_show_concert_reviews`` (rather than venue
+reviews!) so we type ``8`` and hit enter.
 
 .. note::
 
@@ -205,6 +205,15 @@ conversation. At any point you can type ``0`` and the bot will write the
 current conversation to a file and exit the conversation. Make sure to
 combine the dumped story with your original training data for the next
 training.
+
+.. note::
+
+    If you run the bot with not enough training data, it might get ``action_listen``
+    as a most probable response to your input and therefore do nothing.
+    If you continue to input something and get no answer, please head to
+    interactive training and check if ``action_listen`` was chosen as a response.
+    Correct the bot's behaviour, add additional stories and run ``train.py`` then
+    run the bot again.
 
 Motivation: Why Interactive Learning?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
