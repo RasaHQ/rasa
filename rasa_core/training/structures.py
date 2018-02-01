@@ -10,7 +10,7 @@ import uuid
 from collections import deque, defaultdict
 
 import typing
-from typing import List, Text, Dict, Optional, Tuple, Any, Deque, Set
+from typing import List, Text, Dict, Optional, Tuple, Any, Set
 
 from rasa_core import utils
 from rasa_core.actions.action import ACTION_LISTEN_NAME
@@ -298,7 +298,7 @@ class StoryGraph(object):
 
     @staticmethod
     def order_steps(story_steps):
-        # type: (List[StoryStep]) -> Deque[Text]
+        # type: (List[StoryStep]) -> Tuple[deque, Set[Tuple[Text, Text]]]
         """Topological sort of the steps returning the ids of the steps."""
 
         checkpoints = StoryGraph._group_by_start_checkpoint(story_steps)
@@ -323,7 +323,7 @@ class StoryGraph(object):
     def topological_sort(
             graph  # type: Dict[Text, Set[Text]]
     ):
-        # type: (...) -> Tuple[Deque[Text], Set[Tuple[Text, Text]]]
+        # type: (...) -> Tuple[deque, Set[Tuple[Text, Text]]]
         """Creates a top sort of a directed graph. This is an unstable sorting!
 
         The function returns the sorted nodes as well as the edges that need
