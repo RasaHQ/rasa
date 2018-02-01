@@ -55,6 +55,9 @@ def recursively_find_files(resource_name):
     """Traverse directory hierarchy to find files.
 
     `resource_name` can be a folder or a file. In both cases we will return a list of files."""
+    if not isinstance(resource_name, six.string_types):
+        raise ValueError("Resourcename must be a string type")
+
     found = []
     if os.path.isfile(resource_name):
         found.append(resource_name)
@@ -62,7 +65,7 @@ def recursively_find_files(resource_name):
         for root, directories, files in os.walk(resource_name):
             for f in files:
                 found.append(os.path.join(root, f))
-    elif isinstance(resource_name, six.string_types):
+    else:
         raise ValueError("Could not locate the resource '{}'.".format(os.path.abspath(resource_name)))
 
     return found
