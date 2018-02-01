@@ -118,16 +118,19 @@ a ``categorical`` slot.
 
 Rasa automatically represents (featurises) this as a one-hot encoding of the values: ``(1,0,0)``, ``(0,1,0)``, or ``(0,0,1)``.
 
-**Slot features**
-
 .. _slot_features:
 
-When Rasa Core runs training against your story, the presence of a ``Slot`` entry will be used to help 
-determine the next action that should be taken. 
+**Slot features**
 
-This works best with ``CategoricalSlot`` slot types. A ``TextSlot`` can have any value, but it only has one 
-feature - set ``(1)`` or not set ``(0)``. A ``CategoricalSlot`` has a set number of values and a feature for each. Rasa core 
-will be able to make decisions based not only on whether the value is set but also on the value itself.
+When Rasa Core runs trains a dialogue model using your stories the presence of a ``Slot`` entry will be used to help 
+determine the next action that should be taken. This works best with ``CategoricalSlot`` slot types. 
+
+A ``TextSlot`` can have any value, but it only has a single feature. It can be set - in which case the feature 
+has a value ``(1)`` - or if it is not set it will have a value ``(0)``. 
+
+A ``CategoricalSlot`` has a number of values each of which is a feature. Taking the example below, when the 
+``restaurant_availability`` slot is set Rasa Core will be able to determine whether or not the restaurant in question is 
+available and choose radically different actions to perform based on the value.
 
 .. code-block:: yaml
 
@@ -139,18 +142,27 @@ will be able to make decisions based not only on whether the value is set but al
         - waiting-list
         - available
 
-When the ``restaurant_availability`` slot is set Rasa Core will be able to determine if the restaurant in question is
-available and choose radically different actions to perform based on the value.
-
-The ``Slot`` *might* be set by Rasa Core itself from entities detected by the NLU module, but usually you would 
-return the value of the ``Slot`` from your ``Action`` and then use the next ``Turn`` of the conversation to
-check what feature is set.
+A ``Slot`` will be set by Rasa Core if its name and the name of the entity detected by the NLU module match. However, when we wish to alter the flow of a conversation we would explicitly set the value of the slot from a custom ``Action`` and 
+then use the next ``Turn`` of the conversation to check what feature of the slot is set.
 
 .. code-block:: python
 
-    def run(self, dispatcher, tracker, domain):
-        # some logic here to decide if the restaurant is "available", "booked-out" or whatever
-        return [SlotSet("restaurant_availability", "available")]
+    class ActionMakeBooking(Action):
+
+        def run(self, dispatcher, tracker, domain):
+            restaurant_name=tracker.get_slot("restaurant_name")
+            location=tracker.get_slot("location")
+            num_people=tracker.get_slot("people")
+            date=tracker.get_slot("date")
+            # this will fetch the availability of the restaurant from your DB or an API
+            availability=restaurantService.check_availability(restaurant_name, location, num_people, date)
+            return [SlotSet("restaurant_availability", availability)]
+
+The snippet of code from an example ``Action`` shows that the value of the slot ``restaurant_availability`` is determined by querying a database or API. The restaurant availability is not something that is known when we train the dialogue model, the ``Slot`` value is the only way we can alter the course of the conversation based on information from the outside world.
+
+The data fetched from an API call can also be stored for later use without altering the outcome of a conversation as detailed in :ref:`unfeaturized_slots`.
+
+**Example**
 
 In this first story we will try and make a booking for 5 people in a restaurant on the night of 21st August 2018. 
 In this case the restaurant is booked out so we want to apologise to the customer and suggests similar restaurants.
@@ -198,15 +210,24 @@ is set or not.
     * _bye
     - utter_thank_you
 
+.. _unfeaturized_slots:
 
 Storing API responses in the tracker
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You often want to save some information in the tracker, like the results from 
-a database query, or from an API call. If you don't want the value to influence the 
-dialogue, you can use a ``unfeaturized`` slot. You can explicitly set this value in a custom action:
+The result from an API call can be stored in a ``Slot`` as :ref:`highlighted above <slot_features>`. In that case the data is stored in a ``Slot`` that is featurized, influencing the flow of the dialogue. 
 
-.. doctest::
+It is possible to store the results from a database query, or from an API call, in a ``Slot`` that will not influence the dialogue. You will need to define an ``unfeaturized`` slot in your domain:
+
+.. code-block:: yaml
+
+    slots:
+        api_result:
+            type: unfeaturized
+
+You can set this value in a custom ``Action``:
+
+.. code-block:: python
 
    from rasa_core.actions import Action
    from rasa_core.events import SlotSet
@@ -219,3 +240,6 @@ dialogue, you can use a ``unfeaturized`` slot. You can explicitly set this value
        def run(self, tracker, dispatcher):
            data = requests.get(url).json
            return [SlotSet("api_result", data)]
+
+
+Why? Part of conversation / tracker and not separate in a cache - if using persisted tracking will be restored with that data.
