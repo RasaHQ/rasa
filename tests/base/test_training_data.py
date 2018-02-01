@@ -63,7 +63,7 @@ def test_rasa_data():
     assert td.intent_examples != []
 
     num_entities = len([e for e in td.entity_examples if e.get("entities")])
-    assert len(td.sorted_entity_examples()) >= num_entities
+    assert len(td.sorted_entities()) >= num_entities
     assert len(td.sorted_intent_examples()) == len(td.intent_examples)
     assert td.entity_synonyms == {'Chines': 'chinese',
                                   'Chinese': 'chinese',
@@ -88,7 +88,7 @@ def test_rasa_data_multiple():
     assert td.intent_examples != []
 
     num_entities = len([e for e in td.entity_examples if e.get("entities")])
-    assert len(td.sorted_entity_examples()) >= num_entities
+    assert len(td.sorted_entities()) >= num_entities
     assert len(td.sorted_intent_examples()) == len(td.intent_examples)
     assert td.entity_synonyms == {'Chines': 'chinese',
                                   'Chinese': 'chinese',
@@ -128,7 +128,7 @@ def test_markdown_data():
     td = training_data.load_data('data/examples/rasa/demo-rasa.md')
 
     num_entities = len([e for e in td.entity_examples if e.get("entities")])
-    assert len(td.sorted_entity_examples()) >= num_entities
+    assert len(td.sorted_entities()) >= num_entities
     assert len(td.sorted_intent_examples()) == len(td.intent_examples)
     assert td.entity_synonyms == {'Chines': 'chinese',
                                   'Chinese': 'chinese',
@@ -151,7 +151,7 @@ def test_markdown_data_multiple():
     td = training_data.load_data('data/test/multiple_files_markdown')
 
     num_entities = len([e for e in td.entity_examples if e.get("entities")])
-    assert len(td.sorted_entity_examples()) >= num_entities
+    assert len(td.sorted_entities()) >= num_entities
     assert len(td.sorted_intent_examples()) == len(td.intent_examples)
     assert td.entity_synonyms == {'Chines': 'chinese',
                                   'Chinese': 'chinese',
@@ -183,7 +183,7 @@ def test_markdown_data_multiple():
 def test_compare_markdown_to_json():
     td_md = training_data.load_data('data/examples/rasa/demo-rasa.md')
     td_json = training_data.load_data('data/examples/rasa/demo-rasa.json')
-    assert td_md.sorted_entity_examples() == td_json.sorted_entity_examples()
+    assert td_md.sorted_entities() == td_json.sorted_entities()
 
 
 def test_repeated_entities():

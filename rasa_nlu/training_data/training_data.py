@@ -8,17 +8,17 @@ from __future__ import unicode_literals
 import logging
 import os
 import warnings
-from itertools import groupby
 
 from copy import deepcopy
 from builtins import object, str
-from collections import defaultdict
 
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Text
+
+from collections import Counter
 
 from rasa_nlu.utils import lazyproperty, write_to_file
 from rasa_nlu.utils import list_to_str
@@ -49,6 +49,7 @@ class TrainingData(object):
         self.sort_regex_features()
 
         self.validate()
+        self.print_stats()
 
     def merge(self, *others):
         """Merges the TrainingData instance with others and creates a new one."""
@@ -73,24 +74,24 @@ class TrainingData(object):
 
         removes trailing whitespaces from intent annotations."""
 
-        for e in examples:
-            if e.get("intent") is not None:
-                e.set("intent", e.get("intent").strip())
+        for ex in examples:
+            if ex.get("intent") is not None:
+                ex.set("intent", ex.get("intent").strip())
         return examples
 
     @lazyproperty
     def intent_examples(self):
         # type: () -> List[Message]
-        return [e
-                for e in self.training_examples
-                if e.get("intent") is not None]
+        return [ex
+                for ex in self.training_examples
+                if ex.get("intent") is not None]
 
     @lazyproperty
     def entity_examples(self):
         # type: () -> List[Message]
-        return [e
-                for e in self.training_examples
-                if e.get("entities") is not None]
+        return [ex
+                for ex in self.training_examples
+                if ex.get("entities") is not None]
 
     @lazyproperty
     def num_entity_examples(self):
@@ -98,9 +99,9 @@ class TrainingData(object):
         """Returns the number of proper entity training examples
         (containing at least one annotated entity)."""
 
-        return len([e
-                    for e in self.training_examples
-                    if len(e.get("entities", [])) > 0])
+        return len([ex
+                    for ex in self.training_examples
+                    if len(ex.get("entities", [])) > 0])
 
     @lazyproperty
     def num_intent_examples(self):
@@ -108,6 +109,29 @@ class TrainingData(object):
         """Returns the number of intent examples."""
 
         return len(self.intent_examples)
+
+    @lazyproperty
+    def intents(self):
+        """Returns the set of intents in the training data."""
+        return set([ex.get("intent") for ex in self.training_examples]) - {None}
+
+    @lazyproperty
+    def examples_per_intent(self):
+        """Calculates the number of examples per intent."""
+        intents = [ex.get("intent") for ex in self.training_examples]
+        return dict(Counter(intents))
+
+    @lazyproperty
+    def entities(self):
+        """Returns the set of entity types in the training data."""
+        entity_types = [e.get("entity") for e in self.sorted_entities()]
+        return set(entity_types)
+
+    @lazyproperty
+    def examples_per_entity(self):
+        """Calculates the number of examples per entity."""
+        entity_types = [e.get("entity") for e in self.sorted_entities()]
+        return dict(Counter(entity_types))
 
     def sort_regex_features(self):
         """Sorts regex features lexicographically by name+pattern"""
@@ -138,9 +162,9 @@ class TrainingData(object):
             "training_data": "training_data.json"
         }
 
-    def sorted_entity_examples(self):
-        # type: () -> List[Message]
-        """Sorts the entity examples by the annotated entity."""
+    def sorted_entities(self):
+        # type: () -> List[Any]
+        """Extracts all entities from all examples and sorts them by entity type."""
 
         entity_examples = [entity
                            for ex in self.entity_examples
@@ -155,44 +179,34 @@ class TrainingData(object):
 
     def validate(self):
         # type: () -> None
-        """Ensures that the loaded training data is valid, e.g.
+        """Ensures that the loaded training data is valid.
 
-        has a minimum of certain training examples."""
+        Checks that the data has a minimum of certain training examples."""
 
         logger.debug("Validating training data...")
-        examples = self.sorted_intent_examples()
-        different_intents = []
-        for intent, group in groupby(examples, lambda e: e.get("intent")):
-            size = len(list(group))
-            different_intents.append(intent)
-            if intent == "":
-                warnings.warn("Found empty intent, please check your "
-                              "training data. This may result in wrong "
-                              "intent predictions.")
-            if size < self.MIN_EXAMPLES_PER_INTENT:
-                template = ("Intent '{}' has only {} training examples! "
-                            "minimum is {}, training may fail.")
-                warnings.warn(template.format(repr(intent),
-                                              size,
-                                              self.MIN_EXAMPLES_PER_INTENT))
+        if "" in self.intents:
+            warnings.warn("Found empty intent, please check your "
+                          "training data. This may result in wrong "
+                          "intent predictions.")
 
-        different_entities = []
-        for entity, group in groupby(self.sorted_entity_examples(),
-                                     lambda e: e["entity"]):
-            size = len(list(group))
-            different_entities.append(entity)
-            if size < self.MIN_EXAMPLES_PER_ENTITY:
-                template = ("Entity '{}' has only {} training examples! "
-                            "minimum is {}, training may fail.")
-                warnings.warn(template.format(repr(entity), size,
-                                              self.MIN_EXAMPLES_PER_ENTITY))
+        for intent, count in self.examples_per_intent.items():
+            if count < self.MIN_EXAMPLES_PER_INTENT:
+                warnings.warn("Intent '{}' has only {} training examples! "
+                            "Minimum is {}, training may fail.".format(intent, count,
+                                                                       self.MIN_EXAMPLES_PER_INTENT))
+        for entity_type, count in self.examples_per_entity.items():
+            if count < self.MIN_EXAMPLES_PER_ENTITY:
+                warnings.warn("Entity '{}' has only {} training examples! "
+                            "minimum is {}, training may fail.".format(entity_type, count,
+                                                                       self.MIN_EXAMPLES_PER_ENTITY))
 
+    def print_stats(self):
         logger.info("Training data stats: \n" +
-                    "\t- intent examples: {} ({} distinct intents)\n".format(
-                            self.num_intent_examples, len(different_intents)) +
-                    "\t- found intents: {}\n".format(
-                            list_to_str(different_intents)) +
+                    "\t- intent examples: {} ({} distinct intents)\n".format(self.num_intent_examples,
+                                                                             len(self.intents)) +
+                    "\t- Found intents: {}\n".format(
+                            list_to_str(self.intents)) +
                     "\t- entity examples: {} ({} distinct entities)\n".format(
-                            self.num_entity_examples, len(different_entities)) +
+                            self.num_entity_examples, len(self.entities)) +
                     "\t- found entities: {}\n".format(
-                            list_to_str(different_entities)))
+                            list_to_str(self.entities)))

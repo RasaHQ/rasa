@@ -41,22 +41,6 @@ def _from_dialogflow_file(filename, language, fformat):
         return None
 
 
-def from_rasa_file(filename, **kwargs):
-    return RasaReader().read(filename, **kwargs)
-
-
-def from_wit_file(filename, **kwargs):
-    return WitReader().read(filename, **kwargs)
-
-
-def from_luis_file(filename, **kwargs):
-    return LuisReader().read(filename, **kwargs)
-
-
-def from_markdown_file(filename, **kwargs):
-    return MarkdownReader().read(filename, **kwargs)
-
-
 def load_data(resource_name, language='en'):
     # type: (Text, Optional[Text]) -> TrainingData
     """Loads training data from disk and merges them if multiple files are found."""
@@ -81,15 +65,15 @@ def _load(filename, language='en'):
     logger.info("Training data format of {} is {}".format(filename, fformat))
 
     if fformat == LUIS:
-        return from_luis_file(filename)
+        return LuisReader().read(filename)
     elif fformat == WIT:
-        return from_wit_file(filename)
+        return WitReader().read(filename)
     elif fformat.startswith("dialogflow"):
         return _from_dialogflow_file(filename, language, fformat)
     elif fformat == RASA:
-        return from_rasa_file(filename)
+        return RasaReader().read(filename)
     elif fformat == MARKDOWN:
-        return from_markdown_file(filename)
+        return MarkdownReader().read(filename)
     else:
         raise ValueError("unknown training file format : {} for "
                          "file {}".format(fformat, filename))

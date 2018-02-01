@@ -17,7 +17,7 @@ from rasa_nlu.model import Interpreter
 from rasa_nlu.model import Trainer
 
 from rasa_nlu.config import RasaNLUConfig
-from rasa_nlu import training_data
+from rasa_nlu.training_data import load_data
 
 logger = logging.getLogger(__name__)
 
@@ -110,7 +110,7 @@ def do_train(config,  # type: RasaNLUConfig
     # trained in another subprocess
     trainer = Trainer(config, component_builder)
     persistor = create_persistor(config)
-    training_data = training_data.load(config['data'], config['language'])
+    training_data = load_data(config['data'], config['language'])
     interpreter = trainer.train(training_data)
     persisted_path = trainer.persist(config['path'], persistor,
                                      config['project'],

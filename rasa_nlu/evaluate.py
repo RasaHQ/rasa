@@ -386,7 +386,7 @@ def patch_duckling_entities(entity_predictions):
 def run_evaluation(config, model_path, component_builder=None):  # pragma: no cover
     """Evaluate intent classification and entity extraction."""
     # get the metadata config from the package data
-    test_data = load_data(config['data'], config['language'])
+    test_data = training_data.load_data(config['data'], config['language'])
     interpreter = Interpreter.load(model_path, config, component_builder)
     intent_targets, entity_targets = get_targets(test_data)
     intent_predictions, entity_predictions, tokens = get_predictions(interpreter, test_data)
