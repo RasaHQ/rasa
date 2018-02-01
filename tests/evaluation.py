@@ -16,7 +16,7 @@ from rasa_nlu.evaluate import align_entity_predictions
 from rasa_nlu.evaluate import determine_intersection
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.tokenizers import Token
-from rasa_nlu.training_data import DataLoader
+from rasa_nlu import training_data
 from tests import utilities
 
 logging.basicConfig(level="DEBUG")
@@ -210,7 +210,7 @@ def test_duckling_patching():
     assert patch_duckling_entities(entities) == patched
 
 def test_prepare_data():
-    td = DataLoader.load('data/examples/rasa/demo-rasa.json')
+    td = training_data.load_data('data/examples/rasa/demo-rasa.json')
     clean_data = prepare_data(td, 0)
     unique_intents = sorted(set([i.data["intent"] for i in clean_data]))
     assert(unique_intents == ['affirm', 'goodbye', 'greet', 'restaurant_search'])
@@ -221,7 +221,7 @@ def test_prepare_data():
 
 def test_run_cv_evaluation():
     import numpy as np
-    td = DataLoader.load('data/examples/rasa/demo-rasa.json')
+    td = training_data.load_data('data/examples/rasa/demo-rasa.json')
     n_folds = 3
     nlu_config = RasaNLUConfig("sample_configs/config_defaults.json")
 

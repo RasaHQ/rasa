@@ -6,9 +6,11 @@ from __future__ import unicode_literals
 import re
 import logging
 
-from rasa_nlu.training_data import Message, TrainingData, check_duplicate_synonym
+from rasa_nlu.training_data import Message, TrainingData
+from rasa_nlu.training_data.util import check_duplicate_synonym
+from rasa_nlu.utils import build_entity
 
-from rasa_nlu.training_data.formats import TrainingDataReader, TrainingDataWriter
+from rasa_nlu.training_data.formats.readerwriter import TrainingDataReader, TrainingDataWriter
 
 INTENT = "intent"
 SYNONYM = "synonym"
@@ -88,19 +90,15 @@ class MarkdownReader(TrainingDataReader):
         offset = 0
         for match in re.finditer(ent_regex, example):
             entity_text = match.groupdict()['entity_text']
-            entity_entity = match.groupdict()['entity']
+            entity_type = match.groupdict()['entity']
             entity_value = match.groupdict()['value'] if match.groupdict()['value'] else entity_text
 
             start_index = match.start() - offset
             end_index = start_index + len(entity_text)
             offset += len(match.group(0)) - len(entity_text)
 
-            entities.append({
-                'entity': entity_entity,
-                'value': entity_value,
-                'start': start_index,
-                'end': end_index
-            })
+            entity = build_entity(start_index, end_index, entity_value, entity_type)
+            entities.append(entity)
 
         return entities
 

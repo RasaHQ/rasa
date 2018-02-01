@@ -41,3 +41,13 @@ class Message(object):
 
     def __hash__(self):
         return hash((self.text, str(ordered(self.data))))
+
+
+    @classmethod
+    def build(cls, text, intent=None, entities=None):
+        data = {}
+        if intent:
+            data["intent"] = intent
+        if entities:
+            data["entities"] = entities
+        return cls(text, data)

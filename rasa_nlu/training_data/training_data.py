@@ -20,10 +20,10 @@ from typing import List
 from typing import Optional
 from typing import Text
 
-from rasa_nlu.training_data import check_duplicate_synonym
 from rasa_nlu.utils import lazyproperty, write_to_file
 from rasa_nlu.utils import list_to_str
 from rasa_nlu.utils import json_to_string
+from rasa_nlu.training_data.util import check_duplicate_synonym
 
 logger = logging.getLogger(__name__)
 
@@ -143,13 +143,13 @@ class TrainingData(object):
     def as_markdown(self):
         # type: () -> str
         """Generates the markdown representation of the TrainingData."""
-        from rasa_nlu.training_data import MarkdownWriter
+        from rasa_nlu.training_data.formats import MarkdownWriter
         return self._as_format(MarkdownWriter)
 
     def _as_format(self, writer_clz):
         """Generates a string representation of the TrainingData given a writer class."""
         writer = writer_clz()
-        writer.dumps(self)
+        return writer.dumps(self)
 
     def persist(self, dir_name):
         # type: (Text) -> Dict[Text, Any]

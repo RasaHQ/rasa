@@ -150,11 +150,11 @@ def train_models(component_builder):
     # Retrain different multitenancy models
     def train(cfg_name, project_name):
         from rasa_nlu.train import create_persistor
-        from rasa_nlu.training_data import DataLoader
+        from rasa_nlu import training_data
 
         config = RasaNLUConfig(cfg_name)
         trainer = Trainer(config, component_builder)
-        training_data = DataLoader.load(config['data'])
+        training_data = training_data.load_data(config['data'])
 
         trainer.train(training_data)
         persistor = create_persistor(config)

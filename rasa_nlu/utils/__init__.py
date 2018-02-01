@@ -55,17 +55,17 @@ def recursively_find_files(resource_name):
     """Traverse directory hierarchy to find files.
 
     `resource_name` can be a folder or a file. In both cases we will return a list of files."""
-    files = []
+    found = []
     if os.path.isfile(resource_name):
-        files.append(resource_name)
+        found.append(resource_name)
     elif os.path.isdir(resource_name):
         for root, directories, files in os.walk(resource_name):
             for f in files:
-                files.append(os.path.join(root, f))
+                found.append(os.path.join(root, f))
     elif isinstance(resource_name, six.string_types):
         raise ValueError("Could not locate the resource '{}'.".format(os.path.abspath(resource_name)))
 
-    return files
+    return found
 
 
 def lazyproperty(fn):
@@ -154,3 +154,15 @@ def read_json_file(filename):
     except Exception as e:
         raise Exception("Failed to read json from '{}'. Error: "
                         "{}".format(os.path.abspath(filename), e))
+
+def build_entity(start, end, value, entity_type, **kwargs):
+    """Builds a standard entity dictionary and adds additional keyword parameters."""
+    entity = {
+        "start": start,
+        "end": end,
+        "value": value,
+        "entity": entity_type
+    }
+
+    entity.update(kwargs)
+    return entity
