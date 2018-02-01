@@ -18,8 +18,13 @@ Changed
 Removed
 -------
 
+[0.8.1] - 2018-02-01
+^^^^^^^^^^^^^^^^^^^^
+
 Fixed
 -----
+- removed deque to support python 3.5
+- Documentation improvements to tutorials
 
 [0.8.0] - 2018-01-30
 ^^^^^^^^^^^^^^^^^^^^
