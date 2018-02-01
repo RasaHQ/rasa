@@ -7,7 +7,6 @@
     "ner_crf",
     "ner_synonyms"
   ],
-  "path" : "./models",
-  "project": "nlu",
+  "path" : "./models/nlu",
   "data" : "./data/franken_data.json"
 }

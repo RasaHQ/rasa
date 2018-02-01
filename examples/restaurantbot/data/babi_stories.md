@@ -9,8 +9,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"location": "madrid"}
@@ -24,15 +23,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03812903
 * greet
@@ -41,8 +38,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "indian"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -61,10 +57,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00055028
 * greet
@@ -73,8 +67,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "bombay"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -85,7 +78,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -93,10 +86,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04649138
 * greet
@@ -105,8 +96,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "spanish"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * deny
@@ -115,10 +105,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00832024
 * greet
@@ -127,8 +115,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * inform{"location": "madrid"}
@@ -139,7 +126,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -150,12 +137,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07265875
 * greet
@@ -166,8 +149,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"location": "rome"}
@@ -184,10 +166,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02879216
 * greet
@@ -198,8 +178,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -218,10 +197,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04818543
 * greet
@@ -230,8 +207,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
@@ -250,10 +226,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07401415
 * greet
@@ -266,8 +240,7 @@
 * inform{"location": "rome"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -287,12 +260,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07314254
 * greet
@@ -301,8 +270,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -313,12 +281,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03179721
 * greet
@@ -327,8 +291,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "bombay"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -337,15 +300,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00008968
 * greet
@@ -354,8 +315,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * deny
@@ -364,12 +324,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01856430
 * greet
@@ -378,8 +334,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -398,12 +353,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08076703
 * greet
@@ -412,8 +363,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "spanish"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -424,20 +374,16 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06422060
 * greet
@@ -450,8 +396,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -465,7 +410,7 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -473,12 +418,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00264703
 * greet
@@ -489,8 +430,7 @@
 * inform{"cuisine": "british"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
@@ -509,10 +449,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00660267
 * greet
@@ -523,8 +461,7 @@
 * inform{"cuisine": "french"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -538,10 +475,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02753259
 * greet
@@ -554,8 +489,7 @@
 * inform{"location": "bombay"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -568,10 +502,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00496705
 * greet
@@ -580,8 +512,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "madrid"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"location": "bombay"}
@@ -594,10 +525,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04071825
 * greet
@@ -608,8 +537,7 @@
 * inform{"cuisine": "british"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -628,12 +556,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02065778
 * greet
@@ -646,8 +570,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -658,17 +581,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00350794
 * greet
@@ -679,8 +598,7 @@
 * inform{"cuisine": "british"}
  - utter_ask_location
 * inform{"location": "rome"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * inform{"location": "bombay"}
@@ -692,17 +610,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04824790
 * greet
@@ -711,8 +625,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "british"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -731,10 +644,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08852263
 * greet
@@ -747,8 +658,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -759,7 +669,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -767,10 +677,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07460140
 * greet
@@ -779,8 +687,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -794,20 +701,16 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07720463
 * greet
@@ -816,8 +719,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "madrid"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * inform{"location": "bombay"}
@@ -828,10 +730,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07930584
 * greet
@@ -842,8 +742,7 @@
 * inform{"cuisine": "italian"}
  - utter_ask_location
 * inform{"location": "bombay"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * deny
@@ -855,10 +754,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06519313
 * greet
@@ -869,8 +766,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -881,12 +777,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03248462
 * greet
@@ -895,8 +787,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "bombay"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -907,17 +798,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08607862
 * greet
@@ -926,8 +813,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * deny
@@ -936,12 +822,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06360277
 * greet
@@ -950,8 +832,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -960,7 +841,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -968,10 +849,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03043652
 * greet
@@ -982,8 +861,7 @@
 * inform{"location": "madrid"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * deny
@@ -992,10 +870,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07408662
 * greet
@@ -1008,8 +884,7 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * deny
@@ -1018,12 +893,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01743655
 * greet
@@ -1034,8 +905,7 @@
 * inform{"cuisine": "italian"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -1046,12 +916,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05692561
 * greet
@@ -1060,8 +926,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "british"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -1080,12 +945,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03068439
 * greet
@@ -1098,8 +959,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
@@ -1115,10 +975,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00749657
 * greet
@@ -1131,8 +989,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * deny
@@ -1141,10 +998,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03380511
 * greet
@@ -1153,8 +1008,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -1165,7 +1019,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -1173,10 +1027,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06422073
 * greet
@@ -1185,8 +1037,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -1199,12 +1050,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09031916
 * greet
@@ -1215,8 +1062,7 @@
 * inform{"location": "bombay"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
@@ -1232,12 +1078,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01978688
 * greet
@@ -1248,8 +1090,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * deny
@@ -1258,12 +1099,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04854177
 * greet
@@ -1272,8 +1109,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "indian"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -1282,7 +1118,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -1290,12 +1126,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01399547
 * greet
@@ -1304,8 +1136,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -1314,10 +1145,10 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -1325,12 +1156,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01912632
 * greet
@@ -1341,8 +1168,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -1359,10 +1185,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04612031
 * greet
@@ -1375,8 +1199,7 @@
 * inform{"location": "london"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
@@ -1387,10 +1210,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06463518
 * greet
@@ -1399,8 +1220,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
@@ -1415,10 +1235,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09999406
 * greet
@@ -1427,8 +1245,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
@@ -1437,10 +1254,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01480014
 * greet
@@ -1453,8 +1268,7 @@
 * inform{"location": "madrid"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -1463,7 +1277,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -1471,12 +1285,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09053690
 * greet
@@ -1487,8 +1297,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -1499,12 +1308,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03827935
 * greet
@@ -1513,8 +1318,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -1525,7 +1329,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -1536,10 +1340,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02993258
 * greet
@@ -1550,8 +1352,7 @@
 * inform{"location": "madrid"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"location": "rome"}
@@ -1568,10 +1369,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05416743
 * greet
@@ -1582,8 +1381,7 @@
 * inform{"cuisine": "indian"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"location": "bombay"}
@@ -1596,10 +1394,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07596709
 * greet
@@ -1612,8 +1408,7 @@
 * inform{"location": "madrid"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -1627,17 +1422,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00797530
 * greet
@@ -1646,8 +1437,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -1658,12 +1448,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00153088
 * greet
@@ -1672,8 +1458,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * deny
@@ -1683,17 +1468,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07360837
 * greet
@@ -1704,8 +1485,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -1716,10 +1496,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06027650
 * greet
@@ -1728,8 +1506,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "spanish"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * deny
@@ -1744,12 +1521,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00760313
 * greet
@@ -1758,8 +1531,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * deny
@@ -1771,12 +1543,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09866647
 * greet
@@ -1789,8 +1557,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * deny
@@ -1805,12 +1572,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00624668
 * greet
@@ -1819,8 +1582,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
@@ -1833,12 +1595,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09174227
 * greet
@@ -1847,8 +1605,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * deny
@@ -1857,12 +1614,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02413435
 * greet
@@ -1873,8 +1626,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -1888,15 +1640,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03736207
 * greet
@@ -1907,8 +1657,7 @@
 * inform{"cuisine": "british"}
  - utter_ask_location
 * inform{"location": "rome"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -1919,12 +1668,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02843759
 * greet
@@ -1933,8 +1678,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"location": "madrid"}
@@ -1943,7 +1687,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -1951,10 +1695,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07728797
 * greet
@@ -1967,8 +1709,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -1977,7 +1718,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -1985,12 +1726,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08999407
 * greet
@@ -2003,8 +1740,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -2016,15 +1752,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04855656
 * greet
@@ -2033,8 +1767,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "italian"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -2045,15 +1778,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00252998
 * greet
@@ -2066,8 +1797,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -2078,10 +1808,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06289573
 * greet
@@ -2094,23 +1822,20 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07003503
 * greet
@@ -2123,25 +1848,20 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04378975
 * greet
@@ -2154,8 +1874,7 @@
 * inform{"location": "paris"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -2164,7 +1883,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -2172,10 +1891,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01209067
 * greet
@@ -2188,8 +1905,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -2206,12 +1922,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01411182
 * greet
@@ -2222,8 +1934,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * deny
@@ -2232,10 +1943,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08103150
 * greet
@@ -2246,8 +1955,7 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -2258,7 +1966,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -2266,10 +1974,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02467890
 * greet
@@ -2278,8 +1984,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -2290,12 +1995,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06829456
 * greet
@@ -2304,8 +2005,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * deny
@@ -2317,12 +2017,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09351905
 * greet
@@ -2335,8 +2031,7 @@
 * inform{"location": "rome"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -2345,18 +2040,16 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08944879
 * greet
@@ -2367,8 +2060,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -2382,15 +2074,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09232261
 * greet
@@ -2401,8 +2091,7 @@
 * inform{"location": "bombay"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * deny
@@ -2417,12 +2106,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02664959
 * greet
@@ -2435,8 +2120,7 @@
 * inform{"location": "rome"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * deny
@@ -2448,12 +2132,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05047322
 * greet
@@ -2462,8 +2142,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * deny
@@ -2472,12 +2151,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03993480
 * greet
@@ -2490,8 +2165,7 @@
 * inform{"location": "rome"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * deny
@@ -2506,10 +2180,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01984348
 * greet
@@ -2520,8 +2192,7 @@
 * inform{"location": "london"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"location": "bombay"}
@@ -2540,10 +2211,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04592751
 * greet
@@ -2554,8 +2223,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -2568,10 +2236,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09107150
 * greet
@@ -2584,8 +2250,7 @@
 * inform{"location": "bombay"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * deny
@@ -2600,10 +2265,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07407088
 * greet
@@ -2616,8 +2279,7 @@
 * inform{"location": "bombay"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -2626,18 +2288,16 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09044014
 * greet
@@ -2648,8 +2308,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * deny
@@ -2661,10 +2320,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06301857
 * greet
@@ -2675,8 +2332,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * inform{"location": "rome"}
@@ -2693,17 +2349,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04834267
 * greet
@@ -2712,8 +2364,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "indian"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -2724,7 +2375,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -2732,10 +2383,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07308412
 * greet
@@ -2748,8 +2397,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * deny
@@ -2759,7 +2407,7 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -2767,10 +2415,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08908895
 * greet
@@ -2781,8 +2427,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -2802,12 +2447,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01289187
 * greet
@@ -2820,8 +2461,7 @@
 * inform{"location": "bombay"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -2832,7 +2472,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -2840,12 +2480,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01937563
 * greet
@@ -2854,8 +2490,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * deny
@@ -2864,12 +2499,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05088706
 * greet
@@ -2882,8 +2513,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -2896,12 +2526,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09156236
 * greet
@@ -2912,8 +2538,7 @@
 * inform{"location": "bombay"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * deny
@@ -2922,10 +2547,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05268845
 * greet
@@ -2936,8 +2559,7 @@
 * inform{"cuisine": "indian"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -2948,15 +2570,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04910721
 * greet
@@ -2969,8 +2589,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -2981,12 +2600,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09452611
 * greet
@@ -2997,8 +2612,7 @@
 * inform{"location": "bombay"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -3012,12 +2626,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00319959
 * greet
@@ -3028,8 +2638,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * deny
@@ -3044,10 +2653,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05133868
 * greet
@@ -3058,8 +2665,7 @@
 * inform{"cuisine": "indian"}
  - utter_ask_location
 * inform{"location": "rome"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -3076,12 +2682,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06452510
 * greet
@@ -3090,8 +2692,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "italian"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
@@ -3105,17 +2706,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08526348
 * greet
@@ -3124,8 +2721,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"location": "rome"}
@@ -3138,12 +2734,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00282948
 * greet
@@ -3152,8 +2744,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "bombay"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
@@ -3175,10 +2766,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06641526
 * greet
@@ -3191,8 +2780,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
@@ -3203,12 +2791,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08859037
 * greet
@@ -3217,8 +2801,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -3232,15 +2815,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00008217
 * greet
@@ -3253,8 +2834,7 @@
 * inform{"location": "paris"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -3263,18 +2843,16 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01023896
 * greet
@@ -3287,8 +2865,7 @@
 * inform{"location": "rome"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * deny
@@ -3297,12 +2874,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04705724
 * greet
@@ -3313,8 +2886,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -3331,10 +2903,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08574082
 * greet
@@ -3345,8 +2915,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -3363,10 +2932,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09464717
 * greet
@@ -3375,15 +2942,14 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -3391,10 +2957,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03114526
 * greet
@@ -3405,8 +2969,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * deny
@@ -3415,10 +2978,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00481967
 * greet
@@ -3429,8 +2990,7 @@
 * inform{"location": "rome"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * deny
@@ -3440,17 +3000,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05718942
 * greet
@@ -3461,8 +3017,7 @@
 * inform{"location": "bombay"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * deny
@@ -3480,12 +3035,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09924129
 * greet
@@ -3494,8 +3045,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "spanish"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -3510,17 +3060,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08654911
 * greet
@@ -3533,8 +3079,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -3543,7 +3088,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -3551,10 +3096,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04622584
 * greet
@@ -3565,8 +3108,7 @@
 * inform{"cuisine": "french"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -3580,17 +3122,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07235737
 * greet
@@ -3603,8 +3141,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -3621,10 +3158,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00196299
 * greet
@@ -3637,8 +3172,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -3647,20 +3181,16 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03874811
 * greet
@@ -3669,8 +3199,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "spanish"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * deny
@@ -3679,12 +3208,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06072887
 * greet
@@ -3697,8 +3222,7 @@
 * inform{"location": "paris"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -3710,17 +3234,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08654334
 * greet
@@ -3733,8 +3253,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -3748,12 +3267,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04109384
 * greet
@@ -3766,25 +3281,20 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00978965
 * greet
@@ -3797,8 +3307,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -3817,12 +3326,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06840076
 * greet
@@ -3831,8 +3336,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * deny
@@ -3844,12 +3348,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04239724
 * greet
@@ -3862,8 +3362,7 @@
 * inform{"location": "bombay"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -3872,7 +3371,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -3880,12 +3379,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09090049
 * greet
@@ -3896,8 +3391,7 @@
 * inform{"cuisine": "indian"}
  - utter_ask_location
 * inform{"location": "rome"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -3908,12 +3402,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04363473
 * greet
@@ -3924,8 +3414,7 @@
 * inform{"location": "bombay"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
@@ -3942,10 +3431,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00292739
 * greet
@@ -3958,8 +3445,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -3973,12 +3459,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08844467
 * greet
@@ -3991,8 +3473,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -4011,12 +3492,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06812665
 * greet
@@ -4025,8 +3502,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -4037,21 +3513,19 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03851125
 * greet
@@ -4064,8 +3538,7 @@
 * inform{"location": "bombay"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -4076,7 +3549,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -4084,12 +3557,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09004962
 * greet
@@ -4100,31 +3569,26 @@
 * inform{"cuisine": "indian"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04062695
 * greet
@@ -4133,8 +3597,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -4147,10 +3610,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04531146
 * greet
@@ -4161,8 +3622,7 @@
 * inform{"cuisine": "indian"}
  - utter_ask_location
 * inform{"location": "rome"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -4173,17 +3633,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08162169
 * greet
@@ -4194,8 +3650,7 @@
 * inform{"location": "rome"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -4204,18 +3659,16 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01498425
 * greet
@@ -4224,8 +3677,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"location": "rome"}
@@ -4234,7 +3686,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -4242,12 +3694,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03900022
 * greet
@@ -4260,8 +3708,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -4272,12 +3719,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01611465
 * greet
@@ -4288,8 +3731,7 @@
 * inform{"location": "madrid"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * inform{"people": "eight"}
@@ -4302,12 +3744,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02776468
 * greet
@@ -4316,8 +3754,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "madrid"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"people": "eight"}
@@ -4328,17 +3765,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07116144
 * greet
@@ -4347,8 +3780,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "italian"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -4367,12 +3799,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09424206
 * greet
@@ -4381,8 +3809,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "italian"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -4398,12 +3825,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00512103
 * greet
@@ -4412,8 +3835,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "british"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -4424,12 +3846,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06202913
 * greet
@@ -4438,8 +3856,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
@@ -4453,10 +3870,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08813673
 * greet
@@ -4467,8 +3882,7 @@
 * inform{"location": "rome"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
@@ -4480,12 +3894,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09506631
 * greet
@@ -4494,8 +3904,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "italian"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -4512,12 +3921,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02056193
 * greet
@@ -4528,8 +3933,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * deny
@@ -4538,10 +3942,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05553278
 * greet
@@ -4552,8 +3954,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * deny
@@ -4568,12 +3969,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05646905
 * greet
@@ -4582,8 +3979,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "french"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -4597,12 +3993,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06882697
 * greet
@@ -4613,8 +4005,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"location": "bombay"}
@@ -4628,12 +4019,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05241672
 * greet
@@ -4644,8 +4031,7 @@
 * inform{"location": "rome"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -4662,10 +4048,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05836751
 * greet
@@ -4676,8 +4060,7 @@
 * inform{"location": "bombay"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * deny
@@ -4686,10 +4069,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04721693
 * greet
@@ -4698,8 +4079,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -4715,10 +4095,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00770250
 * greet
@@ -4731,8 +4109,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -4744,15 +4121,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05479819
 * greet
@@ -4763,8 +4138,7 @@
 * inform{"cuisine": "french"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -4775,12 +4149,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00494816
 * greet
@@ -4793,8 +4163,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -4805,10 +4174,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09635922
 * greet
@@ -4821,8 +4188,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"location": "madrid"}
@@ -4834,15 +4200,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00166850
 * greet
@@ -4851,8 +4215,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "madrid"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"location": "bombay"}
@@ -4866,17 +4229,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09144866
 * greet
@@ -4885,8 +4244,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -4900,15 +4258,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07590883
 * greet
@@ -4917,8 +4273,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "french"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
@@ -4928,17 +4283,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03361929
 * greet
@@ -4947,8 +4298,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -4961,12 +4311,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07093964
 * greet
@@ -4977,15 +4323,14 @@
 * inform{"location": "london"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -4993,10 +4338,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01995661
 * greet
@@ -5005,8 +4348,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "rome"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -5020,12 +4362,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01795624
 * greet
@@ -5038,8 +4376,7 @@
 * inform{"location": "madrid"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * deny
@@ -5054,10 +4391,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05316798
 * greet
@@ -5068,8 +4403,7 @@
 * inform{"cuisine": "italian"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -5082,10 +4416,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06296526
 * greet
@@ -5096,8 +4428,7 @@
 * inform{"cuisine": "italian"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * deny
@@ -5107,7 +4438,7 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -5118,12 +4449,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05730166
 * greet
@@ -5134,8 +4461,7 @@
 * inform{"cuisine": "british"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -5148,10 +4474,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08611434
 * greet
@@ -5160,8 +4484,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "french"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"location": "madrid"}
@@ -5174,12 +4497,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05526723
 * greet
@@ -5188,8 +4507,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "spanish"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -5207,7 +4525,7 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -5215,12 +4533,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01980989
 * greet
@@ -5233,8 +4547,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * deny
@@ -5249,10 +4562,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08103236
 * greet
@@ -5265,8 +4576,7 @@
 * inform{"location": "bombay"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -5279,10 +4589,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07071838
 * greet
@@ -5295,8 +4603,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * deny
@@ -5311,10 +4618,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05407160
 * greet
@@ -5323,8 +4628,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
@@ -5343,12 +4647,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07910601
 * greet
@@ -5359,8 +4659,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -5379,10 +4678,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02307960
 * greet
@@ -5393,8 +4690,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -5405,10 +4701,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01749191
 * greet
@@ -5421,8 +4715,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -5436,10 +4729,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07420454
 * greet
@@ -5450,8 +4741,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * deny
@@ -5460,12 +4750,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01541159
 * greet
@@ -5476,8 +4762,7 @@
 * inform{"cuisine": "italian"}
  - utter_ask_location
 * inform{"location": "bombay"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -5491,17 +4776,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08330167
 * greet
@@ -5510,8 +4791,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -5533,12 +4813,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09407900
 * greet
@@ -5551,8 +4827,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -5571,10 +4846,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02658648
 * greet
@@ -5587,23 +4860,20 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08761159
 * greet
@@ -5612,8 +4882,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "british"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
@@ -5627,12 +4896,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09442789
 * greet
@@ -5643,8 +4908,7 @@
 * inform{"location": "rome"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * deny
@@ -5657,17 +4921,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07218685
 * greet
@@ -5680,8 +4940,7 @@
 * inform{"location": "rome"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"location": "madrid"}
@@ -5693,17 +4952,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08699011
 * greet
@@ -5716,8 +4971,7 @@
 * inform{"location": "madrid"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -5731,12 +4985,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02841802
 * greet
@@ -5749,8 +4999,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -5763,12 +5012,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03987178
 * greet
@@ -5781,8 +5026,7 @@
 * inform{"location": "london"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -5791,13 +5035,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -5805,10 +5049,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00112984
 * greet
@@ -5817,8 +5059,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "madrid"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
@@ -5831,12 +5072,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07260710
 * greet
@@ -5845,8 +5082,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * deny
@@ -5856,17 +5092,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01365930
 * greet
@@ -5877,8 +5109,7 @@
 * inform{"cuisine": "indian"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -5889,15 +5120,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05120672
 * greet
@@ -5908,8 +5137,7 @@
 * inform{"cuisine": "french"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -5918,21 +5146,19 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04325128
 * greet
@@ -5941,8 +5167,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "indian"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -5955,10 +5180,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09917382
 * greet
@@ -5969,8 +5192,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -5987,12 +5209,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07932481
 * greet
@@ -6005,8 +5223,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * deny
@@ -6024,12 +5241,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04779175
 * greet
@@ -6042,8 +5255,7 @@
 * inform{"location": "rome"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -6060,12 +5272,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07923412
 * greet
@@ -6078,15 +5286,14 @@
 * inform{"location": "bombay"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -6097,12 +5304,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07688327
 * greet
@@ -6111,8 +5314,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -6123,17 +5325,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08050237
 * greet
@@ -6144,8 +5342,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -6164,12 +5361,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00790432
 * greet
@@ -6178,8 +5371,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -6188,7 +5380,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -6199,10 +5391,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05477857
 * greet
@@ -6213,8 +5403,7 @@
 * inform{"cuisine": "french"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * deny
@@ -6226,12 +5415,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08723729
 * greet
@@ -6244,8 +5429,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * deny
@@ -6257,10 +5441,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02145941
 * greet
@@ -6271,8 +5453,7 @@
 * inform{"location": "rome"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"location": "bombay"}
@@ -6281,23 +5462,19 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02904309
 * greet
@@ -6308,8 +5485,7 @@
 * inform{"cuisine": "italian"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"location": "rome"}
@@ -6320,18 +5496,16 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01750267
 * greet
@@ -6340,8 +5514,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "british"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * deny
@@ -6351,15 +5524,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08931260
 * greet
@@ -6372,8 +5543,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -6382,7 +5552,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -6390,10 +5560,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04239519
 * greet
@@ -6404,8 +5572,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * deny
@@ -6414,10 +5581,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09899499
 * greet
@@ -6430,15 +5595,14 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -6446,10 +5610,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09451894
 * greet
@@ -6458,8 +5620,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -6474,17 +5635,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05371750
 * greet
@@ -6495,8 +5652,7 @@
 * inform{"cuisine": "indian"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -6510,12 +5666,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00501978
 * greet
@@ -6528,15 +5680,14 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -6544,12 +5695,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09072588
 * greet
@@ -6562,8 +5709,7 @@
 * inform{"location": "madrid"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -6574,10 +5720,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04582314
 * greet
@@ -6588,8 +5732,7 @@
 * inform{"cuisine": "french"}
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -6614,12 +5757,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02085011
 * greet
@@ -6632,8 +5771,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -6647,17 +5785,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01486105
 * greet
@@ -6670,8 +5804,7 @@
 * inform{"location": "bombay"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -6682,12 +5815,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08346274
 * greet
@@ -6698,8 +5827,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_location
 * inform{"location": "madrid"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -6710,7 +5838,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -6718,10 +5846,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06655353
 * greet
@@ -6732,8 +5858,7 @@
 * inform{"cuisine": "italian"}
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * deny
@@ -6748,10 +5873,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00487479
 * greet
@@ -6764,8 +5887,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -6784,10 +5906,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08015903
 * greet
@@ -6796,8 +5916,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "italian"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -6816,12 +5935,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04625807
 * greet
@@ -6830,8 +5945,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -6844,12 +5958,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07380679
 * greet
@@ -6862,8 +5972,7 @@
 * inform{"location": "bombay"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
@@ -6872,10 +5981,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09277738
 * greet
@@ -6886,8 +5993,7 @@
 * inform{"cuisine": "indian"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * deny
@@ -6897,15 +6003,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06093387
 * greet
@@ -6916,8 +6020,7 @@
 * inform{"location": "rome"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -6936,12 +6039,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04892036
 * greet
@@ -6952,8 +6051,7 @@
 * inform{"cuisine": "indian"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -6962,17 +6060,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01978796
 * greet
@@ -6985,8 +6079,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -6997,12 +6090,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03821257
 * greet
@@ -7013,8 +6102,7 @@
 * inform{"location": "paris"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * deny
@@ -7029,12 +6117,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02199982
 * greet
@@ -7047,8 +6131,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
@@ -7065,10 +6148,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09541007
 * greet
@@ -7081,8 +6162,7 @@
 * inform{"location": "rome"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
@@ -7094,7 +6174,7 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -7102,10 +6182,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03036720
 * greet
@@ -7116,8 +6194,7 @@
 * inform{"location": "bombay"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -7129,17 +6206,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01854820
 * greet
@@ -7150,23 +6223,20 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06568898
 * greet
@@ -7177,8 +6247,7 @@
 * inform{"cuisine": "italian"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -7191,10 +6260,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05649369
 * greet
@@ -7205,8 +6272,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
@@ -7219,10 +6285,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08843346
 * greet
@@ -7235,8 +6299,7 @@
 * inform{"location": "paris"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
@@ -7250,10 +6313,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05316570
 * greet
@@ -7264,8 +6325,7 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * deny
@@ -7275,17 +6335,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05358117
 * greet
@@ -7294,15 +6350,14 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "madrid"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -7310,12 +6365,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09519635
 * greet
@@ -7324,8 +6375,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -7337,15 +6387,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09472164
 * greet
@@ -7354,8 +6402,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * deny
@@ -7367,10 +6414,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00615105
 * greet
@@ -7381,8 +6426,7 @@
 * inform{"cuisine": "italian"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -7399,10 +6443,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00755596
 * greet
@@ -7413,8 +6455,7 @@
 * inform{"cuisine": "indian"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * deny
@@ -7424,17 +6465,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07083125
 * greet
@@ -7447,8 +6484,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * deny
@@ -7460,10 +6496,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05765099
 * greet
@@ -7474,8 +6508,7 @@
 * inform{"cuisine": "british"}
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -7494,10 +6527,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03535337
 * greet
@@ -7510,8 +6541,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -7522,15 +6552,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05644691
 * greet
@@ -7541,23 +6569,20 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06674428
 * greet
@@ -7568,8 +6593,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -7580,12 +6604,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01726720
 * greet
@@ -7596,8 +6616,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * deny
@@ -7606,10 +6625,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05055076
 * greet
@@ -7620,8 +6637,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * deny
@@ -7630,12 +6646,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08970965
 * greet
@@ -7648,8 +6660,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -7663,15 +6674,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09352826
 * greet
@@ -7682,8 +6691,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
@@ -7695,12 +6703,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05365523
 * greet
@@ -7709,8 +6713,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -7727,12 +6730,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06000199
 * greet
@@ -7745,8 +6744,7 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -7757,17 +6755,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04273838
 * greet
@@ -7780,8 +6774,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * deny
@@ -7796,12 +6789,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01270052
 * greet
@@ -7810,8 +6799,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "french"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -7822,12 +6810,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06071407
 * greet
@@ -7836,8 +6820,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "french"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
@@ -7846,7 +6829,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -7854,12 +6837,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02586833
 * greet
@@ -7868,8 +6847,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"location": "madrid"}
@@ -7880,10 +6858,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03374461
 * greet
@@ -7896,8 +6872,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -7913,10 +6888,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00320931
 * greet
@@ -7929,8 +6902,7 @@
 * inform{"location": "madrid"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * deny
@@ -7945,12 +6917,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08849930
 * greet
@@ -7961,8 +6929,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * deny
@@ -7971,12 +6938,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01807635
 * greet
@@ -7987,15 +6950,14 @@
 * inform{"location": "paris"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -8003,12 +6965,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05866804
 * greet
@@ -8019,15 +6977,14 @@
 * inform{"cuisine": "italian"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -8035,12 +6992,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00240913
 * greet
@@ -8051,8 +7004,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * deny
@@ -8067,12 +7019,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04740686
 * greet
@@ -8083,8 +7031,7 @@
 * inform{"location": "london"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"location": "rome"}
@@ -8106,10 +7053,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09772586
 * greet
@@ -8120,8 +7065,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
@@ -8136,10 +7080,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08676027
 * greet
@@ -8148,8 +7090,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -8158,7 +7099,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -8166,12 +7107,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02540704
 * greet
@@ -8180,8 +7117,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
@@ -8190,12 +7126,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06208724
 * greet
@@ -8204,29 +7136,26 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06554752
 * greet
@@ -8239,15 +7168,14 @@
 * inform{"location": "madrid"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -8255,12 +7183,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09403074
 * greet
@@ -8269,8 +7193,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "madrid"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -8281,12 +7204,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03984404
 * greet
@@ -8295,8 +7214,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -8307,12 +7225,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05700104
 * greet
@@ -8323,15 +7237,14 @@
 * inform{"location": "rome"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -8342,12 +7255,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01064359
 * greet
@@ -8356,8 +7265,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -8368,20 +7276,16 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00317473
 * greet
@@ -8390,8 +7294,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "spanish"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -8400,7 +7303,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -8408,12 +7311,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01597569
 * greet
@@ -8424,8 +7323,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -8436,15 +7334,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06659073
 * greet
@@ -8453,8 +7349,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -8465,7 +7360,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -8473,10 +7368,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00435977
 * greet
@@ -8485,8 +7378,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "madrid"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -8495,7 +7387,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -8503,12 +7395,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01048473
 * greet
@@ -8519,8 +7407,7 @@
 * inform{"cuisine": "british"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -8529,20 +7416,16 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09745793
 * greet
@@ -8553,8 +7436,7 @@
 * inform{"cuisine": "french"}
  - utter_ask_location
 * inform{"location": "bombay"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * deny
@@ -8564,17 +7446,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02995684
 * greet
@@ -8585,8 +7463,7 @@
 * inform{"cuisine": "indian"}
  - utter_ask_location
 * inform{"location": "rome"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * deny
@@ -8601,12 +7478,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01091743
 * greet
@@ -8619,8 +7492,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * deny
@@ -8632,12 +7504,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06153610
 * greet
@@ -8650,8 +7518,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -8668,12 +7535,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05036312
 * greet
@@ -8686,8 +7549,7 @@
 * inform{"location": "rome"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -8704,12 +7566,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02891253
 * greet
@@ -8720,8 +7578,7 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
@@ -8736,17 +7593,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07783774
 * greet
@@ -8757,8 +7610,7 @@
 * inform{"location": "rome"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -8771,12 +7623,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08930502
 * greet
@@ -8789,8 +7637,7 @@
 * inform{"location": "bombay"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -8806,12 +7653,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07255380
 * greet
@@ -8822,8 +7665,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -8843,12 +7685,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05514290
 * greet
@@ -8861,8 +7699,7 @@
 * inform{"location": "london"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * deny
@@ -8877,10 +7714,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01373980
 * greet
@@ -8891,8 +7726,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -8903,12 +7737,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00309685
 * greet
@@ -8921,8 +7751,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -8936,12 +7765,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06964204
 * greet
@@ -8954,8 +7779,7 @@
 * inform{"location": "london"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"location": "madrid"}
@@ -8964,7 +7788,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -8972,12 +7796,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00813497
 * greet
@@ -8988,8 +7808,7 @@
 * inform{"location": "madrid"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -9008,12 +7827,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08033594
 * greet
@@ -9024,8 +7839,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -9039,17 +7853,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00567104
 * greet
@@ -9058,8 +7868,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "british"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * deny
@@ -9074,12 +7883,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01150384
 * greet
@@ -9088,8 +7893,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "rome"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -9105,12 +7909,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05429965
 * greet
@@ -9123,8 +7923,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -9143,12 +7942,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04071153
 * greet
@@ -9159,8 +7954,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_location
 * inform{"location": "bombay"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -9172,17 +7966,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02008888
 * greet
@@ -9191,15 +7981,14 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -9207,10 +7996,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09630554
 * greet
@@ -9223,8 +8010,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -9236,15 +8022,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07725040
 * greet
@@ -9253,8 +8037,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
@@ -9263,15 +8046,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03551647
 * greet
@@ -9282,8 +8063,7 @@
 * inform{"cuisine": "british"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * deny
@@ -9295,12 +8075,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03397670
 * greet
@@ -9311,25 +8087,20 @@
 * inform{"cuisine": "french"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00056459
 * greet
@@ -9342,8 +8113,7 @@
 * inform{"location": "london"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * deny
@@ -9358,12 +8128,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08479801
 * greet
@@ -9374,8 +8140,7 @@
 * inform{"cuisine": "indian"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * deny
@@ -9390,12 +8155,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04324212
 * greet
@@ -9408,8 +8169,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"location": "rome"}
@@ -9424,15 +8184,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02693697
 * greet
@@ -9443,8 +8201,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * deny
@@ -9459,12 +8216,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00287919
 * greet
@@ -9477,8 +8230,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -9490,15 +8242,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07004549
 * greet
@@ -9511,8 +8261,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
@@ -9529,10 +8278,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08705460
 * greet
@@ -9541,8 +8288,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "italian"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * deny
@@ -9557,10 +8303,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08036201
 * greet
@@ -9569,15 +8313,14 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -9585,12 +8328,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09331784
 * greet
@@ -9603,8 +8342,7 @@
 * inform{"location": "london"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"people": "eight"}
@@ -9615,10 +8353,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01094208
 * greet
@@ -9631,8 +8367,7 @@
 * inform{"location": "madrid"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -9660,10 +8395,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09614535
 * greet
@@ -9672,8 +8405,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -9684,18 +8416,16 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04907440
 * greet
@@ -9704,8 +8434,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -9717,15 +8446,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05190938
 * greet
@@ -9738,8 +8465,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -9761,12 +8487,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06127194
 * greet
@@ -9775,8 +8497,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -9795,10 +8516,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03531922
 * greet
@@ -9807,8 +8526,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "rome"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -9819,12 +8537,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00150625
 * greet
@@ -9833,8 +8547,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -9853,12 +8566,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08760628
 * greet
@@ -9867,8 +8576,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * deny
@@ -9880,10 +8588,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05825522
 * greet
@@ -9894,8 +8600,7 @@
 * inform{"location": "bombay"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -9906,12 +8611,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05485352
 * greet
@@ -9924,8 +8625,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * deny
@@ -9935,17 +8635,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06152786
 * greet
@@ -9954,15 +8650,14 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -9970,10 +8665,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03468744
 * greet
@@ -9982,8 +8675,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -10000,10 +8692,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02483313
 * greet
@@ -10014,8 +8704,7 @@
 * inform{"cuisine": "british"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -10034,12 +8723,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04524370
 * greet
@@ -10048,8 +8733,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -10071,10 +8755,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08553699
 * greet
@@ -10085,8 +8767,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * deny
@@ -10098,10 +8779,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06155115
 * greet
@@ -10110,8 +8789,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "french"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * deny
@@ -10132,10 +8810,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07396521
 * greet
@@ -10146,8 +8822,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * deny
@@ -10159,10 +8834,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09218245
 * greet
@@ -10171,8 +8844,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * deny
@@ -10182,7 +8854,7 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -10190,12 +8862,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00707850
 * greet
@@ -10208,8 +8876,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * deny
@@ -10224,10 +8891,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00625551
 * greet
@@ -10238,8 +8903,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -10255,10 +8919,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01995917
 * greet
@@ -10271,8 +8933,7 @@
 * inform{"location": "bombay"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -10289,10 +8950,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00009611
 * greet
@@ -10301,8 +8960,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * inform{"people": "eight"}
@@ -10315,12 +8973,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00407170
 * greet
@@ -10329,8 +8983,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -10341,7 +8994,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -10349,10 +9002,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03224749
 * greet
@@ -10365,8 +9016,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -10385,12 +9035,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01812983
 * greet
@@ -10399,8 +9045,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"people": "eight"}
@@ -10419,12 +9064,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04374466
 * greet
@@ -10433,8 +9074,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"location": "madrid"}
@@ -10451,10 +9091,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07767341
 * greet
@@ -10467,8 +9105,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"location": "rome"}
@@ -10485,12 +9122,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03973524
 * greet
@@ -10501,15 +9134,14 @@
 * inform{"cuisine": "indian"}
  - utter_ask_location
 * inform{"location": "bombay"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -10517,10 +9149,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+
 
 ## story_07812635
 * greet
@@ -10529,8 +9159,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * deny
@@ -10539,12 +9168,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06011722
 * greet
@@ -10553,8 +9178,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "indian"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
@@ -10563,10 +9187,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07613896
 * greet
@@ -10577,8 +9199,7 @@
 * inform{"cuisine": "british"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
@@ -10594,12 +9215,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00029804
 * greet
@@ -10608,8 +9225,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -10618,23 +9234,19 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02635044
 * greet
@@ -10647,8 +9259,7 @@
 * inform{"location": "bombay"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -10657,24 +9268,22 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08291350
 * greet
@@ -10687,15 +9296,14 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -10703,12 +9311,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06125512
 * greet
@@ -10719,28 +9323,23 @@
 * inform{"location": "bombay"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06576772
 * greet
@@ -10753,8 +9352,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * deny
@@ -10763,10 +9361,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01283865
 * greet
@@ -10775,8 +9371,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "indian"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * deny
@@ -10794,10 +9389,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03117569
 * greet
@@ -10808,8 +9401,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_location
 * inform{"location": "madrid"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"location": "rome"}
@@ -10829,12 +9421,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03258323
 * greet
@@ -10845,8 +9433,7 @@
 * inform{"location": "madrid"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -10855,7 +9442,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -10863,12 +9450,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00339868
 * greet
@@ -10877,8 +9460,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "british"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -10894,10 +9476,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07011583
 * greet
@@ -10910,8 +9490,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * deny
@@ -10920,12 +9499,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06529306
 * greet
@@ -10934,8 +9509,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -10944,7 +9518,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -10952,12 +9526,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07934293
 * greet
@@ -10966,25 +9536,20 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "spanish"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01340261
 * greet
@@ -10995,8 +9560,7 @@
 * inform{"location": "rome"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -11015,12 +9579,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05727944
 * greet
@@ -11029,8 +9589,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "italian"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -11049,10 +9608,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08095602
 * greet
@@ -11065,15 +9622,14 @@
 * inform{"location": "madrid"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -11081,12 +9637,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07744301
 * greet
@@ -11097,8 +9649,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -11107,17 +9658,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06311913
 * greet
@@ -11126,8 +9673,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "rome"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -11140,10 +9686,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00778945
 * greet
@@ -11152,8 +9696,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -11166,10 +9709,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03264243
 * greet
@@ -11178,8 +9719,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -11190,12 +9730,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00732555
 * greet
@@ -11204,8 +9740,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "bombay"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"location": "madrid"}
@@ -11227,10 +9762,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02579568
 * greet
@@ -11239,8 +9772,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "indian"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
@@ -11253,17 +9785,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09576867
 * greet
@@ -11272,8 +9800,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "rome"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * inform{"people": "eight"}
@@ -11284,7 +9811,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -11292,12 +9819,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00679041
 * greet
@@ -11310,8 +9833,7 @@
 * inform{"location": "london"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"location": "madrid"}
@@ -11333,12 +9855,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08288637
 * greet
@@ -11351,8 +9869,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -11366,15 +9883,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01644532
 * greet
@@ -11383,23 +9898,20 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06698936
 * greet
@@ -11408,8 +9920,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "italian"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -11425,10 +9936,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08064956
 * greet
@@ -11439,8 +9948,7 @@
 * inform{"cuisine": "indian"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -11456,10 +9964,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03224212
 * greet
@@ -11472,8 +9978,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -11482,7 +9987,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -11490,12 +9995,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05627930
 * greet
@@ -11508,23 +10009,20 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04981783
 * greet
@@ -11533,8 +10031,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "spanish"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * deny
@@ -11544,15 +10041,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04951933
 * greet
@@ -11561,8 +10056,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -11573,10 +10067,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06109731
 * greet
@@ -11587,8 +10079,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * deny
@@ -11597,10 +10088,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00804842
 * greet
@@ -11609,8 +10098,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "british"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -11629,10 +10117,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09231986
 * greet
@@ -11645,26 +10131,23 @@
 * inform{"location": "paris"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03435211
 * greet
@@ -11673,8 +10156,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -11685,20 +10167,16 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05044915
 * greet
@@ -11707,8 +10185,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -11717,20 +10194,16 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04320483
 * greet
@@ -11743,8 +10216,7 @@
 * inform{"location": "madrid"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -11760,12 +10232,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03272467
 * greet
@@ -11776,8 +10244,7 @@
 * inform{"cuisine": "french"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -11791,10 +10258,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00130318
 * greet
@@ -11803,8 +10268,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "rome"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -11820,12 +10284,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06774200
 * greet
@@ -11838,8 +10298,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
@@ -11851,12 +10310,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03569719
 * greet
@@ -11867,8 +10322,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * deny
@@ -11880,12 +10334,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04415388
 * greet
@@ -11898,8 +10348,7 @@
 * inform{"location": "rome"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * deny
@@ -11911,12 +10360,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09663817
 * greet
@@ -11927,8 +10372,7 @@
 * inform{"cuisine": "british"}
  - utter_ask_location
 * inform{"location": "madrid"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * deny
@@ -11937,12 +10381,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09140372
 * greet
@@ -11955,8 +10395,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * deny
@@ -11965,10 +10404,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04024668
 * greet
@@ -11981,8 +10418,7 @@
 * inform{"location": "madrid"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * inform{"location": "rome"}
@@ -12001,10 +10437,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02250911
 * greet
@@ -12013,8 +10447,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * inform{"location": "bombay"}
@@ -12028,12 +10461,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07026439
 * greet
@@ -12044,8 +10473,7 @@
 * inform{"location": "madrid"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -12056,21 +10484,19 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09025690
 * greet
@@ -12081,8 +10507,7 @@
 * inform{"cuisine": "french"}
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -12095,12 +10520,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08062978
 * greet
@@ -12111,8 +10532,7 @@
 * inform{"location": "bombay"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -12123,17 +10543,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09012310
 * greet
@@ -12142,8 +10558,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "spanish"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -12159,12 +10574,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03226177
 * greet
@@ -12177,25 +10588,20 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07217864
 * greet
@@ -12208,8 +10614,7 @@
 * inform{"location": "rome"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * deny
@@ -12219,17 +10624,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06723191
 * greet
@@ -12238,8 +10639,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -12250,7 +10650,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -12258,12 +10658,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09874308
 * greet
@@ -12274,15 +10670,14 @@
 * inform{"cuisine": "french"}
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -12299,12 +10694,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07353530
 * greet
@@ -12313,8 +10704,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "french"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * deny
@@ -12323,12 +10713,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01780813
 * greet
@@ -12341,8 +10727,7 @@
 * inform{"location": "bombay"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * deny
@@ -12360,12 +10745,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09116360
 * greet
@@ -12374,8 +10755,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -12395,12 +10775,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06478210
 * greet
@@ -12409,8 +10785,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * inform{"location": "rome"}
@@ -12421,18 +10796,16 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06428553
 * greet
@@ -12445,8 +10818,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -12457,12 +10829,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08772874
 * greet
@@ -12471,8 +10839,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
@@ -12489,12 +10856,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08825416
 * greet
@@ -12505,8 +10868,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -12519,10 +10881,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01226483
 * greet
@@ -12533,25 +10893,20 @@
 * inform{"cuisine": "british"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05839985
 * greet
@@ -12564,8 +10919,7 @@
 * inform{"location": "bombay"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * deny
@@ -12575,15 +10929,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07551950
 * greet
@@ -12592,8 +10944,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "french"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -12607,10 +10958,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09290570
 * greet
@@ -12619,8 +10968,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -12639,10 +10987,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00460044
 * greet
@@ -12653,8 +10999,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * deny
@@ -12666,12 +11011,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08340994
 * greet
@@ -12682,25 +11023,20 @@
 * inform{"location": "bombay"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07040871
 * greet
@@ -12713,8 +11049,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * deny
@@ -12729,10 +11064,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09860021
 * greet
@@ -12741,8 +11074,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "rome"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * deny
@@ -12752,20 +11084,16 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00345785
 * greet
@@ -12774,8 +11102,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"people": "eight"}
@@ -12789,15 +11116,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08546539
 * greet
@@ -12806,8 +11131,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -12823,10 +11147,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02555736
 * greet
@@ -12839,8 +11161,7 @@
 * inform{"location": "bombay"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * deny
@@ -12855,10 +11176,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09181244
 * greet
@@ -12869,8 +11188,7 @@
 * inform{"cuisine": "british"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * deny
@@ -12880,7 +11198,7 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -12888,10 +11206,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05537251
 * greet
@@ -12902,8 +11218,7 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -12914,7 +11229,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -12928,10 +11243,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02959702
 * greet
@@ -12944,8 +11257,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -12962,10 +11274,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05083411
 * greet
@@ -12974,8 +11284,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -12991,10 +11300,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09748536
 * greet
@@ -13005,8 +11312,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -13015,7 +11321,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -13023,10 +11329,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09561957
 * greet
@@ -13035,8 +11339,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -13045,7 +11348,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -13053,10 +11356,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05700339
 * greet
@@ -13067,8 +11368,7 @@
 * inform{"cuisine": "italian"}
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
@@ -13079,12 +11379,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08358757
 * greet
@@ -13093,8 +11389,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * deny
@@ -13104,15 +11399,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03651428
 * greet
@@ -13121,8 +11414,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -13141,12 +11433,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08265138
 * greet
@@ -13157,8 +11445,7 @@
 * inform{"location": "london"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -13167,7 +11454,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -13175,10 +11462,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04662800
 * greet
@@ -13187,8 +11472,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * deny
@@ -13198,15 +11482,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03897194
 * greet
@@ -13215,8 +11497,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * deny
@@ -13225,12 +11506,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08275525
 * greet
@@ -13243,8 +11520,7 @@
 * inform{"location": "madrid"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
@@ -13255,7 +11531,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -13263,12 +11539,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04053749
 * greet
@@ -13277,8 +11549,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -13294,10 +11565,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03563777
 * greet
@@ -13310,8 +11579,7 @@
 * inform{"location": "madrid"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -13322,17 +11590,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08121610
 * greet
@@ -13341,8 +11605,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -13361,12 +11624,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00749297
 * greet
@@ -13379,8 +11638,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * deny
@@ -13390,17 +11648,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01653073
 * greet
@@ -13409,8 +11663,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "british"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * deny
@@ -13419,10 +11672,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02597905
 * greet
@@ -13435,8 +11686,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * inform{"people": "eight"}
@@ -13445,15 +11695,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00952448
 * greet
@@ -13462,8 +11710,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -13472,20 +11719,16 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08262314
 * greet
@@ -13494,8 +11737,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * deny
@@ -13504,12 +11746,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03645990
 * greet
@@ -13518,8 +11756,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "french"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -13533,7 +11770,7 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -13541,12 +11778,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07291868
 * greet
@@ -13557,8 +11790,7 @@
 * inform{"cuisine": "french"}
  - utter_ask_location
 * inform{"location": "madrid"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
@@ -13567,10 +11799,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09899206
 * greet
@@ -13583,8 +11813,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -13595,7 +11824,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -13603,12 +11832,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02191707
 * greet
@@ -13619,8 +11844,7 @@
 * inform{"cuisine": "italian"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
@@ -13639,12 +11863,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08040444
 * greet
@@ -13655,8 +11875,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -13665,17 +11884,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04441788
 * greet
@@ -13686,8 +11901,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -13701,12 +11915,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01260372
 * greet
@@ -13717,8 +11927,7 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -13735,10 +11944,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01839285
 * greet
@@ -13749,8 +11956,7 @@
 * inform{"cuisine": "british"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -13761,12 +11967,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05525385
 * greet
@@ -13779,8 +11981,7 @@
 * inform{"location": "madrid"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -13797,12 +11998,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01271574
 * greet
@@ -13815,8 +12012,7 @@
 * inform{"location": "rome"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
@@ -13834,12 +12030,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03181821
 * greet
@@ -13852,8 +12044,7 @@
 * inform{"location": "london"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -13869,12 +12060,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03876284
 * greet
@@ -13883,8 +12070,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
@@ -13895,10 +12081,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01452194
 * greet
@@ -13911,8 +12095,7 @@
 * inform{"location": "london"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
@@ -13929,10 +12112,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00156552
 * greet
@@ -13943,8 +12124,7 @@
 * inform{"cuisine": "british"}
  - utter_ask_location
 * inform{"location": "madrid"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -13955,12 +12135,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04206739
 * greet
@@ -13969,8 +12145,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "bombay"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -13979,20 +12154,16 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00839949
 * greet
@@ -14001,8 +12172,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * inform{"location": "rome"}
@@ -14019,12 +12189,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09007272
 * greet
@@ -14033,8 +12199,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"location": "rome"}
@@ -14047,12 +12212,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07334460
 * greet
@@ -14063,8 +12224,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_location
 * inform{"location": "madrid"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -14081,10 +12241,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05216830
 * greet
@@ -14093,8 +12251,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "indian"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -14103,7 +12260,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -14114,10 +12271,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00519879
 * greet
@@ -14128,8 +12283,7 @@
 * inform{"cuisine": "italian"}
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -14138,7 +12292,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -14152,12 +12306,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04577592
 * greet
@@ -14170,8 +12320,7 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"location": "rome"}
@@ -14187,10 +12336,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03590482
 * greet
@@ -14201,8 +12348,7 @@
 * inform{"location": "rome"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"people": "eight"}
@@ -14213,7 +12359,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -14221,10 +12367,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03492103
 * greet
@@ -14237,8 +12381,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * deny
@@ -14247,12 +12390,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06001770
 * greet
@@ -14261,8 +12400,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "british"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -14275,12 +12413,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05772832
 * greet
@@ -14291,8 +12425,7 @@
 * inform{"location": "bombay"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
@@ -14302,15 +12435,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04383021
 * greet
@@ -14319,8 +12450,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -14329,7 +12459,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -14337,12 +12467,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04240637
 * greet
@@ -14355,8 +12481,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -14367,7 +12492,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -14375,10 +12500,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01854146
 * greet
@@ -14387,15 +12510,14 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "indian"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -14403,12 +12525,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08385321
 * greet
@@ -14421,8 +12539,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -14439,10 +12556,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01146386
 * greet
@@ -14455,8 +12570,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * deny
@@ -14471,12 +12585,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03529821
 * greet
@@ -14485,8 +12595,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "bombay"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
@@ -14495,10 +12604,10 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -14506,12 +12615,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07870026
 * greet
@@ -14522,8 +12627,7 @@
 * inform{"location": "paris"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * inform{"location": "bombay"}
@@ -14537,17 +12641,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05488816
 * greet
@@ -14558,8 +12658,7 @@
 * inform{"cuisine": "british"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * deny
@@ -14568,10 +12667,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06180843
 * greet
@@ -14584,8 +12681,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"location": "bombay"}
@@ -14604,10 +12700,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09241640
 * greet
@@ -14618,8 +12712,7 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -14641,10 +12734,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08821976
 * greet
@@ -14657,15 +12748,14 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -14673,10 +12763,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06840821
 * greet
@@ -14689,23 +12777,20 @@
 * inform{"location": "rome"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06578239
 * greet
@@ -14714,8 +12799,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "italian"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -14732,10 +12816,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07696073
 * greet
@@ -14748,8 +12830,7 @@
 * inform{"location": "madrid"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -14765,12 +12846,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08574664
 * greet
@@ -14781,8 +12858,7 @@
 * inform{"location": "london"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -14801,10 +12877,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04972497
 * greet
@@ -14813,8 +12887,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -14825,17 +12898,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09572174
 * greet
@@ -14848,8 +12917,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -14865,10 +12933,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02168130
 * greet
@@ -14879,8 +12945,7 @@
 * inform{"location": "paris"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -14891,12 +12956,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08170687
 * greet
@@ -14907,8 +12968,7 @@
 * inform{"location": "london"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * deny
@@ -14917,12 +12977,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09650629
 * greet
@@ -14935,8 +12991,7 @@
 * inform{"location": "paris"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -14945,17 +13000,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07085793
 * greet
@@ -14964,8 +13015,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -14978,10 +13028,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00808985
 * greet
@@ -14992,8 +13040,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"location": "bombay"}
@@ -15006,12 +13053,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06805887
 * greet
@@ -15022,8 +13065,7 @@
 * inform{"location": "madrid"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"location": "bombay"}
@@ -15037,10 +13079,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09229085
 * greet
@@ -15051,8 +13091,7 @@
 * inform{"location": "bombay"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * deny
@@ -15065,15 +13104,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07072585
 * greet
@@ -15084,8 +13121,7 @@
 * inform{"cuisine": "french"}
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -15099,12 +13135,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05234126
 * greet
@@ -15117,8 +13149,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"location": "bombay"}
@@ -15127,7 +13158,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -15135,12 +13166,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01604746
 * greet
@@ -15149,8 +13176,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -15164,12 +13190,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01455955
 * greet
@@ -15182,8 +13204,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -15194,12 +13215,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04008931
 * greet
@@ -15208,8 +13225,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * deny
@@ -15221,12 +13237,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05447297
 * greet
@@ -15239,8 +13251,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -15253,12 +13264,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08821946
 * greet
@@ -15269,8 +13276,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -15279,7 +13285,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -15287,10 +13293,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00466675
 * greet
@@ -15299,18 +13303,17 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -15318,10 +13321,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02593170
 * greet
@@ -15332,8 +13333,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -15350,17 +13350,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05062698
 * greet
@@ -15369,8 +13365,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"location": "rome"}
@@ -15383,10 +13378,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01070654
 * greet
@@ -15397,8 +13390,7 @@
 * inform{"cuisine": "italian"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -15409,10 +13401,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00034683
 * greet
@@ -15423,8 +13413,7 @@
 * inform{"location": "london"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -15435,10 +13424,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01264328
 * greet
@@ -15451,8 +13438,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -15466,17 +13452,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03535906
 * greet
@@ -15485,8 +13467,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "british"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -15499,10 +13480,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06889283
 * greet
@@ -15513,8 +13492,7 @@
 * inform{"cuisine": "french"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -15526,7 +13504,7 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -15534,10 +13512,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01906313
 * greet
@@ -15548,8 +13524,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -15568,12 +13543,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00711706
 * greet
@@ -15582,8 +13553,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"people": "eight"}
@@ -15600,10 +13570,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09784883
 * greet
@@ -15616,8 +13584,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * deny
@@ -15626,10 +13593,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07815326
 * greet
@@ -15642,8 +13607,7 @@
 * inform{"location": "paris"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -15654,10 +13618,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06473770
 * greet
@@ -15668,8 +13630,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
@@ -15683,10 +13644,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01814609
 * greet
@@ -15695,8 +13654,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "rome"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * inform{"location": "bombay"}
@@ -15705,17 +13663,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05455518
 * greet
@@ -15724,8 +13678,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -15739,17 +13692,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01305557
 * greet
@@ -15758,8 +13707,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "indian"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -15768,23 +13716,19 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06484471
 * greet
@@ -15797,8 +13741,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
@@ -15812,10 +13755,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09089141
 * greet
@@ -15828,8 +13769,7 @@
 * inform{"location": "london"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -15846,12 +13786,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05557115
 * greet
@@ -15862,8 +13798,7 @@
 * inform{"location": "bombay"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -15879,12 +13814,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08149316
 * greet
@@ -15897,8 +13828,7 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * deny
@@ -15910,12 +13840,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02242155
 * greet
@@ -15924,8 +13850,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"location": "rome"}
@@ -15942,15 +13867,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04769285
 * greet
@@ -15961,8 +13884,7 @@
 * inform{"location": "rome"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -15984,12 +13906,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09146248
 * greet
@@ -16002,8 +13920,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * deny
@@ -16018,10 +13935,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00536652
 * greet
@@ -16030,8 +13945,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "rome"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
@@ -16040,15 +13954,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07964398
 * greet
@@ -16057,8 +13969,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "madrid"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -16072,17 +13983,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00251195
 * greet
@@ -16095,8 +14002,7 @@
 * inform{"location": "paris"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -16109,12 +14015,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06556520
 * greet
@@ -16125,8 +14027,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * deny
@@ -16138,12 +14039,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08164795
 * greet
@@ -16154,15 +14051,14 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -16170,10 +14066,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03095701
 * greet
@@ -16186,8 +14080,7 @@
 * inform{"location": "paris"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -16203,12 +14096,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07129734
 * greet
@@ -16219,25 +14108,20 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02504254
 * greet
@@ -16248,8 +14132,7 @@
 * inform{"location": "paris"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -16260,18 +14143,16 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03079768
 * greet
@@ -16280,8 +14161,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * deny
@@ -16291,17 +14171,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04764846
 * greet
@@ -16310,8 +14186,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "british"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -16325,10 +14200,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04549426
 * greet
@@ -16339,15 +14212,14 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -16358,12 +14230,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04845907
 * greet
@@ -16374,8 +14242,7 @@
 * inform{"cuisine": "indian"}
  - utter_ask_location
 * inform{"location": "madrid"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -16388,10 +14255,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09501145
 * greet
@@ -16400,8 +14265,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "madrid"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * deny
@@ -16410,10 +14274,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04887912
 * greet
@@ -16422,8 +14284,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
@@ -16438,15 +14299,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09815825
 * greet
@@ -16457,8 +14316,7 @@
 * inform{"cuisine": "italian"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -16471,10 +14329,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00365957
 * greet
@@ -16483,8 +14339,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "british"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -16498,10 +14353,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02128834
 * greet
@@ -16512,8 +14365,7 @@
 * inform{"cuisine": "italian"}
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * deny
@@ -16523,17 +14375,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00895793
 * greet
@@ -16544,8 +14392,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * deny
@@ -16560,10 +14407,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00156329
 * greet
@@ -16574,8 +14419,7 @@
 * inform{"cuisine": "indian"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * deny
@@ -16584,10 +14428,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06823684
 * greet
@@ -16598,8 +14440,7 @@
 * inform{"location": "bombay"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * deny
@@ -16608,12 +14449,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03189716
 * greet
@@ -16622,8 +14459,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "bombay"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -16637,17 +14473,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06677556
 * greet
@@ -16658,8 +14490,7 @@
 * inform{"cuisine": "french"}
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -16673,10 +14504,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09834580
 * greet
@@ -16685,8 +14514,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"location": "rome"}
@@ -16697,7 +14525,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -16705,10 +14533,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03043608
 * greet
@@ -16719,8 +14545,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -16729,20 +14554,16 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01080107
 * greet
@@ -16753,8 +14574,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_location
 * inform{"location": "rome"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -16771,12 +14591,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00309451
 * greet
@@ -16789,8 +14605,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * deny
@@ -16802,12 +14617,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00750605
 * greet
@@ -16816,8 +14627,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -16830,10 +14640,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01959352
 * greet
@@ -16846,8 +14654,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * deny
@@ -16862,12 +14669,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00844474
 * greet
@@ -16876,8 +14679,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "madrid"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * inform{"people": "eight"}
@@ -16890,10 +14692,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08918527
 * greet
@@ -16904,8 +14704,7 @@
 * inform{"cuisine": "french"}
  - utter_ask_location
 * inform{"location": "madrid"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -16921,12 +14720,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02712266
 * greet
@@ -16939,8 +14734,7 @@
 * inform{"location": "rome"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -16956,12 +14750,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03217729
 * greet
@@ -16974,8 +14764,7 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -16986,7 +14775,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -16994,10 +14783,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09971189
 * greet
@@ -17008,8 +14795,7 @@
 * inform{"cuisine": "indian"}
  - utter_ask_location
 * inform{"location": "madrid"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * inform{"location": "rome"}
@@ -17020,12 +14806,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05683202
 * greet
@@ -17036,8 +14818,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"people": "eight"}
@@ -17059,10 +14840,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08055076
 * greet
@@ -17075,8 +14854,7 @@
 * inform{"location": "rome"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -17087,10 +14865,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05409864
 * greet
@@ -17101,8 +14877,7 @@
 * inform{"location": "rome"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * deny
@@ -17111,12 +14886,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02675405
 * greet
@@ -17127,8 +14898,7 @@
 * inform{"cuisine": "italian"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -17139,10 +14909,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09905940
 * greet
@@ -17153,8 +14921,7 @@
 * inform{"cuisine": "british"}
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -17165,7 +14932,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -17173,10 +14940,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01114266
 * greet
@@ -17185,15 +14950,14 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -17201,12 +14965,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09197344
 * greet
@@ -17219,8 +14979,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -17233,12 +14992,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02195594
 * greet
@@ -17247,8 +15002,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "indian"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -17259,17 +15013,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08441847
 * greet
@@ -17280,8 +15030,7 @@
 * inform{"cuisine": "italian"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -17294,12 +15043,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01259421
 * greet
@@ -17312,8 +15057,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -17330,12 +15074,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03028201
 * greet
@@ -17346,8 +15086,7 @@
 * inform{"cuisine": "italian"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -17358,10 +15097,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09735512
 * greet
@@ -17372,8 +15109,7 @@
 * inform{"cuisine": "italian"}
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -17384,7 +15120,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -17395,12 +15131,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02969153
 * greet
@@ -17411,8 +15143,7 @@
 * inform{"location": "rome"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -17426,12 +15157,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07861584
 * greet
@@ -17444,8 +15171,7 @@
 * inform{"location": "bombay"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -17464,12 +15190,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01861546
 * greet
@@ -17478,8 +15200,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * deny
@@ -17494,12 +15215,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02143971
 * greet
@@ -17508,8 +15225,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "bombay"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * deny
@@ -17518,10 +15234,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00844567
 * greet
@@ -17532,8 +15246,7 @@
 * inform{"cuisine": "italian"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -17544,7 +15257,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -17552,10 +15265,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02272099
 * greet
@@ -17566,8 +15277,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -17576,7 +15286,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -17584,10 +15294,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00781021
 * greet
@@ -17600,8 +15308,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -17612,10 +15319,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03902588
 * greet
@@ -17628,8 +15333,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -17638,17 +15342,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04992470
 * greet
@@ -17661,8 +15361,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * deny
@@ -17677,10 +15376,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06482833
 * greet
@@ -17693,8 +15390,7 @@
 * inform{"location": "paris"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -17707,12 +15403,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07258658
 * greet
@@ -17723,8 +15415,7 @@
 * inform{"cuisine": "french"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -17735,10 +15426,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08776751
 * greet
@@ -17747,8 +15436,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -17768,10 +15456,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05340573
 * greet
@@ -17784,8 +15470,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
@@ -17796,10 +15481,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01263649
 * greet
@@ -17812,8 +15495,7 @@
 * inform{"location": "rome"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -17835,12 +15517,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04161709
 * greet
@@ -17853,8 +15531,7 @@
 * inform{"location": "bombay"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -17867,10 +15544,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07467763
 * greet
@@ -17883,8 +15558,7 @@
 * inform{"location": "bombay"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * deny
@@ -17899,10 +15573,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00568872
 * greet
@@ -17915,8 +15587,7 @@
 * inform{"location": "madrid"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -17933,10 +15604,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02622089
 * greet
@@ -17947,8 +15616,7 @@
 * inform{"location": "rome"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -17965,12 +15633,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06239058
 * greet
@@ -17983,8 +15647,7 @@
 * inform{"location": "paris"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * deny
@@ -17993,10 +15656,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04950138
 * greet
@@ -18009,8 +15670,7 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"location": "rome"}
@@ -18019,15 +15679,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02428348
 * greet
@@ -18040,8 +15698,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"location": "bombay"}
@@ -18052,15 +15709,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02512396
 * greet
@@ -18069,8 +15724,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "italian"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
@@ -18089,10 +15743,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07176272
 * greet
@@ -18101,8 +15753,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "indian"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * deny
@@ -18114,10 +15765,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02965882
 * greet
@@ -18128,8 +15777,7 @@
 * inform{"location": "paris"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
@@ -18140,17 +15788,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00458333
 * greet
@@ -18163,8 +15807,7 @@
 * inform{"location": "madrid"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -18178,15 +15821,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08889369
 * greet
@@ -18199,8 +15840,7 @@
 * inform{"location": "rome"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * deny
@@ -18210,15 +15850,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09904271
 * greet
@@ -18227,15 +15865,14 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -18243,10 +15880,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07337015
 * greet
@@ -18255,8 +15890,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * deny
@@ -18271,10 +15905,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09964423
 * greet
@@ -18285,8 +15917,7 @@
 * inform{"location": "madrid"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -18295,7 +15926,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -18303,10 +15934,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04430664
 * greet
@@ -18319,8 +15948,7 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * deny
@@ -18332,10 +15960,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02061383
 * greet
@@ -18344,8 +15970,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "bombay"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -18356,12 +15981,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08368858
 * greet
@@ -18370,8 +15991,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -18384,10 +16004,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06865110
 * greet
@@ -18396,8 +16014,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"location": "rome"}
@@ -18411,7 +16028,7 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -18419,12 +16036,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04755349
 * greet
@@ -18437,8 +16050,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -18451,12 +16063,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08653684
 * greet
@@ -18467,8 +16075,7 @@
 * inform{"location": "rome"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * deny
@@ -18477,12 +16084,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06782231
 * greet
@@ -18491,8 +16094,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "british"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * deny
@@ -18501,12 +16103,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00524308
 * greet
@@ -18519,8 +16117,7 @@
 * inform{"location": "madrid"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -18534,10 +16131,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00933108
 * greet
@@ -18546,8 +16141,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "british"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
@@ -18558,12 +16152,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09816555
 * greet
@@ -18574,8 +16164,7 @@
 * inform{"location": "rome"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -18586,10 +16175,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06781617
 * greet
@@ -18598,8 +16185,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "spanish"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -18608,18 +16194,16 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01160443
 * greet
@@ -18630,8 +16214,7 @@
 * inform{"cuisine": "french"}
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"location": "madrid"}
@@ -18644,12 +16227,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04244380
 * greet
@@ -18658,8 +16237,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * deny
@@ -18668,12 +16246,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00849025
 * greet
@@ -18684,8 +16258,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * deny
@@ -18700,12 +16273,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06603544
 * greet
@@ -18714,8 +16283,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -18732,17 +16300,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09753029
 * greet
@@ -18753,8 +16317,7 @@
 * inform{"cuisine": "indian"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -18770,12 +16333,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03874013
 * greet
@@ -18786,8 +16345,7 @@
 * inform{"location": "rome"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * deny
@@ -18799,12 +16357,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09085199
 * greet
@@ -18817,8 +16371,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * deny
@@ -18833,12 +16386,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03142136
 * greet
@@ -18851,8 +16400,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -18863,7 +16411,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -18874,12 +16422,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02365589
 * greet
@@ -18890,8 +16434,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * deny
@@ -18903,10 +16446,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09744970
 * greet
@@ -18915,8 +16456,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "bombay"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * deny
@@ -18925,12 +16465,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07472413
 * greet
@@ -18941,8 +16477,7 @@
 * inform{"cuisine": "indian"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -18955,10 +16490,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08186840
 * greet
@@ -18967,8 +16500,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "british"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -18987,12 +16519,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08063971
 * greet
@@ -19003,8 +16531,7 @@
 * inform{"cuisine": "italian"}
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -19017,12 +16544,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00624478
 * greet
@@ -19031,8 +16554,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * deny
@@ -19044,12 +16566,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04427174
 * greet
@@ -19062,8 +16580,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"location": "madrid"}
@@ -19074,20 +16591,16 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05484960
 * greet
@@ -19098,8 +16611,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
@@ -19108,20 +16620,16 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02449624
 * greet
@@ -19134,8 +16642,7 @@
 * inform{"location": "madrid"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -19152,10 +16659,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03439017
 * greet
@@ -19168,8 +16673,7 @@
 * inform{"location": "madrid"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -19180,7 +16684,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -19188,12 +16692,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07255272
 * greet
@@ -19202,8 +16702,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
@@ -19215,17 +16714,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03604699
 * greet
@@ -19238,8 +16733,7 @@
 * inform{"location": "rome"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -19256,12 +16750,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09860386
 * greet
@@ -19272,8 +16762,7 @@
 * inform{"location": "madrid"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -19284,10 +16773,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04062984
 * greet
@@ -19300,8 +16787,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -19313,17 +16799,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03941254
 * greet
@@ -19332,8 +16814,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * deny
@@ -19346,15 +16827,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00171217
 * greet
@@ -19363,8 +16842,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * deny
@@ -19377,20 +16855,16 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06811483
 * greet
@@ -19401,8 +16875,7 @@
 * inform{"location": "rome"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -19415,12 +16888,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01877039
 * greet
@@ -19433,15 +16902,14 @@
 * inform{"location": "paris"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -19449,10 +16917,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00969777
 * greet
@@ -19465,8 +16931,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * deny
@@ -19481,10 +16946,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03983773
 * greet
@@ -19493,8 +16956,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -19505,7 +16967,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -19513,10 +16975,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09662563
 * greet
@@ -19527,8 +16987,7 @@
 * inform{"location": "london"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -19539,12 +16998,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06031304
 * greet
@@ -19553,8 +17008,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "british"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -19567,10 +17021,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06667107
 * greet
@@ -19583,8 +17035,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -19595,10 +17046,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07420764
 * greet
@@ -19611,8 +17060,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"people": "eight"}
@@ -19623,15 +17071,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01886993
 * greet
@@ -19640,8 +17086,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * inform{"location": "rome"}
@@ -19652,10 +17097,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07703774
 * greet
@@ -19668,8 +17111,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -19678,10 +17120,10 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -19689,10 +17131,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09421887
 * greet
@@ -19705,8 +17145,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -19719,12 +17158,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02826756
 * greet
@@ -19735,8 +17170,7 @@
 * inform{"location": "bombay"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * deny
@@ -19751,12 +17185,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00118580
 * greet
@@ -19767,26 +17197,23 @@
 * inform{"cuisine": "italian"}
  - utter_ask_location
 * inform{"location": "madrid"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04773474
 * greet
@@ -19795,8 +17222,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * deny
@@ -19805,10 +17231,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00776014
 * greet
@@ -19819,8 +17243,7 @@
 * inform{"cuisine": "british"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -19834,15 +17257,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04905103
 * greet
@@ -19853,8 +17274,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * deny
@@ -19863,12 +17283,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04072855
 * greet
@@ -19881,8 +17297,7 @@
 * inform{"location": "paris"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * deny
@@ -19892,15 +17307,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01706941
 * greet
@@ -19911,8 +17324,7 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -19925,12 +17337,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00303134
 * greet
@@ -19939,8 +17347,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -19954,15 +17361,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01385833
 * greet
@@ -19971,8 +17376,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * deny
@@ -19981,10 +17385,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02725173
 * greet
@@ -19995,8 +17397,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -20009,10 +17410,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05444359
 * greet
@@ -20023,26 +17422,23 @@
 * inform{"location": "bombay"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04820873
 * greet
@@ -20055,8 +17451,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * deny
@@ -20071,12 +17466,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04166050
 * greet
@@ -20089,23 +17480,20 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08464725
 * greet
@@ -20114,8 +17502,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "french"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -20128,12 +17515,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09530558
 * greet
@@ -20146,8 +17529,7 @@
 * inform{"location": "rome"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -20158,10 +17540,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01399039
 * greet
@@ -20170,8 +17550,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * deny
@@ -20186,12 +17565,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05254905
 * greet
@@ -20204,8 +17579,7 @@
 * inform{"location": "bombay"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -20216,10 +17590,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09668676
 * greet
@@ -20230,8 +17602,7 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * deny
@@ -20241,23 +17612,19 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05372829
 * greet
@@ -20270,8 +17637,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"location": "bombay"}
@@ -20290,10 +17656,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03066118
 * greet
@@ -20306,8 +17670,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -20326,12 +17689,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05113464
 * greet
@@ -20344,8 +17703,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -20356,12 +17714,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01865268
 * greet
@@ -20372,8 +17726,7 @@
 * inform{"cuisine": "indian"}
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -20382,20 +17735,16 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03632414
 * greet
@@ -20404,8 +17753,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "spanish"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -20416,7 +17764,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -20424,12 +17772,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02423947
 * greet
@@ -20440,8 +17784,7 @@
 * inform{"location": "madrid"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -20454,12 +17797,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07713696
 * greet
@@ -20472,8 +17811,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * inform{"location": "madrid"}
@@ -20482,7 +17820,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -20490,12 +17828,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08704162
 * greet
@@ -20504,8 +17838,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "indian"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"people": "eight"}
@@ -20521,12 +17854,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03562838
 * greet
@@ -20539,8 +17868,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
@@ -20559,10 +17887,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09822341
 * greet
@@ -20575,8 +17901,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"people": "eight"}
@@ -20593,12 +17918,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06505143
 * greet
@@ -20607,8 +17928,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"people": "eight"}
@@ -20621,10 +17941,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00450317
 * greet
@@ -20637,8 +17955,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -20651,12 +17968,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03676706
 * greet
@@ -20669,8 +17982,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -20684,15 +17996,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06255358
 * greet
@@ -20705,8 +18015,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -20722,10 +18031,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09628610
 * greet
@@ -20734,8 +18041,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -20744,17 +18050,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08373112
 * greet
@@ -20765,8 +18067,7 @@
 * inform{"location": "paris"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -20777,10 +18078,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03628824
 * greet
@@ -20789,8 +18088,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -20801,10 +18099,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05225970
 * greet
@@ -20817,8 +18113,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -20831,10 +18126,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06496178
 * greet
@@ -20845,8 +18138,7 @@
 * inform{"cuisine": "indian"}
  - utter_ask_location
 * inform{"location": "bombay"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * deny
@@ -20855,12 +18147,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02623324
 * greet
@@ -20871,8 +18159,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * deny
@@ -20887,12 +18174,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05818644
 * greet
@@ -20905,8 +18188,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -20920,15 +18202,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08101371
 * greet
@@ -20937,8 +18217,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -20947,17 +18226,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03320883
 * greet
@@ -20966,8 +18241,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "bombay"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -20986,12 +18260,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06821629
 * greet
@@ -21002,8 +18272,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -21016,12 +18285,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03159066
 * greet
@@ -21034,8 +18299,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -21046,18 +18310,16 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00734264
 * greet
@@ -21068,8 +18330,7 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -21086,12 +18347,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07777621
 * greet
@@ -21104,8 +18361,7 @@
 * inform{"location": "rome"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -21127,12 +18383,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04252545
 * greet
@@ -21141,8 +18393,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "bombay"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -21153,15 +18404,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06024388
 * greet
@@ -21172,8 +18421,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -21192,10 +18440,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06714841
 * greet
@@ -21204,8 +18450,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -21218,10 +18463,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08129380
 * greet
@@ -21232,8 +18475,7 @@
 * inform{"location": "bombay"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * deny
@@ -21242,12 +18484,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01172047
 * greet
@@ -21260,8 +18498,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -21277,12 +18514,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06439574
 * greet
@@ -21291,8 +18524,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
@@ -21301,10 +18533,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00593551
 * greet
@@ -21313,8 +18543,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * deny
@@ -21326,10 +18555,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02428697
 * greet
@@ -21342,8 +18569,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"location": "madrid"}
@@ -21354,17 +18580,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06510143
 * greet
@@ -21377,8 +18599,7 @@
 * inform{"location": "bombay"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"location": "rome"}
@@ -21392,12 +18613,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09073912
 * greet
@@ -21410,8 +18627,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -21424,12 +18640,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03631655
 * greet
@@ -21438,8 +18650,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "french"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -21450,10 +18661,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01208285
 * greet
@@ -21464,28 +18673,23 @@
 * inform{"location": "paris"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05275649
 * greet
@@ -21496,8 +18700,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -21508,7 +18711,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -21519,12 +18722,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00789633
 * greet
@@ -21537,8 +18736,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"people": "eight"}
@@ -21552,15 +18750,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09606751
 * greet
@@ -21571,8 +18767,7 @@
 * inform{"location": "bombay"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * deny
@@ -21581,10 +18776,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09656886
 * greet
@@ -21593,23 +18786,20 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "spanish"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00830863
 * greet
@@ -21618,8 +18808,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * deny
@@ -21629,15 +18818,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07537213
 * greet
@@ -21648,8 +18835,7 @@
 * inform{"location": "paris"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -21662,12 +18848,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09314942
 * greet
@@ -21676,8 +18858,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -21691,10 +18872,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08940771
 * greet
@@ -21707,8 +18886,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -21721,10 +18899,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09043068
 * greet
@@ -21737,15 +18913,14 @@
 * inform{"location": "rome"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -21753,12 +18928,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03290139
 * greet
@@ -21771,8 +18942,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
@@ -21784,10 +18954,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08852898
 * greet
@@ -21798,8 +18966,7 @@
 * inform{"location": "madrid"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * deny
@@ -21811,10 +18978,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05740152
 * greet
@@ -21823,8 +18988,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -21836,15 +19000,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06058369
 * greet
@@ -21857,8 +19019,7 @@
 * inform{"location": "madrid"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -21869,23 +19030,19 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00152569
 * greet
@@ -21894,8 +19051,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "bombay"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -21912,12 +19068,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09811824
 * greet
@@ -21930,8 +19082,7 @@
 * inform{"location": "bombay"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -21944,10 +19095,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00957490
 * greet
@@ -21960,8 +19109,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -21975,10 +19123,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00919373
 * greet
@@ -21987,8 +19133,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "british"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -21999,17 +19144,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07279664
 * greet
@@ -22020,8 +19161,7 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
@@ -22033,21 +19173,19 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04854964
 * greet
@@ -22058,8 +19196,7 @@
 * inform{"location": "rome"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
@@ -22068,7 +19205,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -22076,10 +19213,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00980793
 * greet
@@ -22088,15 +19223,14 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -22104,12 +19238,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01065431
 * greet
@@ -22120,8 +19250,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"location": "madrid"}
@@ -22138,12 +19267,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01321177
 * greet
@@ -22156,8 +19281,7 @@
 * inform{"location": "madrid"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"location": "rome"}
@@ -22176,12 +19300,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06376839
 * greet
@@ -22194,8 +19314,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
@@ -22217,10 +19336,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01929540
 * greet
@@ -22229,28 +19346,23 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06506308
 * greet
@@ -22261,8 +19373,7 @@
 * inform{"cuisine": "french"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * deny
@@ -22271,12 +19382,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04181925
 * greet
@@ -22287,8 +19394,7 @@
 * inform{"cuisine": "italian"}
  - utter_ask_location
 * inform{"location": "bombay"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -22307,12 +19413,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00709765
 * greet
@@ -22323,8 +19425,7 @@
 * inform{"location": "madrid"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -22337,12 +19438,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00938138
 * greet
@@ -22355,8 +19452,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -22375,12 +19471,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00638016
 * greet
@@ -22389,8 +19481,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "rome"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * deny
@@ -22399,10 +19490,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05850607
 * greet
@@ -22411,8 +19500,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
@@ -22431,12 +19519,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02751982
 * greet
@@ -22445,18 +19529,17 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "indian"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -22464,10 +19547,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04296137
 * greet
@@ -22480,8 +19561,7 @@
 * inform{"location": "london"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * deny
@@ -22496,12 +19576,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04876842
 * greet
@@ -22510,8 +19586,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -22522,7 +19597,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -22530,12 +19605,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07171758
 * greet
@@ -22548,8 +19619,7 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
@@ -22560,20 +19630,16 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08485578
 * greet
@@ -22582,8 +19648,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
@@ -22592,17 +19657,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01314086
 * greet
@@ -22611,8 +19672,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * deny
@@ -22624,10 +19684,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03724124
 * greet
@@ -22640,8 +19698,7 @@
 * inform{"location": "paris"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"location": "bombay"}
@@ -22657,10 +19714,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06585817
 * greet
@@ -22669,8 +19724,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -22687,12 +19741,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00187798
 * greet
@@ -22703,8 +19753,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -22715,7 +19764,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -22726,12 +19775,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01933633
 * greet
@@ -22742,31 +19787,26 @@
 * inform{"cuisine": "italian"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07144106
 * greet
@@ -22777,8 +19817,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * deny
@@ -22787,10 +19826,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05615854
 * greet
@@ -22801,8 +19838,7 @@
 * inform{"location": "paris"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -22819,12 +19855,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05206907
 * greet
@@ -22833,8 +19865,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * inform{"location": "rome"}
@@ -22843,7 +19874,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -22851,12 +19882,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09625580
 * greet
@@ -22867,8 +19894,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
@@ -22881,12 +19907,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03118434
 * greet
@@ -22895,8 +19917,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
@@ -22906,15 +19927,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04889196
 * greet
@@ -22927,8 +19946,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -22947,12 +19965,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05274495
 * greet
@@ -22963,8 +19977,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -22975,7 +19988,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -22983,12 +19996,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04636405
 * greet
@@ -22999,8 +20008,7 @@
 * inform{"cuisine": "indian"}
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"location": "bombay"}
@@ -23009,23 +20017,19 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07145375
 * greet
@@ -23038,8 +20042,7 @@
 * inform{"location": "madrid"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -23056,10 +20059,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03694903
 * greet
@@ -23068,15 +20069,14 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -23084,10 +20084,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08117383
 * greet
@@ -23098,8 +20096,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * inform{"people": "eight"}
@@ -23112,12 +20109,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01220821
 * greet
@@ -23126,8 +20119,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -23138,17 +20130,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00893195
 * greet
@@ -23161,8 +20149,7 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * deny
@@ -23177,12 +20164,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01317886
 * greet
@@ -23191,8 +20174,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "french"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * deny
@@ -23201,12 +20183,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03348323
 * greet
@@ -23215,8 +20193,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"location": "madrid"}
@@ -23229,12 +20206,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07533049
 * greet
@@ -23247,8 +20220,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -23261,10 +20233,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07826987
 * greet
@@ -23275,28 +20245,23 @@
 * inform{"cuisine": "british"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08516839
 * greet
@@ -23307,8 +20272,7 @@
 * inform{"location": "madrid"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -23322,15 +20286,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02817336
 * greet
@@ -23343,8 +20305,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * deny
@@ -23359,12 +20320,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09089819
 * greet
@@ -23375,8 +20332,7 @@
 * inform{"cuisine": "italian"}
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
@@ -23387,20 +20343,16 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03497250
 * greet
@@ -23409,8 +20361,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
@@ -23429,10 +20380,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09330259
 * greet
@@ -23441,8 +20390,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * deny
@@ -23451,10 +20399,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08349832
 * greet
@@ -23467,8 +20413,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"location": "rome"}
@@ -23481,10 +20426,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09157416
 * greet
@@ -23495,8 +20438,7 @@
 * inform{"cuisine": "british"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * deny
@@ -23511,12 +20453,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00131261
 * greet
@@ -23525,8 +20463,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "italian"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * deny
@@ -23535,10 +20472,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06076209
 * greet
@@ -23551,8 +20486,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * deny
@@ -23567,10 +20501,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04570409
 * greet
@@ -23579,8 +20511,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -23591,12 +20522,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06805619
 * greet
@@ -23607,8 +20534,7 @@
 * inform{"cuisine": "italian"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * deny
@@ -23618,15 +20544,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00022643
 * greet
@@ -23635,8 +20559,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * deny
@@ -23651,12 +20574,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04937786
 * greet
@@ -23665,8 +20584,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "british"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * deny
@@ -23676,15 +20594,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06976592
 * greet
@@ -23695,8 +20611,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
@@ -23713,10 +20628,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08424159
 * greet
@@ -23727,8 +20640,7 @@
 * inform{"location": "london"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -23737,17 +20649,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09234537
 * greet
@@ -23758,8 +20666,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -23776,12 +20683,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09862495
 * greet
@@ -23794,8 +20697,7 @@
 * inform{"location": "rome"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -23812,12 +20714,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05126643
 * greet
@@ -23828,8 +20726,7 @@
 * inform{"cuisine": "british"}
  - utter_ask_location
 * inform{"location": "rome"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -23843,15 +20740,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03337938
 * greet
@@ -23860,8 +20755,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "rome"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
@@ -23873,12 +20767,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03156665
 * greet
@@ -23889,8 +20779,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"location": "madrid"}
@@ -23903,10 +20792,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02957865
 * greet
@@ -23917,8 +20804,7 @@
 * inform{"cuisine": "italian"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -23927,7 +20813,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -23935,12 +20821,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00349487
 * greet
@@ -23949,8 +20831,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -23964,17 +20845,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06798659
 * greet
@@ -23985,8 +20862,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -24003,12 +20879,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09813964
 * greet
@@ -24017,26 +20889,23 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05131495
 * greet
@@ -24045,15 +20914,14 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -24061,10 +20929,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07895394
 * greet
@@ -24077,8 +20943,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -24092,10 +20957,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08823894
 * greet
@@ -24104,8 +20967,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "bombay"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -24114,7 +20976,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -24122,10 +20984,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09702036
 * greet
@@ -24138,8 +20998,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -24164,12 +21023,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02282032
 * greet
@@ -24178,8 +21033,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -24198,10 +21052,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01130224
 * greet
@@ -24212,8 +21064,7 @@
 * inform{"cuisine": "italian"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * deny
@@ -24222,12 +21073,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00895499
 * greet
@@ -24240,8 +21087,7 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -24250,13 +21096,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -24264,10 +21110,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02600877
 * greet
@@ -24280,8 +21124,7 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -24295,10 +21138,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03949551
 * greet
@@ -24311,8 +21152,7 @@
 * inform{"location": "rome"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * deny
@@ -24321,10 +21161,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04176053
 * greet
@@ -24333,8 +21171,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * inform{"people": "eight"}
@@ -24348,12 +21185,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08679366
 * greet
@@ -24366,8 +21199,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * deny
@@ -24376,10 +21208,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01552180
 * greet
@@ -24388,8 +21218,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -24402,10 +21231,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01393050
 * greet
@@ -24418,8 +21245,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * deny
@@ -24429,10 +21255,10 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -24440,10 +21266,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01233425
 * greet
@@ -24452,8 +21276,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * deny
@@ -24462,12 +21285,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00898140
 * greet
@@ -24476,8 +21295,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "french"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -24491,17 +21309,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00902206
 * greet
@@ -24510,8 +21324,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "french"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -24524,10 +21337,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08674334
 * greet
@@ -24536,8 +21347,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * deny
@@ -24546,12 +21356,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05505791
 * greet
@@ -24564,8 +21370,7 @@
 * inform{"location": "london"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
@@ -24576,15 +21381,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04410049
 * greet
@@ -24597,8 +21400,7 @@
 * inform{"location": "madrid"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -24611,10 +21413,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05972136
 * greet
@@ -24627,8 +21427,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -24639,12 +21438,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08344798
 * greet
@@ -24655,8 +21450,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"location": "madrid"}
@@ -24672,12 +21466,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04798183
 * greet
@@ -24690,8 +21480,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -24705,17 +21494,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06230240
 * greet
@@ -24728,8 +21513,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -24751,12 +21535,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01434051
 * greet
@@ -24769,8 +21549,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * inform{"location": "rome"}
@@ -24779,15 +21558,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01094264
 * greet
@@ -24800,8 +21577,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * deny
@@ -24816,10 +21592,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00393178
 * greet
@@ -24830,8 +21604,7 @@
 * inform{"location": "madrid"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -24842,17 +21615,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08422070
 * greet
@@ -24861,8 +21630,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * deny
@@ -24872,15 +21640,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09244706
 * greet
@@ -24893,25 +21659,20 @@
 * inform{"location": "bombay"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06328099
 * greet
@@ -24922,8 +21683,7 @@
 * inform{"location": "rome"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -24937,12 +21697,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04284245
 * greet
@@ -24953,8 +21709,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * deny
@@ -24969,10 +21724,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05686914
 * greet
@@ -24983,8 +21736,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -24999,15 +21751,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08073789
 * greet
@@ -25018,8 +21768,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_location
 * inform{"location": "rome"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * deny
@@ -25028,12 +21777,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04518461
 * greet
@@ -25044,8 +21789,7 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -25058,12 +21802,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08600837
 * greet
@@ -25072,15 +21812,14 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -25091,12 +21830,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08425819
 * greet
@@ -25107,8 +21842,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -25124,12 +21858,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00469483
 * greet
@@ -25138,8 +21868,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -25151,7 +21880,7 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -25159,12 +21888,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09908909
 * greet
@@ -25175,15 +21900,14 @@
 * inform{"cuisine": "italian"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -25191,12 +21915,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02726499
 * greet
@@ -25207,15 +21927,14 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -25223,10 +21942,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00122274
 * greet
@@ -25235,8 +21952,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "bombay"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -25250,10 +21966,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04605461
 * greet
@@ -25266,8 +21980,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -25278,7 +21991,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -25286,12 +21999,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01127782
 * greet
@@ -25304,8 +22013,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -25316,12 +22024,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07047906
 * greet
@@ -25330,23 +22034,20 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "french"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05382785
 * greet
@@ -25359,8 +22060,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -25374,7 +22074,7 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -25385,12 +22085,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09951364
 * greet
@@ -25403,8 +22099,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -25415,10 +22110,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07714658
 * greet
@@ -25429,8 +22122,7 @@
 * inform{"cuisine": "indian"}
  - utter_ask_location
 * inform{"location": "rome"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * deny
@@ -25440,7 +22132,7 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -25448,12 +22140,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05753493
 * greet
@@ -25462,8 +22150,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
@@ -25472,7 +22159,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -25480,12 +22167,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02319303
 * greet
@@ -25496,8 +22179,7 @@
 * inform{"cuisine": "italian"}
  - utter_ask_location
 * inform{"location": "rome"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
@@ -25508,20 +22190,16 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03053117
 * greet
@@ -25534,23 +22212,20 @@
 * inform{"location": "paris"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08039509
 * greet
@@ -25561,8 +22236,7 @@
 * inform{"cuisine": "indian"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
@@ -25576,15 +22250,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06063036
 * greet
@@ -25595,8 +22267,7 @@
 * inform{"cuisine": "british"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -25615,12 +22286,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01842291
 * greet
@@ -25629,8 +22296,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -25644,15 +22310,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00404771
 * greet
@@ -25663,8 +22327,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
@@ -25673,12 +22336,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06303012
 * greet
@@ -25689,8 +22348,7 @@
 * inform{"cuisine": "italian"}
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * deny
@@ -25702,10 +22360,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08826114
 * greet
@@ -25714,8 +22370,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "british"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -25724,21 +22379,19 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08580853
 * greet
@@ -25747,8 +22400,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * deny
@@ -25763,10 +22415,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03270022
 * greet
@@ -25779,8 +22429,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -25796,10 +22445,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06783355
 * greet
@@ -25810,8 +22457,7 @@
 * inform{"cuisine": "indian"}
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * deny
@@ -25820,12 +22466,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00816632
 * greet
@@ -25834,8 +22476,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"location": "madrid"}
@@ -25854,10 +22495,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04796764
 * greet
@@ -25868,8 +22507,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * deny
@@ -25881,12 +22519,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07985063
 * greet
@@ -25899,8 +22533,7 @@
 * inform{"location": "london"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * deny
@@ -25912,12 +22545,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09178086
 * greet
@@ -25928,8 +22557,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * deny
@@ -25939,7 +22567,7 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -25947,12 +22575,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01643031
 * greet
@@ -25965,8 +22589,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * deny
@@ -25976,17 +22599,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09604583
 * greet
@@ -25997,8 +22616,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -26009,12 +22627,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07887953
 * greet
@@ -26023,8 +22637,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * deny
@@ -26039,10 +22652,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09163759
 * greet
@@ -26053,8 +22664,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_location
 * inform{"location": "bombay"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
@@ -26067,10 +22677,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05195314
 * greet
@@ -26081,8 +22689,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -26096,15 +22703,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06757748
 * greet
@@ -26113,8 +22718,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "madrid"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"location": "rome"}
@@ -26130,10 +22734,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06250942
 * greet
@@ -26146,8 +22748,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -26166,10 +22767,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09472081
 * greet
@@ -26182,25 +22781,20 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07167680
 * greet
@@ -26211,8 +22805,7 @@
 * inform{"location": "madrid"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * deny
@@ -26227,12 +22820,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06327458
 * greet
@@ -26243,8 +22832,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -26258,12 +22846,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09740907
 * greet
@@ -26276,8 +22860,7 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * deny
@@ -26289,10 +22872,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01812192
 * greet
@@ -26305,8 +22886,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"location": "rome"}
@@ -26322,10 +22902,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04856578
 * greet
@@ -26334,8 +22912,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"location": "bombay"}
@@ -26346,10 +22923,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04325428
 * greet
@@ -26358,8 +22933,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "madrid"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -26370,12 +22944,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01398241
 * greet
@@ -26384,8 +22954,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "rome"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * deny
@@ -26395,15 +22964,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04724172
 * greet
@@ -26414,8 +22981,7 @@
 * inform{"location": "rome"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -26429,12 +22995,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07606335
 * greet
@@ -26445,8 +23007,7 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -26459,10 +23020,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05715031
 * greet
@@ -26471,8 +23030,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "french"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -26491,12 +23049,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05296588
 * greet
@@ -26509,8 +23063,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * deny
@@ -26519,10 +23072,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08104850
 * greet
@@ -26535,8 +23086,7 @@
 * inform{"location": "paris"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -26553,10 +23103,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05853971
 * greet
@@ -26567,8 +23115,7 @@
 * inform{"cuisine": "italian"}
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
@@ -26579,7 +23126,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -26590,12 +23137,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04727618
 * greet
@@ -26606,8 +23149,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * deny
@@ -26620,15 +23162,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01711241
 * greet
@@ -26637,8 +23177,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "bombay"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -26649,7 +23188,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -26657,12 +23196,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03936603
 * greet
@@ -26671,8 +23206,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "french"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -26686,10 +23220,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08576952
 * greet
@@ -26700,25 +23232,20 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04804222
 * greet
@@ -26729,8 +23256,7 @@
 * inform{"cuisine": "italian"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -26743,10 +23269,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00268133
 * greet
@@ -26759,8 +23283,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -26771,17 +23294,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07483909
 * greet
@@ -26794,8 +23313,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
@@ -26806,10 +23324,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06777191
 * greet
@@ -26822,8 +23338,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -26837,17 +23352,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02494821
 * greet
@@ -26858,8 +23369,7 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -26872,10 +23382,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00239185
 * greet
@@ -26884,8 +23392,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "spanish"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * deny
@@ -26900,12 +23407,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04801990
 * greet
@@ -26918,8 +23421,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -26928,10 +23430,10 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -26942,12 +23444,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06766036
 * greet
@@ -26958,8 +23456,7 @@
 * inform{"location": "madrid"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -26970,18 +23467,16 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06440930
 * greet
@@ -26994,15 +23489,14 @@
 * inform{"location": "bombay"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -27010,10 +23504,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02380468
 * greet
@@ -27022,8 +23514,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -27032,7 +23523,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -27040,12 +23531,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04005855
 * greet
@@ -27054,8 +23541,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "madrid"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"location": "bombay"}
@@ -27066,7 +23552,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -27074,10 +23560,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07405507
 * greet
@@ -27088,8 +23572,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * deny
@@ -27099,17 +23582,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00498578
 * greet
@@ -27120,8 +23599,7 @@
 * inform{"cuisine": "italian"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -27137,10 +23615,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00109081
 * greet
@@ -27153,8 +23629,7 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -27167,12 +23642,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04689909
 * greet
@@ -27181,8 +23652,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * deny
@@ -27200,12 +23670,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01583175
 * greet
@@ -27216,8 +23682,7 @@
 * inform{"cuisine": "french"}
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
@@ -27233,10 +23698,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06081230
 * greet
@@ -27247,8 +23710,7 @@
 * inform{"cuisine": "french"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -27261,10 +23723,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09650700
 * greet
@@ -27275,8 +23735,7 @@
 * inform{"cuisine": "italian"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -27287,15 +23746,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08683423
 * greet
@@ -27306,8 +23763,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -27318,10 +23774,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09809140
 * greet
@@ -27332,8 +23786,7 @@
 * inform{"location": "rome"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * deny
@@ -27345,10 +23798,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08704448
 * greet
@@ -27361,8 +23812,7 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * deny
@@ -27371,12 +23821,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05846298
 * greet
@@ -27389,8 +23835,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * deny
@@ -27405,10 +23850,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01001501
 * greet
@@ -27421,8 +23864,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * deny
@@ -27431,12 +23873,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08879496
 * greet
@@ -27445,8 +23883,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "italian"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * deny
@@ -27461,10 +23898,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07666308
 * greet
@@ -27477,8 +23912,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * deny
@@ -27490,12 +23924,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07775524
 * greet
@@ -27508,8 +23938,7 @@
 * inform{"location": "london"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -27523,7 +23952,7 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -27531,10 +23960,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06657612
 * greet
@@ -27547,8 +23974,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * deny
@@ -27560,10 +23986,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03634704
 * greet
@@ -27574,8 +23998,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * deny
@@ -27584,12 +24007,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09374425
 * greet
@@ -27600,8 +24019,7 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * deny
@@ -27610,10 +24028,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03996025
 * greet
@@ -27624,8 +24040,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -27636,12 +24051,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09354384
 * greet
@@ -27654,8 +24065,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * deny
@@ -27670,12 +24080,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05281037
 * greet
@@ -27688,26 +24094,23 @@
 * inform{"location": "bombay"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00319688
 * greet
@@ -27720,8 +24123,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -27735,17 +24137,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06274716
 * greet
@@ -27756,8 +24154,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * inform{"location": "rome"}
@@ -27768,7 +24165,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -27779,12 +24176,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00091875
 * greet
@@ -27797,8 +24190,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -27807,15 +24199,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03406779
 * greet
@@ -27828,8 +24218,7 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
@@ -27846,12 +24235,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05395046
 * greet
@@ -27864,8 +24249,7 @@
 * inform{"location": "bombay"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * deny
@@ -27877,12 +24261,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04030638
 * greet
@@ -27895,8 +24275,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -27909,12 +24288,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08550472
 * greet
@@ -27923,8 +24298,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * deny
@@ -27933,10 +24307,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07104468
 * greet
@@ -27947,8 +24319,7 @@
 * inform{"cuisine": "british"}
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * deny
@@ -27958,17 +24329,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07688540
 * greet
@@ -27979,8 +24346,7 @@
 * inform{"location": "rome"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -27991,7 +24357,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -27999,12 +24365,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01518753
 * greet
@@ -28013,8 +24375,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "french"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -28028,7 +24389,7 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -28036,12 +24397,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09864436
 * greet
@@ -28050,8 +24407,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "spanish"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * deny
@@ -28063,12 +24419,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04577171
 * greet
@@ -28081,8 +24433,7 @@
 * inform{"location": "paris"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
@@ -28091,12 +24442,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09610292
 * greet
@@ -28107,8 +24454,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_location
 * inform{"location": "madrid"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * deny
@@ -28117,12 +24463,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03166920
 * greet
@@ -28135,8 +24477,7 @@
 * inform{"location": "london"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"location": "paris"}
@@ -28150,12 +24491,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03469112
 * greet
@@ -28166,8 +24503,7 @@
 * inform{"cuisine": "french"}
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
@@ -28176,12 +24512,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06962015
 * greet
@@ -28194,8 +24526,7 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * deny
@@ -28204,10 +24535,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00278172
 * greet
@@ -28218,8 +24547,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_location
 * inform{"location": "rome"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * deny
@@ -28228,12 +24556,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08966504
 * greet
@@ -28242,8 +24566,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * deny
@@ -28252,12 +24575,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02470749
 * greet
@@ -28270,8 +24589,7 @@
 * inform{"location": "rome"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -28282,12 +24600,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04454934
 * greet
@@ -28300,8 +24614,7 @@
 * inform{"location": "bombay"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * inform{"location": "rome"}
@@ -28312,12 +24625,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05034229
 * greet
@@ -28330,26 +24639,23 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00180528
 * greet
@@ -28358,8 +24664,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"location": "madrid"}
@@ -28373,12 +24678,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08515298
 * greet
@@ -28389,8 +24690,7 @@
 * inform{"cuisine": "french"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -28406,12 +24706,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06859902
 * greet
@@ -28422,15 +24718,14 @@
 * inform{"location": "madrid"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -28438,12 +24733,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00392312
 * greet
@@ -28452,8 +24743,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -28464,12 +24754,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05725205
 * greet
@@ -28480,8 +24766,7 @@
 * inform{"location": "madrid"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
@@ -28495,15 +24780,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07300290
 * greet
@@ -28512,8 +24795,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "indian"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -28530,12 +24812,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06309353
 * greet
@@ -28544,8 +24822,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "french"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * inform{"location": "bombay"}
@@ -28559,12 +24836,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03854799
 * greet
@@ -28573,8 +24846,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "london"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
@@ -28588,15 +24860,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09566883
 * greet
@@ -28607,8 +24877,7 @@
 * inform{"cuisine": "french"}
  - utter_ask_location
 * inform{"location": "rome"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -28624,12 +24893,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01043845
 * greet
@@ -28640,8 +24905,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * deny
@@ -28651,15 +24915,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00253574
 * greet
@@ -28670,8 +24932,7 @@
 * inform{"location": "london"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"location": "rome"}
@@ -28684,10 +24945,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03763786
 * greet
@@ -28696,8 +24955,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * deny
@@ -28712,10 +24970,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02144977
 * greet
@@ -28728,8 +24984,7 @@
 * inform{"location": "bombay"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -28738,18 +24993,16 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09850809
 * greet
@@ -28760,8 +25013,7 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
@@ -28771,15 +25023,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09163022
 * greet
@@ -28790,8 +25040,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -28805,15 +25054,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07274687
 * greet
@@ -28824,8 +25071,7 @@
 * inform{"location": "madrid"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -28839,18 +25085,16 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08837527
 * greet
@@ -28859,8 +25103,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
@@ -28873,10 +25116,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00921838
 * greet
@@ -28889,8 +25130,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -28907,10 +25147,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05904994
 * greet
@@ -28921,8 +25159,7 @@
 * inform{"cuisine": "british"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"location": "madrid"}
@@ -28936,17 +25173,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08347700
 * greet
@@ -28955,28 +25188,23 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06500049
 * greet
@@ -28989,8 +25217,7 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -29001,7 +25228,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -29009,12 +25236,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02620391
 * greet
@@ -29023,8 +25246,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"location": "bombay"}
@@ -29041,10 +25263,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09116560
 * greet
@@ -29055,8 +25275,7 @@
 * inform{"cuisine": "british"}
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * deny
@@ -29068,10 +25287,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09270102
 * greet
@@ -29080,8 +25297,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -29092,12 +25308,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06726927
 * greet
@@ -29108,29 +25320,26 @@
 * inform{"location": "rome"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09168519
 * greet
@@ -29139,8 +25348,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * deny
@@ -29150,15 +25358,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09385493
 * greet
@@ -29167,8 +25373,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -29182,12 +25387,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01287768
 * greet
@@ -29198,8 +25399,7 @@
 * inform{"cuisine": "british"}
  - utter_ask_location
 * inform{"location": "bombay"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * deny
@@ -29209,17 +25409,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01543338
 * greet
@@ -29230,8 +25426,7 @@
 * inform{"cuisine": "indian"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -29240,7 +25435,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -29248,10 +25443,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02541285
 * greet
@@ -29264,8 +25457,7 @@
 * inform{"location": "rome"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * inform{"location": "bombay"}
@@ -29274,23 +25466,19 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09271185
 * greet
@@ -29301,8 +25489,7 @@
 * inform{"people": "eight"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -29316,18 +25503,16 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00367264
 * greet
@@ -29336,8 +25521,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * deny
@@ -29346,12 +25530,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04229414
 * greet
@@ -29362,8 +25542,7 @@
 * inform{"location": "bombay"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * deny
@@ -29372,10 +25551,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08134123
 * greet
@@ -29386,8 +25563,7 @@
 * inform{"cuisine": "french"}
  - utter_ask_location
 * inform{"location": "bombay"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -29398,7 +25574,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -29406,10 +25582,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03235504
 * greet
@@ -29418,8 +25592,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
@@ -29430,12 +25603,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03978119
 * greet
@@ -29444,15 +25613,14 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -29460,10 +25628,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09361073
 * greet
@@ -29472,8 +25638,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "indian"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"location": "bombay"}
@@ -29490,10 +25655,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03261321
 * greet
@@ -29502,8 +25665,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -29522,10 +25684,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00496996
 * greet
@@ -29538,15 +25698,14 @@
 * inform{"people": "two"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -29554,10 +25713,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06118884
 * greet
@@ -29566,8 +25723,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "madrid"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"cuisine": "french"}
@@ -29580,10 +25736,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08182507
 * greet
@@ -29594,8 +25748,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * deny
@@ -29610,10 +25763,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00422529
 * greet
@@ -29626,8 +25777,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "two"}
  - utter_ask_moreupdates
 * inform{"location": "bombay"}
@@ -29636,7 +25786,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -29644,12 +25794,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03013594
 * greet
@@ -29660,8 +25806,7 @@
 * inform{"location": "madrid"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -29670,17 +25815,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09008945
 * greet
@@ -29691,8 +25832,7 @@
 * inform{"location": "rome"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * deny
@@ -29701,10 +25841,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03370167
 * greet
@@ -29717,8 +25855,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -29729,10 +25866,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04723733
 * greet
@@ -29743,8 +25878,7 @@
 * inform{"cuisine": "french"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -29755,7 +25889,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -29763,12 +25897,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02172992
 * greet
@@ -29779,8 +25909,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -29799,12 +25928,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04436511
 * greet
@@ -29815,8 +25940,7 @@
 * inform{"cuisine": "italian"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "london"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -29829,10 +25953,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07834269
 * greet
@@ -29843,8 +25965,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -29857,12 +25978,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08319983
 * greet
@@ -29873,8 +25990,7 @@
 * inform{"cuisine": "indian"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "four"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -29885,7 +26001,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -29893,10 +26009,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06524055
 * greet
@@ -29907,25 +26021,20 @@
 * inform{"location": "madrid"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06490936
 * greet
@@ -29938,8 +26047,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
@@ -29950,12 +26058,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03364039
 * greet
@@ -29964,8 +26068,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * deny
@@ -29983,12 +26086,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03853664
 * greet
@@ -29999,8 +26098,7 @@
 * inform{"cuisine": "spanish"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -30011,7 +26109,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -30019,10 +26117,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06995338
 * greet
@@ -30031,8 +26127,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "paris"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -30041,15 +26136,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09243427
 * greet
@@ -30058,8 +26151,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * deny
@@ -30068,10 +26160,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01653797
 * greet
@@ -30080,8 +26170,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -30090,7 +26179,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -30101,12 +26190,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03279828
 * greet
@@ -30117,15 +26202,14 @@
 * inform{"cuisine": "indian"}
  - utter_ask_location
 * inform{"location": "rome"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -30133,12 +26217,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09879267
 * greet
@@ -30151,8 +26231,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -30172,12 +26251,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04204187
 * greet
@@ -30190,8 +26265,7 @@
 * inform{"location": "madrid"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * inform{"location": "london"}
@@ -30204,10 +26278,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00656127
 * greet
@@ -30218,26 +26290,23 @@
 * inform{"cuisine": "italian"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "french"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02034035
 * greet
@@ -30248,8 +26317,7 @@
 * inform{"cuisine": "british"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * deny
@@ -30259,15 +26327,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07316004
 * greet
@@ -30276,8 +26342,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -30290,10 +26355,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03687127
 * greet
@@ -30304,8 +26367,7 @@
 * inform{"location": "bombay"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
@@ -30314,10 +26376,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03560336
 * greet
@@ -30328,8 +26388,7 @@
 * inform{"location": "madrid"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "rome"}
  - utter_ask_moreupdates
 * deny
@@ -30338,10 +26397,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09441270
 * greet
@@ -30350,8 +26407,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"location": "bombay"}
@@ -30362,17 +26418,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01872699
 * greet
@@ -30381,8 +26433,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "british"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"location": "madrid"}
@@ -30396,15 +26447,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02048330
 * greet
@@ -30417,8 +26466,7 @@
 * inform{"location": "london"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "eight"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -30429,17 +26477,13 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06319392
 * greet
@@ -30452,8 +26496,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * deny
@@ -30465,10 +26508,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09516193
 * greet
@@ -30479,8 +26520,7 @@
 * inform{"cuisine": "french"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -30496,10 +26536,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02657528
 * greet
@@ -30510,8 +26548,7 @@
 * inform{"cuisine": "british"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -30522,21 +26559,19 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00310392
 * greet
@@ -30549,8 +26584,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"people": "six"}
@@ -30566,10 +26600,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04983227
 * greet
@@ -30578,8 +26610,7 @@
  - utter_on_it
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * deny
@@ -30597,12 +26628,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_09239368
 * greet
@@ -30613,8 +26640,7 @@
 * inform{"cuisine": "french"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"location": "madrid"}
@@ -30629,17 +26655,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_01412677
 * greet
@@ -30648,8 +26670,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "spanish"}
  - utter_ask_moreupdates
 * inform{"price": "cheap"}
@@ -30668,12 +26689,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03771921
 * greet
@@ -30682,8 +26699,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -30702,10 +26718,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02587073
 * greet
@@ -30716,8 +26730,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -30736,10 +26749,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04309861
 * greet
@@ -30752,8 +26763,7 @@
 * inform{"location": "london"}
  - utter_ask_numpeople
 * inform{"people": "four"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"location": "madrid"}
@@ -30764,12 +26774,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05490968
 * greet
@@ -30780,25 +26786,20 @@
 * inform{"location": "london"}
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_00145741
 * greet
@@ -30807,8 +26808,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "british"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"location": "bombay"}
@@ -30821,12 +26821,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05547840
 * greet
@@ -30839,8 +26835,7 @@
 * inform{"people": "six"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
  - utter_ask_moreupdates
 * deny
@@ -30850,15 +26845,13 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_04527193
 * greet
@@ -30867,8 +26860,7 @@
  - utter_on_it
  - utter_ask_cuisine
 * inform{"cuisine": "indian"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * deny
@@ -30880,12 +26872,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03326363
 * greet
@@ -30898,8 +26886,7 @@
 * inform{"location": "bombay"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "british"}
  - utter_ask_moreupdates
 * deny
@@ -30911,12 +26898,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08338160
 * greet
@@ -30925,8 +26908,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "madrid"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * deny
@@ -30935,12 +26917,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08226375
 * greet
@@ -30949,8 +26927,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "cheap"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -30959,7 +26936,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -30967,12 +26944,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07961733
 * greet
@@ -30985,8 +26958,7 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "moderate"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "bombay"}
  - utter_ask_moreupdates
 * inform{"cuisine": "british"}
@@ -30997,7 +26969,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -31005,10 +26977,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02606355
 * greet
@@ -31021,8 +26991,7 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "eight"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "madrid"}
  - utter_ask_moreupdates
 * inform{"price": "moderate"}
@@ -31033,7 +27002,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -31041,10 +27010,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_06093780
 * greet
@@ -31057,15 +27024,14 @@
 * inform{"people": "four"}
  - utter_ask_price
 * inform{"price": "expensive"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * deny
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -31073,12 +27039,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07143287
 * greet
@@ -31087,8 +27049,7 @@
  - utter_on_it
  - utter_ask_location
 * inform{"location": "bombay"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * inform{"people": "two"}
@@ -31105,12 +27066,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_03162809
 * greet
@@ -31123,8 +27080,7 @@
 * inform{"location": "paris"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "expensive"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -31138,12 +27094,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_02589793
 * greet
@@ -31156,8 +27108,7 @@
 * inform{"location": "rome"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"people": "six"}
  - utter_ask_moreupdates
 * inform{"cuisine": "italian"}
@@ -31171,20 +27122,16 @@
 * deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_08740741
 * greet
@@ -31197,8 +27144,7 @@
 * inform{"location": "rome"}
  - utter_ask_numpeople
 * inform{"people": "six"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"location": "paris"}
  - utter_ask_moreupdates
 * inform{"price": "expensive"}
@@ -31209,12 +27155,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_05389447
 * greet
@@ -31223,8 +27165,7 @@
  - utter_on_it
  - utter_ask_price
 * inform{"price": "cheap"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"cuisine": "indian"}
  - utter_ask_moreupdates
 * deny
@@ -31233,12 +27174,8 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "phone"}
- - action_suggest
-* request_info{"info": "address"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
 ## story_07621761
 * greet
@@ -31249,8 +27186,7 @@
 * inform{"location": "rome"}
  - utter_ask_numpeople
 * inform{"people": "two"}
- - utter_ack_dosearch
- - action_search_restaurants
+ - utter_ask_moreupdates
 * inform{"price": "moderate"}
  - utter_ask_moreupdates
 * inform{"people": "four"}
@@ -31259,7 +27195,7 @@
  - utter_ack_dosearch
  - action_search_restaurants
  - action_suggest
-* greet
+* deny
  - utter_ack_findalternatives
  - action_suggest
 * deny
@@ -31267,10 +27203,6 @@
  - action_suggest
 * affirm
  - utter_ack_makereservation
-* request_info{"info": "address"}
- - action_suggest
-* request_info{"info": "phone"}
- - action_suggest
 * thankyou
- - utter_ask_helpmore
+ - utter_goodbye
 
