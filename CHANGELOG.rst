@@ -17,7 +17,16 @@ Changed
 
 Fixed
 -----
+
+
+[0.11.1] - 2018-02-02
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Changelog doc formatting
 - fixed project loading for newly added projects to a running server
+
 
 [0.11.0] - 2018-01-30
 ^^^^^^^^^^^^^^^^^^^^^
@@ -61,12 +70,14 @@ Fixed
 - read token in server from config instead of data router
 - fixed reading of models with none date name prefix in server
 
+
 [0.10.4] - 2017-10-27
 ^^^^^^^^^^^^^^^^^^^^^
 
 Fixed
 -----
 - docker image build
+
 
 [0.10.3] - 2017-10-26
 ^^^^^^^^^^^^^^^^^^^^^
@@ -85,6 +96,7 @@ Fixed
 - fixed permanent training status when training fails #652
 - quick fix for None "_formatter_parser" bug
 
+
 [0.10.1] - 2017-10-06
 ^^^^^^^^^^^^^^^^^^^^^
 
@@ -92,6 +104,7 @@ Fixed
 -----
 - readme issues
 - improved setup py welcome message
+
 
 [0.10.0] - 2017-09-27
 ^^^^^^^^^^^^^^^^^^^^^
@@ -130,12 +143,14 @@ Fixed
 - Only log a warning (instead of throwing an exception) on
   misaligned entities during mitie NER
 
+
 [0.9.2] - 2017-08-16
 ^^^^^^^^^^^^^^^^^^^^
 
 Fixed
 -----
 - removed unnecessary `ClassVar` import
+
 
 [0.9.1] - 2017-07-11
 ^^^^^^^^^^^^^^^^^^^^
@@ -144,6 +159,7 @@ Fixed
 -----
 - removed obsolete ``--output`` parameter of ``train.py``.
   use ``--path`` instead. fixes #473
+
 
 [0.9.0] - 2017-07-07
 ^^^^^^^^^^^^^^^^^^^^
@@ -188,6 +204,7 @@ Fixed
   those whose name starts with *model*
 - properly return training process ids #391
 
+
 [0.8.12] - 2017-06-29
 ^^^^^^^^^^^^^^^^^^^^^
 
@@ -196,12 +213,14 @@ Fixed
 - fixed missing argument attribute error
 
 
+
 [0.8.11] - 2017-06-07
 ^^^^^^^^^^^^^^^^^^^^^
 
 Fixed
 -----
 - updated mitie installation documentation
+
 
 [0.8.10] - 2017-05-31
 ^^^^^^^^^^^^^^^^^^^^^
@@ -215,8 +234,9 @@ Fixed
 ^^^^^^^^^^^^^^^^^^^^
 
 Fixed
------^
+-----
 - properly handle response_log configuration variable being set to ``null``
+
 
 [0.8.8] - 2017-05-26
 ^^^^^^^^^^^^^^^^^^^^
@@ -226,12 +246,14 @@ Fixed
 - ``/status`` endpoint showing all available models instead of only
   those whose name starts with *model*
 
+
 [0.8.7] - 2017-05-24
 ^^^^^^^^^^^^^^^^^^^^
 
 Fixed
 -----
 - Fixed range calculation for crf #355
+
 
 [0.8.6] - 2017-05-15
 ^^^^^^^^^^^^^^^^^^^^
@@ -240,12 +262,14 @@ Fixed
 -----
 - Fixed duckling dimension persistence. fixes #358
 
+
 [0.8.5] - 2017-05-10
 ^^^^^^^^^^^^^^^^^^^^
 
 Fixed
 -----
 - Fixed pypi installation dependencies (e.g. flask). fixes #354
+
 
 [0.8.4] - 2017-05-10
 ^^^^^^^^^^^^^^^^^^^^
@@ -254,12 +278,14 @@ Fixed
 -----
 - Fixed CRF model training without entities. fixes #345
 
+
 [0.8.3] - 2017-05-10
 ^^^^^^^^^^^^^^^^^^^^
 
 Fixed
 -----
 - Fixed Luis emulation and added test to catch regression. Fixes #353
+
 
 [0.8.2] - 2017-05-08
 ^^^^^^^^^^^^^^^^^^^^
@@ -268,6 +294,7 @@ Fixed
 -----
 - deepcopy of context #343
 
+
 [0.8.1] - 2017-05-08
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -275,8 +302,10 @@ Fixed
 -----
 - NER training reuses context inbetween requests
 
+
 [0.8.0] - 2017-05-08
 ^^^^^^^^^^^^^^^^^^^^
+
 Added
 -----
 - ngram character featurizer (allows better handling of out-of-vocab words)
@@ -323,9 +352,6 @@ Changed
   the spacy component (breaks existing spacy models!)
 - introduced compatibility with both Python 2 and 3
 
-Removed
--------
-
 Fixed
 -----
 - properly parse ``str`` additionally to ``unicode``
@@ -337,6 +363,7 @@ Fixed
 - removed tokenization when reading Luis.ai data (they changed their format)
   `#241 <https://github.com/RasaHQ/rasa_nlu/issues/241>`_
 
+
 [0.7.4] - 2017-03-27
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -344,6 +371,7 @@ Fixed
 -----
 - fixed failed loading of example data after renaming attributes,
   i.e. "KeyError: 'entities'"
+
 
 [0.7.3] - 2017-03-15
 ^^^^^^^^^^^^^^^^^^^^
@@ -353,12 +381,14 @@ Fixed
 - fixed regression in mitie entity extraction on special characters
 - fixed spacy fine tuning and entity recognition on passed language instance
 
+
 [0.7.2] - 2017-03-13
 ^^^^^^^^^^^^^^^^^^^^
 
 Fixed
 -----
 - python documentation about calling rasa NLU from python
+
 
 [0.7.1] - 2017-03-10
 ^^^^^^^^^^^^^^^^^^^^
@@ -392,6 +422,7 @@ Fixed
 -----
 - error propagation on failed vector model loading (spacy)
 - escaping of special characters during mitie tokenization
+
 
 [0.6-beta] - 2017-01-31
 ^^^^^^^^^^^^^^^^^^^^^^^
