@@ -125,8 +125,8 @@ Rasa automatically represents (featurises) this as a one-hot encoding of the val
 When Rasa Core runs trains a dialogue model using your stories the presence of a ``Slot`` entry will be used to help 
 determine the next action that should be taken. This works best with ``CategoricalSlot`` slot types. 
 
-A ``TextSlot`` can have any value, but it only has a single feature. It can be set - in which case the feature 
-has a value ``(1)`` - or if it is not set it will have a value ``(0)``. 
+A ``TextSlot`` can have any value, but it only has a single feature. It can be set, in which case the feature 
+has a value ``(1)``, or if it is not set it will have a value ``(0)``. 
 
 A ``CategoricalSlot`` has a number of values each of which is a feature. Taking the example below, when the 
 ``restaurant_availability`` slot is set Rasa Core will be able to determine whether or not the restaurant in question is 
@@ -158,16 +158,17 @@ then use the next ``Turn`` of the conversation to check what feature of the slot
             availability=restaurantService.check_availability(restaurant_name, location, num_people, date)
             return [SlotSet("restaurant_availability", availability)]
 
-The snippet of code from an example ``Action`` shows that the value of the slot ``restaurant_availability`` is determined by querying a database or API. The restaurant availability is not something that is known when we train the dialogue model, the ``Slot`` value is the only way we can alter the course of the conversation based on information from the outside world.
+The snippet of code above from a hypothetical ``Action`` shows that the value of the slot ``restaurant_availability`` is determined by querying a database or API. The restaurant availability is not something that is known when we train the dialogue model, the ``Slot`` value is the only way we can alter the course of the conversation based on information from the outside world.
 
 The data fetched from an API call can also be stored for later use without altering the outcome of a conversation as detailed in :ref:`unfeaturized_slots`.
 
-**Example**
+**Slot Features Example**
+
+.. note:: 
+    These example stories have been constructed manually for illustrative purposes. While this is a valid approach to training your model the preferred approach is to use :ref:`supervised learning <tutorial_supervised>` which generates stories that are *much* less error-prone.
 
 In this first story we will try and make a booking for 5 people in a restaurant on the night of 21st August 2018. 
-In this case the restaurant is booked out so we want to apologise to the customer and suggests similar restaurants.
-
-**Note:** it is assumed that the Rasa Core model has been trained to recognise a message like *"Book Murphys Bistro on August 21 for 5 people"* 
+In this case the restaurant is booked out so we want to apologize to the customer and suggests similar restaurants. It is assumed that the Rasa Core model has been trained to recognise a message like *"Book Murphys Bistro on August 21 for 5 people"*
 
 .. code-block:: md
 
@@ -215,9 +216,11 @@ is set or not.
 Storing API responses in the tracker
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The result from an API call can be stored in a ``Slot`` as :ref:`highlighted above <slot_features>`. In that case the data is stored in a ``Slot`` that is featurized, influencing the flow of the dialogue. 
+The result from an API call can be stored in a ``Slot`` as :ref:`explained above <slot_features>`. In that case 
+the data is stored in a ``Slot`` that is featurized, influencing the flow of the dialogue. 
 
-It is possible to store the results from a database query, or from an API call, in a ``Slot`` that will not influence the dialogue. You will need to define an ``unfeaturized`` slot in your domain:
+A slot of type ``unfeaturized`` can be used to store the results from a database query or API call so that it will 
+not influence the course of a dialogue. An exaple ``unfeaturized`` slot defined in a domain file:
 
 .. code-block:: yaml
 
@@ -241,5 +244,4 @@ You can set this value in a custom ``Action``:
            data = requests.get(url).json
            return [SlotSet("api_result", data)]
 
-
-Why? Part of conversation / tracker and not separate in a cache - if using persisted tracking will be restored with that data.
+This is especially useful when you are :ref:`persisting your tracker <persisting_trackers>` in Redis or another data store. You could cache the API or database responses separately, but storing them in the tracker means they will be persisted automatically with the rest of the dialogue state, and will be restored along with the rest of the state should the system require a reboot.
