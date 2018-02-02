@@ -10,7 +10,7 @@ import pytest
 
 from rasa_nlu.evaluate import is_token_within_entity, do_entities_overlap, merge_labels, patch_duckling_entities, \
     remove_empty_intent_examples, get_entity_extractors, get_duckling_dimensions, known_duckling_dimensions, \
-    find_component, patch_duckling_extractors, prepare_data, run_cv_evaluation
+    find_component, patch_duckling_extractors, prepare_data, run_cv_evaluation, substitute_labels
 from rasa_nlu.evaluate import does_token_cross_borders
 from rasa_nlu.evaluate import align_entity_predictions
 from rasa_nlu.evaluate import determine_intersection
@@ -282,3 +282,8 @@ def test_patch_duckling_extractors(duckling_interpreter):
 
     patched = patch_duckling_extractors(duckling_interpreter, {"ner_duckling"})
     assert patched == target
+
+def test_label_replacement():
+    original_labels = ["O", "location"]
+    target_labels = ["no_entity", "location"]
+    assert substitute_labels(original_labels, "O", "no_entity") == target_labels
