@@ -75,7 +75,7 @@ class TrainingData(object):
         removes trailing whitespaces from intent annotations."""
 
         for ex in examples:
-            if ex.get("intent") is not None:
+            if ex.get("intent"):
                 ex.set("intent", ex.get("intent").strip())
         return examples
 
@@ -84,31 +84,14 @@ class TrainingData(object):
         # type: () -> List[Message]
         return [ex
                 for ex in self.training_examples
-                if ex.get("intent") is not None]
+                if ex.get("intent")]
 
     @lazyproperty
     def entity_examples(self):
         # type: () -> List[Message]
         return [ex
                 for ex in self.training_examples
-                if ex.get("entities") is not None]
-
-    @lazyproperty
-    def num_entity_examples(self):
-        # type: () -> int
-        """Returns the number of proper entity training examples
-        (containing at least one annotated entity)."""
-
-        return len([ex
-                    for ex in self.training_examples
-                    if len(ex.get("entities", [])) > 0])
-
-    @lazyproperty
-    def num_intent_examples(self):
-        # type: () -> int
-        """Returns the number of intent examples."""
-
-        return len(self.intent_examples)
+                if ex.get("entities")]
 
     @lazyproperty
     def intents(self):
@@ -202,11 +185,11 @@ class TrainingData(object):
 
     def print_stats(self):
         logger.info("Training data stats: \n" +
-                    "\t- intent examples: {} ({} distinct intents)\n".format(self.num_intent_examples,
+                    "\t- intent examples: {} ({} distinct intents)\n".format(len(self.intent_examples),
                                                                              len(self.intents)) +
                     "\t- Found intents: {}\n".format(
                             list_to_str(self.intents)) +
                     "\t- entity examples: {} ({} distinct entities)\n".format(
-                            self.num_entity_examples, len(self.entities)) +
+                            len(self.entity_examples), len(self.entities)) +
                     "\t- found entities: {}\n".format(
                             list_to_str(self.entities)))

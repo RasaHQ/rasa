@@ -4,8 +4,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import io
-import json
 import tempfile
 
 import pytest
@@ -16,12 +14,12 @@ from rasa_nlu.training_data.formats.rasa import validate_rasa_nlu_data
 from rasa_nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa_nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa_nlu import training_data
+from rasa_nlu import utils
 
 
 def test_example_training_data_is_valid():
     demo_json = 'data/examples/rasa/demo-rasa.json'
-    with io.open(demo_json, encoding="utf-8-sig") as f:
-        data = json.loads(f.read())
+    data = utils.read_json_file(demo_json)
     validate_rasa_nlu_data(data)
 
 
@@ -45,145 +43,68 @@ def test_validation_is_throwing_exceptions(invalid_data):
 
 def test_luis_data():
     td = training_data.load_data('data/examples/luis/demo-restaurants.json')
-    assert td.entity_examples != []
-    assert td.intent_examples != []
+    assert len(td.entity_examples) == 8
+    assert len(td.intent_examples) == 28
+    assert len(td.training_examples) == 28
     assert td.entity_synonyms == {}
+    assert td.intents == {"affirm", "goodbye", "greet", "inform"}
+    assert td.entities == {"location", "cuisine"}
 
 
 def test_wit_data():
     td = training_data.load_data('data/examples/wit/demo-flights.json')
-    assert td.entity_examples != []
-    assert td.intent_examples != []
+    assert len(td.entity_examples) == 4
+    assert len(td.intent_examples) == 1
+    assert len(td.training_examples) == 4
     assert td.entity_synonyms == {}
-
-
-def test_rasa_data():
-    td = training_data.load_data('data/examples/rasa/demo-rasa.json')
-    assert td.entity_examples != []
-    assert td.intent_examples != []
-
-    num_entities = len([e for e in td.entity_examples if e.get("entities")])
-    assert len(td.sorted_entities()) >= num_entities
-    assert len(td.sorted_intent_examples()) == len(td.intent_examples)
-    assert td.entity_synonyms == {'Chines': 'chinese',
-                                  'Chinese': 'chinese',
-                                  'chines': 'chinese',
-                                  'vegg': 'vegetarian',
-                                  'veggie': 'vegetarian'}
-
-    assert td.regex_features[0]["name"] == "greet"
-    assert td.regex_features[0]["pattern"] == "hey[^\s]*"
-
-    assert td.regex_features[1]["name"] == "zipcode"
-    assert td.regex_features[1]["pattern"] == "[0-9]{5}"
-
-
-def test_rasa_data_multiple():
-    # Load the reference data
-    td_reference = training_data.load_data('data/examples/rasa/demo-rasa.json')
-
-    # Load and check the multi-file data
-    td = training_data.load_data('data/test/multiple_files_json')
-    assert td.entity_examples != []
-    assert td.intent_examples != []
-
-    num_entities = len([e for e in td.entity_examples if e.get("entities")])
-    assert len(td.sorted_entities()) >= num_entities
-    assert len(td.sorted_intent_examples()) == len(td.intent_examples)
-    assert td.entity_synonyms == {'Chines': 'chinese',
-                                  'Chinese': 'chinese',
-                                  'chines': 'chinese',
-                                  'vegg': 'vegetarian',
-                                  'veggie': 'vegetarian'}
-
-    # Check the number of entries
-    assert td.num_entity_examples == td_reference.num_entity_examples
-    assert td.num_intent_examples == td_reference.num_intent_examples
-
-    # Compare the multi-file data with the reference
-    intents_reference = [i.as_dict()['intent']
-                         for i in td_reference.intent_examples]
-    examples_reference = [i.as_dict()['text']
-                          for i in td_reference.intent_examples]
-    intents = [i.as_dict()['intent'] for i in td.intent_examples]
-    examples = [i.as_dict()['text'] for i in td.intent_examples]
-    assert set(intents) == set(intents_reference)
-    assert set(examples) == set(examples_reference)
-
-    assert td.regex_features[0]["name"] == "greet"
-    assert td.regex_features[0]["pattern"] == "hey[^\s]*"
-
-    assert td.regex_features[1]["name"] == "zipcode"
-    assert td.regex_features[1]["pattern"] == "[0-9]{5}"
+    assert td.intents == {"flight_booking"}
+    assert td.entities == {"location", "datetime"}
 
 
 def test_dialogflow_data():
     td = training_data.load_data('data/examples/dialogflow/')
-    assert td.entity_examples != []
-    assert td.intent_examples != []
-    assert td.entity_synonyms != {}
+    assert len(td.entity_examples) == 5
+    assert len(td.intent_examples) == 24
+    assert len(td.training_examples) == 24
+    assert td.intents == {"affirm", "goodbye", "hi", "inform"}
+    assert td.entities == {"cuisine", "location"}
+    non_trivial_synonyms = {k: v for k, v in td.entity_synonyms.items() if k != v}
+    assert non_trivial_synonyms == {"mexico": "mexican",
+                                  "china": "chinese",
+                                  "india": "indian"}
 
 
-def test_markdown_data():
-    td = training_data.load_data('data/examples/rasa/demo-rasa.md')
+@pytest.mark.parametrize("filename", ["data/examples/rasa/demo-rasa.json", 'data/examples/rasa/demo-rasa.md'])
+def test_demo_data(filename):
+    td = training_data.load_data(filename)
+    assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye"}
+    assert td.entities == {"location", "cuisine"}
+    assert len(td.training_examples) == 42
+    assert len(td.intent_examples) == 42
+    assert len(td.entity_examples) == 11
 
-    num_entities = len([e for e in td.entity_examples if e.get("entities")])
-    assert len(td.sorted_entities()) >= num_entities
-    assert len(td.sorted_intent_examples()) == len(td.intent_examples)
     assert td.entity_synonyms == {'Chines': 'chinese',
                                   'Chinese': 'chinese',
                                   'chines': 'chinese',
                                   'vegg': 'vegetarian',
                                   'veggie': 'vegetarian'}
 
-    assert td.regex_features[0]["name"] == "greet"
-    assert td.regex_features[0]["pattern"] == "hey[^\s]*"
-
-    assert td.regex_features[1]["name"] == "zipcode"
-    assert td.regex_features[1]["pattern"] == "[0-9]{5}"
+    assert td.regex_features == [{"name": "greet", "pattern": "hey[^\s]*"},
+                                 {"name": "zipcode", "pattern": "[0-9]{5}"}]
 
 
-def test_markdown_data_multiple():
-    # Load the reference data
-    td_reference = training_data.load_data('data/examples/rasa/demo-rasa.md')
-
-    # Load and check the multi-file data
-    td = training_data.load_data('data/test/multiple_files_markdown')
-
-    num_entities = len([e for e in td.entity_examples if e.get("entities")])
-    assert len(td.sorted_entities()) >= num_entities
-    assert len(td.sorted_intent_examples()) == len(td.intent_examples)
-    assert td.entity_synonyms == {'Chines': 'chinese',
-                                  'Chinese': 'chinese',
-                                  'chines': 'chinese',
-                                  'vegg': 'vegetarian',
-                                  'veggie': 'vegetarian'}
-
-    # Check the number of entries
-    assert td.num_entity_examples == td_reference.num_entity_examples
-    assert td.num_intent_examples == td_reference.num_intent_examples
-
-    # Compare the multi-file data with the reference
-    intents_reference = [i.as_dict()['intent']
-                         for i in td_reference.intent_examples]
-    examples_reference = [i.as_dict()['text']
-                          for i in td_reference.intent_examples]
-    intents = [i.as_dict()['intent'] for i in td.intent_examples]
-    examples = [i.as_dict()['text'] for i in td.intent_examples]
-    assert set(intents) == set(intents_reference)
-    assert set(examples) == set(examples_reference)
-
-    assert td.regex_features[0]["name"] == "greet"
-    assert td.regex_features[0]["pattern"] == "hey[^\s]*"
-
-    assert td.regex_features[1]["name"] == "zipcode"
-    assert td.regex_features[1]["pattern"] == "[0-9]{5}"
-
-
-def test_compare_markdown_to_json():
-    td_md = training_data.load_data('data/examples/rasa/demo-rasa.md')
-    td_json = training_data.load_data('data/examples/rasa/demo-rasa.json')
-    assert td_md.sorted_entities() == td_json.sorted_entities()
+@pytest.mark.parametrize("files", [('data/examples/rasa/demo-rasa.json', 'data/test/multiple_files_json'),
+                                   ('data/examples/rasa/demo-rasa.md', 'data/test/multiple_files_markdown')])
+def test_data_merging(files):
+    td_reference = training_data.load_data(files[0])
+    td = training_data.load_data(files[1])
+    assert len(td.entity_examples) == len(td_reference.entity_examples)
+    assert len(td.intent_examples) == len(td_reference.intent_examples)
+    assert len(td.training_examples) == len(td_reference.training_examples)
+    assert td.intents == td_reference.intents
+    assert td.entities == td_reference.entities
+    assert td.entity_synonyms == td_reference.entity_synonyms
+    assert td.regex_features == td_reference.regex_features
 
 
 def test_repeated_entities():
