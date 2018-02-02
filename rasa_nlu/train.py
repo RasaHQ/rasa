@@ -13,11 +13,11 @@ from typing import Tuple
 from typing import Optional
 
 from rasa_nlu.components import ComponentBuilder
-from rasa_nlu.converters import load_data
 from rasa_nlu.model import Interpreter
 from rasa_nlu.model import Trainer
 
 from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu.training_data import load_data
 
 logger = logging.getLogger(__name__)
 
