@@ -17,6 +17,10 @@ Added
 
 Changed
 -------
+- Regex features are now sorted internally. **retrain your model if you use regex features**
+- The keyword intent classifier now returns ``null`` instead of ``"None"`` as intent name in the json result
+if there's no match
+
 
 Fixed
 -----
@@ -41,7 +45,6 @@ Changed
   the app use ``pip install -e .``
 - fixed http duckling parsing for non ``en`` languages
 - fixed parsing of entities from markdown training data files
-- Regex features are now sorted internally. **retrain your model if you use regex features**
 
 
 [0.10.6] - 2018-01-02
