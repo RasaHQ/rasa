@@ -142,8 +142,10 @@ available and choose radically different actions to perform based on the value.
         - waiting-list
         - available
 
-A ``Slot`` will be set by Rasa Core if its name and the name of the entity detected by the NLU module match. However, when we wish to alter the flow of a conversation we would explicitly set the value of the slot from a custom ``Action`` and 
-then use the next ``Turn`` of the conversation to check what feature of the slot is set.
+A ``Slot`` will be set by Rasa Core if its name and the name of the entity detected by the NLU module 
+match. The value of the slot will influence the story dialogue if you add the slot to the training 
+stories - this is explained in the examples below. Slots can also be set explicitly from our own custom ``Action`` 
+and influence the dialogue based on real-world information.
 
 .. code-block:: python
 
@@ -165,15 +167,15 @@ The data fetched from an API call can also be stored for later use without alter
 **Slot Features Example**
 
 .. note:: 
-    These example stories have been constructed manually for illustrative purposes. While this is a valid approach to training your model the preferred approach is to use :ref:`supervised learning <tutorial_supervised>` which generates stories that are *much* less error-prone.
+    These example stories have been constructed manually for illustrative purposes. While this is a valid approach to training your model the preferred approach is to use :ref:`interactive learning <tutorial_interactive_learning>` which generates stories that are *much* less error-prone.
 
 In this first story we will try and make a booking for 5 people in a restaurant on the night of 21st August 2018. 
-In this case the restaurant is booked out so we want to apologize to the customer and suggests similar restaurants. It is assumed that the Rasa Core model has been trained to recognise a message like *"Book Murphys Bistro on August 21 for 5 people"*
+In this case the restaurant is booked out so we want to apologize to the customer and suggest similar restaurants. It is assumed that the Rasa Core model has been trained to recognise a message like *"Book Murphys Bistro on August 21 for 5 people"*
 
 .. code-block:: md
 
     # restaurant unavailable
-    * _make_booking[people=5, date="2018-08-21T19:30:00+00:00", restaurant_id=145]
+    * _make_booking{"people":"5", "date":"2018-08-21T19:30:00+00:00", "restaurant_id":"145"}
     - slot{"restaurant_availability": "booked-out"}
     - utter_sorry_unavailable
     - action_show_similar
@@ -182,9 +184,8 @@ This second story details the flow when the restaurant is available. We will tel
 the restaurant and ask if any further help is required.
     
 .. code-block:: md
-
     # restaurant available
-    * _make_booking[people=5, date="2018-08-22T19:30:00+00:00", restaurant_id=145]
+    * _make_booking{"people":"5", "date":"2018-08-22T19:30:00+00:00", "restaurant_id":"145"}
     - slot{"restaurant_availability": "available"}
     - action_make_booking
     - utter_restaurant_booked
@@ -201,10 +202,10 @@ is set or not.
 .. code-block:: md
 
     # restaurant request without date
-    * _make_booking[people=5, restaurant_id=145]
+    * _make_booking{"people":"5", "restaurant_id":"145"}
     - slot{"date": null}
     - utter_date_required
-    * _inform[date="2018-08-22T19:30:00+00:00"]
+    * _inform{"date":"2018-08-22T19:30:00+00:00"}
     - action_make_booking
     - utter_restaurant_booked
     - utter_anything_more
