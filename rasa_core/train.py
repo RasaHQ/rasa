@@ -17,6 +17,8 @@ from rasa_core.policies.memoization import MemoizationPolicy
 
 
 def create_argument_parser():
+    """Parse all the command line arguments for the training script."""
+
     parser = argparse.ArgumentParser(
             description='trains a dialogue model')
     parser.add_argument(
@@ -65,23 +67,7 @@ def create_argument_parser():
             default=50,
             help="how much data augmentation to use during training")
 
-    # arguments for logging configuration
-    parser.add_argument(
-            '--debug',
-            help="Print lots of debugging statements. "
-                 "Sets logging level to DEBUG",
-            action="store_const",
-            dest="loglevel",
-            const=logging.DEBUG,
-            default=logging.WARNING,
-    )
-    parser.add_argument(
-            '-v', '--verbose',
-            help="Be verbose. Sets logging level to INFO",
-            action="store_const",
-            dest="loglevel",
-            const=logging.INFO,
-    )
+    utils.add_logging_option_arguments(parser)
     return parser
 
 

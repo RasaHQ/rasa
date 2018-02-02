@@ -18,6 +18,8 @@ logger = logging.getLogger(__name__)
 
 
 def create_argument_parser():
+    """Parse all the command line arguments for the visualisation script."""
+
     parser = argparse.ArgumentParser(
             description='Visualize the stories in a dialogue training file')
 
@@ -44,23 +46,7 @@ def create_argument_parser():
                         help="path of the Rasa NLU training data, "
                              "used to insert example messages into the graph")
 
-    # arguments for logging configuration
-    parser.add_argument(
-            '--debug',
-            help="Print lots of debugging statements. "
-                 "Sets logging level to DEBUG",
-            action="store_const",
-            dest="loglevel",
-            const=logging.DEBUG,
-            default=logging.INFO,
-    )
-    parser.add_argument(
-            '-v', '--verbose',
-            help="Be verbose. Sets logging level to INFO",
-            action="store_const",
-            dest="loglevel",
-            const=logging.INFO,
-    )
+    utils.add_logging_option_arguments(parser)
     return parser
 
 

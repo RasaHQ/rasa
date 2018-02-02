@@ -55,24 +55,7 @@ def create_argument_parser():
         choices=["facebook", "slack", "telegram", "cmdline"],
         help="service to connect to")
 
-    # arguments for logging configuration
-    parser.add_argument(
-        '--debug',
-        help="Print lots of debugging statements. "
-             "Sets logging level to DEBUG",
-        action="store_const",
-        dest="loglevel",
-        const=logging.DEBUG,
-        default=logging.WARNING,
-    )
-    parser.add_argument(
-        '-v', '--verbose',
-        help="Be verbose. Sets logging level to INFO",
-        action="store_const",
-        dest="loglevel",
-        const=logging.INFO,
-    )
-
+    utils.add_logging_option_arguments(parser)
     return parser
 
 
