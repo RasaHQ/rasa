@@ -70,8 +70,8 @@ def test_dialogflow_data():
     assert td.entities == {"cuisine", "location"}
     non_trivial_synonyms = {k: v for k, v in td.entity_synonyms.items() if k != v}
     assert non_trivial_synonyms == {"mexico": "mexican",
-                                  "china": "chinese",
-                                  "india": "indian"}
+                                    "china": "chinese",
+                                    "india": "indian"}
 
 
 @pytest.mark.parametrize("filename", ["data/examples/rasa/demo-rasa.json", 'data/examples/rasa/demo-rasa.md'])
