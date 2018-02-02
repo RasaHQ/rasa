@@ -24,6 +24,8 @@ For example:
 The full set of events is documented in the :doc:`Events API documentation <api/events>`.
 
 
+.. _persisting_trackers:
+
 Persisting Trackers:
 --------------------
 
