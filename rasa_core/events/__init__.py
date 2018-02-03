@@ -475,7 +475,7 @@ class ReminderScheduled(Event):
     def as_story_string(self):
         props = json.dumps({
             "action": self.action_name,
-            "date_time": self.trigger_date_time,
+            "date_time": self.trigger_date_time.isoformat(),
             "name": self.name,
             "kill_on_user_msg": self.kill_on_user_message})
         return "{name}{props}".format(name=self.type_name, props=props)
