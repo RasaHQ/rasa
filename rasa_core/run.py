@@ -76,7 +76,7 @@ def create_argument_parser():
     return parser
 
 
-def _raise_missing_credentials_Exception(channel):
+def _raise_missing_credentials_exception(channel):
     if channel == "facebook":
         channel_doc_link = "facebook-messenger"
     elif channel == "slack":
@@ -97,7 +97,7 @@ def _raise_missing_credentials_Exception(channel):
 
 def _create_external_channel(channel, port, credentials_file):
     if credentials_file is None:
-        _raise_missing_credentials_Exception(channel)
+        _raise_missing_credentials_exception(channel)
 
     credentials = read_yaml_file(credentials_file)
     if channel == "facebook":

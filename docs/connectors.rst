@@ -134,12 +134,12 @@ facebook developer portal.
 
       1. To create the app go to: https://api.slack.com/apps and click on *"Create New App"*.
       2. Activate the following features: interactive components, event subscriptions, bot users,
-            permissions (for basic functionality you should subscribe to the ``message.channel``,
-            ``message.groups``, ``message.im`` and ``message.mpim`` events)
+         permissions (for basic functionality you should subscribe to the ``message.channel``,
+         ``message.groups``, ``message.im`` and ``message.mpim`` events)
       3. The ``slack_channel`` is the target your bot posts to. This can be a channel,
-            an app or an individual person
+         an app or an individual person
       4. Use the entry for ``Bot User OAuth Access Token`` in the "OAuth & Permissions" tab
-            as your ``slack_token``
+         as your ``slack_token``
 
 
    For more detailed steps, visit the

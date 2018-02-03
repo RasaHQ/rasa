@@ -78,7 +78,7 @@ So what do the different parts mean?
 | ``templates`` | template strings for the things your bot can say                                                     |
 +---------------+------------------------------------------------------------------------------------------------------+
 
-In our simple example we don't need slots, so that section doesn't appear
+In our simple example we don't need ``slots`` and ``entities``, so these sections don't appear
 in our definition.
 
 **How does this fit together?**
@@ -86,16 +86,17 @@ Rasa takes the ``intent``, ``entities``, and the internal state of the dialogue,
 and selects one of the ``actions`` that should be executed next.
 If the action is just to say something to the user, Rasa will look for a matching
 template in the domain (action name equals the utter template, as for
-``utter_greeting`` in the above example), fill in any variables,
-and respond.
+``utter_greet`` in the above example), fill in any variables,
+and respond. For actions
+which do more than just send a message, you can define them as
+python classes and reference them in the domain by their module path. See
+:ref:`custom_actions` for more information about custom actions.
 
 .. note::
 
-   There is one special action, ``ActionListen``, which means to stop taking
-   further actions until the user says something else. For actions
-   which do more than just send a message, you can define them as
-   python classes and reference them in the domain by their module path. See
-   :ref:`custom_actions` for more information about custom actions.
+   There is one additional special action, ``ActionListen``, which means to stop taking
+   further actions until the user says something else.
+   It is not specified in the ``domain.yml``
 
 2. Define an interpreter
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -106,6 +107,7 @@ In this example we are going to use Rasa NLU for this purpose.
 
 In Rasa NLU, we need to define the user messages our bot should be able to
 handle in the `Rasa NLU training data format <https://nlu.rasa.ai/dataformat.html>`_.
+In this tutorial we are going to use Markdown Format for NLU training data.
 Let's create some intent examples in ``data/nlu.md``:
 
 .. literalinclude:: ../examples/moodbot/data/nlu.md
@@ -130,8 +132,9 @@ Let's run
 
    python -m rasa_nlu.train -c nlu_model_config.json --fixed_model_name current
 
-to train our NLU model. A new directory ``models/nlu/current`` should have been
-created containing the NLU model.
+to train our NLU model. A new directory ``models/nlu/default/current`` should have been
+created containing the NLU model. Note that ``default`` stands for project name, since we did not
+specify it explicitly in ``nlu_model_config.json``.
 
 .. note::
 
@@ -144,26 +147,32 @@ created containing the NLU model.
 So far, we've got an NLU model, a domain defining the actions our bot can
 take, and inputs it should handle (intents & entities). We are still
 missing the central piece, **stories to tell our bot what to do at which
-point in the dialogue**. There are two different ways to create stories (and
+point in the dialogue**.
+
+A **story** is a training data sample for the dialogue system.
+There are two different ways to create stories (and
 you can mix them):
 
 - create the stories by hand, writing them directly to a file
 - create stories using interactive learning (see :ref:`tutorial_interactive_learning`).
 
 For this example, we are going to create the stories by writing them directly
-to ``stories.md``. But be aware, although it is a bit faster to write
-stories directly by hand instead of using interactive learning, special
-care needs to be taken when using slots, as they need to be properly set in the
-stories. But enough talking, let's head over to our stories:
+to ``stories.md``.
+Stories begin with ``##`` and a string as an identifier. User actions start
+with an asterisk, and bot actions are specified by lines beginning with a
+dash. The end of a story is denoted by a newline. See :ref:`stories` for
+more information about the data format.
+
+Enough talking, let's head over to our stories:
 
 .. literalinclude:: ../examples/moodbot/data/stories.md
     :linenos:
     :language: md
 
-Stories begin with ``##`` and a string as an identifier. User actions start
-with an asterisk, and bot actions are specified by lines beginning with a
-dash. The end of a story is denoted by a newline. See :ref:`stories` for
-more information about the data format.
+Be aware, although it is a bit faster to write
+stories directly by hand instead of using interactive learning, special
+care needs to be taken when using slots, as they need to be properly set in the
+stories.
 
 4. Put the pieces together
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -183,12 +192,17 @@ Here we'll just talk to the bot on the command line:
 
 .. code-block:: bash
 
-   python -m rasa_core.run -d models/dialogue -u models/nlu/current
+   python -m rasa_core.run -d models/dialogue -u models/nlu/default/current
 
 And there we have it! A minimal bot containing all the important pieces of
 Rasa Core.
 
 .. image:: _static/images/facebook-run.png
+
+.. note::
+
+    Button emulation does not work in console output, you need to type words like "great" or "sad"
+    instead of numbers 1 or 2.
 
 Bonus: Handle messages from Facebook
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

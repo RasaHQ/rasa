@@ -4,13 +4,34 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
-[Unreleased] - `master`_
-^^^^^^^^^^^^^^^^^^^^^^^^
+[Unreleased 0.9.0.aX] - `master`_
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. note:: This version is not yet released and is under active development.
 
-This is a major version change. Make sure to take a look at the migrations
-guide in the documentation for advice on how to update existing projects.
+Added
+-----
+
+Changed
+-------
+
+Removed
+-------
+
+[0.8.1] - 2018-02-01
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- removed deque to support python 3.5
+- Documentation improvements to tutorials
+
+[0.8.0] - 2018-01-30
+^^^^^^^^^^^^^^^^^^^^
+
+This is a major version change. Make sure to take a look at the
+:ref:`migration` in the documentation for advice on how to
+update existing projects.
 
 Added
 -----
@@ -36,11 +57,8 @@ Changed
 - improved travis build speed by not using miniconda
 - don't fail with an exception but with a helpful error message if an
   utterance template contains a variable that can not be filled
-- domain doesn't fail on unknown actions but emits a warning instead. this is to support reading 
+- domain doesn't fail on unknown actions but emits a warning instead. this is to support reading
   logs from older conversation if one recently removed an action from the domain
-
-Removed
--------
 
 Fixed
 -----
@@ -51,6 +69,8 @@ Fixed
 - properly log to specified file when starting Rasa Core server
 - properly calculate offset of last reset event after loading tracker from
   tracker store
+- UserUtteranceReverted action incorrectly triggered actions to be replayed
+
 
 [0.7.9] - 2017-11-29
 ^^^^^^^^^^^^^^^^^^^^
