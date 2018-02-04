@@ -38,4 +38,4 @@ class KeywordIntentClassifier(Component):
         elif any(map(is_present, self.byes)):
             return "goodbye"
         else:
-            return "None"
+            return None

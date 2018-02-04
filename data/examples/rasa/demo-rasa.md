@@ -49,10 +49,15 @@
 - [central](location) [indian](cuisine) restaurant
 
 ## synonym:chinese
-- Chines
-- chines
-- Chinese
++ Chines
+* Chinese
 
 ## synonym:vegetarian
 - vegg
 - veggie
+
+## regex:zipcode
+- [0-9]{5}
+
+## regex:greet
+- hey[^\s]*

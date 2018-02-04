@@ -1,5 +1,11 @@
 {
   "rasa_nlu_data": {
+    "regex_features": [
+      {
+        "name": "greet",
+        "pattern": "hey[^\\s]*"
+      }
+    ],
     "entity_synonyms": [
       {
         "value": "chinese",
