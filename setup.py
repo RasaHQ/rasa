@@ -8,7 +8,7 @@ tests_requires = [
     "pytest-pep8",
     "pytest-services",
     "pytest-cov",
-    "pytest-twisted",
+    "pytest-twisted<1.6",
     "treq"
 ]
 
