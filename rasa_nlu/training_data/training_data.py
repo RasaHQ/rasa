@@ -23,6 +23,7 @@ from collections import Counter
 from rasa_nlu.utils import lazyproperty, write_to_file
 from rasa_nlu.utils import list_to_str
 from rasa_nlu.training_data.util import check_duplicate_synonym
+from rasa_nlu.training_data import Message
 
 logger = logging.getLogger(__name__)
 
@@ -37,47 +38,63 @@ class TrainingData(object):
     def __init__(self,
                  training_examples=None,
                  entity_synonyms=None,
-                 regex_features=None):
-        # type: (Optional[List[Message]], Optional[Dict[Text, Text]]) -> None
+                 regex_features=None,
+                 entity_phrases=None):
+        # type: (Optional[List[Message]], Optional[Dict[Text, Text]], Optional[List[Dict[Text, Text]]]) -> None
 
-        if training_examples:
-            self.training_examples = self.sanitize_examples(training_examples)
-        else:
-            self.training_examples = []
-        self.entity_synonyms = entity_synonyms if entity_synonyms else {}
-        self.regex_features = regex_features if regex_features else []
+        self.training_examples = training_examples or []
+        self.sanitize_examples()
+
+        self.entity_synonyms = entity_synonyms or {}
+
+        self.regex_features = regex_features or []
         self.sort_regex_features()
+
+        self.entity_phrases = entity_phrases or {}
 
         self.validate()
         self.print_stats()
 
     def merge(self, *others):
+        # type: (List[TrainingData]) -> TrainingData
         """Merges the TrainingData instance with others and creates a new one."""
         training_examples = deepcopy(self.training_examples)
         entity_synonyms = self.entity_synonyms.copy()
         regex_features = deepcopy(self.regex_features)
+        entity_phrases = deepcopy(self.entity_phrases)
 
         for o in others:
             training_examples.extend(deepcopy(o.training_examples))
             regex_features.extend(deepcopy(o.regex_features))
+            self._merge_entity_synonyms(entity_synonyms, o)
+            self._merge_entity_phrases(entity_phrases, o)
 
-            for text, syn in o.entity_synonyms.items():
-                check_duplicate_synonym(entity_synonyms, text, syn, "merging training data")
+        return TrainingData(training_examples, entity_synonyms, regex_features, entity_phrases)
 
-            entity_synonyms.update(o.entity_synonyms)
+    def _merge_entity_synonyms(self, entity_synonyms, o):
+        """Merges entity synonyms and warns for inconsistencies."""
+        for text, syn in o.entity_synonyms.items():
+            check_duplicate_synonym(entity_synonyms, text, syn, "merging training data")
 
-        return TrainingData(training_examples, entity_synonyms, regex_features)
+        entity_synonyms.update(o.entity_synonyms)
 
-    def sanitize_examples(self, examples):
-        # type: (List[Message]) -> List[Message]
+    def _merge_entity_phrases(self, entity_phrases, o):
+        """Merges entity phrases."""
+        for entity, phrases in o.entity_phrases.items():
+            if entity in entity_phrases:
+                entity_phrases[entity] = entity_phrases[entity].union(phrases)
+            else:
+                entity_phrases[entity] = phrases
+
+    def sanitize_examples(self):
+        # type: () -> None
         """Makes sure the training data is clean.
 
         removes trailing whitespaces from intent annotations."""
 
-        for ex in examples:
+        for ex in self.training_examples:
             if ex.get("intent"):
                 ex.set("intent", ex.get("intent").strip())
-        return examples
 
     @lazyproperty
     def intent_examples(self):

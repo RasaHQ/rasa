@@ -26,6 +26,7 @@ class RasaReader(JsonTrainingDataReader):
         entity_examples = data.get("entity_examples", [])
         entity_synonyms = data.get("entity_synonyms", [])
         regex_features = data.get("regex_features", [])
+        entity_phrases = data.get("entity_phrases", [])
 
         entity_synonyms = transform_entity_synonyms(entity_synonyms)
 
@@ -41,7 +42,10 @@ class RasaReader(JsonTrainingDataReader):
             msg = Message.build(ex['text'], ex.get("intent"), ex.get("entities"))
             training_examples.append(msg)
 
-        return TrainingData(training_examples, entity_synonyms, regex_features)
+        entity_phrases = {ep["entity"]: set(ep["phrases"]) for ep in entity_phrases}
+
+        return TrainingData(training_examples, entity_synonyms, regex_features, entity_phrases)
+
 
 class RasaWriter(TrainingDataWriter):
     def dumps(self, training_data, **kwargs):
@@ -57,11 +61,15 @@ class RasaWriter(TrainingDataWriter):
         formatted_examples = [example.as_dict()
                               for example in training_data.training_examples]
 
+        formatted_entity_phrases = [{'entity': entity, 'phrases': list(phrases)}
+                                     for entity, phrases in training_data.entity_phrases.items()]
+
         return json_to_string({
             "rasa_nlu_data": {
                 "common_examples": formatted_examples,
                 "regex_features": training_data.regex_features,
-                "entity_synonyms": formatted_synonyms
+                "entity_synonyms": formatted_synonyms,
+                "entity_phrases": formatted_entity_phrases
             }
         }, **kwargs)
 
@@ -81,6 +89,7 @@ def validate_rasa_nlu_data(data):
                       "is valid. For more information about the format visit "
                       "https://rasahq.github.io/rasa_nlu/dataformat.html")
         raise e
+
 
 def _rasa_nlu_data_schema():
     training_example_schema = {
@@ -113,6 +122,24 @@ def _rasa_nlu_data_schema():
         }
     }
 
+    entity_synonyms_schema = {
+        "type": "object",
+        "properties": {
+            "value": {"type": "string"},
+            "synonyms": {"type": "array",
+                         "items": {"type": "string"}}
+        }
+    }
+
+    entity_phrases_schema = {
+        "type": "object",
+        "properties": {
+            "entity": {"type": "string"},
+            "phrases": {"type": "array",
+                        "items": {"type": "string"}}
+        }
+    }
+
     return {
         "type": "object",
         "properties": {
@@ -122,6 +149,14 @@ def _rasa_nlu_data_schema():
                     "regex_features": {
                         "type": "array",
                         "items": regex_feature_schema
+                    },
+                    "entity_synonyms": {
+                        "type": "array",
+                        "items": entity_synonyms_schema
+                    },
+                    "entity_phrases": {
+                        "type": "array",
+                        "items": entity_phrases_schema
                     },
                     "common_examples": {
                         "type": "array",

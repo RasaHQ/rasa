@@ -92,6 +92,10 @@ def test_demo_data(filename):
     assert td.regex_features == [{"name": "greet", "pattern": "hey[^\s]*"},
                                  {"name": "zipcode", "pattern": "[0-9]{5}"}]
 
+    assert td.entity_phrases == {
+        "food": {"Mapo Tofu", "Tacos", "Chana Masala"}
+    }
+
 
 @pytest.mark.parametrize("files", [('data/examples/rasa/demo-rasa.json', 'data/test/multiple_files_json'),
                                    ('data/examples/rasa/demo-rasa.md', 'data/test/multiple_files_markdown')])
@@ -105,6 +109,7 @@ def test_data_merging(files):
     assert td.entities == td_reference.entities
     assert td.entity_synonyms == td_reference.entity_synonyms
     assert td.regex_features == td_reference.regex_features
+    assert td.entity_phrases == td_reference.entity_phrases
 
 
 def test_repeated_entities():

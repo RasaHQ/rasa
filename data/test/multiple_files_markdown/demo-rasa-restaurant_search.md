@@ -25,3 +25,7 @@
 
 ## regex:zipcode
 - [0-9]{5}
+
+## entity_phrase:food
+- Chana Masala
+- Tacos

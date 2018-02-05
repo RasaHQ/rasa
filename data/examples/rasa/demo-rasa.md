@@ -56,6 +56,11 @@
 - vegg
 - veggie
 
+## entity_phrase:food
+* Mapo Tofu
+* Tacos
+* Chana Masala
+
 ## regex:zipcode
 - [0-9]{5}
 

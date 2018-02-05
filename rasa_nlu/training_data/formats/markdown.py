@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import re
 import logging
+from collections import defaultdict
 
 from rasa_nlu.training_data import Message, TrainingData
 from rasa_nlu.training_data.util import check_duplicate_synonym
@@ -15,7 +16,8 @@ from rasa_nlu.training_data.formats.readerwriter import TrainingDataReader, Trai
 INTENT = "intent"
 SYNONYM = "synonym"
 REGEX = "regex"
-available_sections = [INTENT, SYNONYM, REGEX]
+ENTITY_PHRASE = "entity_phrase"
+available_sections = {INTENT, SYNONYM, REGEX, ENTITY_PHRASE}
 ent_regex = re.compile(r'\[(?P<entity_text>[^\]]+)'
                        r'\]\((?P<entity>\w*?)'
                        r'(?:\:(?P<value>[^)]+))?\)')  # [entity_text](entity_type(:entity_synonym)?)
@@ -35,10 +37,11 @@ class MarkdownReader(TrainingDataReader):
         self.training_examples = []
         self.entity_synonyms = {}
         self.regex_features = []
+        self.entity_phrases = defaultdict(set)
         self.section_regexes = self._create_section_regexes(available_sections)
 
     def reads(self, s, **kwargs):
-        """Read markdown string and create TrainingData object"""
+        """Read markdown string and create TrainingData object.ß"""
         self.__init__()
         s = self._strip_comments(s)
         for line in s.splitlines():
@@ -49,7 +52,8 @@ class MarkdownReader(TrainingDataReader):
             else:
                 self._parse_item(line)
 
-        return TrainingData(self.training_examples, self.entity_synonyms, self.regex_features)
+        return TrainingData(self.training_examples, self.entity_synonyms,
+                            self.regex_features, dict(self.entity_phrases))
 
     @staticmethod
     def _strip_comments(text):
@@ -81,8 +85,10 @@ class MarkdownReader(TrainingDataReader):
                 self.training_examples.append(parsed)
             elif self.current_section == SYNONYM:
                 self._add_synonym(item, self.current_title)
-            else:
+            elif self.current_section == REGEX:
                 self.regex_features.append({"name": self.current_title, "pattern": item})
+            else:
+                self.entity_phrases[self.current_title].add(item)
 
     def _find_entities_in_training_example(self, example):
         """Extracts entities from a markdown intent example."""
@@ -141,6 +147,7 @@ class MarkdownWriter(TrainingDataWriter):
         md += self._generate_training_examples_md(training_data)
         md += self._generate_synonyms_md(training_data)
         md += self._generate_regex_features_md(training_data)
+        md += self._generate_entity_phrases_md(training_data)
 
         return md
 
@@ -182,6 +189,18 @@ class MarkdownWriter(TrainingDataWriter):
             md += self._generate_item_md(regex_feature["pattern"])
 
         return md
+
+    def _generate_entity_phrases_md(self, training_data):
+        """generates markdown for entity phrases."""
+        md = u''
+        entity_phrases = training_data.entity_phrases
+        for entity, phrases in entity_phrases.items():
+            md += self._generate_section_header_md(ENTITY_PHRASE, entity)
+            for phrase in phrases:
+                md += self._generate_item_md(phrase)
+
+        return md
+
 
     def _generate_section_header_md(self, section_type, title, prepend_newline = True):
         """generates markdown section header."""

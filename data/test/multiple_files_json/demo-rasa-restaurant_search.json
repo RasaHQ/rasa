@@ -1,5 +1,11 @@
 {
   "rasa_nlu_data": {
+    "entity_phrases": [
+      {
+        "entity": "food",
+        "phrases": ["Chana Masala", "Tacos"]
+      }
+    ],
     "regex_features": [
       {
         "name": "greet",
