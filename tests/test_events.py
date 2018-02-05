@@ -70,29 +70,29 @@ def test_event_has_proper_implementation(one_event, another_event):
         "Event has a proper str method"
 
 @pytest.mark.parametrize("one_event", [
-    (UserUttered("/greet", {"intent": "greet", "confidence": 1.0}, [])),
+    UserUttered("/greet", {"intent": "greet", "confidence": 1.0}, []),
 
-    (TopicSet("my_topic")),
+    TopicSet("my_topic"),
 
-    (SlotSet("my_slot", "value")),
+    SlotSet("my_slot", "value"),
 
-    (Restarted()),
+    Restarted(),
 
-    (AllSlotsReset()),
+    AllSlotsReset(),
 
-    (ConversationPaused()),
+    ConversationPaused(),
 
-    (ConversationResumed()),
+    ConversationResumed(),
 
-    (StoryExported()),
+    StoryExported(),
 
-    (ActionReverted()),
+    ActionReverted(),
 
-    (ActionExecuted("my_action")),
+    ActionExecuted("my_action"),
 
-    (BotUttered("my_text", "my_data")),
+    BotUttered("my_text", "my_data"),
 
-    (ReminderScheduled("my_action", "now"))
+    ReminderScheduled("my_action", "now")
 ])
 def test_serialisation(one_event):
     story_string = one_event.as_story_string()
