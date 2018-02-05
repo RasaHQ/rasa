@@ -68,3 +68,34 @@ def test_event_has_proper_implementation(one_event, another_event):
     # str test
     assert "object at 0x" not in str(one_event), \
         "Event has a proper str method"
+
+@pytest.mark.parametrize("one_event", [
+    (UserUttered("/greet", {"intent": "greet", "confidence": 1.0}, [])),
+
+    (TopicSet("my_topic")),
+
+    (SlotSet("my_slot", "value")),
+
+    (Restarted()),
+
+    (AllSlotsReset()),
+
+    (ConversationPaused()),
+
+    (ConversationResumed()),
+
+    (StoryExported()),
+
+    (ActionReverted()),
+
+    (ActionExecuted("my_action")),
+
+    (BotUttered("my_text", "my_data")),
+
+    (ReminderScheduled("my_action", "now"))
+])
+def test_serialisation(one_event):
+    story_string = one_event.as_story_string()
+    new_event = Event.from_story_string(story_string)
+    assert hash(one_event) == hash(new_event)
+    
