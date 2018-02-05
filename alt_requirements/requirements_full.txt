@@ -8,3 +8,4 @@
 -r requirements_mitie.txt
 
 duckling==1.7.3
+pygtrie==2.2

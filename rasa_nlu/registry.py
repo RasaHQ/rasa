@@ -27,6 +27,7 @@ from rasa_nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
 from rasa_nlu.extractors.entity_synonyms import EntitySynonymMapper
 from rasa_nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
+from rasa_nlu.extractors.phrase_matcher import PhraseMatcher
 from rasa_nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa_nlu.featurizers.mitie_featurizer import MitieFeaturizer
 from rasa_nlu.featurizers.ngram_featurizer import NGramFeaturizer
@@ -48,7 +49,7 @@ if typing.TYPE_CHECKING:
 component_classes = [
     SpacyNLP, MitieNLP,
     SpacyEntityExtractor, MitieEntityExtractor, DucklingExtractor,
-    CRFEntityExtractor, DucklingHTTPExtractor,
+    CRFEntityExtractor, DucklingHTTPExtractor, PhraseMatcher,
     EntitySynonymMapper,
     SpacyFeaturizer, MitieFeaturizer, NGramFeaturizer, RegexFeaturizer,
     MitieTokenizer, SpacyTokenizer, WhitespaceTokenizer,
@@ -111,6 +112,7 @@ registered_pipeline_templates = {
         "ner_duckling",
         "ner_duckling_http",
         "ner_synonyms",
+        "ner_phrase_matcher",
         "intent_classifier_keyword",
         "intent_classifier_sklearn",
         "intent_classifier_mitie",

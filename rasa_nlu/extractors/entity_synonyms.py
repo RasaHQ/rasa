@@ -71,10 +71,10 @@ class EntitySynonymMapper(EntityExtractor):
             if os.path.isfile(entity_synonyms_file):
                 with io.open(entity_synonyms_file, encoding='utf-8') as f:
                     synonyms = json.loads(f.read())
-                return EntitySynonymMapper(synonyms)
+                return cls(synonyms)
             else:
                 warnings.warn("Failed to load synonyms file from '{}'".format(entity_synonyms_file))
-        return EntitySynonymMapper()
+        return cls()
 
     def replace_synonyms(self, entities):
         for entity in entities:
