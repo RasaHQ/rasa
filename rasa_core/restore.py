@@ -46,8 +46,7 @@ def create_argument_parser():
 
 def check_prediction_aligns_with_story(last_prediction,
                                        actions_between_utterances):
-    p, a = evaluate.min_list_distance(last_prediction,
-                                      actions_between_utterances)
+    p, a = evaluate.align_lists(last_prediction, actions_between_utterances)
     if p != a:
         logger.warn("Model predicted different actions than the "
                     "model used to create the story! Expected: "

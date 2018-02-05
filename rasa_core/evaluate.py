@@ -10,7 +10,9 @@ from difflib import SequenceMatcher
 
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+from typing import Text, List, Tuple
 
+import rasa_core
 from rasa_core import utils
 from rasa_core.agent import Agent
 from rasa_core.events import ActionExecuted, UserUttered
@@ -56,8 +58,14 @@ def create_argument_parser():
     return parser
 
 
-def min_list_distance(pred, actual):
-    """Calculate the distance between the two lists."""
+def align_lists(pred, actual):
+    # type: (List[Text], List[Text]) -> Tuple[List[Text], List[Text]]
+    """Align two lists trying to keep same elements at the same index.
+
+    If lists contain different items at some indices, the algorithm will
+    try to find the best alignment and pad with `None`
+    values where necessary."""
+
     padded_pred = []
     padded_actual = []
     s = SequenceMatcher(None, pred, actual)
@@ -73,6 +81,9 @@ def min_list_distance(pred, actual):
 
 
 def actions_since_last_utterance(tracker):
+    # type: (rasa_core.trackers.DialogueStateTracker) -> List[Text]
+    """Extract all events after the most recent utterance from the user."""
+
     actions = []
     for e in reversed(tracker.events):
         if isinstance(e, UserUttered):
@@ -120,8 +131,7 @@ def collect_story_predictions(story_file, policy_model_path, nlu_model_path,
 
         for i, event in enumerate(events[1:]):
             if isinstance(event, UserUttered):
-                p, a = min_list_distance(last_prediction,
-                                          actions_between_utterances)
+                p, a = align_lists(last_prediction, actions_between_utterances)
                 preds.extend(p)
                 actual.extend(a)
 
