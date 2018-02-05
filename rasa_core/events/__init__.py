@@ -487,8 +487,12 @@ class ReminderScheduled(Event):
     def _from_story_string(cls, event_name, parameters, domain):
         logger.info("Reminders will be ignored during training, "
                     "which should be ok.")
+        trigger_date_time = datetime.datetime.strptime(
+            parameters.get("date_time")[:19],
+            '%Y-%m-%dT%H:%M:%S'
+        )
         return ReminderScheduled(parameters.get("action"),
-                                 parameters.get("date_time"),
+                                 trigger_date_time,
                                  parameters.get("name", None),
                                  parameters.get("kill_on_user_msg", True),
                                  parameters.get("timestamp"))
