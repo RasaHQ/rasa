@@ -11,10 +11,9 @@ import numpy as np
 from collections import defaultdict
 
 from rasa_nlu.config import RasaNLUConfig
-from rasa_nlu.converters import load_data
 from rasa_nlu.model import Interpreter
-from rasa_nlu.model import Metadata
 from rasa_nlu.model import Trainer, TrainingData
+from rasa_nlu import training_data
 
 logger = logging.getLogger(__name__)
 
@@ -387,7 +386,7 @@ def patch_duckling_entities(entity_predictions):
 def run_evaluation(config, model_path, component_builder=None):  # pragma: no cover
     """Evaluate intent classification and entity extraction."""
     # get the metadata config from the package data
-    test_data = load_data(config['data'], config['language'])
+    test_data = training_data.load_data(config['data'], config['language'])
     interpreter = Interpreter.load(model_path, config, component_builder)
     intent_targets, entity_targets = get_targets(test_data)
     intent_predictions, entity_predictions, tokens = get_predictions(interpreter, test_data)
@@ -469,7 +468,7 @@ if __name__ == '__main__':  # pragma: no cover
     logging.basicConfig(level=nlu_config['log_level'])
 
     if args.mode == "crossvalidation":
-        data = load_data(args.data)
+        data = training_data.load_data(args.data)
         data = prepare_data(data, cutoff = 5)
         results = run_cv_evaluation(data, int(args.folds), nlu_config)
         logger.info("CV evaluation (n={})".format(args.folds))

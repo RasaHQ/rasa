@@ -3,9 +3,8 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 import argparse
-import io
 
-from rasa_nlu.converters import load_data
+from rasa_nlu import training_data
 from rasa_nlu.utils import write_to_file
 
 
@@ -28,7 +27,7 @@ def create_argparser():
 
 
 def convert_training_data(data_file, out_file, output_format, language):
-    td = load_data(data_file, language)
+    td = training_data.load_data(data_file, language)
     output = td.as_markdown() if output_format == 'md' else td.as_json(indent=2)
     write_to_file(out_file, output)
 

@@ -129,7 +129,7 @@ the zipcode example it might look like this:
                 },
                 {
                     "name": "greet",
-                    "pattern": "hey[^\s]*"
+                    "pattern": "hey[^\\s]*"
                 },
             ]
         }
@@ -154,7 +154,8 @@ for these extractors. Currently, all intent classifiers make use of available re
 Markdown Format
 ---------------------------
 
-Alternatively training data can be used in the following markdown format (Regex features not supported yet). Examples are listed using the unordered list syntax, e.g. minus ``-`` or asterisk ``*``:
+Alternatively training data can be used in the following markdown format. Examples are listed using the unordered
+list syntax, e.g. minus ``-``, asterisk ``*``, or plus ``+``:
 
 .. code-block:: markdown
 
@@ -170,14 +171,19 @@ Alternatively training data can be used in the following markdown format (Regex 
     ## synonym:savings   <!-- synonyms, method 2 -->
     - pink pig
 
+
+    ## regex:zipcode
+    - [0-9]{5}
+
 Organization
 ---------------------------
 
 The training data can either be stored in a single file or split into multiple files.
-For larger training examples splitting the training data into multiple files (e.g. one per intent) might be
-beneficial in terms of maintainability.
+For larger training examples, splitting the training data into multiple files, e.g. one per intent, increases maintainability.
 
-Storing files with different file formats (e.g. markdown and JSON) in one directory is currently not supported.
+Storing files with different file formats, i.e. mixing markdown and JSON, is currently not supported.
 
 .. note::
-    Splitting the training data into multiple files currently only words for markdown and JSON data. For other file formats you have to use the single-file approach.
+    Splitting the training data into multiple files currently only works for markdown and JSON data.
+    For other file formats you have to use the single-file approach.
+

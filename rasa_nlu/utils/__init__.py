@@ -1,16 +1,18 @@
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
+import errno
+import io
+import json
 import os
 
+import six
 from builtins import str
-import errno
 from typing import List
 from typing import Optional
 from typing import Text
-import json
-import io
 
 
 def relative_normpath(f, path):
@@ -25,7 +27,9 @@ def relative_normpath(f, path):
 
 def create_dir(dir_path):
     # type: (Text) -> None
-    """Creates a directory and its super paths. Succeeds even if the path already exists."""
+    """Creates a directory and its super paths.
+
+    Succeeds even if the path already exists."""
 
     try:
         os.makedirs(dir_path)
@@ -48,40 +52,35 @@ def create_dir_for_file(file_path):
 
 
 def recursively_find_files(resource_name):
-    # type: (Optional[Text]) -> List[Text]
+    # type: (Text) -> List[Text]
     """Traverse directory hierarchy to find files.
 
-    `resource_name` can be a folder or a file. In both cases we will return a list of files."""
+    `resource_name` can be a folder or a file. In both cases
+    we will return a list of files."""
 
-    if not resource_name:
-        raise ValueError("Resource name '{}' must be an existing directory or file.".format(resource_name))
-    elif os.path.isfile(resource_name):
-        return [resource_name]
+    if not isinstance(resource_name, six.string_types):
+        raise ValueError("Resourcename must be a string type")
+
+    found = []
+    if os.path.isfile(resource_name):
+        found.append(resource_name)
     elif os.path.isdir(resource_name):
-        resources = []  # type: List[Text]
-        # walk the fs tree and return a list of files
-        nodes_to_visit = [resource_name]
-        while len(nodes_to_visit) > 0:
-            # skip hidden files
-            nodes_to_visit = [f for f in nodes_to_visit if not f.split("/")[-1].startswith('.')]
-
-            current_node = nodes_to_visit[0]
-            # if current node is a folder, schedule its children for a visit. Else add them to the resources.
-            if os.path.isdir(current_node):
-                nodes_to_visit += [os.path.join(current_node, f) for f in os.listdir(current_node)]
-            else:
-                resources += [current_node]
-            nodes_to_visit = nodes_to_visit[1:]
-        return resources
+        for root, directories, files in os.walk(resource_name):
+            for f in files:
+                found.append(os.path.join(root, f))
     else:
-        raise ValueError("Could not locate the resource '{}'.".format(os.path.abspath(resource_name)))
+        raise ValueError("Could not locate the resource '{}'."
+                         "".format(os.path.abspath(resource_name)))
+
+    return found
 
 
 def lazyproperty(fn):
-    """Allows to avoid recomputing a property over and over. Instead the result gets stored in a local var.
+    """Allows to avoid recomputing a property over and over.
 
-    Computation of the property will happen once, on the first call of the property. All succeeding calls will use
-    the value stored in the private property."""
+    The result gets stored in a local var. Computation of the property
+    will happen once, on the first call of the property. All
+    succeeding calls will use the value stored in the private property."""
 
     attr_name = '_lazy_' + fn.__name__
 
@@ -147,3 +146,35 @@ def write_to_file(filename, text):
 
     with io.open(filename, 'w', encoding="utf-8") as f:
         f.write(str(text))
+
+
+def read_file(filename, encoding="utf-8"):
+    """Read text from a file."""
+    with io.open(filename, encoding=encoding) as f:
+        return f.read()
+
+
+def read_json_file(filename):
+    """Read json from a file."""
+    content = read_file(filename)
+    try:
+        return json.loads(content)
+    except Exception as e:
+        raise Exception("Failed to read json from '{}'. Error: "
+                        "{}".format(os.path.abspath(filename), e))
+
+
+def build_entity(start, end, value, entity_type, **kwargs):
+    """Builds a standard entity dictionary.
+
+    Adds additional keyword parameters."""
+
+    entity = {
+        "start": start,
+        "end": end,
+        "value": value,
+        "entity": entity_type
+    }
+
+    entity.update(kwargs)
+    return entity
