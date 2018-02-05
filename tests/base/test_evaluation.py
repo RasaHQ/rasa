@@ -10,7 +10,7 @@ import pytest
 
 from rasa_nlu.evaluate import is_token_within_entity, do_entities_overlap, merge_labels, patch_duckling_entities, \
     remove_empty_intent_examples, get_entity_extractors, get_duckling_dimensions, known_duckling_dimensions, \
-    find_component, patch_duckling_extractors, prepare_data, run_cv_evaluation
+    find_component, patch_duckling_extractors, drop_intents_below_freq, run_cv_evaluation
 from rasa_nlu.evaluate import does_token_cross_borders
 from rasa_nlu.evaluate import align_entity_predictions
 from rasa_nlu.evaluate import determine_intersection
@@ -20,6 +20,7 @@ from rasa_nlu import training_data
 from tests import utilities
 
 logging.basicConfig(level="DEBUG")
+
 
 @pytest.fixture(scope="module")
 def duckling_interpreter(component_builder):
@@ -209,30 +210,27 @@ def test_duckling_patching():
     ]]
     assert patch_duckling_entities(entities) == patched
 
-def test_prepare_data():
-    td = training_data.load_data('data/examples/rasa/demo-rasa.json')
-    clean_data = prepare_data(td, 0)
-    unique_intents = sorted(set([i.data["intent"] for i in clean_data]))
-    assert(unique_intents == ['affirm', 'goodbye', 'greet', 'restaurant_search'])
 
-    clean_data = prepare_data(td, 10)
-    unique_intents = sorted(set([i.data["intent"] for i in clean_data]))
-    assert(unique_intents == ['affirm', 'restaurant_search'])
+def test_drop_intents_below_freq():
+    td = training_data.load_data('data/examples/rasa/demo-rasa.json')
+    clean_td = drop_intents_below_freq(td, 0)
+    assert clean_td.intents == {'affirm', 'goodbye', 'greet', 'restaurant_search'}
+
+    clean_td = drop_intents_below_freq(td, 10)
+    assert clean_td.intents == {'affirm', 'restaurant_search'}
+
 
 def test_run_cv_evaluation():
     import numpy as np
     td = training_data.load_data('data/examples/rasa/demo-rasa.json')
     n_folds = 3
-    nlu_config = RasaNLUConfig("sample_configs/config_defaults.json")
+    nlu_config = RasaNLUConfig("sample_configs/config_spacy.json")
 
-    np.seed(2018)
+    np.random.seed(2018)
     results = run_cv_evaluation(td, n_folds, nlu_config)
 
-    rel_tol=1e-09
-    abs_tol=0.01
-
-    acc = np.mean(results["accuracy"])
-    exp_acc = 0.65 # expected result
+    acc = np.mean(results["Accuracy"])
+    exp_acc = 0.677777  # expected result
     np.testing.assert_approx_equal(acc, exp_acc, significant=5)
 
 

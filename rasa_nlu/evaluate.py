@@ -22,6 +22,7 @@ known_duckling_dimensions = {"amount-of-money", "distance", "duration", "email",
                              "ordinal", "phone-number", "timezone", "temperature", "time", "url", "volume"}
 entity_processors = {"ner_synonyms"}
 
+
 def create_argparser():  # pragma: no cover
     import argparse
     parser = argparse.ArgumentParser(
@@ -94,6 +95,7 @@ def log_evaluation_table(test_y, preds):  # pragma: no cover
     logger.info("Accuracy:  {}".format(accuracy))
     logger.info("Classification report: \n{}".format(report))
 
+
 def remove_empty_intent_examples(targets, predictions):
     """Removes those examples without intent."""
     targets = np.array(targets)
@@ -103,27 +105,13 @@ def remove_empty_intent_examples(targets, predictions):
     return targets, predictions
 
 
-def prepare_data(data, cutoff = 5):
+def drop_intents_below_freq(td, cutoff=5):
     """Remove intent groups with less than cutoff instances."""
-    data = data.sorted_intent_examples()
-    logger.info("Raw data intent examples: {}".format(len(data)))
+    logger.debug("Raw data intent examples: {}".format(len(td.intent_examples)))
+    keep_examples = [ex for ex in td.intent_examples
+                     if td.examples_per_intent[ex.get("intent")] >= cutoff]
 
-    # count intents
-    list_intents = []
-    n_intents = []
-    for intent, group in itertools.groupby(data, lambda e: e.get("intent")):
-        size = len(list(group))
-        n_intents.append(size)
-        list_intents.append(intent)
-
-    # only include intents with enough traing data
-    prep_data = []
-    good_intents = [list_intents[i] for i, _ in enumerate(list_intents) if n_intents[i] >= cutoff]
-    for ind, _ in enumerate(data):
-        if data[ind].get("intent") in good_intents:
-            prep_data.append(data[ind])
-
-    return prep_data
+    return TrainingData(keep_examples, td.entity_synonyms, td.regex_features)
 
 
 def evaluate_intents(targets, predictions):  # pragma: no cover
@@ -400,14 +388,14 @@ def run_evaluation(config, model_path, component_builder=None):  # pragma: no co
     evaluate_entities(entity_targets, entity_predictions, tokens, extractors)
 
 
-def run_cv_evaluation(data, n_folds, nlu_config):
+def run_cv_evaluation(td, n_folds, nlu_config):
     from sklearn import metrics
     from sklearn.model_selection import StratifiedKFold
     from collections import defaultdict
-    # type: (List[rasa_nlu.training_data.Message], int, RasaNLUConfig) -> Dict[Text, List[float]]
+    # type: (TrainingData, int, RasaNLUConfig) -> Dict[Text, List[float]]
     """Stratified cross validation on data
 
-    :param data: list of rasa_nlu.training_data.Message objects
+    :param td: TrainingData object
     :param n_folds: integer, number of cv folds
     :param nlu_config: nlu config file
     :return: dictionary with key, list structure, where each entry in list
@@ -416,20 +404,22 @@ def run_cv_evaluation(data, n_folds, nlu_config):
     """
     trainer = Trainer(nlu_config)
     results = defaultdict(list)
+    examples = td.intent_examples
 
-    y_true = [e.get("intent") for e in data]
+    y_true = [ex.get("intent") for ex in examples]
 
     skf = StratifiedKFold(n_splits=n_folds, random_state=11, shuffle=True)
     counter = 1
     logger.info("Evaluation started")
-    for train_index, test_index in skf.split(data, y_true):
-
-        train = [data[i] for i in train_index]
-        test = [data[i] for i in test_index]
-
+    for train_index, test_index in skf.split(examples, y_true):
         logger.debug("Fold: {}".format(counter))
+        train = [examples[i] for i in train_index]
+        test = [examples[i] for i in test_index]
+
         logger.debug("Training ...")
-        trainer.train(TrainingData(training_examples=train))
+        trainer.train(TrainingData(training_examples=train,
+                                   entity_synonyms=td.entity_synonyms,
+                                   regex_features=td.regex_features))
         model_directory = trainer.persist("projects/")  # Returns the directory the model is stored in
 
         logger.debug("Evaluation ...")
@@ -454,6 +444,7 @@ def run_cv_evaluation(data, n_folds, nlu_config):
 
     return dict(results)
 
+
 if __name__ == '__main__':  # pragma: no cover
     parser = create_argparser()
     args = parser.parse_args()
@@ -468,11 +459,11 @@ if __name__ == '__main__':  # pragma: no cover
     logging.basicConfig(level=nlu_config['log_level'])
 
     if args.mode == "crossvalidation":
-        data = training_data.load_data(args.data)
-        data = prepare_data(data, cutoff = 5)
-        results = run_cv_evaluation(data, int(args.folds), nlu_config)
+        td = training_data.load_data(args.data)
+        td = drop_intents_below_freq(td, cutoff=5)
+        results = run_cv_evaluation(td, int(args.folds), nlu_config)
         logger.info("CV evaluation (n={})".format(args.folds))
-        for k,v in results.items():
+        for k, v in results.items():
             logger.info("{}: {:.3f} ({:.3f})".format(k, np.mean(v), np.std(v)))
     elif args.mode == "evaluation":
         run_evaluation(nlu_config, args.model)
