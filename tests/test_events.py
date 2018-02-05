@@ -7,7 +7,7 @@ from copy import deepcopy
 
 import pytest
 
-from rasa_core.events import UserUttered, TopicSet, SlotSet, Restarted, \
+from rasa_core.events import Event, UserUttered, TopicSet, SlotSet, Restarted, \
     ActionExecuted, AllSlotsReset, \
     ReminderScheduled, ConversationResumed, ConversationPaused, StoryExported, \
     ActionReverted, BotUttered
@@ -96,6 +96,6 @@ def test_event_has_proper_implementation(one_event, another_event):
 ])
 def test_serialisation(one_event):
     story_string = one_event.as_story_string()
-    new_event = Event.from_story_string(story_string)
+    new_event = Event.from_story_string(story_string, one_event.as_dict(), None)
     assert hash(one_event) == hash(new_event)
     
