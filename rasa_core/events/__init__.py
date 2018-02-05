@@ -20,6 +20,19 @@ if typing.TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def deserialise_events(serialized_events, domain):
+    # Example format: {"event": "set_slot", "value": 5, "name": "my_slot"}
+
+    deserialized = []
+    for e in serialized_events:
+        etype = e.get("event")
+        if etype is not None:
+            copied = e.copy()
+            del copied["event"]
+            deserialized.append(Event.from_parameters(etype, copied, domain))
+    return deserialized
+
+
 # noinspection PyProtectedMember
 class Event(object):
     """An event is one of the following:

@@ -56,7 +56,7 @@ def create_argument_parser():
     return parser
 
 
-def _min_list_distance(pred, actual):
+def min_list_distance(pred, actual):
     """Calculate the distance between the two lists."""
     padded_pred = []
     padded_actual = []
@@ -72,19 +72,20 @@ def _min_list_distance(pred, actual):
     return padded_pred, padded_actual
 
 
+def actions_since_last_utterance(tracker):
+    actions = []
+    for e in reversed(tracker.events):
+        if isinstance(e, UserUttered):
+            break
+        elif isinstance(e, ActionExecuted):
+            actions.append(e.action_name)
+    actions.reverse()
+    return actions
+
+
 def collect_story_predictions(story_file, policy_model_path, nlu_model_path,
                               max_stories=None, shuffle_stories=True):
     """Test the stories from a file, running them through the stored model."""
-
-    def actions_since_last_utterance(tracker):
-        actions = []
-        for e in reversed(tracker.events):
-            if isinstance(e, UserUttered):
-                break
-            elif isinstance(e, ActionExecuted):
-                actions.append(e.action_name)
-        actions.reverse()
-        return actions
 
     if nlu_model_path is not None:
         interpreter = RasaNLUInterpreter(model_directory=nlu_model_path)
@@ -119,7 +120,7 @@ def collect_story_predictions(story_file, policy_model_path, nlu_model_path,
 
         for i, event in enumerate(events[1:]):
             if isinstance(event, UserUttered):
-                p, a = _min_list_distance(last_prediction,
+                p, a = min_list_distance(last_prediction,
                                           actions_between_utterances)
                 preds.extend(p)
                 actual.extend(a)
