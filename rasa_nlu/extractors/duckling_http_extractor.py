@@ -113,10 +113,7 @@ class DucklingHTTPExtractor(EntityExtractor):
                         "`duckling_http_url` configuration in the config "
                         "file.")
 
-        extracted = self.add_extractor_name(extracted)
-        message.set("entities",
-                    message.get("entities", []) + extracted,
-                    add_to_output=True)
+        self.append_entities(message, extracted)
 
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]

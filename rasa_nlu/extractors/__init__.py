@@ -25,3 +25,8 @@ class EntityExtractor(Component):
         else:
             entity["processors"] = [self.name]
         return entity
+
+    def append_entities(self, message, entities):
+        entities = self.add_extractor_name(entities)
+        message.set("entities", message.get("entities", []) + entities,
+                    add_to_output=True)

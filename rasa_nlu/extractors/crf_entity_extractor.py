@@ -119,9 +119,8 @@ class CRFEntityExtractor(EntityExtractor):
     def process(self, message, **kwargs):
         # type: (Message, **Any) -> None
 
-        extracted = self.add_extractor_name(self.extract_entities(message))
-        message.set("entities", message.get("entities", []) + extracted,
-                    add_to_output=True)
+        extracted = self.extract_entities(message)
+        self.append_entities(message, extracted)
 
     def _convert_example(self, example):
         # type: (Message) -> List[Tuple[int, int, Text]]
