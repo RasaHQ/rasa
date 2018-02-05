@@ -20,6 +20,7 @@ from twisted.internet.defer import Deferred
 from twisted.logger import jsonFileLogObserver, Logger
 
 from rasa_nlu import utils
+from rasa_nlu.training_data.loading import load_data
 from rasa_nlu.project import Project
 from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.config import RasaNLUConfig
@@ -185,6 +186,21 @@ class DataRouter(object):
             "available_projects": {name: project.as_dict() for name, project in self.project_store.items()}
         }
 
+    def _evaluate(self, test_data, project, model):
+        test_y = [e.get("intent") for e in test_data.training_examples]
+
+        texts = [e.text for e in test_data.training_examples]
+
+        preds_json, _ = self.project_store[project].parseAll(texts, None, model)
+
+        preds = []
+        for res in preds_json:
+            if res.get('intent'):
+                preds.append(res['intent'].get('name'))
+            else:
+                preds.append(None)
+        return preds, test_y, preds_json
+
     def start_train_process(self, data, config_values):
         # type: (Text, Dict[Text, Any]) -> Deferred
         """Start a model training."""
@@ -234,3 +250,29 @@ class DataRouter(object):
         result.addErrback(training_errback)
 
         return result
+
+    def start_evaluation(self, data, parameters):
+        # type: (Text, Dict[Text, Any]) -> Dict[Text, Any]
+        """Start a model evaluation."""
+
+        if PY3:
+            f = tempfile.NamedTemporaryFile("w+", suffix="_training_data", delete=False, encoding="utf-8")
+            f.write(data)
+        else:
+            f = tempfile.NamedTemporaryFile("w+", suffix="_training_data", delete=False)
+            f.write(data.encode("utf-8"))
+        f.close()
+        test_data = load_data(f.name)
+
+        project = parameters.get("project") or RasaNLUConfig.DEFAULT_PROJECT_NAME
+        model = parameters.get("model")
+
+        if not (project and project in self.project_store):
+            raise InvalidProjectError("Missing project name to evaluate")
+
+        _, _, preds_json = self._evaluate(test_data, project, model)
+        predictions = [{"text": e.text, "intent": e.get("intent"), "predicted": p.get("intent")}
+                       for e, p in zip(test_data.training_examples, preds_json)]
+
+        return {"intent_evaluation": {
+                    "predictions": predictions}}
