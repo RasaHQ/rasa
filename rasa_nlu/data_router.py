@@ -186,21 +186,6 @@ class DataRouter(object):
             "available_projects": {name: project.as_dict() for name, project in self.project_store.items()}
         }
 
-    def _evaluate(self, test_data, project, model):
-        test_y = [e.get("intent") for e in test_data.training_examples]
-
-        texts = [e.text for e in test_data.training_examples]
-
-        preds_json, _ = self.project_store[project].parseAll(texts, None, model)
-
-        preds = []
-        for res in preds_json:
-            if res.get('intent'):
-                preds.append(res['intent'].get('name'))
-            else:
-                preds.append(None)
-        return preds, test_y, preds_json
-
     def start_train_process(self, data, config_values):
         # type: (Text, Dict[Text, Any]) -> Deferred
         """Start a model training."""
@@ -270,8 +255,16 @@ class DataRouter(object):
         if not (project and project in self.project_store):
             raise InvalidProjectError("Missing project name to evaluate")
 
-        _, _, preds_json = self._evaluate(test_data, project, model)
-        predictions = [{"text": e.text, "intent": e.get("intent"), "predicted": p.get("intent")}
+        preds_json = []
+        for ex in test_data.intent_examples:
+            logger.info("going to parse")
+            logger.info(ex)
+
+            response, _ = self.project_store[project].parse(ex.text, None, model)
+            logger.info(response)
+            preds_json.append(response)
+
+        predictions = [{"text": e.text, "intent": e.data.get("intent"), "predicted": p.get("intent")}
                        for e, p in zip(test_data.training_examples, preds_json)]
 
         return {"intent_evaluation": {
