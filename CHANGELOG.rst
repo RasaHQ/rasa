@@ -11,9 +11,16 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 Added
 -----
+- support for inline entity synonyms in markdown training format
+- support for regex features in markdown training format
+- support for splitting and training data into multiple and mixing formats
 
 Changed
 -------
+- Regex features are now sorted internally. **retrain your model if you use regex features**
+- The keyword intent classifier now returns ``null`` instead of ``"None"`` as intent name in the json result
+if there's no match
+
 
 Fixed
 -----

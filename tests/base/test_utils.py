@@ -16,7 +16,7 @@ def test_relative_normpath():
 def test_recursively_find_files_invalid_resource():
     with pytest.raises(ValueError) as execinfo:
         recursively_find_files(None)
-    assert "must be an existing directory" in str(execinfo.value)
+    assert "must be a string type" in str(execinfo.value)
 
 
 def test_recursively_find_files_non_existing_dir():

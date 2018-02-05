@@ -12,7 +12,7 @@ Or, you can train directly in python with a script like the following (using spa
 
 .. testcode::
 
-    from rasa_nlu.converters import load_data
+    from rasa_nlu.training_data import load_data
     from rasa_nlu.config import RasaNLUConfig
     from rasa_nlu.model import Trainer
 
@@ -52,7 +52,7 @@ Here is a short example on how to create a component builder, that can be reused
 
 .. testcode::
 
-    from rasa_nlu.converters import load_data
+    from rasa_nlu.training_data import load_data
     from rasa_nlu.config import RasaNLUConfig
     from rasa_nlu.components import ComponentBuilder
     from rasa_nlu.model import Trainer

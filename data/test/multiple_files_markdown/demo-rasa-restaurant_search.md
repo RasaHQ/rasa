@@ -17,9 +17,11 @@
 
 ## synonym:chinese
 - Chines
-- chines
 - Chinese
 
 ## synonym:vegetarian
 - vegg
 - veggie
+
+## regex:zipcode
+- [0-9]{5}
