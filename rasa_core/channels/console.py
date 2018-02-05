@@ -27,6 +27,7 @@ class ConsoleInputChannel(InputChannel):
     """Input channel that reads the user messages from the command line."""
 
     def __init__(self, sender_id=UserMessage.DEFAULT_SENDER_ID):
+        # type: (Text) -> None
         self.sender_id = sender_id
 
     def _record_messages(self, on_message, max_message_limit=None):

@@ -37,6 +37,7 @@ class PolicyEnsemble(object):
             self.action_fingerprints = {}
 
     def max_history(self):
+        # type: () -> Optional[int]
         """Return max history, only works if the ensemble is already trained."""
 
         if self.policies:

@@ -11,7 +11,9 @@ import time
 import jsonpickle
 import typing
 from builtins import str
+from typing import List, Dict, Text, Any
 
+import rasa_core
 from rasa_core import utils
 
 if typing.TYPE_CHECKING:
@@ -21,7 +23,12 @@ logger = logging.getLogger(__name__)
 
 
 def deserialise_events(serialized_events, domain):
-    # Example format: {"event": "set_slot", "value": 5, "name": "my_slot"}
+    # type: (List[Dict[Text, Any]], rasa_core.domain.Domain) -> List[Event]
+    """Convert a list of dictionaries to a list of corresponding events.
+
+    Example format:
+        [{"event": "set_slot", "value": 5, "name": "my_slot"}]
+    """
 
     deserialized = []
     for e in serialized_events:
