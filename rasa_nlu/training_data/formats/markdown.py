@@ -41,7 +41,7 @@ class MarkdownReader(TrainingDataReader):
         self.section_regexes = self._create_section_regexes(available_sections)
 
     def reads(self, s, **kwargs):
-        """Read markdown string and create TrainingData object.ß"""
+        """Read markdown string and create TrainingData object."""
         self.__init__()
         s = self._strip_comments(s)
         for line in s.splitlines():
@@ -57,7 +57,7 @@ class MarkdownReader(TrainingDataReader):
 
     @staticmethod
     def _strip_comments(text):
-        """ Removes comments defined by `comment_regex` from `text`. """
+        """ Removes comments defined by `comment_regex` from `text`."""
         return re.sub(comment_regex, '', text)
 
     @staticmethod
