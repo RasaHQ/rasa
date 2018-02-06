@@ -33,6 +33,10 @@
     "L1_c": 1,
     "L2_c": 1e-3
   },
+  "ner_spacy": {
+    "epochs": 1,
+    "batch_size": 10
+  },
 
   "intent_classifier_sklearn": {
     "C": [1, 2, 5, 10, 20, 100],

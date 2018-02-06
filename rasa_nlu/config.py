@@ -1,17 +1,18 @@
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
 from __future__ import absolute_import
-from builtins import object
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import io
-import simplejson
 import os
+from builtins import object
+# Describes where to search for the config file if no location is specified
+from typing import Text
+
+import simplejson
 import six
 
 from rasa_nlu.utils import json_to_string
-
-# Describes where to search for the config file if no location is specified
-from typing import Text
 
 DEFAULT_CONFIG_LOCATION = "config.json"
 
@@ -48,6 +49,10 @@ DEFAULT_CONFIG = {
         "max_iterations": 50,
         "L1_c": 1,
         "L2_c": 1e-3
+    },
+    "ner_spacy": {
+        "epochs": 1,
+        "batch_size": 10
     },
     "intent_classifier_sklearn": {
         "C": [1, 2, 5, 10, 20, 100],

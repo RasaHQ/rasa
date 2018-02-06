@@ -33,10 +33,9 @@ class SpacyEntityExtractor(EntityExtractor):
         self.spacy_nlp = None
 
     def train(self, training_data, config, **kwargs):
-        # type: (TrainingData, RasaNLUConfig) -> Dict[Text, Any]
+        # type: (TrainingData, RasaNLUConfig, **Any) -> Dict[Text, Any]
 
         ner_config = config.get('ner_spacy')
-        batch_size = ner_config.get('batch_size', 16)
 
         nlp = kwargs['spacy_nlp']
 
@@ -52,6 +51,13 @@ class SpacyEntityExtractor(EntityExtractor):
 
                 training_ner_data.append((example.text, {'entities': entities}))
 
+        self.__train_ner(ner_config, nlp, training_ner_data)
+
+        ner.cfg['rasa_updated'] = True
+        return {'spacy_nlp': nlp}
+
+    def __train_ner(self, ner_config, nlp, training_ner_data):
+        batch_size = ner_config.get('batch_size', 16)
         # get names of other pipes to disable them during training
         other_pipes = [pipe for pipe in nlp.pipe_names if pipe != 'ner']
         with nlp.disable_pipes(*other_pipes):  # only train NER
@@ -69,9 +75,6 @@ class SpacyEntityExtractor(EntityExtractor):
                     nlp.update(texts, annotations, sgd=optimizer, drop=0.35,
                                losses=losses)
                     progress.set_description_str('epoch %d/%d, loss: %s' % (it + 1, epochs, str(losses)))
-
-        ner.cfg['rasa_updated'] = True
-        return {'spacy_nlp': nlp}
 
     def process(self, message, **kwargs):
         # type: (Message, **Any) -> None

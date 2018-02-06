@@ -9,9 +9,5 @@
   ],
   "path": "./projects",
   "spacy_model_name": "spacy_model",
-  "data": "./data/examples/rasa/demo-rasa.json",
-  "ner_spacy": {
-    "epochs": 1,
-    "batch_size": 10
-  }
+  "data": "./data/examples/rasa/demo-rasa.json"
 }
