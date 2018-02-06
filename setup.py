@@ -20,6 +20,7 @@ tests_requires = [
     "pytest-xdist",
     "pytest-twisted",
     "treq",
+    "freezegun",
 ]
 
 install_requires = [
@@ -40,13 +41,15 @@ install_requires = [
     'tqdm',
     'ConfigArgParse',
     'networkx',
-    'pymessenger2',
+    'fbmessenger',
     'pykwalify',
     'coloredlogs',
     'ruamel.yaml',
     'flask',
     'scikit-learn',
     'rasa_nlu',
+    'slackclient',
+    'python-telegram-bot'
 ]
 
 extras_requires = {
@@ -57,6 +60,7 @@ setup(
     name='rasa_core',
     classifiers=[
         "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6"
     ],
     packages=find_packages(exclude=["tests", "tools"]),

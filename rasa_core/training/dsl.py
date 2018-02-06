@@ -4,24 +4,19 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import copy
 import io
 import json
 import logging
 import os
 import re
 import warnings
-from collections import deque
 
 from typing import Optional, List, Text, Any, Dict
 
 from rasa_core import utils
-from rasa_core.channels import UserMessage
-from rasa_core.domain import Domain
 from rasa_core.events import (
-    ActionExecuted, UserUttered, Event, ActionReverted)
+    ActionExecuted, UserUttered, Event)
 from rasa_core.interpreter import RegexInterpreter
-from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.structures import (
     Checkpoint, STORY_END, STORY_START, StoryStep)
 
@@ -54,19 +49,22 @@ class StoryStepBuilder(object):
                             "(checkpoint: {})".format(name))
             additional_steps = []
             for t in self.current_steps:
-                if t.end_checkpoint != STORY_END:
+                if t.end_checkpoints:
                     tcp = t.create_copy(use_new_id=True)
-                    tcp.end_checkpoint = Checkpoint(name)
+                    tcp.end_checkpoints = [Checkpoint(name)]
                     additional_steps.append(tcp)
                 else:
-                    t.end_checkpoint = Checkpoint(name)
+                    t.end_checkpoints = [Checkpoint(name)]
             self.current_steps.extend(additional_steps)
 
     def _prev_end_checkpoints(self):
         if not self.current_steps:
             return self.start_checkpoints
         else:
-            end_names = {s.end_checkpoint_name() for s in self.current_steps}
+            # makes sure we got each end name only once
+            end_names = {e.name
+                         for s in self.current_steps
+                         for e in s.end_checkpoints}
             return [Checkpoint(name) for name in end_names]
 
     def add_user_messages(self, messages):
@@ -87,7 +85,7 @@ class StoryStepBuilder(object):
                 for m in messages:
                     copied = t.create_copy(use_new_id=True)
                     copied.add_user_message(m)
-                    copied.end_checkpoint = Checkpoint(generated_checkpoint)
+                    copied.end_checkpoints = [Checkpoint(generated_checkpoint)]
                     updated_steps.append(copied)
             self.current_steps = updated_steps
 
@@ -99,10 +97,10 @@ class StoryStepBuilder(object):
     def ensure_current_steps(self):
         completed = [step
                      for step in self.current_steps
-                     if step.end_checkpoint != STORY_END]
+                     if step.end_checkpoints]
         unfinished = [step
                       for step in self.current_steps
-                      if step.end_checkpoint == STORY_END]
+                      if not step.end_checkpoints]
         self.story_steps.extend(completed)
         if unfinished:
             self.current_steps = unfinished
@@ -118,8 +116,8 @@ class StoryStepBuilder(object):
         start_checkpoints = self._prev_end_checkpoints()
         if not start_checkpoints:
             start_checkpoints = [Checkpoint(STORY_START)]
-        current_turns = [StoryStep(block_name=self.name, start_checkpoint=s)
-                         for s in start_checkpoints]
+        current_turns = [StoryStep(block_name=self.name,
+                                   start_checkpoints=start_checkpoints)]
         return current_turns
 
 

@@ -11,6 +11,7 @@ from difflib import SequenceMatcher
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
+from rasa_core import utils
 from rasa_core.agent import Agent
 from rasa_core.events import ActionExecuted, UserUttered
 from rasa_core.interpreter import RegexInterpreter, RasaNLUInterpreter
@@ -23,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 def create_argument_parser():
     """Create argument parser for the evaluate script."""
+
     parser = argparse.ArgumentParser(
             description='evaluates a dialogue model')
     parser.add_argument(
@@ -50,23 +52,7 @@ def create_argument_parser():
             default="story_confmat.pdf",
             help="output path for the created evaluation plot")
 
-    # arguments for logging configuration
-    parser.add_argument(
-            '--debug',
-            help="Print lots of debugging statements. "
-                 "Sets logging level to DEBUG",
-            action="store_const",
-            dest="loglevel",
-            const=logging.DEBUG,
-            default=logging.WARNING,
-    )
-    parser.add_argument(
-            '-v', '--verbose',
-            help="Be verbose. Sets logging level to INFO",
-            action="store_const",
-            dest="loglevel",
-            const=logging.INFO,
-    )
+    utils.add_logging_option_arguments(parser)
     return parser
 
 

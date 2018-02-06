@@ -11,6 +11,7 @@ from builtins import str
 from klein import Klein
 from typing import Union, Text, Optional
 
+from rasa_core import utils
 from rasa_core.agent import Agent
 from rasa_core.events import Event
 from rasa_core.interpreter import NaturalLanguageInterpreter
@@ -21,6 +22,8 @@ logger = logging.getLogger(__name__)
 
 
 def create_argument_parser():
+    """Parse all the command line arguments for the server script."""
+
     parser = argparse.ArgumentParser(
             description='starts server to serve an agent')
     parser.add_argument(
@@ -54,23 +57,7 @@ def create_argument_parser():
             default="rasa_core.log",
             help="store log file in specified file")
 
-    # arguments for logging configuration
-    parser.add_argument(
-            '--debug',
-            help="Print lots of debugging statements. "
-                 "Sets logging level to DEBUG",
-            action="store_const",
-            dest="loglevel",
-            const=logging.DEBUG,
-            default=logging.WARNING,
-    )
-    parser.add_argument(
-            '-v', '--verbose',
-            help="Be verbose. Sets logging level to INFO",
-            action="store_const",
-            dest="loglevel",
-            const=logging.INFO,
-    )
+    utils.add_logging_option_arguments(parser)
     return parser
 
 

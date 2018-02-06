@@ -9,6 +9,7 @@ import logging
 import random
 from collections import defaultdict, namedtuple, deque
 
+import io
 import numpy as np
 import typing
 from numpy import ndarray
@@ -21,7 +22,7 @@ from rasa_core.events import ActionExecuted, UserUttered, Event, ActionReverted
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.data import DialogueTrainingData
 from rasa_core.training.structures import (
-    StoryGraph, Checkpoint, STORY_END, STORY_START, StoryStep)
+    StoryGraph, STORY_END, STORY_START, StoryStep, GENERATED_CHECKPOINT_PREFIX)
 
 logger = logging.getLogger(__name__)
 
@@ -150,11 +151,13 @@ class TrainingsDataGenerator(object):
         all_features = []  # type: List[ndarray]
         all_actions = []  # type: List[int]
         unused_checkpoints = set()  # type: Set[Text]
+        used_checkpoints = set()  # type: Set[Text]
 
         init_tracker = FeaturizedTracker.from_domain(
                 self.domain, self.config.max_history,
                 self.config.tracker_limit)
-        active_trackers = {STORY_START: [init_tracker]}
+        active_trackers = defaultdict(list)
+        active_trackers[STORY_START].append(init_tracker)
         finished_trackers = []
 
         phases = self._phase_names()
@@ -169,20 +172,20 @@ class TrainingsDataGenerator(object):
             pbar = tqdm(self.story_graph.ordered_steps(),
                         desc="Processed Story Blocks")
             for step in pbar:
-                if step.start_checkpoint:
-                    start = step.start_checkpoint
-                else:
-                    start = Checkpoint(None)
-                if start.name not in active_trackers:
-                    # need to skip - there was no previous step that
-                    # had this start checkpoint as an end checkpoint
-                    unused_checkpoints.add(start.name)
-                else:
+                incoming_trackers = []
+                for start in step.start_checkpoints:
+                    if not active_trackers[start.name]:
+                        # need to skip - there was no previous step that
+                        # had this start checkpoint as an end checkpoint
+                        unused_checkpoints.add(start.name)
+                    else:
+                        ts = start.filter_trackers(active_trackers[start.name])
+                        incoming_trackers.extend(ts)
+                        used_checkpoints.add(start.name)
+
+                if incoming_trackers:
                     # these are the trackers that reached this story
                     # step and that need to handle all events of the step
-                    incoming_trackers = active_trackers[start.name]
-                    incoming_trackers = start.filter_trackers(incoming_trackers)
-
                     incoming_trackers = self._subsample_trackers(
                             incoming_trackers, phase_idx=i)
 
@@ -203,16 +206,20 @@ class TrainingsDataGenerator(object):
                     # that handled the events of the step and
                     # that can now be used for further story steps
                     # that start with the checkpoint this step ended with
-                    if step.end_checkpoint_name() not in active_trackers:
-                        active_trackers[step.end_checkpoint_name()] = []
-                    active_trackers[step.end_checkpoint_name()].extend(trackers)
+                    for end in step.end_checkpoints:
+                        active_trackers[end.name].extend(trackers)
+
+                    if not step.end_checkpoints:
+                        active_trackers[STORY_END].extend(trackers)
+
             # trackers that reached the end of a story
-            completed = active_trackers.get(STORY_END, [])
-            finished_trackers.extend([t.tracker for t in completed])
+            completed = [t.tracker for t in active_trackers[STORY_END]]
+            finished_trackers.extend(completed)
             active_trackers = self._create_start_trackers(active_trackers)
             logger.debug("Finished phase. ({} training samples found)".format(
                     len(all_actions)))
 
+        unused_checkpoints -= used_checkpoints
         self._issue_unused_checkpoint_notification(unused_checkpoints)
         logger.debug("Found {} action examples.".format(len(all_actions)))
 
@@ -252,19 +259,12 @@ class TrainingsDataGenerator(object):
         # if flows get very long and have a lot of forks we
         # get into trouble by collecting to many trackers
         # hence the sub sampling
-        if phase_idx == 0:
-            if self.config.max_number_of_trackers is not None:
-                return utils.subsample_array(incoming_trackers,
-                                             self.config.max_number_of_trackers,
-                                             self.config.rand)
-            else:
-                return incoming_trackers
-        else:
-            # after the first phase we always sample max
-            # `augmentation_factor` samples
+        if self.config.max_number_of_trackers is not None:
             return utils.subsample_array(incoming_trackers,
-                                         self.config.augmentation_factor,
+                                         self.config.max_number_of_trackers,
                                          self.config.rand)
+        else:
+            return incoming_trackers
 
     def _create_start_trackers(self, active_trackers):
         # type: (TrackerLookupDict) -> TrackerLookupDict
@@ -276,7 +276,7 @@ class TrainingsDataGenerator(object):
         if self.config.use_story_concatenation:
             glue_mapping[STORY_END] = STORY_START
 
-        next_active_trackers = {}
+        next_active_trackers = defaultdict(list)
         for end, start in glue_mapping.items():
             ending_trackers = active_trackers.get(end, [])
             if start == STORY_START:
@@ -284,8 +284,6 @@ class TrainingsDataGenerator(object):
                         ending_trackers,
                         self.config.augmentation_factor,
                         self.config.rand)
-
-            next_active_trackers[start] = []
 
             # This is where the augmentation magic happens. We
             # will reuse all the trackers that reached the
@@ -415,7 +413,12 @@ class TrainingsDataGenerator(object):
         an action listen as unpredictable."""
 
         for step in self.story_graph.story_steps:
-            if step.start_checkpoint_name() == STORY_START:
+            # TODO: this does not work if a step is the conversational start
+            #       as well as an intermediary part of a conversation.
+            #       This means a checkpoint can either have multiple
+            #       checkpoints OR be the start of a conversation
+            #       but not both.
+            if STORY_START in {s.name for s in step.start_checkpoints}:
                 for i, e in enumerate(step.events):
                     if isinstance(e, UserUttered):
                         # if there is a user utterance, that means before the
@@ -441,10 +444,12 @@ class TrainingsDataGenerator(object):
         # per block (as one block might have multiple steps)
         collected = set()
         for step in self.story_graph.story_steps:
-            if step.start_checkpoint in unused_checkpoints:
-                # After processing, there shouldn't be a story part left.
-                # This indicates a start checkpoint that doesn't exist
-                collected.add((step.start_checkpoint, step.block_name))
-        for block_name, cp in collected:
-            logger.warn("Unsatisfied start checkpoint '{}' "
-                        "in block '{}'".format(cp, block_name))
+            for start in step.start_checkpoints:
+                if start.name in unused_checkpoints:
+                    # After processing, there shouldn't be a story part left.
+                    # This indicates a start checkpoint that doesn't exist
+                    collected.add((start.name, step.block_name))
+        for cp, block_name in collected:
+            if not cp.startswith(GENERATED_CHECKPOINT_PREFIX):
+                logger.warn("Unsatisfied start checkpoint '{}' "
+                            "in block '{}'".format(cp, block_name))
