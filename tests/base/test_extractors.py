@@ -107,3 +107,29 @@ def test_unintentional_synonyms_capitalized(component_builder):
     ner_syn.train(TrainingData(training_examples=examples), _config)
     assert ner_syn.synonyms.get("mexican") is None
     assert ner_syn.synonyms.get("tacos") == "Mexican"
+
+
+def test_phrase_matcher(component_builder):
+    _config = utilities.base_test_conf("all_components")
+    ner_component = "ner_phrase_matcher"
+    ner_pm = component_builder.create_component(ner_component, _config)
+
+    entity_phrases = {
+        "food": {"Pizza", "Pasta", "Rigatoni", "Rigatoni al forno"}
+    }
+
+    examples = [
+        Message.build("Pizza", "food"),
+        Message.build("I'd like to have some Rigatoni al forno", "food")
+    ]
+
+    targets = [
+        [{"start": 0, "end": 5, "value": "Pizza", "entity": "food", "extractor": ner_component}],
+        [{"start": 22, "end": 39, "value": "Rigatoni al forno", "entity": "food", "extractor": ner_component}]
+    ]
+
+    ner_pm.train(TrainingData(training_examples=examples, entity_phrases=entity_phrases), _config)
+
+    for ex, target in zip(examples, targets):
+        ner_pm.process(ex)
+        assert ex.get("entities") == target
