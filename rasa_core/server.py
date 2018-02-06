@@ -4,8 +4,12 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import argparse
+import io
 import json
 import logging
+import tempfile
+import zipfile
+from functools import wraps
 
 from builtins import str
 from klein import Klein
@@ -81,6 +85,24 @@ def _configure_logging(loglevel, logfile):
     logging.captureWarnings(True)
 
 
+def ensure_loaded_agent(f):
+    """Wraps a request handler ensuring there is a loaded and usable model."""
+
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        self = args[0]
+        request = args[1]
+
+        if not self.agent:
+            request.setResponseCode(503)
+            return ("No agent loaded. To continue processing, a model of a "
+                    "trained agent needs to be loaded.")
+
+        return f(*args, **kwargs)
+
+    return decorated
+
+
 class RasaCoreServer(object):
     """Class representing a Rasa Core HTTP server."""
 
@@ -98,6 +120,9 @@ class RasaCoreServer(object):
 
         self.config = {"cors_origins": cors_origins if cors_origins else [],
                        "token": auth_token}
+        self.model_directory = model_directory
+        self.interpreter = interpreter
+        self.action_factory = action_factory
         self.agent = self._create_agent(model_directory, interpreter,
                                         action_factory)
 
@@ -107,9 +132,15 @@ class RasaCoreServer(object):
             interpreter,  # type: Union[Text, NaturalLanguageInterpreter]
             action_factory=None  # type: Optional[Text]
     ):
-        # type: (...) -> Agent
-        return Agent.load(model_directory, interpreter,
-                          action_factory=action_factory)
+        # type: (...) -> Optional[Agent]
+        try:
+            return Agent.load(model_directory, interpreter,
+                              action_factory=action_factory)
+        except Exception as e:
+            logger.warn("Failed to load any agent model. Running "
+                        "Rasa Core server with out loaded model now. {}"
+                        "".format(e))
+            return None
 
     @app.route("/",
                methods=['GET', 'OPTIONS'])
@@ -122,6 +153,7 @@ class RasaCoreServer(object):
                methods=['POST', 'OPTIONS'])
     @check_cors
     @requires_auth
+    @ensure_loaded_agent
     def continue_predicting(self, request, sender_id):
         """Continue a prediction started with parse.
 
@@ -155,6 +187,7 @@ class RasaCoreServer(object):
     @app.route("/conversations/<sender_id>/tracker/events",
                methods=['POST', 'OPTIONS'])
     @check_cors
+    @ensure_loaded_agent
     def append_events(self, request, sender_id):
         """Append a list of events to the state of a conversation"""
 
@@ -172,6 +205,7 @@ class RasaCoreServer(object):
     @app.route("/conversations/<sender_id>/tracker",
                methods=['GET', 'OPTIONS'])
     @check_cors
+    @ensure_loaded_agent
     def retrieve_tracker(self, request, sender_id):
         """Get a dump of a conversations tracker including its events."""
 
@@ -182,6 +216,7 @@ class RasaCoreServer(object):
     @app.route("/conversations/<sender_id>/tracker",
                methods=['PUT', 'OPTIONS'])
     @check_cors
+    @ensure_loaded_agent
     def update_tracker(self, request, sender_id):
         """Use a list of events to set a conversations tracker to a state."""
 
@@ -204,6 +239,7 @@ class RasaCoreServer(object):
                methods=['GET', 'POST', 'OPTIONS'])
     @check_cors
     @requires_auth
+    @ensure_loaded_agent
     def parse(self, request, sender_id):
         request.setHeader('Content-Type', 'application/json')
         if request.method.decode('utf-8', 'strict') == 'GET':
@@ -232,6 +268,29 @@ class RasaCoreServer(object):
             logger.error("Caught an exception during "
                          "parse: {}".format(e), exc_info=1)
             return json.dumps({"error": "{}".format(e)})
+
+    @app.route("/load", methods=['POST', 'OPTIONS'])
+    @check_cors
+    def load_model(self, request):
+        """Loads a zipped model, replacing the existing one."""
+
+        zipped_path = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
+        zipped_path.close()
+
+        with io.open(zipped_path.name, 'wb') as f:
+            # fileOutput.write(img['datafile'].value)
+            f.write(request.args[b'model'][0])
+
+        # adds trailing slash and clears directory
+        # shutil.rmtree(os.path.join(self.model_directory, ''))
+
+        zip_ref = zipfile.ZipFile(zipped_path.name, 'r')
+        zip_ref.extractall(self.model_directory)
+        zip_ref.close()
+
+        self.agent = self._create_agent(self.model_directory, self.interpreter,
+                                        self.action_factory)
+        return json.dumps({'success': 1})
 
     @app.route("/version",
                methods=['GET', 'OPTIONS'])
