@@ -18,7 +18,7 @@ tests_requires = [
     "pytest-services",
     "pytest-cov",
     "pytest-xdist",
-    "pytest-twisted",
+    "pytest-twisted<1.6",
     "treq",
     "freezegun",
 ]

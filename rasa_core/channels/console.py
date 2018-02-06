@@ -26,8 +26,12 @@ class ConsoleOutputChannel(OutputChannel):
 class ConsoleInputChannel(InputChannel):
     """Input channel that reads the user messages from the command line."""
 
+    def __init__(self, sender_id=UserMessage.DEFAULT_SENDER_ID):
+        # type: (Text) -> None
+        self.sender_id = sender_id
+
     def _record_messages(self, on_message, max_message_limit=None):
-        utils.print_color("Bot loaded. Type a message and press enter : ",
+        utils.print_color("Bot loaded. Type a message and press enter: ",
                           utils.bcolors.OKGREEN)
         num_messages = 0
         while max_message_limit is None or num_messages < max_message_limit:
@@ -36,10 +40,9 @@ class ConsoleInputChannel(InputChannel):
                 # in python 2 input doesn't return unicode values
                 text = text.decode("utf-8")
             if text == INTENT_MESSAGE_PREFIX + 'stop':
-                import os
-                # sys.exit(1)
-                os._exit(1)
-            on_message(UserMessage(text, ConsoleOutputChannel()))
+                return
+            on_message(UserMessage(text, ConsoleOutputChannel(),
+                                   self.sender_id))
             num_messages += 1
 
     def start_async_listening(self, message_queue):
