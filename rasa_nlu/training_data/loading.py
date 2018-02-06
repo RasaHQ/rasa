@@ -7,10 +7,12 @@ import logging
 import json
 
 from rasa_nlu import utils
-from rasa_nlu.training_data.formats import MarkdownReader, WitReader, LuisReader, RasaReader, DialogflowReader
+from rasa_nlu.training_data.formats import MarkdownReader, WitReader, LuisReader, \
+    RasaReader, DialogflowReader
 from rasa_nlu.training_data import TrainingData
 from rasa_nlu.training_data.formats.dialogflow import DIALOGFLOW_AGENT, DIALOGFLOW_PACKAGE, DIALOGFLOW_INTENT, \
     DIALOGFLOW_ENTITIES, DIALOGFLOW_ENTITY_ENTRIES, DIALOGFLOW_INTENT_EXAMPLES
+from rasa_nlu.training_data.formats.markdown import available_sections as available_markdown_sections
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +22,9 @@ LUIS = "luis"
 RASA = "rasa_nlu"
 UNK = "unk"
 MARKDOWN = "md"
+DIALOGFLOW_RELEVANT = {DIALOGFLOW_ENTITIES, DIALOGFLOW_INTENT}
 
+_markdown_section_markers = ["## {}:".format(s) for s in available_markdown_sections]
 _json_format_heuristics = {
     WIT: lambda js, fn: "data" in js and isinstance(js.get("data"), list),
     LUIS: lambda js, fn: "luis_schema_version" in js,
@@ -34,20 +38,12 @@ _json_format_heuristics = {
 }
 
 
-def _from_dialogflow_file(filename, language, fformat):
-    if fformat in {DIALOGFLOW_INTENT, DIALOGFLOW_ENTITIES}:
-        return DialogflowReader().read(filename, language=language, fformat=fformat)
-    else:
-        return None
-
-
 def load_data(resource_name, language='en'):
     # type: (Text, Optional[Text]) -> TrainingData
     """Loads training data from disk and merges them if multiple files are found."""
 
     files = utils.recursively_find_files(resource_name)
     data_sets = [_load(f, language) for f in files]
-    # Dialogflow has files that we don't read directly, these return None
     data_sets = [ds for ds in data_sets if ds]
     if len(data_sets) == 0:
         return TrainingData()
@@ -57,26 +53,35 @@ def load_data(resource_name, language='en'):
         return data_sets[0].merge(*data_sets[1:])
 
 
+def _reader_factory(fformat):
+    """Generates the appropriate reader class based on the file format."""
+    reader = None
+    if fformat == LUIS:
+        reader = LuisReader()
+    elif fformat == WIT:
+        reader = WitReader()
+    elif fformat in DIALOGFLOW_RELEVANT:
+        reader = DialogflowReader()
+    elif fformat == RASA:
+        reader = RasaReader()
+    elif fformat == MARKDOWN:
+        reader = MarkdownReader()
+    return reader
+
+
 def _load(filename, language='en'):
     """Loads a single training data file from disk."""
 
     fformat = _guess_format(filename)
+    if fformat == UNK:
+        raise ValueError("Unknown data format for file {}".format(filename))
 
     logger.info("Training data format of {} is {}".format(filename, fformat))
-
-    if fformat == LUIS:
-        return LuisReader().read(filename)
-    elif fformat == WIT:
-        return WitReader().read(filename)
-    elif fformat.startswith("dialogflow"):
-        return _from_dialogflow_file(filename, language, fformat)
-    elif fformat == RASA:
-        return RasaReader().read(filename)
-    elif fformat == MARKDOWN:
-        return MarkdownReader().read(filename)
-    else:
-        raise ValueError("unknown training file format : {} for "
-                         "file {}".format(fformat, filename))
+    reader = _reader_factory(fformat)
+    td = None
+    if reader:
+        td = reader.read(filename, language=language, fformat=fformat)
+    return td
 
 
 def _guess_format(filename):
@@ -87,11 +92,12 @@ def _guess_format(filename):
     try:
         js = json.loads(content)
     except ValueError:
-        if "## intent:" in content:
+        if any([marker in content for marker in _markdown_section_markers]):
             guess = MARKDOWN
     else:
         for fformat, format_heuristic in _json_format_heuristics.items():
             if format_heuristic(js, filename):
                 guess = fformat
+                break
 
     return guess
