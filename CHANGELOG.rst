@@ -18,6 +18,14 @@ Changed
 Fixed
 -----
 
+[0.11.2] - 2018-02-06
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Formatting of tokens without assigned entities in evaluation
+- pip installation issues due to missing training_data package in setup.py
+
 
 [0.11.1] - 2018-02-02
 ^^^^^^^^^^^^^^^^^^^^^
