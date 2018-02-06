@@ -276,3 +276,39 @@ def test_revert_user_utterance_event(default_domain):
     assert recovered.current_state() == tracker.current_state()
     assert tracker.latest_action_name == "my_action_1"
     assert len(list(tracker.generate_all_prior_states())) == 3
+
+
+def test_traveling_back_in_time(default_domain):
+    tracker = DialogueStateTracker("default", default_domain.slots,
+                                   default_domain.topics,
+                                   default_domain.default_topic)
+    # the retrieved tracker should be empty
+    assert len(tracker.events) == 0
+
+    intent = {"name": "greet", "confidence": 1.0}
+    tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
+    tracker.update(UserUttered("/greet", intent, []))
+
+    import time
+    time.sleep(1)
+    time_for_timemachine = time.time()
+    time.sleep(1)
+
+    tracker.update(ActionExecuted("my_action"))
+    tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
+
+    # Expecting count of 4:
+    #   +3 executed actions
+    #   +1 final state
+    assert tracker.latest_action_name == ACTION_LISTEN_NAME
+    assert len(tracker.events) == 4
+    assert len(list(tracker.generate_all_prior_states())) == 4
+
+    tracker = tracker.travel_back_in_time(time_for_timemachine)
+
+    # Expecting count of 2:
+    #   +1 executed actions
+    #   +1 final state
+    assert tracker.latest_action_name == ACTION_LISTEN_NAME
+    assert len(tracker.events) == 2
+    assert len(list(tracker.generate_all_prior_states())) == 2
