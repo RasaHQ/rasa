@@ -22,6 +22,6 @@ ruamel.yaml==0.15.34
 flask==0.12
 scikit-learn==0.19.1
 slackclient==1.1.0
-requests==2.18.4
+requests==2.18.4ƒ
 python-telegram-bot==8.1.1
 rasa_nlu
