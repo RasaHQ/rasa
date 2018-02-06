@@ -48,3 +48,4 @@ def test_training_script(tmpdir):
                          use_online_learning=False,
                          nlu_model_path=None,
                          kwargs={})
+    assert True

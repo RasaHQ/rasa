@@ -14,6 +14,7 @@ from typing import Generator, Dict, Text, Any, Optional, Iterator
 from typing import List
 
 from rasa_core import utils
+from rasa_core import events
 from rasa_core.conversation import Dialogue, Topic
 from rasa_core.events import UserUttered, TopicSet, ActionExecuted, \
     Event, SlotSet, Restarted, ActionReverted, UserUtteranceReverted, BotUttered
@@ -26,6 +27,15 @@ if typing.TYPE_CHECKING:
 
 class DialogueStateTracker(object):
     """Maintains the state of a conversation."""
+
+    @classmethod
+    def from_dict(cls, sender_id, dump_as_dict, domain):
+        evts = events.deserialise_events(dump_as_dict, domain)
+        tracker = cls(sender_id, domain.slots, domain.topics,
+                      domain.default_topic)
+        for e in evts:
+            tracker.update(e)
+        return tracker
 
     def __init__(self, sender_id, slots,
                  topics=None,
@@ -74,9 +84,9 @@ class DialogueStateTracker(object):
         """Returns the current tracker state as an object."""
 
         if should_include_events:
-            events = [e.as_dict() for e in self.events]
+            evts = [e.as_dict() for e in self.events]
         else:
-            events = None
+            evts = None
 
         latest_event_time = None
         if len(self.events) > 0:
@@ -88,7 +98,7 @@ class DialogueStateTracker(object):
             "latest_message": self.latest_message.parse_data,
             "latest_event_time": latest_event_time,
             "paused": self.is_paused(),
-            "events": events
+            "events": evts
         }
 
     def current_slot_values(self):
@@ -202,7 +212,7 @@ class DialogueStateTracker(object):
         return applied_events
 
     def replay_events(self):
-        # type: (int) -> None
+        # type: () -> None
         """Update the tracker based on a list of events."""
 
         applied_events = self._applied_events()
@@ -306,12 +316,12 @@ class DialogueStateTracker(object):
                          "added all your slots to your domain file."
                          "".format(key))
 
-    def _create_events(self, events):
+    def _create_events(self, evts):
         # type: (List[Event]) -> deque
 
-        if events and not isinstance(events[0], Event):  # pragma: no cover
+        if evts and not isinstance(evts[0], Event):  # pragma: no cover
             raise ValueError("events, if given, must be a list of events")
-        return deque(events, self._max_event_history)
+        return deque(evts, self._max_event_history)
 
     def __eq__(self, other):
         if isinstance(other, type(self)):
