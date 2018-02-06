@@ -149,17 +149,22 @@ class DialogueStateTracker(object):
 
         return self._topic_stack.top
 
+    def _init_copy(self):
+        """Creates a new state tracker with the same initial values."""
+        from rasa_core.channels import UserMessage
+
+        return DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
+                                    self.slots.values(),
+                                    self.topics,
+                                    self.default_topic)
+
     def generate_all_prior_states(self):
         # type: () -> Generator[DialogueStateTracker, None, None]
         """Returns a generator of the previous states of this tracker.
 
         The resulting array is representing the state before each action."""
-        from rasa_core.channels import UserMessage
 
-        tracker = DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
-                                       self.slots.values(),
-                                       self.topics,
-                                       self.default_topic)
+        tracker = self._init_copy()
 
         for event in self._applied_events():
             if isinstance(event, ActionExecuted):
@@ -219,6 +224,24 @@ class DialogueStateTracker(object):
         self._reset()
         self.events.extend(dialogue.events)
         self.replay_events()
+
+    def travel_back_in_time(self, target_time):
+        # type: (float) -> DialogueStateTracker
+        """Creates a new tracker with a state at a specific timestamp.
+
+        A new tracker will be created and all events previous to the
+        passed time stamp will be replayed. Events that occur exactly
+        at the target time will be included."""
+
+        tracker = self._init_copy()
+
+        for event in self._applied_events():
+            if event.timestamp <= target_time:
+                tracker.update(event)
+            else:
+                break
+
+        return tracker  # yields the final state
 
     def as_dialogue(self):
         # type: () -> Dialogue
