@@ -36,6 +36,15 @@ class PolicyEnsemble(object):
         else:
             self.action_fingerprints = {}
 
+    def max_history(self):
+        # type: () -> Optional[int]
+        """Return max history, only works if the ensemble is already trained."""
+
+        if self.policies:
+            return self.policies[0].max_history
+        else:
+            return None
+
     def train(self, training_data, domain, featurizer, **kwargs):
         # type: (DialogueTrainingData, Domain, Featurizer, **Any) -> None
         if not training_data.is_empty():
@@ -56,8 +65,9 @@ class PolicyEnsemble(object):
         predict the action. Returns the index of the next action"""
         probabilities = self.probabilities_using_best_policy(tracker, domain)
         max_index = np.argmax(probabilities)
-        logger.debug("Predicted next action #{} with prob {:.2f}.".format(
-                max_index, probabilities[max_index]))
+        logger.debug("Predicted next action '{}' with prob {:.2f}.".format(
+                domain.action_for_index(max_index).name(),
+                probabilities[max_index]))
         return max_index
 
     def probabilities_using_best_policy(self, tracker, domain):
@@ -103,10 +113,7 @@ class PolicyEnsemble(object):
         # type: (Text) -> None
         """Persists the policy to storage."""
 
-        if self.policies:
-            self._persist_metadata(path, self.policies[0].max_history)
-        else:
-            self._persist_metadata(path, None)
+        self._persist_metadata(path, self.max_history())
 
         for policy in self.policies:
             policy.persist(path)
