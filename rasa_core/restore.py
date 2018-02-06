@@ -65,7 +65,7 @@ def _replay_events(tracker, agent):
     created by the agent are compared to the logged ones of the tracker that
     is getting replayed. If they differ, a warning is logged.
 
-    At the end, the tracker stored in the agents tracker store for the
+    At the end, the tracker stored in the agent's tracker store for the
     same sender id will have quite the same state as the one
     that got replayed."""
 
