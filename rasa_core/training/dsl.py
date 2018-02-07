@@ -267,7 +267,12 @@ class StoryFileReader(object):
         parsed_messages = []
         for m in messages:
             parse_data = self.interpreter.parse(m)
-            utterance = UserUttered.from_parse_data(m, parse_data)
+            # a user uttered event's format is a bit different to the one of
+            # other events, so we need to take a shortcut here
+            parameters = {"text": m, "parse_data": parse_data}
+            utterance = Event.from_story_string(UserUttered.type_name,
+                                                parameters,
+                                                self.domain)
             if m.startswith("_"):
                 c = utterance.as_story_string()
                 logger.warn("Stating user intents with a leading '_' is "
