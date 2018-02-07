@@ -18,6 +18,7 @@ from typing import Union, Text, Optional
 from rasa_core import utils, events
 from rasa_core.agent import Agent
 from rasa_core.interpreter import NaturalLanguageInterpreter
+from rasa_core.tracker_store import TrackerStore
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.version import __version__
 from rasa_nlu.server import check_cors, requires_auth
@@ -102,7 +103,8 @@ class RasaCoreServer(object):
                  logfile="rasa_core.log",
                  cors_origins=None,
                  action_factory=None,
-                 auth_token=None):
+                 auth_token=None,
+                 tracker_store=None):
 
         _configure_logging(loglevel, logfile)
 
@@ -110,19 +112,23 @@ class RasaCoreServer(object):
                        "token": auth_token}
         self.model_directory = model_directory
         self.interpreter = interpreter
+        self.tracker_store = tracker_store
         self.action_factory = action_factory
         self.agent = self._create_agent(model_directory, interpreter,
-                                        action_factory)
+                                        action_factory, tracker_store)
 
     @staticmethod
     def _create_agent(
             model_directory,  # type: Text
             interpreter,  # type: Union[Text, NaturalLanguageInterpreter]
-            action_factory=None  # type: Optional[Text]
+            action_factory=None,  # type: Optional[Text]
+            tracker_store=None  # type: Optional[TrackerStore]
     ):
         # type: (...) -> Optional[Agent]
         try:
+
             return Agent.load(model_directory, interpreter,
+                              tracker_store=tracker_store,
                               action_factory=action_factory)
         except Exception as e:
             logger.warn("Failed to load any agent model. Running "
@@ -272,7 +278,7 @@ class RasaCoreServer(object):
         zip_ref.close()
 
         self.agent = self._create_agent(self.model_directory, self.interpreter,
-                                        self.action_factory)
+                                        self.action_factory, self.tracker_store)
         return json.dumps({'success': 1})
 
     @app.route("/version",
