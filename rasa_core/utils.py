@@ -322,8 +322,13 @@ def fix_yaml_loader():
 
 def read_yaml_file(filename):
     fix_yaml_loader()
-    with io.open(filename, encoding="utf-8") as f:
-        return yaml.load(f.read())
+    return yaml.load(read_file(filename, "utf-8"))
+
+
+def read_file(filename, encoding="utf-8"):
+    """Read text from a file."""
+    with io.open(filename, encoding=encoding) as f:
+        return f.read()
 
 
 def is_training_data_empty(X):

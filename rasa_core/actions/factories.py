@@ -59,9 +59,8 @@ def local_action_factory(action_classes, action_names, utter_templates):
                         "action. Remember to prefix actions that should "
                         "utter a template with `utter_`. "
                         "Error: {}".format(action_name, e))
-            else:
-                # raises the original exception again
-                raise
+            # raises the original exception again
+            raise
         except (AttributeError, KeyError) as e:
             raise ValueError(
                     "Action '{}' doesn't correspond to a template / action. "

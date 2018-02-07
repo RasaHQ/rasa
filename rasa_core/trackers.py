@@ -14,6 +14,7 @@ from typing import Generator, Dict, Text, Any, Optional, Iterator
 from typing import List
 
 from rasa_core import utils
+from rasa_core import events
 from rasa_core.conversation import Dialogue, Topic
 from rasa_core.events import UserUttered, TopicSet, ActionExecuted, \
     Event, SlotSet, Restarted, ActionReverted, UserUtteranceReverted, BotUttered
@@ -26,6 +27,15 @@ if typing.TYPE_CHECKING:
 
 class DialogueStateTracker(object):
     """Maintains the state of a conversation."""
+
+    @classmethod
+    def from_dict(cls, sender_id, dump_as_dict, domain):
+        evts = events.deserialise_events(dump_as_dict, domain)
+        tracker = cls(sender_id, domain.slots, domain.topics,
+                      domain.default_topic)
+        for e in evts:
+            tracker.update(e)
+        return tracker
 
     def __init__(self, sender_id, slots,
                  topics=None,
@@ -69,14 +79,20 @@ class DialogueStateTracker(object):
     ###
     # Public tracker interface
     ###
-    def current_state(self, should_include_events=False):
-        # type: (bool) -> Dict[Text, Any]
+    def current_state(self,
+                      should_include_events=False,
+                      only_events_after_latest_restart=False):
+        # type: (bool, bool) -> Dict[Text, Any]
         """Returns the current tracker state as an object."""
 
         if should_include_events:
-            events = [e.as_dict() for e in self.events]
+            if only_events_after_latest_restart:
+                es = self.events
+            else:
+                es = self.events_after_latest_restart()
+            evts = [e.as_dict() for e in es]
         else:
-            events = None
+            evts = None
 
         latest_event_time = None
         if len(self.events) > 0:
@@ -88,7 +104,7 @@ class DialogueStateTracker(object):
             "latest_message": self.latest_message.parse_data,
             "latest_event_time": latest_event_time,
             "paused": self.is_paused(),
-            "events": events
+            "events": evts
         }
 
     def current_slot_values(self):
@@ -149,17 +165,22 @@ class DialogueStateTracker(object):
 
         return self._topic_stack.top
 
+    def _init_copy(self):
+        """Creates a new state tracker with the same initial values."""
+        from rasa_core.channels import UserMessage
+
+        return DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
+                                    self.slots.values(),
+                                    self.topics,
+                                    self.default_topic)
+
     def generate_all_prior_states(self):
         # type: () -> Generator[DialogueStateTracker, None, None]
         """Returns a generator of the previous states of this tracker.
 
         The resulting array is representing the state before each action."""
-        from rasa_core.channels import UserMessage
 
-        tracker = DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
-                                       self.slots.values(),
-                                       self.topics,
-                                       self.default_topic)
+        tracker = self._init_copy()
 
         for event in self._applied_events():
             if isinstance(event, ActionExecuted):
@@ -197,7 +218,7 @@ class DialogueStateTracker(object):
         return applied_events
 
     def replay_events(self):
-        # type: (int) -> None
+        # type: () -> None
         """Update the tracker based on a list of events."""
 
         applied_events = self._applied_events()
@@ -219,6 +240,24 @@ class DialogueStateTracker(object):
         self._reset()
         self.events.extend(dialogue.events)
         self.replay_events()
+
+    def travel_back_in_time(self, target_time):
+        # type: (float) -> DialogueStateTracker
+        """Creates a new tracker with a state at a specific timestamp.
+
+        A new tracker will be created and all events previous to the
+        passed time stamp will be replayed. Events that occur exactly
+        at the target time will be included."""
+
+        tracker = self._init_copy()
+
+        for event in self._applied_events():
+            if event.timestamp <= target_time:
+                tracker.update(event)
+            else:
+                break
+
+        return tracker  # yields the final state
 
     def as_dialogue(self):
         # type: () -> Dialogue
@@ -283,12 +322,12 @@ class DialogueStateTracker(object):
                          "added all your slots to your domain file."
                          "".format(key))
 
-    def _create_events(self, events):
+    def _create_events(self, evts):
         # type: (List[Event]) -> deque
 
-        if events and not isinstance(events[0], Event):  # pragma: no cover
+        if evts and not isinstance(evts[0], Event):  # pragma: no cover
             raise ValueError("events, if given, must be a list of events")
-        return deque(events, self._max_event_history)
+        return deque(evts, self._max_event_history)
 
     def __eq__(self, other):
         if isinstance(other, type(self)):

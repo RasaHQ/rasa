@@ -11,6 +11,8 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+- script to reload a dumped trackers state and to continue the conversation
+  at the end of the stored dialogue
 
 Changed
 -------
@@ -25,6 +27,7 @@ Fixed
 -----
 - removed deque to support python 3.5
 - Documentation improvements to tutorials
+- serialisation of date time value for ``ReminderScheduled`` event
 
 [0.8.0] - 2018-01-30
 ^^^^^^^^^^^^^^^^^^^^
