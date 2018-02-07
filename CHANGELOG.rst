@@ -27,6 +27,7 @@ Fixed
 -----
 - removed deque to support python 3.5
 - Documentation improvements to tutorials
+- serialisation of date time value for ``ReminderScheduled`` event
 
 [0.8.0] - 2018-01-30
 ^^^^^^^^^^^^^^^^^^^^
