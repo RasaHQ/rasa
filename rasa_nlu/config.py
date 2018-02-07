@@ -51,7 +51,7 @@ DEFAULT_CONFIG = {
         "L2_c": 1e-3
     },
     "ner_spacy": {
-        "epochs": 1,
+        "epochs": 10,
         "batch_size": 10
     },
     "intent_classifier_sklearn": {

@@ -35,12 +35,10 @@ class SpacyEntityExtractor(EntityExtractor):
     def train(self, training_data, config, **kwargs):
         # type: (TrainingData, RasaNLUConfig, **Any) -> Dict[Text, Any]
 
-        ner_config = config.get('ner_spacy')
-
-        nlp = kwargs['spacy_nlp']
+        spacy_nlp = kwargs['spacy_nlp']
 
         # get the ner pipe
-        ner = nlp.get_pipe('ner')
+        ner = spacy_nlp.create_pipe('ner')
 
         training_ner_data = []
         if training_data.entity_examples:
@@ -51,19 +49,27 @@ class SpacyEntityExtractor(EntityExtractor):
 
                 training_ner_data.append((example.text, {'entities': entities}))
 
-        self.__train_ner(ner_config, nlp, training_ner_data)
-
         ner.cfg['rasa_updated'] = True
-        return {'spacy_nlp': nlp}
+        spacy_nlp.replace_pipe('ner', ner)
+        self.__train_ner(config.get('ner_spacy'), spacy_nlp, training_ner_data)
 
-    def __train_ner(self, ner_config, nlp, training_ner_data):
-        batch_size = ner_config.get('batch_size', 16)
+        return {'spacy_nlp': spacy_nlp}
+
+    @staticmethod
+    def __train_ner(ner_config, nlp, training_ner_data):
+        if not ner_config:
+            logger.warning('ner_config is None')
+            epochs = 16
+            batch_size = 10
+        else:
+            epochs = ner_config.get('epochs', 16)
+            batch_size = ner_config.get('batch_size', 10)
+
         # get names of other pipes to disable them during training
         other_pipes = [pipe for pipe in nlp.pipe_names if pipe != 'ner']
         with nlp.disable_pipes(*other_pipes):  # only train NER
             logger.info('start training ner')
             optimizer = nlp.begin_training()
-            epochs = ner_config.get('epochs')
             for it in range(epochs):
                 random.shuffle(training_ner_data)
                 losses = {}
