@@ -79,12 +79,18 @@ class DialogueStateTracker(object):
     ###
     # Public tracker interface
     ###
-    def current_state(self, should_include_events=False):
-        # type: (bool) -> Dict[Text, Any]
+    def current_state(self,
+                      should_include_events=False,
+                      only_events_after_latest_restart=False):
+        # type: (bool, bool) -> Dict[Text, Any]
         """Returns the current tracker state as an object."""
 
         if should_include_events:
-            evts = [e.as_dict() for e in self.events]
+            if only_events_after_latest_restart:
+                es = self.events
+            else:
+                es = self.events_after_latest_restart()
+            evts = [e.as_dict() for e in es]
         else:
             evts = None
 
