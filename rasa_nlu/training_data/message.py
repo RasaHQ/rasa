@@ -13,7 +13,11 @@ class Message(object):
         self.text = text
         self.time = time
         self.data = data if data else {}
-        self.output_properties = output_properties if output_properties else set()
+
+        if output_properties:
+            self.output_properties = output_properties
+        else:
+            self.output_properties = set()
 
     def set(self, prop, info, add_to_output=False):
         self.data[prop] = info
@@ -41,7 +45,6 @@ class Message(object):
 
     def __hash__(self):
         return hash((self.text, str(ordered(self.data))))
-
 
     @classmethod
     def build(cls, text, intent=None, entities=None):
