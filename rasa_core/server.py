@@ -7,6 +7,7 @@ import argparse
 import io
 import json
 import logging
+import os
 import tempfile
 import zipfile
 from functools import wraps
@@ -263,22 +264,23 @@ class RasaCoreServer(object):
     def load_model(self, request):
         """Loads a zipped model, replacing the existing one."""
 
+        logger.info("Received new model through REST interface.")
         zipped_path = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
         zipped_path.close()
 
         with io.open(zipped_path.name, 'wb') as f:
-            # fileOutput.write(img['datafile'].value)
             f.write(request.args[b'model'][0])
-
-        # adds trailing slash and clears directory
-        # shutil.rmtree(os.path.join(self.model_directory, ''))
+        logger.debug("Downloaded model to {}".format(zipped_path.name))
 
         zip_ref = zipfile.ZipFile(zipped_path.name, 'r')
         zip_ref.extractall(self.model_directory)
         zip_ref.close()
+        logger.debug("Unzipped model to {}".format(
+                os.path.abspath(self.model_directory)))
 
         self.agent = self._create_agent(self.model_directory, self.interpreter,
                                         self.action_factory, self.tracker_store)
+        logger.debug("Finished loading new agent.")
         return json.dumps({'success': 1})
 
     @app.route("/version",
