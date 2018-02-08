@@ -4,7 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
-
+import os
 import typing
 from typing import Any
 from typing import Dict
@@ -50,7 +50,15 @@ class SpacyNLP(Component):
             spacy_model_name = config["language"]
         logger.info("Trying to load spacy model with "
                     "name '{}'".format(spacy_model_name))
-        nlp = spacy.load(spacy_model_name, parser=False)
+        try:
+            nlp = spacy.load(spacy_model_name, parser=False)
+        except IOError:
+            # if failed to read model from spacy_model_name,
+            # read model based on language, and name this model as spacy_model_name
+            logger.warning('Failed to load model %s, try to load model %s', spacy_model_name, config['language'])
+            nlp = spacy.load(config["language"], parser=False)
+            logger.warning('Loaded model %s successfully, fork to %s', config['language'], spacy_model_name)
+
         cls.ensure_proper_language_model(nlp)
         return SpacyNLP(nlp, config["language"], spacy_model_name)
 
@@ -84,10 +92,18 @@ class SpacyNLP(Component):
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]
 
+        should_to_disk = any([True for pipeline in self.nlp.pipeline
+                              if 'rasa_updated' in pipeline[1].cfg and pipeline[1].cfg['rasa_updated']])
+        if should_to_disk:
+            path = os.path.join(model_dir, self.spacy_model_name)
+            logger.info('trying to dump to disk')
+            self.nlp.to_disk(path)
+
         return {
             "spacy_model_name": self.spacy_model_name,
             "language": self.language
         }
+
 
     @classmethod
     def load(cls,
@@ -101,9 +117,14 @@ class SpacyNLP(Component):
         if cached_component:
             return cached_component
 
-        nlp = spacy.load(model_metadata.get("spacy_model_name"), parser=False)
+        spacy_model_name = model_metadata.get('spacy_model_name')
+        try:
+            path = os.path.join(model_dir, spacy_model_name)
+            nlp = spacy.load(path, parser=False)
+        except IOError:
+            nlp = spacy.load(spacy_model_name, parser=False)
         cls.ensure_proper_language_model(nlp)
-        return SpacyNLP(nlp, model_metadata.get("language"), model_metadata.get("spacy_model_name"))
+        return SpacyNLP(nlp, model_metadata.get("language"), spacy_model_name)
 
     @staticmethod
     def ensure_proper_language_model(nlp):
