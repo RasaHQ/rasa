@@ -79,9 +79,9 @@ class MitieIntentClassifier(Component):
         if model_dir and model_metadata.get("intent_classifier_mitie"):
             classifier_file = os.path.join(model_dir, model_metadata.get("intent_classifier_mitie"))
             classifier = mitie.text_categorizer(classifier_file)
-            return MitieIntentClassifier(classifier)
+            return cls(classifier)
         else:
-            return MitieIntentClassifier()
+            return cls()
 
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]

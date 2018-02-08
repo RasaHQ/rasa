@@ -169,7 +169,7 @@ class SklearnIntentClassifier(Component):
                 else:
                     return cloudpickle.load(f)
         else:
-            return SklearnIntentClassifier()
+            return cls()
 
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]
