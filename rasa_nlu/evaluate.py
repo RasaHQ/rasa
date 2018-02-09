@@ -70,6 +70,7 @@ def plot_confusion_matrix(cm, classes,
     else:
         logger.info("Confusion matrix, without normalization: \n{}".format(cm))
 
+    #np.savetxt("confusion_matrix.txt",cm.astype(int))
     thresh = cm.max() / 2.
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
         plt.text(j, i, cm[i, j],
@@ -408,9 +409,6 @@ def run_evaluation(config, model_path, component_builder=None):  # pragma: no co
 
 
 def run_cv_evaluation(data, n_folds, nlu_config):
-    from sklearn import metrics
-    from sklearn.model_selection import StratifiedKFold
-    from collections import defaultdict
     # type: (List[rasa_nlu.training_data.Message], int, RasaNLUConfig) -> Dict[Text, List[float]]
     """Stratified cross validation on data
 
@@ -421,8 +419,12 @@ def run_cv_evaluation(data, n_folds, nlu_config):
               corresponds to the relevant result for one fold
 
     """
+    from sklearn.model_selection import StratifiedKFold
+    from collections import defaultdict
+
     trainer = Trainer(nlu_config)
-    results = defaultdict(list)
+    train_results = defaultdict(list)
+    test_results = defaultdict(list)
 
     y_true = [e.get("intent") for e in data]
 
@@ -441,25 +443,41 @@ def run_cv_evaluation(data, n_folds, nlu_config):
 
         logger.debug("Evaluation ...")
         interpreter = Interpreter.load(model_directory, nlu_config)
-        test_y = [e.get("intent") for e in test]
-
-        preds = []
-        for e in test:
-            res = interpreter.parse(e.text)
-            if res.get('intent'):
-                preds.append(res['intent'].get('name'))
-            else:
-                preds.append(None)
-
-        # compute fold metrics
-        results["Accuracy"].append(metrics.accuracy_score(test_y, preds))
-        results["F1-score"].append(metrics.f1_score(test_y, preds, average='weighted'))
-        results["Precision"] = metrics.precision_score(test_y, preds, average='weighted')
+            
+        # calculate train accuracy
+        compute_metrics(interpreter, train, train_results)
+        # calculate test accuracy
+        compute_metrics(interpreter, test, test_results)
 
         # increase fold counter
         counter += 1
 
-    return dict(results)
+    return dict(train_results),dict(test_results)
+
+
+def compute_metrics(interpreter, corpus, results):
+    """Computes evaluation metrics for a given corpus and appends them to results"""
+    from sklearn import metrics
+    
+    y = [e.get("intent") for e in corpus]
+
+    preds = []
+    for e in corpus:
+        res = interpreter.parse(e.text)
+        if res.get('intent'):
+            preds.append(res['intent'].get('name'))
+        else:
+            preds.append(None)
+
+    # get rid of None, since sklearn metrics does not support it anymore
+    y = [t if t!=None else "" for t in y]
+    preds = [t if t!=None else "" for t in preds]
+
+    # compute fold metrics
+    results["Accuracy"].append(metrics.accuracy_score(y, preds))
+    results["F1-score"].append(metrics.f1_score(y, preds, average='weighted'))
+    results["Precision"].append(metrics.precision_score(y, preds, average='weighted'))
+
 
 if __name__ == '__main__':  # pragma: no cover
     parser = create_argparser()
@@ -477,7 +495,7 @@ if __name__ == '__main__':  # pragma: no cover
     if args.mode == "crossvalidation":
         data = training_data.load_data(args.data)
         data = prepare_data(data, cutoff = 5)
-        results = run_cv_evaluation(data, int(args.folds), nlu_config)
+        _,results = run_cv_evaluation(data, int(args.folds), nlu_config)
         logger.info("CV evaluation (n={})".format(args.folds))
         for k,v in results.items():
             logger.info("{}: {:.3f} ({:.3f})".format(k, np.mean(v), np.std(v)))
