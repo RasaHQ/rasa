@@ -14,6 +14,7 @@ Added
 - support for inline entity synonyms in markdown training format
 - support for regex features in markdown training format
 - support for splitting and training data into multiple and mixing formats
+- support for markdown files containing regex-features or synonyms only
 
 Changed
 -------

@@ -78,10 +78,11 @@ def _load(filename, language='en'):
 
     logger.info("Training data format of {} is {}".format(filename, fformat))
     reader = _reader_factory(fformat)
-    td = None
+
     if reader:
-        td = reader.read(filename, language=language, fformat=fformat)
-    return td
+        return reader.read(filename, language=language, fformat=fformat)
+    else:
+        return None
 
 
 def _guess_format(filename):
