@@ -202,9 +202,13 @@ class RasaCoreServer(object):
     def retrieve_tracker(self, request, sender_id):
         """Get a dump of a conversations tracker including its events."""
 
+        use_history = bool(request.args.get('only_events_after_latest_restart'))
+        should_include_events = bool(request.args.get('events'))
         request.setHeader('Content-Type', 'application/json')
         tracker = self.agent.tracker_store.get_or_create_tracker(sender_id)
-        return json.dumps(tracker.current_state(should_include_events=True))
+        return json.dumps(tracker.current_state(
+                should_include_events=should_include_events,
+                only_events_after_latest_restart=use_history))
 
     @app.route("/conversations/<sender_id>/tracker",
                methods=['PUT', 'OPTIONS'])
@@ -287,9 +291,9 @@ class RasaCoreServer(object):
                methods=['GET', 'OPTIONS'])
     @check_cors
     def version(self, request):
-        """Respond with the version number of the installed Rasa Core."""
+        """respond with the version number of the installed rasa core."""
 
-        request.setHeader('Content-Type', 'application/json')
+        request.setheader('content-type', 'application/json')
         return json.dumps({'version': __version__})
 
 
