@@ -93,6 +93,11 @@ def ensure_loaded_agent(f):
     return decorated
 
 
+def bool_arg(request, name, default=True):
+    d = str(default)
+    return request.args.get(name, d).lower() == 'true'
+
+
 class RasaCoreServer(object):
     """Class representing a Rasa Core HTTP server."""
 
@@ -202,8 +207,8 @@ class RasaCoreServer(object):
     def retrieve_tracker(self, request, sender_id):
         """Get a dump of a conversations tracker including its events."""
 
-        use_history = bool(request.args.get('only_events_after_latest_restart'))
-        should_include_events = bool(request.args.get('events'))
+        use_history = bool_arg(request, 'ignore_restarts', default=False)
+        should_include_events = bool_arg(request, 'events', default=True)
         request.setHeader('Content-Type', 'application/json')
         tracker = self.agent.tracker_store.get_or_create_tracker(sender_id)
         return json.dumps(tracker.current_state(
