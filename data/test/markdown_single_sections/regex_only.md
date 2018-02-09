@@ -1,0 +1,2 @@
+## regex:greet
+- hey[^\s]*
