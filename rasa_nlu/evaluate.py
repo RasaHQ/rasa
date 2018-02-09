@@ -70,7 +70,6 @@ def plot_confusion_matrix(cm, classes,
     else:
         logger.info("Confusion matrix, without normalization: \n{}".format(cm))
 
-    #np.savetxt("confusion_matrix.txt",cm.astype(int))
     thresh = cm.max() / 2.
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
         plt.text(j, i, cm[i, j],
