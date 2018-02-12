@@ -221,17 +221,15 @@ def test_drop_intents_below_freq():
 
 
 def test_run_cv_evaluation():
-    import numpy as np
     td = training_data.load_data('data/examples/rasa/demo-rasa.json')
-    n_folds = 3
     nlu_config = RasaNLUConfig("sample_configs/config_spacy.json")
 
-    np.random.seed(2018)
+    n_folds = 3
     results = run_cv_evaluation(td, n_folds, nlu_config)
 
-    acc = np.mean(results["Accuracy"])
-    exp_acc = 0.677777  # expected result
-    np.testing.assert_approx_equal(acc, exp_acc, significant=5)
+    assert len(results["Accuracy"]) == n_folds
+    assert len(results["Precision"]) == n_folds
+    assert len(results["F1-score"]) == n_folds
 
 
 def test_empty_intent_removal():

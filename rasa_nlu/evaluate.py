@@ -15,7 +15,7 @@ from typing import Dict, Text, List
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.model import Interpreter
 from rasa_nlu.model import Trainer, TrainingData
-from rasa_nlu import training_data
+from rasa_nlu import training_data, utils
 
 logger = logging.getLogger(__name__)
 
@@ -220,7 +220,7 @@ def do_entities_overlap(entities):
     for i in range(len(sorted_entities) - 1):
         curr_ent = sorted_entities[i]
         next_ent = sorted_entities[i + 1]
-        if(next_ent["start"] < curr_ent["end"]
+        if (next_ent["start"] < curr_ent["end"]
                 and next_ent["entity"] != curr_ent["entity"]):
             return True
 
@@ -450,6 +450,19 @@ def run_evaluation(config, model_path,
     evaluate_entities(entity_targets, entity_predictions, tokens, extractors)
 
 
+def generate_folds(n, td):
+    """generates n cross validation folds for training data td."""
+    from sklearn.model_selection import StratifiedKFold
+    skf = StratifiedKFold(n_splits=n, random_state=2018, shuffle=True)
+    x = td.intent_examples
+    y = [example.get("intent") for example in x]
+    for i_fold, (train_index, test_index) in enumerate(skf.split(x, y)):
+        logger.debug("Fold: {}".format(i_fold))
+        train = [x[i] for i in train_index]
+        test = [x[i] for i in test_index]
+        yield train, test
+
+
 def run_cv_evaluation(td, n_folds, nlu_config):
     # type: (TrainingData, int, RasaNLUConfig) ->  Dict[Text, List[float]]
     """Stratified cross validation on data
@@ -461,53 +474,30 @@ def run_cv_evaluation(td, n_folds, nlu_config):
               corresponds to the relevant result for one fold
     """
     from sklearn import metrics
-    from sklearn.model_selection import StratifiedKFold
     from collections import defaultdict
+    import tempfile
 
     trainer = Trainer(nlu_config)
     results = defaultdict(list)
-    examples = td.intent_examples
+    tmp_dir = tempfile.mkdtemp()
 
-    y_true = [ex.get("intent") for ex in examples]
-
-    skf = StratifiedKFold(n_splits=n_folds, random_state=11, shuffle=True)
-    counter = 1
-    logger.info("Evaluation started")
-    for train_index, test_index in skf.split(examples, y_true):
-        logger.debug("Fold: {}".format(counter))
-        train = [examples[i] for i in train_index]
-        test = [examples[i] for i in test_index]
-
-        logger.debug("Training ...")
+    for train, test in generate_folds(n_folds, td):
         trainer.train(TrainingData(training_examples=train,
                                    entity_synonyms=td.entity_synonyms,
                                    regex_features=td.regex_features))
-
-        # Returns the directory the model is stored in
-        model_directory = trainer.persist("projects/")
-
-        logger.debug("Evaluation ...")
-        interpreter = Interpreter.load(model_directory, nlu_config)
-        test_y = [e.get("intent") for e in test]
-
-        preds = []
-        for e in test:
-            res = interpreter.parse(e.text)
-            if res.get('intent'):
-                preds.append(res['intent'].get('name'))
-            else:
-                preds.append(None)
+        model_dir = trainer.persist(tmp_dir)
+        interpreter = Interpreter.load(model_dir, nlu_config)
+        targets, _ = get_targets(TrainingData(test))
+        predictions, _, _ = get_predictions(interpreter, TrainingData(test))
+        utils.remove_model(model_dir)
 
         # compute fold metrics
-        results["Accuracy"].append(metrics.accuracy_score(test_y, preds))
-        results["F1-score"].append(metrics.f1_score(test_y, preds,
-                                                    average='weighted'))
-        results["Precision"] = metrics.precision_score(test_y, preds,
-                                                       average='weighted')
+        results["Accuracy"].append(metrics.accuracy_score(targets, predictions))
+        results["F1-score"].append(metrics.f1_score(targets, predictions, average='weighted'))
+        results["Precision"].append(metrics.precision_score(targets, predictions, average='weighted'))
 
-        # increase fold counter
-        counter += 1
-
+    os.rmdir(os.path.join(tmp_dir, "default"))
+    os.rmdir(tmp_dir)
     return dict(results)
 
 
