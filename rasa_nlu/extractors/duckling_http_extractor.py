@@ -3,23 +3,22 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import io
 import logging
 import os
 
 import requests
 import simplejson
-from builtins import str
 from typing import Any, Dict
 from typing import List
 from typing import Optional
 from typing import Text
 
+from rasa_nlu import utils
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.extractors import EntityExtractor
+from rasa_nlu.extractors.duckling_extractor import extract_value
 from rasa_nlu.model import Metadata
 from rasa_nlu.training_data import Message
-from rasa_nlu.extractors.duckling_extractor import extract_value
 from rasa_nlu.utils import write_json_to_file
 
 logger = logging.getLogger(__name__)
@@ -140,9 +139,8 @@ class DucklingHTTPExtractor(EntityExtractor):
         dimensions = None
 
         if os.path.isfile(persisted):
-            with io.open(persisted, encoding='utf-8') as f:
-                persisted_data = simplejson.loads(f.read())
-                dimensions = persisted_data["dimensions"]
+            persisted_data = utils.read_json_file(persisted)
+            dimensions = persisted_data["dimensions"]
 
         return DucklingHTTPExtractor(config.get("duckling_http_url"),
                                      model_metadata.get("language"),
