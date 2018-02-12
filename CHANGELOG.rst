@@ -16,9 +16,13 @@ Added
 
 Changed
 -------
+- updated dependencies
 
 Removed
 -------
+
+Fixed
+-----
 
 [0.8.1] - 2018-02-01
 ^^^^^^^^^^^^^^^^^^^^

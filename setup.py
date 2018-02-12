@@ -33,6 +33,7 @@ install_requires = [
     'future',
     'numpy>=1.13',
     'typing>=3.6',
+    'requests',
     'graphviz',
     'Keras',
     'tensorflow',
