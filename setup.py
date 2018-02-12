@@ -8,7 +8,7 @@ tests_requires = [
     "pytest-pep8",
     "pytest-services",
     "pytest-cov",
-    "pytest-twisted",
+    "pytest-twisted<1.6",
     "treq"
 ]
 
@@ -49,6 +49,8 @@ setup(
         'rasa_nlu.extractors',
         'rasa_nlu.featurizers',
         'rasa_nlu.tokenizers',
+        'rasa_nlu.training_data',
+        'rasa_nlu.training_data.formats'
     ],
     classifiers=[
         "Programming Language :: Python :: 2.7",

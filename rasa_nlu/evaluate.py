@@ -168,8 +168,12 @@ def merge_labels(aligned_predictions, extractor=None):
     return np.array(flattened)
 
 
-def evaluate_entities(targets, predictions,
-                      tokens, extractors):  # pragma: no cover
+def substitute_labels(labels, old, new):
+    """Replaces label names in a list of labels."""
+    return [new if label == old else label for label in labels]
+
+
+def evaluate_entities(targets, predictions, tokens, extractors):  # pragma: no cover
     """Creates summary statistics for each entity extractor.
 
     Logs precision, recall, and F1 per entity type for each extractor."""
@@ -180,10 +184,12 @@ def evaluate_entities(targets, predictions,
                                                             extractors))
 
     merged_targets = merge_labels(aligned_predictions)
+    merged_targets = substitute_labels(merged_targets, "O", "no_entity")
 
     for extractor in extractors:
         merged_predictions = merge_labels(aligned_predictions, extractor)
-        logger.info("Evaluation for entity extractor: {}".format(extractor))
+        merged_predictions = substitute_labels(merged_predictions, "O", "no_entity")
+        logger.info("Evaluation for entity extractor: {} ".format(extractor))
         log_evaluation_table(merged_targets, merged_predictions)
 
 

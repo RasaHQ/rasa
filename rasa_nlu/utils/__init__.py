@@ -1,19 +1,18 @@
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
 from __future__ import absolute_import
-import os
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
-import itertools
+import errno
+import io
+import json
+import os
 
 import six
 from builtins import str
-import errno
 from typing import List
 from typing import Optional
 from typing import Text
-import json
-import io
 
 
 def relative_normpath(f, path):
@@ -28,7 +27,9 @@ def relative_normpath(f, path):
 
 def create_dir(dir_path):
     # type: (Text) -> None
-    """Creates a directory and its super paths. Succeeds even if the path already exists."""
+    """Creates a directory and its super paths.
+
+    Succeeds even if the path already exists."""
 
     try:
         os.makedirs(dir_path)
@@ -54,7 +55,9 @@ def recursively_find_files(resource_name):
     # type: (Text) -> List[Text]
     """Traverse directory hierarchy to find files.
 
-    `resource_name` can be a folder or a file. In both cases we will return a list of files."""
+    `resource_name` can be a folder or a file. In both cases
+    we will return a list of files."""
+
     if not isinstance(resource_name, six.string_types):
         raise ValueError("Resourcename must be a string type")
 
@@ -66,16 +69,18 @@ def recursively_find_files(resource_name):
             for f in files:
                 found.append(os.path.join(root, f))
     else:
-        raise ValueError("Could not locate the resource '{}'.".format(os.path.abspath(resource_name)))
+        raise ValueError("Could not locate the resource '{}'."
+                         "".format(os.path.abspath(resource_name)))
 
     return found
 
 
 def lazyproperty(fn):
-    """Allows to avoid recomputing a property over and over. Instead the result gets stored in a local var.
+    """Allows to avoid recomputing a property over and over.
 
-    Computation of the property will happen once, on the first call of the property. All succeeding calls will use
-    the value stored in the private property."""
+    The result gets stored in a local var. Computation of the property
+    will happen once, on the first call of the property. All
+    succeeding calls will use the value stored in the private property."""
 
     attr_name = '_lazy_' + fn.__name__
 
@@ -160,7 +165,10 @@ def read_json_file(filename):
 
 
 def build_entity(start, end, value, entity_type, **kwargs):
-    """Builds a standard entity dictionary and adds additional keyword parameters."""
+    """Builds a standard entity dictionary.
+
+    Adds additional keyword parameters."""
+
     entity = {
         "start": start,
         "end": end,

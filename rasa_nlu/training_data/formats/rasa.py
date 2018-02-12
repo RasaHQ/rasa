@@ -4,11 +4,12 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
-
 from collections import defaultdict
 
 from rasa_nlu.training_data import Message, TrainingData
-from rasa_nlu.training_data.formats.readerwriter import JsonTrainingDataReader, TrainingDataWriter
+from rasa_nlu.training_data.formats.readerwriter import (
+    JsonTrainingDataReader,
+    TrainingDataWriter)
 from rasa_nlu.training_data.util import transform_entity_synonyms
 from rasa_nlu.utils import json_to_string
 
@@ -30,18 +31,22 @@ class RasaReader(JsonTrainingDataReader):
         entity_synonyms = transform_entity_synonyms(entity_synonyms)
 
         if intent_examples or entity_examples:
-            logger.warn("DEPRECATION warning: your rasa data contains 'intent_examples' "
+            logger.warn("DEPRECATION warning: your rasa data "
+                        "contains 'intent_examples' "
                         "or 'entity_examples' which will be "
-                        "removed in the future. Consider putting all your examples "
+                        "removed in the future. Consider "
+                        "putting all your examples "
                         "into the 'common_examples' section.")
 
         all_examples = common_examples + intent_examples + entity_examples
         training_examples = []
         for ex in all_examples:
-            msg = Message.build(ex['text'], ex.get("intent"), ex.get("entities"))
+            msg = Message.build(ex['text'], ex.get("intent"),
+                                ex.get("entities"))
             training_examples.append(msg)
 
         return TrainingData(training_examples, entity_synonyms, regex_features)
+
 
 class RasaWriter(TrainingDataWriter):
     def dumps(self, training_data, **kwargs):
@@ -81,6 +86,7 @@ def validate_rasa_nlu_data(data):
                       "is valid. For more information about the format visit "
                       "https://rasahq.github.io/rasa_nlu/dataformat.html")
         raise e
+
 
 def _rasa_nlu_data_schema():
     training_example_schema = {
