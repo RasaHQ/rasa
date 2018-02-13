@@ -233,7 +233,7 @@ class Agent(object):
 
     @classmethod
     def _create_domain(cls, domain):
-        if isinstance(domain, str):
+        if isinstance(domain, basestring):
             return TemplateDomain.load(domain)
         elif isinstance(domain, Domain):
             return domain
