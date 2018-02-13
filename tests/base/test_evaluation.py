@@ -220,7 +220,6 @@ def test_drop_intents_below_freq():
     assert clean_td.intents == {'affirm', 'restaurant_search'}
 
 
-
 def test_run_cv_evaluation():
     td = training_data.load_data('data/examples/rasa/demo-rasa.json')
     nlu_config = RasaNLUConfig("sample_configs/config_spacy.json")
