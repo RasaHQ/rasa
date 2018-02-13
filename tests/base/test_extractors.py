@@ -4,6 +4,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from tests import utilities
 from rasa_nlu.training_data import TrainingData, Message
 
@@ -107,3 +108,18 @@ def test_unintentional_synonyms_capitalized(component_builder):
     ner_syn.train(TrainingData(training_examples=examples), _config)
     assert ner_syn.synonyms.get("mexican") is None
     assert ner_syn.synonyms.get("tacos") == "Mexican"
+
+
+def test_spacy_ner_extractor(spacy_nlp):
+    ext = SpacyEntityExtractor()
+    example = Message("anywhere in the West", {
+            "intent": "restaurant_search",
+            "entities": [],
+            "spacy_doc": spacy_nlp("anywhere in the west")})
+
+    ext.process(example, spacy_nlp=spacy_nlp)
+
+    assert len(example.get("entities", [])) == 1
+    assert example.get("entities")[0] == {
+        u'start': 16, u'extractor': u'ner_spacy',
+        u'end': 20, u'value': u'West', u'entity': u'LOC'}
