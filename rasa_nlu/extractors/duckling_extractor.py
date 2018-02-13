@@ -3,25 +3,22 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import os
-import io
-import json
-import logging
-import typing
 import datetime
+import logging
+import os
+from inspect import getmembers
+
+import typing
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Text
 
-from builtins import str
-
+from rasa_nlu import utils
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.model import Metadata
-from inspect import getmembers
-
 from rasa_nlu.training_data import Message
 from rasa_nlu.utils import write_json_to_file
 
@@ -174,7 +171,7 @@ class DucklingExtractor(EntityExtractor):
             duckling = cls.create_duckling_wrapper(language)
 
         if os.path.isfile(persisted):
-            with io.open(persisted, encoding='utf-8') as f:
-                persisted_data = json.loads(f.read())
-                return DucklingExtractor(duckling, persisted_data["dimensions"])
-        return DucklingExtractor(duckling)
+            persisted_data = utils.read_json_file(persisted)
+            return DucklingExtractor(duckling, persisted_data["dimensions"])
+        else:
+            return DucklingExtractor(duckling)

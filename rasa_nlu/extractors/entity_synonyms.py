@@ -3,8 +3,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import io
-import json
 import os
 import warnings
 
@@ -15,6 +13,7 @@ from typing import Dict
 from typing import Optional
 from typing import Text
 
+from rasa_nlu import utils
 from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.model import Metadata
 from rasa_nlu.training_data import Message
@@ -69,8 +68,7 @@ class EntitySynonymMapper(EntityExtractor):
         if model_dir and model_metadata.get("entity_synonyms"):
             entity_synonyms_file = os.path.join(model_dir, model_metadata.get("entity_synonyms"))
             if os.path.isfile(entity_synonyms_file):
-                with io.open(entity_synonyms_file, encoding='utf-8') as f:
-                    synonyms = json.loads(f.read())
+                synonyms = utils.read_json_file(entity_synonyms_file)
                 return EntitySynonymMapper(synonyms)
             else:
                 warnings.warn("Failed to load synonyms file from '{}'".format(entity_synonyms_file))

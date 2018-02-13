@@ -48,7 +48,7 @@ def app(tmpdir_factory):
 @pytest.fixture
 def rasa_default_train_data():
     with io.open('data/examples/rasa/demo-rasa.json',
-                 encoding='utf-8') as train_file:
+                 encoding='utf-8-sig') as train_file:
         return json.loads(train_file.read())
 
 
