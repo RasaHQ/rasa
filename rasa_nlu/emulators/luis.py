@@ -51,5 +51,5 @@ class LUISEmulator(NoEmulator):
                     "endIndex": None,
                     "score": None
                 } for e in data["entities"]
-                ] if "entities" in data else []
+            ] if "entities" in data else []
         }
