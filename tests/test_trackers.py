@@ -4,19 +4,23 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import glob
+import json
 
 import pytest
 
+from rasa_core import utils
 from rasa_core.actions.action import ActionListen, ACTION_LISTEN_NAME
+from rasa_core.channels import UserMessage
 from rasa_core.conversation import Topic
 from rasa_core.domain import TemplateDomain
 from rasa_core.events import (
     UserUttered, TopicSet, ActionExecuted, SlotSet,
-    Restarted, ActionReverted)
+    Restarted, ActionReverted, UserUtteranceReverted)
 from rasa_core.featurizers import BinaryFeaturizer
 from rasa_core.tracker_store import InMemoryTrackerStore, RedisTrackerStore
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training import STORY_START, extract_trackers_from_file
+from tests.conftest import DEFAULT_STORIES_FILE
 from tests.utilities import tracker_from_dialogue_file, read_dialogue_file
 
 domain = TemplateDomain.load("data/test_domains/default_with_topic.yml")
@@ -142,12 +146,12 @@ def test_tracker_entity_retrieval(default_domain):
 
     intent = {"name": "greet", "confidence": 1.0}
     tracker.update(UserUttered("/greet", intent, [{
-          "start": 1,
-          "end": 5,
-          "value": "greet",
-          "entity": "entity_name",
-          "extractor": "manual"
-        }]))
+        "start": 1,
+        "end": 5,
+        "value": "greet",
+        "entity": "entity_name",
+        "extractor": "manual"
+    }]))
     assert list(tracker.get_latest_entity_values("entity_name")) == ["greet"]
     assert list(tracker.get_latest_entity_values("unknown")) == []
 
@@ -205,11 +209,18 @@ def test_revert_action_event(default_domain):
     tracker.update(ActionExecuted("my_action"))
     tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
 
+    # Expecting count of 4:
+    #   +3 executed actions
+    #   +1 final state
     assert tracker.latest_action_name == ACTION_LISTEN_NAME
     assert len(list(tracker.generate_all_prior_states())) == 4
 
     tracker.update(ActionReverted())
 
+    # Expecting count of 3:
+    #   +3 executed actions
+    #   +1 final state
+    #   -1 reverted action
     assert tracker.latest_action_name == "my_action"
     assert len(list(tracker.generate_all_prior_states())) == 3
 
@@ -223,3 +234,124 @@ def test_revert_action_event(default_domain):
     assert recovered.current_state() == tracker.current_state()
     assert tracker.latest_action_name == "my_action"
     assert len(list(tracker.generate_all_prior_states())) == 3
+
+
+def test_revert_user_utterance_event(default_domain):
+    tracker = DialogueStateTracker("default", default_domain.slots,
+                                   default_domain.topics,
+                                   default_domain.default_topic)
+    # the retrieved tracker should be empty
+    assert len(tracker.events) == 0
+
+    intent1 = {"name": "greet", "confidence": 1.0}
+    tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
+    tracker.update(UserUttered("/greet", intent1, []))
+    tracker.update(ActionExecuted("my_action_1"))
+    tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
+
+    intent2 = {"name": "goodbye", "confidence": 1.0}
+    tracker.update(UserUttered("/goodbye", intent2, []))
+    tracker.update(ActionExecuted("my_action_2"))
+    tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
+
+    # Expecting count of 6:
+    #   +5 executed actions
+    #   +1 final state
+    assert tracker.latest_action_name == ACTION_LISTEN_NAME
+    assert len(list(tracker.generate_all_prior_states())) == 6
+
+    tracker.update(UserUtteranceReverted())
+
+    # Expecting count of 3:
+    #   +5 executed actions
+    #   +1 final state
+    #   -2 rewound actions associated with the /goodbye
+    #   -1 rewound action from the listen right before /goodbye
+    assert tracker.latest_action_name == "my_action_1"
+    assert len(list(tracker.generate_all_prior_states())) == 3
+
+    dialogue = tracker.as_dialogue()
+
+    recovered = DialogueStateTracker("default", default_domain.slots,
+                                     default_domain.topics,
+                                     default_domain.default_topic)
+    recovered.recreate_from_dialogue(dialogue)
+
+    assert recovered.current_state() == tracker.current_state()
+    assert tracker.latest_action_name == "my_action_1"
+    assert len(list(tracker.generate_all_prior_states())) == 3
+
+
+def test_traveling_back_in_time(default_domain):
+    tracker = DialogueStateTracker("default", default_domain.slots,
+                                   default_domain.topics,
+                                   default_domain.default_topic)
+    # the retrieved tracker should be empty
+    assert len(tracker.events) == 0
+
+    intent = {"name": "greet", "confidence": 1.0}
+    tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
+    tracker.update(UserUttered("/greet", intent, []))
+
+    import time
+    time.sleep(1)
+    time_for_timemachine = time.time()
+    time.sleep(1)
+
+    tracker.update(ActionExecuted("my_action"))
+    tracker.update(ActionExecuted(ACTION_LISTEN_NAME))
+
+    # Expecting count of 4:
+    #   +3 executed actions
+    #   +1 final state
+    assert tracker.latest_action_name == ACTION_LISTEN_NAME
+    assert len(tracker.events) == 4
+    assert len(list(tracker.generate_all_prior_states())) == 4
+
+    tracker = tracker.travel_back_in_time(time_for_timemachine)
+
+    # Expecting count of 2:
+    #   +1 executed actions
+    #   +1 final state
+    assert tracker.latest_action_name == ACTION_LISTEN_NAME
+    assert len(tracker.events) == 2
+    assert len(list(tracker.generate_all_prior_states())) == 2
+
+
+def test_dump_and_restore_as_json(default_agent, tmpdir):
+    trackers = extract_trackers_from_file(
+            DEFAULT_STORIES_FILE,
+            default_agent.domain,
+            default_agent.featurizer,
+            default_agent.interpreter,
+            default_agent.policy_ensemble.max_history())
+
+    out_path = tmpdir.join("dumped_tracker.json")
+
+    for tracker in trackers:
+        dumped = tracker.current_state(should_include_events=True)
+        utils.dump_obj_as_json_to_file(out_path.strpath, dumped)
+
+        tracker_json = json.loads(utils.read_file(out_path.strpath))
+        sender_id = tracker_json.get("sender_id", UserMessage.DEFAULT_SENDER_ID)
+        restored_tracker = DialogueStateTracker.from_dict(
+                sender_id, tracker_json.get("events", []), default_agent.domain)
+
+        assert restored_tracker == tracker
+
+
+def test_read_json_dump(default_agent):
+    json_content = utils.read_file("data/test_trackers/tracker_moodbot.json")
+    tracker_json = json.loads(json_content)
+    sender_id = tracker_json.get("sender_id", UserMessage.DEFAULT_SENDER_ID)
+    restored_tracker = DialogueStateTracker.from_dict(
+            sender_id, tracker_json.get("events", []), default_agent.domain)
+
+    assert len(restored_tracker.events) == 7
+    assert restored_tracker.latest_action_name == "action_listen"
+    assert not restored_tracker.is_paused()
+    assert restored_tracker.sender_id == "mysender"
+    assert restored_tracker.events[-1].timestamp == 1517821726.211042
+
+    restored_state = restored_tracker.current_state(should_include_events=True)
+    assert restored_state == tracker_json

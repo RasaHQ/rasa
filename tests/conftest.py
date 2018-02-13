@@ -27,8 +27,6 @@ matplotlib.use('Agg')
 
 logging.basicConfig(level="DEBUG")
 
-pytest_plugins = str("pytest_twisted")
-
 DEFAULT_DOMAIN_PATH = "data/test_domains/default_with_slots.yml"
 
 DEFAULT_STORIES_FILE = "data/test_stories/stories_defaultdomain.md"

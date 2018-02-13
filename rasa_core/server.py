@@ -11,9 +11,10 @@ from builtins import str
 from klein import Klein
 from typing import Union, Text, Optional
 
+from rasa_core import utils, events
 from rasa_core.agent import Agent
-from rasa_core.events import Event
 from rasa_core.interpreter import NaturalLanguageInterpreter
+from rasa_core.trackers import DialogueStateTracker
 from rasa_core.version import __version__
 from rasa_nlu.server import check_cors, requires_auth
 
@@ -21,6 +22,8 @@ logger = logging.getLogger(__name__)
 
 
 def create_argument_parser():
+    """Parse all the command line arguments for the server script."""
+
     parser = argparse.ArgumentParser(
             description='starts server to serve an agent')
     parser.add_argument(
@@ -54,36 +57,8 @@ def create_argument_parser():
             default="rasa_core.log",
             help="store log file in specified file")
 
-    # arguments for logging configuration
-    parser.add_argument(
-            '--debug',
-            help="Print lots of debugging statements. "
-                 "Sets logging level to DEBUG",
-            action="store_const",
-            dest="loglevel",
-            const=logging.DEBUG,
-            default=logging.WARNING,
-    )
-    parser.add_argument(
-            '-v', '--verbose',
-            help="Be verbose. Sets logging level to INFO",
-            action="store_const",
-            dest="loglevel",
-            const=logging.INFO,
-    )
+    utils.add_logging_option_arguments(parser)
     return parser
-
-
-def convert_obj_2_tracker_events(serialized_events, domain):
-    # Example format: {"event": "set_slot", "value": 5, "name": "my_slot"}
-
-    deserialized = []
-    for e in serialized_events:
-        etype = e.get("event")
-        if etype is not None:
-            del e["event"]
-            deserialized.append(Event.from_parameters(etype, e, domain))
-    return deserialized
 
 
 def _configure_logging(loglevel, logfile):
@@ -150,12 +125,11 @@ class RasaCoreServer(object):
                 request.content.read().decode('utf-8', 'strict'))
         encoded_events = request_params.get("events", [])
         executed_action = request_params.get("executed_action", None)
-        events = convert_obj_2_tracker_events(encoded_events,
-                                              self.agent.domain)
+        evts = events.deserialise_events(encoded_events, self.agent.domain)
         try:
             response = self.agent.continue_message_handling(sender_id,
                                                             executed_action,
-                                                            events)
+                                                            evts)
         except ValueError as e:
             request.setResponseCode(400)
             return json.dumps({"error": e.message})
@@ -174,10 +148,9 @@ class RasaCoreServer(object):
         request.setHeader('Content-Type', 'application/json')
         request_params = json.loads(
                 request.content.read().decode('utf-8', 'strict'))
-        events = convert_obj_2_tracker_events(request_params,
-                                              self.agent.domain)
+        evts = events.deserialise_events(request_params, self.agent.domain)
         tracker = self.agent.tracker_store.get_or_create_tracker(sender_id)
-        for e in events:
+        for e in evts:
             tracker.update(e)
         self.agent.tracker_store.save(tracker)
         return json.dumps(tracker.current_state())
@@ -201,12 +174,9 @@ class RasaCoreServer(object):
         request.setHeader('Content-Type', 'application/json')
         request_params = json.loads(
                 request.content.read().decode('utf-8', 'strict'))
-        events = convert_obj_2_tracker_events(request_params,
-                                              self.agent.domain)
-
-        tracker = self.agent.tracker_store.init_tracker(sender_id)
-        for e in events:
-            tracker.update(e)
+        tracker = DialogueStateTracker.from_dict(sender_id,
+                                                 request_params,
+                                                 self.agent.domain)
         self.agent.tracker_store.save(tracker)
 
         # will override an existing tracker with the same id!

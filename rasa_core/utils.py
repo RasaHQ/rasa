@@ -5,7 +5,9 @@ from __future__ import unicode_literals
 
 import errno
 import json
+import logging
 import os, io
+import ruamel.yaml
 from collections import deque
 from hashlib import sha1
 from random import Random
@@ -14,6 +16,28 @@ import six
 from builtins import input, range, str
 from numpy import all, array
 from typing import Text, Any, List, Optional
+
+
+def add_logging_option_arguments(parser):
+    """Add options to an argument parser to configure logging levels."""
+
+    # arguments for logging configuration
+    parser.add_argument(
+            '--debug',
+            help="Print lots of debugging statements. "
+                 "Sets logging level to DEBUG",
+            action="store_const",
+            dest="loglevel",
+            const=logging.DEBUG,
+            default=logging.WARNING,
+    )
+    parser.add_argument(
+            '-v', '--verbose',
+            help="Be verbose. Sets logging level to INFO",
+            action="store_const",
+            dest="loglevel",
+            const=logging.INFO,
+    )
 
 
 def class_from_module_path(module_path):
@@ -298,12 +322,9 @@ def fix_yaml_loader():
 
 def read_yaml_file(filename):
     """Read contents of `filename` interpreting them as yaml."""
-    import ruamel.yaml
-
     #fix_yaml_loader()
 
-    with io.open(filename, encoding="utf-8") as f:
-        return ruamel.yaml.load(f.read())
+    return ruamel.yaml.load(read_file(filename))
 
 
 def fix_yaml_writer():
@@ -318,7 +339,6 @@ def fix_yaml_writer():
 
 def dump_obj_as_yaml_to_file(filename, obj):
     """Writes data (python dict) to the filename in yaml repr."""
-    import ruamel.yaml
 
     fix_yaml_writer()
 
@@ -326,6 +346,12 @@ def dump_obj_as_yaml_to_file(filename, obj):
         ruamel.yaml.dump(obj, yaml_file,
                          allow_unicode=True,
                          default_flow_style=False)
+
+
+def read_file(filename, encoding="utf-8"):
+    """Read text from a file."""
+    with io.open(filename, encoding=encoding) as f:
+        return f.read()
 
 
 def is_training_data_empty(X):

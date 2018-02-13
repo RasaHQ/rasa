@@ -22,5 +22,8 @@ run-fb:
 run-slack:
 	python -m rasa_core.run -d models/dialogue -u models/nlu/current -p 5002 -c slack --credentials slack_credentials.yml
 
+run-telegram:
+	python -m rasa_core.run -d models/dialogue -u models/nlu/current -p 5002 -c telegram --credentials telegram_credentials.yml
+
 run-cmdline:
 	python -m rasa_core.run -d models/dialogue -u models/nlu/current

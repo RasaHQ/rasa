@@ -51,7 +51,10 @@ class Dispatcher(object):
         # type: (Dict[Text, Any]) -> None
         """Send a message to the client."""
 
-        if message.get("buttons"):
+        if message.get("elements"):
+            self.utter_custom_message(message.get("elements"))
+
+        elif message.get("buttons"):
             self.utter_button_message(message.get("text"),
                                       message.get("buttons"))
         else:

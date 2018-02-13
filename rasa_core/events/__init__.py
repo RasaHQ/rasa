@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import datetime
 import json
 import logging
 import uuid
@@ -11,13 +12,33 @@ import time
 import jsonpickle
 import typing
 from builtins import str
+from typing import List, Dict, Text, Any
 
+import rasa_core
 from rasa_core import utils
 
 if typing.TYPE_CHECKING:
     from rasa_core.trackers import DialogueStateTracker
 
 logger = logging.getLogger(__name__)
+
+
+def deserialise_events(serialized_events, domain):
+    # type: (List[Dict[Text, Any]], rasa_core.domain.Domain) -> List[Event]
+    """Convert a list of dictionaries to a list of corresponding events.
+
+    Example format:
+        [{"event": "set_slot", "value": 5, "name": "my_slot"}]
+    """
+
+    deserialized = []
+    for e in serialized_events:
+        etype = e.get("event")
+        if etype is not None:
+            copied = e.copy()
+            del copied["event"]
+            deserialized.append(Event.from_parameters(etype, copied, domain))
+    return deserialized
 
 
 # noinspection PyProtectedMember
@@ -122,7 +143,7 @@ class UserUttered(Event):
         super(UserUttered, self).__init__(timestamp)
 
     @staticmethod
-    def from_parse_data(text, parse_data, timestamp=None):
+    def _from_parse_data(text, parse_data, timestamp=None):
         return UserUttered(text, parse_data["intent"], parse_data["entities"],
                            parse_data,
                            timestamp)
@@ -157,11 +178,11 @@ class UserUttered(Event):
         return d
 
     @classmethod
-    def _from_parameters(cls, event_name, parameters, domain):
+    def _from_story_string(cls, event_name, parameters, domain):
         try:
-            return UserUttered.from_parse_data(parameters.get("text"),
-                                               parameters.get("parse_data"),
-                                               parameters.get("timestamp"))
+            return cls._from_parse_data(parameters.get("text"),
+                                        parameters.get("parse_data"),
+                                        parameters.get("timestamp"))
         except KeyError as e:
             raise ValueError("Failed to parse bot uttered event. {}".format(e))
 
@@ -375,8 +396,6 @@ class Restarted(Event):
     def apply_to(self, tracker):
         from rasa_core.actions.action import ActionListen
         tracker._reset()
-        # will be the index of the first event after the restart
-        tracker.latest_restart_event = len(tracker.events) + 1
         tracker.follow_up_action = ActionListen()
 
 
@@ -474,23 +493,34 @@ class ReminderScheduled(Event):
                 "action: {}, trigger_date: {}, name: {}"
                 ")".format(self.action_name, self.trigger_date_time, self.name))
 
-    def as_story_string(self):
-        props = json.dumps({
+    def _data_obj(self):
+        return {
             "action": self.action_name,
-            "date_time": self.trigger_date_time,
+            "date_time": self.trigger_date_time.isoformat(),
             "name": self.name,
-            "kill_on_user_msg": self.kill_on_user_message})
+            "kill_on_user_msg": self.kill_on_user_message
+        }
+
+    def as_story_string(self):
+        props = json.dumps(self._data_obj())
         return "{name}{props}".format(name=self.type_name, props=props)
 
     def as_dict(self):
-        raise NotImplementedError()
+        d = super(ReminderScheduled, self).as_dict()
+        d.update(self._data_obj())
+        return d
+
+    @classmethod
+    def _parse_trigger_time(self, date_time):
+        return datetime.datetime.strptime(date_time[:19], '%Y-%m-%dT%H:%M:%S')
 
     @classmethod
     def _from_story_string(cls, event_name, parameters, domain):
         logger.info("Reminders will be ignored during training, "
                     "which should be ok.")
+        trigger_date_time = cls._parse_trigger_time(parameters.get("date_time"))
         return ReminderScheduled(parameters.get("action"),
-                                 parameters.get("date_time"),
+                                 trigger_date_time,
                                  parameters.get("name", None),
                                  parameters.get("kill_on_user_msg", True),
                                  parameters.get("timestamp"))
