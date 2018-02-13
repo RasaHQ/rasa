@@ -251,7 +251,7 @@ class DialogueStateTracker(object):
 
         tracker = self._init_copy()
 
-        for event in self._applied_events():
+        for event in self.events:
             if event.timestamp <= target_time:
                 tracker.update(event)
             else:
