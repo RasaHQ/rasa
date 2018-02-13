@@ -18,6 +18,14 @@ Changed
 Fixed
 -----
 
+[0.11.3] - 2018-02-13
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- capitalization issues during spacy named entity recognition
+
+
 [0.11.2] - 2018-02-06
 ^^^^^^^^^^^^^^^^^^^^^
 
