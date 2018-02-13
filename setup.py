@@ -60,7 +60,7 @@ extras_requires = {
 setup(
     name='rasa_core',
     classifiers=[
-        "Development Status :: 5 - Production/Stable",
+        "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: Apache Software License",
         # supported python versions
