@@ -215,3 +215,6 @@ With very little data, rasa NLU can in certain cases already generalise concepts
 
 even though there's nothing quite like this sentence in the examples used to train the model. 
 To build a more robust app you will obviously want to use a lot more training data, so go and collect it!
+
+.. raw:: html 
+   :file: poll.html
