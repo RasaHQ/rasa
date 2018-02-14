@@ -3,15 +3,12 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import copy
 import datetime
-import io
-import json
 import logging
 import os
 
-import copy
 from builtins import object
-from builtins import str
 from typing import Any
 from typing import Dict
 from typing import List
@@ -53,8 +50,7 @@ class Metadata(object):
         """Loads the metadata from a models directory."""
         try:
             metadata_file = os.path.join(model_dir, 'metadata.json')
-            with io.open(metadata_file, encoding="utf-8") as f:
-                data = json.loads(f.read())
+            data = utils.read_json_file(metadata_file)
             return Metadata(data, model_dir)
         except Exception as e:
             abspath = os.path.abspath(os.path.join(model_dir, 'metadata.json'))

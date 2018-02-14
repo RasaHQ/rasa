@@ -3,31 +3,29 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import io
-import json
 import logging
 import os
 import re
 import warnings
 
 import typing
-from builtins import str
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Text
 
+from rasa_nlu import utils
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.featurizers import Featurizer
 from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
-from rasa_nlu.utils import write_json_to_file
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
-    import numpy as np
     from rasa_nlu.model import Metadata
 
 
@@ -39,6 +37,8 @@ class RegexFeaturizer(Featurizer):
     requires = ["tokens"]
 
     def __init__(self, known_patterns=None):
+        super(RegexFeaturizer, self).__init__()
+
         self.known_patterns = known_patterns if known_patterns else []
 
     @classmethod
@@ -72,10 +72,11 @@ class RegexFeaturizer(Featurizer):
     def features_for_patterns(self, message):
         """Checks which known patterns match the message.
 
-        Given a sentence, returns a vector of {1,0} values indicating which regexes did match. Furthermore, if the
-        message is tokenized, the function will mark the matching regex on the tokens that are part of the match."""
+        Given a sentence, returns a vector of {1,0} values indicating which
+        regexes did match. Furthermore, if the
+        message is tokenized, the function will mark the matching regex on
+        the tokens that are part of the match."""
 
-        import numpy as np
         found = []
         for i, exp in enumerate(self.known_patterns):
             match = re.search(exp["pattern"], message.text)
@@ -89,26 +90,34 @@ class RegexFeaturizer(Featurizer):
         return np.array(found)
 
     @classmethod
-    def load(cls, model_dir=None, model_metadata=None, cached_component=None, **kwargs):
-        # type: (Text, Metadata, Optional[RegexFeaturizer], **Any) -> RegexFeaturizer
+    def load(cls,
+             model_dir=None,   # type: Optional[Text]
+             model_metadata=None,   # type: Optional[Metadata]
+             cached_component=None,   # type: Optional[RegexFeaturizer]
+             **kwargs  # type: **Any
+             ):
+        # type: (...) -> RegexFeaturizer
 
         if model_dir and model_metadata.get("regex_featurizer"):
-            regex_file = os.path.join(model_dir, model_metadata.get("regex_featurizer"))
+            regex_file = os.path.join(model_dir,
+                                      model_metadata.get("regex_featurizer"))
             if os.path.isfile(regex_file):
-                with io.open(regex_file, encoding='utf-8') as f:
-                    known_patterns = json.loads(f.read())
+                known_patterns = utils.read_json_file(regex_file)
                 return RegexFeaturizer(known_patterns)
             else:
-                warnings.warn("Failed to load regex pattern file '{}'".format(regex_file))
+                warnings.warn("Failed to load regex pattern file "
+                              "'{}'".format(regex_file))
         return RegexFeaturizer()
 
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]
-        """Persist this model into the passed directory. Returns the metadata necessary to load the model again."""
+        """Persist this model into the passed directory.
+
+        Return the metadata necessary to load the model again."""
 
         if self.known_patterns:
             regex_file = os.path.join(model_dir, "regex_featurizer.json")
-            write_json_to_file(regex_file, self.known_patterns, indent=4)
+            utils.write_json_to_file(regex_file, self.known_patterns, indent=4)
             return {"regex_featurizer": "regex_featurizer.json"}
         else:
             return {"regex_featurizer": None}

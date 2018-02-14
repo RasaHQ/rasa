@@ -1,17 +1,17 @@
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
 from __future__ import absolute_import
-from builtins import object
-import io
-import simplejson
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import os
+
 import six
-
-from rasa_nlu.utils import json_to_string
-
+from builtins import object
 # Describes where to search for the config file if no location is specified
 from typing import Text
+
+from rasa_nlu import utils
+from rasa_nlu.utils import json_to_string
 
 DEFAULT_CONFIG_LOCATION = "config.json"
 
@@ -75,10 +75,10 @@ class RasaNLUConfig(object):
         self.override(DEFAULT_CONFIG)
         if filename is not None:
             try:
-                with io.open(filename, encoding='utf-8') as f:
-                    file_config = simplejson.loads(f.read())
+                file_config = utils.read_json_file(filename)
             except ValueError as e:
-                raise InvalidConfigError("Failed to read configuration file '{}'. Error: {}".format(filename, e))
+                raise InvalidConfigError("Failed to read configuration file "
+                                         "'{}'. Error: {}".format(filename, e))
             self.override(file_config)
 
         if env_vars is not None:

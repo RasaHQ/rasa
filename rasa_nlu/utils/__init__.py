@@ -8,6 +8,7 @@ import io
 import json
 import os
 
+import simplejson
 import six
 from builtins import str
 from typing import List
@@ -148,7 +149,7 @@ def write_to_file(filename, text):
         f.write(str(text))
 
 
-def read_file(filename, encoding="utf-8"):
+def read_file(filename, encoding="utf-8-sig"):
     """Read text from a file."""
     with io.open(filename, encoding=encoding) as f:
         return f.read()
@@ -158,10 +159,10 @@ def read_json_file(filename):
     """Read json from a file."""
     content = read_file(filename)
     try:
-        return json.loads(content)
-    except Exception as e:
-        raise Exception("Failed to read json from '{}'. Error: "
-                        "{}".format(os.path.abspath(filename), e))
+        return simplejson.loads(content)
+    except ValueError as e:
+        raise ValueError("Failed to read json from '{}'. Error: "
+                         "{}".format(os.path.abspath(filename), e))
 
 
 def build_entity(start, end, value, entity_type, **kwargs):

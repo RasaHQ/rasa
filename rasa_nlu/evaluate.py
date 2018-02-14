@@ -22,6 +22,7 @@ known_duckling_dimensions = {"amount-of-money", "distance", "duration", "email",
                              "ordinal", "phone-number", "timezone", "temperature", "time", "url", "volume"}
 entity_processors = {"ner_synonyms"}
 
+
 def create_argparser():  # pragma: no cover
     import argparse
     parser = argparse.ArgumentParser(
@@ -94,6 +95,7 @@ def log_evaluation_table(test_y, preds):  # pragma: no cover
     logger.info("Accuracy:  {}".format(accuracy))
     logger.info("Classification report: \n{}".format(report))
 
+
 def remove_empty_intent_examples(targets, predictions):
     """Removes those examples without intent."""
     targets = np.array(targets)
@@ -103,7 +105,7 @@ def remove_empty_intent_examples(targets, predictions):
     return targets, predictions
 
 
-def prepare_data(data, cutoff = 5):
+def prepare_data(data, cutoff=5):
     """Remove intent groups with less than cutoff instances."""
     data = data.sorted_intent_examples()
     logger.info("Raw data intent examples: {}".format(len(data)))
@@ -480,6 +482,7 @@ def compute_metrics(interpreter, corpus, results):
     results["Precision"].append(metrics.precision_score(y, preds, average='weighted'))
 
 
+
 if __name__ == '__main__':  # pragma: no cover
     parser = create_argparser()
     args = parser.parse_args()
@@ -495,14 +498,14 @@ if __name__ == '__main__':  # pragma: no cover
 
     if args.mode == "crossvalidation":
         data = training_data.load_data(args.data)
-        data = prepare_data(data, cutoff = 5)
+        data = prepare_data(data, cutoff=5)
         results = run_cv_evaluation(data, int(args.folds), nlu_config)
         logger.info("CV evaluation (n={})".format(args.folds))
         for k,v in results.train.items():
             logger.info("train {}: {:.3f} ({:.3f})".format(k, np.mean(v), np.std(v)))
         for k,v in results.test.items():
             logger.info("test {}: {:.3f} ({:.3f})".format(k, np.mean(v), np.std(v)))
-        
+
     elif args.mode == "evaluation":
         run_evaluation(nlu_config, args.model)
 

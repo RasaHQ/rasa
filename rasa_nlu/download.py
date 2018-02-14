@@ -42,7 +42,7 @@ def download_mitie_fe_file(fe_file):    # pragma: no cover
     response = requests.get(_fe_file_url, stream=True)
 
     with io.open(fe_file, "wb") as output:
-        for data in tqdm(response.iter_content(chunk_size=1024*1024), unit='MB', unit_scale=True):
+        for data in tqdm(response.iter_content(chunk_size=1024 * 1024), unit='MB', unit_scale=True):
             output.write(data)
     logger.debug("file written! {0}, {1}".format(fe_file, os.path.exists(fe_file)))
 

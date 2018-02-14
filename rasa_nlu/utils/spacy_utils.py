@@ -71,7 +71,7 @@ class SpacyNLP(Component):
         return {"spacy_nlp": self.nlp}
 
     def train(self, training_data, config, **kwargs):
-        # type: (TrainingData) -> Dict[Text, Any]
+        # type: (TrainingData, RasaNLUConfig, **Any) -> None
 
         for example in training_data.training_examples:
             example.set("spacy_doc", self.nlp(example.text.lower()))
