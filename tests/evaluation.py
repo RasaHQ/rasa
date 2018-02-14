@@ -21,6 +21,7 @@ from tests import utilities
 
 logging.basicConfig(level="DEBUG")
 
+
 @pytest.fixture(scope="module")
 def duckling_interpreter(component_builder):
     _conf = utilities.base_test_conf("")
@@ -214,11 +215,11 @@ def test_prepare_data():
     td = training_data.load_data('data/examples/rasa/demo-rasa.json')
     clean_data = prepare_data(td, 0)
     unique_intents = sorted(set([i.data["intent"] for i in clean_data]))
-    assert(unique_intents == ['affirm', 'goodbye', 'greet', 'restaurant_search'])
+    assert (unique_intents == ['affirm', 'goodbye', 'greet', 'restaurant_search'])
 
     clean_data = prepare_data(td, 10)
     unique_intents = sorted(set([i.data["intent"] for i in clean_data]))
-    assert(unique_intents == ['affirm', 'restaurant_search'])
+    assert (unique_intents == ['affirm', 'restaurant_search'])
 
 
 def test_run_cv_evaluation():
@@ -230,11 +231,11 @@ def test_run_cv_evaluation():
     np.seed(2018)
     results = run_cv_evaluation(td, n_folds, nlu_config)
 
-    rel_tol=1e-09
-    abs_tol=0.01
+    rel_tol = 1e-09
+    abs_tol = 0.01
 
     acc = np.mean(results["accuracy"])
-    exp_acc = 0.65 # expected result
+    exp_acc = 0.65  # expected result
     np.testing.assert_approx_equal(acc, exp_acc, significant=5)
 
 
