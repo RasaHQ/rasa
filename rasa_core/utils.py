@@ -323,18 +323,19 @@ def fix_yaml_loader():
 def read_yaml_file(filename):
     """Read contents of `filename` interpreting them as yaml."""
     #fix_yaml_loader()
-
-    return ruamel.yaml.load(read_file(filename))
+    yaml_parser = ruamel.yaml.YAML(typ="safe")
+    return yaml_parser.load(read_file(filename))
 
 
 def fix_yaml_writer():
     """Makes sure we omit UTF 8 tags in the yaml file."""
-    import ruamel.yaml
 
     def my_unicode_repr(self, data):
         return self.represent_str(data.encode('utf-8'))
 
-    ruamel.yaml.add_representer(unicode, my_unicode_repr)
+    ruamel.yaml.representer.Representer.add_representer(unicode,
+                                                        my_unicode_repr)
+    # ruamel.yaml.add_representer(unicode, my_unicode_repr)
 
 
 def dump_obj_as_yaml_to_file(filename, obj):
@@ -342,10 +343,12 @@ def dump_obj_as_yaml_to_file(filename, obj):
 
     fix_yaml_writer()
 
+    yaml_writer = ruamel.yaml.YAML(typ="safe")
+
     with io.open(filename, 'w', encoding="utf-8") as yaml_file:
-        ruamel.yaml.dump(obj, yaml_file,
-                         allow_unicode=True,
-                         default_flow_style=False)
+        ruamel.yaml.safe_dump(obj, yaml_file,
+                              allow_unicode=True,
+                              default_flow_style=False)
 
 
 def read_file(filename, encoding="utf-8"):

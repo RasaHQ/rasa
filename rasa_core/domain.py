@@ -456,7 +456,7 @@ class TemplateDomain(Domain):
 
         schema_file = pkg_resources.resource_filename(__name__,
                                                       "schemas/domain.yml")
-        c = Core(source_file=filename,
+        c = Core(source_data=utils.read_yaml_file(filename),
                  schema_files=[schema_file])
         try:
             c.validate(raise_exception=True)
