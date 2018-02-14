@@ -8,7 +8,7 @@ import logging
 import os
 import numpy as np
 
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.model import Interpreter
@@ -70,7 +70,6 @@ def plot_confusion_matrix(cm, classes,
     else:
         logger.info("Confusion matrix, without normalization: \n{}".format(cm))
 
-    #np.savetxt("confusion_matrix.txt",cm.astype(int))
     thresh = cm.max() / 2.
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
         plt.text(j, i, cm[i, j],
@@ -452,7 +451,9 @@ def run_cv_evaluation(data, n_folds, nlu_config):
         # increase fold counter
         counter += 1
 
-    return dict(train_results),dict(test_results)
+    Results = namedtuple('Results','train test')
+    results = Results(dict(train_results), dict(test_results))
+    return results
 
 
 def compute_metrics(interpreter, corpus, results):
@@ -495,10 +496,13 @@ if __name__ == '__main__':  # pragma: no cover
     if args.mode == "crossvalidation":
         data = training_data.load_data(args.data)
         data = prepare_data(data, cutoff = 5)
-        _,results = run_cv_evaluation(data, int(args.folds), nlu_config)
+        results = run_cv_evaluation(data, int(args.folds), nlu_config)
         logger.info("CV evaluation (n={})".format(args.folds))
-        for k,v in results.items():
-            logger.info("{}: {:.3f} ({:.3f})".format(k, np.mean(v), np.std(v)))
+        for k,v in results.train.items():
+            logger.info("train {}: {:.3f} ({:.3f})".format(k, np.mean(v), np.std(v)))
+        for k,v in results.test.items():
+            logger.info("test {}: {:.3f} ({:.3f})".format(k, np.mean(v), np.std(v)))
+        
     elif args.mode == "evaluation":
         run_evaluation(nlu_config, args.model)
 
