@@ -21,7 +21,7 @@ Changed
 - Regex features are now sorted internally. **retrain your model if you use regex features**
 - The keyword intent classifier now returns ``null`` instead of ``"None"`` as intent name in the json result
 if there's no match
-
+- Docker Images now run on python 3.6 for better non-latin character set support
 
 Fixed
 -----
