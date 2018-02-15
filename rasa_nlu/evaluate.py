@@ -444,7 +444,7 @@ def run_cv_evaluation(data, n_folds, nlu_config):
 
         logger.debug("Evaluation ...")
         interpreter = Interpreter.load(model_directory, nlu_config)
-            
+
         # calculate train accuracy
         compute_metrics(interpreter, train, train_results)
         # calculate test accuracy
@@ -453,7 +453,7 @@ def run_cv_evaluation(data, n_folds, nlu_config):
         # increase fold counter
         counter += 1
 
-    Results = namedtuple('Results','train test')
+    Results = namedtuple('Results', 'train test')
     results = Results(dict(train_results), dict(test_results))
     return results
 
@@ -461,7 +461,7 @@ def run_cv_evaluation(data, n_folds, nlu_config):
 def compute_metrics(interpreter, corpus, results):
     """Computes evaluation metrics for a given corpus and appends them to results"""
     from sklearn import metrics
-    
+
     y = [e.get("intent") for e in corpus]
 
     preds = []
@@ -480,7 +480,6 @@ def compute_metrics(interpreter, corpus, results):
     results["Accuracy"].append(metrics.accuracy_score(y, preds))
     results["F1-score"].append(metrics.f1_score(y, preds, average='weighted'))
     results["Precision"].append(metrics.precision_score(y, preds, average='weighted'))
-
 
 
 if __name__ == '__main__':  # pragma: no cover
