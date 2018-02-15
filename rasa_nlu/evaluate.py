@@ -8,7 +8,7 @@ import logging
 import os
 import numpy as np
 
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.model import Interpreter
@@ -410,9 +410,6 @@ def run_evaluation(config, model_path, component_builder=None):  # pragma: no co
 
 
 def run_cv_evaluation(data, n_folds, nlu_config):
-    from sklearn import metrics
-    from sklearn.model_selection import StratifiedKFold
-    from collections import defaultdict
     # type: (List[rasa_nlu.training_data.Message], int, RasaNLUConfig) -> Dict[Text, List[float]]
     """Stratified cross validation on data
 
@@ -423,8 +420,12 @@ def run_cv_evaluation(data, n_folds, nlu_config):
               corresponds to the relevant result for one fold
 
     """
+    from sklearn.model_selection import StratifiedKFold
+    from collections import defaultdict
+
     trainer = Trainer(nlu_config)
-    results = defaultdict(list)
+    train_results = defaultdict(list)
+    test_results = defaultdict(list)
 
     y_true = [e.get("intent") for e in data]
 
@@ -443,25 +444,42 @@ def run_cv_evaluation(data, n_folds, nlu_config):
 
         logger.debug("Evaluation ...")
         interpreter = Interpreter.load(model_directory, nlu_config)
-        test_y = [e.get("intent") for e in test]
 
-        preds = []
-        for e in test:
-            res = interpreter.parse(e.text)
-            if res.get('intent'):
-                preds.append(res['intent'].get('name'))
-            else:
-                preds.append(None)
-
-        # compute fold metrics
-        results["Accuracy"].append(metrics.accuracy_score(test_y, preds))
-        results["F1-score"].append(metrics.f1_score(test_y, preds, average='weighted'))
-        results["Precision"] = metrics.precision_score(test_y, preds, average='weighted')
+        # calculate train accuracy
+        compute_metrics(interpreter, train, train_results)
+        # calculate test accuracy
+        compute_metrics(interpreter, test, test_results)
 
         # increase fold counter
         counter += 1
 
-    return dict(results)
+    Results = namedtuple('Results', 'train test')
+    results = Results(dict(train_results), dict(test_results))
+    return results
+
+
+def compute_metrics(interpreter, corpus, results):
+    """Computes evaluation metrics for a given corpus and appends them to results"""
+    from sklearn import metrics
+
+    y = [e.get("intent") for e in corpus]
+
+    preds = []
+    for e in corpus:
+        res = interpreter.parse(e.text)
+        if res.get('intent'):
+            preds.append(res['intent'].get('name'))
+        else:
+            preds.append(None)
+
+    # get rid of None, since sklearn metrics does not support it anymore
+    y = [t if t is not None else "" for t in y]
+    preds = [t if t is not None else "" for t in preds]
+
+    # compute fold metrics
+    results["Accuracy"].append(metrics.accuracy_score(y, preds))
+    results["F1-score"].append(metrics.f1_score(y, preds, average='weighted'))
+    results["Precision"].append(metrics.precision_score(y, preds, average='weighted'))
 
 
 if __name__ == '__main__':  # pragma: no cover
@@ -482,8 +500,11 @@ if __name__ == '__main__':  # pragma: no cover
         data = prepare_data(data, cutoff=5)
         results = run_cv_evaluation(data, int(args.folds), nlu_config)
         logger.info("CV evaluation (n={})".format(args.folds))
-        for k, v in results.items():
-            logger.info("{}: {:.3f} ({:.3f})".format(k, np.mean(v), np.std(v)))
+        for k, v in results.train.items():
+            logger.info("train {}: {:.3f} ({:.3f})".format(k, np.mean(v), np.std(v)))
+        for k, v in results.test.items():
+            logger.info("test {}: {:.3f} ({:.3f})".format(k, np.mean(v), np.std(v)))
+
     elif args.mode == "evaluation":
         run_evaluation(nlu_config, args.model)
 
