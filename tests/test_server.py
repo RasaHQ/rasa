@@ -28,7 +28,7 @@ test_events = [
                                 "intent": {
                                     "confidence": 1.0, "name": "greet"},
                                 "entities": []}
-                           }, None),
+                           }),
     BotUttered("Welcome!", {"test": True}),
     TopicSet("question"),
     SlotSet("cuisine", 34),

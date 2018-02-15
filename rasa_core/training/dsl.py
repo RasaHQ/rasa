@@ -271,8 +271,7 @@ class StoryFileReader(object):
             # other events, so we need to take a shortcut here
             parameters = {"text": m, "parse_data": parse_data}
             utterance = Event.from_story_string(UserUttered.type_name,
-                                                parameters,
-                                                self.domain)
+                                                parameters)
             if m.startswith("_"):
                 c = utterance.as_story_string()
                 logger.warn("Stating user intents with a leading '_' is "
@@ -288,7 +287,9 @@ class StoryFileReader(object):
         self.current_step_builder.add_user_messages(parsed_messages)
 
     def add_event(self, event_name, parameters):
-        parsed = Event.from_story_string(event_name, parameters, self.domain,
+        if "name" not in parameters:
+            parameters["name"] = event_name
+        parsed = Event.from_story_string(event_name, parameters,
                                          default=ActionExecuted)
         if parsed is None:
             raise StoryParseError("Unknown event '{}'. It is Neither an event "

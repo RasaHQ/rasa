@@ -169,7 +169,7 @@ class RasaCoreServer(object):
                 request.content.read().decode('utf-8', 'strict'))
         encoded_events = request_params.get("events", [])
         executed_action = request_params.get("executed_action", None)
-        evts = events.deserialise_events(encoded_events, self.agent.domain)
+        evts = events.deserialise_events(encoded_events)
         try:
             response = self.agent.continue_message_handling(sender_id,
                                                             executed_action,
@@ -193,7 +193,7 @@ class RasaCoreServer(object):
         request.setHeader('Content-Type', 'application/json')
         request_params = json.loads(
                 request.content.read().decode('utf-8', 'strict'))
-        evts = events.deserialise_events(request_params, self.agent.domain)
+        evts = events.deserialise_events(request_params)
         tracker = self.agent.tracker_store.get_or_create_tracker(sender_id)
         for e in evts:
             tracker.update(e)
@@ -207,13 +207,21 @@ class RasaCoreServer(object):
     def retrieve_tracker(self, request, sender_id):
         """Get a dump of a conversations tracker including its events."""
 
+        # parameters
         use_history = bool_arg(request, 'ignore_restarts', default=False)
         should_include_events = bool_arg(request, 'events', default=True)
-        request.setHeader('Content-Type', 'application/json')
+        until_time = request.args.get('until', None)
+
+        # retrieve tracker and set to requested state
         tracker = self.agent.tracker_store.get_or_create_tracker(sender_id)
-        return json.dumps(tracker.current_state(
+        if until_time is not None:
+            tracker = tracker.travel_back_in_time(float(until_time))
+
+        # dump and return tracker
+        state = tracker.current_state(
                 should_include_events=should_include_events,
-                only_events_after_latest_restart=use_history))
+                only_events_after_latest_restart=use_history)
+        return json.dumps(state)
 
     @app.route("/conversations/<sender_id>/tracker",
                methods=['PUT', 'OPTIONS'])
@@ -298,7 +306,7 @@ class RasaCoreServer(object):
     def version(self, request):
         """respond with the version number of the installed rasa core."""
 
-        request.setheader('content-type', 'application/json')
+        request.setHeader('content-type', 'application/json')
         return json.dumps({'version': __version__})
 
 
