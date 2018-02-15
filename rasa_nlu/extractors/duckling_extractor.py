@@ -82,8 +82,6 @@ class DucklingExtractor(EntityExtractor):
         # type: (RasaNLUConfig) -> DucklingExtractor
 
         dims = config["duckling_dimensions"]
-
-        config.get({})
         if dims:
             unknown_dimensions = [dim
                                   for dim in dims
