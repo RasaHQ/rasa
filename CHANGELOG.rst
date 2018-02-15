@@ -11,14 +11,31 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
-- script to reload a dumped trackers state and to continue the conversation
-  at the end of the stored dialogue
 
 Changed
 -------
 
 Removed
 -------
+
+Fixed
+-----
+
+[0.8.2] - 2018-02-13
+^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- script to reload a dumped trackers state and to continue the conversation
+  at the end of the stored dialogue
+
+Changed
+-------
+- minor updates to dependencies
+
+Fixed
+-----
+- fixed datetime serialisation of reminder event
 
 [0.8.1] - 2018-02-01
 ^^^^^^^^^^^^^^^^^^^^

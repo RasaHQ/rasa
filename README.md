@@ -104,5 +104,3 @@ Licenses of the dependencies:
 | fbmessenger      | Apache Licence 2.0   |
 | tqdm             | MIT                  |
 | ConfigArgParse   | MIT                  |
-
-
