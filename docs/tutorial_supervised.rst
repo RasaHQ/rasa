@@ -151,9 +151,9 @@ For this bot, we came up with our own policy.
 This policy extends the Keras policy modifying the ML architecture of the
 underlying neural network.
 Check out the
-``RestaurantPolicy`` class in ``bot.py`` for the gory details:
+``RestaurantPolicy`` class in ``policy.py`` for the glory details:
 
-.. literalinclude:: ../examples/restaurantbot/bot.py
+.. literalinclude:: ../examples/restaurantbot/policy.py
    :linenos:
    :pyobject: RestaurantPolicy
 
