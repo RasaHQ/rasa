@@ -473,8 +473,8 @@ def compute_metrics(interpreter, corpus, results):
             preds.append(None)
 
     # get rid of None, since sklearn metrics does not support it anymore
-    y = [t if t!=None else "" for t in y]
-    preds = [t if t!=None else "" for t in preds]
+    y = [t if t is not None else "" for t in y]
+    preds = [t if t is not None else "" for t in preds]
 
     # compute fold metrics
     results["Accuracy"].append(metrics.accuracy_score(y, preds))
@@ -501,9 +501,9 @@ if __name__ == '__main__':  # pragma: no cover
         data = prepare_data(data, cutoff=5)
         results = run_cv_evaluation(data, int(args.folds), nlu_config)
         logger.info("CV evaluation (n={})".format(args.folds))
-        for k,v in results.train.items():
+        for k, v in results.train.items():
             logger.info("train {}: {:.3f} ({:.3f})".format(k, np.mean(v), np.std(v)))
-        for k,v in results.test.items():
+        for k, v in results.test.items():
             logger.info("test {}: {:.3f} ({:.3f})".format(k, np.mean(v), np.std(v)))
 
     elif args.mode == "evaluation":
