@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import errno
 import json
+import logging
 import os, io
 from collections import deque
 from hashlib import sha1
@@ -15,6 +16,28 @@ import yaml
 from builtins import input, range, str
 from numpy import all, array
 from typing import Text, Any, List, Optional
+
+
+def add_logging_option_arguments(parser):
+    """Add options to an argument parser to configure logging levels."""
+
+    # arguments for logging configuration
+    parser.add_argument(
+            '--debug',
+            help="Print lots of debugging statements. "
+                 "Sets logging level to DEBUG",
+            action="store_const",
+            dest="loglevel",
+            const=logging.DEBUG,
+            default=logging.WARNING,
+    )
+    parser.add_argument(
+            '-v', '--verbose',
+            help="Be verbose. Sets logging level to INFO",
+            action="store_const",
+            dest="loglevel",
+            const=logging.INFO,
+    )
 
 
 def class_from_module_path(module_path):
@@ -299,8 +322,13 @@ def fix_yaml_loader():
 
 def read_yaml_file(filename):
     fix_yaml_loader()
-    with io.open(filename, encoding="utf-8") as f:
-        return yaml.load(f.read())
+    return yaml.load(read_file(filename, "utf-8"))
+
+
+def read_file(filename, encoding="utf-8"):
+    """Read text from a file."""
+    with io.open(filename, encoding=encoding) as f:
+        return f.read()
 
 
 def is_training_data_empty(X):

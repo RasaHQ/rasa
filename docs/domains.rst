@@ -49,7 +49,7 @@ Defining Custom Actions
 
 The easiest are ``UtterActions``, which just send a message to the user. You define them by adding an entry to the
 action list that is named after the utterance. E.g. if there should be an action that utters the template called
-``utter_greet`` you need to add ``greet`` to the list of defined actions. In the above example yaml you can see that
+``utter_greet`` you need to add ``utter_greet`` to the list of defined actions. In the above example yaml you can see that
 all three of the defined actions are just named after utter templates and hence just respond with a message to
 the user.
 
@@ -66,7 +66,7 @@ your bot would execute the action ``ActionCheckRestaurants``, which might look l
    class ActionCheckRestaurants(Action):
       def name(self):
          # type: () -> Text
-         return "check_restaurants"
+         return "action_check_restaurants"
 
       def run(self, dispatcher, tracker, domain):
          # type: (Dispatcher, DialogueStateTracker, Domain) -> List[Event]
@@ -97,6 +97,8 @@ action in a module called ``restaurant.actions``):
       - utter_goodbye
       - restaurant.actions.ActionCheckRestaurants   # custom action
 
+If we want to use our new action for a specific story, we only have to add the canonical name of the action to a story. 
+In our case we would have to add ``- action_check_restaurants`` to a story in our ``stories.md``.
 
 We only show the changed action list here, you also need to include the other
 parts from the original domain! The point of this is just to show how the pieces
@@ -124,7 +126,7 @@ Templates defined in a domains yaml file can contain images and buttons as well:
 .. code-block:: yaml
 
    templates:
-     utter_greeting:
+     utter_greet:
      - text: "Hey! How are you?"
        buttons:
        - title: "great"
@@ -153,7 +155,7 @@ like this:
 .. code-block:: yaml
 
   templates:
-    utter_greeting:
+    utter_greet:
     - text: "Hey, {name}. How are you?"
 
 Rasa will automatically fill that variable with a value found in a slot called

@@ -14,7 +14,7 @@ from treq.testing import StubTreq
 
 import rasa_core
 from rasa_core.agent import Agent
-from rasa_core.events import UserUttered, BotUttered, SlotSet, TopicSet
+from rasa_core.events import UserUttered, BotUttered, SlotSet, TopicSet, Event
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.policies.scoring_policy import ScoringPolicy
 from rasa_core.server import RasaCoreServer
@@ -22,9 +22,13 @@ from tests.conftest import DEFAULT_STORIES_FILE
 
 # a couple of event instances that we can use for testing
 test_events = [
-    UserUttered.from_parse_data("/goodbye", {
-        "intent": {"confidence": 1.0, "name": "greet"},
-        "entities": []}),
+    Event.from_parameters(UserUttered.type_name,
+                          {"text": "/goodbye",
+                           "parse_data": {
+                                "intent": {
+                                    "confidence": 1.0, "name": "greet"},
+                                "entities": []}
+                           }, None),
     BotUttered("Welcome!", {"test": True}),
     TopicSet("question"),
     SlotSet("cuisine", 34),

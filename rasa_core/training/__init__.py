@@ -68,5 +68,5 @@ def extract_trackers_from_file(
                                tracker_limit=1000,
                                remove_duplicates=False,
                                max_number_of_trackers=max_number_of_trackers)
-    data = g.generate()
-    return data.metadata["trackers"]
+    training_data = g.generate()
+    return training_data.metadata["trackers"]

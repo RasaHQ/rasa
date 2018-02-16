@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
+import re
 
 from typing import Text, List
 
@@ -47,10 +48,19 @@ def local_action_factory(action_classes, action_names, utter_templates):
             cls = utils.class_from_module_path(action_name)
             return cls()
         except ImportError as e:
-            raise ValueError(
-                    "Action '{}' doesn't correspond to a template / action. "
-                    "Remember to prefix actions that should utter a template "
-                    "with `utter_`. Error: {}".format(action_name, e))
+            if len(e.args) > 0:
+                erx = re.compile("No module named '?(.*?)'?$")
+                matched = erx.search(e.args[0])
+                if matched and matched.group(1) in action_name:
+                    # we only want to capture exceptions that are raised by the
+                    # class itself, not by other packages that fail to import
+                    raise ValueError(
+                        "Action '{}' doesn't correspond to a template / "
+                        "action. Remember to prefix actions that should "
+                        "utter a template with `utter_`. "
+                        "Error: {}".format(action_name, e))
+            # raises the original exception again
+            raise
         except (AttributeError, KeyError) as e:
             raise ValueError(
                     "Action '{}' doesn't correspond to a template / action. "

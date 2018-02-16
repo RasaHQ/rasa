@@ -10,7 +10,10 @@ from difflib import SequenceMatcher
 
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+from typing import Text, List, Tuple
 
+import rasa_core
+from rasa_core import utils
 from rasa_core.agent import Agent
 from rasa_core.events import ActionExecuted, UserUttered
 from rasa_core.interpreter import RegexInterpreter, RasaNLUInterpreter
@@ -23,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 def create_argument_parser():
     """Create argument parser for the evaluate script."""
+
     parser = argparse.ArgumentParser(
             description='evaluates a dialogue model')
     parser.add_argument(
@@ -50,28 +54,18 @@ def create_argument_parser():
             default="story_confmat.pdf",
             help="output path for the created evaluation plot")
 
-    # arguments for logging configuration
-    parser.add_argument(
-            '--debug',
-            help="Print lots of debugging statements. "
-                 "Sets logging level to DEBUG",
-            action="store_const",
-            dest="loglevel",
-            const=logging.DEBUG,
-            default=logging.WARNING,
-    )
-    parser.add_argument(
-            '-v', '--verbose',
-            help="Be verbose. Sets logging level to INFO",
-            action="store_const",
-            dest="loglevel",
-            const=logging.INFO,
-    )
+    utils.add_logging_option_arguments(parser)
     return parser
 
 
-def _min_list_distance(pred, actual):
-    """Calculate the distance between the two lists."""
+def align_lists(pred, actual):
+    # type: (List[Text], List[Text]) -> Tuple[List[Text], List[Text]]
+    """Align two lists trying to keep same elements at the same index.
+
+    If lists contain different items at some indices, the algorithm will
+    try to find the best alignment and pad with `None`
+    values where necessary."""
+
     padded_pred = []
     padded_actual = []
     s = SequenceMatcher(None, pred, actual)
@@ -86,19 +80,23 @@ def _min_list_distance(pred, actual):
     return padded_pred, padded_actual
 
 
+def actions_since_last_utterance(tracker):
+    # type: (rasa_core.trackers.DialogueStateTracker) -> List[Text]
+    """Extract all events after the most recent utterance from the user."""
+
+    actions = []
+    for e in reversed(tracker.events):
+        if isinstance(e, UserUttered):
+            break
+        elif isinstance(e, ActionExecuted):
+            actions.append(e.action_name)
+    actions.reverse()
+    return actions
+
+
 def collect_story_predictions(story_file, policy_model_path, nlu_model_path,
                               max_stories=None, shuffle_stories=True):
     """Test the stories from a file, running them through the stored model."""
-
-    def actions_since_last_utterance(tracker):
-        actions = []
-        for e in reversed(tracker.events):
-            if isinstance(e, UserUttered):
-                break
-            elif isinstance(e, ActionExecuted):
-                actions.append(e.action_name)
-        actions.reverse()
-        return actions
 
     if nlu_model_path is not None:
         interpreter = RasaNLUInterpreter(model_directory=nlu_model_path)
@@ -133,8 +131,7 @@ def collect_story_predictions(story_file, policy_model_path, nlu_model_path,
 
         for i, event in enumerate(events[1:]):
             if isinstance(event, UserUttered):
-                p, a = _min_list_distance(last_prediction,
-                                          actions_between_utterances)
+                p, a = align_lists(last_prediction, actions_between_utterances)
                 preds.extend(p)
                 actual.extend(a)
 

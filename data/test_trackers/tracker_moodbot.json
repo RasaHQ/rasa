@@ -1,0 +1,109 @@
+{
+  "latest_message": {
+    "entities": [],
+    "intent": {
+      "confidence": 0.60,
+      "name": "default"
+    },
+    "text": "I am very good",
+    "intent_ranking": [
+      {
+        "confidence": 0.60,
+        "name": "default"
+      },
+      {
+        "confidence": 0.20,
+        "name": "greet"
+      },
+      {
+        "confidence": 0.20,
+        "name": "goodbye"
+      }
+    ]
+  },
+  "sender_id": "mysender",
+  "paused": false,
+  "latest_event_time": 1517821726.211042,
+  "slots": {"name": null},
+  "events": [
+    {
+      "timestamp": 1517821726.211031,
+      "event": "action",
+      "name": "action_listen"
+    },
+    {
+      "timestamp": 1517821726.200036,
+      "parse_data": {
+        "entities": [],
+        "intent": {
+          "confidence": 0.54,
+          "name": "greet"
+        },
+        "text": "hello",
+        "intent_ranking": [
+          {
+            "confidence": 0.54,
+            "name": "greet"
+          },
+          {
+            "confidence": 0.31,
+            "name": "goodbye"
+          },
+          {
+            "confidence": 0.15,
+            "name": "default"
+          }
+        ]
+      },
+      "event": "user",
+      "text": "hello"
+    },
+    {
+      "timestamp": 1517821726.200373,
+      "event": "action",
+      "name": "utter_greet"
+    },
+    {
+      "timestamp": 1517821726.211038,
+      "event": "action",
+      "name": "action_listen"
+    },
+    {
+      "timestamp": 1517821726.209836,
+      "parse_data": {
+        "entities": [],
+        "intent": {
+          "confidence": 0.60,
+          "name": "default"
+        },
+        "text": "I am very good",
+        "intent_ranking": [
+          {
+            "confidence": 0.60,
+            "name": "default"
+          },
+          {
+            "confidence": 0.20,
+            "name": "greet"
+          },
+          {
+            "confidence": 0.20,
+            "name": "goodbye"
+          }
+        ]
+      },
+      "event": "user",
+      "text": "I am very good"
+    },
+    {
+      "timestamp": 1517821726.209908,
+      "event": "action",
+      "name": "utter_default"
+    },
+    {
+      "timestamp": 1517821726.211042,
+      "event": "action",
+      "name": "action_listen"
+    }
+  ]
+}

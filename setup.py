@@ -18,7 +18,7 @@ tests_requires = [
     "pytest-services",
     "pytest-cov",
     "pytest-xdist",
-    "pytest-twisted",
+    "pytest-twisted<1.6",
     "treq",
     "freezegun",
 ]
@@ -33,6 +33,7 @@ install_requires = [
     'future',
     'numpy>=1.13',
     'typing>=3.6',
+    'requests',
     'graphviz',
     'Keras',
     'tensorflow',
@@ -48,6 +49,8 @@ install_requires = [
     'flask',
     'scikit-learn',
     'rasa_nlu',
+    'slackclient',
+    'python-telegram-bot'
 ]
 
 extras_requires = {
@@ -57,7 +60,12 @@ extras_requires = {
 setup(
     name='rasa_core',
     classifiers=[
+        "Development Status :: 4 - Beta",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: Apache Software License",
+        # supported python versions
         "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6"
     ],
     packages=find_packages(exclude=["tests", "tools"]),
@@ -71,11 +79,10 @@ setup(
     long_description=readme,
     author='Rasa Technologies GmbH',
     author_email='hi@rasa.ai',
-    keywords=["nlp", "machine-learning", "machine-learning-library", "bot",
-              "bots",
-              "botkit", "rasa", "conversational-agents",
-              "conversational-ai",
-              "chatbot", "chatbot-framework", "bot-framework"],
+    license='Apache 2.0',
+    keywords="nlp machine-learning machine-learning-library bot bots "
+             "botkit rasa conversational-agents conversational-ai chatbot"
+             "chatbot-framework bot-framework",
     url="https://rasa.ai",
     download_url="https://github.com/RasaHQ/rasa_core/archive/{}.tar.gz".format(__version__)
 )
