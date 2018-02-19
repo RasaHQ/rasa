@@ -155,7 +155,7 @@ Using run script
 
 If you want to connect to the slack input channel using the run script, e.g. using
 
-.. code_block:: bash
+.. code-block:: bash
 
   python -m rasa_core.run -d models/dialogue -u models/nlu/current
       --port 5002 -c telegram --credentials telegram_credentials.yml
