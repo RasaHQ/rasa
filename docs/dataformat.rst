@@ -11,7 +11,8 @@ The training data for rasa NLU is structured into different parts, ``common_exam
         "rasa_nlu_data": {
             "common_examples": [],
             "regex_features" : [],
-            "entity_synonyms": []
+            "entity_synonyms": [],
+            "entity_phrases": [],
         }
     }
 
@@ -151,6 +152,33 @@ for these extractors. Currently, all intent classifiers make use of available re
     recognize entities and related intents. Hence, you still need to provide intent & entity examples as part of your
     training data!
 
+Entity Phrases
+--------------
+Entity phrases are predefined lists of entities that the system should directly extract.
+These lists are used by the ``ner_phrase_matcher`` component to search the text for the defined entities.
+
+If you have a closed set of non-ambiguous entities, entity phrases can give you high-precision
+and high-recall extraction. Keep in mind, however, that the ``ner_phrase_matcher`` does not take the
+context into account. As a result, it might create false positives by extracting entities in the wrong
+context, e.g. "white house" in both "a white house" and "the white house". Also, the phrase matcher
+will not recognize any entities that are not explicitly defined in the entity phrases section.
+
+.. code-block:: json
+
+    {
+        "rasa_nlu_data": {
+            "entity_phrases": [
+                {
+                    "entity": "food",
+                    "phrases": ["Mapo Tofu", "Tacos", "Chana Masala"]
+                }
+            ]
+        }
+    }
+
+In this example, `food` is the entity type and the phrases are what the
+``ner_phrase_matcher`` component searches for in the message text.
+
 Markdown Format
 ---------------------------
 
@@ -171,9 +199,13 @@ list syntax, e.g. minus ``-``, asterisk ``*``, or plus ``+``:
     ## synonym:savings   <!-- synonyms, method 2 -->
     - pink pig
 
-
     ## regex:zipcode
     - [0-9]{5}
+
+    ## entity_phrase:food
+    - Mapo Tofu
+    - Tacos
+    - Chana Masala
 
 Organization
 ---------------------------

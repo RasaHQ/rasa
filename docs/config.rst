@@ -232,6 +232,19 @@ aws_endpoint_url
     Optional endpoint of the custom S3 compatible storage provider. This is used only when ``"storage"`` is selected as ``"aws"``.
     See :ref:`section_persistence` for more details.
 
+.. _section_config_phrase_matcher:
+
+phrase_matcher
+~~~~~~~~~~~~~~
+
+ignore_case
++++++++++++
+:Type: ``bool``
+:Examples: ``true``
+:Description:
+    Determines whether the phrase matcher will ignore the case of the provided entity phrases
+    for matching. Default is ``true``.
+
 ner_crf
 ~~~~~~~
 

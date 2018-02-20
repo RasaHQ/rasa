@@ -332,7 +332,7 @@ ner_duckling
         }
 
 :Description:
-    Duckling allows to recognize dates, numbers, distances and other structured entities
+    Duckling recognizes dates, numbers, distances and other structured entities
     and normalizes them (for a reference of all available entities
     see `the duckling documentation <https://duckling.wit.ai/#getting-started>`_).
     The component recognizes the entity types defined by the :ref:`duckling dimensions configuration variable <section_configuration_duckling_dimensions>`.
@@ -341,6 +341,28 @@ ner_duckling
     for the duckling component, the component will extract two entities: ``10`` as a number and
     ``in 10 minutes`` as a time from the text ``I will be there in 10 minutes``. In such a
     situation, your application would have to decide which entity type is be the correct one.
+
+ner_phrase_matcher
+~~~~~~~~~~~~~~~~~~
+:Short: entity extraction using predefined lists of entities
+:Outputs: appends ``entities``
+:Output-Example:
+
+    .. code-block:: json
+
+        {
+            "entities": [{"value":"New York City",
+                          "start": 20,
+                          "end": 33,
+                          "entity": "city",
+                          "extractor": "ner_phrase_matcher"}]
+        }
+
+:Description:
+    The phrase matcher recognizes entities from text according to the provided entity lists
+    in the ``entity_phrases`` sections of the training data. By default,
+    the phrase matcher is case insensitve. This behavior can be
+    :ref:`configured<section_config_phrase_matcher>`.
 
 Creating new Components
 -----------------------
