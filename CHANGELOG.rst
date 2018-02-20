@@ -15,6 +15,7 @@ Added
 - support for regex features in markdown training format
 - support for splitting and training data into multiple and mixing formats
 - support for markdown files containing regex-features or synonyms only
+- A new entity extraction component using predefined entity lists: ``ner_phrase_matcher``
 
 Changed
 -------
