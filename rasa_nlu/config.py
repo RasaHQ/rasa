@@ -39,6 +39,9 @@ DEFAULT_CONFIG = {
     "aws_endpoint_url": None,
     "duckling_dimensions": None,
     "duckling_http_url": None,
+    "phrase_matcher": {
+        "ignore_case": True
+    },
     "ner_crf": {
         "BILOU_flag": True,
         "features": [

@@ -121,12 +121,40 @@ def test_phrase_matcher(component_builder):
 
     examples = [
         Message.build("Pizza", "food"),
+        Message.build("pizza", "food"),
         Message.build("I'd like to have some Rigatoni al forno", "food")
     ]
 
     targets = [
         [{"start": 0, "end": 5, "value": "Pizza", "entity": "food", "extractor": ner_component}],
+        [{"start": 0, "end": 5, "value": "pizza", "entity": "food", "extractor": ner_component}],
         [{"start": 22, "end": 39, "value": "Rigatoni al forno", "entity": "food", "extractor": ner_component}]
+    ]
+
+    ner_pm.train(TrainingData(training_examples=examples, entity_phrases=entity_phrases), _config)
+
+    for ex, target in zip(examples, targets):
+        ner_pm.process(ex)
+        assert ex.get("entities") == target
+
+
+def test_phrase_matcher_case(component_builder):
+    _config = utilities.base_test_conf("all_components")
+    _config["phrase_matcher"]["ignore_case"] = False
+    ner_component = "ner_phrase_matcher"
+    ner_pm = component_builder.create_component(ner_component, _config)
+    entity_phrases = {
+        "food": {"Pizza"}
+    }
+
+    examples = [
+        Message.build("I'd like some Pizza", "food"),
+        Message.build("I'd like some pizza", "food"),
+    ]
+
+    targets = [
+        [{"start": 14, "end": 19, "value": "Pizza", "entity": "food", "extractor": ner_component}],
+        [],
     ]
 
     ner_pm.train(TrainingData(training_examples=examples, entity_phrases=entity_phrases), _config)
