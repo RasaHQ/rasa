@@ -20,6 +20,7 @@ DIALOGFLOW_INTENT_EXAMPLES = "dialogflow_intent_examples"
 DIALOGFLOW_ENTITIES = "dialogflow_entities"
 DIALOGFLOW_ENTITY_ENTRIES = "dialogflow_entity_entries"
 
+
 class DialogflowReader(TrainingDataReader):
     def read(self, fn, **kwargs):
         # type: ([Text]) -> TrainingData
@@ -41,7 +42,6 @@ class DialogflowReader(TrainingDataReader):
             return self._read_intent(root_js, examples_js)
         elif fformat == DIALOGFLOW_ENTITIES:
             return self._read_entities(examples_js)
-
 
     def _read_intent(self, intent_js, examples_js):
         """Reads the intent and examples from respective jsons."""

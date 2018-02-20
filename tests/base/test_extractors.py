@@ -4,6 +4,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from tests import utilities
 from rasa_nlu.training_data import TrainingData, Message
 
@@ -133,3 +134,18 @@ def test_phrase_matcher(component_builder):
     for ex, target in zip(examples, targets):
         ner_pm.process(ex)
         assert ex.get("entities") == target
+
+
+def test_spacy_ner_extractor(spacy_nlp):
+    ext = SpacyEntityExtractor()
+    example = Message("anywhere in the West", {
+        "intent": "restaurant_search",
+        "entities": [],
+        "spacy_doc": spacy_nlp("anywhere in the west")})
+
+    ext.process(example, spacy_nlp=spacy_nlp)
+
+    assert len(example.get("entities", [])) == 1
+    assert example.get("entities")[0] == {
+        u'start': 16, u'extractor': u'ner_spacy',
+        u'end': 20, u'value': u'West', u'entity': u'LOC'}

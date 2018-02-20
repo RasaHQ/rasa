@@ -20,12 +20,16 @@ class SpacyEntityExtractor(EntityExtractor):
 
     provides = ["entities"]
 
-    requires = ["spacy_doc"]
+    requires = ["spacy_nlp"]
 
     def process(self, message, **kwargs):
         # type: (Message, **Any) -> None
 
-        extracted = self.extract_entities(message.get("spacy_doc"))
+        # can't use the existing doc here (spacy_doc on the message)
+        # because tokens are lower cased which is bad for NER
+        spacy_nlp = kwargs.get("spacy_nlp", None)
+        doc = spacy_nlp(message.text)
+        extracted = self.extract_entities(doc)
         self.append_entities(message, extracted)
 
     def extract_entities(self, doc):

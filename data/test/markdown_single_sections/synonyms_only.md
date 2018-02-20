@@ -1,0 +1,3 @@
+## synonym:chinese
+- Chines
+- Chinese
