@@ -51,5 +51,3 @@ if __name__ == '__main__':  # pragma: no cover
     logging.basicConfig(level=nlu_config['log_level'])
 
     run_cmdline(nlu_config, args.model)
-
-    logger.info("Finished evaluation")
