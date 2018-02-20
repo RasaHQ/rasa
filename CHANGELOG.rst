@@ -14,6 +14,7 @@ Added
 
 Changed
 -------
+- updated dependency fbmessenger from 4.3.1 to 5.0.0
 
 Removed
 -------
