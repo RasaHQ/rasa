@@ -42,7 +42,7 @@ install_requires = [
     'tqdm',
     'ConfigArgParse',
     'networkx',
-    'fbmessenger',
+    'fbmessenger>=5.0.0',
     'pykwalify',
     'coloredlogs',
     'ruamel.yaml',
