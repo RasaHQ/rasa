@@ -50,7 +50,7 @@ extras_requires = {
 
 setup(
     name='rasa_nlu',
-    packages = find_packages(exclude=['contrib', 'docs', 'tests']),
+    packages=find_packages(exclude=['contrib', 'docs', 'tests']),
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
