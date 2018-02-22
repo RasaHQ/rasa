@@ -34,7 +34,7 @@ Entities are specified with a ``start`` and  ``end`` value, which together make 
 style range to apply to the string, e.g. in the example below, with ``text="show me chinese
 restaurants"``, then ``text[8:15] == 'chinese'``. Entities can span multiple words, and in
 fact the ``value`` field does not have to correspond exactly to the substring in your example.
-That way you can map syonyms, or misspellings, to the same ``value``.
+That way you can map synonyms, or misspellings, to the same ``value``.
 
 .. code-block:: json
 
