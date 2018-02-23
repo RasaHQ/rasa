@@ -237,7 +237,7 @@ if __name__ == '__main__':
     arg_parser = create_argument_parser()
     cmdline_args = arg_parser.parse_args()
 
-    logging.basicConfig(level=cmdline_args.loglevel)
+    utils.configure_colored_logging(cmdline_args.loglevel)
 
     rasa = RasaCoreServer(cmdline_args.core,
                           cmdline_args.nlu,
