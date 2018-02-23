@@ -30,16 +30,15 @@ class TrainingFinishedException(Exception):
 
 class OnlinePolicyTrainer(PolicyTrainer):
     def train(self,
-              filename=None, interpreter=None, input_channel=None,
+              resource_name=None, interpreter=None, input_channel=None,
               max_history=3, augmentation_factor=20, max_training_samples=None,
               max_number_of_trackers=2000, **kwargs):
         logger.debug("Policy trainer got kwargs: {}".format(kwargs))
         check_domain_sanity(self.domain)
 
-        training_data = self._prepare_training_data(filename, max_history,
-                                           augmentation_factor,
-                                           max_training_samples,
-                                           max_number_of_trackers)
+        training_data = self._prepare_training_data(
+                resource_name, max_history, augmentation_factor,
+                max_training_samples, max_number_of_trackers)
 
         self.ensemble.train(training_data, self.domain, self.featurizer,
                             **kwargs)

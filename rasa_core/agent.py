@@ -142,20 +142,21 @@ class Agent(object):
             if type(p) == MemoizationPolicy:
                 p.toggle(activate)
 
-    def train(self, filename=None, model_path=None, remove_duplicates=True,
+    def train(self, resource_name=None, model_path=None, remove_duplicates=True,
               **kwargs):
         # type: (Optional[Text], Optional[Text], **Any) -> None
         """Train the policies / policy ensemble using dialogue data from file"""
 
         trainer = PolicyTrainer(self.policy_ensemble, self.domain,
                                 self.featurizer)
-        trainer.train(filename, remove_duplicates=remove_duplicates, **kwargs)
+        trainer.train(resource_name, remove_duplicates=remove_duplicates,
+                      **kwargs)
 
         if model_path:
             self.persist(model_path)
 
     def train_online(self,
-                     filename=None,  # type: Optional[Text]
+                     resource_name=None,  # type: Optional[Text]
                      input_channel=None,  # type: Optional[InputChannel]
                      model_path=None,  # type: Optional[Text]
                      **kwargs  # type: **Any
@@ -174,7 +175,7 @@ class Agent(object):
                     "an interpreter for the agent to use.")
         trainer = OnlinePolicyTrainer(self.policy_ensemble, self.domain,
                                       self.featurizer)
-        trainer.train(filename, self.interpreter, input_channel, **kwargs)
+        trainer.train(resource_name, self.interpreter, input_channel, **kwargs)
 
         if model_path:
             self.persist(model_path)
@@ -192,7 +193,7 @@ class Agent(object):
                     "".format(os.path.abspath(model_path)))
 
     def visualize(self,
-                  filename,
+                  resource_name,
                   output_file,
                   max_history,
                   nlu_training_data=None,
@@ -201,7 +202,8 @@ class Agent(object):
         from rasa_core.training.visualization import visualize_stories
         from rasa_core.training import StoryFileReader
 
-        story_steps = StoryFileReader.read_from_file(filename, self.domain)
+        story_steps = StoryFileReader.read_from_folder(resource_name,
+                                                       self.domain)
         visualize_stories(story_steps, self.domain, output_file, max_history,
                           self.interpreter, nlu_training_data, fontsize)
 

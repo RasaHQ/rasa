@@ -10,14 +10,12 @@ import numpy as np
 
 from rasa_core.events import ActionExecuted, UserUttered
 from rasa_core.featurizers import BinaryFeaturizer
-from rasa_core.training import (
-    extract_trackers_from_file,
-    extract_story_graph_from_file, extract_training_data_from_file)
+from rasa_core import training
 from rasa_core.training.structures import Story
 
 
 def test_can_read_test_story(default_domain):
-    trackers = extract_trackers_from_file("data/test_stories/stories.md",
+    trackers = training.extract_trackers("data/test_stories/stories.md",
                                           default_domain,
                                           featurizer=BinaryFeaturizer())
     assert len(trackers) == 7
@@ -40,16 +38,16 @@ def test_can_read_test_story(default_domain):
 
 
 def test_persist_and_read_test_story_graph(tmpdir, default_domain):
-    graph = extract_story_graph_from_file("data/test_stories/stories.md",
+    graph = training.extract_story_graph("data/test_stories/stories.md",
                                           default_domain)
     out_path = tmpdir.join("persisted_story.md")
     with io.open(out_path.strpath, "w") as f:
         f.write(graph.as_story_string())
 
-    recovered_trackers = extract_trackers_from_file(out_path.strpath,
+    recovered_trackers = training.extract_trackers(out_path.strpath,
                                                     default_domain,
                                                     BinaryFeaturizer())
-    existing_trackers = extract_trackers_from_file(
+    existing_trackers = training.extract_trackers(
             "data/test_stories/stories.md",
             default_domain,
             BinaryFeaturizer())
@@ -62,15 +60,15 @@ def test_persist_and_read_test_story_graph(tmpdir, default_domain):
 
 
 def test_persist_and_read_test_story(tmpdir, default_domain):
-    graph = extract_story_graph_from_file("data/test_stories/stories.md",
+    graph = training.extract_story_graph("data/test_stories/stories.md",
                                           default_domain)
     out_path = tmpdir.join("persisted_story.md")
     Story(graph.story_steps).dump_to_file(out_path.strpath)
 
-    recovered_trackers = extract_trackers_from_file(out_path.strpath,
+    recovered_trackers = training.extract_trackers(out_path.strpath,
                                                     default_domain,
                                                     BinaryFeaturizer())
-    existing_trackers = extract_trackers_from_file(
+    existing_trackers = training.extract_trackers(
             "data/test_stories/stories.md",
             default_domain,
             BinaryFeaturizer())
@@ -82,7 +80,7 @@ def test_persist_and_read_test_story(tmpdir, default_domain):
 
 
 def test_read_story_file_with_cycles(tmpdir, default_domain):
-    graph = extract_story_graph_from_file(
+    graph = training.extract_story_graph(
             "data/test_stories/stories_with_cycle.md",
             default_domain)
 
@@ -100,7 +98,7 @@ def test_read_story_file_with_cycles(tmpdir, default_domain):
 
 def test_generate_training_data_with_cycles(tmpdir, default_domain):
     featurizer = BinaryFeaturizer()
-    training_data = extract_training_data_from_file(
+    training_data = training.extract_training_data(
             "data/test_stories/stories_with_cycle.md",
             default_domain,
             featurizer,
@@ -115,7 +113,7 @@ def test_generate_training_data_with_cycles(tmpdir, default_domain):
 
 
 def test_visualize_training_data_graph(tmpdir, default_domain):
-    graph = extract_story_graph_from_file(
+    graph = training.extract_story_graph(
             "data/test_stories/stories_with_cycle.md",
             default_domain)
 

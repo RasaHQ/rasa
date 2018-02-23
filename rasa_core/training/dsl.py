@@ -8,6 +8,7 @@ import io
 import json
 import logging
 import os
+import rasa_nlu
 import re
 import warnings
 
@@ -132,9 +133,22 @@ class StoryFileReader(object):
         self.template_variables = template_vars if template_vars else {}
 
     @staticmethod
+    def read_from_folder(resource_name, domain, interpreter=RegexInterpreter(),
+                         template_variables=None):
+        """Given a path reads all contained story files."""
+
+        files = rasa_nlu.utils.recursively_find_files(resource_name)
+        story_steps = []
+        for f in files:
+            steps = StoryFileReader.read_from_file(f, domain, interpreter,
+                                                   template_variables)
+            story_steps.extend(steps)
+        return story_steps
+
+    @staticmethod
     def read_from_file(filename, domain, interpreter=RegexInterpreter(),
                        template_variables=None):
-        """Given a json file reads the contained stories."""
+        """Given a md file reads the contained stories."""
 
         try:
             with io.open(filename, "r") as f:
