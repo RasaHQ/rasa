@@ -71,7 +71,7 @@ class SpacyNLP(Component):
         return {"spacy_nlp": self.nlp}
 
     def train(self, training_data, config, **kwargs):
-        # type: (TrainingData) -> Dict[Text, Any]
+        # type: (TrainingData, RasaNLUConfig, **Any) -> None
 
         for example in training_data.training_examples:
             example.set("spacy_doc", self.nlp(example.text.lower()))
@@ -103,7 +103,7 @@ class SpacyNLP(Component):
 
         nlp = spacy.load(model_metadata.get("spacy_model_name"), parser=False)
         cls.ensure_proper_language_model(nlp)
-        return SpacyNLP(nlp, model_metadata.get("language"), model_metadata.get("spacy_model_name"))
+        return cls(nlp, model_metadata.get("language"), model_metadata.get("spacy_model_name"))
 
     @staticmethod
     def ensure_proper_language_model(nlp):

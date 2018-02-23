@@ -83,7 +83,7 @@ class MitieEntityExtractor(EntityExtractor):
         trainer = mitie.ner_trainer(config["mitie_file"])
         trainer.num_threads = config["num_threads"]
         found_one_entity = False
-        for example in training_data.entity_examples:
+        for example in training_data.training_examples:
             text = example.text
             tokens = example.get("tokens")
             sample = mitie.ner_training_instance([t.text for t in tokens])

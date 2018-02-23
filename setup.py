@@ -1,7 +1,16 @@
-from setuptools import setup
+from setuptools import setup, find_packages
+import io
 
-__version__ = None  # Avoids IDE errors, but actual version is read from version.py
-exec (open('rasa_nlu/version.py').read())
+# Avoids IDE errors, but actual version is read from version.py
+__version__ = None
+exec(open('rasa_nlu/version.py').read())
+
+try:
+    import pypandoc
+    readme = pypandoc.convert_file('README.md', 'rst')
+except (IOError, ImportError):
+    with io.open('README.md', encoding='utf-8') as f:
+        readme = f.read()
 
 tests_requires = [
     "pytest",
@@ -41,18 +50,12 @@ extras_requires = {
 
 setup(
     name='rasa_nlu',
-    packages=[
-        'rasa_nlu',
-        'rasa_nlu.utils',
-        'rasa_nlu.classifiers',
-        'rasa_nlu.emulators',
-        'rasa_nlu.extractors',
-        'rasa_nlu.featurizers',
-        'rasa_nlu.tokenizers',
-        'rasa_nlu.training_data',
-        'rasa_nlu.training_data.formats'
-    ],
+    packages=find_packages(exclude=['contrib', 'docs', 'tests']),
     classifiers=[
+        "Development Status :: 4 - Beta",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: Apache Software License",
+        # supported python versions
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.5",
@@ -64,17 +67,19 @@ setup(
     extras_require=extras_requires,
     include_package_data=True,
     description="Rasa NLU a natural language parser for bots",
-    author='Alan Nichol',
-    author_email='alan@rasa.ai',
+    long_description=readme,
+    author='Rasa Technologies GmbH',
+    author_email='hi@rasa.ai',
+    license='Apache 2.0',
     url="https://rasa.com",
-    keywords=["nlp", "machine-learning", "machine-learning-library", "bot",
-              "bots",
-              "botkit", "rasa", "conversational-agents",
-              "conversational-ai",
-              "chatbot", "chatbot-framework", "bot-framework"],
-    download_url="https://github.com/RasaHQ/rasa_nlu/archive/{}.tar.gz".format(__version__)
+    keywords="nlp machine-learning machine-learning-library bot bots "
+             "botkit rasa conversational-agents conversational-ai chatbot"
+             "chatbot-framework bot-framework",
+    download_url="https://github.com/RasaHQ/rasa_nlu/archive/{}.tar.gz"
+                 "".format(__version__)
 )
 
 print("\nWelcome to Rasa NLU!")
-print("If any questions please visit documentation page https://rasahq.github.io/rasa_nlu")
+print("If any questions please visit documentation "
+      "page https://rasahq.github.io/rasa_nlu")
 print("or join community chat on https://gitter.im/RasaHQ/rasa_nlu")
