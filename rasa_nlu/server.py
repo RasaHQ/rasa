@@ -233,6 +233,7 @@ class RasaNLU(object):
             return simplejson.dumps(
                     {"error": "{}".format(e)})
 
+
 if __name__ == '__main__':
     # Running as standalone python application
     arg_parser = create_argparser()

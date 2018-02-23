@@ -26,6 +26,7 @@ from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.model import Metadata, InvalidProjectError, Interpreter
 from rasa_nlu.train import do_train_in_worker
+from rasa_nlu.evaluate import get_evaluation_table
 
 logger = logging.getLogger(__name__)
 
@@ -241,15 +242,18 @@ class DataRouter(object):
         """Start a model evaluation."""
 
         if PY3:
-            f = tempfile.NamedTemporaryFile("w+", suffix="_training_data", delete=False, encoding="utf-8")
+            f = tempfile.NamedTemporaryFile("w+", suffix="_training_data",
+                                            delete=False, encoding="utf-8")
             f.write(data)
         else:
-            f = tempfile.NamedTemporaryFile("w+", suffix="_training_data", delete=False)
+            f = tempfile.NamedTemporaryFile("w+", suffix="_training_data",
+                                            delete=False)
             f.write(data.encode("utf-8"))
         f.close()
         test_data = load_data(f.name)
 
-        project = parameters.get("project") or RasaNLUConfig.DEFAULT_PROJECT_NAME
+        project = parameters.get(
+            "project") or RasaNLUConfig.DEFAULT_PROJECT_NAME
         model = parameters.get("model")
 
         if not (project and project in self.project_store):
@@ -260,12 +264,31 @@ class DataRouter(object):
             logger.info("going to parse")
             logger.info(ex)
 
-            response, _ = self.project_store[project].parse(ex.text, None, model)
+            response, _ = self.project_store[project].parse(ex.text, None,
+                                                            model)
             logger.info(response)
             preds_json.append(response)
 
-        predictions = [{"text": e.text, "intent": e.data.get("intent"), "predicted": p.get("intent")}
-                       for e, p in zip(test_data.training_examples, preds_json)]
+        predictions = [
+            {"text": e.text, "intent": e.data.get("intent"),
+             "predicted": p.get("intent")}
+            for e, p in
+            zip(test_data.training_examples, preds_json)
+        ]
 
-        return {"intent_evaluation": {
-                    "predictions": predictions}}
+        y_true = [e.data.get("intent") for e in test_data.training_examples]
+
+        y_pred = [p.get("intent") for p in preds_json]
+
+        report, precision, f1, accuracy = get_evaluation_table(y_true,
+                                                               y_pred,
+                                                               log=False)
+
+        return {
+            "intent_evaluation": {
+                "report": report,
+                "predictions": predictions,
+                "precision": precision,
+                "f1_score": f1,
+                "accuracy": accuracy}
+        }

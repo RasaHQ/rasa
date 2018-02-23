@@ -172,3 +172,19 @@ def test_model_hot_reloading(app, rasa_default_train_data):
 
     response = yield app.get(query)
     assert response.code == 200, "Project should now exist after it got trained"
+
+
+@pytest.inlineCallbacks
+def test_evaluate(app, rasa_default_train_data):
+    response = app.post("http://dummy_uri/evaluate",
+                        json=rasa_default_train_data)
+    time.sleep(3)
+    app.flush()
+    rjs = response.json()
+    assert response.code == 200
+    assert "intent_evaluation" in rjs
+    assert all(prop in rjs["intent_evaluation"] for prop in ["report",
+                                                             "predictions",
+                                                             "precision",
+                                                             "f1_score",
+                                                             "accuracy"])

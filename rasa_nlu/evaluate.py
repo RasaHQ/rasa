@@ -81,7 +81,7 @@ def plot_confusion_matrix(cm, classes,
     plt.xlabel('Predicted label')
 
 
-def log_evaluation_table(test_y, preds):  # pragma: no cover
+def get_evaluation_table(test_y, preds, log=True):  # pragma: no cover
     from sklearn import metrics
 
     report = metrics.classification_report(test_y, preds)
@@ -89,11 +89,14 @@ def log_evaluation_table(test_y, preds):  # pragma: no cover
     f1 = metrics.f1_score(test_y, preds, average='weighted')
     accuracy = metrics.accuracy_score(test_y, preds)
 
-    logger.info("Intent Evaluation Results")
-    logger.info("F1-Score:  {}".format(f1))
-    logger.info("Precision: {}".format(precision))
-    logger.info("Accuracy:  {}".format(accuracy))
-    logger.info("Classification report: \n{}".format(report))
+    if log:
+        logger.info("Intent Evaluation Results")
+        logger.info("F1-Score:  {}".format(f1))
+        logger.info("Precision: {}".format(precision))
+        logger.info("Accuracy:  {}".format(accuracy))
+        logger.info("Classification report: \n{}".format(report))
+
+    return report, precision, f1, accuracy
 
 
 def remove_empty_intent_examples(targets, predictions):
@@ -142,7 +145,7 @@ def evaluate_intents(targets, predictions):  # pragma: no cover
     targets, predictions = remove_empty_intent_examples(targets, predictions)
     logger.info("Intent Evaluation: Only considering those {} examples that "
                 "have a defined intent out of {} examples".format(targets.size, num_examples))
-    log_evaluation_table(targets, predictions)
+    get_evaluation_table(targets, predictions)
 
     cnf_matrix = confusion_matrix(targets, predictions)
     plot_confusion_matrix(cnf_matrix, classes=unique_labels(targets, predictions),
@@ -187,7 +190,7 @@ def evaluate_entities(targets, predictions, tokens, extractors):  # pragma: no c
         merged_predictions = merge_labels(aligned_predictions, extractor)
         merged_predictions = substitute_labels(merged_predictions, "O", "no_entity")
         logger.info("Evaluation for entity extractor: {} ".format(extractor))
-        log_evaluation_table(merged_targets, merged_predictions)
+        get_evaluation_table(merged_targets, merged_predictions)
 
 
 def is_token_within_entity(token, entity):
