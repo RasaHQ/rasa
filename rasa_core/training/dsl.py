@@ -141,10 +141,14 @@ class StoryFileReader(object):
                 lines = f.readlines()
             reader = StoryFileReader(domain, interpreter, template_variables)
             return reader.process_lines(lines)
-        except Exception:
-            logger.exception("Failed to parse '{}'".format(
-                    os.path.abspath(filename)))
-            raise ValueError("Invalid story file format.")
+        except ValueError as err:
+            file_info = ("Invalid story file format. Failed to parse "
+                         "'{}'".format(os.path.abspath(filename)))
+            logger.exception(file_info)
+            if not err.args:
+                err.args = ('',)
+            err.args = err.args + (file_info,)
+            raise
 
     @staticmethod
     def _parameters_from_json_string(s, line):
@@ -217,7 +221,7 @@ class StoryFileReader(object):
             except Exception as e:
                 msg = "Error in line {}: {}".format(line_num, e.message)
                 logger.error(msg, exc_info=1)
-                raise Exception(msg)
+                raise ValueError(msg)
         self._add_current_stories_to_result()
         return self.story_steps
 
