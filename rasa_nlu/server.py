@@ -225,13 +225,11 @@ class RasaNLU(object):
 
         try:
             request.setResponseCode(200)
-            response = self.data_router.start_evaluation(
-                    data_string, kwargs)
+            response = self.data_router.evaluate(data_string, kwargs)
             return simplejson.dumps(response)
         except Exception as e:
             request.setResponseCode(500)
-            return simplejson.dumps(
-                    {"error": "{}".format(e)})
+            return simplejson.dumps({"error": "{}".format(e)})
 
 
 if __name__ == '__main__':

@@ -461,6 +461,11 @@ def run_cv_evaluation(data, n_folds, nlu_config):
     return results
 
 
+def clean_intent_labels(labels):
+    """Gets rid of None, since sklearn metrics does not support it anymore"""
+    return [l if l is not None else "" for l in labels]
+
+
 def compute_metrics(interpreter, corpus, results):
     """Computes evaluation metrics for a given corpus and appends them to results"""
     from sklearn import metrics
@@ -475,9 +480,8 @@ def compute_metrics(interpreter, corpus, results):
         else:
             preds.append(None)
 
-    # get rid of None, since sklearn metrics does not support it anymore
-    y = [t if t is not None else "" for t in y]
-    preds = [t if t is not None else "" for t in preds]
+    y = clean_intent_labels(y)
+    preds = clean_intent_labels(preds)
 
     # compute fold metrics
     results["Accuracy"].append(metrics.accuracy_score(y, preds))
