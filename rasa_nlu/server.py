@@ -4,6 +4,7 @@ from __future__ import division
 from __future__ import absolute_import
 
 import argparse
+import json
 import logging
 import os
 import six
@@ -197,9 +198,13 @@ class RasaNLU(object):
         data_string = request.content.read().decode('utf-8', 'strict')
         kwargs = {key.decode('utf-8', 'strict'): value[0].decode('utf-8', 'strict')
                   for key, value in request.args.items()}
+
         request.setHeader('Content-Type', 'application/json')
 
         try:
+            if 'ner_crf' in kwargs:
+                kwargs['ner_crf'] = json.loads(kwargs['ner_crf'])
+
             request.setResponseCode(200)
             response = yield self.data_router.start_train_process(
                     data_string, kwargs)
