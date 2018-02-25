@@ -49,7 +49,7 @@ class PhraseMatcher(EntityExtractor):
         for i in range(len(text)):
             match = self.phrase_trie.longest_prefix(text[i:])
             if match:
-                start, end = i, i+len(match[0])
+                start, end = i, i + len(match[0])
                 value = message.text[start:end] if self.ignore_case else match[0]
                 entity_type = match[1]
                 extracted.append(utils.build_entity(start, end, value, entity_type))
@@ -76,6 +76,7 @@ class PhraseMatcher(EntityExtractor):
     def load(cls, model_dir, model_metadata, cached_component, **kwargs):
         if not model_metadata.get("entity_phrases"):
             raise ValueError("Entity phrases not defined in metadata, but component present in pipeline")
+        kwargs = {}
         ignore_case = model_metadata.get("phrase_matcher", {}).get("ignore_case")
         if ignore_case is not None:
             kwargs["ignore_case"] = ignore_case

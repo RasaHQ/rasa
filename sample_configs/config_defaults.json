@@ -22,7 +22,9 @@
   "max_number_of_ngrams": 7,
   "duckling_dimensions": null,
   "duckling_http_url": null,
-
+  "phrase_matcher": {
+    "ignore_case": true
+  },
   "ner_crf": {
     "BILOU_flag": true,
     "features": [

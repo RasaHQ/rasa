@@ -51,7 +51,6 @@ class RasaReader(JsonTrainingDataReader):
         return TrainingData(training_examples, entity_synonyms, regex_features, entity_phrases)
 
 
-
 class RasaWriter(TrainingDataWriter):
     def dumps(self, training_data, **kwargs):
         """Writes Training Data to a string in json format."""
@@ -67,7 +66,7 @@ class RasaWriter(TrainingDataWriter):
                               for example in training_data.training_examples]
 
         formatted_entity_phrases = [{'entity': entity, 'phrases': list(phrases)}
-                                     for entity, phrases in training_data.entity_phrases.items()]
+                                    for entity, phrases in training_data.entity_phrases.items()]
 
         return json_to_string({
             "rasa_nlu_data": {
