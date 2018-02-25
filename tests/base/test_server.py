@@ -169,7 +169,6 @@ def test_model_hot_reloading(app, rasa_default_train_data):
     app.flush()
     response = yield response
     assert response.code == 200, "Training should end successfully"
-
     response = yield app.get(query)
     assert response.code == 200, "Project should now exist after it got trained"
 
@@ -180,9 +179,10 @@ def test_evaluate(app, rasa_default_train_data):
                         json=rasa_default_train_data)
     time.sleep(3)
     app.flush()
-    rjs = response.json()
+    response = yield response
+    rjs = yield response.json()
     assert response.code == 200
-    assert "intent_evaluation" in rjs
+    assert rjs.get("intent_evaluation")
     assert all(prop in rjs["intent_evaluation"] for prop in ["report",
                                                              "predictions",
                                                              "precision",
