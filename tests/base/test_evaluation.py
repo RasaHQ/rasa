@@ -227,10 +227,12 @@ def test_run_cv_evaluation():
     n_folds = 3
     results = run_cv_evaluation(td, n_folds, nlu_config)
 
-    assert len(results["Accuracy"]) == n_folds
-    assert len(results["Precision"]) == n_folds
-    assert len(results["F1-score"]) == n_folds
-
+    assert len(results.train["Accuracy"]) == n_folds
+    assert len(results.train["Precision"]) == n_folds
+    assert len(results.train["F1-score"]) == n_folds
+    assert len(results.test["Accuracy"]) == n_folds
+    assert len(results.test["Precision"]) == n_folds
+    assert len(results.test["F1-score"]) == n_folds
 
 def test_empty_intent_removal():
     targets = ["", "greet"]

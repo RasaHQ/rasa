@@ -70,7 +70,7 @@ def test_luis_response():
                 "endIndex": None,
                 "score": None
             } for e in data["entities"]
-            ]
+        ]
     }
 
 

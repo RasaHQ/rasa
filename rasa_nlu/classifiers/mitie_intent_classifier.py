@@ -22,7 +22,6 @@ if typing.TYPE_CHECKING:
 
 
 class MitieIntentClassifier(Component):
-
     name = "intent_classifier_mitie"
 
     provides = ["intent"]
@@ -37,7 +36,7 @@ class MitieIntentClassifier(Component):
         # type: () -> List[Text]
         return ["mitie"]
 
-    def train(self, training_data, config,  **kwargs):
+    def train(self, training_data, config, **kwargs):
         # type: (TrainingData, RasaNLUConfig, **Any) -> None
         import mitie
 

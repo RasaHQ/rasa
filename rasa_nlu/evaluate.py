@@ -8,7 +8,7 @@ import logging
 import os
 import numpy as np
 
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 
 from typing import Dict, Text, List
 
@@ -484,7 +484,8 @@ def run_cv_evaluation(td, n_folds, nlu_config):
     import tempfile
 
     trainer = Trainer(nlu_config)
-    results = defaultdict(list)
+    results = {"train": defaultdict(list),
+               "test": defaultdict(list)}
     tmp_dir = tempfile.mkdtemp()
 
     for train, test in generate_folds(n_folds, td):
@@ -493,18 +494,24 @@ def run_cv_evaluation(td, n_folds, nlu_config):
                                    regex_features=td.regex_features))
         model_dir = trainer.persist(tmp_dir)
         interpreter = Interpreter.load(model_dir, nlu_config)
-        targets, _ = get_targets(TrainingData(test))
-        predictions, _, _ = get_predictions(interpreter, TrainingData(test))
-        utils.remove_model(model_dir)
 
-        # compute fold metrics
-        results["Accuracy"].append(metrics.accuracy_score(targets, predictions))
-        results["F1-score"].append(metrics.f1_score(targets, predictions, average='weighted'))
-        results["Precision"].append(metrics.precision_score(targets, predictions, average='weighted'))
+        for name, examples in [("train", train), ("test", test)]:
+            targets, _ = get_targets(TrainingData(examples))
+            predictions, _, _ = get_predictions(interpreter, TrainingData(examples))
+
+            # compute fold metrics
+            results[name]["Accuracy"].append(metrics.accuracy_score(targets, predictions))
+            results[name]["F1-score"].append(metrics.f1_score(targets, predictions, average='weighted'))
+            results[name]["Precision"].append(metrics.precision_score(targets, predictions, average='weighted'))
+
+        utils.remove_model(model_dir)
 
     os.rmdir(os.path.join(tmp_dir, "default"))
     os.rmdir(tmp_dir)
-    return dict(results)
+
+    Results = namedtuple('Results', 'train test')
+    results = Results(dict(results["train"]), dict(results["test"]))
+    return results
 
 
 if __name__ == '__main__':  # pragma: no cover
@@ -523,10 +530,13 @@ if __name__ == '__main__':  # pragma: no cover
     if args.mode == "crossvalidation":
         td = training_data.load_data(args.data)
         td = drop_intents_below_freq(td, cutoff=5)
-        cv_results = run_cv_evaluation(td, int(args.folds), nlu_config)
+        results = run_cv_evaluation(td, int(args.folds), nlu_config)
         logger.info("CV evaluation (n={})".format(args.folds))
-        for k, v in cv_results.items():
-            logger.info("{}: {:.3f} ({:.3f})".format(k, np.mean(v), np.std(v)))
+        for k, v in results.train.items():
+            logger.info("train {}: {:.3f} ({:.3f})".format(k, np.mean(v), np.std(v)))
+        for k, v in results.test.items():
+            logger.info("test {}: {:.3f} ({:.3f})".format(k, np.mean(v), np.std(v)))
+
     elif args.mode == "evaluation":
         run_evaluation(nlu_config, args.model)
 
