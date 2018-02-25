@@ -282,21 +282,20 @@ class DataRouter(object):
 
         preds_json = []
         for ex in test_data.intent_examples:
-            logger.info("Going to parse")
-            logger.info(ex.as_dict())
+            logger.info("Going to parse: {}".format(ex.as_dict()))
 
             response, _ = self.project_store[project].parse(ex.text,
                                                             None,
                                                             model)
 
-            logger.info("Received response")
-            logger.info(response)
+            logger.info("Received response: {}".format(response))
             preds_json.append(response)
 
         predictions = [
             {"text": e.text,
              "intent": e.data.get("intent"),
-             "predicted": p.get("intent", {}).get("name")}
+             "predicted": p.get("intent", {}).get("name"),
+             "confidence": p.get("intent", {}).get("confidence")}
             for e, p in zip(test_data.intent_examples, preds_json)
         ]
 
@@ -308,7 +307,7 @@ class DataRouter(object):
 
         report, precision, f1, accuracy = get_evaluation_table(y_true,
                                                                y_pred,
-                                                               log=False)
+                                                               log=True)
 
         return {
             "intent_evaluation": {

@@ -202,7 +202,7 @@ def test_evaluate(app, rasa_default_train_data):
     app.flush()
     response = yield response
     rjs = yield response.json()
-    assert response.code == 200
+    assert response.code == 200, "Evaluation should start"
     assert "intent_evaluation" in rjs
     assert all(prop in rjs["intent_evaluation"] for prop in ["report",
                                                              "predictions",
