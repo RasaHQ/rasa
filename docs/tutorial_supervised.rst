@@ -119,7 +119,7 @@ find in ``nlu_model_config.json``:
 .. literalinclude:: ../examples/restaurantbot/nlu_model_config.json
    :linenos:
 
-And training data ``franken_data.json`` (see <https://nlu.rasa.ai/dataformat.html>`_ for details).
+And training data ``franken_data.json`` (see `<https://nlu.rasa.ai/dataformat.html>`_ for details).
 
 We can train the NLU model using
 
