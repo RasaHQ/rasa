@@ -270,15 +270,15 @@ class DataRouter(object):
             preds_json.append(response)
 
         predictions = [
-            {"text": e.text, "intent": e.data.get("intent"),
-             "predicted": p.get("intent")}
-            for e, p in
-            zip(test_data.training_examples, preds_json)
+            {"text": e.text,
+             "intent": e.data.get("intent"),
+             "predicted": p.get("intent", {}).get("name")}
+            for e, p in zip(test_data.intent_examples, preds_json)
         ]
 
-        y_true = [e.data.get("intent") for e in test_data.training_examples]
+        y_true = [e.data.get("intent") for e in test_data.intent_examples]
 
-        y_pred = [p.get("intent") for p in preds_json]
+        y_pred = [p.get("intent", {}).get("name") for p in preds_json]
 
         report, precision, f1, accuracy = get_evaluation_table(y_true,
                                                                y_pred,
