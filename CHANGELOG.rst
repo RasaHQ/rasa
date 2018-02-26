@@ -18,10 +18,12 @@ Added
 
 Changed
 -------
-- Regex features are now sorted internally. **retrain your model if you use regex features**
-- The keyword intent classifier now returns ``null`` instead of ``"None"`` as intent name in the json result
-if there's no match
-
+- Regex features are now sorted internally.
+  **retrain your model if you use regex features**
+- The keyword intent classifier now returns ``null`` instead
+  of ``"None"`` as intent name in the json result if there's no match
+- in teh evaluation results, replaced ``O`` with the string
+  ``no_entity`` for better understanding
 
 Fixed
 -----
