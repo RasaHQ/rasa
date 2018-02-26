@@ -234,6 +234,7 @@ def test_run_cv_evaluation():
     assert len(results.test["Precision"]) == n_folds
     assert len(results.test["F1-score"]) == n_folds
 
+
 def test_empty_intent_removal():
     targets = ["", "greet"]
     predicted = ["restaurant_search", "greet"]
