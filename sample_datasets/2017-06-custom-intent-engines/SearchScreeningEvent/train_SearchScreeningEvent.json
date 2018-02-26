@@ -1,0 +1,6238 @@
+{
+  "SearchScreeningEvent": [
+    {
+      "data": [
+        {
+          "text": "Find "
+        },
+        {
+          "text": "movie times",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "Landmark Theatres",
+          "entity": "location_name"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What are the "
+        },
+        {
+          "text": "movie times",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "Amco Entertainment",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what "
+        },
+        {
+          "text": "films",
+          "entity": "movie_type"
+        },
+        {
+          "text": " are showing at "
+        },
+        {
+          "text": "Bow Tie Cinemas",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Show me the "
+        },
+        {
+          "text": "movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "close by",
+          "entity": "spatial_relation"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to see "
+        },
+        {
+          "text": "The Da Vinci Code",
+          "entity": "movie_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Show me "
+        },
+        {
+          "text": "movie times",
+          "entity": "object_type"
+        },
+        {
+          "text": " at the "
+        },
+        {
+          "text": "Pacific Theatres",
+          "entity": "location_name"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "The Hot Rock",
+          "entity": "movie_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Tell me the "
+        },
+        {
+          "text": "closest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie house",
+          "entity": "object_location_type"
+        },
+        {
+          "text": " playing "
+        },
+        {
+          "text": "Black Rage",
+          "entity": "movie_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "My Own True Love",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What are the "
+        },
+        {
+          "text": "movie schedules",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "Kerasotes Theatres",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Check the movie timings for "
+        },
+        {
+          "text": "Cracked Nuts",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "Southern Theatres",
+          "entity": "location_name"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is it possible to see "
+        },
+        {
+          "text": "Riddick",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "Consolidated Theatres",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What "
+        },
+        {
+          "text": "films",
+          "entity": "movie_type"
+        },
+        {
+          "text": " are playing at the "
+        },
+        {
+          "text": "closest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie house",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "The Wash",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing at the "
+        },
+        {
+          "text": "cinema",
+          "entity": "object_location_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in one minute",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Give me the "
+        },
+        {
+          "text": "movie schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "The Loners",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "MJR Theatres",
+          "entity": "location_name"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Show the "
+        },
+        {
+          "text": "times",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "animated movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " in the "
+        },
+        {
+          "text": "nearest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie house",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "movie schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "close by",
+          "entity": "spatial_relation"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What are them "
+        },
+        {
+          "text": "movie times",
+          "entity": "object_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "A Kiss Before Dying",
+          "entity": "movie_name"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "animated movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "nearby",
+          "entity": "spatial_relation"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "When is "
+        },
+        {
+          "text": "The Grip of Iron",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Give me "
+        },
+        {
+          "text": "Pacific Theatres",
+          "entity": "location_name"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie schedules",
+          "entity": "object_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "where is the "
+        },
+        {
+          "text": "nearest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie theatre",
+          "entity": "object_location_type"
+        },
+        {
+          "text": " showing "
+        },
+        {
+          "text": "movies",
+          "entity": "movie_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the "
+        },
+        {
+          "text": "7 A.M.",
+          "entity": "timeRange"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie schedules",
+          "entity": "object_type"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "Amco Entertainment",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "movie times",
+          "entity": "object_type"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "National Amusements",
+          "entity": "location_name"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I need the "
+        },
+        {
+          "text": "films",
+          "entity": "movie_type"
+        },
+        {
+          "text": " names that are playing in the "
+        },
+        {
+          "text": "closest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie house",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What "
+        },
+        {
+          "text": "AMC Theaters",
+          "entity": "location_name"
+        },
+        {
+          "text": " is "
+        },
+        {
+          "text": "The Red Dance",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing at?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "The Strange Case of the End of Civilization as We Know It",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing at the "
+        },
+        {
+          "text": "movie theatre",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "AMC Theaters",
+          "entity": "location_name"
+        },
+        {
+          "text": " showing "
+        },
+        {
+          "text": "Crime on the Hill",
+          "entity": "movie_name"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "Worms Will Turn",
+          "entity": "movie_name"
+        },
+        {
+          "text": " running at any movie hall?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what day does the movie "
+        },
+        {
+          "text": "Star of the Circus",
+          "entity": "movie_name"
+        },
+        {
+          "text": " play at "
+        },
+        {
+          "text": "ten PM",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "Metallica Through the Never",
+          "entity": "movie_name"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I need "
+        },
+        {
+          "text": "movie times",
+          "entity": "object_type"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "United Paramount Theatres",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "Mark of the Cop",
+          "entity": "movie_name"
+        },
+        {
+          "text": " showing in the "
+        },
+        {
+          "text": "closest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie theatre",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Check which "
+        },
+        {
+          "text": "cinema",
+          "entity": "object_location_type"
+        },
+        {
+          "text": " currently runs "
+        },
+        {
+          "text": "When the Last Sword is Drawn",
+          "entity": "movie_name"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "When does"
+        },
+        {
+          "text": "Fun 2shh: Dudes in the 10th Century",
+          "entity": "movie_name"
+        },
+        {
+          "text": " start at the "
+        },
+        {
+          "text": "closest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie theatre",
+          "entity": "object_location_type"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I would like to see a "
+        },
+        {
+          "text": "movie",
+          "entity": "movie_type"
+        },
+        {
+          "text": " at the "
+        },
+        {
+          "text": "nearest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie house",
+          "entity": "object_location_type"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "movie schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "when is "
+        },
+        {
+          "text": "Interview: The Documentary",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing in "
+        },
+        {
+          "text": "Loews Cineplex",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to see "
+        },
+        {
+          "text": "Death Carries a Cane",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at the "
+        },
+        {
+          "text": "closest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie theatre",
+          "entity": "object_location_type"
+        },
+        {
+          "text": ", what "
+        },
+        {
+          "text": "times",
+          "entity": "object_type"
+        },
+        {
+          "text": " will it be showing?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I need "
+        },
+        {
+          "text": "movie schedules",
+          "entity": "object_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " at the "
+        },
+        {
+          "text": "nearest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "cinema",
+          "entity": "object_location_type"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "The Country Doctor",
+          "entity": "movie_name"
+        },
+        {
+          "text": " on the "
+        },
+        {
+          "text": "schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " at any theater near me?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "where is "
+        },
+        {
+          "text": "No Sleep til Shanghai",
+          "entity": "movie_name"
+        },
+        {
+          "text": " showing in "
+        },
+        {
+          "text": "three hours from now",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Are any "
+        },
+        {
+          "text": "films",
+          "entity": "movie_type"
+        },
+        {
+          "text": " play at the "
+        },
+        {
+          "text": "Santikos Theatres",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is showing at "
+        },
+        {
+          "text": "twelve P.M.",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in the "
+        },
+        {
+          "text": "closest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie house",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "movie times",
+          "entity": "object_type"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "Bow Tie Cinemas",
+          "entity": "location_name"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "closest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie theatre",
+          "entity": "object_location_type"
+        },
+        {
+          "text": " with "
+        },
+        {
+          "text": "animated movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in 21 hours",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "Winged Victory",
+          "entity": "movie_name"
+        },
+        {
+          "text": " showing anywhere "
+        },
+        {
+          "text": "in one minute",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "show me the "
+        },
+        {
+          "text": "schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " of movie "
+        },
+        {
+          "text": "Thirty Two Short Films About Glenn Gould",
+          "entity": "movie_name"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in 14 minutes",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "When is "
+        },
+        {
+          "text": "Painless Love",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing in the "
+        },
+        {
+          "text": "Neighborhood Cinema Group",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Give me the "
+        },
+        {
+          "text": "movie schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "Cineplex Odeon Corporation",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "When is "
+        },
+        {
+          "text": "Brick",
+          "entity": "movie_name"
+        },
+        {
+          "text": " showing"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Where will "
+        },
+        {
+          "text": "The Blonde from Peking",
+          "entity": "movie_name"
+        },
+        {
+          "text": " be playing"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is there any way to see "
+        },
+        {
+          "text": "Tailspin Tommy in the Great Air Mystery",
+          "entity": "movie_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "Southern Theatres",
+          "entity": "location_name"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What "
+        },
+        {
+          "text": "movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " are playing at "
+        },
+        {
+          "text": "Loews Cineplex",
+          "entity": "location_name"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to find out when "
+        },
+        {
+          "text": "Midnight Club",
+          "entity": "movie_name"
+        },
+        {
+          "text": " is playing"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Can I get the "
+        },
+        {
+          "text": "movie schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "Douglas Theatre Company",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what "
+        },
+        {
+          "text": "movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " are playing at "
+        },
+        {
+          "text": "Warren Theatres",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "movie schedules",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "Cobb Theatres",
+          "entity": "location_name"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will you show me the "
+        },
+        {
+          "text": "movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " playing "
+        },
+        {
+          "text": "around here",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Circle of Iron",
+          "entity": "movie_name"
+        },
+        {
+          "text": " in the closet "
+        },
+        {
+          "text": "cinema",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find "
+        },
+        {
+          "text": "animated movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in the neighborhood",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "Storm Warning",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Are there any "
+        },
+        {
+          "text": "animated movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " playing at the "
+        },
+        {
+          "text": "closest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "cinema",
+          "entity": "object_location_type"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the "
+        },
+        {
+          "text": "movie schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "Marcus Corporation",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What "
+        },
+        {
+          "text": "movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " are playing at the "
+        },
+        {
+          "text": "closest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie theatre",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "when is "
+        },
+        {
+          "text": "The Statue",
+          "entity": "movie_name"
+        },
+        {
+          "text": " showing "
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "The Love Guru",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing "
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "when is "
+        },
+        {
+          "text": "Letters from a Porcupine",
+          "entity": "movie_name"
+        },
+        {
+          "text": " showing at "
+        },
+        {
+          "text": "Alamo Drafthouse Cinema",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What "
+        },
+        {
+          "text": "times",
+          "entity": "object_type"
+        },
+        {
+          "text": " will "
+        },
+        {
+          "text": "Escape from Hong Kong",
+          "entity": "movie_name"
+        },
+        {
+          "text": " be showing?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to see "
+        },
+        {
+          "text": "The Happy Thieves",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "Marcus Corporation",
+          "entity": "location_name"
+        },
+        {
+          "text": ", can you show me "
+        },
+        {
+          "text": "movie times",
+          "entity": "object_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Are there any "
+        },
+        {
+          "text": "movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " playing at "
+        },
+        {
+          "text": "5 am",
+          "entity": "timeRange"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "North American Cinemas",
+          "entity": "location_name"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "Stacey",
+          "entity": "movie_name"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "When is "
+        },
+        {
+          "text": "The Tale of the Fox",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing near me"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What "
+        },
+        {
+          "text": "films",
+          "entity": "movie_type"
+        },
+        {
+          "text": " are showing at "
+        },
+        {
+          "text": "Magic Johnson Theatres",
+          "entity": "location_name"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Can I get the "
+        },
+        {
+          "text": "movie schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "ArcLight Hollywood",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Give me "
+        },
+        {
+          "text": "movie times",
+          "entity": "object_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What are the "
+        },
+        {
+          "text": "animated movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " playing "
+        },
+        {
+          "text": "nearby",
+          "entity": "spatial_relation"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What "
+        },
+        {
+          "text": "movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " are at "
+        },
+        {
+          "text": "Caribbean Cinemas",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "Sheikh Chilli",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the "
+        },
+        {
+          "text": "nearest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie theatre",
+          "entity": "object_location_type"
+        },
+        {
+          "text": " showing "
+        },
+        {
+          "text": "Ocean’s 13",
+          "entity": "movie_name"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "The Voice in the Fog",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "night",
+          "entity": "timeRange"
+        },
+        {
+          "text": " at the "
+        },
+        {
+          "text": "closest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie house",
+          "entity": "object_location_type"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Check "
+        },
+        {
+          "text": "movie schedules",
+          "entity": "object_type"
+        },
+        {
+          "text": " and find which "
+        },
+        {
+          "text": "animated movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " are being aired "
+        },
+        {
+          "text": "in the neighborhood",
+          "entity": "spatial_relation"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "where can i watch "
+        },
+        {
+          "text": "animated movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "around here",
+          "entity": "spatial_relation"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Show me the "
+        },
+        {
+          "text": "movie times",
+          "entity": "object_type"
+        },
+        {
+          "text": " "
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "Millions in the Air",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing at the "
+        },
+        {
+          "text": "cinema",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "Love, Marilyn",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What "
+        },
+        {
+          "text": "times",
+          "entity": "object_type"
+        },
+        {
+          "text": " is "
+        },
+        {
+          "text": "7 Faces of Dr. Lao",
+          "entity": "movie_name"
+        },
+        {
+          "text": " showing at "
+        },
+        {
+          "text": "United Paramount Theatres",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": " Give me the list of "
+        },
+        {
+          "text": "films",
+          "entity": "movie_type"
+        },
+        {
+          "text": " showing at "
+        },
+        {
+          "text": "night",
+          "entity": "timeRange"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "Great Escape Theatres",
+          "entity": "location_name"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "When is "
+        },
+        {
+          "text": "Balkan Rhapsodies: 78 Measures of War",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing at "
+        },
+        {
+          "text": "Malco Theatres",
+          "entity": "location_name"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "show me the "
+        },
+        {
+          "text": "schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " of "
+        },
+        {
+          "text": "The Loves of Letty",
+          "entity": "movie_name"
+        },
+        {
+          "text": " in the "
+        },
+        {
+          "text": "closest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "cinema",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Can I see "
+        },
+        {
+          "text": "The Cup Winner",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at the "
+        },
+        {
+          "text": "closest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie house",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "when can I see "
+        },
+        {
+          "text": "Dead Snow",
+          "entity": "movie_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Where can i see "
+        },
+        {
+          "text": "Love Me Tonight",
+          "entity": "movie_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "show me the list of "
+        },
+        {
+          "text": "films",
+          "entity": "movie_type"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Cobb Theatres",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to see "
+        },
+        {
+          "text": "King of the River",
+          "entity": "movie_name"
+        },
+        {
+          "text": " in the "
+        },
+        {
+          "text": "nearest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie theatre",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "At what "
+        },
+        {
+          "text": "times",
+          "entity": "object_type"
+        },
+        {
+          "text": " will "
+        },
+        {
+          "text": "animated movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " be showing "
+        },
+        {
+          "text": "nearby",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "show me the "
+        },
+        {
+          "text": "schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " of movie "
+        },
+        {
+          "text": "Shadow of a Woman",
+          "entity": "movie_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What are the "
+        },
+        {
+          "text": "movie schedules",
+          "entity": "object_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in the neighborhood",
+          "entity": "spatial_relation"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "show me the "
+        },
+        {
+          "text": "movie times",
+          "entity": "object_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in the neighbourhood",
+          "entity": "spatial_relation"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I need to know when "
+        },
+        {
+          "text": "Sensation in Morgan’s Creek",
+          "entity": "movie_name"
+        },
+        {
+          "text": " is playing"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Give me the "
+        },
+        {
+          "text": "schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "animated movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " at the "
+        },
+        {
+          "text": "nearest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "cinema",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What "
+        },
+        {
+          "text": "movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " are showing "
+        },
+        {
+          "text": "close by",
+          "entity": "spatial_relation"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is it possible to see "
+        },
+        {
+          "text": "Seed of Chucky",
+          "entity": "movie_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "When is "
+        },
+        {
+          "text": "The Creators",
+          "entity": "movie_name"
+        },
+        {
+          "text": " showing"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "The Kiss",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "movie times",
+          "entity": "object_type"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Can I see the "
+        },
+        {
+          "text": "movie times",
+          "entity": "object_type"
+        },
+        {
+          "text": " for the "
+        },
+        {
+          "text": "Great Escape Theatres",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "are there any "
+        },
+        {
+          "text": "movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " playing "
+        },
+        {
+          "text": "around here",
+          "entity": "spatial_relation"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "List all the "
+        },
+        {
+          "text": "movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " playing "
+        },
+        {
+          "text": "in the area",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "now",
+          "entity": "timeRange"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "Precautions Against Fanatics",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "Star Theatres",
+          "entity": "location_name"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to see "
+        },
+        {
+          "text": "Idols of Clay",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at my "
+        },
+        {
+          "text": "movie house",
+          "entity": "object_location_type"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "Prophecy",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing at "
+        },
+        {
+          "text": "Malco Theatres",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "Evening Clothes",
+          "entity": "movie_name"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in 1 second",
+          "entity": "timeRange"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "The Solitude of Prime Numbers",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at the "
+        },
+        {
+          "text": "nearest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "cinema",
+          "entity": "object_location_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in 1 hour",
+          "entity": "timeRange"
+        },
+        {
+          "text": " ."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "When can I see "
+        },
+        {
+          "text": "I Am Sorry",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at my "
+        },
+        {
+          "text": "movie house",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Show me when and where I can see "
+        },
+        {
+          "text": "Song of Summer",
+          "entity": "movie_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "show me the "
+        },
+        {
+          "text": "movie schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " at the "
+        },
+        {
+          "text": "closest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "cinema",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Can I get a "
+        },
+        {
+          "text": "movie schedule",
+          "entity": "object_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "animated movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in the neighbourhood",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to see "
+        },
+        {
+          "text": "Sympathy for the Devil",
+          "entity": "movie_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "show the "
+        },
+        {
+          "text": "schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " of "
+        },
+        {
+          "text": "Unborn but Forgotten",
+          "entity": "movie_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "Unsettled Land",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing at the "
+        },
+        {
+          "text": "movie theatre",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "When is "
+        },
+        {
+          "text": "The Devil with Hitler",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing in "
+        },
+        {
+          "text": "Bow Tie Cinemas",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Tell me what "
+        },
+        {
+          "text": "movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " are showing at "
+        },
+        {
+          "text": "seven am",
+          "entity": "timeRange"
+        },
+        {
+          "text": " at the "
+        },
+        {
+          "text": "closest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie house",
+          "entity": "object_location_type"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find "
+        },
+        {
+          "text": "movie schedules",
+          "entity": "object_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "nearby",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "Death Valley Manhunt",
+          "entity": "movie_name"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find "
+        },
+        {
+          "text": "animated movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " showing "
+        },
+        {
+          "text": "close by",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "A Man, a Woman, and a Bank",
+          "entity": "movie_name"
+        },
+        {
+          "text": " showing in the "
+        },
+        {
+          "text": "nearest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Neighborhood Cinema Group",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the list of "
+        },
+        {
+          "text": "movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " showing "
+        },
+        {
+          "text": "close by",
+          "entity": "spatial_relation"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Are there any "
+        },
+        {
+          "text": "films",
+          "entity": "movie_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "around here",
+          "entity": "spatial_relation"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "Rented Lips",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing at the "
+        },
+        {
+          "text": "nearest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "cinema",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "Heart Beats",
+          "entity": "movie_name"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "Malco Theatres",
+          "entity": "location_name"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "A Closed Book",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing at "
+        },
+        {
+          "text": "United Paramount Theatres",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what are the "
+        },
+        {
+          "text": "movie times",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "IMAX Corporation",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What "
+        },
+        {
+          "text": "animated movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " are playing at the "
+        },
+        {
+          "text": "closest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "cinema",
+          "entity": "object_location_type"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "When can I see "
+        },
+        {
+          "text": "Ghost World",
+          "entity": "movie_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What "
+        },
+        {
+          "text": "movie theatre",
+          "entity": "object_location_type"
+        },
+        {
+          "text": " is palying "
+        },
+        {
+          "text": "The Hurricane",
+          "entity": "movie_name"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "five hours from now",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "movie schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "B&B Theatres",
+          "entity": "location_name"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Show me "
+        },
+        {
+          "text": "movie schedules",
+          "entity": "object_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "American Dreamer",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing at "
+        },
+        {
+          "text": "Pacific Theatres",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to see "
+        },
+        {
+          "text": "Vanishing of the Bees",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at a "
+        },
+        {
+          "text": "movie house",
+          "entity": "object_location_type"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Give me the list of "
+        },
+        {
+          "text": "animated movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " playing at the "
+        },
+        {
+          "text": "closest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie house",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What are the timings for "
+        },
+        {
+          "text": "Starship Troopers 2",
+          "entity": "movie_name"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "When will "
+        },
+        {
+          "text": "So Happy Together",
+          "entity": "movie_name"
+        },
+        {
+          "text": " begin playing?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": " is it possible to see "
+        },
+        {
+          "text": "Corn",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "eleven A.M.",
+          "entity": "timeRange"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "Loews Cineplex Entertainment",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "Short of Love",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing "
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "When is "
+        },
+        {
+          "text": "For One Night",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing at "
+        },
+        {
+          "text": "Loews Cineplex Entertainment",
+          "entity": "location_name"
+        },
+        {
+          "text": "?\n"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "The Little Irish Girl",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What "
+        },
+        {
+          "text": "film",
+          "entity": "movie_type"
+        },
+        {
+          "text": " is playing "
+        },
+        {
+          "text": "nearby",
+          "entity": "spatial_relation"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Can I see "
+        },
+        {
+          "text": "Love in the Time of Cholera",
+          "entity": "movie_name"
+        },
+        {
+          "text": " in the "
+        },
+        {
+          "text": "nearest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie house",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What are the "
+        },
+        {
+          "text": "movie schedules",
+          "entity": "object_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in the neighbourhood",
+          "entity": "spatial_relation"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what's the "
+        },
+        {
+          "text": "movie schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "National Amusements",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I'd like to go to "
+        },
+        {
+          "text": "Douglas Theatre Company",
+          "entity": "location_name"
+        },
+        {
+          "text": " to see "
+        },
+        {
+          "text": "In Beaver Valley",
+          "entity": "movie_name"
+        },
+        {
+          "text": ", what "
+        },
+        {
+          "text": "times",
+          "entity": "object_type"
+        },
+        {
+          "text": " will this be playing?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what "
+        },
+        {
+          "text": "films",
+          "entity": "movie_type"
+        },
+        {
+          "text": " are showing at "
+        },
+        {
+          "text": "United Paramount Theatres",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "show me the "
+        },
+        {
+          "text": "movie times",
+          "entity": "object_type"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Dipson Theatres",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Show me "
+        },
+        {
+          "text": "movie schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "Cobb Theatres",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What "
+        },
+        {
+          "text": "animated movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " are showing "
+        },
+        {
+          "text": "nearby",
+          "entity": "spatial_relation"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Shoe the movie showings for the "
+        },
+        {
+          "text": "closest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "cinema",
+          "entity": "object_location_type"
+        },
+        {
+          "text": " showing international "
+        },
+        {
+          "text": "movies",
+          "entity": "movie_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What's the "
+        },
+        {
+          "text": "movie schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "sunrise",
+          "entity": "timeRange"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "ArcLight Hollywood",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I need the movie "
+        },
+        {
+          "text": "Kids in Love",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at the "
+        },
+        {
+          "text": "movie house",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "The Butcher Boy",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing anywhere at "
+        },
+        {
+          "text": "supper",
+          "entity": "timeRange"
+        },
+        {
+          "text": " time?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Can I see "
+        },
+        {
+          "text": "An Innocent Affair",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at the "
+        },
+        {
+          "text": "nearest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie house",
+          "entity": "object_location_type"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Show me the "
+        },
+        {
+          "text": "movie times",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "animated movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " that are in "
+        },
+        {
+          "text": "theaters",
+          "entity": "location_name"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "close by",
+          "entity": "spatial_relation"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "movie schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "animated movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in the neighborhood",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "When and where can I see "
+        },
+        {
+          "text": "A Film with Me in It",
+          "entity": "movie_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I need a list of places "
+        },
+        {
+          "text": "in the area",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " where I can see "
+        },
+        {
+          "text": "animated movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in six minutes",
+          "entity": "timeRange"
+        },
+        {
+          "text": " "
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Can I see "
+        },
+        {
+          "text": "Standing on the Edge of the Noise",
+          "entity": "movie_name"
+        },
+        {
+          "text": " in the "
+        },
+        {
+          "text": "nearest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "cinema",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to see "
+        },
+        {
+          "text": "Michel Strogoff",
+          "entity": "movie_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to see "
+        },
+        {
+          "text": "The Devil Diamond",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at a "
+        },
+        {
+          "text": "movie theatre",
+          "entity": "object_location_type"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "Chronicle of My Mother",
+          "entity": "movie_name"
+        },
+        {
+          "text": " showing at the "
+        },
+        {
+          "text": "nearest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "cinema",
+          "entity": "object_location_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in 1 minute and 8 seconds",
+          "entity": "timeRange"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "Salt of the Black Earth",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at the "
+        },
+        {
+          "text": "closest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie house",
+          "entity": "object_location_type"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What are the "
+        },
+        {
+          "text": "movie times",
+          "entity": "object_type"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "Alamo Drafthouse Cinema",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I need the "
+        },
+        {
+          "text": "movie schedules",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "Century Theatres",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I need "
+        },
+        {
+          "text": "movie times",
+          "entity": "object_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in the area",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " for any type of "
+        },
+        {
+          "text": "movies",
+          "entity": "movie_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "films",
+          "entity": "movie_type"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "ArcLight Hollywood",
+          "entity": "location_name"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Show me the new showings for "
+        },
+        {
+          "text": "animated movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in the neighborhood",
+          "entity": "spatial_relation"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what theater is showing "
+        },
+        {
+          "text": "Trouble in Paradise",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "00:45 am",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Give me the "
+        },
+        {
+          "text": "movie schedules",
+          "entity": "object_type"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "Plitt Theatres",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What are the "
+        },
+        {
+          "text": "movie times",
+          "entity": "object_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in the neighbourhood",
+          "entity": "spatial_relation"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Show me "
+        },
+        {
+          "text": "animated movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " that are playig at "
+        },
+        {
+          "text": "Great Escape Theatres",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is there a showing of "
+        },
+        {
+          "text": "A Matter of Degrees",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "Harkins Theatres",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "i want to see some "
+        },
+        {
+          "text": "movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " in a "
+        },
+        {
+          "text": "B&B Theatres",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What "
+        },
+        {
+          "text": "movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " are showing at "
+        },
+        {
+          "text": "Plitt Theatres",
+          "entity": "location_name"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I would like to see "
+        },
+        {
+          "text": "The Heart of a Siren",
+          "entity": "movie_name"
+        },
+        {
+          "text": " in my "
+        },
+        {
+          "text": "movie house",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Any showings for "
+        },
+        {
+          "text": "animated movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "Santikos Theatres",
+          "entity": "location_name"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "movie schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "IMAX Corporation",
+          "entity": "location_name"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I need a list for "
+        },
+        {
+          "text": "Star Theatres",
+          "entity": "location_name"
+        },
+        {
+          "text": " of "
+        },
+        {
+          "text": "animated movies",
+          "entity": "movie_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Can i get the "
+        },
+        {
+          "text": "times",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "afternoon",
+          "entity": "timeRange"
+        },
+        {
+          "text": " showings in the "
+        },
+        {
+          "text": "nearest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "cinema",
+          "entity": "object_location_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "In the Secret Service",
+          "entity": "movie_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "When is "
+        },
+        {
+          "text": "Robotix",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find me "
+        },
+        {
+          "text": "animated movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "Amco Entertainment",
+          "entity": "location_name"
+        },
+        {
+          "text": " tomorrow"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what "
+        },
+        {
+          "text": "movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " are playing "
+        },
+        {
+          "text": "nearby",
+          "entity": "spatial_relation"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "Fast and Loose",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "movie schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "B&B Theatres",
+          "entity": "location_name"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what are the "
+        },
+        {
+          "text": "movie times",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "animated movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "close by",
+          "entity": "spatial_relation"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "SHow me the "
+        },
+        {
+          "text": "nearest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie house",
+          "entity": "object_location_type"
+        },
+        {
+          "text": " showing "
+        },
+        {
+          "text": "Moron 5 and the Crying Lady",
+          "entity": "movie_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Give me the list of "
+        },
+        {
+          "text": "animated movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " showing "
+        },
+        {
+          "text": "tonight",
+          "entity": "timeRange"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "United Paramount Theatres",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Show me the "
+        },
+        {
+          "text": "movie schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "Whore II",
+          "entity": "movie_name"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What "
+        },
+        {
+          "text": "films",
+          "entity": "movie_type"
+        },
+        {
+          "text": " are playing "
+        },
+        {
+          "text": "in the neighborhood",
+          "entity": "spatial_relation"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to see "
+        },
+        {
+          "text": "Train",
+          "entity": "movie_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "Fighting With Buffalo Bill",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing at the "
+        },
+        {
+          "text": "closest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie house",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Can I see "
+        },
+        {
+          "text": "Central Airport",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at the "
+        },
+        {
+          "text": "closest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie theatre",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "List the "
+        },
+        {
+          "text": "movie schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "Regal Entertainment Group",
+          "entity": "location_name"
+        },
+        {
+          "text": " theater."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "Agents of Secret Stuff",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing at "
+        },
+        {
+          "text": "North American Cinemas",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What are the "
+        },
+        {
+          "text": "8 P.M.",
+          "entity": "timeRange"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie schedules",
+          "entity": "object_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to see an "
+        },
+        {
+          "text": "animated movie",
+          "entity": "movie_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in the neighbourhood",
+          "entity": "spatial_relation"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Recite the "
+        },
+        {
+          "text": "movie schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Can I see "
+        },
+        {
+          "text": "William Comes to Town",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "KB Theatres",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "show the "
+        },
+        {
+          "text": "movie times",
+          "entity": "object_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "Success",
+          "entity": "movie_name"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Show me the "
+        },
+        {
+          "text": "movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " at the "
+        },
+        {
+          "text": "Megaplex Theatres",
+          "entity": "location_name"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to see the "
+        },
+        {
+          "text": "movie schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "North American Cinemas",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is the "
+        },
+        {
+          "text": "films",
+          "entity": "movie_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "19 hours from now",
+          "entity": "timeRange"
+        },
+        {
+          "text": " playing at "
+        },
+        {
+          "text": "Landmark Theatres",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "give me the "
+        },
+        {
+          "text": "movie times",
+          "entity": "object_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Give me the showing of "
+        },
+        {
+          "text": "animated movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "Speakeasy Theaters",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the "
+        },
+        {
+          "text": "schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " at the "
+        },
+        {
+          "text": "closest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie theatre",
+          "entity": "object_location_type"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find all the "
+        },
+        {
+          "text": "films",
+          "entity": "movie_type"
+        },
+        {
+          "text": " at the "
+        },
+        {
+          "text": "closest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": "cinema",
+          "entity": "object_location_type"
+        },
+        {
+          "text": " during "
+        },
+        {
+          "text": "meal",
+          "entity": "timeRange"
+        },
+        {
+          "text": " time."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "The Mystical Adventures of Billy Owens",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing at the "
+        },
+        {
+          "text": "closest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie house",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Which "
+        },
+        {
+          "text": "movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " are currently playing at "
+        },
+        {
+          "text": "Speakeasy Theaters",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "show the "
+        },
+        {
+          "text": "movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " at the "
+        },
+        {
+          "text": "nearest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie house",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Can I get the "
+        },
+        {
+          "text": "movie schedule",
+          "entity": "object_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Tell me the "
+        },
+        {
+          "text": "movie times",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "animated movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in the neighborhood",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Tell me what "
+        },
+        {
+          "text": "movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " are at "
+        },
+        {
+          "text": "AMC Theatres",
+          "entity": "location_name"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find me the "
+        },
+        {
+          "text": "movie schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "Great Escape Theatres",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Gimme "
+        },
+        {
+          "text": "movie times",
+          "entity": "object_type"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the "
+        },
+        {
+          "text": "movie schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " at the "
+        },
+        {
+          "text": "IMAX Corporation",
+          "entity": "location_name"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "three minutes from now",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What are the "
+        },
+        {
+          "text": "movie times",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "films",
+          "entity": "movie_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "close by",
+          "entity": "spatial_relation"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "where's the "
+        },
+        {
+          "text": "nearest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie house",
+          "entity": "object_location_type"
+        },
+        {
+          "text": " playing "
+        },
+        {
+          "text": "No Trains No Planes",
+          "entity": "movie_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to see "
+        },
+        {
+          "text": "Teeny Little Super Guy",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "Malco Theatres",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Give me the "
+        },
+        {
+          "text": "movie schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "animated movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in the neighbourhood",
+          "entity": "spatial_relation"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to watch "
+        },
+        {
+          "text": "Uproar in the Studio",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at the "
+        },
+        {
+          "text": "nearest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "cinema",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "When can I see "
+        },
+        {
+          "text": "The Crew of the Dora",
+          "entity": "movie_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "List the "
+        },
+        {
+          "text": "movie times",
+          "entity": "object_type"
+        },
+        {
+          "text": " for recent "
+        },
+        {
+          "text": "movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in the area",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "Proudly She Marches",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing anywhere?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I need to know what "
+        },
+        {
+          "text": "theatre",
+          "entity": "object_location_type"
+        },
+        {
+          "text": " is playing "
+        },
+        {
+          "text": "A Happy Coersion",
+          "entity": "movie_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Can I see "
+        },
+        {
+          "text": "Blood Orgy of the Leather Girls",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at a "
+        },
+        {
+          "text": "movie house",
+          "entity": "object_location_type"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Show me "
+        },
+        {
+          "text": "movie times",
+          "entity": "object_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Give me the "
+        },
+        {
+          "text": "schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "now",
+          "entity": "timeRange"
+        },
+        {
+          "text": " at the "
+        },
+        {
+          "text": "nearest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie house",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "The Skull",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing at "
+        },
+        {
+          "text": "Loews Cineplex",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "102 Years in the Heart of Europe: A Portrait of Ernst Jünger",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at a "
+        },
+        {
+          "text": "movie theatre",
+          "entity": "object_location_type"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find "
+        },
+        {
+          "text": "animated movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " playing "
+        },
+        {
+          "text": "in the area",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I need a "
+        },
+        {
+          "text": "movie schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "animated movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "nearby",
+          "entity": "spatial_relation"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "Grand Canyon Trail",
+          "entity": "movie_name"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "show me the "
+        },
+        {
+          "text": "movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Pacific Theatres",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Whens the next showing of "
+        },
+        {
+          "text": "The Game of Their Lives",
+          "entity": "movie_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Give me the list of "
+        },
+        {
+          "text": "films",
+          "entity": "movie_type"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "Santikos Theatres",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Fine the "
+        },
+        {
+          "text": "movie schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to see when "
+        },
+        {
+          "text": "Box Head Revolution",
+          "entity": "movie_name"
+        },
+        {
+          "text": " is playing at the "
+        },
+        {
+          "text": "nearest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie theatre",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What "
+        },
+        {
+          "text": "films",
+          "entity": "movie_type"
+        },
+        {
+          "text": " are playing at the "
+        },
+        {
+          "text": "nearest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie theatre",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "The Tooth Will Out",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "sunrise",
+          "entity": "timeRange"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "animated movie",
+          "entity": "movie_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in the neighborhood",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "02:06:29 am",
+          "entity": "timeRange"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "movie schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "around here",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the "
+        },
+        {
+          "text": "movie schedule",
+          "entity": "object_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "Jappeloup",
+          "entity": "movie_name"
+        },
+        {
+          "text": " showing at "
+        },
+        {
+          "text": "Bow Tie Cinemas",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What's the "
+        },
+        {
+          "text": "movie schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "B&B Theatres",
+          "entity": "location_name"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Show me the "
+        },
+        {
+          "text": "schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " in the "
+        },
+        {
+          "text": "nearest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie theatre",
+          "entity": "object_location_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "Invasion U.S.A.",
+          "entity": "movie_name"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "show me the "
+        },
+        {
+          "text": "movie schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in the area",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "seven AM",
+          "entity": "timeRange"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "animated movies",
+          "entity": "movie_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Give me "
+        },
+        {
+          "text": "movie times",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "Regal Entertainment Group",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Please check which "
+        },
+        {
+          "text": "movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " will be available at "
+        },
+        {
+          "text": "eleven A.M.",
+          "entity": "timeRange"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "Santikos Theatres",
+          "entity": "location_name"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Where can I see "
+        },
+        {
+          "text": "Getting There: Sweet 16 and Licensed to Drive",
+          "entity": "movie_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "The Kentuckians",
+          "entity": "movie_name"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "movie times",
+          "entity": "object_type"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "show me the "
+        },
+        {
+          "text": "schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " of "
+        },
+        {
+          "text": "movie theatre",
+          "entity": "object_location_type"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "closest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "Vampire Hunter D: Bloodlust",
+          "entity": "movie_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "show me the "
+        },
+        {
+          "text": "films",
+          "entity": "movie_type"
+        },
+        {
+          "text": " playing "
+        },
+        {
+          "text": "in the neighbourhood",
+          "entity": "spatial_relation"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "show me the "
+        },
+        {
+          "text": "schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "The Duchess of Langeais",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at my "
+        },
+        {
+          "text": "cinema",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "Love and Other Troubles",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "The Legend of the Evil Lake",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing at "
+        },
+        {
+          "text": "09:38:42 am",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is it possible to see "
+        },
+        {
+          "text": "The Italian Job",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "Malco Theatres",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find "
+        },
+        {
+          "text": "movie schedules",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "Bow Tie Cinemas",
+          "entity": "location_name"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is it possible to see "
+        },
+        {
+          "text": "The Day of the Jackal",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "Pacific Theatres",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What "
+        },
+        {
+          "text": "times",
+          "entity": "object_type"
+        },
+        {
+          "text": " will "
+        },
+        {
+          "text": "The Garden of sinners Film 1 – Thanatos",
+          "entity": "movie_name"
+        },
+        {
+          "text": " be playing?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What "
+        },
+        {
+          "text": "movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " are playing at the "
+        },
+        {
+          "text": "closest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie theatre",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "Outlaw of Gor",
+          "entity": "movie_name"
+        },
+        {
+          "text": " showing at the"
+        },
+        {
+          "text": "nearest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie house",
+          "entity": "object_location_type"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "5 A.M.",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Kingsman: The Secret Service",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at my "
+        },
+        {
+          "text": "movie theatre",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the "
+        },
+        {
+          "text": "movie schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for the "
+        },
+        {
+          "text": "Pacific Theatres",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "Project Shadowchaser II",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at the "
+        },
+        {
+          "text": "cinema",
+          "entity": "object_location_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in eighteen hours",
+          "entity": "timeRange"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Show me a theater "
+        },
+        {
+          "text": "close by",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " with "
+        },
+        {
+          "text": "2 p.m.",
+          "entity": "timeRange"
+        },
+        {
+          "text": " or later "
+        },
+        {
+          "text": "movie times",
+          "entity": "object_type"
+        },
+        {
+          "text": " that plays recent "
+        },
+        {
+          "text": "movies",
+          "entity": "movie_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Find the "
+        },
+        {
+          "text": "schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "The Wild Eye",
+          "entity": "movie_name"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Please look for "
+        },
+        {
+          "text": "The Pagans",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "movie house",
+          "entity": "object_location_type"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "When will "
+        },
+        {
+          "text": "The Flower and the Angry Waves",
+          "entity": "movie_name"
+        },
+        {
+          "text": " be showing?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to see "
+        },
+        {
+          "text": "The Band of Honest Men",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at the "
+        },
+        {
+          "text": "nearest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie theatre",
+          "entity": "object_location_type"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is playing "
+        },
+        {
+          "text": " at the "
+        },
+        {
+          "text": "closest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie house",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "show me the "
+        },
+        {
+          "text": "movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " playing "
+        },
+        {
+          "text": "around here",
+          "entity": "spatial_relation"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "When is "
+        },
+        {
+          "text": "Four Days in November",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing at the "
+        },
+        {
+          "text": "movie house",
+          "entity": "object_location_type"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Can I get the newest "
+        },
+        {
+          "text": "movie schedule",
+          "entity": "object_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what's the "
+        },
+        {
+          "text": "nearest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie theatre",
+          "entity": "object_location_type"
+        },
+        {
+          "text": " showing "
+        },
+        {
+          "text": "Concussion",
+          "entity": "movie_name"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in one hour",
+          "entity": "timeRange"
+        },
+        {
+          "text": " "
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What "
+        },
+        {
+          "text": "movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " are playing at the "
+        },
+        {
+          "text": "closest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "cinema",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to see showings for "
+        },
+        {
+          "text": "The Voice of Merrill",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at my "
+        },
+        {
+          "text": "cinema",
+          "entity": "object_location_type"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to see a list of the "
+        },
+        {
+          "text": "closest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "cinema",
+          "entity": "object_location_type"
+        },
+        {
+          "text": "'s "
+        },
+        {
+          "text": "movies",
+          "entity": "movie_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What Are the showings for "
+        },
+        {
+          "text": "The Natural History of Parking Lots",
+          "entity": "movie_name"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie house",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Give me the "
+        },
+        {
+          "text": "schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "Public Stenographer",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "MJR Theatres",
+          "entity": "location_name"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is it possible to see "
+        },
+        {
+          "text": "Tube",
+          "entity": "movie_name"
+        },
+        {
+          "text": " at the "
+        },
+        {
+          "text": "closest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie theatre",
+          "entity": "object_location_type"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to see "
+        },
+        {
+          "text": "Wenn Lucy springt",
+          "entity": "movie_name"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "now",
+          "entity": "timeRange"
+        },
+        {
+          "text": " at a "
+        },
+        {
+          "text": "movie theatre",
+          "entity": "object_location_type"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is "
+        },
+        {
+          "text": "Across the Line",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing at the "
+        },
+        {
+          "text": "closest",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "movie house",
+          "entity": "object_location_type"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Which "
+        },
+        {
+          "text": "animated movies",
+          "entity": "movie_type"
+        },
+        {
+          "text": " are playing "
+        },
+        {
+          "text": "in the neighbourhood",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " ?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Where is "
+        },
+        {
+          "text": "They Always Return at Dawn",
+          "entity": "movie_name"
+        },
+        {
+          "text": " playing"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the "
+        },
+        {
+          "text": "movie schedule",
+          "entity": "object_type"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in the neighborhood",
+          "entity": "spatial_relation"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Tell me when "
+        },
+        {
+          "text": "Howling II: Your Sister Is a Werewolf",
+          "entity": "movie_name"
+        },
+        {
+          "text": " is playing."
+        }
+      ]
+    }
+  ]
+}

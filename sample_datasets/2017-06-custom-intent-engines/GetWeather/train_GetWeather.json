@@ -1,0 +1,6385 @@
+{
+  "GetWeather": [
+    {
+      "data": [
+        {
+          "text": "How's the weather in "
+        },
+        {
+          "text": "Munchique National Natural Park",
+          "entity": "geographic_poi"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Tell me the weather forecast for "
+        },
+        {
+          "text": "France",
+          "entity": "country"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will there be "
+        },
+        {
+          "text": "wind",
+          "entity": "condition_description"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Hornitos",
+          "entity": "city"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "DC",
+          "entity": "state"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is it "
+        },
+        {
+          "text": "warm",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "here",
+          "entity": "current_location"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "now",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what is the forecast for "
+        },
+        {
+          "text": "Roulo",
+          "entity": "city"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "foggy",
+          "entity": "condition_description"
+        },
+        {
+          "text": " conditions on "
+        },
+        {
+          "text": "February the eighteenth, 2018",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to eat in "
+        },
+        {
+          "text": "Wallis and Futuna",
+          "entity": "country"
+        },
+        {
+          "text": " and get a "
+        },
+        {
+          "text": "blizzard",
+          "entity": "condition_description"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what is the forecast "
+        },
+        {
+          "text": "in 23 hours and seventeen seconds",
+          "entity": "timeRange"
+        },
+        {
+          "text": " at this "
+        },
+        {
+          "text": "current spot",
+          "entity": "current_location"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I need a table at a restaurant in "
+        },
+        {
+          "text": "Montserrat",
+          "entity": "country"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the weather forecast for "
+        },
+        {
+          "text": "one am.",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "West Athens",
+          "entity": "city"
+        },
+        {
+          "text": ", "
+        },
+        {
+          "text": "Benin",
+          "entity": "country"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What will the weather be this "
+        },
+        {
+          "text": "Afternoon",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Brilliant",
+          "entity": "city"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "MI",
+          "entity": "state"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the weather "
+        },
+        {
+          "text": "not far",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " from "
+        },
+        {
+          "text": "Upper Klamath National Wildlife Refuge",
+          "entity": "geographic_poi"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Weather in "
+        },
+        {
+          "text": "Parc national de Nech Sar",
+          "entity": "geographic_poi"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What will the weather be in "
+        },
+        {
+          "text": "Battle Lake",
+          "entity": "city"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "temperate",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in the "
+        },
+        {
+          "text": "current place",
+          "entity": "current_location"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the weather for "
+        },
+        {
+          "text": "eight o'clock",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Laos",
+          "entity": "country"
+        },
+        {
+          "text": " that is "
+        },
+        {
+          "text": "within walking distance",
+          "entity": "spatial_relation"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Tell me if it will it be "
+        },
+        {
+          "text": "windy",
+          "entity": "condition_description"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Grizzled Squirrel Wildlife Sanctuary",
+          "entity": "geographic_poi"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "windy",
+          "entity": "condition_description"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "here",
+          "entity": "current_location"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Dec. 16th",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the weather forecast for "
+        },
+        {
+          "text": "Danvers",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "freezing",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Jul. 7, 2038",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Vananda",
+          "entity": "city"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Alaska",
+          "entity": "state"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What will the weather be in "
+        },
+        {
+          "text": "Sche-Phoksundo-Nationalpark",
+          "entity": "geographic_poi"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "leif erikson day",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is the weather "
+        },
+        {
+          "text": "chilly",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Pintura",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What's the weather in "
+        },
+        {
+          "text": "Nigeria",
+          "entity": "country"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the "
+        },
+        {
+          "text": "overcast",
+          "entity": "condition_description"
+        },
+        {
+          "text": " forecast "
+        },
+        {
+          "text": "within the same area",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " of "
+        },
+        {
+          "text": "Rio Grande Nature Center State Park",
+          "entity": "geographic_poi"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "fifteen o'clock",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is it "
+        },
+        {
+          "text": "hot",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in the "
+        },
+        {
+          "text": "current location",
+          "entity": "current_location"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Tell me the weather for "
+        },
+        {
+          "text": "Oct. the 26th",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Rosewood Heights",
+          "entity": "city"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the "
+        },
+        {
+          "text": "SD",
+          "entity": "state"
+        },
+        {
+          "text": " forecast for "
+        },
+        {
+          "text": "oct. 6th, 2037",
+          "entity": "timeRange"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "hot",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " weather at "
+        },
+        {
+          "text": "Belle Vernon",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is it "
+        },
+        {
+          "text": "rainy",
+          "entity": "condition_description"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Greely Center",
+          "entity": "city"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I need the weather in "
+        },
+        {
+          "text": "Hubbardston",
+          "entity": "city"
+        },
+        {
+          "text": ", will it be "
+        },
+        {
+          "text": "chillier",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "colder",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Texas",
+          "entity": "state"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Tell me the weather forecast for "
+        },
+        {
+          "text": "close by",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " my "
+        },
+        {
+          "text": "current location",
+          "entity": "current_location"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what is the forecast for "
+        },
+        {
+          "text": "Uganda",
+          "entity": "country"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "Yom Ha'atzmaut",
+          "entity": "timeRange"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "chilly",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " weather "
+        },
+        {
+          "text": "close from",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "sunny",
+          "entity": "condition_description"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "March 1, 2026",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Forty Fort",
+          "entity": "city"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to book a restaurant "
+        },
+        {
+          "text": "in 40 weeks",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Iowa",
+          "entity": "state"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what is the forecast for "
+        },
+        {
+          "text": "NV",
+          "entity": "state"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "First Day Of Sukkot",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the weather forecast for "
+        },
+        {
+          "text": "Agate Fossil Beds National Monument",
+          "entity": "geographic_poi"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Tell me if it is "
+        },
+        {
+          "text": "cold",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Federated States Of Micronesia",
+          "entity": "state"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I need the weather for "
+        },
+        {
+          "text": "7/13/2036",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Gwynedd Valley",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is it "
+        },
+        {
+          "text": "cold",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "here",
+          "entity": "current_location"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will there be "
+        },
+        {
+          "text": "rain",
+          "entity": "condition_description"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "next year",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "New Hampshire",
+          "entity": "state"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the weather at "
+        },
+        {
+          "text": "5 am",
+          "entity": "timeRange"
+        },
+        {
+          "text": " on the "
+        },
+        {
+          "text": "Farallon Islands",
+          "entity": "geographic_poi"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "windy",
+          "entity": "condition_description"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "4 Pm",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "NY",
+          "entity": "state"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Tell me the weather forecast for "
+        },
+        {
+          "text": "Roseburg",
+          "entity": "city"
+        },
+        {
+          "text": ", "
+        },
+        {
+          "text": "Iowa",
+          "entity": "state"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Weather in "
+        },
+        {
+          "text": "Malaysia",
+          "entity": "country"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Need weather for "
+        },
+        {
+          "text": "1 pm",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Russell Gardens",
+          "entity": "city"
+        },
+        {
+          "text": " or "
+        },
+        {
+          "text": "close-by",
+          "entity": "spatial_relation"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "windy",
+          "entity": "condition_description"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "John Day",
+          "entity": "city"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What's the weather like at "
+        },
+        {
+          "text": "Nationaal park Bạch Mã",
+          "entity": "geographic_poi"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "hotter",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Hungary",
+          "entity": "country"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "February the 16th",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What will the weather be at "
+        },
+        {
+          "text": "six o'clock",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in the "
+        },
+        {
+          "text": "Virgin Islands",
+          "entity": "state"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "is the weather going to be "
+        },
+        {
+          "text": "hotter",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "RI",
+          "entity": "state"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in one year",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the weather in "
+        },
+        {
+          "text": "Weidman",
+          "entity": "city"
+        },
+        {
+          "text": " will it be "
+        },
+        {
+          "text": "warm",
+          "entity": "condition_temperature"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "How "
+        },
+        {
+          "text": "cold",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " will it get in "
+        },
+        {
+          "text": "Tajikistan",
+          "entity": "country"
+        },
+        {
+          "text": " around "
+        },
+        {
+          "text": "oct. eleventh",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the weather forecast "
+        },
+        {
+          "text": "here",
+          "entity": "current_location"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "warmer",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "near",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "here",
+          "entity": "current_location"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "jan. the fifteenth",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Tell me the weather forecast for "
+        },
+        {
+          "text": "eight A.m.",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Reminderville",
+          "entity": "city"
+        },
+        {
+          "text": ", "
+        },
+        {
+          "text": "FL",
+          "entity": "state"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "will it be "
+        },
+        {
+          "text": "chilly",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "0 pm",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Guam",
+          "entity": "country"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is it "
+        },
+        {
+          "text": "chillier",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "here",
+          "entity": "current_location"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is it "
+        },
+        {
+          "text": "hot",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in the "
+        },
+        {
+          "text": "current location",
+          "entity": "current_location"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "is it "
+        },
+        {
+          "text": "cold",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Vigus",
+          "entity": "city"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "TN",
+          "entity": "state"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "need a table "
+        },
+        {
+          "text": "now",
+          "entity": "timeRange"
+        },
+        {
+          "text": " somewhere "
+        },
+        {
+          "text": "nearby",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Petit Manan National Wildlife Refuge",
+          "entity": "geographic_poi"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What's the weather in "
+        },
+        {
+          "text": "Ransom Canyon",
+          "entity": "city"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what is the forecast for "
+        },
+        {
+          "text": "Orienta",
+          "entity": "city"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "hotter",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " weather"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "hotter",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "neighboring",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "ME",
+          "entity": "state"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "august eighteenth, 2025",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What's the forecast for "
+        },
+        {
+          "text": "Sweden",
+          "entity": "country"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "9 a.m.",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "temperate",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "West Liberty",
+          "entity": "city"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "MH",
+          "entity": "state"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "freezing",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "4 hours from now",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Tonga",
+          "entity": "country"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "colder",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Tallgrass Prairie National Preserve",
+          "entity": "geographic_poi"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What will the weather be on the "
+        },
+        {
+          "text": "Keeling Islands",
+          "entity": "country"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "aug. third, 2037",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will there be a "
+        },
+        {
+          "text": "snowstorm",
+          "entity": "condition_description"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "september the first",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Bechtelsville",
+          "entity": "city"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Georgia",
+          "entity": "state"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Tell me the weather forecast for "
+        },
+        {
+          "text": "Finland",
+          "entity": "country"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Give me the forecast for "
+        },
+        {
+          "text": "San Pedro River Preserve",
+          "entity": "geographic_poi"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "is it "
+        },
+        {
+          "text": "humid",
+          "entity": "condition_description"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Humboldt Bay National Wildlife Refuge",
+          "entity": "geographic_poi"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Tell me if it will "
+        },
+        {
+          "text": "hail",
+          "entity": "condition_description"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Kyrgyzstan",
+          "entity": "country"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "cold",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Haiti",
+          "entity": "country"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What's the weather in "
+        },
+        {
+          "text": "Humarock",
+          "entity": "city"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Tell me the weather forecast for "
+        },
+        {
+          "text": "Fort Yargo State Park",
+          "entity": "geographic_poi"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I need the weather in "
+        },
+        {
+          "text": "ND",
+          "entity": "state"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in three hundred fifty one days",
+          "entity": "timeRange"
+        },
+        {
+          "text": " "
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Tell me the weather forecast "
+        },
+        {
+          "text": "within the same area",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " of "
+        },
+        {
+          "text": "Pocomoke River State Park",
+          "entity": "geographic_poi"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "is it going to be "
+        },
+        {
+          "text": "windy",
+          "entity": "condition_description"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "8/8/2032",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "North Charleston",
+          "entity": "city"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "MT",
+          "entity": "state"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will the weather be "
+        },
+        {
+          "text": "freezing",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Tennessee",
+          "entity": "state"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "humidity",
+          "entity": "condition_description"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Netawaka",
+          "entity": "city"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "WI",
+          "entity": "state"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What's the weather "
+        },
+        {
+          "text": "this week",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "distant",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Bartholomew's Cobble",
+          "entity": "geographic_poi"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what is the foreast for "
+        },
+        {
+          "text": "Spain",
+          "entity": "country"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "East Glacier Park",
+          "entity": "city"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "one pm",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "is it "
+        },
+        {
+          "text": "cloudy",
+          "entity": "condition_description"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Turkmenistan",
+          "entity": "country"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what is the forecast for "
+        },
+        {
+          "text": "chillier",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " conditions at "
+        },
+        {
+          "text": "Calipuy National Reservation",
+          "entity": "geographic_poi"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it "
+        },
+        {
+          "text": "rain",
+          "entity": "condition_description"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Blissfield",
+          "entity": "city"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Namibia",
+          "entity": "country"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "nine hours 1 minute and one second from now",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is it going to be "
+        },
+        {
+          "text": "colder",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Bonnie",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the weather forecast for "
+        },
+        {
+          "text": "Deaver",
+          "entity": "city"
+        },
+        {
+          "text": ", "
+        },
+        {
+          "text": "SC",
+          "entity": "state"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "May 10th",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Want to eat somewhere "
+        },
+        {
+          "text": "cold",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in the "
+        },
+        {
+          "text": "neighboring",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Antlers",
+          "entity": "city"
+        },
+        {
+          "text": " region on "
+        },
+        {
+          "text": "aug. 22",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is it "
+        },
+        {
+          "text": "colder",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in Istanbul, Turkey or "
+        },
+        {
+          "text": "Amarillo",
+          "entity": "city"
+        },
+        {
+          "text": ", "
+        },
+        {
+          "text": "Greece",
+          "entity": "country"
+        },
+        {
+          "text": "?\n"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "warm",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Pink Hill",
+          "entity": "city"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what is the forecast for "
+        },
+        {
+          "text": "Winnabow",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "When will there be "
+        },
+        {
+          "text": "wind",
+          "entity": "condition_description"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "this year",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Racine",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "humid",
+          "entity": "condition_description"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Weippe",
+          "entity": "city"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "DC",
+          "entity": "state"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I need a table in "
+        },
+        {
+          "text": "Uruguay",
+          "entity": "country"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in 213 days",
+          "entity": "timeRange"
+        },
+        {
+          "text": " when it's "
+        },
+        {
+          "text": "chillier",
+          "entity": "condition_temperature"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the weather forecast for my "
+        },
+        {
+          "text": "current position",
+          "entity": "current_location"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will there be "
+        },
+        {
+          "text": "cloud",
+          "entity": "condition_description"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "a year from now",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "MN",
+          "entity": "state"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will there be "
+        },
+        {
+          "text": "snowfall",
+          "entity": "condition_description"
+        },
+        {
+          "text": " at the "
+        },
+        {
+          "text": "current location",
+          "entity": "current_location"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "3 o'clock",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "weather in "
+        },
+        {
+          "text": "Holly Recreation Area",
+          "entity": "geographic_poi"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "eight P.m",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What will the weather be "
+        },
+        {
+          "text": "here",
+          "entity": "current_location"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "10:19",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the weather "
+        },
+        {
+          "text": "now",
+          "entity": "timeRange"
+        },
+        {
+          "text": " and "
+        },
+        {
+          "text": "here",
+          "entity": "current_location"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will the weather be "
+        },
+        {
+          "text": "hot",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Netherlands Antilles",
+          "entity": "country"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "When will "
+        },
+        {
+          "text": "WI",
+          "entity": "state"
+        },
+        {
+          "text": " be "
+        },
+        {
+          "text": "temperate",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What will the weather be "
+        },
+        {
+          "text": "here",
+          "entity": "current_location"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "When will it be "
+        },
+        {
+          "text": "temperate",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Lansford",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What's the weather in "
+        },
+        {
+          "text": "Macedonia",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Weather "
+        },
+        {
+          "text": "in 3 minutes",
+          "entity": "timeRange"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "Jean Lafitte National Historical Park and Preserve",
+          "entity": "geographic_poi"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "cold",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "East McKeesport",
+          "entity": "city"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Norfolk Island",
+          "entity": "country"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "february the twenty-second, 2038",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Weather in "
+        },
+        {
+          "text": "Gibraltar",
+          "entity": "country"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "meal",
+          "entity": "timeRange"
+        },
+        {
+          "text": " time"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Tell me if it will be "
+        },
+        {
+          "text": "foggy",
+          "entity": "condition_description"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Maxwell",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the forecast for "
+        },
+        {
+          "text": "in one minute",
+          "entity": "timeRange"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "here",
+          "entity": "current_location"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Weather conditions in "
+        },
+        {
+          "text": "East Pasadena",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will the weather be "
+        },
+        {
+          "text": "colder",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "jul. 21st, 2020",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "HI",
+          "entity": "state"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Gost Creek",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Weather in "
+        },
+        {
+          "text": "Grey Eagle",
+          "entity": "city"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Feb. fifteenth, 2034",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what is the weather in "
+        },
+        {
+          "text": "Cotton Valley",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the weather forecast for "
+        },
+        {
+          "text": "Cistern",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "How's the weather in "
+        },
+        {
+          "text": "Nebraska",
+          "entity": "state"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what is the forecast in "
+        },
+        {
+          "text": "Mankins",
+          "entity": "city"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "seven p.m",
+          "entity": "timeRange"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "snow",
+          "entity": "condition_description"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "New Caledonia",
+          "entity": "country"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "foggy",
+          "entity": "condition_description"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Dunedin",
+          "entity": "city"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "ND",
+          "entity": "state"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the weather forecast for "
+        },
+        {
+          "text": "Cistern",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "chillier",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Elko",
+          "entity": "city"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "WI",
+          "entity": "state"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "07:51 p.m.",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what is the forecast starting at "
+        },
+        {
+          "text": "six pm",
+          "entity": "timeRange"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "Janes Island State Park",
+          "entity": "geographic_poi"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Tell me if it will be "
+        },
+        {
+          "text": "humid",
+          "entity": "condition_description"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "West Lafayette",
+          "entity": "city"
+        },
+        {
+          "text": ", "
+        },
+        {
+          "text": "OK",
+          "entity": "state"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What's the weather in "
+        },
+        {
+          "text": "Poland",
+          "entity": "country"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the "
+        },
+        {
+          "text": "humidity",
+          "entity": "condition_description"
+        },
+        {
+          "text": " at my "
+        },
+        {
+          "text": "current position",
+          "entity": "current_location"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "colder",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in the "
+        },
+        {
+          "text": "Apache-Sitgreaves National Forest",
+          "entity": "geographic_poi"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "6 Pm",
+          "entity": "timeRange"
+        },
+        {
+          "text": " ."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What kind of weather will be in "
+        },
+        {
+          "text": "VA",
+          "entity": "state"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "12 years from now",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Need weather "
+        },
+        {
+          "text": "close-by",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " where I am in state of "
+        },
+        {
+          "text": "MS",
+          "entity": "state"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What will the weather be in "
+        },
+        {
+          "text": "East Tawakoni",
+          "entity": "city"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "november twenty-fourth, 2031",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "hot",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "four",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Louisiana",
+          "entity": "state"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "hot",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Lake Buena Vista",
+          "entity": "city"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Brunei",
+          "entity": "country"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "warmer",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "MT",
+          "entity": "state"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "cold",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Maryland",
+          "entity": "state"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "april 21",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the weather forecast "
+        },
+        {
+          "text": "near",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "United Kingdom",
+          "entity": "country"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is it "
+        },
+        {
+          "text": "chilly",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Haiti",
+          "entity": "country"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "give me the forecast for "
+        },
+        {
+          "text": "next Tues.",
+          "entity": "timeRange"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "Ree Heights",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "weather on "
+        },
+        {
+          "text": "september 14",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Crofton",
+          "entity": "city"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Ukraine",
+          "entity": "country"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will the weather be "
+        },
+        {
+          "text": "foggy",
+          "entity": "condition_description"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "ND",
+          "entity": "state"
+        },
+        {
+          "text": " when I go to "
+        },
+        {
+          "text": "Dunedin",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "warmer",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "fourteen o'clock",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Atlas",
+          "entity": "city"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Mongolia",
+          "entity": "country"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What will the weather be on "
+        },
+        {
+          "text": "April 9, 2037",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "New Brunswick Botanical Garden",
+          "entity": "geographic_poi"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the weather like in "
+        },
+        {
+          "text": "Peru",
+          "entity": "country"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "October",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What's the weather "
+        },
+        {
+          "text": "far",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " away in "
+        },
+        {
+          "text": "Estonia",
+          "entity": "country"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What will the weather be in the "
+        },
+        {
+          "text": "current location",
+          "entity": "current_location"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Feb. the twenty-eighth, 2026",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will the weather be good at "
+        },
+        {
+          "text": "breakfast",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Bay Harbor Islands",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What weather will "
+        },
+        {
+          "text": "HI",
+          "entity": "state"
+        },
+        {
+          "text": " have will there be "
+        },
+        {
+          "text": "hail",
+          "entity": "condition_description"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "twenty one minutes from now",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What will the weather be "
+        },
+        {
+          "text": "nearby",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Delaware",
+          "entity": "state"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What will the weather be "
+        },
+        {
+          "text": "here",
+          "entity": "current_location"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "twelve P.m.",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the forecast for "
+        },
+        {
+          "text": "Dec. 1st, 2036",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Keeneland",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will there be a "
+        },
+        {
+          "text": "blizzard",
+          "entity": "condition_description"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "this month",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Uganda",
+          "entity": "country"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "hot",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "West Union",
+          "entity": "city"
+        },
+        {
+          "text": ", "
+        },
+        {
+          "text": "Malaysia",
+          "entity": "country"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the weather forecast for "
+        },
+        {
+          "text": "Sanborn",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What's the "
+        },
+        {
+          "text": "snowfall",
+          "entity": "condition_description"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Malawi",
+          "entity": "country"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what is the forecast for "
+        },
+        {
+          "text": "Sweden",
+          "entity": "country"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Westmoreland",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will there be a "
+        },
+        {
+          "text": "snowstorm",
+          "entity": "condition_description"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Pomona",
+          "entity": "city"
+        },
+        {
+          "text": ", "
+        },
+        {
+          "text": "New Mexico",
+          "entity": "state"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what is the forecast starting "
+        },
+        {
+          "text": "three weeks from now",
+          "entity": "timeRange"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "Point Isabel",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "When will there be a "
+        },
+        {
+          "text": "cloud",
+          "entity": "condition_description"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Australia",
+          "entity": "country"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Was there "
+        },
+        {
+          "text": "rainfall",
+          "entity": "condition_description"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "last mar.",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Greenbrier",
+          "entity": "city"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Egypt",
+          "entity": "country"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what is the forecast starting "
+        },
+        {
+          "text": "next week",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Guam",
+          "entity": "country"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it get "
+        },
+        {
+          "text": "chillier",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Las Lomas",
+          "entity": "city"
+        },
+        {
+          "text": ", "
+        },
+        {
+          "text": "British Virgin Islands",
+          "entity": "country"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Nov. the 21st",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Tell me the weather forecast "
+        },
+        {
+          "text": "in 1 hour",
+          "entity": "timeRange"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "District Of Columbia",
+          "entity": "state"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Kaysville",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Tell me the weather forecast for "
+        },
+        {
+          "text": "here",
+          "entity": "current_location"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in seven years ",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "how's the weather in "
+        },
+        {
+          "text": "Northfield Center",
+          "entity": "city"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "ME",
+          "entity": "state"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will the weather this "
+        },
+        {
+          "text": "week",
+          "entity": "timeRange"
+        },
+        {
+          "text": " be "
+        },
+        {
+          "text": "warmer",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Crystal River",
+          "entity": "city"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Weather at "
+        },
+        {
+          "text": "Norfolk Island",
+          "entity": "country"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What will the weather be "
+        },
+        {
+          "text": "neighboring",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "La Tigra National Park",
+          "entity": "geographic_poi"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Tell me the weather forecast for "
+        },
+        {
+          "text": "Ethridge",
+          "entity": "city"
+        },
+        {
+          "text": ", "
+        },
+        {
+          "text": "Maryland",
+          "entity": "state"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what is the forecast starting "
+        },
+        {
+          "text": "in a week and a half",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Faroe Islands",
+          "entity": "country"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "cloud",
+          "entity": "condition_description"
+        },
+        {
+          "text": " weather"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what is the forecast for "
+        },
+        {
+          "text": "Tennessee",
+          "entity": "state"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "freezing",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "El Casco",
+          "entity": "city"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Czechia",
+          "entity": "country"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Apr. fourteenth, 2033",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "want to eat somewhere "
+        },
+        {
+          "text": "windy",
+          "entity": "condition_description"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "NM",
+          "entity": "state"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Weather in "
+        },
+        {
+          "text": "Witt",
+          "entity": "city"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "october twenty-sixth",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "snowy",
+          "entity": "condition_description"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "february the 14th, 2021",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Port Armstrong",
+          "entity": "city"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will there be "
+        },
+        {
+          "text": "rainfall",
+          "entity": "condition_description"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Ryland Heights",
+          "entity": "city"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "New York",
+          "entity": "state"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what is the forecast for "
+        },
+        {
+          "text": "Lesotho",
+          "entity": "country"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Please check the weather forecast for "
+        },
+        {
+          "text": "Mauritania",
+          "entity": "country"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "August 14, 2040",
+          "entity": "timeRange"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What will the weather be in "
+        },
+        {
+          "text": "Pipe",
+          "entity": "city"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Venezuela",
+          "entity": "country"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in 10 years ",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "forecast for "
+        },
+        {
+          "text": "Guatemala",
+          "entity": "country"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "stormy",
+          "entity": "condition_description"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Old Fort",
+          "entity": "city"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Saint Lucia",
+          "entity": "country"
+        },
+        {
+          "text": " right "
+        },
+        {
+          "text": "now",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will the weather be "
+        },
+        {
+          "text": "sunny",
+          "entity": "condition_description"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Lovettsville",
+          "entity": "city"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "may the twenty-fourth, 2020",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What will the weather be in "
+        },
+        {
+          "text": "East Liberty",
+          "entity": "city"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "MN",
+          "entity": "state"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what is the forecast for "
+        },
+        {
+          "text": "Cropsey",
+          "entity": "city"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "Aug. the 5th",
+          "entity": "timeRange"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "warmer",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " weather"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what is the forecast "
+        },
+        {
+          "text": "within the same area",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " of "
+        },
+        {
+          "text": "Zambia",
+          "entity": "country"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What will the weather be in "
+        },
+        {
+          "text": "ID",
+          "entity": "state"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what is the forecast for "
+        },
+        {
+          "text": "freezing",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " weather "
+        },
+        {
+          "text": "here",
+          "entity": "current_location"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What's the weather in "
+        },
+        {
+          "text": "FL",
+          "entity": "state"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what is the forecast for "
+        },
+        {
+          "text": "Wyoming",
+          "entity": "state"
+        },
+        {
+          "text": " starting at "
+        },
+        {
+          "text": "14",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What's the weather "
+        },
+        {
+          "text": "next september",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in the "
+        },
+        {
+          "text": "current location",
+          "entity": "current_location"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Show me whether "
+        },
+        {
+          "text": "Iceland",
+          "entity": "country"
+        },
+        {
+          "text": " will be "
+        },
+        {
+          "text": "colder",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " than it was "
+        },
+        {
+          "text": "last april",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Please check the weather forecast around "
+        },
+        {
+          "text": "05:54",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Macedonia",
+          "entity": "country"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what's the weather going to be like in "
+        },
+        {
+          "text": "MI",
+          "entity": "state"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "august twenty-eighth, 2033",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the weather "
+        },
+        {
+          "text": "now",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Grand Detour",
+          "entity": "city"
+        },
+        {
+          "text": ", "
+        },
+        {
+          "text": "UT",
+          "entity": "state"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the forecast in "
+        },
+        {
+          "text": "KY",
+          "entity": "state"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "temperate",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " weather"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What was the weather "
+        },
+        {
+          "text": "last February",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "William A. Switzer Provincial Park",
+          "entity": "geographic_poi"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is it "
+        },
+        {
+          "text": "warm",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " at the "
+        },
+        {
+          "text": "current location",
+          "entity": "current_location"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will there be "
+        },
+        {
+          "text": "snow",
+          "entity": "condition_description"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "North Abington",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Tell me the weather forecast for "
+        },
+        {
+          "text": "Conda",
+          "entity": "city"
+        },
+        {
+          "text": ", "
+        },
+        {
+          "text": "VT",
+          "entity": "state"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it "
+        },
+        {
+          "text": "snow",
+          "entity": "condition_description"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Granbury",
+          "entity": "city"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Weather "
+        },
+        {
+          "text": "in twenty two seconds",
+          "entity": "timeRange"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "within walking distance",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " of the city of "
+        },
+        {
+          "text": "Jackman",
+          "entity": "city"
+        },
+        {
+          "text": " will it be "
+        },
+        {
+          "text": "cold",
+          "entity": "condition_temperature"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "When will it be "
+        },
+        {
+          "text": "warmer",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Benin",
+          "entity": "country"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "forecast for "
+        },
+        {
+          "text": "Conrad",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "hotter",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Cale",
+          "entity": "city"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Weather in "
+        },
+        {
+          "text": "Park Layne",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the weather forecast for "
+        },
+        {
+          "text": "California",
+          "entity": "state"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "august the 13th, 2019",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what is the forecast for "
+        },
+        {
+          "text": "temperate",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " weather "
+        },
+        {
+          "text": "in 5 weeks",
+          "entity": "timeRange"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "Daisy Lake Uplands Provincial Park",
+          "entity": "geographic_poi"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "hot",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in 1 minute",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Massachusetts",
+          "entity": "state"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to book a restaurant in "
+        },
+        {
+          "text": "Neshanic Station",
+          "entity": "city"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Nigeria",
+          "entity": "country"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "06:18:13 pm",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "windy",
+          "entity": "condition_description"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "NM",
+          "entity": "state"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "colder",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Gost Creek",
+          "entity": "city"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "HI",
+          "entity": "state"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "jul. 21st, 2020",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is th weather going to be like "
+        },
+        {
+          "text": "mar. the twenty-third",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in the city of "
+        },
+        {
+          "text": "Value",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Tell me when "
+        },
+        {
+          "text": "sunrise",
+          "entity": "timeRange"
+        },
+        {
+          "text": " is in "
+        },
+        {
+          "text": "Tennessee",
+          "entity": "state"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the weather like in "
+        },
+        {
+          "text": "Newton",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "how's the weather in "
+        },
+        {
+          "text": "Baywood",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is it going to be "
+        },
+        {
+          "text": "overcast",
+          "entity": "condition_description"
+        },
+        {
+          "text": " today in "
+        },
+        {
+          "text": "Guyana",
+          "entity": "country"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "colder",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Oaklawn",
+          "entity": "city"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Zambia",
+          "entity": "country"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What kind of weather will be in "
+        },
+        {
+          "text": "TN",
+          "entity": "state"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "a week from now",
+          "entity": "timeRange"
+        },
+        {
+          "text": " ?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Weather on "
+        },
+        {
+          "text": "Jul. 23",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Rhode Island",
+          "entity": "state"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "hotter",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " at my "
+        },
+        {
+          "text": "current place",
+          "entity": "current_location"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "02:22:32 pm",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Is the weather "
+        },
+        {
+          "text": "chillier",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Hubbardston",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it "
+        },
+        {
+          "text": "hail",
+          "entity": "condition_description"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "July 20, 2027",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Ingalls",
+          "entity": "city"
+        },
+        {
+          "text": ", "
+        },
+        {
+          "text": "Malta",
+          "entity": "country"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "warm",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Jenners",
+          "entity": "city"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Kansas",
+          "entity": "state"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What will the weather be in "
+        },
+        {
+          "text": "Rwanda",
+          "entity": "country"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What will the weather be in the "
+        },
+        {
+          "text": "Black Bayou Lake National Wildlife Refuge",
+          "entity": "geographic_poi"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "How will be the weather in "
+        },
+        {
+          "text": "U.S. Minor Outlying Islands",
+          "entity": "country"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Jul. 17",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "hotter",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " on the "
+        },
+        {
+          "text": "Isle of Man",
+          "entity": "country"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "lunch",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "how's the forecast for my "
+        },
+        {
+          "text": "current spot",
+          "entity": "current_location"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will there be "
+        },
+        {
+          "text": "wind",
+          "entity": "condition_description"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Anguilla",
+          "entity": "city"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what is the forecast starting on "
+        },
+        {
+          "text": "september 1, 2039",
+          "entity": "timeRange"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "chillier",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " conditions in "
+        },
+        {
+          "text": "AK",
+          "entity": "state"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What will the weather be "
+        },
+        {
+          "text": "in a week ",
+          "entity": "timeRange"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "near",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Unionville Center",
+          "entity": "city"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Tell me when it will "
+        },
+        {
+          "text": "blizzard",
+          "entity": "condition_description"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Estes Park",
+          "entity": "city"
+        },
+        {
+          "text": ", "
+        },
+        {
+          "text": "Utah",
+          "entity": "state"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "how is the "
+        },
+        {
+          "text": "overcast",
+          "entity": "condition_description"
+        },
+        {
+          "text": " condition to start "
+        },
+        {
+          "text": "in one minute",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Lower Marlboro",
+          "entity": "city"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Montserrat",
+          "entity": "country"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Give me the weather forecast for "
+        },
+        {
+          "text": "Svalbard and Jan Mayen",
+          "entity": "country"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Tell me the weather forecast for "
+        },
+        {
+          "text": "HI",
+          "entity": "state"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "is "
+        },
+        {
+          "text": "Saint Robert",
+          "entity": "city"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "hotter",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " than "
+        },
+        {
+          "text": "Turkmenistan",
+          "entity": "country"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the weather forecast for "
+        },
+        {
+          "text": "Midnight",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "DC",
+          "entity": "state"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "weather "
+        },
+        {
+          "text": "close-by",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Lone Elk County Park",
+          "entity": "geographic_poi"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "4 am",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what is the "
+        },
+        {
+          "text": "sunny",
+          "entity": "condition_description"
+        },
+        {
+          "text": " condition outlook for "
+        },
+        {
+          "text": "Dundas Valley Conservation Area",
+          "entity": "geographic_poi"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "freezing",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "not far",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " from the "
+        },
+        {
+          "text": "Currant Mountain Wilderness",
+          "entity": "geographic_poi"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the weather forecast for "
+        },
+        {
+          "text": "Manassa",
+          "entity": "city"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what is the forecast for "
+        },
+        {
+          "text": "Douglas State Forest",
+          "entity": "geographic_poi"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "snowy",
+          "entity": "condition_description"
+        },
+        {
+          "text": " weather"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the weather forecast for "
+        },
+        {
+          "text": "Koszta",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the weather like in "
+        },
+        {
+          "text": "Wakarusa",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "will it be "
+        },
+        {
+          "text": "cloudy",
+          "entity": "condition_description"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "241 days from now",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "South Korea",
+          "entity": "country"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "hot",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in the "
+        },
+        {
+          "text": "current place",
+          "entity": "current_location"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "two hundred fourteen days from now",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Starting "
+        },
+        {
+          "text": "in one minute",
+          "entity": "timeRange"
+        },
+        {
+          "text": ", please give me a hourly update as to whether it is "
+        },
+        {
+          "text": "foggy",
+          "entity": "condition_description"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Hallsville",
+          "entity": "city"
+        },
+        {
+          "text": ", "
+        },
+        {
+          "text": "Wallis and Futuna",
+          "entity": "country"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Tell me when "
+        },
+        {
+          "text": "Sunset",
+          "entity": "timeRange"
+        },
+        {
+          "text": " is in "
+        },
+        {
+          "text": "New Jersey",
+          "entity": "state"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the weather forecast for "
+        },
+        {
+          "text": "Laos",
+          "entity": "country"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What's the weather in "
+        },
+        {
+          "text": "Almota",
+          "entity": "city"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will there be "
+        },
+        {
+          "text": "wind",
+          "entity": "condition_description"
+        },
+        {
+          "text": " in the "
+        },
+        {
+          "text": "District Of Columbia",
+          "entity": "state"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What will the weather be in the "
+        },
+        {
+          "text": "Iñao National Park and Integrated Management Natural Area",
+          "entity": "geographic_poi"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What's the weather in the "
+        },
+        {
+          "text": "current place",
+          "entity": "current_location"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the weather forecast "
+        },
+        {
+          "text": "nearby",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "here",
+          "entity": "current_location"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I need the weather for "
+        },
+        {
+          "text": "Laos",
+          "entity": "country"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "warmer",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Flag",
+          "entity": "city"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I need the weather "
+        },
+        {
+          "text": "close-by",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "MS",
+          "entity": "state"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "hot",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in the "
+        },
+        {
+          "text": "current place",
+          "entity": "current_location"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I need the weather for "
+        },
+        {
+          "text": "7/13/2036",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Gwynedd Valley",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What will the weather be a "
+        },
+        {
+          "text": "nine",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Willow River State Park",
+          "entity": "geographic_poi"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "humid",
+          "entity": "condition_description"
+        },
+        {
+          "text": " at the "
+        },
+        {
+          "text": "current location",
+          "entity": "current_location"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "one minute from now",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Tell me if there will be "
+        },
+        {
+          "text": "sun",
+          "entity": "condition_description"
+        },
+        {
+          "text": " in the "
+        },
+        {
+          "text": "afternoon",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "NH",
+          "entity": "state"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "When will it be "
+        },
+        {
+          "text": "hotter",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "this year",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Lake Linden",
+          "entity": "city"
+        },
+        {
+          "text": ", "
+        },
+        {
+          "text": "Arizona",
+          "entity": "state"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what is the forecast for "
+        },
+        {
+          "text": "California",
+          "entity": "state"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "rain",
+          "entity": "condition_description"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Weather at "
+        },
+        {
+          "text": "Bystrzyca Valley Landscape Park",
+          "entity": "geographic_poi"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "sunny",
+          "entity": "condition_description"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "three pm",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in my "
+        },
+        {
+          "text": "current position",
+          "entity": "current_location"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "cold",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "here",
+          "entity": "current_location"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in one hour",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "How's the forecast for "
+        },
+        {
+          "text": "VI",
+          "entity": "state"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what is the forecast for "
+        },
+        {
+          "text": "here",
+          "entity": "current_location"
+        },
+        {
+          "text": " and for "
+        },
+        {
+          "text": "nearby",
+          "entity": "spatial_relation"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What will the weather be in "
+        },
+        {
+          "text": "Tontitown",
+          "entity": "city"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the weather "
+        },
+        {
+          "text": "now",
+          "entity": "timeRange"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "nearby",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Petit Manan National Wildlife Refuge",
+          "entity": "geographic_poi"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What will the weather be in "
+        },
+        {
+          "text": "Deer River",
+          "entity": "city"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Please check the weather forecast "
+        },
+        {
+          "text": "near",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "supper",
+          "entity": "timeRange"
+        },
+        {
+          "text": " time "
+        },
+        {
+          "text": "here",
+          "entity": "current_location"
+        },
+        {
+          "text": "."
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Tell me when it will be "
+        },
+        {
+          "text": "temperate",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "Carl's Corner",
+          "entity": "city"
+        },
+        {
+          "text": ", in "
+        },
+        {
+          "text": "NV",
+          "entity": "state"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What will the weather be in "
+        },
+        {
+          "text": "Carlock",
+          "entity": "city"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "nov. the 9th",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Tell me the weather forecast for "
+        },
+        {
+          "text": "1 month from now",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Wilkesboro",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "weather in "
+        },
+        {
+          "text": "Hillsview",
+          "entity": "city"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "MA",
+          "entity": "state"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What will the weather be "
+        },
+        {
+          "text": "three hours from now",
+          "entity": "timeRange"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "within walking distance",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " of "
+        },
+        {
+          "text": "Okanogan National Forest",
+          "entity": "geographic_poi"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the "
+        },
+        {
+          "text": "cloud",
+          "entity": "condition_description"
+        },
+        {
+          "text": " condition "
+        },
+        {
+          "text": "here",
+          "entity": "current_location"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "June fifteenth, 2026",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What will the weather be in "
+        },
+        {
+          "text": "Berville",
+          "entity": "city"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "AK",
+          "entity": "state"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "Feb. 6, 2017",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Weather in "
+        },
+        {
+          "text": "Cairngorms-Nationalpark",
+          "entity": "geographic_poi"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "close from",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "freezing",
+          "entity": "condition_temperature"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "colder",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Postelle",
+          "entity": "city"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "10:31 a.m.",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "How "
+        },
+        {
+          "text": "hot",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " is it in "
+        },
+        {
+          "text": "Hackamore",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "is it "
+        },
+        {
+          "text": "freezing",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Prompton",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Weather at "
+        },
+        {
+          "text": "Navajo National Monument",
+          "entity": "geographic_poi"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "fri.",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "chillier",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Uruguay",
+          "entity": "country"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in 213 days",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will there be a "
+        },
+        {
+          "text": "blizzard",
+          "entity": "condition_description"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Guadeloupe",
+          "entity": "country"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "is it going ot be "
+        },
+        {
+          "text": "chillier",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Maumee",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "I want to eat in "
+        },
+        {
+          "text": "Rowan Bay",
+          "entity": "city"
+        },
+        {
+          "text": " on a nice "
+        },
+        {
+          "text": "cloud",
+          "entity": "condition_description"
+        },
+        {
+          "text": " less day"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What will the weather be "
+        },
+        {
+          "text": "here",
+          "entity": "current_location"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "January twenty-first, 2029",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What is the weather like in "
+        },
+        {
+          "text": "Wyatte",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What will the "
+        },
+        {
+          "text": "humidity",
+          "entity": "condition_description"
+        },
+        {
+          "text": " be "
+        },
+        {
+          "text": "here",
+          "entity": "current_location"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "this week",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it still be "
+        },
+        {
+          "text": "warm",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "nineteen hours from now",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "PA",
+          "entity": "state"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "is "
+        },
+        {
+          "text": "Morley Nelson Snake River Birds of Prey National Conservation Area",
+          "entity": "geographic_poi"
+        },
+        {
+          "text": " going to be "
+        },
+        {
+          "text": "cold",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "1 second from now",
+          "entity": "timeRange"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What will the weather be "
+        },
+        {
+          "text": "in 3 years ",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Eros",
+          "entity": "city"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "NC",
+          "entity": "state"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "snowy",
+          "entity": "condition_description"
+        },
+        {
+          "text": " at "
+        },
+        {
+          "text": "04:43 a.m.",
+          "entity": "timeRange"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "North Carolina",
+          "entity": "state"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what is the forecast for "
+        },
+        {
+          "text": "Gambier",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What kind of "
+        },
+        {
+          "text": "temperate",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " will be in "
+        },
+        {
+          "text": "Slade",
+          "entity": "city"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "what is the forecast for "
+        },
+        {
+          "text": "Sea Isle City",
+          "entity": "city"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Louisiana",
+          "entity": "state"
+        },
+        {
+          "text": " for "
+        },
+        {
+          "text": "warmer",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " weather"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Tell me the weather forecast for "
+        },
+        {
+          "text": "Island Mountain",
+          "entity": "city"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will it be "
+        },
+        {
+          "text": "cold",
+          "entity": "condition_temperature"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "neighboring",
+          "entity": "spatial_relation"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "Antlers",
+          "entity": "city"
+        },
+        {
+          "text": " on "
+        },
+        {
+          "text": "aug. 22",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "Will the weather be "
+        },
+        {
+          "text": "foggy",
+          "entity": "condition_description"
+        },
+        {
+          "text": " in "
+        },
+        {
+          "text": "Vatican",
+          "entity": "country"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "West Carson",
+          "entity": "city"
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "in 1 hour and one minute",
+          "entity": "timeRange"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What's the weather in "
+        },
+        {
+          "text": "New Zealand",
+          "entity": "country"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    },
+    {
+      "data": [
+        {
+          "text": "What will the weather be in "
+        },
+        {
+          "text": "Montserrat",
+          "entity": "country"
+        },
+        {
+          "text": "?"
+        }
+      ]
+    }
+  ]
+}
