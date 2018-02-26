@@ -24,7 +24,7 @@ from rasa_nlu.training_data.loading import load_data
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from twisted.logger import jsonFileLogObserver, Logger
-from typing import Text, Dict, Any
+from typing import Text, Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -75,8 +75,7 @@ def deferred_from_future(future):
 
 class DataRouter(object):
     def __init__(self, config, component_builder):
-        self._training_processes = config['max_training_processes'] if \
-            config['max_training_processes'] > 0 else 1
+        self._training_processes = max(config['max_training_processes'], 1)
         self.config = config
         self.responses = self._create_query_logger(config)
         self.model_dir = config['path']
@@ -173,15 +172,15 @@ class DataRouter(object):
                         "Unable to load project '{}'. Error: {}".format(
                             project, e))
 
+        time = data.get('time')
         response, used_model = self.project_store[project].parse(data['text'],
-                                                                 data.get(
-                                                                     'time',
-                                                                     None),
+                                                                 time,
                                                                  model)
 
         if self.responses:
             self.responses.info('', user_input=response, project=project,
                                 model=used_model)
+
         return self.format_response(response)
 
     @staticmethod
@@ -191,6 +190,36 @@ class DataRouter(object):
                 for fn in glob.glob(os.path.join(path, '*'))
                 if os.path.isdir(fn)]
 
+    @staticmethod
+    def create_temporary_file(data, suffix=""):
+        """Creates a tempfile.NamedTemporaryFile object for data"""
+
+        if PY3:
+            f = tempfile.NamedTemporaryFile("w+", suffix=suffix,
+                                            delete=False, encoding="utf-8")
+            f.write(data)
+        else:
+            f = tempfile.NamedTemporaryFile("w+", suffix=suffix,
+                                            delete=False)
+            f.write(data.encode("utf-8"))
+
+        f.close()
+        return f
+
+    def parse_training_examples(self, examples, project, model):
+        # type: (Optional[List[Message]], Text, Text) -> List[Dict[Text, Text]]
+        """Parses a list of training examples to the project interpreter"""
+
+        predictions = []
+        for ex in examples:
+            logger.debug("Going to parse: {}".format(ex.as_dict()))
+            response, _ = self.project_store[project].parse(ex.text,
+                                                            model_name=model)
+            logger.debug("Received response: {}".format(response))
+            predictions.append(response)
+
+        return predictions
+
     def format_response(self, data):
         return self.emulator.normalise_response_json(data)
 
@@ -199,23 +228,17 @@ class DataRouter(object):
         # be other trainings run in different processes we don't know about.
 
         return {
-            "available_projects": {name: project.as_dict() for name, project in
-                                   self.project_store.items()}
+            "available_projects": {
+                name: project.as_dict()
+                for name, project in self.project_store.items()
+            }
         }
 
     def start_train_process(self, data, config_values):
         # type: (Text, Dict[Text, Any]) -> Deferred
         """Start a model training."""
 
-        if PY3:
-            f = tempfile.NamedTemporaryFile("w+", suffix="_training_data",
-                                            delete=False, encoding="utf-8")
-            f.write(data)
-        else:
-            f = tempfile.NamedTemporaryFile("w+", suffix="_training_data",
-                                            delete=False)
-            f.write(data.encode("utf-8"))
-        f.close()
+        f = self.create_temporary_file(data, "_training_data")
         # TODO: fix config handling
         _config = self.config.as_dict()
         for key, val in config_values.items():
@@ -258,38 +281,21 @@ class DataRouter(object):
 
         return result
 
-    def evaluate(self, data, parameters):
-        # type: (Text, Dict[Text, Any]) -> Dict[Text, Any]
+    def evaluate(self, data, project=None, model=None):
+        # type: (Text, Optional[Text], Optional[Text]) -> Dict[Text, Any]
         """Perform a model evaluation."""
 
-        if PY3:
-            f = tempfile.NamedTemporaryFile("w+", suffix="_training_data",
-                                            delete=False, encoding="utf-8")
-            f.write(data)
-        else:
-            f = tempfile.NamedTemporaryFile("w+", suffix="_training_data",
-                                            delete=False)
-            f.write(data.encode("utf-8"))
-        f.close()
+        project = project or RasaNLUConfig.DEFAULT_PROJECT_NAME
+        f = self.create_temporary_file(data, "_training_data")
         test_data = load_data(f.name)
 
-        project = parameters.get(
-            "project") or RasaNLUConfig.DEFAULT_PROJECT_NAME
-        model = parameters.get("model")
+        if project not in self.project_store:
+            raise InvalidProjectError("Project {} could not "
+                                      "be found".format(project))
 
-        if not (project and project in self.project_store):
-            raise InvalidProjectError("Missing project name to evaluate")
-
-        preds_json = []
-        for ex in test_data.intent_examples:
-            logger.info("Going to parse: {}".format(ex.as_dict()))
-
-            response, _ = self.project_store[project].parse(ex.text,
-                                                            None,
-                                                            model)
-
-            logger.info("Received response: {}".format(response))
-            preds_json.append(response)
+        preds_json = self.parse_training_examples(test_data.intent_examples,
+                                                  project,
+                                                  model)
 
         predictions = [
             {"text": e.text,
@@ -305,9 +311,7 @@ class DataRouter(object):
         y_pred = [p.get("intent", {}).get("name") for p in preds_json]
         y_pred = clean_intent_labels(y_pred)
 
-        report, precision, f1, accuracy = get_evaluation_table(y_true,
-                                                               y_pred,
-                                                               log=True)
+        report, precision, f1, accuracy = get_evaluation_table(y_true, y_pred)
 
         return {
             "intent_evaluation": {

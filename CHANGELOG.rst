@@ -15,6 +15,7 @@ Added
 - support for regex features in markdown training format
 - support for splitting and training data into multiple and mixing formats
 - support for markdown files containing regex-features or synonyms only
+- server evaluation endpoint at ``POST /evaluate``
 
 Changed
 -------
