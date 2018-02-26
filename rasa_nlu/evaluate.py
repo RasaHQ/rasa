@@ -83,7 +83,7 @@ def plot_confusion_matrix(cm, classes,
 
 def log_evaluation_table(targets, predictions):  # pragma: no cover
     """Logs the sklearn evaluation metrics"""
-    report, precision, f1, accuracy = get_evaluation_metrics(targets, 
+    report, precision, f1, accuracy = get_evaluation_metrics(targets,
                                                              predictions)
 
     logger.info("Intent Evaluation Results")
