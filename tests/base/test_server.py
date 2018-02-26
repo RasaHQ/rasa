@@ -17,7 +17,7 @@ import io
 
 from tests import utilities
 from tests.utilities import ResponseTest
-from rasa_nlu.server import RasaNLU
+from rasa_nlu.server import RasaNLU, InvalidProjectError
 
 
 @pytest.fixture(scope="module")
@@ -180,6 +180,15 @@ def test_model_hot_reloading(app, rasa_default_train_data):
     assert response.code == 200, "Training should end successfully"
     response = yield app.get(query)
     assert response.code == 200, "Project should now exist after it got trained"
+
+
+@pytest.inlineCallbacks
+def test_evaluate_invalid_project_error(app, rasa_default_train_data):
+    with pytest.raises(InvalidProjectError) as execinfo:
+        app.post("http://dummy_uri/evaluate",
+                 json=rasa_default_train_data,
+                 params={"project": "project123"})
+    assert "Project project123 could not be found" in str(execinfo.value)
 
 
 @pytest.inlineCallbacks

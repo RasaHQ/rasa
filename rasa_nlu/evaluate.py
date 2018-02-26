@@ -81,9 +81,10 @@ def plot_confusion_matrix(cm, classes,
     plt.xlabel('Predicted label')
 
 
-def log_evaluation_table(test_y, preds):  # pragma: no cover
+def log_evaluation_table(targets, predictions):  # pragma: no cover
     """Logs the sklearn evaluation metrics"""
-    report, precision, f1, accuracy = get_evaluation_table(test_y, preds)
+    report, precision, f1, accuracy = get_evaluation_metrics(targets, 
+                                                             predictions)
 
     logger.info("Intent Evaluation Results")
     logger.info("F1-Score:  {}".format(f1))
@@ -92,17 +93,17 @@ def log_evaluation_table(test_y, preds):  # pragma: no cover
     logger.info("Classification report: \n{}".format(report))
 
 
-def get_evaluation_table(test_y, preds):  # pragma: no cover
+def get_evaluation_metrics(targets, predictions):  # pragma: no cover
     """Computes the f1, precision and accuracy sklearn evaluation metrics
 
     and fetches a summary report.
     """
     from sklearn import metrics
 
-    report = metrics.classification_report(test_y, preds)
-    precision = metrics.precision_score(test_y, preds, average='weighted')
-    f1 = metrics.f1_score(test_y, preds, average='weighted')
-    accuracy = metrics.accuracy_score(test_y, preds)
+    report = metrics.classification_report(targets, predictions)
+    precision = metrics.precision_score(targets, predictions, average='weighted')
+    f1 = metrics.f1_score(targets, predictions, average='weighted')
+    accuracy = metrics.accuracy_score(targets, predictions)
 
     return report, precision, f1, accuracy
 
@@ -114,6 +115,14 @@ def remove_empty_intent_examples(targets, predictions):
     targets = targets[mask]
     predictions = np.array(predictions)[mask]
     return targets, predictions
+
+
+def clean_intent_labels(labels):
+    """Gets rid of `None` intents, since sklearn metrics does not support it
+
+    anymore.
+    """
+    return [l if l is not None else "" for l in labels]
 
 
 def prepare_data(data, cutoff=5):
@@ -470,15 +479,11 @@ def run_cv_evaluation(data, n_folds, nlu_config):
     return results
 
 
-def clean_intent_labels(labels):
-    """Gets rid of None, since sklearn metrics does not support it anymore"""
-    return [l if l is not None else "" for l in labels]
-
-
 def compute_metrics(interpreter, corpus, results):
-    """Computes evaluation metrics for a given corpus and appends them to results"""
-    from sklearn import metrics
+    """Computes evaluation metrics for a given corpus and
 
+    appends them to results.
+    """
     y = [e.get("intent") for e in corpus]
 
     preds = []
@@ -493,9 +498,11 @@ def compute_metrics(interpreter, corpus, results):
     preds = clean_intent_labels(preds)
 
     # compute fold metrics
-    results["Accuracy"].append(metrics.accuracy_score(y, preds))
-    results["F1-score"].append(metrics.f1_score(y, preds, average='weighted'))
-    results["Precision"].append(metrics.precision_score(y, preds, average='weighted'))
+    _, precision, f1, accuracy = get_evaluation_metrics(y, preds)
+
+    results["Accuracy"].append(accuracy)
+    results["F1-score"].append(f1)
+    results["Precision"].append(precision)
 
 
 if __name__ == '__main__':  # pragma: no cover

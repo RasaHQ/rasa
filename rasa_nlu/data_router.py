@@ -16,7 +16,7 @@ from future.utils import PY3
 from rasa_nlu import utils
 from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.config import RasaNLUConfig
-from rasa_nlu.evaluate import get_evaluation_table, clean_intent_labels
+from rasa_nlu.evaluate import get_evaluation_metrics, clean_intent_labels
 from rasa_nlu.model import InvalidProjectError
 from rasa_nlu.project import Project
 from rasa_nlu.train import do_train_in_worker
@@ -286,6 +286,7 @@ class DataRouter(object):
         """Perform a model evaluation."""
 
         project = project or RasaNLUConfig.DEFAULT_PROJECT_NAME
+        model = model or None
         f = self.create_temporary_file(data, "_training_data")
         test_data = load_data(f.name)
 
@@ -311,7 +312,8 @@ class DataRouter(object):
         y_pred = [p.get("intent", {}).get("name") for p in preds_json]
         y_pred = clean_intent_labels(y_pred)
 
-        report, precision, f1, accuracy = get_evaluation_table(y_true, y_pred)
+        report, precision, f1, accuracy = get_evaluation_metrics(y_true,
+                                                                 y_pred)
 
         return {
             "intent_evaluation": {
