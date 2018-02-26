@@ -163,8 +163,10 @@ class AWSPersistor(Persistor):
             projects_set = {self._project_and_model_from_filename(obj.key)[0]
                             for obj in self.bucket.objects.filter()}
             return list(projects_set)
-        except Exception as e:
-            logger.warning("Failed to list projects in AWS. {}".format(e))
+        except Exception:
+            logger.exception("Failed to list projects in AWS bucket {}. "
+                             "Region: {}".format(self.bucket_name,
+                                                 self.aws_region))
             return []
 
     def _ensure_bucket_exists(self, bucket_name, aws_region):

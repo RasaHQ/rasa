@@ -9,7 +9,6 @@ import io
 import logging
 import os
 import tempfile
-import traceback
 
 from builtins import object
 from typing import Text, Dict, Any
@@ -111,20 +110,24 @@ class DataRouter(object):
             logger.info("Logging of requests is disabled. (No 'request_log' directory configured)")
             return None
 
-    def _create_project_store(self):
-        projects = []
-
+    def _collect_projects(self):
         if os.path.isdir(self.config['path']):
             projects = os.listdir(self.config['path'])
+        else:
+            projects = []
 
-        cloud_provided_projects = self._list_projects_in_cloud()
+        projects.extend(self._list_projects_in_cloud())
+        return projects
 
-        projects.extend(cloud_provided_projects)
+    def _create_project_store(self):
+        projects = self._collect_projects()
 
         project_store = {}
 
         for project in projects:
-            project_store[project] = Project(self.config, self.component_builder, project)
+            project_store[project] = Project(self.config,
+                                             self.component_builder,
+                                             project)
 
         if not project_store:
             project_store[RasaNLUConfig.DEFAULT_PROJECT_NAME] = Project(self.config)
@@ -138,8 +141,8 @@ class DataRouter(object):
                 return p.list_projects()
             else:
                 return []
-        except Exception as e:
-            logger.warning("Failed to list projects. {}".format(traceback.format_exc()))
+        except Exception:
+            logger.exception("Failed to list projects.")
             return []
 
     def _create_emulator(self):
