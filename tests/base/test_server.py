@@ -184,11 +184,16 @@ def test_model_hot_reloading(app, rasa_default_train_data):
 
 @pytest.inlineCallbacks
 def test_evaluate_invalid_project_error(app, rasa_default_train_data):
-    with pytest.raises(InvalidProjectError) as execinfo:
-        app.post("http://dummy_uri/evaluate",
-                 json=rasa_default_train_data,
-                 params={"project": "project123"})
-    assert "Project project123 could not be found" in str(execinfo.value)
+    response = app.post("http://dummy_uri/evaluate",
+                        json=rasa_default_train_data,
+                        params={"project": "project123"})
+    time.sleep(3)
+    app.flush()
+    response = yield response
+    rjs = yield response.json()
+    assert response.code == 500, "The project cannot be found"
+    assert "error" in rjs
+    assert rjs["error"] == "Project project123 could not be found"
 
 
 @pytest.inlineCallbacks
@@ -201,6 +206,7 @@ def test_evaluate_internal_error(app, rasa_default_train_data):
     rjs = yield response.json()
     assert response.code == 500, "The training data format is not valid"
     assert "error" in rjs
+    assert "Unknown data format for file" in rjs["error"]
 
 
 @pytest.inlineCallbacks

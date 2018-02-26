@@ -223,6 +223,7 @@ class RasaNLU(object):
             key.decode('utf-8', 'strict'): value[0].decode('utf-8', 'strict')
             for key, value in request.args.items()
         }
+
         request.setHeader('Content-Type', 'application/json')
 
         try:
