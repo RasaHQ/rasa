@@ -114,22 +114,41 @@ class DataRouter(object):
                 "Logging of requests is disabled. (No 'request_log' directory configured)")
             return None
 
-    def _create_project_store(self):
-        projects = []
-
+    def _collect_projects(self):
         if os.path.isdir(self.config['path']):
             projects = os.listdir(self.config['path'])
+        else:
+            projects = []
+
+        projects.extend(self._list_projects_in_cloud())
+        return projects
+
+    def _create_project_store(self):
+        projects = self._collect_projects()
 
         project_store = {}
 
         for project in projects:
             project_store[project] = Project(self.config,
-                                             self.component_builder, project)
+                                             self.component_builder,
+                                             project)
 
         if not project_store:
             project_store[RasaNLUConfig.DEFAULT_PROJECT_NAME] = Project(
                 self.config)
         return project_store
+
+    def _list_projects_in_cloud(self):
+        try:
+            from rasa_nlu.persistor import get_persistor
+            p = get_persistor(self.config)
+            if p is not None:
+                return p.list_projects()
+            else:
+                return []
+        except Exception:
+            logger.exception("Failed to list projects.")
+            return []
 
     def _create_emulator(self):
         """Sets which NLU webservice to emulate among those supported by Rasa"""
@@ -159,6 +178,10 @@ class DataRouter(object):
 
         if project not in self.project_store:
             projects = self._list_projects(self.config['path'])
+
+            cloud_provided_projects = self._list_projects_in_cloud()
+            projects.extend(cloud_provided_projects)
+
             if project not in projects:
                 raise InvalidProjectError(
                     "No project found with name '{}'.".format(project))
