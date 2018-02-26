@@ -1,5 +1,6 @@
 gevent==1.2.2
 klein==17.10.0
+hyperlink==17.3.0
 boto3==1.5.20
 typing==3.6.2
 future==0.16.0
