@@ -9,6 +9,7 @@ import io
 import logging
 import os
 import tempfile
+import traceback
 
 from builtins import object
 from typing import Text, Dict, Any
@@ -116,6 +117,10 @@ class DataRouter(object):
         if os.path.isdir(self.config['path']):
             projects = os.listdir(self.config['path'])
 
+        cloud_provided_projects = self._list_projects_in_cloud()
+
+        projects.extend(cloud_provided_projects)
+
         project_store = {}
 
         for project in projects:
@@ -124,6 +129,18 @@ class DataRouter(object):
         if not project_store:
             project_store[RasaNLUConfig.DEFAULT_PROJECT_NAME] = Project(self.config)
         return project_store
+
+    def _list_projects_in_cloud(self):
+        try:
+            from rasa_nlu.persistor import get_persistor
+            p = get_persistor(self.config)
+            if p is not None:
+                return p.list_projects()
+            else:
+                return []
+        except Exception as e:
+            logger.warning("Failed to list projects. {}".format(traceback.format_exc()))
+            return []
 
     def _create_emulator(self):
         """Sets which NLU webservice to emulate among those supported by Rasa"""
@@ -153,6 +170,10 @@ class DataRouter(object):
 
         if project not in self.project_store:
             projects = self._list_projects(self.config['path'])
+
+            cloud_provided_projects = self._list_projects_in_cloud()
+            projects.extend(cloud_provided_projects)
+
             if project not in projects:
                 raise InvalidProjectError("No project found with name '{}'.".format(project))
             else:

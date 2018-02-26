@@ -10,5 +10,6 @@ requests==2.18.4
 tqdm==4.19.5
 numpy==1.14.0
 simplejson==3.13.2
+mock==2.0.0
 cloudpickle==0.5.2
 msgpack-python==0.5.4
