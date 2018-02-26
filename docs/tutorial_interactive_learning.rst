@@ -175,6 +175,7 @@ prompt asking for the correct one. This also shows the probabilities the
 model has assigned to each of the actions.
 
 .. code-block:: text
+
    what is the next action for the bot?
 
         0                           action_listen    0.19

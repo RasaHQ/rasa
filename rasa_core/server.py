@@ -255,8 +255,14 @@ class RasaCoreServer(object):
                                                                'strict')
                 for key, value in request.args.items()}
         else:
-            request_params = json.loads(
-                    request.content.read().decode('utf-8', 'strict'))
+            content = request.content.read()
+            try:
+                request_params = json.loads(content.decode('utf-8', 'strict'))
+            except ValueError as e:
+                logger.error("Failed to decode json during parse request. "
+                             "Error: {}. Request content: "
+                             "'{}'".format(e, content))
+                raise
 
         if 'query' in request_params:
             message = request_params.pop('query')
@@ -315,7 +321,7 @@ if __name__ == '__main__':
     arg_parser = create_argument_parser()
     cmdline_args = arg_parser.parse_args()
 
-    logging.basicConfig(level=cmdline_args.loglevel)
+    utils.configure_colored_logging(cmdline_args.loglevel)
 
     rasa = RasaCoreServer(cmdline_args.core,
                           cmdline_args.nlu,

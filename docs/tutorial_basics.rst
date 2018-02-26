@@ -158,9 +158,9 @@ you can mix them):
 
 For this example, we are going to create the stories by writing them directly
 to ``stories.md``.
-Stories begin with ``##`` and a string as an identifier. User actions start
-with an asterisk, and bot actions are specified by lines beginning with a
-dash. The end of a story is denoted by a newline. See :ref:`stories` for
+Stories begin with ``##`` and a string as an identifier. User intents start
+with an asterisk ``*``, and bot actions are specified by lines beginning with a
+dash ``-``. The end of a story is denoted by a newline. See :ref:`stories` for
 more information about the data format.
 
 Enough talking, let's head over to our stories:
@@ -186,7 +186,10 @@ To train the dialogue model, run:
    python -m rasa_core.train -s data/stories.md -d domain.yml -o models/dialogue --epochs 300
 
 This will train the dialogue model for ``300`` epochs and store it
-into ``models/dialogue``. Now we can use that trained dialogue model
+into ``models/dialogue``. Where ``1`` epoch corresponds to one pass of the algorithm
+through all the trainning examples, which in this case are the stories.
+
+Now we can use that trained dialogue model
 and the previously created NLU model to run our bot. 
 Here we'll just talk to the bot on the command line:
 
@@ -203,6 +206,8 @@ Rasa Core.
 
     Button emulation does not work in console output, you need to type words like "great" or "sad"
     instead of numbers 1 or 2.
+
+In order to restart the bot type ``/restart`` into the command line.
 
 Bonus: Handle messages from Facebook
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

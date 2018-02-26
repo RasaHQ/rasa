@@ -160,10 +160,11 @@ class RegexInterpreter(NaturalLanguageInterpreter):
 
 
 class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
-    def __init__(self, model_name, token, server):
+    def __init__(self, model_name, token, server, project_name='default'):
         self.model_name = model_name
         self.token = token
         self.server = server
+        self.project_name = project_name
 
     def parse(self, text):
         """Parse a text message.
@@ -190,6 +191,7 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
         params = {
             "token": self.token,
             "model": self.model_name,
+            "project": self.project_name,
             "q": text
         }
         url = "{}/parse".format(self.server)

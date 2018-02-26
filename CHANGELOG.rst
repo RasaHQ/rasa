@@ -11,9 +11,11 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+- parameter to specify NLU project when instantiating a ``RasaNLUInterpreter``
 
 Changed
 -------
+- updated dependency fbmessenger from 4.3.1 to 5.0.0
 
 Removed
 -------
