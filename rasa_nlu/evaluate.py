@@ -28,6 +28,8 @@ known_duckling_dimensions = {"amount-of-money", "distance", "duration",
 
 entity_processors = {"ner_synonyms"}
 
+CVEvaluationResult = namedtuple('Results', 'train test')
+
 
 def create_argparser():  # pragma: no cover
     import argparse
@@ -88,19 +90,31 @@ def plot_confusion_matrix(cm, classes,
     plt.xlabel('Predicted label')
 
 
-def log_evaluation_table(test_y, preds):  # pragma: no cover
-    from sklearn import metrics
-
-    report = metrics.classification_report(test_y, preds)
-    precision = metrics.precision_score(test_y, preds, average='weighted')
-    f1 = metrics.f1_score(test_y, preds, average='weighted')
-    accuracy = metrics.accuracy_score(test_y, preds)
+def log_evaluation_table(targets, predictions):  # pragma: no cover
+    """Logs the sklearn evaluation metrics"""
+    report, precision, f1, accuracy = get_evaluation_metrics(targets,
+                                                             predictions)
 
     logger.info("Intent Evaluation Results")
     logger.info("F1-Score:  {}".format(f1))
     logger.info("Precision: {}".format(precision))
     logger.info("Accuracy:  {}".format(accuracy))
     logger.info("Classification report: \n{}".format(report))
+
+
+def get_evaluation_metrics(targets, predictions):  # pragma: no cover
+    """Computes the f1, precision and accuracy sklearn evaluation metrics
+
+    and fetches a summary report.
+    """
+    from sklearn import metrics
+
+    report = metrics.classification_report(targets, predictions)
+    precision = metrics.precision_score(targets, predictions, average='weighted')
+    f1 = metrics.f1_score(targets, predictions, average='weighted')
+    accuracy = metrics.accuracy_score(targets, predictions)
+
+    return report, precision, f1, accuracy
 
 
 def remove_empty_intent_examples(targets, predictions):
@@ -111,6 +125,14 @@ def remove_empty_intent_examples(targets, predictions):
     targets = targets[mask]
     predictions = np.array(predictions)[mask]
     return targets, predictions
+
+
+def clean_intent_labels(labels):
+    """Gets rid of `None` intents, since sklearn metrics does not support it
+
+    anymore.
+    """
+    return [l if l is not None else "" for l in labels]
 
 
 def drop_intents_below_freq(td, cutoff=5):
@@ -457,7 +479,8 @@ def run_evaluation(config, model_path,
 
 
 def generate_folds(n, td):
-    """generates n cross validation folds for training data td."""
+    """Generates n cross validation folds for training data td."""
+
     from sklearn.model_selection import StratifiedKFold
     skf = StratifiedKFold(n_splits=n, random_state=2018, shuffle=True)
     x = td.intent_examples
@@ -470,7 +493,7 @@ def generate_folds(n, td):
 
 
 def run_cv_evaluation(td, n_folds, nlu_config):
-    # type: (TrainingData, int, RasaNLUConfig) ->  Dict[Text, List[float]]
+    # type: (TrainingData, int, RasaNLUConfig) -> CVEvaluationResult
     """Stratified cross validation on data
 
     :param td: Training Data
@@ -484,8 +507,9 @@ def run_cv_evaluation(td, n_folds, nlu_config):
     import tempfile
 
     trainer = Trainer(nlu_config)
-    results = {"train": defaultdict(list),
-               "test": defaultdict(list)}
+    train_results = defaultdict(list)
+    test_results = defaultdict(list)
+
     tmp_dir = tempfile.mkdtemp()
 
     for train, test in generate_folds(n_folds, td):
@@ -495,23 +519,43 @@ def run_cv_evaluation(td, n_folds, nlu_config):
         model_dir = trainer.persist(tmp_dir)
         interpreter = Interpreter.load(model_dir, nlu_config)
 
-        for name, examples in [("train", train), ("test", test)]:
-            targets, _ = get_targets(TrainingData(examples))
-            predictions, _, _ = get_predictions(interpreter, TrainingData(examples))
-
-            # compute fold metrics
-            results[name]["Accuracy"].append(metrics.accuracy_score(targets, predictions))
-            results[name]["F1-score"].append(metrics.f1_score(targets, predictions, average='weighted'))
-            results[name]["Precision"].append(metrics.precision_score(targets, predictions, average='weighted'))
+        # calculate train accuracy
+        compute_metrics(interpreter, train, train_results)
+        # calculate test accuracy
+        compute_metrics(interpreter, test, test_results)
 
         utils.remove_model(model_dir)
 
     os.rmdir(os.path.join(tmp_dir, "default"))
     os.rmdir(tmp_dir)
 
-    Results = namedtuple('Results', 'train test')
-    results = Results(dict(results["train"]), dict(results["test"]))
-    return results
+    return CVEvaluationResult(dict(train_results), dict(test_results))
+
+
+def compute_metrics(interpreter, corpus, results):
+    """Computes evaluation metrics for a given corpus and
+
+    appends them to results.
+    """
+    y = [e.get("intent") for e in corpus]
+
+    preds = []
+    for e in corpus:
+        res = interpreter.parse(e.text)
+        if res.get('intent'):
+            preds.append(res['intent'].get('name'))
+        else:
+            preds.append(None)
+
+    y = clean_intent_labels(y)
+    preds = clean_intent_labels(preds)
+
+    # compute fold metrics
+    _, precision, f1, accuracy = get_evaluation_metrics(y, preds)
+
+    results["Accuracy"].append(accuracy)
+    results["F1-score"].append(f1)
+    results["Precision"].append(precision)
 
 
 if __name__ == '__main__':  # pragma: no cover

@@ -77,6 +77,42 @@ configuration section by passing in their name and the adjusted value.
 You cannot send a training request for a project already training a new model (see below).
 
 
+``POST /evaluate``
+^^^^^^^^^^^^^^^^^^
+
+You can use this endpoint to evaluate data on a model. The query string
+takes the ``project`` (required) and a ``model`` (optional). You must
+specify the project in which the model is located. N.b. if you don't specify
+a model, the latest one will be selected. This endpoint returns some common
+sklearn  evaluation metrics (`accuracy <http://scikit-learn
+.org/stable/modules/generated/sklearn.metrics.accuracy_score.html#sklearn
+.metrics.accuracy_score>`_, `f1 score <http://scikit-learn
+.org/stable/modules/generated/sklearn.metrics.f1_score.html>`_,
+`precision <http://scikit-learn.org/stable/modules/generated/sklearn.metrics.precision_score.html>`_, as well as
+a summary `report <http://scikit-learn.org/stable/modules/generated/sklearn
+.metrics.classification_report.html>`_).
+
+.. code-block:: bash
+
+    $ curl -XPOST localhost:5000/evaluate?project=my_project&model=model_XXXXXX -d @data/examples/rasa/demo-rasa.json | python -mjson.tool
+
+    {
+        "accuracy": 0.19047619047619047,
+        "f1_score": 0.06095238095238095,
+        "precision": 0.036281179138321996,
+        "predictions": [
+            {
+                "intent": "greet",
+                "predicted": "greet",
+                "text": "hey",
+                "confidence": 1.0
+            },
+            ...,
+        ]
+        "report": ...
+    }
+
+
 ``GET /status``
 ^^^^^^^^^^^^^^^
 
