@@ -8,6 +8,10 @@ python:
 - '2.7'
 - '3.5'
 - '3.6'
+env:
+  # needed to fix issues with boto during testing:
+  # https://github.com/travis-ci/travis-ci/issues/7940
+  global: BOTO_CONFIG=/dev/null
 install:
 - pip install git+https://github.com/tmbo/MITIE.git
 - pip install -r alt_requirements/requirements_dev.txt
