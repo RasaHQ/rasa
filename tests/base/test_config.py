@@ -1,21 +1,21 @@
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
 from __future__ import absolute_import
-import pytest
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
+import io
 import json
 import os
-import io
 import tempfile
 
+import pytest
 from typing import Text
 
 import rasa_nlu
-from tests.utilities import write_file_config
-from tests.conftest import CONFIG_DEFAULTS_PATH
 from rasa_nlu.config import RasaNLUConfig, InvalidConfigError
 from rasa_nlu.registry import registered_pipeline_templates
-
+from tests.conftest import CONFIG_DEFAULTS_PATH
+from tests.utilities import write_file_config
 
 with io.open(CONFIG_DEFAULTS_PATH, "r") as f:
     defaults = json.load(f)

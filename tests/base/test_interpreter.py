@@ -1,11 +1,12 @@
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import pytest
 
-from tests import utilities
 from rasa_nlu import registry, training_data
+from tests import utilities
 
 
 @utilities.slowtest

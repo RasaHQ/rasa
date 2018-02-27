@@ -134,7 +134,7 @@ class AWSPersistor(Persistor):
 
     Fetches them when needed, instead of storing them on the local disk."""
 
-    def __init__(self, aws_region, bucket_name, endpoint_url):
+    def __init__(self, aws_region, bucket_name, endpoint_url=None):
         # type: (Text, Text, Text) -> None
         super(AWSPersistor, self).__init__()
         self.s3 = boto3.resource('s3',
