@@ -214,6 +214,28 @@ class RasaNLU(object):
             request.setResponseCode(500)
             returnValue(json_to_string({"error": "{}".format(e)}))
 
+    @app.route("/evaluate", methods=['POST'])
+    @requires_auth
+    @check_cors
+    def evaluate(self, request):
+        data_string = request.content.read().decode('utf-8', 'strict')
+        params = {
+            key.decode('utf-8', 'strict'): value[0].decode('utf-8', 'strict')
+            for key, value in request.args.items()
+        }
+
+        request.setHeader('Content-Type', 'application/json')
+
+        try:
+            request.setResponseCode(200)
+            response = self.data_router.evaluate(data_string,
+                                                 params.get('project'),
+                                                 params.get('model'))
+            return simplejson.dumps(response)
+        except Exception as e:
+            request.setResponseCode(500)
+            return simplejson.dumps({"error": "{}".format(e)})
+
 
 if __name__ == '__main__':
     # Running as standalone python application

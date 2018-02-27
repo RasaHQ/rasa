@@ -17,7 +17,7 @@ import io
 
 from tests import utilities
 from tests.utilities import ResponseTest
-from rasa_nlu.server import RasaNLU
+from rasa_nlu.server import RasaNLU, InvalidProjectError
 
 
 @pytest.fixture(scope="module")
@@ -82,20 +82,23 @@ def test_version(app):
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-            "http://dummy_uri/parse?q=hello",
-            [{"entities": {}, "confidence": 1.0, "intent": "greet", "_text": "hello"}]
+        "http://dummy_uri/parse?q=hello",
+        [{"entities": {}, "confidence": 1.0, "intent": "greet",
+          "_text": "hello"}]
     ),
     ResponseTest(
-            "http://dummy_uri/parse?query=hello",
-            [{"entities": {}, "confidence": 1.0, "intent": "greet", "_text": "hello"}]
+        "http://dummy_uri/parse?query=hello",
+        [{"entities": {}, "confidence": 1.0, "intent": "greet",
+          "_text": "hello"}]
     ),
     ResponseTest(
-            "http://dummy_uri/parse?q=hello ńöñàśçií",
-            [{"entities": {}, "confidence": 1.0, "intent": "greet", "_text": "hello ńöñàśçií"}]
+        "http://dummy_uri/parse?q=hello ńöñàśçií",
+        [{"entities": {}, "confidence": 1.0, "intent": "greet",
+          "_text": "hello ńöñàśçií"}]
     ),
     ResponseTest(
-            "http://dummy_uri/parse?q=",
-            [{"entities": {}, "confidence": 0.0, "intent": None, "_text": ""}]
+        "http://dummy_uri/parse?q=",
+        [{"entities": {}, "confidence": 0.0, "intent": None, "_text": ""}]
     ),
 ])
 @pytest.inlineCallbacks
@@ -104,33 +107,39 @@ def test_get_parse(app, response_test):
     rjs = yield response.json()
     assert response.code == 200
     assert len(rjs) == 1
-    assert all(prop in rjs[0] for prop in ['entities', 'intent', '_text', 'confidence'])
+    assert all(prop in rjs[0] for prop in
+               ['entities', 'intent', '_text', 'confidence'])
 
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-            "http://dummy_uri/parse",
-            [{"entities": {}, "confidence": 1.0, "intent": "greet", "_text": "hello"}],
-            payload={"q": "hello"}
+        "http://dummy_uri/parse",
+        [{"entities": {}, "confidence": 1.0, "intent": "greet",
+          "_text": "hello"}],
+        payload={"q": "hello"}
     ),
     ResponseTest(
-            "http://dummy_uri/parse",
-            [{"entities": {}, "confidence": 1.0, "intent": "greet", "_text": "hello"}],
-            payload={"query": "hello"}
+        "http://dummy_uri/parse",
+        [{"entities": {}, "confidence": 1.0, "intent": "greet",
+          "_text": "hello"}],
+        payload={"query": "hello"}
     ),
     ResponseTest(
-            "http://dummy_uri/parse",
-            [{"entities": {}, "confidence": 1.0, "intent": "greet", "_text": "hello ńöñàśçií"}],
-            payload={"q": "hello ńöñàśçií"}
+        "http://dummy_uri/parse",
+        [{"entities": {}, "confidence": 1.0, "intent": "greet",
+          "_text": "hello ńöñàśçií"}],
+        payload={"q": "hello ńöñàśçií"}
     ),
 ])
 @pytest.inlineCallbacks
 def test_post_parse(app, response_test):
-    response = yield app.post(response_test.endpoint, json=response_test.payload)
+    response = yield app.post(response_test.endpoint,
+                              json=response_test.payload)
     rjs = yield response.json()
     assert response.code == 200
     assert len(rjs) == 1
-    assert all(prop in rjs[0] for prop in ['entities', 'intent', '_text', 'confidence'])
+    assert all(prop in rjs[0] for prop in
+               ['entities', 'intent', '_text', 'confidence'])
 
 
 @utilities.slowtest
@@ -169,6 +178,49 @@ def test_model_hot_reloading(app, rasa_default_train_data):
     app.flush()
     response = yield response
     assert response.code == 200, "Training should end successfully"
-
     response = yield app.get(query)
     assert response.code == 200, "Project should now exist after it got trained"
+
+
+@pytest.inlineCallbacks
+def test_evaluate_invalid_project_error(app, rasa_default_train_data):
+    response = app.post("http://dummy_uri/evaluate",
+                        json=rasa_default_train_data,
+                        params={"project": "project123"})
+    time.sleep(3)
+    app.flush()
+    response = yield response
+    rjs = yield response.json()
+    assert response.code == 500, "The project cannot be found"
+    assert "error" in rjs
+    assert rjs["error"] == "Project project123 could not be found"
+
+
+@pytest.inlineCallbacks
+def test_evaluate_internal_error(app, rasa_default_train_data):
+    response = app.post("http://dummy_uri/evaluate",
+                        json={"data": "dummy_data_for_triggering_an_error"})
+    time.sleep(3)
+    app.flush()
+    response = yield response
+    rjs = yield response.json()
+    assert response.code == 500, "The training data format is not valid"
+    assert "error" in rjs
+    assert "Unknown data format for file" in rjs["error"]
+
+
+@pytest.inlineCallbacks
+def test_evaluate(app, rasa_default_train_data):
+    response = app.post("http://dummy_uri/evaluate",
+                        json=rasa_default_train_data)
+    time.sleep(3)
+    app.flush()
+    response = yield response
+    rjs = yield response.json()
+    assert response.code == 200, "Evaluation should start"
+    assert "intent_evaluation" in rjs
+    assert all(prop in rjs["intent_evaluation"] for prop in ["report",
+                                                             "predictions",
+                                                             "precision",
+                                                             "f1_score",
+                                                             "accuracy"])

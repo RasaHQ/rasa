@@ -18,6 +18,7 @@ def test_list_projects_method_in_AWSPersistor():
         self._project_and_model_from_filename = lambda x: {'project_key': ('project', 'model')}[x]
         self.bucket = Object()
         self.bucket.objects = Object()
+        self.bucket_name = 'bucket'
 
         def mocked_filter():
             filter_result = Object()
@@ -25,6 +26,7 @@ def test_list_projects_method_in_AWSPersistor():
             return filter_result,
 
         self.bucket.objects.filter = mocked_filter
+        print(self.bucket_name)
 
     with mock.patch.object(persistor.AWSPersistor, "__init__", mocked_init):
         result = persistor.AWSPersistor("", "", "").list_projects()
@@ -36,6 +38,8 @@ def test_list_projects_method_raise_exeception_in_AWSPersistor():
     def mocked_init(self, *args, **kwargs):
         self.bucket = Object()
         self.bucket.objects = Object()
+        self.bucket_name = 'bucket'
+        self.aws_region = 'region'
 
         def mocked_filter():
             raise ValueError
