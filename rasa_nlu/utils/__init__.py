@@ -179,3 +179,28 @@ def build_entity(start, end, value, entity_type, **kwargs):
 
     entity.update(kwargs)
     return entity
+
+
+def is_model_dir(model_dir):
+    """Checks if the given directory contains a model and can be safely removed.
+
+    specifically checks if the directory has no subdirectories and
+    if all files have an appropriate ending."""
+    allowed_extensions = {".json", ".pkl", ".dat"}
+    dir_tree = list(os.walk(model_dir))
+    if len(dir_tree) != 1:
+        return False
+    model_dir, child_dirs, files = dir_tree[0]
+    file_extenstions = [os.path.splitext(f)[1] for f in files]
+    only_valid_files = all([ext in allowed_extensions for ext in file_extenstions])
+    return only_valid_files
+
+
+def remove_model(model_dir):
+    """Removes a model directory and all its content."""
+    import shutil
+    if is_model_dir(model_dir):
+        shutil.rmtree(model_dir)
+        return True
+    else:
+        raise ValueError("Cannot remove {}, it seems it is not a model directory".format(model_dir))

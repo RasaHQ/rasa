@@ -99,7 +99,7 @@ class DucklingExtractor(EntityExtractor):
     def cache_key(cls, model_metadata):
         # type: (Metadata) -> Text
 
-        return cls.name + "-" + model_metadata.language
+        return None
 
     def process(self, message, **kwargs):
         # type: (Message, **Any) -> None
