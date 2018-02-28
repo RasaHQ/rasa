@@ -1,23 +1,21 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
+import io
+import json
 import tempfile
-
-import pytest
 import time
 
+import pytest
 from treq.testing import StubTreq
 
 from rasa_nlu.config import RasaNLUConfig
-import json
-import io
-
+from rasa_nlu.server import RasaNLU
 from tests import utilities
 from tests.utilities import ResponseTest
-from rasa_nlu.server import RasaNLU, InvalidProjectError
 
 
 @pytest.fixture(scope="module")
