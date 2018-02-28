@@ -14,12 +14,12 @@ from rasa_core.channels import UserMessage
 from rasa_core.conversation import Topic
 from rasa_core.domain import TemplateDomain
 from rasa_core.events import (
-    UserUttered, TopicSet, ActionExecuted, SlotSet,
-    Restarted, ActionReverted, UserUtteranceReverted)
+    UserUttered, TopicSet, ActionExecuted, Restarted, ActionReverted,
+    UserUtteranceReverted)
 from rasa_core.featurizers import BinaryFeaturizer
 from rasa_core.tracker_store import InMemoryTrackerStore, RedisTrackerStore
 from rasa_core.trackers import DialogueStateTracker
-from rasa_core.training import STORY_START, extract_trackers_from_file
+from rasa_core.training import extract_trackers_from_file
 from tests.conftest import DEFAULT_STORIES_FILE
 from tests.utilities import tracker_from_dialogue_file, read_dialogue_file
 
@@ -104,7 +104,9 @@ def test_tracker_write_to_story(tmpdir, default_domain):
     assert len(trackers) == 1
     recovered = trackers[0]
     assert len(recovered.events) == 8
-    assert recovered.events[6] == SlotSet("location", "central")
+    assert recovered.events[6].type_name == "slot"
+    assert recovered.events[6].key == "location"
+    assert recovered.events[6].value == "central"
 
 
 def test_tracker_state_regression_without_bot_utterance(default_agent):
