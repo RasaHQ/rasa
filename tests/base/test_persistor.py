@@ -7,7 +7,7 @@ import mock
 import pytest
 from moto import mock_s3
 
-import utilities
+from tests import utilities
 from rasa_nlu import persistor
 
 
@@ -36,7 +36,7 @@ def test_list_projects_method_in_AWSPersistor(component_builder):
                                           _config['bucket_name'])
     result = awspersistor.list_projects()
 
-    assert ['mytestproject'] == result
+    assert result == ['mytestproject']
 
 
 @mock_s3

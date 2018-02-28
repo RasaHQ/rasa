@@ -12,9 +12,9 @@ import tarfile
 import boto3
 import botocore
 from builtins import object
+from typing import Optional, Tuple, List, Text
+
 from rasa_nlu.config import RasaNLUConfig
-from typing import Optional, Tuple, List
-from typing import Text
 
 logger = logging.getLogger(__name__)
 
@@ -135,7 +135,7 @@ class AWSPersistor(Persistor):
     Fetches them when needed, instead of storing them on the local disk."""
 
     def __init__(self, aws_region, bucket_name, endpoint_url=None):
-        # type: (Text, Text, Text) -> None
+        # type: (Text, Text, Optional[Text]) -> None
         super(AWSPersistor, self).__init__()
         self.s3 = boto3.resource('s3',
                                  region_name=aws_region,
