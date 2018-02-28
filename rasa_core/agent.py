@@ -246,7 +246,11 @@ class Agent(object):
     @classmethod
     def create_tracker_store(cls, store, domain):
         # type: (Optional[TrackerStore], Domain) -> TrackerStore
-        return store if store is not None else InMemoryTrackerStore(domain)
+        if store is not None:
+            store.domain = domain
+            return store
+        else:
+            return InMemoryTrackerStore(domain)
 
     @staticmethod
     def _create_interpreter(

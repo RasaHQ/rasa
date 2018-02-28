@@ -22,13 +22,13 @@ from tests.conftest import DEFAULT_STORIES_FILE
 
 # a couple of event instances that we can use for testing
 test_events = [
-    Event.from_parameters(UserUttered.type_name,
-                          {"text": "/goodbye",
+    Event.from_parameters({"event": UserUttered.type_name,
+                           "text": "/goodbye",
                            "parse_data": {
-                                "intent": {
-                                    "confidence": 1.0, "name": "greet"},
-                                "entities": []}
-                           }, None),
+                               "intent": {
+                                   "confidence": 1.0, "name": "greet"},
+                               "entities": []}
+                           }),
     BotUttered("Welcome!", {"test": True}),
     TopicSet("question"),
     SlotSet("cuisine", 34),

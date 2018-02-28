@@ -36,7 +36,7 @@ class DialogueStateTracker(object):
         The dump should be an array of dumped events. When restoring
         the tracker, these events will be replayed to recreate the state."""
 
-        evts = events.deserialise_events(dump_as_dict, domain)
+        evts = events.deserialise_events(dump_as_dict)
         tracker = cls(sender_id, domain.slots, domain.topics,
                       domain.default_topic)
         for e in evts:
@@ -299,12 +299,9 @@ class DialogueStateTracker(object):
         """Dump the tracker as a story in the Rasa Core story format.
 
         Returns the dumped tracker as a string."""
-        from rasa_core.training.structures import StoryStep, Story
+        from rasa_core.training.structures import Story
 
-        story_step = StoryStep()
-        for event in self._applied_events():
-            story_step.add_event(event)
-        story = Story([story_step])
+        story = Story.from_events(self._applied_events())
         return story.as_story_string(flat=True)
 
     def export_stories_to_file(self, export_path="debug.md"):
