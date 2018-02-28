@@ -97,6 +97,12 @@ rasa is a set of tools for building more advanced bots, developed by `Rasa <http
 
 .. toctree::
    :maxdepth: 1
+   :caption: Resources
+
+   community
+
+.. toctree::
+   :maxdepth: 1
    :caption: Developer Documentation
 
    Roadmap<https://github.com/RasaHQ/rasa_nlu/projects/2>
