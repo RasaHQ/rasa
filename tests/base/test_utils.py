@@ -1,16 +1,19 @@
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
-import pytest
+import io
 import os
 import pickle
 import tempfile
-import io
 
-from rasa_nlu.utils import relative_normpath, recursively_find_files, create_dir, \
-    ordered, is_model_dir, remove_model, write_json_to_file, write_to_file
+import pytest
+
+from rasa_nlu.utils import (
+    relative_normpath, recursively_find_files,
+    create_dir,
+    ordered, is_model_dir, remove_model, write_json_to_file, write_to_file)
 
 
 @pytest.fixture
@@ -22,7 +25,8 @@ def empty_model_dir(scope="function"):
 
 
 def test_relative_normpath():
-    assert relative_normpath("/my/test/path/file.txt", "/my/test") == "path/file.txt"
+    test_file = "/my/test/path/file.txt"
+    assert relative_normpath(test_file, "/my/test") == "path/file.txt"
     assert relative_normpath(None, "/my/test") is None
 
 
@@ -39,7 +43,8 @@ def test_recursively_find_files_non_existing_dir():
 
 
 def test_creation_of_existing_dir(tmpdir):
-    assert create_dir(tmpdir.strpath) is None  # makes sure there is no exception
+    # makes sure there is no exception
+    assert create_dir(tmpdir.strpath) is None
 
 
 def test_ordered():

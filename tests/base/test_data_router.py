@@ -1,8 +1,12 @@
-import pytest
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import mock
 
-from rasa_nlu import persistor
 from rasa_nlu import data_router
+from rasa_nlu import persistor
 
 
 def test_list_projects_in_cloud_method():

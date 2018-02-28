@@ -5,8 +5,8 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
-from tests import utilities
 from rasa_nlu.training_data import TrainingData, Message
+from tests import utilities
 
 
 def test_crf_extractor(spacy_nlp):
