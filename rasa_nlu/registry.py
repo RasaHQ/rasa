@@ -95,7 +95,7 @@ registered_pipeline_templates = {
         "intent_classifier_keyword",
     ],
     "fasttext": [
-        "intent_classifier_fasttext"
+        "intent_classifier_fasttext",
     ],
     # this template really is just for testing
     # every component should be in here so train-persist-load-use cycle can be

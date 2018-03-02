@@ -21,11 +21,6 @@ logger.info("lskjgfqsegpzqdgn")
 # How many intents are at max put into the output intent ranking, everything else will be cut off
 INTENT_RANKING_LENGTH = 10
 
-if typing.TYPE_CHECKING:
-    import fasttext
-    import numpy as np
-
-
 class FastTextIntentClassifier(Component):
     """Intent classifier using the sklearn framework"""
 
@@ -38,15 +33,18 @@ class FastTextIntentClassifier(Component):
     @classmethod
     def required_packages(cls):
         # type: () -> List[Text]
-        return ["numpy", "fasttext"]
+        return ["numpy", "fastText"]
 
     @classmethod
     def load(cls, model_dir=None, model_metadata=None, cached_component=None, **kwargs):
         # type: (Text, Metadata, Optional[Component], **Any) -> SklearnIntentClassifier
+        import fastText
 
         if model_dir and model_metadata.get("intent_classifier_fasttext"):
             classifier_file = os.path.join(model_dir, model_metadata.get("intent_classifier_fasttext"), "model.ftz")
-            model = fasttext.load_model(classifier_file)
+            model = fastText.load_model(classifier_file)
+            logger.info("lskjgfqsegpzqdgn")
+
             return model
         else:
             return cls()
@@ -55,8 +53,8 @@ class FastTextIntentClassifier(Component):
         # type: (Message, **Any) -> None
         """Returns the most likely intent and its probability for the input text."""
 
-        X = message.get("text_features").reshape(1, -1)
-        aa = self.predict(X)
+        logger.info(message.text)
+        aa = self.predict(message.text)
         logger.info(aa)
         intents = self.transform_labels_num2str(intent_ids)
         # `predict` returns a matrix as it is supposed
