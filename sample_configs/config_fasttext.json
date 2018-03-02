@@ -1,0 +1,4 @@
+{
+  "pipeline": "fasttext",
+  "path" : "../../fastText-0.1.0/models_fr/all_labels"
+}
