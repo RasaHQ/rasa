@@ -14,6 +14,7 @@ from typing import Optional
 from typing import Set
 from typing import Text
 from typing import Tuple
+from typing import Hashable
 
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.training_data import Message
@@ -141,6 +142,13 @@ class Component(object):
     # previous component in the pipeline needs to have "tokens"
     # within the above described `provides` property.
     requires = []
+
+    # Defines what language(s) this component can handle.
+    # This attribute is designed for instance method: `can_handle_language`.
+    # Default value is None which means it can handle all languages.
+    # This is important feature that can backward-compatible with
+    # old style components.
+    _language_list = None
 
     def __init__(self):
         self.partial_processing_pipeline = None
@@ -276,6 +284,18 @@ class Component(object):
             logger.info("Failed to run partial processing due "
                         "to missing pipeline.")
         return message
+
+    def can_handle_language(self, language):
+        # type: (Hashable) -> bool
+        """Check if component support specific language.
+
+        this method can overwrite when needed.
+        (e.g. dynamic determine which language is supported.)"""
+
+        if self._language_list is None:  # None means support all languages
+            return True
+
+        return language in self._language_list
 
 
 class ComponentBuilder(object):

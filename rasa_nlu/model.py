@@ -261,6 +261,18 @@ class Interpreter(object):
                 raise Exception("Failed to initialize component '{}'. "
                                 "{}".format(component.name, e))
 
+        # Check language supporting
+        language = config.get('language')
+        for component in pipeline:
+            if not component.can_handle_language(language):
+                # check failed
+                raise Exception(
+                    "component {} not support language {}".format(
+                        component.name,
+                        language
+                    )
+                )
+
         return Interpreter(pipeline, context, model_metadata)
 
     def __init__(self, pipeline, context, model_metadata=None):
