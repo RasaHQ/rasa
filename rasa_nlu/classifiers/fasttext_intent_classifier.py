@@ -32,8 +32,6 @@ class FastTextIntentClassifier(Component):
 
     provides = ["intent", "intent_ranking"]
 
-    # requires = ["text_features"]
-
     def __init__(self, clf=None, le=None):
         # type: (fastText) -> None
         """Construct a new intent classifier using the fasttext framework."""
@@ -48,7 +46,6 @@ class FastTextIntentClassifier(Component):
     def transform_labels(self, labels):
         # type: (List[Text]) -> np.ndarray
         """Transforms a list of strings into numeric label representation.
-
         :param labels: List of labels to convert to numeric representation"""
 
         return [x.replace('__label__', '') for x in labels]
@@ -56,12 +53,9 @@ class FastTextIntentClassifier(Component):
     def train(self, training_data, config, **kwargs):
         # type: (TrainingData, RasaNLUConfig, **Any) -> None
         """Train the intent classifier on a data set.
+        :param num_threads: number of threads used during training time
+        We keep it here for later use."""
 
-        :param num_threads: number of threads used during training time"""
-
-        classifier_file = "projects/default/model.ftz"
-
-        # self.clf = load_model(classifier_file)
 
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]
@@ -83,8 +77,6 @@ class FastTextIntentClassifier(Component):
         import cloudpickle
         from fastText import load_model
 
-        model_file = "projects/default/model.ftz"
-
         if model_dir and model_metadata.get("intent_classifier_fasttext"):
             classifier_file = os.path.join(model_dir, model_metadata.get("intent_classifier_fasttext"))
 
@@ -92,9 +84,10 @@ class FastTextIntentClassifier(Component):
                 if PY3:
                     return cloudpickle.load(f, encoding="latin-1")
                 else:
-                    a = cloudpickle.load(f)
-                    a.clf = load_model(model_file)
-                    return a
+                    # Load the clf outside pickle to avoid segmentation fault error (compiler side)
+                    component = cloudpickle.load(f)
+                    component.clf = load_model(model_metadata.get("model_fasttext"))
+                    return component
         else:
             return cls()
 

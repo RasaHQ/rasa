@@ -22,6 +22,7 @@ DEFAULT_CONFIG = {
     "data": None,
     "emulate": None,
     "language": "en",
+    "model_fasttext": None,
     "log_file": None,
     "log_level": 'INFO',
     "mitie_file": os.path.join("data", "total_word_feature_extractor.dat"),

@@ -169,6 +169,7 @@ class Trainer(object):
             "language": self.config["language"],
             "pipeline": [utils.module_path_from_object(component)
                          for component in self.pipeline],
+            "model_fasttext": self.config["model_fasttext"],
         }
 
         if project_name is None:

@@ -1,5 +1,7 @@
 {
   "pipeline": "fasttext",
   "path" : "./projects",
+  "language": "fr",
+  "model_fasttext": "projects/default/model.ftz",
   "data" : "./data/examples/rasa/demo-rasa.json"
 }
