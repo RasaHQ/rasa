@@ -23,7 +23,7 @@ DEFAULT_CONFIG = {
     "emulate": None,
     "language": "en",
     "log_file": None,
-    "log_level": 'DEBUG',
+    "log_level": 'INFO',
     "mitie_file": os.path.join("data", "total_word_feature_extractor.dat"),
     "spacy_model_name": None,
     "num_threads": 1,

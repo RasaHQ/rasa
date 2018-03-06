@@ -1,4 +1,5 @@
 {
   "pipeline": "fasttext",
-  "path" : "./projects"
+  "path" : "./projects",
+  "data" : "./data/examples/rasa/demo-rasa.json"
 }
