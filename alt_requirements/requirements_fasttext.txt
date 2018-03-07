@@ -1,0 +1,4 @@
+# Minimum Instal Requirements
+-r requirements_bare.txt
+
+git+https://github.com/facebookresearch/fastText.git#egg=fasttext
