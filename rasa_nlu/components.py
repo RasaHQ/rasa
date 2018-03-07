@@ -103,20 +103,9 @@ class MissingArgumentError(ValueError):
         return self.message
 
 
-class NoLanguageSupportingError(ValueError):
-    """Raised when a component is created but the language is not supported.
-
-    Attributes:
-        message -- explanation of which parameter is missing
-    """
-
-    def __init__(self, message):
-        # type: (Text) -> None
-        super(NoLanguageSupportingError, self).__init__(message)
-        self.message = message
-
-    def __str__(self):
-        return self.message
+class NoLanguageSupportingError(Exception):
+    """Raised when a component is created but the language is not supported."""
+    pass
 
 
 class Component(object):

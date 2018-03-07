@@ -129,7 +129,9 @@ class Trainer(object):
                         component_name, config)
                 self.pipeline.append(component)
             except NoLanguageSupportingError as e:
+                # component don't support current language
                 if not config.component_force_language_support:
+                    # ignore this component
                     logger.warning(e.message)
                     continue
 
