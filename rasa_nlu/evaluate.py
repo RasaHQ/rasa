@@ -502,60 +502,80 @@ def run_cv_evaluation(td, n_folds, nlu_config):
     :return: dictionary with key, list structure, where each entry in list
               corresponds to the relevant result for one fold
     """
-    from sklearn import metrics
     from collections import defaultdict
     import tempfile
 
     trainer = Trainer(nlu_config)
     train_results = defaultdict(list)
     test_results = defaultdict(list)
-
+    entity_train_results = defaultdict(lambda: defaultdict(list))
+    entity_test_results = defaultdict(lambda: defaultdict(list))
     tmp_dir = tempfile.mkdtemp()
 
     for train, test in generate_folds(n_folds, td):
-        trainer.train(TrainingData(training_examples=train,
-                                   entity_synonyms=td.entity_synonyms,
-                                   regex_features=td.regex_features))
+        train = TrainingData(training_examples=train,
+                             entity_synonyms=td.entity_synonyms,
+                             regex_features=td.regex_features)
+        test = TrainingData(training_examples=test,
+                            entity_synonyms=td.entity_synonyms,
+                            regex_features=td.regex_features)
+        trainer.train(train)
         model_dir = trainer.persist(tmp_dir)
         interpreter = Interpreter.load(model_dir, nlu_config)
 
         # calculate train accuracy
-        compute_metrics(interpreter, train, train_results)
+        compute_metrics(interpreter, train, train_results, entity_train_results)
         # calculate test accuracy
-        compute_metrics(interpreter, test, test_results)
+        compute_metrics(interpreter, test, test_results, entity_test_results)
 
         utils.remove_model(model_dir)
 
     os.rmdir(os.path.join(tmp_dir, "default"))
     os.rmdir(tmp_dir)
 
-    return CVEvaluationResult(dict(train_results), dict(test_results))
+    return (CVEvaluationResult(dict(train_results), dict(test_results)),
+            CVEvaluationResult(dict(entity_train_results),
+                               dict(entity_test_results)))
 
 
-def compute_metrics(interpreter, corpus, results):
+def compute_metrics(interpreter, corpus, intent_results, entity_results):
     """Computes evaluation metrics for a given corpus and
 
     appends them to results.
     """
-    y = [e.get("intent") for e in corpus]
 
-    preds = []
-    for e in corpus:
-        res = interpreter.parse(e.text)
-        if res.get('intent'):
-            preds.append(res['intent'].get('name'))
-        else:
-            preds.append(None)
-
-    y = clean_intent_labels(y)
-    preds = clean_intent_labels(preds)
+    # y = [e.get("intent") for e in corpus]
+    intent_targets, entity_targets = get_targets(corpus)
+    intent_predictions, entity_predictions, tokens = get_predictions(interpreter,
+                                                                     corpus)
+    intent_targets, intent_predictions = remove_empty_intent_examples(
+                                            intent_targets, intent_predictions)
 
     # compute fold metrics
-    _, precision, f1, accuracy = get_evaluation_metrics(y, preds)
+    _, precision, f1, accuracy = get_evaluation_metrics(intent_targets,
+                                                        intent_predictions)
 
-    results["Accuracy"].append(accuracy)
-    results["F1-score"].append(f1)
-    results["Precision"].append(precision)
+    intent_results["Accuracy"].append(accuracy)
+    intent_results["F1-score"].append(f1)
+    intent_results["Precision"].append(precision)
+
+    extractors = get_entity_extractors(interpreter)
+    aligned_predictions = []
+    for ts, ps, tks in zip(entity_targets, entity_predictions, tokens):
+        aligned_predictions.append(align_entity_predictions(ts, ps, tks,
+                                                            extractors))
+
+    merged_targets = merge_labels(aligned_predictions)
+    merged_targets = substitute_labels(merged_targets, "O", "no_entity")
+    for extractor in extractors:
+        merged_predictions = merge_labels(aligned_predictions, extractor)
+        merged_predictions = substitute_labels(merged_predictions, "O",
+                                               "no_entity")
+        _, precision, f1, accuracy = get_evaluation_metrics(merged_targets,
+                                                            merged_predictions)
+        entity_results[extractor]["Accuracy"].append(accuracy)
+        entity_results[extractor]["F1-score"].append(f1)
+        entity_results[extractor]["Precision"].append(precision)
 
 
 if __name__ == '__main__':  # pragma: no cover
@@ -574,12 +594,29 @@ if __name__ == '__main__':  # pragma: no cover
     if args.mode == "crossvalidation":
         td = training_data.load_data(args.data)
         td = drop_intents_below_freq(td, cutoff=5)
-        results = run_cv_evaluation(td, int(args.folds), nlu_config)
+        results, entity_results = run_cv_evaluation(td, int(args.folds),
+                                                    nlu_config)
         logger.info("CV evaluation (n={})".format(args.folds))
+        logger.info("Intent evaluation results")
         for k, v in results.train.items():
-            logger.info("train {}: {:.3f} ({:.3f})".format(k, np.mean(v), np.std(v)))
+            logger.info("train {}: {:.3f} ({:.3f})".format(k, np.mean(v),
+                                                           np.std(v)))
         for k, v in results.test.items():
-            logger.info("test {}: {:.3f} ({:.3f})".format(k, np.mean(v), np.std(v)))
+            logger.info("test {}: {:.3f} ({:.3f})".format(k, np.mean(v),
+                                                          np.std(v)))
+
+        logger.info("Entity evaluation results")
+        for extractor, results in entity_results.train.items():
+            logger.info("Entity extractor: {}".format(extractor))
+            for k, v in results.items():
+                logger.info("train {}: {:.3f} ({:.3f})".format(k, np.mean(v),
+                                                               np.std(v)))
+        for extractor, results in entity_results.test.items():
+            print(results)
+            logger.info("Entity extractor: {}".format(extractor))
+            for k, v in results.items():
+                logger.info("test {}: {:.3f} ({:.3f})".format(k, np.mean(v),
+                                                              np.std(v)))
 
     elif args.mode == "evaluation":
         run_evaluation(nlu_config, args.model)
