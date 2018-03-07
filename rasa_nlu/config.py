@@ -52,7 +52,8 @@ DEFAULT_CONFIG = {
     "intent_classifier_sklearn": {
         "C": [1, 2, 5, 10, 20, 100],
         "kernel": "linear"
-    }
+    },
+    "component_force_language_support": False,
 }
 
 
