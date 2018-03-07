@@ -6,6 +6,7 @@ typing==3.6.2
 future==0.16.0
 six==1.11.0
 jsonschema==2.6.0
+fasttext==0.8.22
 matplotlib==2.1.0
 requests==2.18.4
 tqdm==4.19.5
