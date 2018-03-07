@@ -261,29 +261,7 @@ class Interpreter(object):
                 raise Exception("Failed to initialize component '{}'. "
                                 "{}".format(component.name, e))
 
-        # TODO: using explict class name is a bad idea
-        Interpreter.check_component_language(
-            pipeline,
-            language=config.get("language")
-        )
-
         return Interpreter(pipeline, context, model_metadata)
-
-    @staticmethod
-    def check_component_language(pipeline, language):
-        # type: (List, object) -> bool
-        """Check language supporting"""
-        for component in pipeline:
-            if not component.can_handle_language(language):
-                # check failed
-                raise Exception(
-                    "component {} not support language {}".format(
-                        component.name,
-                        language
-                    )
-                )
-
-        return True
 
     def __init__(self, pipeline, context, model_metadata=None):
         # type: (List[Component], Dict[Text, Any], Optional[Metadata]) -> None

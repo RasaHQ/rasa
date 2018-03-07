@@ -148,7 +148,7 @@ class Component(object):
     # Default value is None which means it can handle all languages.
     # This is important feature that can backward-compatible with
     # old style components.
-    _language_list = None
+    language_list = None
 
     def __init__(self):
         self.partial_processing_pipeline = None
@@ -197,6 +197,13 @@ class Component(object):
         """Creates this component (e.g. before a training is started).
 
         Method can access all configuration parameters."""
+
+        # Check language supporting
+        language = config.get('language', None)
+        if not cls.can_handle_language(language):
+            # check failed
+            raise Exception("component {} not support language {}".format(cls.name, language))
+
         return cls()
 
     def provide_context(self):
@@ -285,17 +292,18 @@ class Component(object):
                         "to missing pipeline.")
         return message
 
-    def can_handle_language(self, language):
+    @classmethod
+    def can_handle_language(cls, language):
         # type: (Hashable) -> bool
         """Check if component support specific language.
 
         this method can overwrite when needed.
         (e.g. dynamic determine which language is supported.)"""
 
-        if self._language_list is None:  # None means support all languages
+        if cls.language_list is None:  # None means support all languages
             return True
 
-        return language in self._language_list
+        return language in cls.language_list
 
 
 class ComponentBuilder(object):
