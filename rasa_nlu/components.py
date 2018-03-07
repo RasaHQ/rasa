@@ -202,7 +202,7 @@ class Component(object):
         language = config.get('language', None)
         if not cls.can_handle_language(language):
             # check failed
-            raise Exception("component {} not support language {}".format(cls.name, language))
+            raise Exception("component {} does not support language {}".format(cls.name, language))
 
         return cls()
 
