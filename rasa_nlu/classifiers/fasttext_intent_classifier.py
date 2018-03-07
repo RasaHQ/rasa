@@ -5,7 +5,7 @@ from __future__ import absolute_import
 from future.utils import PY3
 
 import logging
-import typing
+import cloudpickle
 from builtins import zip
 import os
 import io
@@ -60,7 +60,6 @@ class FastTextIntentClassifier(Component):
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]
         """Persist this model into the passed directory. Returns the metadata necessary to load the model again."""
-        import cloudpickle
 
         classifier_file = os.path.join(model_dir, "intent_classifier.pkl")
         with io.open(classifier_file, 'wb') as f:
@@ -74,7 +73,6 @@ class FastTextIntentClassifier(Component):
     @classmethod
     def load(cls, model_dir=None, model_metadata=None, cached_component=None, **kwargs):
         # type: (Text, Metadata, Optional[Component], **Any) -> SklearnIntentClassifier
-        import cloudpickle
         from fastText import load_model
 
         if model_dir and model_metadata.get("intent_classifier_fasttext"):
