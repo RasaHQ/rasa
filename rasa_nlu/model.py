@@ -225,8 +225,8 @@ class Interpreter(object):
         return Interpreter.create(model_metadata, config, component_builder,
                                   skip_valdation)
 
-    @staticmethod
-    def create(model_metadata,  # type: Metadata
+    @classmethod
+    def create(cls, model_metadata,  # type: Metadata
                config,  # type: RasaNLUConfig
                component_builder=None,  # type: Optional[ComponentBuilder]
                skip_valdation=False  # type: bool
@@ -261,8 +261,13 @@ class Interpreter(object):
                 raise Exception("Failed to initialize component '{}'. "
                                 "{}".format(component.name, e))
 
+        cls.check_component_language(pipeline, language=config.get("language"))
+
+        return Interpreter(pipeline, context, model_metadata)
+
+    @classmethod
+    def check_component_language(cls, pipeline, language):
         # Check language supporting
-        language = config.get('language')
         for component in pipeline:
             if not component.can_handle_language(language):
                 # check failed
@@ -273,7 +278,7 @@ class Interpreter(object):
                     )
                 )
 
-        return Interpreter(pipeline, context, model_metadata)
+        return True
 
     def __init__(self, pipeline, context, model_metadata=None):
         # type: (List[Component], Dict[Text, Any], Optional[Metadata]) -> None
