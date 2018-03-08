@@ -200,10 +200,8 @@ def evaluate_entities(targets, predictions, tokens, extractors):  # pragma: no c
 
     Logs precision, recall, and F1 per entity type for each extractor."""
 
-    aligned_predictions = []
-    for ts, ps, tks in zip(targets, predictions, tokens):
-        aligned_predictions.append(align_entity_predictions(ts, ps, tks,
-                                                            extractors))
+    aligned_predictions = align_all_entity_predictions(targets, predictions,
+                                                       tokens, extractors)
 
     merged_targets = merge_labels(aligned_predictions)
     merged_targets = substitute_labels(merged_targets, "O", "no_entity")
@@ -339,6 +337,26 @@ def align_entity_predictions(targets, predictions, tokens, extractors):
 
     return {"target_labels": true_token_labels,
             "extractor_labels": dict(extractor_labels)}
+
+
+def align_all_entity_predictions(targets, predictions, tokens, extractors):
+    """ Aligns entity predictions to the message tokens for the whole dataset
+        using align_entity_predictions
+
+    :param targets: list of lists of target entities
+    :param predictions: list of lists of predicted entities
+    :param tokens: list of original message tokens
+    :param extractors: the entity extractors that should be considered
+    :return: list of dictionaries containing the true token labels and token
+             labels from the extractors
+    """
+
+    aligned_predictions = []
+    for ts, ps, tks in zip(targets, predictions, tokens):
+        aligned_predictions.append(align_entity_predictions(ts, ps, tks,
+                                                            extractors))
+
+    return aligned_predictions
 
 
 def get_targets(test_data):  # pragma: no cover
@@ -560,10 +578,9 @@ def compute_metrics(interpreter, corpus, intent_results, entity_results):
     intent_results["Precision"].append(precision)
 
     extractors = get_entity_extractors(interpreter)
-    aligned_predictions = []
-    for ts, ps, tks in zip(entity_targets, entity_predictions, tokens):
-        aligned_predictions.append(align_entity_predictions(ts, ps, tks,
-                                                            extractors))
+    aligned_predictions = align_all_entity_predictions(entity_targets,
+                                                       entity_predictions,
+                                                       tokens, extractors)
 
     merged_targets = merge_labels(aligned_predictions)
     merged_targets = substitute_labels(merged_targets, "O", "no_entity")
@@ -576,6 +593,18 @@ def compute_metrics(interpreter, corpus, intent_results, entity_results):
         entity_results[extractor]["Accuracy"].append(accuracy)
         entity_results[extractor]["F1-score"].append(f1)
         entity_results[extractor]["Precision"].append(precision)
+
+
+def return_results(results, dataset):
+    """Returns results of crossvalidation
+    :param results: dictionary of results returned from cv
+    :param dataset: string of which dataset the results are from, e.g.
+                    test/train
+    """
+
+    for k, v in results.items():
+        logger.info("{} {}: {:.3f} ({:.3f})".format(dataset, k, np.mean(v),
+                                                    np.std(v)))
 
 
 if __name__ == '__main__':  # pragma: no cover
@@ -598,25 +627,16 @@ if __name__ == '__main__':  # pragma: no cover
                                                     nlu_config)
         logger.info("CV evaluation (n={})".format(args.folds))
         logger.info("Intent evaluation results")
-        for k, v in results.train.items():
-            logger.info("train {}: {:.3f} ({:.3f})".format(k, np.mean(v),
-                                                           np.std(v)))
-        for k, v in results.test.items():
-            logger.info("test {}: {:.3f} ({:.3f})".format(k, np.mean(v),
-                                                          np.std(v)))
+        return_results(results.train, "train")
+        return_results(results.test, "test")
 
         logger.info("Entity evaluation results")
         for extractor, results in entity_results.train.items():
             logger.info("Entity extractor: {}".format(extractor))
-            for k, v in results.items():
-                logger.info("train {}: {:.3f} ({:.3f})".format(k, np.mean(v),
-                                                               np.std(v)))
+            return_results(results, "train")
         for extractor, results in entity_results.test.items():
-            print(results)
             logger.info("Entity extractor: {}".format(extractor))
-            for k, v in results.items():
-                logger.info("test {}: {:.3f} ({:.3f})".format(k, np.mean(v),
-                                                              np.std(v)))
+            return_results(results, "test")
 
     elif args.mode == "evaluation":
         run_evaluation(nlu_config, args.model)
