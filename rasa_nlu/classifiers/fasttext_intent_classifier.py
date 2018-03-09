@@ -85,10 +85,32 @@ class FastTextIntentClassifier(Component):
                     # Load the clf outside pickle to avoid segmentation fault error (compiler side)
                     component = cloudpickle.load(f)
                     component.clf = load_model(model_metadata.get("model_fasttext"))
+                    component.language = model_metadata.get("language")
                     return component
         else:
             return cls()
 
+    def preprocess(self, raw_text, language=None):
+        """
+        Preprocess a message before feeding to classification model.
+        :param raw_text
+        :return: processed message
+        """
+        import re
+        from nltk.corpus import stopwords
+        letters_only_text = re.sub("[^a-zA-Z0-9]", " ", raw_text)
+        words = letters_only_text.split()
+
+        if language=="en":
+            stopword_set = set(stopwords.words("english"))
+        elif language=="fr":
+            stopword_set = set(stopwords.words("french"))
+        else:
+            raise ValueError('Language in model_metadata not covered.')
+
+        meaningful_words = [w for w in words if w not in stopword_set]
+        cleaned_word_list = " ".join(meaningful_words)
+        return cleaned_word_list
 
     def process(self, message, **kwargs):
         # type: (Message, **Any) -> None
@@ -100,7 +122,8 @@ class FastTextIntentClassifier(Component):
             intent_ranking = []
         else:
             nb_labels = len(self.clf.get_labels())
-            intent_ids, probabilities = self.clf.predict(message.text, k=nb_labels)
+            preprocessed_message = self.preprocess(raw_text=message.text, language=self.language)
+            intent_ids, probabilities = self.clf.predict(preprocessed_message, k=nb_labels)
             intents = self.transform_labels(intent_ids)
             # `predict` returns a matrix as it is supposed
             # to work for multiple examples as well, hence we need to flatten
