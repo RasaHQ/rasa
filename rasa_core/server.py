@@ -94,6 +94,12 @@ def ensure_loaded_agent(f):
 
 
 def bool_arg(request, name, default=True):
+    # type: (Request, Text, bool) -> bool
+    """Return a passed boolean argument of the request or a default.
+
+    Checks the `name` parameter of the request if it contains a valid
+    boolean value. If not, `default` is returned."""
+
     d = str(default)
     return request.args.get(name, d).lower() == 'true'
 
