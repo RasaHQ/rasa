@@ -122,12 +122,20 @@ class Trainer(object):
         if not self.skip_validation:
             components.validate_requirements(config.pipeline)
 
-        # Transform the passed names of the pipeline components into classes
+        # build pipeline
+        self.pipeline = self._build_pipeline(config, component_builder)
+
+    @staticmethod
+    def _build_pipeline(config, component_builder):
+        # type: (RasaNLUConfig, ComponentBuilder) -> List
+        """Transform the passed names of the pipeline components into classes"""
+        pipeline = []
+
         for component_name in config.pipeline:
             try:
                 component = component_builder.create_component(
                         component_name, config)
-                self.pipeline.append(component)
+                pipeline.append(component)
             except NoLanguageSupportingError as e:
                 # component don't support current language
                 if not config.component_force_language_support:
@@ -137,6 +145,8 @@ class Trainer(object):
 
                 # else re-raise the exception
                 raise
+
+        return pipeline
 
     def train(self, data):
         # type: (TrainingData) -> Interpreter
