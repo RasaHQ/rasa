@@ -104,8 +104,24 @@ class MissingArgumentError(ValueError):
 
 
 class NoLanguageSupportingError(Exception):
-    """Raised when a component is created but the language is not supported."""
-    pass
+    """Raised when a component is created but the language is not supported.
+
+    Attributes:
+        component -- component name
+        language -- language that component not support
+    """
+
+    def __init__(self, component, language):
+        # type: (Text, Text) -> None
+        self.component = component
+        self.language = language
+
+        super(NoLanguageSupportingError, self).__init__(component, language)
+
+    def __str__(self):
+        return "component {} does not support language {}".format(
+            self.component, self.language
+        )
 
 
 class Component(object):
@@ -207,7 +223,7 @@ class Component(object):
         language = config.get('language', None)
         if not cls.can_handle_language(language):
             # check failed
-            raise NoLanguageSupportingError("component {} does not support language {}".format(cls.name, language))
+            raise NoLanguageSupportingError(cls.name, language)
 
         return cls()
 

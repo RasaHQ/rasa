@@ -140,7 +140,7 @@ class Trainer(object):
                 # component don't support current language
                 if not config.component_force_language_support:
                     # ignore this component
-                    logger.warning(e.message)
+                    logger.warning(e)
                     continue
 
                 # else re-raise the exception
