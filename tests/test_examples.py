@@ -27,7 +27,7 @@ def test_moodbot_example():
     assert responses[-1]['text'] in {"Did that help you?"}
 
     # (there is a 'I am on it' message in the middle we are not checking)
-    assert len(responses) == 6
+    assert len(responses) == 4
 
 
 def test_remote_example():
@@ -75,7 +75,7 @@ def test_restaurantbot_example():
                            os.path.join(p, "data", "babi_stories.md"))
 
     responses = agent.handle_message("/greet")
-    assert responses[0] == 'how can I help you?'
+    assert responses[0]['text'] == 'how can I help you?'
 
 
 def test_concerts_online_example():
