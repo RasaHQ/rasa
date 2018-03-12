@@ -27,6 +27,8 @@ Changed
   of ``"None"`` as intent name in the json result if there's no match
 - in teh evaluation results, replaced ``O`` with the string
   ``no_entity`` for better understanding
+- The ``CRFEntityExtractor`` now only trains entity examples that have
+  ``"extractor": "ner_crf"`` or no extractor at all
 
 Fixed
 -----
