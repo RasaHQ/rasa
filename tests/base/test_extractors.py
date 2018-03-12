@@ -38,7 +38,8 @@ def test_crf_extractor(spacy_nlp):
     sentence = 'anywhere in the west'
     ext.extract_entities(Message(sentence, {"spacy_doc": spacy_nlp(sentence)}))
     filtered = ext.filter_trainable_entities(examples)
-    assert filtered[1].get('entities') == [{"start": 8, "end": 14, "value": "indian", "entity": "cuisine", "extractor": "ner_crf"}]
+    assert filtered[1].get('entities') == [
+        {"start": 8, "end": 14, "value": "indian", "entity": "cuisine", "extractor": "ner_crf"}]
 
 
 def test_crf_json_from_BILOU(spacy_nlp):
