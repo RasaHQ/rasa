@@ -95,6 +95,6 @@ def test_concerts_online_example():
     agent = run_concertbot_online(input_channel, RegexInterpreter(),
                                   domain_file, training_file)
     responses = agent.handle_message("/greet")
-    assert responses[-1] in {"hey there!",
+    assert responses[-1]['text'] in {"hey there!",
                              "how can I help you?",
                              "default message"}
