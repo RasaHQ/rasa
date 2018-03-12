@@ -21,10 +21,10 @@ def test_moodbot_example():
     agent = run.main("examples/moodbot/models/dialogue")
 
     responses = agent.handle_message("/greet")
-    assert responses[0] == 'Hey! How are you?'
+    assert responses[0]['text'] == 'Hey! How are you?'
 
     responses.extend(agent.handle_message("/mood_unhappy"))
-    assert responses[-1] in {"Did that help you?"}
+    assert responses[-1]['text'] in {"Did that help you?"}
 
     # (there is a 'I am on it' message in the middle we are not checking)
     assert len(responses) == 6
