@@ -82,7 +82,7 @@ class FormAction(Action):
                 raise
                 return []
 
-    def ready_to_submit(self, tracker):
+    def ready_to_submit(self, tracker, events):
         return not any([
             self.should_request_slot(tracker, field.slot_name, events)
             for field in self.REQUIRED_FIELDS])
@@ -92,7 +92,7 @@ class FormAction(Action):
 
         events = self.get_requested_slot(tracker)
 
-        if self.ready_to_submit(tracker):
+        if self.ready_to_submit(tracker, events):
             return self.submit(dispatcher, tracker, domain)
 
         for field in self.REQUIRED_FIELDS:
