@@ -3,18 +3,13 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from copy import deepcopy
-
-import typing
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Text
 
 from rasa_nlu.components import Component
-
-if typing.TYPE_CHECKING:
-    from rasa_nlu.training_data import Message
+from rasa_nlu.training_data import Message
 
 
 class EntityExtractor(Component):
@@ -34,12 +29,17 @@ class EntityExtractor(Component):
 
     def filter_trainable_entities(self, entity_examples):
         # type: (List[Message]) -> List[Message]
-        working_examples = deepcopy(entity_examples)
-        for message in working_examples:
+        filtered = []
+        for message in entity_examples:
             entities = []
             for ent in message.get("entities", []):
                 extractor = ent.get("extractor")
                 if not extractor or extractor == self.name:
                     entities.append(ent)
-            message.set("entities", entities)
-        return working_examples
+            data = message.data.copy()
+            data['entities'] = entities
+            filtered.append(Message(text=message.text,
+                                    data=data,
+                                    output_properties=message.output_properties,
+                                    time=message.time))
+        return filtered
