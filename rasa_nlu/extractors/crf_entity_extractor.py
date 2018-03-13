@@ -5,7 +5,6 @@ from __future__ import absolute_import
 
 import logging
 import os
-from copy import deepcopy
 
 import typing
 from typing import Any
@@ -18,7 +17,6 @@ from typing import Tuple
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.model import Metadata
-from rasa_nlu.tokenizers import Token
 from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
 from builtins import str
@@ -28,7 +26,6 @@ logger = logging.getLogger(__name__)
 if typing.TYPE_CHECKING:
     from spacy.language import Language
     import sklearn_crfsuite
-    from spacy.tokens import Doc
 
 
 class CRFEntityExtractor(EntityExtractor):

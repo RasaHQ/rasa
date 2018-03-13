@@ -25,10 +25,17 @@ class EntityExtractor(Component):
             entity["processors"].append(self.name)
         else:
             entity["processors"] = [self.name]
+
         return entity
 
     def filter_trainable_entities(self, entity_examples):
         # type: (List[Message]) -> List[Message]
+        """Filters out untrainable entity annotations.
+
+        Creates a copy of entity_examples in which entities that have
+        `extractor` set to something other than self.name (e.g. 'ner_crf')
+        are removed."""
+
         filtered = []
         for message in entity_examples:
             entities = []
@@ -38,8 +45,10 @@ class EntityExtractor(Component):
                     entities.append(ent)
             data = message.data.copy()
             data['entities'] = entities
-            filtered.append(Message(text=message.text,
-                                    data=data,
-                                    output_properties=message.output_properties,
-                                    time=message.time))
+            filtered.append(
+                Message(text=message.text,
+                        data=data,
+                        output_properties=message.output_properties,
+                        time=message.time))
+
         return filtered
