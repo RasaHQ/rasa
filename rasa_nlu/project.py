@@ -143,7 +143,7 @@ class Project(object):
 
         if models:
             time_list = [
-                datetime.datetime.strptime(m,'%Y%m%d-%H%M%S')
+                datetime.datetime.strptime(m, '%Y%m%d-%H%M%S')
                 for m in models]
             return models[max(time_list).strftime('%Y%m%d-%H%M%S')]
         else:
