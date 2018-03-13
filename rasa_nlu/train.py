@@ -96,6 +96,8 @@ def do_train_in_worker(config):
         _, _, persisted_path = do_train(config)
         return persisted_path
     except Exception as e:
+        logger.exception("Failed to train project '{}'.".format(
+                config.get("project")))
         raise TrainingException(config.get("project"), e)
 
 
