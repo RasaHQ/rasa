@@ -26,6 +26,12 @@ the framework that you executed them and tell the model about any update of the
 internal dialogue state for that user. All of these interactions are done using
 a HTTP REST interface.
 
+You can also use a single, simpler endpoint called `/respond`, which just returns
+all of the messages your bot should send back to the user. In general, this only
+works if all of your actions are simple utterances (messages sent to the user).
+It can make use of custom actions, but then these *have* to be implemented in 
+python and executed on the machine that runs the server. 
+
 To activate the remote mode, include
 
 .. code-block:: yaml
@@ -260,6 +266,37 @@ Endpoints
               }
           }
       }
+
+   :statuscode 200: no error
+
+.. http:post:: /conversations/(str:sender_id)/respond
+
+   Notify the dialogue engine that the user posted a new message, and get
+   a list of response messages the bot should send back.
+   You must ``POST`` data in this format ``'{"query":"<your text to parse>"}'``,
+   you can do this with
+
+   **Example request**:
+
+   .. sourcecode:: bash
+
+      curl -XPOST localhost:5005/conversations/default/respond -d \
+        '{"query":"hello there"}' | python -mjson.tool
+
+   **Example response**:
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Vary: Accept
+      Content-Type: text/javascript
+
+      [
+        {
+          "text": "Hi! welcome to the pizzabot",
+          "data": {"title": "order pizza", "payload": "/start_order"},
+        }
+      ]
 
    :statuscode 200: no error
 
