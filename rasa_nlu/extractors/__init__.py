@@ -3,6 +3,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from copy import deepcopy
+
 import typing
 from typing import Any
 from typing import Dict
@@ -31,7 +33,7 @@ class EntityExtractor(Component):
         return entity
 
     def filter_trainable_entities(self, entity_examples):
-        # type: (List[Message]) -> TrainingData
+        # type: (List[Message]) -> List[Message]
         for message in entity_examples:
             entities = []
             for ent in message.get("entities", []):
