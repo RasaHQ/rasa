@@ -45,8 +45,6 @@ def create_argparser():
                         help="If present, a model will always be persisted "
                              "in the specified directory instead of creating "
                              "a folder like 'model_20171020-160213'")
-    parser.add_argument('-m', '--mitie_file', default=None,
-                        help='File with mitie total_word_feature_extractor')
     return parser
 
 

@@ -32,10 +32,5 @@ def spacy_nlp(component_builder, default_config):
 
 
 @pytest.fixture(scope="session")
-def mitie_feature_extractor(component_builder, default_config):
-    return component_builder.create_component("nlp_mitie", default_config).extractor
-
-
-@pytest.fixture(scope="session")
 def default_config():
     return RasaNLUConfig(CONFIG_DEFAULTS_PATH)

@@ -48,14 +48,6 @@ def app(component_builder):
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-            "http://dummy_uri/parse?q=food&project=test_project_mitie",
-            {"entities": [], "intent": "affirm", "text": "food"}
-    ),
-    ResponseTest(
-            "http://dummy_uri/parse?q=food&project=test_project_mitie_sklearn",
-            {"entities": [], "intent": "restaurant_search", "text": "food"}
-    ),
-    ResponseTest(
             "http://dummy_uri/parse?q=food&project=test_project_spacy_sklearn",
             {"entities": [], "intent": "restaurant_search", "text": "food"}
     ),
@@ -90,16 +82,6 @@ def test_get_parse_invalid_model(app, response_test):
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
             "http://dummy_uri/parse",
-            {"entities": [], "intent": "affirm", "text": "food"},
-            payload={"q": "food", "project": "test_project_mitie"}
-    ),
-    ResponseTest(
-            "http://dummy_uri/parse",
-            {"entities": [], "intent": "restaurant_search", "text": "food"},
-            payload={"q": "food", "project": "test_project_mitie_sklearn"}
-    ),
-    ResponseTest(
-            "http://dummy_uri/parse",
             {"entities": [], "intent": "restaurant_search", "text": "food"},
             payload={"q": "food", "project": "test_project_spacy_sklearn"}
     ),
@@ -116,9 +98,13 @@ def test_post_parse(app, response_test):
 def test_post_parse_specific_model(app):
     status = yield app.get("http://dummy_uri/status")
     sjs = yield status.json()
-    model = sjs["available_projects"]["test_project_mitie"]["available_models"][0]
-    query = ResponseTest("http://dummy_uri/parse", {"entities": [], "intent": "affirm", "text": "food"},
-                         payload={"q": "food", "project": "test_project_mitie", "model": model})
+    project = sjs["available_projects"]["test_project_spacy_sklearn"]
+    model = project["available_models"][0]
+    query = ResponseTest("http://dummy_uri/parse",
+                         {"entities": [], "intent": "affirm", "text": "food"},
+                         payload={"q": "food",
+                                  "project": "test_project_spacy_sklearn",
+                                  "model": model})
     response = yield app.post(query.endpoint, json=query.payload)
     assert response.code == 200
 
@@ -157,6 +143,4 @@ def train_models(component_builder):
         persistor = create_persistor(config)
         trainer.persist("test_projects", persistor, project_name)
 
-    train("sample_configs/config_mitie.json", "test_project_mitie")
     train("sample_configs/config_spacy.json", "test_project_spacy_sklearn")
-    train("sample_configs/config_mitie_sklearn.json", "test_project_mitie_sklearn")

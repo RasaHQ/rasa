@@ -88,16 +88,10 @@ Training a New Model for your Project
 -------------------------------------
 
 Now we're going to create a configuration file. Make sure first that you've set up a backend, see :ref:`section_backends` .
-Create a file called ``config_spacy.json`` or ``config_mitie.json``, depending on the pipeline selected, in your working directory which looks like this
+Create a file called ``config_spacy.json`` in your working directory which looks like this
 
  
 .. literalinclude:: ../sample_configs/config_spacy.json
-    :language: json
-
-or if you've installed the MITIE backend instead:
-
-
-.. literalinclude:: ../sample_configs/config_mitie.json
     :language: json
 
 Now we can train a spacy model by running:
@@ -180,14 +174,10 @@ This tutorial is just a toy example, with far too little training data to expect
     Intent classification is independent of entity extraction, e.g. in "I am looking for Chinese food" the entities are not extracted, though intent classification is correct.
 
 Rasa NLU will also print a ``confidence`` value for the intent classification. For models using spacy
-intent classification this will be a probability. For MITIE models this is just a score, which **might be
-greater than 1**.
+intent classification this will be a probability.
 
 You can use this to do some error handling in your chatbot (ex: asking the user again if the confidence is low)
 and it's also helpful for prioritising which intents need more training data.
-
-.. note::
-    The output may contain other or less attributes, depending on the pipeline you are using. For example, the ``mitie`` pipeline doesn't include the ``"intent_ranking"`` (see example below) whereas the ``spacy_sklearn`` pipeline does (see example above).
 
 
 With very little data, rasa NLU can in certain cases already generalise concepts, for example:
@@ -207,7 +197,7 @@ With very little data, rasa NLU can in certain cases already generalise concepts
                 "value": "italian",
                 "start": 12,
                 "end": 19,
-                "extractor": "ner_mitie"
+                "extractor": "ner_crf"
             }
         ],
         "text": "I want some italian food"

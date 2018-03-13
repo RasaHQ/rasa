@@ -38,7 +38,7 @@ def test_blank_config():
 
 
 def test_invalid_config_json():
-    file_config = """{"pipeline": [mitie]}"""   # invalid json
+    file_config = """{"pipeline": [spacy_sklearn]}"""   # invalid json
     cmdline_args = {}
     env_vars = {}
     with tempfile.NamedTemporaryFile("w+", suffix="_tmp_config_file.json") as f:
