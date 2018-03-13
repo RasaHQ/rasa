@@ -34,11 +34,12 @@ class EntityExtractor(Component):
 
     def filter_trainable_entities(self, entity_examples):
         # type: (List[Message]) -> List[Message]
-        for message in entity_examples:
+        working_examples = deepcopy(entity_examples)
+        for message in working_examples:
             entities = []
             for ent in message.get("entities", []):
                 extractor = ent.get("extractor")
                 if not extractor or extractor == self.name:
                     entities.append(ent)
             message.set("entities", entities)
-        return entity_examples
+        return working_examples

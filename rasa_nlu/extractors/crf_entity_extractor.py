@@ -98,14 +98,13 @@ class CRFEntityExtractor(EntityExtractor):
 
         # checks whether there is at least one example with an entity annotation
         if training_data.entity_examples:
-            # entity examples are modified, hence create deepcopy
-            working_data = deepcopy(training_data.entity_examples)
             # filter out pre-trained entity examples
-            filtered = self.filter_trainable_entities(working_data)
+            filtered_entity_examples = self.filter_trainable_entities(
+                training_data.entity_examples)
             # convert the dataset into features
             # this will train on ALL examples, even the ones
             # without annotations
-            dataset = self._create_dataset(filtered)
+            dataset = self._create_dataset(filtered_entity_examples)
             # train the model
             self._train_model(dataset)
 
