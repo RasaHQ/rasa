@@ -1,12 +1,18 @@
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 import logging
 import os
 
 import typing
+from builtins import str
+from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu.extractors import EntityExtractor
+from rasa_nlu.model import Metadata
+from rasa_nlu.training_data import Message
+from rasa_nlu.training_data import TrainingData
 from typing import Any
 from typing import Dict
 from typing import List
@@ -14,20 +20,11 @@ from typing import Optional
 from typing import Text
 from typing import Tuple
 
-from rasa_nlu.config import RasaNLUConfig
-from rasa_nlu.extractors import EntityExtractor
-from rasa_nlu.model import Metadata
-from rasa_nlu.tokenizers import Token
-from rasa_nlu.training_data import Message
-from rasa_nlu.training_data import TrainingData
-from builtins import str
-
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from spacy.language import Language
     import sklearn_crfsuite
-    from spacy.tokens import Doc
 
 
 class CRFEntityExtractor(EntityExtractor):
@@ -55,6 +52,8 @@ class CRFEntityExtractor(EntityExtractor):
                  entity_crf_BILOU_flag=True):
         # type: (sklearn_crfsuite.CRF, List[List[Text]], bool) -> None
 
+        super(CRFEntityExtractor, self).__init__()
+
         self.ent_tagger = ent_tagger
 
         # BILOU_flag determines whether to use BILOU tagging or not.
@@ -62,20 +61,25 @@ class CRFEntityExtractor(EntityExtractor):
         # rule of thumb: use only if more than 100 egs. per entity
         self.BILOU_flag = entity_crf_BILOU_flag
 
+        self.max_iterations = None
+        self.L1_C = None
+        self.L2_C = None
+
         if not entity_crf_features:
             # crf_features is [before, word, after] array with before, word,
             # after holding keys about which
             # features to use for each word, for example, 'title' in
             # array before will have the feature
             # "is the preceding word in title case?"
-            self.crf_features = [
-                ['low', 'title', 'upper', 'pos', 'pos2'],
-                ['bias', 'low', 'word3', 'word2', 'upper', 'title', 'digit', 'pos', 'pos2', 'pattern'],
-                ['low', 'title', 'upper', 'pos', 'pos2']
-            ]
+            prev_token = ['low', 'title', 'upper', 'pos', 'pos2']
+            curr_token = ['bias', 'low', 'word3', 'word2', 'upper',
+                          'title', 'digit', 'pos', 'pos2', 'pattern']
+            next_token = ['low', 'title', 'upper', 'pos', 'pos2']
+            self.crf_features = [prev_token, curr_token, next_token]
         else:
             if len(entity_crf_features) % 2 != 1:
-                raise ValueError("Need an odd number of crf feature lists to have a center word.")
+                raise ValueError("Need an odd number of crf feature "
+                                 "lists to have a center word.")
             self.crf_features = entity_crf_features
 
     @classmethod
@@ -95,7 +99,8 @@ class CRFEntityExtractor(EntityExtractor):
         self.L1_C = config.get("L1_c", 1)
         self.L2_C = config.get("L2_c", 1e-3)
 
-        # checks whether there is at least one example with an entity annotation
+        # checks whether there is at least one
+        # example with an entity annotation
         if training_data.entity_examples:
             # convert the dataset into features
             # this will train on ALL examples, even the ones
@@ -112,13 +117,6 @@ class CRFEntityExtractor(EntityExtractor):
             dataset.append(self._from_json_to_crf(example, entity_offsets))
         return dataset
 
-    def test(self, testing_data):
-        # type: (TrainingData, Language) -> None
-
-        if testing_data.num_entity_examples > 0:
-            dataset = self._create_dataset(testing_data.entity_examples)
-            self._test_model(dataset)
-
     def process(self, message, **kwargs):
         # type: (Message, **Any) -> None
 
@@ -126,11 +124,12 @@ class CRFEntityExtractor(EntityExtractor):
         message.set("entities", message.get("entities", []) + extracted,
                     add_to_output=True)
 
-    def _convert_example(self, example):
+    @staticmethod
+    def _convert_example(example):
         # type: (Message) -> List[Tuple[int, int, Text]]
 
-        def convert_entity(ent):
-            return ent["start"], ent["end"], ent["entity"]
+        def convert_entity(entity):
+            return entity["start"], entity["end"], entity["entity"]
 
         return [convert_entity(ent) for ent in example.get("entities", [])]
 
@@ -217,9 +216,9 @@ class CRFEntityExtractor(EntityExtractor):
 
     @classmethod
     def load(cls,
-             model_dir,  # type: Text
-             model_metadata,  # type: Metadata
-             cached_component,  # type: Optional[CRFEntityExtractor]
+             model_dir=None,  # type: Text
+             model_metadata=None,  # type: Metadata
+             cached_component=None,  # type: Optional[CRFEntityExtractor]
              **kwargs  # type: **Any
              ):
         # type: (...) -> CRFEntityExtractor
@@ -227,7 +226,8 @@ class CRFEntityExtractor(EntityExtractor):
 
         if model_dir and model_metadata.get("entity_extractor_crf"):
             meta = model_metadata.get("entity_extractor_crf")
-            ent_tagger = joblib.load(os.path.join(model_dir, meta["model_file"]))
+            model_file = os.path.join(model_dir, meta["model_file"])
+            ent_tagger = joblib.load(model_file)
             return CRFEntityExtractor(ent_tagger=ent_tagger,
                                       entity_crf_features=meta['crf_features'],
                                       entity_crf_BILOU_flag=meta['BILOU_flag'])
@@ -285,23 +285,29 @@ class CRFEntityExtractor(EntityExtractor):
             sentence_features.append(word_features)
         return sentence_features
 
-    def _sentence_to_labels(self, sentence):
+    @staticmethod
+    def _sentence_to_labels(sentence):
         # type: (List[Tuple[Text, Text, Text, Text]]) -> List[Text]
 
         return [label for _, _, label, _ in sentence]
 
-    def _from_json_to_crf(self, message, entity_offsets):
-        # type: (Message, List[Tuple[int, int, Text]]) -> List[Tuple[Text, Text, Text, Text]]
-        """Takes the json examples and switches them to a format which crfsuite likes."""
+    def _from_json_to_crf(self,
+                          message,  # type: Message
+                          entity_offsets  # type: List[Tuple[int, int, Text]]
+                          ):
+        # type: (...) -> List[Tuple[Text, Text, Text, Text]]
+        """Convert json examples to format of underlying crfsuite."""
         from spacy.gold import GoldParse
 
         doc = message.get("spacy_doc")
         gold = GoldParse(doc, entities=entity_offsets)
         ents = [l[5] for l in gold.orig_annot]
         if '-' in ents:
-            logger.warn("Misaligned entity annotation in sentence '{}'. ".format(doc.text) +
-                        "Make sure the start and end values of the annotated training " +
-                        "examples end at token boundaries (e.g. don't include trailing whitespaces).")
+            logger.warn("Misaligned entity annotation in sentence '{}'. "
+                        "Make sure the start and end values of the "
+                        "annotated training examples end at token "
+                        "boundaries (e.g. don't include trailing "
+                        "whitespaces).".format(doc.text))
         if not self.BILOU_flag:
             for i, entity in enumerate(ents):
                 if entity.startswith('B-') or \
@@ -312,13 +318,15 @@ class CRFEntityExtractor(EntityExtractor):
 
         return self._from_text_to_crf(message, ents)
 
-    def __pattern_of_token(self, message, i):
+    @staticmethod
+    def __pattern_of_token(message, i):
         if message.get("tokens"):
             return message.get("tokens")[i].get("pattern")
         else:
             return None
 
-    def __tag_of_token(selfself, token):
+    @staticmethod
+    def __tag_of_token(token):
         import spacy
         if spacy.about.__version__ > "2" and token._.has("tag"):
             return token._.get("tag")
@@ -346,9 +354,13 @@ class CRFEntityExtractor(EntityExtractor):
         y_train = [self._sentence_to_labels(sent) for sent in df_train]
         self.ent_tagger = sklearn_crfsuite.CRF(
                 algorithm='lbfgs',
-                c1=self.L1_C,  # coefficient for L1 penalty
-                c2=self.L2_C,  # coefficient for L2 penalty
-                max_iterations=self.max_iterations,  # stop earlier
-                all_possible_transitions=True  # include transitions that are possible, but not observed
+                # coefficient for L1 penalty
+                c1=self.L1_C,
+                # coefficient for L2 penalty
+                c2=self.L2_C,
+                # stop earlier
+                max_iterations=self.max_iterations,
+                # include transitions that are possible, but not observed
+                all_possible_transitions=True
         )
         self.ent_tagger.fit(X_train, y_train)

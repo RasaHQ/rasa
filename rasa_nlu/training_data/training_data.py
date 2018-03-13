@@ -11,6 +11,7 @@ import warnings
 
 from copy import deepcopy
 from builtins import object, str
+from rasa_nlu.training_data import Message
 
 from typing import Any
 from typing import Dict
@@ -52,7 +53,8 @@ class TrainingData(object):
         self.print_stats()
 
     def merge(self, *others):
-        """Merges the TrainingData instance with others and creates a new one."""
+        """Return merged instance of this data with other training data."""
+
         training_examples = deepcopy(self.training_examples)
         entity_synonyms = self.entity_synonyms.copy()
         regex_features = deepcopy(self.regex_features)
@@ -62,13 +64,15 @@ class TrainingData(object):
             regex_features.extend(deepcopy(o.regex_features))
 
             for text, syn in o.entity_synonyms.items():
-                check_duplicate_synonym(entity_synonyms, text, syn, "merging training data")
+                check_duplicate_synonym(entity_synonyms, text, syn,
+                                        "merging training data")
 
             entity_synonyms.update(o.entity_synonyms)
 
         return TrainingData(training_examples, entity_synonyms, regex_features)
 
-    def sanitize_examples(self, examples):
+    @staticmethod
+    def sanitize_examples(examples):
         # type: (List[Message]) -> List[Message]
         """Makes sure the training data is clean.
 
@@ -119,7 +123,8 @@ class TrainingData(object):
     def sort_regex_features(self):
         """Sorts regex features lexicographically by name+pattern"""
         self.regex_features = sorted(self.regex_features,
-                                     key=lambda e: "{}+{}".format(e['name'], e['pattern']))
+                                     key=lambda e: "{}+{}".format(e['name'],
+                                                                  e['pattern']))
 
     def as_json(self, **kwargs):
         # type: (**Any) -> str
@@ -147,7 +152,7 @@ class TrainingData(object):
 
     def sorted_entities(self):
         # type: () -> List[Any]
-        """Extracts all entities from all examples and sorts them by entity type."""
+        """Extract all entities from examples and sorts them by entity type."""
 
         entity_examples = [entity
                            for ex in self.entity_examples
@@ -172,21 +177,26 @@ class TrainingData(object):
                           "training data. This may result in wrong "
                           "intent predictions.")
 
+        # emit warnings for intents with only a few training samples
         for intent, count in self.examples_per_intent.items():
             if count < self.MIN_EXAMPLES_PER_INTENT:
                 warnings.warn("Intent '{}' has only {} training examples! "
-                              "Minimum is {}, training may fail.".format(intent, count,
-                                                                         self.MIN_EXAMPLES_PER_INTENT))
+                              "Minimum is {}, training may fail."
+                              .format(intent, count,
+                                      self.MIN_EXAMPLES_PER_INTENT))
+
+        # emit warnings for entities with only a few training samples
         for entity_type, count in self.examples_per_entity.items():
             if count < self.MIN_EXAMPLES_PER_ENTITY:
                 warnings.warn("Entity '{}' has only {} training examples! "
-                              "minimum is {}, training may fail.".format(entity_type, count,
-                                                                         self.MIN_EXAMPLES_PER_ENTITY))
+                              "minimum is {}, training may fail."
+                              "".format(entity_type, count,
+                                        self.MIN_EXAMPLES_PER_ENTITY))
 
     def print_stats(self):
         logger.info("Training data stats: \n" +
-                    "\t- intent examples: {} ({} distinct intents)\n".format(len(self.intent_examples),
-                                                                             len(self.intents)) +
+                    "\t- intent examples: {} ({} distinct intents)\n".format(
+                            len(self.intent_examples), len(self.intents)) +
                     "\t- Found intents: {}\n".format(
                             list_to_str(self.intents)) +
                     "\t- entity examples: {} ({} distinct entities)\n".format(
