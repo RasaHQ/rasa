@@ -9,9 +9,10 @@ import pickle
 import tempfile
 
 import pytest
+from rasa_nlu import utils
 
 from rasa_nlu.utils import (
-    relative_normpath, recursively_find_files,
+    relative_normpath,
     create_dir,
     ordered, is_model_dir, remove_model, write_json_to_file, write_to_file)
 
@@ -30,15 +31,15 @@ def test_relative_normpath():
     assert relative_normpath(None, "/my/test") is None
 
 
-def test_recursively_find_files_invalid_resource():
+def test_find_files_invalid_resource():
     with pytest.raises(ValueError) as execinfo:
-        recursively_find_files(None)
+        utils.list_files(None)
     assert "must be a string type" in str(execinfo.value)
 
 
-def test_recursively_find_files_non_existing_dir():
+def test_find_files_non_existing_dir():
     with pytest.raises(ValueError) as execinfo:
-        recursively_find_files("my/made_up/path")
+        utils.list_files("my/made_up/path")
     assert "Could not locate the resource" in str(execinfo.value)
 
 
