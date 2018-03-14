@@ -29,6 +29,7 @@ Changed
   ``no_entity`` for better understanding
 - The ``CRFEntityExtractor`` now only trains entity examples that have
   ``"extractor": "ner_crf"`` or no extractor at all
+- Ignore hidden files when listing projects or models
 
 Fixed
 -----
