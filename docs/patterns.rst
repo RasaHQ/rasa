@@ -35,7 +35,7 @@ A form action has a set of required fields, which you define for the class:
    class RestaurantSearch(FormAction):
    
        REQUIRED_FIELDS = [
-	  EntityFormField("number", "num_people"),
+          EntityFormField("number", "num_people"),
           EntityFormField("cuisine", "cuisine")
        ]
 

@@ -28,10 +28,7 @@ class EntityFormField(FormField):
         self.slot_name = slot_name
 
     def extract(self, tracker):
-        value = None
-        for e in tracker.latest_message.entities:
-            if e["entity"] == self.entity_name:
-                value = e["value"]
+        value = next(tracker.get_latest_entity_values(self.entity_name), None)
         if value:
             return [SlotSet(self.slot_name, value)]
         else:
@@ -47,7 +44,7 @@ class BooleanFormField(FormField):
 
     def extract(self, tracker):
         value = None
-        intent = tracker.latest_message.intent["name"]
+        intent = tracker.latest_message.intent.get("name")
         if intent == self.affirm_intent:
             value = True
         elif intent == self.deny_intent:
@@ -72,14 +69,13 @@ class FormAction(Action):
         if requested_slot is None:
             return []
         else:
-            try:
-                required = self.REQUIRED_FIELDS[:]
-                if self.RANDOMIZE:
-                    random.shuffle(required)
-                fields = [f for f in required if f.slot_name == requested_slot]
+            required = self.REQUIRED_FIELDS[:]
+            if self.RANDOMIZE:
+                random.shuffle(required)
+            fields = [f for f in required if f.slot_name == requested_slot]
+            if len(fields) > 0:
                 return fields[0].extract(tracker)
-            except:
-                raise
+            else:
                 return []
 
     def ready_to_submit(self, tracker, events):
