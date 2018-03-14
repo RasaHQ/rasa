@@ -105,7 +105,8 @@ class TelegramInput(HttpInputComponent):
                 return "Webhook setup successful"
             else:
                 return "Invalid webhook"
-
+        set_webhook()
+        
         @telegram_webhook.route("/webhook", methods=['GET', 'POST'])
         def message():
             if request.method == 'POST':
