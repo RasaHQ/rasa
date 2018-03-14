@@ -1,0 +1,27 @@
+# all hashtags are comments :)
+action_factory: remote
+
+intents:
+ - inform
+
+entities:
+- number
+- cuisine
+
+slots:
+  cuisine:
+    type: text
+  people:
+    type: text
+  requested_slot:
+    type: unfeaturized
+
+
+templates:
+  utter_ask_people:
+    - "for how many people?"
+  utter_ask_cuisine:
+    - "what cuisine would you like?"
+
+actions:
+  - action_search_restaurants
