@@ -8,10 +8,10 @@ import io
 import json
 import logging
 import os
-import rasa_nlu
 import re
 import warnings
 
+from rasa_nlu import utils as nlu_utils
 from typing import Optional, List, Text, Any, Dict
 
 from rasa_core import utils
@@ -19,7 +19,7 @@ from rasa_core.events import (
     ActionExecuted, UserUttered, Event)
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.training.structures import (
-    Checkpoint, STORY_END, STORY_START, StoryStep)
+    Checkpoint, STORY_START, StoryStep)
 
 logger = logging.getLogger(__name__)
 
@@ -137,7 +137,7 @@ class StoryFileReader(object):
                          template_variables=None):
         """Given a path reads all contained story files."""
 
-        files = rasa_nlu.utils.recursively_find_files(resource_name)
+        files = nlu_utils.list_files(resource_name)
         story_steps = []
         for f in files:
             steps = StoryFileReader.read_from_file(f, domain, interpreter,

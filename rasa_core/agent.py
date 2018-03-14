@@ -71,11 +71,7 @@ class Agent(object):
             sender_id=UserMessage.DEFAULT_SENDER_ID  # type: Optional[Text]
     ):
         # type: (...) -> Optional[List[Text]]
-        """
-
-
-
-        Handle a single message.
+        """Handle a single message.
 
         If a message preprocessor is passed, the message will be passed to that
         function first and the return value is then used as the
