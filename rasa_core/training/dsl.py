@@ -137,9 +137,8 @@ class StoryFileReader(object):
                          template_variables=None):
         """Given a path reads all contained story files."""
 
-        files = nlu_utils.list_files(resource_name)
         story_steps = []
-        for f in files:
+        for f in nlu_utils.list_files(resource_name):
             steps = StoryFileReader.read_from_file(f, domain, interpreter,
                                                    template_variables)
             story_steps.extend(steps)
