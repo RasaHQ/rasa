@@ -322,7 +322,7 @@ class RasaCoreServer(object):
         except Exception as e:
             request.setResponseCode(500)
             logger.error("Caught an exception during "
-                         "parse: {}".format(e), exc_info=1)
+                         "respond: {}".format(e), exc_info=1)
             return json.dumps({"error": "{}".format(e)})
 
     @app.route("/load", methods=['POST', 'OPTIONS'])
