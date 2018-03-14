@@ -27,3 +27,6 @@ run-telegram:
 
 run-cmdline:
 	python -m rasa_core.run -d models/dialogue -u models/nlu/current
+
+evaluate-nlu:
+	python -m rasa_nlu.evaluate  --model models/nlu/current --config nlu_model_config.json --data

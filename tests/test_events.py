@@ -99,7 +99,5 @@ def test_event_has_proper_implementation(one_event, another_event):
 ])
 def test_dict_serialisation(one_event, default_domain):
     evt_dict = one_event.as_dict()
-    recovered_event = Event.from_parameters(one_event.type_name,
-                                            evt_dict,
-                                            default_domain)
+    recovered_event = Event.from_parameters(evt_dict)
     assert hash(one_event) == hash(recovered_event)

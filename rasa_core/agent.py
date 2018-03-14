@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 import os
 
 import logging
-from builtins import str
+from six import string_types
 from typing import Text, List, Optional, Callable, Any, Dict, Union
 
 from rasa_core.channels import UserMessage, InputChannel, OutputChannel
@@ -231,7 +231,7 @@ class Agent(object):
 
     @classmethod
     def _create_domain(cls, domain):
-        if isinstance(domain, str):
+        if isinstance(domain, string_types):
             return TemplateDomain.load(domain)
         elif isinstance(domain, Domain):
             return domain
@@ -244,7 +244,11 @@ class Agent(object):
     @classmethod
     def create_tracker_store(cls, store, domain):
         # type: (Optional[TrackerStore], Domain) -> TrackerStore
-        return store if store is not None else InMemoryTrackerStore(domain)
+        if store is not None:
+            store.domain = domain
+            return store
+        else:
+            return InMemoryTrackerStore(domain)
 
     @staticmethod
     def _create_interpreter(

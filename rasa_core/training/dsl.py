@@ -155,10 +155,14 @@ class StoryFileReader(object):
                 lines = f.readlines()
             reader = StoryFileReader(domain, interpreter, template_variables)
             return reader.process_lines(lines)
-        except Exception:
-            logger.exception("Failed to parse '{}'".format(
-                    os.path.abspath(filename)))
-            raise ValueError("Invalid story file format.")
+        except ValueError as err:
+            file_info = ("Invalid story file format. Failed to parse "
+                         "'{}'".format(os.path.abspath(filename)))
+            logger.exception(file_info)
+            if not err.args:
+                err.args = ('',)
+            err.args = err.args + (file_info,)
+            raise
 
     @staticmethod
     def _parameters_from_json_string(s, line):
@@ -231,7 +235,7 @@ class StoryFileReader(object):
             except Exception as e:
                 msg = "Error in line {}: {}".format(line_num, e.message)
                 logger.error(msg, exc_info=1)
-                raise Exception(msg)
+                raise ValueError(msg)
         self._add_current_stories_to_result()
         return self.story_steps
 
@@ -285,8 +289,7 @@ class StoryFileReader(object):
             # other events, so we need to take a shortcut here
             parameters = {"text": m, "parse_data": parse_data}
             utterance = Event.from_story_string(UserUttered.type_name,
-                                                parameters,
-                                                self.domain)
+                                                parameters)
             if m.startswith("_"):
                 c = utterance.as_story_string()
                 logger.warn("Stating user intents with a leading '_' is "
@@ -302,7 +305,9 @@ class StoryFileReader(object):
         self.current_step_builder.add_user_messages(parsed_messages)
 
     def add_event(self, event_name, parameters):
-        parsed = Event.from_story_string(event_name, parameters, self.domain,
+        if "name" not in parameters:
+            parameters["name"] = event_name
+        parsed = Event.from_story_string(event_name, parameters,
                                          default=ActionExecuted)
         if parsed is None:
             raise StoryParseError("Unknown event '{}'. It is Neither an event "

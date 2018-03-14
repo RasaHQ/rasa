@@ -13,6 +13,7 @@ Added
 -----
 - supported loading training data from a folder - loads all stories from
   all files in that directory
+- parameter to specify NLU project when instantiating a ``RasaNLUInterpreter``
 
 Changed
 -------
