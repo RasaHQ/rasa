@@ -85,8 +85,7 @@ class MessageProcessor(object):
         self._save_tracker(tracker)
 
         if isinstance(message.output_channel, CollectingOutputChannel):
-            return [outgoing_message
-                    for _, outgoing_message in message.output_channel.messages]
+            return message.output_channel.messages
         else:
             return None
 
