@@ -110,7 +110,8 @@ def get_evaluation_metrics(targets, predictions):  # pragma: no cover
     from sklearn import metrics
 
     report = metrics.classification_report(targets, predictions)
-    precision = metrics.precision_score(targets, predictions, average='weighted')
+    precision = metrics.precision_score(targets, predictions,
+                                        average='weighted')
     f1 = metrics.f1_score(targets, predictions, average='weighted')
     accuracy = metrics.accuracy_score(targets, predictions)
 
@@ -195,7 +196,10 @@ def substitute_labels(labels, old, new):
     return [new if label == old else label for label in labels]
 
 
-def evaluate_entities(targets, predictions, tokens, extractors):  # pragma: no cover
+def evaluate_entities(targets,
+                      predictions,
+                      tokens,
+                      extractors):  # pragma: no cover
     """Creates summary statistics for each entity extractor.
 
     Logs precision, recall, and F1 per entity type for each extractor."""
@@ -208,7 +212,8 @@ def evaluate_entities(targets, predictions, tokens, extractors):  # pragma: no c
 
     for extractor in extractors:
         merged_predictions = merge_labels(aligned_predictions, extractor)
-        merged_predictions = substitute_labels(merged_predictions, "O", "no_entity")
+        merged_predictions = substitute_labels(
+                merged_predictions, "O", "no_entity")
         logger.info("Evaluation for entity extractor: {} ".format(extractor))
         log_evaluation_table(merged_targets, merged_predictions)
 
@@ -564,10 +569,10 @@ def compute_metrics(interpreter, corpus, intent_results, entity_results):
 
     # y = [e.get("intent") for e in corpus]
     intent_targets, entity_targets = get_targets(corpus)
-    intent_predictions, entity_predictions, tokens = get_predictions(interpreter,
-                                                                     corpus)
+    intent_predictions, entity_predictions, tokens = get_predictions(
+        interpreter, corpus)
     intent_targets, intent_predictions = remove_empty_intent_examples(
-                                            intent_targets, intent_predictions)
+            intent_targets, intent_predictions)
 
     # compute fold metrics
     _, precision, f1, accuracy = get_evaluation_metrics(intent_targets,
