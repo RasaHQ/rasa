@@ -57,7 +57,8 @@ def list_directory(path):
     # type: (Text) -> List[Text]
     """Returns all files and folders excluding hidden files.
 
-    If the path points to a file, returns the file."""
+    If the path points to a file, returns the file. This is a recursive
+    implementation returning files in any depth of the path."""
 
     if not isinstance(path, six.string_types):
         raise ValueError("Resourcename must be a string type")
@@ -65,7 +66,12 @@ def list_directory(path):
     if os.path.isfile(path):
         return [path]
     elif os.path.isdir(path):
-        return glob.glob(os.path.join(path, '*'))
+        results = []
+        for base, dirs, files in os.walk(path):
+            # remove hidden files
+            goodfiles = filter(lambda x: not x.startswith('.'), files)
+            results.extend(os.path.join(base, f) for f in goodfiles)
+        return results
     else:
         raise ValueError("Could not locate the resource '{}'."
                          "".format(os.path.abspath(path)))
