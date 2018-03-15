@@ -68,7 +68,7 @@ def load_interpreter_for_model(config, persisted_path, component_builder):
             return Metadata.load(model_dir)
 
     metadata = read_model_metadata(persisted_path, config)
-    return Interpreter.create(metadata, config, component_builder)
+    return Interpreter.create(metadata, component_builder)
 
 
 class ResponseTest(object):

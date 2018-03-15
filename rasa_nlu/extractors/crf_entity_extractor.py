@@ -8,7 +8,6 @@ import os
 
 import typing
 from builtins import str
-from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.model import Metadata
 from rasa_nlu.training_data import Message
@@ -33,6 +32,18 @@ class CRFEntityExtractor(EntityExtractor):
     provides = ["entities"]
 
     requires = ["spacy_doc", "tokens"]
+
+    config = {
+        "BILOU_flag": True,
+        "features": [
+            ["low", "title", "upper", "pos", "pos2"],
+            ["bias", "low", "word3", "word2", "upper",
+             "title", "digit", "pos", "pos2", "pattern"],
+            ["low", "title", "upper", "pos", "pos2"]],
+        "max_iterations": 50,
+        "L1_c": 1,
+        "L2_c": 1e-3
+    }
 
     function_dict = {
         'low': lambda doc: doc[0].lower(),
@@ -71,11 +82,7 @@ class CRFEntityExtractor(EntityExtractor):
             # features to use for each word, for example, 'title' in
             # array before will have the feature
             # "is the preceding word in title case?"
-            prev_token = ['low', 'title', 'upper', 'pos', 'pos2']
-            curr_token = ['bias', 'low', 'word3', 'word2', 'upper',
-                          'title', 'digit', 'pos', 'pos2', 'pattern']
-            next_token = ['low', 'title', 'upper', 'pos', 'pos2']
-            self.crf_features = [prev_token, curr_token, next_token]
+            self.crf_features = self.config
         else:
             if len(entity_crf_features) % 2 != 1:
                 raise ValueError("Need an odd number of crf feature "

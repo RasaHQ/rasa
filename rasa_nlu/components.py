@@ -15,7 +15,6 @@ from typing import Set
 from typing import Text
 from typing import Tuple
 
-from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.training_data import Message
 
 if typing.TYPE_CHECKING:
@@ -142,7 +141,8 @@ class Component(object):
     # within the above described `provides` property.
     requires = []
 
-    def __init__(self):
+    def __init__(self, config):
+        self.config = config
         self.partial_processing_pipeline = None
         self.partial_processing_context = None
 

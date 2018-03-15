@@ -6,16 +6,16 @@ from __future__ import unicode_literals
 import itertools
 import logging
 import os
+import tempfile
+from collections import defaultdict
+from collections import namedtuple
+
 import numpy as np
 
-from collections import defaultdict, namedtuple
-
-from typing import Dict, Text, List
-
-from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu import training_data, utils, config
+from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.model import Interpreter
 from rasa_nlu.model import Trainer, TrainingData
-from rasa_nlu import training_data, utils
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ entity_processors = {"ner_synonyms"}
 CVEvaluationResult = namedtuple('Results', 'train test')
 
 
-def create_argparser():  # pragma: no cover
+def create_argument_parser():
     import argparse
     parser = argparse.ArgumentParser(
             description='evaluate a Rasa NLU pipeline with cross '
@@ -39,17 +39,23 @@ def create_argparser():  # pragma: no cover
 
     parser.add_argument('-d', '--data', required=True,
                         help="file containing training/evaluation data")
+
     parser.add_argument('--mode', required=False, default="evaluation",
                         help="evaluation|crossvalidation (evaluate "
                              "pretrained model or train model "
                              "by crossvalidation)")
+
     parser.add_argument('-c', '--config', required=True,
                         help="config file")
 
     parser.add_argument('-m', '--model', required=False,
                         help="path to model (evaluation only)")
+
     parser.add_argument('-f', '--folds', required=False, default=10,
                         help="number of CV folds (crossvalidation only)")
+
+    utils.add_logging_option_arguments(parser)
+
     return parser
 
 
@@ -66,7 +72,9 @@ def plot_confusion_matrix(cm, classes,
 
     zmax = cm.max()
     plt.clf()
-    plt.imshow(cm, interpolation='nearest', cmap=cmap if cmap else plt.cm.Blues,
+    if not cmap:
+        cmap = plt.cm.Blues
+    plt.imshow(cm, interpolation='nearest', cmap=cmap,
                aspect='auto', norm=LogNorm(vmin=zmin, vmax=zmax))
     plt.title(title)
     plt.colorbar()
@@ -110,7 +118,8 @@ def get_evaluation_metrics(targets, predictions):  # pragma: no cover
     from sklearn import metrics
 
     report = metrics.classification_report(targets, predictions)
-    precision = metrics.precision_score(targets, predictions, average='weighted')
+    precision = metrics.precision_score(targets, predictions,
+                                        average='weighted')
     f1 = metrics.f1_score(targets, predictions, average='weighted')
     accuracy = metrics.accuracy_score(targets, predictions)
 
@@ -195,7 +204,8 @@ def substitute_labels(labels, old, new):
     return [new if label == old else label for label in labels]
 
 
-def evaluate_entities(targets, predictions, tokens, extractors):  # pragma: no cover
+def evaluate_entities(targets, predictions, tokens,
+                      extractors):  # pragma: no cover
     """Creates summary statistics for each entity extractor.
 
     Logs precision, recall, and F1 per entity type for each extractor."""
@@ -210,7 +220,8 @@ def evaluate_entities(targets, predictions, tokens, extractors):  # pragma: no c
 
     for extractor in extractors:
         merged_predictions = merge_labels(aligned_predictions, extractor)
-        merged_predictions = substitute_labels(merged_predictions, "O", "no_entity")
+        merged_predictions = substitute_labels(merged_predictions, "O",
+                                               "no_entity")
         logger.info("Evaluation for entity extractor: {} ".format(extractor))
         log_evaluation_table(merged_targets, merged_predictions)
 
@@ -458,13 +469,14 @@ def patch_duckling_entities(entity_predictions):
     return patched_entity_predictions
 
 
-def run_evaluation(config, model_path,
+def run_evaluation(data_path, model_path,
                    component_builder=None):  # pragma: no cover
     """Evaluate intent classification and entity extraction."""
 
     # get the metadata config from the package data
-    test_data = training_data.load_data(config['data'], config['language'])
     interpreter = Interpreter.load(model_path, config, component_builder)
+    test_data = training_data.load_data(data_path,
+                                        interpreter.model_metadata.language)
     intent_targets, entity_targets = get_targets(test_data)
     intent_predictions, entity_predictions, tokens = get_predictions(
             interpreter, test_data)
@@ -492,19 +504,16 @@ def generate_folds(n, td):
         yield train, test
 
 
-def run_cv_evaluation(td, n_folds, nlu_config):
-    # type: (TrainingData, int, RasaNLUConfig) -> CVEvaluationResult
+def run_cv_evaluation(data, n_folds, nlu_config):
+    # type: (TrainingData, int, RasaNLUModelConfig) -> CVEvaluationResult
     """Stratified cross validation on data
 
-    :param td: Training Data
+    :param data: Training Data
     :param n_folds: integer, number of cv folds
     :param nlu_config: nlu config file
     :return: dictionary with key, list structure, where each entry in list
               corresponds to the relevant result for one fold
     """
-    from sklearn import metrics
-    from collections import defaultdict
-    import tempfile
 
     trainer = Trainer(nlu_config)
     train_results = defaultdict(list)
@@ -512,19 +521,16 @@ def run_cv_evaluation(td, n_folds, nlu_config):
 
     tmp_dir = tempfile.mkdtemp()
 
-    for train, test in generate_folds(n_folds, td):
-        trainer.train(TrainingData(training_examples=train,
-                                   entity_synonyms=td.entity_synonyms,
-                                   regex_features=td.regex_features))
-        model_dir = trainer.persist(tmp_dir)
-        interpreter = Interpreter.load(model_dir, nlu_config)
+    for train, test in generate_folds(n_folds, data):
+        td = TrainingData(training_examples=train,
+                          entity_synonyms=data.entity_synonyms,
+                          regex_features=data.regex_features)
+        interpreter = trainer.train(td)
 
         # calculate train accuracy
         compute_metrics(interpreter, train, train_results)
         # calculate test accuracy
         compute_metrics(interpreter, test, test_results)
-
-        utils.remove_model(model_dir)
 
     os.rmdir(os.path.join(tmp_dir, "default"))
     os.rmdir(tmp_dir)
@@ -559,29 +565,32 @@ def compute_metrics(interpreter, corpus, results):
 
 
 if __name__ == '__main__':  # pragma: no cover
-    parser = create_argparser()
-    args = parser.parse_args()
+    parser = create_argument_parser()
+    cmdline_args = parser.parse_args()
 
-    # manual check argument dependency
-    if args.mode == "crossvalidation":
-        if args.model is not None:
+    utils.configure_colored_logging(cmdline_args.loglevel)
+
+    if cmdline_args.mode == "crossvalidation":
+
+        # manual check argument dependency
+        if cmdline_args.model is not None:
             parser.error("Crossvalidation will train a new model "
                          "- do not specify external model")
 
-    nlu_config = RasaNLUConfig(args.config, os.environ, vars(args))
-    logging.basicConfig(level=nlu_config['log_level'])
+        nlu_config = config.load(cmdline_args.config)
+        data = training_data.load_data(cmdline_args.data)
+        data = drop_intents_below_freq(data, cutoff=5)
+        results = run_cv_evaluation(data, int(cmdline_args.folds), nlu_config)
+        logger.info("CV evaluation (n={})".format(cmdline_args.folds))
 
-    if args.mode == "crossvalidation":
-        td = training_data.load_data(args.data)
-        td = drop_intents_below_freq(td, cutoff=5)
-        results = run_cv_evaluation(td, int(args.folds), nlu_config)
-        logger.info("CV evaluation (n={})".format(args.folds))
         for k, v in results.train.items():
-            logger.info("train {}: {:.3f} ({:.3f})".format(k, np.mean(v), np.std(v)))
+            logger.info("train {}: {:.3f} ({:.3f})"
+                        "".format(k, np.mean(v), np.std(v)))
         for k, v in results.test.items():
-            logger.info("test {}: {:.3f} ({:.3f})".format(k, np.mean(v), np.std(v)))
+            logger.info("test {}: {:.3f} ({:.3f})"
+                        "".format(k, np.mean(v), np.std(v)))
 
-    elif args.mode == "evaluation":
-        run_evaluation(nlu_config, args.model)
+    elif cmdline_args.mode == "evaluation":
+        run_evaluation(cmdline_args.data, cmdline_args.model)
 
     logger.info("Finished evaluation")

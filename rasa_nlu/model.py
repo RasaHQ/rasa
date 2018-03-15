@@ -19,7 +19,7 @@ import rasa_nlu
 from rasa_nlu import components, utils
 from rasa_nlu.components import Component
 from rasa_nlu.components import ComponentBuilder
-from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.persistor import Persistor
 from rasa_nlu.training_data import TrainingData, Message
 from rasa_nlu.utils import create_dir, write_json_to_file
@@ -104,8 +104,12 @@ class Trainer(object):
     # Officially supported languages (others might be used, but might fail)
     SUPPORTED_LANGUAGES = ["de", "en"]
 
-    def __init__(self, config, component_builder=None, skip_validation=False):
-        # type: (RasaNLUConfig, Optional[ComponentBuilder], bool) -> None
+    def __init__(self,
+                 config,  # type: RasaNLUModelConfig
+                 component_builder=None,  # type: Optional[ComponentBuilder]
+                 skip_validation=False  # type: bool
+                 ):
+        # type: (...) -> None
 
         self.config = config
         self.skip_validation = skip_validation
@@ -148,7 +152,8 @@ class Trainer(object):
         working_data = copy.deepcopy(data)
 
         for i, component in enumerate(self.pipeline):
-            logger.info("Starting to train component {}".format(component.name))
+            logger.info("Starting to train component {}"
+                        "".format(component.name))
             component.prepare_partial_processing(self.pipeline[:i], context)
             updates = component.train(working_data, self.config, **context)
             logger.info("Finished training component.")
@@ -202,14 +207,14 @@ class Trainer(object):
 class Interpreter(object):
     """Use a trained pipeline of components to parse text messages"""
 
-    # Defines all attributes (& default values) that will be returned by `parse`
+    # Defines all attributes (& default values)
+    # that will be returned by `parse`
     @staticmethod
     def default_output_attributes():
         return {"intent": {"name": "", "confidence": 0.0}, "entities": []}
 
     @staticmethod
-    def load(model_dir, config=RasaNLUConfig(), component_builder=None,
-             skip_valdation=False):
+    def load(model_dir, component_builder=None, skip_valdation=False):
         """Creates an interpreter based on a persisted model."""
 
         if isinstance(model_dir, Metadata):
@@ -222,12 +227,12 @@ class Interpreter(object):
                         "`Interpreter.load(model_dir, ...)")
         else:
             model_metadata = Metadata.load(model_dir)
-        return Interpreter.create(model_metadata, config, component_builder,
+        return Interpreter.create(model_metadata,
+                                  component_builder,
                                   skip_valdation)
 
     @staticmethod
     def create(model_metadata,  # type: Metadata
-               config,  # type: RasaNLUConfig
                component_builder=None,  # type: Optional[ComponentBuilder]
                skip_valdation=False  # type: bool
                ):
@@ -251,7 +256,7 @@ class Interpreter(object):
         for component_name in model_metadata.pipeline:
             component = component_builder.load_component(
                     component_name, model_metadata.model_dir,
-                    model_metadata, config=config, **context)
+                    model_metadata, **context)
             try:
                 updates = component.provide_context()
                 if updates:
@@ -279,8 +284,8 @@ class Interpreter(object):
         if not text:
             # Not all components are able to handle empty strings. So we need
             # to prevent that... This default return will not contain all
-            # output attributes of all components, but in the end, no one should
-            # pass an empty string in the first place.
+            # output attributes of all components, but in the end, no one
+            # should pass an empty string in the first place.
             output = self.default_output_attributes()
             output["text"] = ""
             return output
@@ -291,5 +296,6 @@ class Interpreter(object):
             component.process(message, **self.context)
 
         output = self.default_output_attributes()
-        output.update(message.as_dict(only_output_properties=only_output_properties))
+        output.update(message.as_dict(
+                only_output_properties=only_output_properties))
         return output

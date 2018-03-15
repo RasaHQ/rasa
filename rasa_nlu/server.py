@@ -16,7 +16,7 @@ from klein import Klein
 from twisted.internet import reactor, threads
 from twisted.internet.defer import inlineCallbacks, returnValue
 
-from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu import utils
 from rasa_nlu.data_router import DataRouter, InvalidProjectError, \
     AlreadyTrainingError
 from rasa_nlu.train import TrainingException
@@ -26,24 +26,13 @@ from rasa_nlu.utils import json_to_string
 logger = logging.getLogger(__name__)
 
 
-def create_argparser():
+def create_argument_parser():
     parser = argparse.ArgumentParser(description='parse incoming text')
-    parser.add_argument('-c', '--config',
-                        help="config file, all the command line options can "
-                             "also be passed via a (json-formatted) config "
-                             "file. NB command line args take precedence")
+
     parser.add_argument('-e', '--emulate',
                         choices=['wit', 'luis', 'dialogflow'],
                         help='which service to emulate (default: None i.e. use '
                              'simple built in format)')
-    parser.add_argument('-l', '--language',
-                        choices=['de', 'en'],
-                        help="model and data language")
-    parser.add_argument('-p', '--path',
-                        help="path where project files will be saved")
-    parser.add_argument('--pipeline',
-                        help="The pipeline to use. Either a pipeline template "
-                             "name or a list of components separated by comma")
     parser.add_argument('-P', '--port',
                         type=int,
                         help='port on which to run server')
@@ -52,6 +41,24 @@ def create_argparser():
                              "provide this token as a query parameter")
     parser.add_argument('-w', '--write',
                         help='file where logs will be saved')
+    parser.add_argument('--path',
+                        help="path where project files will be saved")
+    parser.add_argument('--max_training_processes',
+                        help='Number of parallel trainings to run when '
+                             'training data is submitted over HTTP.')
+    parser.add_argument('--num_threads',
+                        help='Number of parallel threads to use for '
+                             'handling parse requests.')
+    parser.add_argument('--response_log',
+                        help='File to store responses delivered over'
+                             'the parse endpoint.')
+    parser.add_argument('--storage',
+                        help='Set the remote location where models are stored. '
+                             'E.g. on AWS. If nothing is configured, the '
+                             'server will only serve the models that are '
+                             'on disk in the configured `path`.')
+
+    utils.add_logging_option_arguments(parser)
 
     return parser
 
@@ -66,9 +73,9 @@ def check_cors(f):
         origin = request.getHeader('Origin')
 
         if origin:
-            if '*' in self.config['cors_origins']:
+            if '*' in self.cors_origins:
                 request.setHeader('Access-Control-Allow-Origin', '*')
-            elif origin in self.config['cors_origins']:
+            elif origin in self.cors_origins:
                 request.setHeader('Access-Control-Allow-Origin', origin)
             else:
                 request.setResponseCode(403)
@@ -93,7 +100,7 @@ def requires_auth(f):
             token = request.args.get(b'token', [b''])[0].decode("utf8")
         else:
             token = str(request.args.get('token', [''])[0])
-        if self.config['token'] is None or token == self.config['token']:
+        if self.access_token is None or token == self.access_token:
             return f(*args, **kwargs)
         request.setResponseCode(401)
         return 'unauthorized'
@@ -106,20 +113,32 @@ class RasaNLU(object):
 
     app = Klein()
 
-    def __init__(self, config, component_builder=None, testing=False):
-        logging.basicConfig(filename=config['log_file'],
-                            level=config['log_level'])
-        logging.captureWarnings(True)
-        logger.debug("Configuration: " + config.view())
+    def __init__(self,
+                 data_router,
+                 log_level='INFO',
+                 log_file=None,
+                 num_threads=1,
+                 token=None,
+                 cors_origins=None,
+                 testing=False):
 
-        logger.debug("Creating a new data router")
-        self.config = config
-        self.data_router = self._create_data_router(config, component_builder)
+        self._configure_logging(log_level, log_file)
+
+        # TODO: anything we want to print here?
+        logger.debug("Configuration: ")
+
+        self.default_model_config = None
+        self.data_router = data_router
         self._testing = testing
-        reactor.suggestThreadPoolSize(config['num_threads'] * 5)
+        self.cors_origins = cors_origins if cors_origins else ["*"]
+        self.access_token = token
+        reactor.suggestThreadPoolSize(num_threads * 5)
 
-    def _create_data_router(self, config, component_builder):
-        return DataRouter(config, component_builder)
+    @staticmethod
+    def _configure_logging(log_level, log_file):
+        logging.basicConfig(filename=log_file,
+                            level=log_level)
+        logging.captureWarnings(True)
 
     @app.route("/", methods=['GET', 'OPTIONS'])
     @check_cors
@@ -178,7 +197,8 @@ class RasaNLU(object):
         """Returns the in-memory configuration of the Rasa server"""
 
         request.setHeader('Content-Type', 'application/json')
-        return json_to_string(self.config.as_dict())
+        # TODO: check if this works
+        return json_to_string(self.default_model_config)
 
     @app.route("/status", methods=['GET', 'OPTIONS'])
     @requires_auth
@@ -192,16 +212,25 @@ class RasaNLU(object):
     @check_cors
     @inlineCallbacks
     def train(self, request):
+        # TODO: allow to pass in whole model configuration, for now: use
+        # default config
+        model_config = self.default_model_config
         data_string = request.content.read().decode('utf-8', 'strict')
-        kwargs = {key.decode('utf-8', 'strict'): value[0].decode('utf-8', 'strict')
-                  for key, value in request.args.items()}
+
+        # update model config from get parameters
+        for key, value in request.args.items():
+            k = key.decode('utf-8', 'strict')
+            v = value[0].decode('utf-8', 'strict')
+            model_config[k] = v
+
         request.setHeader('Content-Type', 'application/json')
 
         try:
             request.setResponseCode(200)
             response = yield self.data_router.start_train_process(
-                    data_string, kwargs)
-            returnValue(json_to_string({'info': 'new model trained: {}'.format(response)}))
+                    data_string, model_config)
+            returnValue(json_to_string({'info': 'new model trained: {}'
+                                                ''.format(response)}))
         except AlreadyTrainingError as e:
             request.setResponseCode(403)
             returnValue(json_to_string({"error": "{}".format(e)}))
@@ -237,12 +266,21 @@ class RasaNLU(object):
 
 if __name__ == '__main__':
     # Running as standalone python application
-    arg_parser = create_argparser()
-    cmdline_args = {key: val
-                    for key, val in list(vars(arg_parser.parse_args()).items())
-                    if val is not None}
-    rasa_nlu_config = RasaNLUConfig(
-            cmdline_args.get("config"), os.environ, cmdline_args)
-    rasa = RasaNLU(rasa_nlu_config)
-    logger.info('Started http server on port %s' % rasa_nlu_config['port'])
-    rasa.app.run('0.0.0.0', rasa_nlu_config['port'])
+    cmdline_args = create_argument_parser().parse_args()
+
+    utils.configure_colored_logging(cmdline_args.loglevel)
+
+    router = DataRouter(cmdline_args.path,
+                        cmdline_args.max_training_processes,
+                        cmdline_args.response_log)
+    rasa = RasaNLU(
+            router,
+            cmdline_args.path,
+            cmdline_args.log_level,
+            cmdline_args.log_file,
+            cmdline_args.num_threads,
+            cmdline_args.token,
+    )
+
+    logger.info('Started http server on port %s' % cmdline_args.port)
+    rasa.app.run('0.0.0.0', cmdline_args.port)

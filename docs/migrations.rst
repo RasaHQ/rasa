@@ -3,6 +3,15 @@ Migration Guide
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+0.11.x to 0.12.0
+---------------
+
+persistors:
+~~~~~~~~~~~
+- renamed ``AWS_REGION`` to ``AWS_DEFAULT_REGION``
+- always make sure to specify the bucket using env ``BUCKET_NAME``
+- are now configured solely over environment variables
+
 0.9.x to 0.10.0
 ---------------
 - We introduced a new concept called a ``project``. You can have multiple versions

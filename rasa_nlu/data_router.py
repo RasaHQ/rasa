@@ -13,9 +13,11 @@ import os
 from builtins import object
 from concurrent.futures import ProcessPoolExecutor as ProcessPool
 from future.utils import PY3
+from rasa_nlu.training_data import Message
+
 from rasa_nlu import utils
 from rasa_nlu.components import ComponentBuilder
-from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.evaluate import get_evaluation_metrics, clean_intent_labels
 from rasa_nlu.model import InvalidProjectError
 from rasa_nlu.project import Project
@@ -24,20 +26,26 @@ from rasa_nlu.training_data.loading import load_data
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from twisted.logger import jsonFileLogObserver, Logger
-from typing import Text, Dict, Any, Optional
+from typing import Text, Dict, Any, Optional, List
 
 logger = logging.getLogger(__name__)
 
-# in some execution environments `reactor.callFromThread` can not be called as it will result in a deadlock as
-# the `callFromThread` queues the function to be called by the reactor which only happens after the call to `yield`.
-# Unfortunately, the test is blocked there because `app.flush()` needs to be called to allow the fake server to
-# respond and change the status of the Deferred on which the client is yielding. Solution: during tests we will set
-# this Flag to `False` to directly run the calls instead of wrapping them in `callFromThread`.
+# in some execution environments `reactor.callFromThread`
+# can not be called as it will result in a deadlock as
+# the `callFromThread` queues the function to be called
+# by the reactor which only happens after the call to `yield`.
+# Unfortunately, the test is blocked there because `app.flush()`
+# needs to be called to allow the fake server to
+# respond and change the status of the Deferred on which
+# the client is yielding. Solution: during tests we will set
+# this Flag to `False` to directly run the calls instead
+# of wrapping them in `callFromThread`.
 DEFERRED_RUN_IN_REACTOR_THREAD = True
 
 
 class AlreadyTrainingError(Exception):
-    """Raised when a training request is received for an Project already being trained.
+    """Raised when a training is requested for a project that is
+       already training.
 
     Attributes:
         message -- explanation of why the request is invalid
@@ -51,9 +59,13 @@ class AlreadyTrainingError(Exception):
 
 
 def deferred_from_future(future):
-    """Converts a concurrent.futures.Future object to a twisted.internet.defer.Deferred object.
-    See: https://twistedmatrix.com/pipermail/twisted-python/2011-January/023296.html
+    """Converts a concurrent.futures.Future object to a
+       twisted.internet.defer.Deferred object.
+
+    See:
+    https://twistedmatrix.com/pipermail/twisted-python/2011-January/023296.html
     """
+
     d = Deferred()
 
     def callback(future):
@@ -74,86 +86,107 @@ def deferred_from_future(future):
 
 
 class DataRouter(object):
-    def __init__(self, config, component_builder):
-        self._training_processes = max(config['max_training_processes'], 1)
-        self.config = config
-        self.responses = self._create_query_logger(config)
-        self.model_dir = config['path']
-        self.emulator = self._create_emulator()
-        self.component_builder = component_builder if component_builder else ComponentBuilder(
-            use_cache=True)
-        self.project_store = self._create_project_store()
+    def __init__(self,
+                 project_dir=None,
+                 max_training_processes=1,
+                 response_log=None,
+                 emulation_mode=None,
+                 remote_storage=None,
+                 component_builder=None):
+
+        self._training_processes = max(max_training_processes, 1)
+        self.responses = self._create_query_logger(response_log)
+        self.project_dir = project_dir
+        self.emulator = self._create_emulator(emulation_mode)
+        self.remote_storage = remote_storage
+
+        if component_builder:
+            self.component_builder = component_builder
+        else:
+            self.component_builder = ComponentBuilder(use_cache=True)
+
+        self.project_store = self._create_project_store(project_dir)
         self.pool = ProcessPool(self._training_processes)
 
     def __del__(self):
         """Terminates workers pool processes"""
         self.pool.shutdown()
 
-    def _create_query_logger(self, config):
-        """Creates a logger that will persist incoming queries and their results."""
+    @staticmethod
+    def _create_query_logger(response_log):
+        """Create a logger that will persist incoming query results."""
 
-        response_log_dir = config['response_log']
-        # Ensures different log files for different processes in multi worker mode
-        if response_log_dir:
-            # We need to generate a unique file name, even in multiprocess environments
+        # Ensures different log files for different
+        # processes in multi worker mode
+        if response_log:
+            # We need to generate a unique file name,
+            # even in multiprocess environments
             timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
             log_file_name = "rasa_nlu_log-{}-{}.log".format(timestamp,
                                                             os.getpid())
-            response_logfile = os.path.join(response_log_dir, log_file_name)
-            # Instantiate a standard python logger, which we are going to use to log requests
+            response_logfile = os.path.join(response_log, log_file_name)
+            # Instantiate a standard python logger,
+            # which we are going to use to log requests
             utils.create_dir_for_file(response_logfile)
-            query_logger = Logger(observer=jsonFileLogObserver(
-                io.open(response_logfile, 'a', encoding='utf8')),
-                namespace='query-logger')
-            # Prevents queries getting logged with parent logger --> might log them to stdout
+            query_logger = Logger(
+                    observer=jsonFileLogObserver(io.open(response_logfile,
+                                                         'a',
+                                                         encoding='utf8')),
+                    namespace='query-logger')
+            # Prevents queries getting logged with parent logger
+            # --> might log them to stdout
             logger.info("Logging requests to '{}'.".format(response_logfile))
             return query_logger
         else:
             # If the user didn't provide a logging directory, we wont log!
-            logger.info(
-                "Logging of requests is disabled. (No 'request_log' directory configured)")
+            logger.info("Logging of requests is disabled. "
+                        "(No 'request_log' directory configured)")
             return None
 
-    def _collect_projects(self):
-        if os.path.isdir(self.config['path']):
-            projects = os.listdir(self.config['path'])
+    def _collect_projects(self, project_dir):
+        if os.path.isdir(project_dir):
+            projects = os.listdir(project_dir)
         else:
             projects = []
 
         projects.extend(self._list_projects_in_cloud())
         return projects
 
-    def _create_project_store(self):
-        projects = self._collect_projects()
+    def _create_project_store(self, project_dir):
+        projects = self._collect_projects(project_dir)
 
         project_store = {}
 
         for project in projects:
-            project_store[project] = Project(self.config,
-                                             self.component_builder,
-                                             project)
+            project_store[project] = Project(self.component_builder,
+                                             project,
+                                             self.project_dir)
 
         if not project_store:
-            project_store[RasaNLUConfig.DEFAULT_PROJECT_NAME] = Project(
-                self.config)
+            default_model = RasaNLUModelConfig.DEFAULT_PROJECT_NAME
+            project_store[default_model] = Project(project_dir=self.project_dir)
         return project_store
 
     def _list_projects_in_cloud(self):
         try:
             from rasa_nlu.persistor import get_persistor
-            p = get_persistor(self.config)
+            p = get_persistor(self.remote_storage)
             if p is not None:
                 return p.list_projects()
             else:
                 return []
         except Exception:
-            logger.exception("Failed to list projects.")
+            logger.exception("Failed to list projects. Make sure you have "
+                             "correctly configured your cloud storage "
+                             "settings.")
             return []
 
-    def _create_emulator(self):
-        """Sets which NLU webservice to emulate among those supported by Rasa"""
+    @staticmethod
+    def _create_emulator(mode):
+        """Create emulator for specified mode.
 
-        mode = self.config['emulate']
+        If no emulator is specified, we will use the Rasa NLU format."""
+
         if mode is None:
             from rasa_nlu.emulators import NoEmulator
             return NoEmulator()
@@ -173,11 +206,11 @@ class DataRouter(object):
         return self.emulator.normalise_request_json(data)
 
     def parse(self, data):
-        project = data.get("project") or RasaNLUConfig.DEFAULT_PROJECT_NAME
+        project = data.get("project", RasaNLUModelConfig.DEFAULT_PROJECT_NAME)
         model = data.get("model")
 
         if project not in self.project_store:
-            projects = self._list_projects(self.config['path'])
+            projects = self._list_projects(self.project_dir)
 
             cloud_provided_projects = self._list_projects_in_cloud()
             projects.extend(cloud_provided_projects)
@@ -187,9 +220,8 @@ class DataRouter(object):
                     "No project found with name '{}'.".format(project))
             else:
                 try:
-                    self.project_store[project] = Project(self.config,
-                                                          self.component_builder,
-                                                          project)
+                    self.project_store[project] = Project(
+                            self.component_builder, project, self.project_dir)
                 except Exception as e:
                     raise InvalidProjectError(
                         "Unable to load project '{}'. Error: {}".format(
@@ -219,7 +251,8 @@ class DataRouter(object):
 
         if PY3:
             f = tempfile.NamedTemporaryFile("w+", suffix=suffix,
-                                            delete=False, encoding="utf-8")
+                                            delete=False,
+                                            encoding="utf-8")
             f.write(data)
         else:
             f = tempfile.NamedTemporaryFile("w+", suffix=suffix,
@@ -248,7 +281,8 @@ class DataRouter(object):
         return self.emulator.normalise_response_json(data)
 
     def get_status(self):
-        # This will only count the trainings started from this process, if run in multi worker mode, there might
+        # This will only count the trainings started from this
+        # process, if run in multi worker mode, there might
         # be other trainings run in different processes we don't know about.
 
         return {
@@ -258,30 +292,26 @@ class DataRouter(object):
             }
         }
 
-    def start_train_process(self, data, config_values):
-        # type: (Text, Dict[Text, Any]) -> Deferred
+    def start_train_process(self, data, project, config_values):
+        # type: (Text, Text, Dict[Text, Any]) -> Deferred
         """Start a model training."""
 
-        f = self.create_temporary_file(data, "_training_data")
-        # TODO: fix config handling
-        _config = self.config.as_dict()
-        for key, val in config_values.items():
-            _config[key] = val
-        _config["data"] = f.name
-        train_config = RasaNLUConfig(cmdline_args=_config)
-
-        project = _config.get("project")
         if not project:
             raise InvalidProjectError("Missing project name to train")
-        elif project in self.project_store:
+
+        f = self.create_temporary_file(data, "_training_data")
+        # TODO: fix data location handling
+        # f.name
+        train_config = RasaNLUModelConfig(config_values)
+
+        if project in self.project_store:
             if self.project_store[project].status == 1:
                 raise AlreadyTrainingError
             else:
                 self.project_store[project].status = 1
         elif project not in self.project_store:
-            self.project_store[project] = Project(self.config,
-                                                  self.component_builder,
-                                                  project)
+            self.project_store[project] = Project(
+                    self.component_builder, project, self.project_dir)
             self.project_store[project].status = 1
 
         def training_callback(model_path):
@@ -309,7 +339,7 @@ class DataRouter(object):
         # type: (Text, Optional[Text], Optional[Text]) -> Dict[Text, Any]
         """Perform a model evaluation."""
 
-        project = project or RasaNLUConfig.DEFAULT_PROJECT_NAME
+        project = project or RasaNLUModelConfig.DEFAULT_PROJECT_NAME
         model = model or None
         f = self.create_temporary_file(data, "_training_data")
         test_data = load_data(f.name)

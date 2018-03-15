@@ -14,26 +14,22 @@ import botocore
 from builtins import object
 from typing import Optional, Tuple, List, Text
 
-from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu.config import RasaNLUModelConfig
 
 logger = logging.getLogger(__name__)
 
 
-def get_persistor(config):
-    # type: (RasaNLUConfig) -> Optional[Persistor]
+def get_persistor(name):
+    # type: (Text) -> Optional[Persistor]
     """Returns an instance of the requested persistor.
 
     Currently, `aws` and `gcs` are supported"""
 
-    if 'storage' not in config:
-        raise KeyError("No persistent storage specified. Supported values "
-                       "are {}".format(", ".join(['aws', 'gcs'])))
-
-    if config['storage'] == 'aws':
-        return AWSPersistor(config['aws_region'], config['bucket_name'],
-                            config['aws_endpoint_url'])
-    elif config['storage'] == 'gcs':
-        return GCSPersistor(config['bucket_name'])
+    if name == 'aws':
+        return AWSPersistor(os.environ.get("BUCKET_NAME"),
+                            os.environ.get("AWS_ENDPOINT_URL"))
+    elif name == 'gcs':
+        return GCSPersistor(os.environ.get("BUCKET_NAME"))
     else:
         return None
 
@@ -100,11 +96,11 @@ class Persistor(object):
     def _project_prefix(project):
         # type: (Text) -> Text
 
-        return '{}___'.format(project or RasaNLUConfig.DEFAULT_PROJECT_NAME)
+        return '{}___'.format(project or RasaNLUModelConfig.DEFAULT_PROJECT_NAME)
 
     @staticmethod
     def _project_and_model_from_filename(filename):
-        # type: (Text) -> Text
+        # type: (Text) -> (Text, Text)
 
         split = filename.split("___")
         if len(split) > 1:
@@ -126,7 +122,8 @@ class Persistor(object):
         # type: (Text, Text) -> None
 
         with tarfile.open(compressed_path, "r:gz") as tar:
-            tar.extractall(target_path)  # project dir will be created if it not exists
+            tar.extractall(
+                target_path)  # project dir will be created if it not exists
 
 
 class AWSPersistor(Persistor):
@@ -134,13 +131,11 @@ class AWSPersistor(Persistor):
 
     Fetches them when needed, instead of storing them on the local disk."""
 
-    def __init__(self, aws_region, bucket_name, endpoint_url=None):
-        # type: (Text, Text, Optional[Text]) -> None
+    def __init__(self, bucket_name, endpoint_url=None):
+        # type: (Text, Optional[Text]) -> None
         super(AWSPersistor, self).__init__()
-        self.s3 = boto3.resource('s3',
-                                 region_name=aws_region,
-                                 endpoint_url=endpoint_url)
-        self._ensure_bucket_exists(bucket_name, aws_region)
+        self.s3 = boto3.resource('s3', endpoint_url=endpoint_url)
+        self._ensure_bucket_exists(bucket_name)
         self.bucket_name = bucket_name
         self.bucket = self.s3.Bucket(bucket_name)
 
@@ -167,8 +162,9 @@ class AWSPersistor(Persistor):
                                                  self.aws_region))
             return []
 
-    def _ensure_bucket_exists(self, bucket_name, aws_region):
-        bucket_config = {'LocationConstraint': aws_region}
+    def _ensure_bucket_exists(self, bucket_name):
+        bucket_config = {
+            'LocationConstraint': boto3.DEFAULT_SESSION.region_name}
         try:
             self.s3.create_bucket(Bucket=bucket_name,
                                   CreateBucketConfiguration=bucket_config)

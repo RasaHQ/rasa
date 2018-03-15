@@ -88,6 +88,10 @@ registered_pipeline_templates = {
 }
 
 
+def pipeline_template(s):
+    return registered_pipeline_templates.get(s)
+
+
 def get_component_class(component_name):
     # type: (Text) -> Optional[Type[Component]]
     """Resolve component name to a registered components class."""
