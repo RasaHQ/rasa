@@ -364,16 +364,22 @@ def align_all_entity_predictions(targets, predictions, tokens, extractors):
     return aligned_predictions
 
 
-def get_targets(test_data):  # pragma: no cover
-    """Extracts targets from the test data."""
+def get_intent_targets(test_data):  # pragma: no cover
+    """Extracts intent targets from the test data."""
 
     intent_targets = [e.get("intent", "")
                       for e in test_data.training_examples]
 
+    return intent_targets
+
+
+def get_entity_targets(test_data):
+    """Extracts entity targets from the test data."""
+
     entity_targets = [e.get("entities", [])
                       for e in test_data.training_examples]
 
-    return intent_targets, entity_targets
+    return entity_targets
 
 
 def extract_intent(result):  # pragma: no cover
@@ -386,15 +392,24 @@ def extract_entities(result):  # pragma: no cover
     return result.get('entities', [])
 
 
-def get_predictions(interpreter, test_data):  # pragma: no cover
-    """Runs the model for the test set and extracts predictions and tokens."""
-    intent_predictions, entity_predictions, tokens = [], [], []
+def get_intent_predictions(interpreter, test_data):  # pragma: no cover
+    """Runs the model for the test set and extracts intent predictions"""
+    intent_predictions = []
     for e in test_data.training_examples:
         res = interpreter.parse(e.text, only_output_properties=False)
         intent_predictions.append(extract_intent(res))
+    return intent_predictions
+
+
+def get_entity_predictions(interpreter, test_data):  # pragma: no cover
+    """Runs the model for the test set and extracts entity
+    predictions and tokens."""
+    entity_predictions, tokens = [], []
+    for e in test_data.training_examples:
+        res = interpreter.parse(e.text, only_output_properties=False)
         entity_predictions.append(extract_entities(res))
         tokens.append(res["tokens"])
-    return intent_predictions, entity_predictions, tokens
+    return entity_predictions, tokens
 
 
 def get_entity_extractors(interpreter):
@@ -488,9 +503,10 @@ def run_evaluation(config, model_path,
     # get the metadata config from the package data
     test_data = training_data.load_data(config['data'], config['language'])
     interpreter = Interpreter.load(model_path, config, component_builder)
-    intent_targets, entity_targets = get_targets(test_data)
-    intent_predictions, entity_predictions, tokens = get_predictions(
-            interpreter, test_data)
+    intent_targets = get_intent_targets(test_data)
+    entity_targets = get_entity_targets(test_data)
+    intent_predictions = get_intent_predictions(interpreter, test_data)
+    entity_predictions, tokens = get_entity_predictions(interpreter, test_data)
     extractors = get_entity_extractors(interpreter)
 
     if extractors.intersection(duckling_extractors):
@@ -512,7 +528,12 @@ def generate_folds(n, td):
         logger.debug("Fold: {}".format(i_fold))
         train = [x[i] for i in train_index]
         test = [x[i] for i in test_index]
-        yield train, test
+        yield (TrainingData(training_examples=train,
+                            entity_synonyms=td.entity_synonyms,
+                            regex_features=td.regex_features),
+               TrainingData(training_examples=test,
+                            entity_synonyms=td.entity_synonyms,
+                            regex_features=td.regex_features))
 
 
 def run_cv_evaluation(td, n_folds, nlu_config):
@@ -525,7 +546,7 @@ def run_cv_evaluation(td, n_folds, nlu_config):
     :return: dictionary with key, list structure, where each entry in list
               corresponds to the relevant result for one fold
     """
-    from collections import defaultdict
+    from collections import defaultdict, Counter
     import tempfile
 
     trainer = Trainer(nlu_config)
@@ -536,20 +557,22 @@ def run_cv_evaluation(td, n_folds, nlu_config):
     tmp_dir = tempfile.mkdtemp()
 
     for train, test in generate_folds(n_folds, td):
-        train = TrainingData(training_examples=train,
-                             entity_synonyms=td.entity_synonyms,
-                             regex_features=td.regex_features)
-        test = TrainingData(training_examples=test,
-                            entity_synonyms=td.entity_synonyms,
-                            regex_features=td.regex_features)
         trainer.train(train)
         model_dir = trainer.persist(tmp_dir)
         interpreter = Interpreter.load(model_dir, nlu_config)
 
         # calculate train accuracy
-        compute_metrics(interpreter, train, train_results, entity_train_results)
+        train_results = (Counter(train_results) +
+                         Counter(compute_intent_metrics(interpreter, train)))
+        test_results = (Counter(test_results) +
+                        Counter(compute_intent_metrics(interpreter, test)))
         # calculate test accuracy
-        compute_metrics(interpreter, test, test_results, entity_test_results)
+        entity_train_results = (Counter(entity_train_results) +
+                                Counter(compute_entity_metrics(interpreter,
+                                                               train)))
+        entity_test_results = (Counter(entity_test_results) +
+                               Counter(compute_entity_metrics(interpreter,
+                                                              test)))
 
         utils.remove_model(model_dir)
 
@@ -561,16 +584,13 @@ def run_cv_evaluation(td, n_folds, nlu_config):
                                dict(entity_test_results)))
 
 
-def compute_metrics(interpreter, corpus, intent_results, entity_results):
-    """Computes evaluation metrics for a given corpus and
-
-    appends them to results.
+def compute_intent_metrics(interpreter, corpus):
+    """Computes intent evaluation metrics for a given corpus and
+    returns the results
     """
 
-    # y = [e.get("intent") for e in corpus]
-    intent_targets, entity_targets = get_targets(corpus)
-    intent_predictions, entity_predictions, tokens = get_predictions(
-        interpreter, corpus)
+    intent_targets = get_intent_targets(corpus)
+    intent_predictions = get_intent_predictions(interpreter, corpus)
     intent_targets, intent_predictions = remove_empty_intent_examples(
             intent_targets, intent_predictions)
 
@@ -578,9 +598,16 @@ def compute_metrics(interpreter, corpus, intent_results, entity_results):
     _, precision, f1, accuracy = get_evaluation_metrics(intent_targets,
                                                         intent_predictions)
 
-    intent_results["Accuracy"].append(accuracy)
-    intent_results["F1-score"].append(f1)
-    intent_results["Precision"].append(precision)
+    return {"Accuracy": accuracy, "F1-score": f1, "Precision": precision}
+
+
+def compute_entity_metrics(interpreter, corpus):
+    """Computes entity evaluation metrics for a given corpus and
+    returns the results
+    """
+
+    entity_targets = get_entity_targets(corpus)
+    entity_predictions, tokens = get_entity_predictions(interpreter, corpus)
 
     extractors = get_entity_extractors(interpreter)
     aligned_predictions = align_all_entity_predictions(entity_targets,
@@ -589,6 +616,8 @@ def compute_metrics(interpreter, corpus, intent_results, entity_results):
 
     merged_targets = merge_labels(aligned_predictions)
     merged_targets = substitute_labels(merged_targets, "O", "no_entity")
+    entity_results = defaultdict(lambda: defaultdict(list))
+
     for extractor in extractors:
         merged_predictions = merge_labels(aligned_predictions, extractor)
         merged_predictions = substitute_labels(merged_predictions, "O",
@@ -599,8 +628,10 @@ def compute_metrics(interpreter, corpus, intent_results, entity_results):
         entity_results[extractor]["F1-score"].append(f1)
         entity_results[extractor]["Precision"].append(precision)
 
+    return entity_results
 
-def return_results(results, dataset):
+
+def return_results(results, dataset_name):
     """Returns results of crossvalidation
     :param results: dictionary of results returned from cv
     :param dataset: string of which dataset the results are from, e.g.
@@ -608,7 +639,8 @@ def return_results(results, dataset):
     """
 
     for k, v in results.items():
-        logger.info("{} {}: {:.3f} ({:.3f})".format(dataset, k, np.mean(v),
+        logger.info("{} {}: {:.3f} ({:.3f})".format(dataset_name, k,
+                                                    np.mean(v),
                                                     np.std(v)))
 
 
