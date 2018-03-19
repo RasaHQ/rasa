@@ -52,14 +52,14 @@ def rasa_default_train_data():
 
 @pytest.inlineCallbacks
 def test_root(app):
-    response = yield app.get("http://dummy_uri/")
+    response = yield app.get("http://dummy-uri/")
     content = yield response.text()
     assert response.code == 200 and content.startswith("hello")
 
 
 @pytest.inlineCallbacks
 def test_status(app):
-    response = yield app.get("http://dummy_uri/status")
+    response = yield app.get("http://dummy-uri/status")
     rjs = yield response.json()
     assert response.code == 200 and "available_projects" in rjs
     assert "default" in rjs["available_projects"]
@@ -67,35 +67,35 @@ def test_status(app):
 
 @pytest.inlineCallbacks
 def test_config(app):
-    response = yield app.get("http://dummy_uri/config")
+    response = yield app.get("http://dummy-uri/config")
     assert response.code == 200
 
 
 @pytest.inlineCallbacks
 def test_version(app):
-    response = yield app.get("http://dummy_uri/version")
+    response = yield app.get("http://dummy-uri/version")
     rjs = yield response.json()
     assert response.code == 200 and "version" in rjs
 
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-        "http://dummy_uri/parse?q=hello",
+        "http://dummy-uri/parse?q=hello",
         [{"entities": {}, "confidence": 1.0, "intent": "greet",
           "_text": "hello"}]
     ),
     ResponseTest(
-        "http://dummy_uri/parse?query=hello",
+        "http://dummy-uri/parse?query=hello",
         [{"entities": {}, "confidence": 1.0, "intent": "greet",
           "_text": "hello"}]
     ),
     ResponseTest(
-        "http://dummy_uri/parse?q=hello ńöñàśçií",
+        "http://dummy-uri/parse?q=hello ńöñàśçií",
         [{"entities": {}, "confidence": 1.0, "intent": "greet",
           "_text": "hello ńöñàśçií"}]
     ),
     ResponseTest(
-        "http://dummy_uri/parse?q=",
+        "http://dummy-uri/parse?q=",
         [{"entities": {}, "confidence": 0.0, "intent": None, "_text": ""}]
     ),
 ])
@@ -111,19 +111,19 @@ def test_get_parse(app, response_test):
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-        "http://dummy_uri/parse",
+        "http://dummy-uri/parse",
         [{"entities": {}, "confidence": 1.0, "intent": "greet",
           "_text": "hello"}],
         payload={"q": "hello"}
     ),
     ResponseTest(
-        "http://dummy_uri/parse",
+        "http://dummy-uri/parse",
         [{"entities": {}, "confidence": 1.0, "intent": "greet",
           "_text": "hello"}],
         payload={"query": "hello"}
     ),
     ResponseTest(
-        "http://dummy_uri/parse",
+        "http://dummy-uri/parse",
         [{"entities": {}, "confidence": 1.0, "intent": "greet",
           "_text": "hello ńöñàśçií"}],
         payload={"q": "hello ńöñàśçií"}
@@ -143,7 +143,7 @@ def test_post_parse(app, response_test):
 @utilities.slowtest
 @pytest.inlineCallbacks
 def test_post_train(app, rasa_default_train_data):
-    response = app.post("http://dummy_uri/train", json=rasa_default_train_data)
+    response = app.post("http://dummy-uri/train", json=rasa_default_train_data)
     time.sleep(3)
     app.flush()
     response = yield response
@@ -155,7 +155,7 @@ def test_post_train(app, rasa_default_train_data):
 @utilities.slowtest
 @pytest.inlineCallbacks
 def test_post_train_internal_error(app, rasa_default_train_data):
-    response = app.post("http://dummy_uri/train?project=test",
+    response = app.post("http://dummy-uri/train?project=test",
                         json={"data": "dummy_data_for_triggering_an_error"})
     time.sleep(3)
     app.flush()
@@ -167,10 +167,10 @@ def test_post_train_internal_error(app, rasa_default_train_data):
 
 @pytest.inlineCallbacks
 def test_model_hot_reloading(app, rasa_default_train_data):
-    query = "http://dummy_uri/parse?q=hello&project=my_keyword_model"
+    query = "http://dummy-uri/parse?q=hello&project=my_keyword_model"
     response = yield app.get(query)
     assert response.code == 404, "Project should not exist yet"
-    train_u = "http://dummy_uri/train?project=my_keyword_model&pipeline=keyword"
+    train_u = "http://dummy-uri/train?project=my_keyword_model&pipeline=keyword"
     response = app.post(train_u, json=rasa_default_train_data)
     time.sleep(3)
     app.flush()
@@ -182,7 +182,7 @@ def test_model_hot_reloading(app, rasa_default_train_data):
 
 @pytest.inlineCallbacks
 def test_evaluate_invalid_project_error(app, rasa_default_train_data):
-    response = app.post("http://dummy_uri/evaluate",
+    response = app.post("http://dummy-uri/evaluate",
                         json=rasa_default_train_data,
                         params={"project": "project123"})
     time.sleep(3)
@@ -196,7 +196,7 @@ def test_evaluate_invalid_project_error(app, rasa_default_train_data):
 
 @pytest.inlineCallbacks
 def test_evaluate_internal_error(app, rasa_default_train_data):
-    response = app.post("http://dummy_uri/evaluate",
+    response = app.post("http://dummy-uri/evaluate",
                         json={"data": "dummy_data_for_triggering_an_error"})
     time.sleep(3)
     app.flush()
@@ -209,7 +209,7 @@ def test_evaluate_internal_error(app, rasa_default_train_data):
 
 @pytest.inlineCallbacks
 def test_evaluate(app, rasa_default_train_data):
-    response = app.post("http://dummy_uri/evaluate",
+    response = app.post("http://dummy-uri/evaluate",
                         json=rasa_default_train_data)
     time.sleep(3)
     app.flush()
