@@ -233,6 +233,12 @@ def test_run_cv_evaluation():
     assert len(results.test["Accuracy"]) == n_folds
     assert len(results.test["Precision"]) == n_folds
     assert len(results.test["F1-score"]) == n_folds
+    assert len(entity_results.train['ner_crf']["Accuracy"]) == n_folds
+    assert len(entity_results.train['ner_crf']["Precision"]) == n_folds
+    assert len(entity_results.train['ner_crf']["F1-score"]) == n_folds
+    assert len(entity_results.test['ner_crf']["Accuracy"]) == n_folds
+    assert len(entity_results.test['ner_crf']["Precision"]) == n_folds
+    assert len(entity_results.test['ner_crf']["F1-score"]) == n_folds
 
 
 def test_empty_intent_removal():

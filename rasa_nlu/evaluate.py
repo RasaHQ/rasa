@@ -536,6 +536,27 @@ def generate_folds(n, td):
                             regex_features=td.regex_features))
 
 
+def combine_intent_result(results, interpreter, data):
+    """Combines intent result for crossvalidation folds"""
+    from collections import Counter
+
+    current_result = compute_intent_metrics(interpreter, data)
+
+    return Counter(results) + Counter(current_result)
+
+
+def combine_entity_result(results, interpreter, data):
+    """Combines entity result for crossvalidation folds"""
+    from collections import Counter
+
+    current_result = compute_entity_metrics(interpreter, data)
+
+    for k, v in current_result.items():
+        results[k] = Counter(results[k]) + Counter(v)
+
+    return results
+
+
 def run_cv_evaluation(td, n_folds, nlu_config):
     # type: (TrainingData, int, RasaNLUConfig) -> CVEvaluationResult
     """Stratified cross validation on data
@@ -546,7 +567,7 @@ def run_cv_evaluation(td, n_folds, nlu_config):
     :return: dictionary with key, list structure, where each entry in list
               corresponds to the relevant result for one fold
     """
-    from collections import defaultdict, Counter
+    from collections import defaultdict
     import tempfile
 
     trainer = Trainer(nlu_config)
@@ -562,17 +583,13 @@ def run_cv_evaluation(td, n_folds, nlu_config):
         interpreter = Interpreter.load(model_dir, nlu_config)
 
         # calculate train accuracy
-        train_results = (Counter(train_results) +
-                         Counter(compute_intent_metrics(interpreter, train)))
-        test_results = (Counter(test_results) +
-                        Counter(compute_intent_metrics(interpreter, test)))
+        train_results = combine_intent_result(train_results, interpreter, train)
+        test_results = combine_intent_result(test_results, interpreter, test)
         # calculate test accuracy
-        entity_train_results = (Counter(entity_train_results) +
-                                Counter(compute_entity_metrics(interpreter,
-                                                               train)))
-        entity_test_results = (Counter(entity_test_results) +
-                               Counter(compute_entity_metrics(interpreter,
-                                                              test)))
+        entity_train_results = combine_entity_result(entity_train_results,
+                                                     interpreter, train)
+        entity_test_results = combine_entity_result(entity_test_results,
+                                                    interpreter, test)
 
         utils.remove_model(model_dir)
 
@@ -598,7 +615,7 @@ def compute_intent_metrics(interpreter, corpus):
     _, precision, f1, accuracy = get_evaluation_metrics(intent_targets,
                                                         intent_predictions)
 
-    return {"Accuracy": accuracy, "F1-score": f1, "Precision": precision}
+    return {"Accuracy": [accuracy], "F1-score": [f1], "Precision": [precision]}
 
 
 def compute_entity_metrics(interpreter, corpus):
