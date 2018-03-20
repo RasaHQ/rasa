@@ -1,0 +1,10 @@
+# Minimum Install Requirements
+-r requirements_bare.txt
+
+spacy==2.0.5
+scikit-learn==0.19.1
+scipy==1.0.0
+sklearn-crfsuite==0.3.6
+nltk==3.2.5
+tflearn==0.3.2
+tensorflow==1.4.0
