@@ -54,6 +54,7 @@ class MitieEntityExtractor(EntityExtractor):
                     ents.append({
                         "entity": e[1],
                         "value": text[start:end],
+                        "confidence": e[2],
                         "start": start,
                         "end": end
                     })
