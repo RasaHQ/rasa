@@ -44,7 +44,7 @@ def app(component_builder):
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-            "http://dummy_uri/parse?q=food&project=test_project_spacy_sklearn",
+            "http://dummy-uri/parse?q=food&project=test_project_spacy_sklearn",
             {"entities": [], "intent": "restaurant_search", "text": "food"}
     ),
 ])
@@ -59,11 +59,11 @@ def test_get_parse(app, response_test):
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-            "http://dummy_uri/parse?q=food",
+            "http://dummy-uri/parse?q=food",
             {"error": "No project found with name 'default'."}
     ),
     ResponseTest(
-            "http://dummy_uri/parse?q=food&project=umpalumpa",
+            "http://dummy-uri/parse?q=food&project=umpalumpa",
             {"error": "No project found with name 'umpalumpa'."}
     )
 ])
@@ -77,7 +77,7 @@ def test_get_parse_invalid_model(app, response_test):
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-            "http://dummy_uri/parse",
+            "http://dummy-uri/parse",
             {"entities": [], "intent": "restaurant_search", "text": "food"},
             payload={"q": "food", "project": "test_project_spacy_sklearn"}
     ),
@@ -92,11 +92,11 @@ def test_post_parse(app, response_test):
 
 @pytest.inlineCallbacks
 def test_post_parse_specific_model(app):
-    status = yield app.get("http://dummy_uri/status")
+    status = yield app.get("http://dummy-uri/status")
     sjs = yield status.json()
     project = sjs["available_projects"]["test_project_spacy_sklearn"]
     model = project["available_models"][0]
-    query = ResponseTest("http://dummy_uri/parse",
+    query = ResponseTest("http://dummy-uri/parse",
                          {"entities": [], "intent": "affirm", "text": "food"},
                          payload={"q": "food",
                                   "project": "test_project_spacy_sklearn",
@@ -107,12 +107,12 @@ def test_post_parse_specific_model(app):
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
-            "http://dummy_uri/parse",
+            "http://dummy-uri/parse",
             {"error": "No project found with name 'default'."},
             payload={"q": "food"}
     ),
     ResponseTest(
-            "http://dummy_uri/parse",
+            "http://dummy-uri/parse",
             {"error": "No project found with name 'umpalumpa'."},
             payload={"q": "food", "project": "umpalumpa"}
     ),

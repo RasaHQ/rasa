@@ -21,7 +21,10 @@ def test_crf_extractor(spacy_nlp):
         }),
         Message("central indian restaurant", {
             "intent": "restaurant_search",
-            "entities": [{"start": 0, "end": 7, "value": "central", "entity": "location"}],
+            "entities": [
+                {"start": 0, "end": 7, "value": "central", "entity": "location", "extractor": "random_extractor"},
+                {"start": 8, "end": 14, "value": "indian", "entity": "cuisine", "extractor": "ner_crf"}
+            ],
             "spacy_doc": spacy_nlp("central indian restaurant")
         })]
 
@@ -36,6 +39,16 @@ def test_crf_extractor(spacy_nlp):
     assert feats[1]['0:low'] == "in"
     sentence = 'anywhere in the west'
     ext.extract_entities(Message(sentence, {"spacy_doc": spacy_nlp(sentence)}))
+    filtered = ext.filter_trainable_entities(examples)
+    assert filtered[0].get('entities') == [
+        {"start": 16, "end": 20, "value": "west", "entity": "location"}
+    ], 'Entity without extractor remains'
+    assert filtered[1].get('entities') == [
+        {"start": 8, "end": 14, "value": "indian", "entity": "cuisine", "extractor": "ner_crf"}
+    ], 'Only ner_crf entity annotation remains'
+    assert examples[1].get('entities')[0] == {
+        "start": 0, "end": 7, "value": "central", "entity": "location", "extractor": "random_extractor"
+    }, 'Original examples are not mutated'
 
 
 def test_crf_json_from_BILOU(spacy_nlp):

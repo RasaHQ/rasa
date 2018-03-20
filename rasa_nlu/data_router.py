@@ -242,8 +242,7 @@ class DataRouter(object):
     def _list_projects(path):
         """List the projects in the path, ignoring hidden directories."""
         return [os.path.basename(fn)
-                for fn in glob.glob(os.path.join(path, '*'))
-                if os.path.isdir(fn)]
+                for fn in utils.list_subdirectories(path)]
 
     @staticmethod
     def create_temporary_file(data, suffix=""):
