@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import os
 
 import six
+import yaml
 from builtins import object
 # Describes where to search for the config file if no location is specified
 from typing import Text
@@ -36,7 +37,7 @@ def load(filename=None):
     if filename is not None:
         try:
             file_config = utils.read_yaml_file(filename)
-        except ValueError as e:
+        except yaml.parser.ParserError as e:
             raise InvalidConfigError("Failed to read configuration file "
                                      "'{}'. Error: {}".format(filename, e))
         return RasaNLUModelConfig(file_config)
@@ -109,6 +110,11 @@ class RasaNLUModelConfig(object):
 
     def view(self):
         return json_to_string(self.__dict__, indent=4)
+
+    def for_component(self, name, defaults=None):
+        component_config = defaults or {}
+        component_config.update(self.pipeline.get(name, {}))
+        return component_config
 
     def make_paths_absolute(self, config, keys):
         abs_path_config = dict(config)

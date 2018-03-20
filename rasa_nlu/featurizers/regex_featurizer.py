@@ -16,7 +16,7 @@ from typing import Optional
 from typing import Text
 
 from rasa_nlu import utils
-from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.featurizers import Featurizer
 from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
@@ -47,7 +47,7 @@ class RegexFeaturizer(Featurizer):
         return ["numpy"]
 
     def train(self, training_data, config, **kwargs):
-        # type: (TrainingData, RasaNLUConfig, **Any) -> None
+        # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
 
         for example in training_data.regex_features:
             self.known_patterns.append(example)

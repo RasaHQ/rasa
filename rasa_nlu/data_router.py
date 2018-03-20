@@ -144,7 +144,7 @@ class DataRouter(object):
             return None
 
     def _collect_projects(self, project_dir):
-        if os.path.isdir(project_dir):
+        if project_dir and os.path.isdir(project_dir):
             projects = os.listdir(project_dir)
         else:
             projects = []

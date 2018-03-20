@@ -13,7 +13,7 @@ from typing import Optional
 from typing import Text
 
 from rasa_nlu.components import Component
-from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
 
@@ -43,11 +43,13 @@ class SpacyNLP(Component):
 
     @classmethod
     def create(cls, config):
-        # type: (RasaNLUConfig) -> SpacyNLP
+        # type: (RasaNLUModelConfig) -> SpacyNLP
         import spacy
-        spacy_model_name = config["spacy_model_name"]
-        if spacy_model_name is None:
-            spacy_model_name = config["language"]
+        component_conf = config.for_component(cls.name)
+
+        # if no model is specified, we fall back to the language string
+        spacy_model_name = component_conf.get("model_name",config.language)
+
         logger.info("Trying to load spacy model with "
                     "name '{}'".format(spacy_model_name))
         nlp = spacy.load(spacy_model_name, parser=False)

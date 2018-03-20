@@ -41,7 +41,7 @@ class Project(object):
         self._project = project
         self.remote_storage = remote_storage
 
-        if project:
+        if project and project_dir:
             self._path = os.path.join(project_dir, project)
         self._search_for_models()
 

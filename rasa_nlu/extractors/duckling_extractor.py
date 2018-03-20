@@ -16,7 +16,7 @@ from typing import Optional
 from typing import Text
 
 from rasa_nlu import utils
-from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.model import Metadata
 from rasa_nlu.training_data import Message
@@ -79,9 +79,9 @@ class DucklingExtractor(EntityExtractor):
 
     @classmethod
     def create(cls, config):
-        # type: (RasaNLUConfig) -> DucklingExtractor
+        # type: (RasaNLUModelConfig) -> DucklingExtractor
 
-        dims = config["duckling_dimensions"]
+        dims = config.for_component(cls.name).get("dimensions")
         if dims:
             unknown_dimensions = [dim
                                   for dim in dims

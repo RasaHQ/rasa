@@ -15,6 +15,7 @@ from typing import Set
 from typing import Text
 from typing import Tuple
 
+from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.training_data import Message
 
 if typing.TYPE_CHECKING:
@@ -141,8 +142,7 @@ class Component(object):
     # within the above described `provides` property.
     requires = []
 
-    def __init__(self, config):
-        self.config = config
+    def __init__(self):
         self.partial_processing_pipeline = None
         self.partial_processing_context = None
 
@@ -341,7 +341,7 @@ class ComponentBuilder(object):
                             "{}".format(component_name, e))
 
     def create_component(self, component_name, config):
-        # type: (Text, RasaNLUConfig) -> Component
+        # type: (Text, RasaNLUModelConfig) -> Component
         """Tries to retrieve a component from the cache,
         calls `create` to create a new component."""
         from rasa_nlu import registry

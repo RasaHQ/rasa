@@ -14,7 +14,7 @@ from typing import Optional
 from typing import Text
 
 from rasa_nlu import utils
-from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.extractors.duckling_extractor import extract_value
 from rasa_nlu.model import Metadata
@@ -41,11 +41,11 @@ class DucklingHTTPExtractor(EntityExtractor):
 
     @classmethod
     def create(cls, config):
-        # type: (RasaNLUConfig) -> DucklingHTTPExtractor
+        # type: (RasaNLUModelConfig) -> DucklingHTTPExtractor
 
-        return DucklingHTTPExtractor(config["duckling_http_url"],
-                                     config["language"],
-                                     config["duckling_dimensions"])
+        return DucklingHTTPExtractor(config.for_component(cls.name).get("url"),
+                                     config.language,
+                                     config.for_component(cls.name).get("dimensions"))
 
     def _duckling_parse(self, text):
         """Sends the request to the duckling server and parses the result."""

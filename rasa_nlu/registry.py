@@ -33,7 +33,7 @@ from typing import Type
 
 if typing.TYPE_CHECKING:
     from rasa_nlu.components import Component
-    from rasa_nlu.config import RasaNLUConfig
+    from rasa_nlu.config import RasaNLUModelConfig, RasaNLUModelConfig
 
 # Classes of all known components. If a new component should be added,
 # its class name should be listed here.
@@ -126,7 +126,7 @@ def load_component_by_name(component_name,  # type: Text
 
 
 def create_component_by_name(component_name, config):
-    # type: (Text, RasaNLUConfig) -> Optional[Component]
+    # type: (Text, RasaNLUModelConfig) -> Optional[Component]
     """Resolves a component and calls it's create method to init it based on a
     previously persisted model."""
 
