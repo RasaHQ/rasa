@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import logging
 import os
 
 import six
@@ -19,7 +20,11 @@ DEFAULT_CONFIG_LOCATION = "config.yml"
 DEFAULT_CONFIG = {
     "language": "en",
     "pipeline": [],
+    "num_threads": 1      # TODO: rethink - how do we get this value to sklearn
 }
+
+
+logger = logging.getLogger(__name__)
 
 
 class InvalidConfigError(ValueError):
@@ -30,7 +35,7 @@ class InvalidConfigError(ValueError):
         super(InvalidConfigError, self).__init__(message)
 
 
-def load(filename=None):
+def load(filename=None, **kwargs):
     if filename is None and os.path.isfile(DEFAULT_CONFIG_LOCATION):
         filename = DEFAULT_CONFIG_LOCATION
 
@@ -40,9 +45,26 @@ def load(filename=None):
         except yaml.parser.ParserError as e:
             raise InvalidConfigError("Failed to read configuration file "
                                      "'{}'. Error: {}".format(filename, e))
+
+        if kwargs:
+            file_config.update(kwargs)
         return RasaNLUModelConfig(file_config)
     else:
-        return RasaNLUModelConfig()
+        return RasaNLUModelConfig(kwargs)
+
+
+def override_defaults(defaults, custom):
+    cfg = defaults or {}
+    if custom:
+        cfg.update(custom)
+    return cfg
+
+
+def make_path_absolute(path):
+    if path and not os.path.isabs(path):
+        return os.path.join(os.getcwd(), path)
+    else:
+        return path
 
 
 class RasaNLUModelConfig(object):
@@ -112,36 +134,25 @@ class RasaNLUModelConfig(object):
         return json_to_string(self.__dict__, indent=4)
 
     def for_component(self, name, defaults=None):
-        component_config = defaults or {}
-        component_config.update(self.pipeline.get(name, {}))
-        return component_config
+        for c in self.pipeline:
+            if c.get("name") == name:
+                return override_defaults(defaults, c)
+        else:
+            return defaults or {}
 
-    def make_paths_absolute(self, config, keys):
-        abs_path_config = dict(config)
-        for key in keys:
-            if (key in abs_path_config
-                    and abs_path_config[key] is not None
-                    and not os.path.isabs(abs_path_config[key])):
-                abs_path_config[key] = os.path.join(os.getcwd(),
-                                                    abs_path_config[key])
-        return abs_path_config
+    @property
+    def component_names(self):
+        return [c.get("name") for c in self.pipeline]
 
-    # noinspection PyCompatibility
-    def make_unicode(self, config):
-        # TODO: i think this can be removed I don't think there is a case
-        # where we would parse the config and it would turn out to be a str
-        if six.PY2:
-            # Sometimes (depending on the source of the config value)
-            # an argument will be str instead of unicode
-            # to unify that and ease further usage of the config,
-            # we convert everything to unicode
-            for k, v in config.items():
-                if type(v) is str:
-                    config[k] = unicode(v, "utf-8")
-        return config
+    def set_component_attr(self, name, **kwargs):
+        # TODO: test
+        for c in self.pipeline:
+            if c.get("name") == name:
+                c.update(kwargs)
+        else:
+            logger.warn("Tried to set configuration value for component '{}' "
+                        "which is not part of the pipeline.".format(name))
 
     def override(self, config):
-        abs_path_config = self.make_paths_absolute(config,
-                                                   ["path", "response_log"])
-        unicode_config = self.make_unicode(abs_path_config)
-        self.__dict__.update(unicode_config)
+        if config:
+            self.__dict__.update(config)

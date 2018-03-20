@@ -21,6 +21,7 @@ from typing import Optional
 from future.utils import PY3
 from typing import Text
 
+from rasa_nlu import config
 from rasa_nlu.components import Component
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.featurizers import Featurizer
@@ -53,7 +54,8 @@ class NGramFeaturizer(Featurizer):
     def __init__(self, component_config=None):
         self.best_num_ngrams = None
         self.all_ngrams = None
-        self.component_config = component_config
+        self.component_config = config.override_defaults(self.defaults,
+                                                         component_config)
 
     @classmethod
     def required_packages(cls):
@@ -137,7 +139,8 @@ class NGramFeaturizer(Featurizer):
         """Returns an ordered list of the best character ngrams for an intent classification problem"""
 
         oov_strings = self._remove_in_vocab_words(examples)
-        ngrams = self._generate_all_ngrams(oov_strings, ngram_min_length)
+        ngrams = self._generate_all_ngrams(
+                oov_strings, self.component_config["ngram_min_length"])
         return self._sort_applicable_ngrams(ngrams, examples, labels)
 
     def _remove_in_vocab_words(self, examples):
@@ -254,7 +257,8 @@ class NGramFeaturizer(Featurizer):
         features = {}
         counters = {ngram_min_length - 1: Counter()}
 
-        for n in range(ngram_min_length, self.component_config["n_gram_max_length"]):
+        for n in range(ngram_min_length,
+                       self.component_config["ngram_max_length"]):
             candidates = []
             features[n] = []
             counters[n] = Counter()

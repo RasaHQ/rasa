@@ -13,7 +13,7 @@ If you would like to evaluate your pipeline using crossvalidation, you can run t
 
 .. code-block:: bash
 
-    python -m rasa_nlu.evaluate -d data/examples/rasa/demo-rasa.json -c sample_configs/config_spacy.json --mode crossvalidation
+    python -m rasa_nlu.evaluate -d data/examples/rasa/demo-rasa.json -c sample_configs/config_spacy.yml --mode crossvalidation
 
 Intent Classification
 ---------------------

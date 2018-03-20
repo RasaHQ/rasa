@@ -15,6 +15,8 @@ from typing import List
 from typing import Text
 from typing import Tuple
 
+import numpy as np
+
 from rasa_nlu.components import Component
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.model import Metadata
@@ -33,7 +35,6 @@ MAX_CV_FOLDS = 5
 
 if typing.TYPE_CHECKING:
     import sklearn
-    import numpy as np
 
 
 class SklearnIntentClassifier(Component):
@@ -47,19 +48,19 @@ class SklearnIntentClassifier(Component):
 
     defaults = {
         "C": [1, 2, 5, 10, 20, 100],
-        "kernel": "linear"
+        "kernels": ["linear"]
     }
 
     def __init__(self,
-                 config,  # type: sklearn.model_selection.GridSearchCV
-                 clf=None,  # type: sklearn.preprocessing.LabelEncoder
-                 le=None
+                 component_config=None,  # type: Dict[Text, Any]
+                 clf=None,  # type: sklearn.model_selection.GridSearchCV
+                 le=None  # type: sklearn.preprocessing.LabelEncoder
                  ):
         # type: (...) -> None
         """Construct a new intent classifier using the sklearn framework."""
         from sklearn.preprocessing import LabelEncoder
 
-        super(SklearnIntentClassifier, self).__init__(config)
+        super(SklearnIntentClassifier, self).__init__(component_config)
 
         if le is not None:
             self.le = le
@@ -88,14 +89,12 @@ class SklearnIntentClassifier(Component):
 
         return self.le.inverse_transform(y)
 
-    def train(self, training_data, config, **kwargs):
+    def train(self, training_data, cfg, **kwargs):
         # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
-        """Train the intent classifier on a data set.
+        """Train the intent classifier on a data set."""
 
-        :param num_threads: number of threads used during training time"""
         from sklearn.model_selection import GridSearchCV
         from sklearn.svm import SVC
-        import numpy as np
 
         labels = [e.get("intent")
                   for e in training_data.intent_examples]
@@ -109,10 +108,8 @@ class SklearnIntentClassifier(Component):
             X = np.stack([example.get("text_features")
                           for example in training_data.intent_examples])
 
-            sklearn_config = config.for_component("intent_classifier_sklearn",
-                                                  defaults=self.defaults)
-            C = sklearn_config["C"]
-            kernels = sklearn_config["kernels"]
+            C = self.component_config["C"]
+            kernels = self.component_config["kernels"]
             # dirty str fix because sklearn is expecting
             # str not instance of basestr...
             tuned_parameters = [{"C": C,
@@ -125,7 +122,7 @@ class SklearnIntentClassifier(Component):
                                         probability=True,
                                         class_weight='balanced'),
                                     param_grid=tuned_parameters,
-                                    n_jobs=config["num_threads"],
+                                    n_jobs=cfg.num_threads,
                                     cv=cv_splits,
                                     scoring='f1_weighted',
                                     verbose=1)
@@ -152,7 +149,9 @@ class SklearnIntentClassifier(Component):
             if intents.size > 0 and probabilities.size > 0:
                 ranking = list(zip(list(intents),
                                    list(probabilities)))[:INTENT_RANKING_LENGTH]
+
                 intent = {"name": intents[0], "confidence": probabilities[0]}
+
                 intent_ranking = [{"name": intent_name, "confidence": score}
                                   for intent_name, score in ranking]
             else:
@@ -183,8 +182,6 @@ class SklearnIntentClassifier(Component):
         :return: tuple of first, the most probable label and second,
                  its probability."""
 
-        import numpy as np
-
         pred_result = self.predict_prob(X)
         # sort the probabilities retrieving the indices of
         # the elements in sorted order
@@ -192,7 +189,11 @@ class SklearnIntentClassifier(Component):
         return sorted_indices, pred_result[:, sorted_indices]
 
     @classmethod
-    def load(cls, model_dir=None, model_metadata=None, cached_component=None, **kwargs):
+    def load(cls,
+             model_dir=None,  #
+             model_metadata=None,
+             cached_component=None,
+             **kwargs):
         # type: (Text, Metadata, Optional[Component], **Any) -> SklearnIntentClassifier
         import cloudpickle
 

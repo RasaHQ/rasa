@@ -8,6 +8,9 @@ import os
 
 import typing
 from builtins import str
+
+from rasa_nlu import config
+from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.model import Metadata
 from rasa_nlu.training_data import Message
@@ -33,8 +36,17 @@ class CRFEntityExtractor(EntityExtractor):
 
     requires = ["spacy_doc", "tokens"]
 
-    config = {
+    defaults = {
+        # BILOU_flag determines whether to use BILOU tagging or not.
+        # More rigorous however requires more examples per entity
+        # rule of thumb: use only if more than 100 egs. per entity
         "BILOU_flag": True,
+
+        # crf_features is [before, word, after] array with before, word,
+        # after holding keys about which
+        # features to use for each word, for example, 'title' in
+        # array before will have the feature
+        # "is the preceding word in title case?"
         "features": [
             ["low", "title", "upper", "pos", "pos2"],
             ["bias", "low", "word3", "word2", "upper",
@@ -59,52 +71,30 @@ class CRFEntityExtractor(EntityExtractor):
         'pattern': lambda doc: str(doc[3]) if doc[3] is not None else 'N/A',
     }
 
-    def __init__(self, ent_tagger=None, entity_crf_features=None,
-                 entity_crf_BILOU_flag=True):
-        # type: (sklearn_crfsuite.CRF, List[List[Text]], bool) -> None
+    def __init__(self, component_config=None, ent_tagger=None):
+        # type: (sklearn_crfsuite.CRF, Dict[Text, Any]) -> None
 
-        super(CRFEntityExtractor, self).__init__()
+        super(CRFEntityExtractor, self).__init__(component_config)
 
         self.ent_tagger = ent_tagger
 
-        # BILOU_flag determines whether to use BILOU tagging or not.
-        # More rigorous however requires more examples per entity
-        # rule of thumb: use only if more than 100 egs. per entity
-        self.BILOU_flag = entity_crf_BILOU_flag
+        self._validate_configuration()
 
-        self.max_iterations = None
-        self.L1_C = None
-        self.L2_C = None
-
-        if not entity_crf_features:
-            # crf_features is [before, word, after] array with before, word,
-            # after holding keys about which
-            # features to use for each word, for example, 'title' in
-            # array before will have the feature
-            # "is the preceding word in title case?"
-            self.crf_features = self.config
-        else:
-            if len(entity_crf_features) % 2 != 1:
-                raise ValueError("Need an odd number of crf feature "
-                                 "lists to have a center word.")
-            self.crf_features = entity_crf_features
+    def _validate_configuration(self):
+        if len(self.component_config.get("features", [])) % 2 != 1:
+            raise ValueError("Need an odd number of crf feature "
+                             "lists to have a center word.")
 
     @classmethod
     def required_packages(cls):
         return ["sklearn_crfsuite", "sklearn", "spacy"]
 
     def train(self, training_data, config, **kwargs):
-        # type: (TrainingData, RasaNLUConfig) -> None
+        # type: (TrainingData, RasaNLUModelConfig) -> None
 
-        train_config = config.get("ner_crf", {})
+        self.component_config = config.for_component(self.name, self.defaults)
 
-        # These two are expected to be in the config so not using .get
-        self.BILOU_flag = train_config["BILOU_flag"]
-        self.crf_features = train_config["features"]
-
-        self.max_iterations = train_config.get("max_iterations", 50)
-        self.L1_C = config.get("L1_c", 1)
-        self.L2_C = config.get("L2_c", 1e-3)
+        self._validate_configuration()
 
         # checks whether there is at least one
         # example with an entity annotation
@@ -160,7 +150,7 @@ class CRFEntityExtractor(EntityExtractor):
         if len(sentence_doc) != len(entities):
             raise Exception('Inconsistency in amount of tokens '
                             'between crfsuite and spacy')
-        if self.BILOU_flag:
+        if self.component_config["BILOU_flag"]:
             # using the BILOU tagging scheme
             for word_idx in range(len(sentence_doc)):
                 entity = entities[word_idx]
@@ -208,7 +198,7 @@ class CRFEntityExtractor(EntityExtractor):
                            'value': ent_value,
                            'entity': entity[2:]}
                     json_ents.append(ent)
-        elif not self.BILOU_flag:
+        else:
             # not using BILOU tagging scheme, multi-word entities are split.
             for word_idx in range(len(sentence_doc)):
                 entity = entities[word_idx]
@@ -233,11 +223,9 @@ class CRFEntityExtractor(EntityExtractor):
 
         if model_dir and model_metadata.get("entity_extractor_crf"):
             meta = model_metadata.get("entity_extractor_crf")
-            model_file = os.path.join(model_dir, meta["model_file"])
+            model_file = os.path.join(model_dir, "crf_model.pkl")
             ent_tagger = joblib.load(model_file)
-            return CRFEntityExtractor(ent_tagger=ent_tagger,
-                                      entity_crf_features=meta['crf_features'],
-                                      entity_crf_BILOU_flag=meta['BILOU_flag'])
+            return CRFEntityExtractor(meta, ent_tagger)
         else:
             return CRFEntityExtractor()
 
@@ -253,10 +241,7 @@ class CRFEntityExtractor(EntityExtractor):
             model_file_name = os.path.join(model_dir, "crf_model.pkl")
 
             joblib.dump(self.ent_tagger, model_file_name)
-            return {"entity_extractor_crf": {"model_file": "crf_model.pkl",
-                                             "crf_features": self.crf_features,
-                                             "BILOU_flag": self.BILOU_flag,
-                                             "version": 1}}
+            return {"entity_extractor_crf": self.component_config}
         else:
             return {"entity_extractor_crf": None}
 
@@ -265,10 +250,11 @@ class CRFEntityExtractor(EntityExtractor):
         """Convert a word into discrete features in self.crf_features,
         including word before and word after."""
 
+        configured_features = self.component_config["features"]
         sentence_features = []
         for word_idx in range(len(sentence)):
             # word before(-1), current word(0), next word(+1)
-            feature_span = len(self.crf_features)
+            feature_span = len(configured_features)
             half_span = feature_span // 2
             feature_range = range(- half_span, half_span + 1)
             prefixes = [str(i) for i in feature_range]
@@ -284,7 +270,7 @@ class CRFEntityExtractor(EntityExtractor):
                     word = sentence[word_idx + f_i]
                     f_i_from_zero = f_i + half_span
                     prefix = prefixes[f_i_from_zero]
-                    features = self.crf_features[f_i_from_zero]
+                    features = configured_features[f_i_from_zero]
                     for feature in features:
                         # append each feature to a feature vector
                         value = self.function_dict[feature](word)
@@ -315,7 +301,7 @@ class CRFEntityExtractor(EntityExtractor):
                         "annotated training examples end at token "
                         "boundaries (e.g. don't include trailing "
                         "whitespaces).".format(doc.text))
-        if not self.BILOU_flag:
+        if not self.component_config["BILOU_flag"]:
             for i, entity in enumerate(ents):
                 if entity.startswith('B-') or \
                         entity.startswith('I-') or \
@@ -362,11 +348,11 @@ class CRFEntityExtractor(EntityExtractor):
         self.ent_tagger = sklearn_crfsuite.CRF(
                 algorithm='lbfgs',
                 # coefficient for L1 penalty
-                c1=self.L1_C,
+                c1=self.component_config["L1_c"],
                 # coefficient for L2 penalty
-                c2=self.L2_C,
+                c2=self.component_config["L2_c"],
                 # stop earlier
-                max_iterations=self.max_iterations,
+                max_iterations=self.component_config["max_iterations"],
                 # include transitions that are possible, but not observed
                 all_possible_transitions=True
         )

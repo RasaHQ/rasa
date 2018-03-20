@@ -15,6 +15,7 @@ from typing import Set
 from typing import Text
 from typing import Tuple
 
+from rasa_nlu import config
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.training_data import Message
 
@@ -142,7 +143,12 @@ class Component(object):
     # within the above described `provides` property.
     requires = []
 
-    def __init__(self):
+    defaults = {}
+
+    def __init__(self, component_config=None):
+        self.component_config = config.override_defaults(
+                self.defaults, component_config)
+
         self.partial_processing_pipeline = None
         self.partial_processing_context = None
 
@@ -181,15 +187,19 @@ class Component(object):
         Components can rely on any context attributes that are
         created by `pipeline_init` calls to components previous
         to this one."""
-        return cached_component if cached_component else cls()
+        if cached_component:
+            return cached_component
+        else:
+            component_config = model_metadata.get(cls.name)
+            return cls(component_config)
 
     @classmethod
-    def create(cls, config):
-        # type: (RasaNLUConfig) -> Component
+    def create(cls, cfg):
+        # type: (RasaNLUModelConfig) -> Component
         """Creates this component (e.g. before a training is started).
 
         Method can access all configuration parameters."""
-        return cls()
+        return cls(cfg.for_component(cls.name, cls.defaults))
 
     def provide_context(self):
         # type: () -> Optional[Dict[Text, Any]]
@@ -205,8 +215,8 @@ class Component(object):
         (e.g. loading word vectors for the pipeline)."""
         pass
 
-    def train(self, training_data, config, **kwargs):
-        # type: (TrainingData, RasaNLUConfig, **Any) -> None
+    def train(self, training_data, cfg, **kwargs):
+        # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
         """Train this component.
 
         This is the components chance to train itself provided
@@ -232,7 +242,8 @@ class Component(object):
     def persist(self, model_dir):
         # type: (Text) -> Optional[Dict[Text, Any]]
         """Persist this component to disk for future loading."""
-        pass
+
+        return {self.name: self.component_config}
 
     @classmethod
     def cache_key(cls, model_metadata):
@@ -340,7 +351,7 @@ class ComponentBuilder(object):
             raise Exception("Failed to load component '{}'. "
                             "{}".format(component_name, e))
 
-    def create_component(self, component_name, config):
+    def create_component(self, component_name, cfg):
         # type: (Text, RasaNLUModelConfig) -> Component
         """Tries to retrieve a component from the cache,
         calls `create` to create a new component."""
@@ -349,10 +360,10 @@ class ComponentBuilder(object):
 
         try:
             component, cache_key = self.__get_cached_component(
-                    component_name, Metadata(config.as_dict(), None))
+                    component_name, Metadata(cfg.as_dict(), None))
             if component is None:
                 component = registry.create_component_by_name(component_name,
-                                                              config)
+                                                              cfg)
                 self.__add_to_cache(component, cache_key)
             return component
         except MissingArgumentError as e:  # pragma: no cover

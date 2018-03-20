@@ -36,8 +36,8 @@ class RegexFeaturizer(Featurizer):
 
     requires = ["tokens"]
 
-    def __init__(self, known_patterns=None):
-        super(RegexFeaturizer, self).__init__()
+    def __init__(self, component_config=None, known_patterns=None):
+        super(RegexFeaturizer, self).__init__(component_config)
 
         self.known_patterns = known_patterns if known_patterns else []
 

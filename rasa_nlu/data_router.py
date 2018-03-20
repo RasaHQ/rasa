@@ -15,7 +15,7 @@ from concurrent.futures import ProcessPoolExecutor as ProcessPool
 from future.utils import PY3
 from rasa_nlu.training_data import Message
 
-from rasa_nlu import utils
+from rasa_nlu import utils, config
 from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.evaluate import get_evaluation_metrics, clean_intent_labels
@@ -96,7 +96,7 @@ class DataRouter(object):
 
         self._training_processes = max(max_training_processes, 1)
         self.responses = self._create_query_logger(response_log)
-        self.project_dir = project_dir
+        self.project_dir = config.make_path_absolute(project_dir)
         self.emulator = self._create_emulator(emulation_mode)
         self.remote_storage = remote_storage
 

@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import itertools
 import logging
 import os
+import shutil
 import tempfile
 from collections import defaultdict
 from collections import namedtuple
@@ -532,8 +533,7 @@ def run_cv_evaluation(data, n_folds, nlu_config):
         # calculate test accuracy
         compute_metrics(interpreter, test, test_results)
 
-    os.rmdir(os.path.join(tmp_dir, "default"))
-    os.rmdir(tmp_dir)
+    shutil.rmtree(tmp_dir, ignore_errors=True)
 
     return CVEvaluationResult(dict(train_results), dict(test_results))
 

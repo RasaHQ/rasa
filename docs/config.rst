@@ -18,8 +18,8 @@ Default
 -------
 Here is the default configuration including all available parameters:
 
-.. literalinclude:: ../sample_configs/config_defaults.json
-    :language: json
+.. literalinclude:: ../sample_configs/config_defaults.yml
+    :language: yaml
 
 Options
 -------
@@ -106,7 +106,7 @@ config
 ~~~~~~
 
 :Type: ``str``
-:Examples: ``"sample_configs/config_spacy.json"``
+:Examples: ``"sample_configs/config_spacy.yml"``
 :Description:
     Location of the configuration file (can only be set as env var or command line option).
 

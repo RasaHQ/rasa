@@ -10,7 +10,9 @@ import tempfile
 import pytest
 from treq.testing import StubTreq
 
-from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu import config
+from rasa_nlu.config import RasaNLUModelConfig
+from rasa_nlu.data_router import DataRouter
 from rasa_nlu.model import Trainer
 from rasa_nlu.server import RasaNLU
 from tests.utilities import ResponseTest
@@ -18,8 +20,8 @@ from tests.utilities import ResponseTest
 
 @pytest.fixture(scope="module")
 def app(component_builder):
-    """
-    This fixture makes use of the IResource interface of the Klein application to mock Rasa HTTP server.
+    """Use IResource interface of Klein to mock Rasa HTTP server.
+
     :param component_builder:
     :return:
     """
@@ -30,19 +32,13 @@ def app(component_builder):
         root_dir = os.getcwd()
 
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
-    _config = {
-        'write': nlu_log_file,
-        'port': -1,  # unused in test app
-        "pipeline": "keyword",
 
-        "path": os.path.join(root_dir, "test_projects"),
-        "data": os.path.join(root_dir, "data/demo-restaurants.json"),
-        "max_training_processes": 1
-    }
-    train_models(component_builder)
+    train_models(component_builder,
+                 os.path.join(root_dir, "data/demo-restaurants.json"))
 
-    config = RasaNLUConfig(cmdline_args=_config)
-    rasa = RasaNLU(config, component_builder, True)
+    router = DataRouter(os.path.join(root_dir, "test_projects"))
+    rasa = RasaNLU(router, log_file=nlu_log_file, testing=True)
+
     return StubTreq(rasa.app.resource())
 
 
@@ -129,18 +125,17 @@ def test_post_parse_invalid_model(app, response_test):
     assert rjs.get("error").startswith(response_test.expected_response["error"])
 
 
-def train_models(component_builder):
+def train_models(component_builder, data):
     # Retrain different multitenancy models
     def train(cfg_name, project_name):
         from rasa_nlu.train import create_persistor
         from rasa_nlu import training_data
 
-        config = RasaNLUConfig(cfg_name)
-        trainer = Trainer(config, component_builder)
-        training_data = training_data.load_data(config['data'])
+        cfg = config.load(cfg_name)
+        trainer = Trainer(cfg, component_builder)
+        training_data = training_data.load_data(data)
 
         trainer.train(training_data)
-        persistor = create_persistor(config)
-        trainer.persist("test_projects", persistor, project_name)
+        trainer.persist("test_projects", project_name=project_name)
 
-    train("sample_configs/config_spacy.json", "test_project_spacy_sklearn")
+    train("sample_configs/config_spacy.yml", "test_project_spacy_sklearn")

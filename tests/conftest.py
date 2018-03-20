@@ -7,14 +7,13 @@ import logging
 
 import pytest
 
-from rasa_nlu import data_router
+from rasa_nlu import data_router, config
 from rasa_nlu.components import ComponentBuilder
-from rasa_nlu.config import RasaNLUConfig
-
+from rasa_nlu.config import RasaNLUModelConfig
 
 logging.basicConfig(level="DEBUG")
 
-CONFIG_DEFAULTS_PATH = "sample_configs/config_defaults.json"
+CONFIG_DEFAULTS_PATH = "sample_configs/config_defaults.yml"
 
 # see `rasa_nlu.data_router` for details. avoids deadlock in
 # `deferred_from_future` function during tests
@@ -33,4 +32,4 @@ def spacy_nlp(component_builder, default_config):
 
 @pytest.fixture(scope="session")
 def default_config():
-    return RasaNLUConfig(CONFIG_DEFAULTS_PATH)
+    return config.load(CONFIG_DEFAULTS_PATH)

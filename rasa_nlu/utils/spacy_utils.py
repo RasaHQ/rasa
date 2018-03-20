@@ -29,12 +29,16 @@ class SpacyNLP(Component):
 
     provides = ["spacy_doc", "spacy_nlp"]
 
-    def __init__(self, nlp, language, spacy_model_name):
-        # type: (Language, Text, Text) -> None
+    defaults = {
+        "model": None
+    }
+
+    def __init__(self, component_config=None, nlp=None):
+        # type: (Dict[Text, Any], Language) -> None
+
+        super(SpacyNLP, self).__init__(component_config)
 
         self.nlp = nlp
-        self.language = language
-        self.spacy_model_name = spacy_model_name
 
     @classmethod
     def required_packages(cls):
@@ -42,29 +46,30 @@ class SpacyNLP(Component):
         return ["spacy"]
 
     @classmethod
-    def create(cls, config):
+    def create(cls, cfg):
         # type: (RasaNLUModelConfig) -> SpacyNLP
         import spacy
-        component_conf = config.for_component(cls.name)
+        component_conf = cfg.for_component(cls.name)
 
         # if no model is specified, we fall back to the language string
-        spacy_model_name = component_conf.get("model_name",config.language)
+        spacy_model_name = component_conf.get("model", cfg.language)
 
         logger.info("Trying to load spacy model with "
                     "name '{}'".format(spacy_model_name))
         nlp = spacy.load(spacy_model_name, parser=False)
         cls.ensure_proper_language_model(nlp)
-        return SpacyNLP(nlp, config["language"], spacy_model_name)
+        return SpacyNLP(component_conf, nlp)
 
     @classmethod
     def cache_key(cls, model_metadata):
         # type: (Metadata) -> Text
 
-        spacy_model_name = model_metadata.metadata.get("spacy_model_name")
-        if spacy_model_name is None:
-            # Fallback, use the language name, e.g. "en",
-            # as the model name if no explicit name is defined
-            spacy_model_name = model_metadata.language
+        component_meta = model_metadata.metadata.get("ner_spacy", {})
+
+        # Fallback, use the language name, e.g. "en",
+        # as the model name if no explicit name is defined
+        spacy_model_name = component_meta.get("model", model_metadata.language)
+
         return cls.name + "-" + spacy_model_name
 
     def provide_context(self):
@@ -73,7 +78,7 @@ class SpacyNLP(Component):
         return {"spacy_nlp": self.nlp}
 
     def train(self, training_data, config, **kwargs):
-        # type: (TrainingData, RasaNLUConfig, **Any) -> None
+        # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
 
         for example in training_data.training_examples:
             example.set("spacy_doc", self.nlp(example.text.lower()))
@@ -82,14 +87,6 @@ class SpacyNLP(Component):
         # type: (Message, **Any) -> None
 
         message.set("spacy_doc", self.nlp(message.text.lower()))
-
-    def persist(self, model_dir):
-        # type: (Text) -> Dict[Text, Any]
-
-        return {
-            "spacy_model_name": self.spacy_model_name,
-            "language": self.language
-        }
 
     @classmethod
     def load(cls,
@@ -103,19 +100,28 @@ class SpacyNLP(Component):
         if cached_component:
             return cached_component
 
-        nlp = spacy.load(model_metadata.get("spacy_model_name"), parser=False)
+        component_meta = model_metadata.get("spacy", {})
+        model_name = component_meta.get("model")
+
+        nlp = spacy.load(model_name, parser=False)
         cls.ensure_proper_language_model(nlp)
-        return cls(nlp, model_metadata.get("language"), model_metadata.get("spacy_model_name"))
+        return cls(component_meta, nlp)
 
     @staticmethod
     def ensure_proper_language_model(nlp):
         # type: (Optional[Language]) -> None
-        """Checks if the spacy language model is properly loaded. Raises an exception if the model is invalid."""
+        """Checks if the spacy language model is properly loaded.
+
+        Raises an exception if the model is invalid."""
 
         if nlp is None:
-            raise Exception("Failed to load spacy language model. Loading the model returned 'None'.")
+            raise Exception("Failed to load spacy language model. "
+                            "Loading the model returned 'None'.")
         if nlp.path is None:
-            # Spacy sets the path to `None` if it did not load the model from disk.
+            # Spacy sets the path to `None` if
+            # it did not load the model from disk.
             # In this case `nlp` is an unusable stub.
-            raise Exception("Failed to load spacy language model for lang '{}'. ".format(nlp.lang) +
-                            "Make sure you have downloaded the correct model (https://spacy.io/docs/usage/).")
+            raise Exception("Failed to load spacy language model for "
+                            "lang '{}'. Make sure you have downloaded the "
+                            "correct model (https://spacy.io/docs/usage/)."
+                            "".format(nlp.lang))

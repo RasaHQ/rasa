@@ -88,17 +88,17 @@ Training a New Model for your Project
 -------------------------------------
 
 Now we're going to create a configuration file. Make sure first that you've set up a backend, see :ref:`section_backends` .
-Create a file called ``config_spacy.json`` in your working directory which looks like this
+Create a file called ``config_spacy.yml`` in your working directory which looks like this
 
  
-.. literalinclude:: ../sample_configs/config_spacy.json
-    :language: json
+.. literalinclude:: ../sample_configs/config_spacy.yml
+    :language: yaml
 
 Now we can train a spacy model by running:
 
 .. code-block:: console
 
-    $ python -m rasa_nlu.train -c sample_configs/config_spacy.json
+    $ python -m rasa_nlu.train -c sample_configs/config_spacy.yml
 
 If you want to know more about the parameters, there is an overview of the :ref:`section_configuration`. After a few minutes,
 rasa NLU will finish training, and you'll see a new folder named as 
@@ -115,7 +115,7 @@ When no project is specified, as in this example, a "default" one will be used, 
 
 .. code-block:: console
 
-    $ python -m rasa_nlu.server -c sample_configs/config_spacy.json
+    $ python -m rasa_nlu.server -c sample_configs/config_spacy.yml
 
 More information about starting the server can be found in :ref:`section_http`.
 

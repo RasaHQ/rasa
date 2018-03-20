@@ -4,6 +4,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa_nlu.training_data import TrainingData, Message
 from tests import utilities
@@ -23,8 +24,9 @@ def test_crf_extractor(spacy_nlp):
             "entities": [{"start": 0, "end": 7, "value": "central", "entity": "location"}],
             "spacy_doc": spacy_nlp("central indian restaurant")
         })]
-    config = {"ner_crf": {"BILOU_flag": True, "features": ext.crf_features}}
-    ext.train(TrainingData(training_examples=examples), config)
+
+    # uses BILOU and the default features
+    ext.train(TrainingData(training_examples=examples), RasaNLUModelConfig())
     sentence = 'anywhere in the west'
     crf_format = ext._from_text_to_crf(Message(sentence, {"spacy_doc": spacy_nlp(sentence)}))
     assert [word[0] for word in crf_format] == ['anywhere', 'in', 'the', 'west']
@@ -50,8 +52,7 @@ def test_crf_json_from_BILOU(spacy_nlp):
 
 def test_crf_json_from_non_BILOU(spacy_nlp):
     from rasa_nlu.extractors.crf_entity_extractor import CRFEntityExtractor
-    ext = CRFEntityExtractor()
-    ext.BILOU_flag = False
+    ext = CRFEntityExtractor(component_config={"BILOU_flag": False})
     sentence = u"I need a home cleaning close-by"
     r = ext._from_crf_to_json(Message(sentence, {"spacy_doc": spacy_nlp(sentence)}),
                               ['O', 'O', 'O', 'what', 'what', 'where', 'where', 'where'])
@@ -65,7 +66,7 @@ def test_crf_json_from_non_BILOU(spacy_nlp):
 
 def test_duckling_entity_extractor(component_builder):
     _config = utilities.base_test_conf("all_components")
-    _config["duckling_dimensions"] = ["time"]
+    _config.set_component_attr("ner_duckling", dimensions=["time"])
     duckling = component_builder.create_component("ner_duckling", _config)
     message = Message("Today is the 5th of May. Let us meet tomorrow.")
     duckling.process(message)
@@ -83,7 +84,7 @@ def test_duckling_entity_extractor(component_builder):
 
 def test_duckling_entity_extractor_and_synonyms(component_builder):
     _config = utilities.base_test_conf("all_components")
-    _config["duckling_dimensions"] = ["number"]
+    _config.set_component_attr("ner_duckling", dimensions=["number"])
     duckling = component_builder.create_component("ner_duckling", _config)
     synonyms = component_builder.create_component("ner_synonyms", _config)
     message = Message("He was 6 feet away")

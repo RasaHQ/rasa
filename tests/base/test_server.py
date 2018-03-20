@@ -12,7 +12,8 @@ import time
 import pytest
 from treq.testing import StubTreq
 
-from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu.config import RasaNLUModelConfig
+from rasa_nlu.data_router import DataRouter
 from rasa_nlu.server import RasaNLU
 from tests import utilities
 from tests.utilities import ResponseTest
@@ -20,26 +21,19 @@ from tests.utilities import ResponseTest
 
 @pytest.fixture(scope="module")
 def app(tmpdir_factory):
-    """
-    This fixture makes use of the IResource interface of the Klein application to mock Rasa HTTP server.
+    """Use IResource interface of Klein to mock Rasa HTTP server.
+
     :param component_builder:
     :return:
     """
 
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
-    _config = {
-        'write': nlu_log_file,
-        'port': -1,  # unused in test app
-        "pipeline": "keyword",
-        "path": tmpdir_factory.mktemp("projects").strpath,
-        "server_model_dirs": {},
-        "data": "./data/demo-restaurants.json",
-        "emulate": "wit",
-        "max_training_processes": 1
-    }
 
-    config = RasaNLUConfig(cmdline_args=_config)
-    rasa = RasaNLU(config, testing=True)
+    router = DataRouter(tmpdir_factory.mktemp("projects").strpath,
+                        emulation_mode="wit")
+    rasa = RasaNLU(router,
+                   log_file=nlu_log_file,
+                   testing=True)
     return StubTreq(rasa.app.resource())
 
 

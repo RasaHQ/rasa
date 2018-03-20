@@ -89,7 +89,15 @@ registered_pipeline_templates = {
 
 
 def pipeline_template(s):
-    return registered_pipeline_templates.get(s)
+    components = registered_pipeline_templates.get(s)
+
+    if components:
+        # converts the list of components in the configuration
+        # format expected (one json object per component)
+        return [{"name": c} for c in components]
+
+    else:
+        return None
 
 
 def get_component_class(component_name):

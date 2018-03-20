@@ -16,7 +16,7 @@ from typing import Optional
 from typing import Text
 
 import rasa_nlu
-from rasa_nlu import components, utils
+from rasa_nlu import components, utils, config
 from rasa_nlu.components import Component
 from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.config import RasaNLUModelConfig
@@ -123,10 +123,10 @@ class Trainer(object):
         # Before instantiating the component classes, lets check if all
         # required packages are available
         if not self.skip_validation:
-            components.validate_requirements(config.pipeline)
+            components.validate_requirements(config.component_names)
 
         # Transform the passed names of the pipeline components into classes
-        for component_name in config.pipeline:
+        for component_name in config.component_names:
             component = component_builder.create_component(
                     component_name, config)
             self.pipeline.append(component)
@@ -183,6 +183,8 @@ class Trainer(object):
             model_name = fixed_model_name
         else:
             model_name = "model_" + timestamp
+
+        path = config.make_path_absolute(path)
         dir_name = os.path.join(path, project_name, model_name)
 
         create_dir(dir_name)

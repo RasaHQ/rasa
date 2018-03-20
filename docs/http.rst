@@ -13,7 +13,7 @@ You can run a simple http server that handles requests using your projects with 
 
 .. code-block:: bash
 
-    $ python -m rasa_nlu.server -c sample_configs/config_spacy.json
+    $ python -m rasa_nlu.server -c sample_configs/config_spacy.yml
 
 The server will look for existing projects under the folder defined by the ``path`` parameter in the configuration.
 By default a project will load the latest trained model.

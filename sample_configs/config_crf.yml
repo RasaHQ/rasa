@@ -1,5 +1,28 @@
-{
-  "pipeline": ["nlp_spacy", "ner_crf"],
-  "path" : "./projects",
-  "data" : "./data/examples/rasa/demo-rasa.json"
-}
+language: "en"
+num_threads: 1
+
+pipeline:
+- name: "spacy_nlp"
+  model: "en"
+- name: "spacy_ner"
+- name: "ner_ngrams"
+  max_number_of_ngrams: 7
+- name: "duckling_ner_http"
+  url: "http://my_url"
+  dimensions:
+  - "NUMBER"
+- name: "ner_crf"
+  BILOU_flag: true
+  features:
+    # features for word before token
+    - ["low", "title", "upper", "pos", "pos2"]
+    # features of token itself
+    - ["bias", "low", "word3", "word2", "upper", "title", "digit", "pos", "pos2", "pattern"]
+    # features for word after the token we want to tag
+    - ["low", "title", "upper", "pos", "pos2"]
+  max_iterations: 50
+  L1_c: 1
+  L2_c: 1e-3
+- name: "intent_classifier_sklearn"
+  C: [1, 2, 5, 10, 20, 100]
+  kernel: "linear"

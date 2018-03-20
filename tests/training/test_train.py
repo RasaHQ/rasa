@@ -9,7 +9,7 @@ import os
 import pytest
 
 from rasa_nlu import registry
-from rasa_nlu.model import Trainer
+from rasa_nlu.model import Trainer, Interpreter
 from rasa_nlu.train import create_persistor
 from rasa_nlu.training_data import TrainingData
 from tests import utilities
@@ -21,7 +21,7 @@ def test_train_model(pipeline_template, component_builder):
     _config = utilities.base_test_conf(pipeline_template)
     (trained, persisted_path) = utilities.run_train(_config, component_builder)
     assert trained.pipeline
-    loaded = utilities.load_interpreter_for_model(_config, persisted_path, component_builder)
+    loaded = Interpreter.load(persisted_path, component_builder)
     assert loaded.pipeline
     assert loaded.parse("hello") is not None
     assert loaded.parse("Hello today is Monday, again!") is not None
@@ -33,7 +33,7 @@ def test_train_model_noents(component_builder):
     _config['data'] = "./data/test/demo-rasa-noents.json"
     (trained, persisted_path) = utilities.run_train(_config, component_builder)
     assert trained.pipeline
-    loaded = utilities.load_interpreter_for_model(_config, persisted_path, component_builder)
+    loaded = Interpreter.load(persisted_path, component_builder)
     assert loaded.pipeline
     assert loaded.parse("hello") is not None
     assert loaded.parse("Hello today is Monday, again!") is not None
@@ -45,7 +45,7 @@ def test_train_model_multithread(component_builder):
     _config['num_threads'] = 2
     (trained, persisted_path) = utilities.run_train(_config, component_builder)
     assert trained.pipeline
-    loaded = utilities.load_interpreter_for_model(_config, persisted_path, component_builder)
+    loaded = Interpreter.load(persisted_path, component_builder)
     assert loaded.pipeline
     assert loaded.parse("hello") is not None
     assert loaded.parse("Hello today is Monday, again!") is not None
@@ -81,7 +81,7 @@ def test_load_and_persist_without_train(component_builder):
     persistor = create_persistor(_config)
     persisted_path = trainer.persist(_config['path'], persistor,
                                      project_name=_config['project'])
-    loaded = utilities.load_interpreter_for_model(_config, persisted_path, component_builder)
+    loaded = Interpreter.load(persisted_path, component_builder)
     assert loaded.pipeline
     assert loaded.parse("hello") is not None
     assert loaded.parse("Hello today is Monday, again!") is not None
@@ -94,7 +94,7 @@ def test_train_with_empty_data(component_builder):
     persistor = create_persistor(_config)
     persisted_path = trainer.persist(_config['path'], persistor,
                                      project_name=_config['project'])
-    loaded = utilities.load_interpreter_for_model(_config, persisted_path, component_builder)
+    loaded = Interpreter.load(persisted_path, component_builder)
     assert loaded.pipeline
     assert loaded.parse("hello") is not None
     assert loaded.parse("Hello today is Monday, again!") is not None

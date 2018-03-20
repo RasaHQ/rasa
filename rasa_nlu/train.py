@@ -11,7 +11,7 @@ from typing import Optional
 from typing import Text
 from typing import Tuple
 
-from rasa_nlu import utils
+from rasa_nlu import utils, config
 from rasa_nlu.components import ComponentBuilder
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.model import Interpreter
@@ -144,6 +144,9 @@ if __name__ == '__main__':
     cmdline_args = create_argument_parser().parse_args()
 
     utils.configure_colored_logging(cmdline_args.loglevel)
+
+    cfg = config.load(cmdline_args.config,
+                      num_threads=cmdline_args.num_threads)
 
     do_train(cmdline_args.config,
              cmdline_args.data,
