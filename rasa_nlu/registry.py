@@ -23,7 +23,7 @@ from rasa_nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
 from rasa_nlu.classifiers.sklearn_intent_classifier import \
     SklearnIntentClassifier
 from rasa_nlu.classifiers.tflearn_intent_classifier import \
-    TflearnIntentClassifier    
+    TflearnIntentClassifier
 from rasa_nlu.extractors.duckling_extractor import DucklingExtractor
 from rasa_nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
 from rasa_nlu.extractors.entity_synonyms import EntitySynonymMapper
@@ -79,7 +79,7 @@ registered_pipeline_templates = {
         "ner_crf",
         "ner_synonyms",
         "intent_classifier_tflearn",
-    ],    
+    ],
     "mitie": [
         "nlp_mitie",
         "tokenizer_mitie",

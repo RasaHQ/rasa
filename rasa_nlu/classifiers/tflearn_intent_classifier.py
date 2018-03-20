@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
-from builtins import map
 from typing import Any
 from typing import Dict
 from typing import Text
@@ -13,11 +12,11 @@ from rasa_nlu.training_data import Message
 import os
 import tensorflow as tf
 import pickle
-import nltk
 import tflearn
 import numpy as np
 import random
 from nltk.stem.lancaster import LancasterStemmer
+
 
 class TflearnIntentClassifier(Component):
 
@@ -45,7 +44,7 @@ class TflearnIntentClassifier(Component):
 
         stemmer = LancasterStemmer()
         documents = []
-        ignore_words = ['?', '¿', '¡', '!', '.', ',', ':']
+        ignore_words = ['?', '¡', '!', '.', ',', ':']
 
         for e in training_data.intent_examples:
             # get tokens
@@ -70,7 +69,6 @@ class TflearnIntentClassifier(Component):
 
             # create our training data
             training = []
-            output = []
 
             # create an empty array for our output
             output_empty = [0] * len(self.classes)
@@ -112,8 +110,11 @@ class TflearnIntentClassifier(Component):
             self.model = tflearn.DNN(net)
 
             # Start training (apply gradient descent algorithm)
-            self.model.fit(self.train_x, self.train_y, n_epoch=len(self.classes)+100, batch_size=int(len(self.classes)/10), show_metric=False)
-
+            self.model.fit(self.train_x,
+                           self.train_y,
+                           n_epoch=len(self.classes) + 100,
+                           batch_size=int(len(self.classes) / 10),
+                           show_metric=False)
 
     def process(self, message, **kwargs):
         # type: (Message, **Any) -> None
@@ -132,7 +133,7 @@ class TflearnIntentClassifier(Component):
             return_list = []
             for r in results:
                 classes = self.clf.get_classes()
-                return_list.append((classes[r[0]], str(r[1])))
+                return_list.append((classes[r[0]], r[1]))
 
             if len(return_list) == 0:
                 intent = {"name": None, "confidence": 0.0}
@@ -141,20 +142,17 @@ class TflearnIntentClassifier(Component):
                 intent = {"name": return_list[0][0], "confidence": return_list[0][1]}
                 intent_ranking = [{"name": intent_name, "confidence": score} for intent_name, score in return_list]
 
-            message.set("intent", intent, add_to_output=True)
-            message.set("intent_ranking", intent_ranking, add_to_output=True)
-
+        message.set("intent", intent, add_to_output=True)
+        message.set("intent_ranking", intent_ranking, add_to_output=True)
 
     @classmethod
     def load(cls, model_dir=None, model_metadata=None, cached_component=None, **kwargs):
         # type: (Text, Metadata, Optional[Component], **Any) -> SklearnIntentClassifier
         if model_dir and model_metadata.get("intent_classifier_tflearn"):
-            words = None
-            classes = None
-            model = None
-
-            classifier_file = os.path.join(model_dir, model_metadata.get("intent_classifier_tflearn").split(',')[0])
-            trained_intents_file = os.path.join(model_dir, model_metadata.get("intent_classifier_tflearn").split(',')[1])
+            classifier_file = os.path.join(model_dir,
+                                           model_metadata.get("intent_classifier_tflearn").split(',')[0])
+            trained_intents_file = os.path.join(model_dir,
+                                                model_metadata.get("intent_classifier_tflearn").split(',')[1])
 
             if os.path.isfile(trained_intents_file):
                 # restore all of our data structures
@@ -179,34 +177,31 @@ class TflearnIntentClassifier(Component):
         else:
             return cls()
 
-
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]
         """Persist this model into the passed directory. Returns the metadata necessary to load the model again."""
 
         classifier_file = os.path.join(model_dir, "intents-model.tflearn")
         trained_intents_file = os.path.join(model_dir, "trained-intents")
-        if classifier_file:
+        if classifier_file and trained_intents_file and self.model:
             self.model.save(classifier_file)
 
             # save all of our data structures
-            pickle.dump({'words':self.words,
-                        'classes':self.classes,
-                        'train_x':self.train_x,
-                        'train_y':self.train_y},
+            pickle.dump({'words': self.words,
+                        'classes': self.classes,
+                        'train_x': self.train_x,
+                        'train_y': self.train_y},
                         open(trained_intents_file, "wb"))
         
         return {
             "intent_classifier_tflearn": "intents-model.tflearn,trained-intents"
         }
 
-
     def clean_up_sentence(self, tokens):
         stemmer = LancasterStemmer()
         # stem each word
         sentence_words = [stemmer.stem(word.text.lower()) for word in tokens]
         return sentence_words
-
 
     # return bag of words array: 0 or 1 for each word in the bag that exists in the sentence
     def bow(self, tokens, words):
@@ -222,7 +217,7 @@ class TflearnIntentClassifier(Component):
         return np.array(bag)
 
 
-class TfModel():
+class TfModel:
     def __init__(self, model=None, words=None, classes=None):
         self.model = model
         self.words = words
