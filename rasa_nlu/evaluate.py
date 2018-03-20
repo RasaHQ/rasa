@@ -661,6 +661,17 @@ def return_results(results, dataset_name):
                                                     np.std(v)))
 
 
+def return_entity_results(results, dataset_name):
+    """Returns entity results of crossvalidation
+    :param results: dictionary of dictionaries of results returned from cv
+    :param dataset: string of which dataset the results are from, e.g.
+                    test/train
+    """
+    for extractor, result in results.items():
+            logger.info("Entity extractor: {}".format(extractor))
+            return_results(result, dataset_name)
+
+
 if __name__ == '__main__':  # pragma: no cover
     parser = create_argparser()
     args = parser.parse_args()
@@ -685,12 +696,8 @@ if __name__ == '__main__':  # pragma: no cover
         return_results(results.test, "test")
 
         logger.info("Entity evaluation results")
-        for extractor, results in entity_results.train.items():
-            logger.info("Entity extractor: {}".format(extractor))
-            return_results(results, "train")
-        for extractor, results in entity_results.test.items():
-            logger.info("Entity extractor: {}".format(extractor))
-            return_results(results, "test")
+        return_entity_results(entity_results.train, "train")
+        return_entity_results(entity_results.test, "test")
 
     elif args.mode == "evaluation":
         run_evaluation(nlu_config, args.model)
