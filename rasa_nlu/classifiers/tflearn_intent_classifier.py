@@ -1,7 +1,9 @@
+# -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
+import typing
 from typing import Any
 from typing import Dict
 from typing import Text
@@ -9,13 +11,14 @@ from typing import Text
 from rasa_nlu.components import Component
 from rasa_nlu.training_data import Message
 
-import os
-import tensorflow as tf
-import pickle
-import tflearn
-import numpy as np
-import random
-from nltk.stem.lancaster import LancasterStemmer
+if typing.TYPE_CHECKING:
+    import os
+    import tensorflow as tf
+    import pickle
+    import tflearn
+    import numpy as np
+    import random
+    import nltk
 
 
 class TflearnIntentClassifier(Component):
@@ -41,6 +44,12 @@ class TflearnIntentClassifier(Component):
         # type: (TrainingData, RasaNLUConfig, **Any) -> None
 
         """Train the intent classifier on a data set."""
+
+        from nltk.stem.lancaster import LancasterStemmer
+        import tflearn
+        import tensorflow as tf
+        import random
+        import numpy as np
 
         stemmer = LancasterStemmer()
         documents = []
@@ -148,6 +157,12 @@ class TflearnIntentClassifier(Component):
     @classmethod
     def load(cls, model_dir=None, model_metadata=None, cached_component=None, **kwargs):
         # type: (Text, Metadata, Optional[Component], **Any) -> SklearnIntentClassifier
+
+        import os
+        import pickle
+        import tflearn
+        import tensorflow as tf
+
         if model_dir and model_metadata.get("intent_classifier_tflearn"):
             classifier_file = os.path.join(model_dir,
                                            model_metadata.get("intent_classifier_tflearn").split(',')[0])
@@ -174,12 +189,17 @@ class TflearnIntentClassifier(Component):
                     # load our saved model
                     model.load(classifier_file)
                     return cls(TfModel(model, words, classes))
+            else:
+                return cls()
         else:
             return cls()
 
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]
         """Persist this model into the passed directory. Returns the metadata necessary to load the model again."""
+
+        import os
+        import pickle
 
         classifier_file = os.path.join(model_dir, "intents-model.tflearn")
         trained_intents_file = os.path.join(model_dir, "trained-intents")
@@ -188,16 +208,18 @@ class TflearnIntentClassifier(Component):
 
             # save all of our data structures
             pickle.dump({'words': self.words,
-                        'classes': self.classes,
-                        'train_x': self.train_x,
-                        'train_y': self.train_y},
+                         'classes': self.classes,
+                         'train_x': self.train_x,
+                         'train_y': self.train_y},
                         open(trained_intents_file, "wb"))
-        
+
         return {
             "intent_classifier_tflearn": "intents-model.tflearn,trained-intents"
         }
 
     def clean_up_sentence(self, tokens):
+        from nltk.stem.lancaster import LancasterStemmer
+
         stemmer = LancasterStemmer()
         # stem each word
         sentence_words = [stemmer.stem(word.text.lower()) for word in tokens]
@@ -205,6 +227,8 @@ class TflearnIntentClassifier(Component):
 
     # return bag of words array: 0 or 1 for each word in the bag that exists in the sentence
     def bow(self, tokens, words):
+        import numpy as np
+
         # tokenize the pattern
         sentence_words = self.clean_up_sentence(tokens)
         # bag of words
