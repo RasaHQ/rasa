@@ -103,7 +103,7 @@ class RegexFeaturizer(Featurizer):
                                       model_metadata.get("regex_featurizer"))
             if os.path.isfile(regex_file):
                 known_patterns = utils.read_json_file(regex_file)
-                return RegexFeaturizer(known_patterns)
+                return RegexFeaturizer(known_patterns=known_patterns)
             else:
                 warnings.warn("Failed to load regex pattern file "
                               "'{}'".format(regex_file))

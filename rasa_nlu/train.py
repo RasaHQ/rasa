@@ -117,7 +117,7 @@ def do_train_in_worker(config,  # type: RasaNLUModelConfig
 
 def do_train(config,  # type: RasaNLUModelConfig
              data,  # type: Text
-             path,  # type: Text
+             path=None,  # type: Text
              project=None,  # type: Optional[Text]
              fixed_model_name=None,  # type: Optional[Text]
              storage=None,  # type: Text
@@ -133,10 +133,15 @@ def do_train(config,  # type: RasaNLUModelConfig
     persistor = create_persistor(storage)
     training_data = load_data(data, config.language)
     interpreter = trainer.train(training_data)
-    persisted_path = trainer.persist(path,
-                                     persistor,
-                                     project,
-                                     fixed_model_name)
+
+    if path:
+        persisted_path = trainer.persist(path,
+                                         persistor,
+                                         project,
+                                         fixed_model_name)
+    else:
+        persisted_path = None
+
     return trainer, interpreter, persisted_path
 
 

@@ -23,7 +23,7 @@ def test_if_persistor_class_has_list_projects_method():
 
 
 @mock_s3
-def test_list_projects_method_in_AWSPersistor(component_builder):
+def test_list_projects_method_in_AWSPersistor(component_builder, tmpdir):
     # artificially create a persisted model
     _config = utilities.base_test_conf("keyword")
     os.environ["BUCKET_NAME"] = 'rasa-test'
@@ -31,16 +31,15 @@ def test_list_projects_method_in_AWSPersistor(component_builder):
 
     (trained, _, persisted_path) = train.do_train(
             _config,
-            data=None,
-            path=None,
+            data="data/test/demo-rasa-small.json",
+            path=tmpdir.strpath,
             project='mytestproject',
             storage='aws',
             component_builder=component_builder)
 
     # We need to create the bucket since this is all in Moto's 'virtual' AWS
     # account
-    awspersistor = persistor.AWSPersistor(_config['aws_region'],
-                                          _config['bucket_name'])
+    awspersistor = persistor.AWSPersistor(os.environ["BUCKET_NAME"])
     result = awspersistor.list_projects()
 
     assert result == ['mytestproject']

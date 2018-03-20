@@ -15,6 +15,8 @@ logging.basicConfig(level="DEBUG")
 
 CONFIG_DEFAULTS_PATH = "sample_configs/config_defaults.yml"
 
+DEFAULT_DATA_PATH = "data/examples/rasa/demo-rasa.json"
+
 # see `rasa_nlu.data_router` for details. avoids deadlock in
 # `deferred_from_future` function during tests
 data_router.DEFERRED_RUN_IN_REACTOR_THREAD = False

@@ -10,7 +10,8 @@ from tests import utilities
 
 
 @utilities.slowtest
-@pytest.mark.parametrize("pipeline_template", list(registry.registered_pipeline_templates.keys()))
+@pytest.mark.parametrize("pipeline_template",
+                         list(registry.registered_pipeline_templates.keys()))
 def test_interpreter(pipeline_template, component_builder, tmpdir):
     test_data = "data/examples/rasa/demo-rasa.json"
     _conf = utilities.base_test_conf(pipeline_template)
@@ -26,9 +27,11 @@ def test_interpreter(pipeline_template, component_builder, tmpdir):
     for text in texts:
         result = interpreter.parse(text, time=None)
         assert result['text'] == text
-        assert not result['intent']['name'] or result['intent']['name'] in td.intents
+        assert (not result['intent']['name']
+                or result['intent']['name'] in td.intents)
         assert result['intent']['confidence'] >= 0
         # Ensure the model doesn't detect entity types that are not present
-        # Models on our test data set are not stable enough to require the exact entities to be found
+        # Models on our test data set are not stable enough to
+        # require the exact entities to be found
         for entity in result['entities']:
             assert entity['entity'] in td.entities

@@ -34,7 +34,7 @@ def app(component_builder):
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
 
     train_models(component_builder,
-                 os.path.join(root_dir, "data/demo-restaurants.json"))
+                 os.path.join(root_dir, "data/examples/rasa/demo-rasa.json"))
 
     router = DataRouter(os.path.join(root_dir, "test_projects"))
     rasa = RasaNLU(router, log_file=nlu_log_file, testing=True)

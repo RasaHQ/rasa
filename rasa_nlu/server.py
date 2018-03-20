@@ -127,7 +127,7 @@ class RasaNLU(object):
         # TODO: anything we want to print here?
         logger.debug("Configuration: ")
 
-        self.default_model_config = None
+        self.default_model_config = {}
         self.data_router = data_router
         self._testing = testing
         self.cors_origins = cors_origins if cors_origins else ["*"]
@@ -215,6 +215,9 @@ class RasaNLU(object):
         # TODO: allow to pass in whole model configuration, for now: use
         # default config
         model_config = self.default_model_config
+
+        project = next(iter(request.args.get('project', [])), None)
+
         data_string = request.content.read().decode('utf-8', 'strict')
 
         # update model config from get parameters
@@ -228,7 +231,7 @@ class RasaNLU(object):
         try:
             request.setResponseCode(200)
             response = yield self.data_router.start_train_process(
-                    data_string, model_config)
+                    data_string, project, model_config)
             returnValue(json_to_string({'info': 'new model trained: {}'
                                                 ''.format(response)}))
         except AlreadyTrainingError as e:

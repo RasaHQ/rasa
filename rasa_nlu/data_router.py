@@ -319,6 +319,7 @@ class DataRouter(object):
             return model_dir
 
         def training_errback(failure):
+            logger.warn(failure)
             target_project = self.project_store.get(
                 failure.value.failed_target_project)
             if target_project:
@@ -327,7 +328,11 @@ class DataRouter(object):
 
         logger.debug("New training queued")
 
-        result = self.pool.submit(do_train_in_worker, train_config)
+        result = self.pool.submit(do_train_in_worker,
+                                  train_config,
+                                  f.name,
+                                  path=self.project_dir,
+                                  project=project)
         result = deferred_from_future(result)
         result.addCallback(training_callback)
         result.addErrback(training_errback)

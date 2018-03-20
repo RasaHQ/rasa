@@ -142,7 +142,10 @@ class RasaNLUModelConfig(object):
 
     @property
     def component_names(self):
-        return [c.get("name") for c in self.pipeline]
+        if self.pipeline:
+            return [c.get("name") for c in self.pipeline]
+        else:
+            return []
 
     def set_component_attr(self, name, **kwargs):
         # TODO: test

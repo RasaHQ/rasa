@@ -97,7 +97,7 @@ class DucklingHTTPExtractor(EntityExtractor):
         # type: (Message, **Any) -> None
 
         extracted = []
-        if self.component_config["duckling_url"] is not None:
+        if self.component_config["url"] is not None:
 
             matches = self._duckling_parse(message.text)
             relevant_matches = self._filter_irrelevant_matches(matches)

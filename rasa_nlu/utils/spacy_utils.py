@@ -36,9 +36,8 @@ class SpacyNLP(Component):
     def __init__(self, component_config=None, nlp=None):
         # type: (Dict[Text, Any], Language) -> None
 
-        super(SpacyNLP, self).__init__(component_config)
-
         self.nlp = nlp
+        super(SpacyNLP, self).__init__(component_config)
 
     @classmethod
     def required_packages(cls):
@@ -52,7 +51,7 @@ class SpacyNLP(Component):
         component_conf = cfg.for_component(cls.name)
 
         # if no model is specified, we fall back to the language string
-        spacy_model_name = component_conf.get("model", cfg.language)
+        spacy_model_name = component_conf.setdefault("model", cfg.language)
 
         logger.info("Trying to load spacy model with "
                     "name '{}'".format(spacy_model_name))
@@ -100,7 +99,7 @@ class SpacyNLP(Component):
         if cached_component:
             return cached_component
 
-        component_meta = model_metadata.get("spacy", {})
+        component_meta = model_metadata.get(cls.name, {})
         model_name = component_meta.get("model")
 
         nlp = spacy.load(model_name, parser=False)
