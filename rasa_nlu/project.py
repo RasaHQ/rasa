@@ -12,6 +12,7 @@ import logging
 from builtins import object
 from threading import Lock
 
+from rasa_nlu import utils
 from typing import Text, List
 
 from rasa_nlu.config import RasaNLUConfig
@@ -223,5 +224,4 @@ class Project(object):
             return []
         else:
             return [os.path.relpath(model, path)
-                    for model in glob.glob(os.path.join(path, '*'))
-                    if os.path.isdir(model)]
+                    for model in utils.list_subdirectories(path)]
