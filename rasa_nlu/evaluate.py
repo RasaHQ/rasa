@@ -538,21 +538,19 @@ def generate_folds(n, td):
 
 def combine_intent_result(results, interpreter, data):
     """Combines intent result for crossvalidation folds"""
-    from collections import Counter
 
     current_result = compute_intent_metrics(interpreter, data)
 
-    return Counter(results) + Counter(current_result)
+    return {k: v + results[k] for k, v in current_result.items()}
 
 
 def combine_entity_result(results, interpreter, data):
     """Combines entity result for crossvalidation folds"""
-    from collections import Counter
 
     current_result = compute_entity_metrics(interpreter, data)
 
     for k, v in current_result.items():
-        results[k] = Counter(results[k]) + Counter(v)
+        results[k] = {key: val + results[k][key] for key, val in v.items()}
 
     return results
 
