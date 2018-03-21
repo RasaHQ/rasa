@@ -44,8 +44,7 @@ Custom, Domain-specific entities
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In the introductory tutorial we build a restaurant bot, and create custom entities for location and cuisine.
-The best components for training these domain-specific entity recognisers is the ``ner_crf`` component.
-It is recommended that you experiment with both of these to see what works best for your data set. 
+The best components for training these domain-specific entity recognisers is the ``ner_crf`` component. 
 
 Returned Entities Object
 ------------------------
