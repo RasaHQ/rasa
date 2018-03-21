@@ -496,6 +496,16 @@ def patch_duckling_entities(entity_predictions):
     return patched_entity_predictions
 
 
+def patch_duckling(interpreter, extractors, entity_predictions):
+    """combines patch_duckling_entities and patch_duckling_extractors"""
+
+    if extractors.intersection(duckling_extractors):
+        entity_predictions = patch_duckling_entities(entity_predictions)
+        extractors = patch_duckling_extractors(interpreter, extractors)
+
+    return extractors, entity_predictions
+
+
 def run_evaluation(config, model_path,
                    component_builder=None):  # pragma: no cover
     """Evaluate intent classification and entity extraction."""
@@ -508,10 +518,8 @@ def run_evaluation(config, model_path,
     intent_predictions = get_intent_predictions(interpreter, test_data)
     entity_predictions, tokens = get_entity_predictions(interpreter, test_data)
     extractors = get_entity_extractors(interpreter)
-
-    if extractors.intersection(duckling_extractors):
-        entity_predictions = patch_duckling_entities(entity_predictions)
-        extractors = patch_duckling_extractors(interpreter, extractors)
+    extractors, entity_predictions = patch_duckling(interpreter, extractors,
+                                                    entity_predictions)
 
     evaluate_intents(intent_targets, intent_predictions)
     evaluate_entities(entity_targets, entity_predictions, tokens, extractors)
@@ -625,6 +633,9 @@ def compute_entity_metrics(interpreter, corpus):
     entity_predictions, tokens = get_entity_predictions(interpreter, corpus)
 
     extractors = get_entity_extractors(interpreter)
+    extractors, entity_predictions = patch_duckling(interpreter, extractors,
+                                                    entity_predictions)
+
     aligned_predictions = align_all_entity_predictions(entity_targets,
                                                        entity_predictions,
                                                        tokens, extractors)
