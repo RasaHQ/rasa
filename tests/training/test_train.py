@@ -8,7 +8,7 @@ from __future__ import unicode_literals
 import os
 import pytest
 
-from conftest import DEFAULT_DATA_PATH
+from tests.conftest import DEFAULT_DATA_PATH
 from rasa_nlu import registry, train
 from rasa_nlu.model import Trainer, Interpreter
 from rasa_nlu.train import create_persistor
