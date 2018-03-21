@@ -231,8 +231,9 @@ class CRFEntityExtractor(EntityExtractor):
         from sklearn.externals import joblib
 
         meta = model_metadata.get(cls.name)
-        if model_dir:
-            model_file = os.path.join(model_dir, CRF_MODEL_FILE_NAME)
+        model_file = os.path.join(model_dir, CRF_MODEL_FILE_NAME)
+
+        if os.path.exists(model_file):
             ent_tagger = joblib.load(model_file)
             return CRFEntityExtractor(meta, ent_tagger)
         else:

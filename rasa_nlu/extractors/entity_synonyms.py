@@ -74,16 +74,15 @@ class EntitySynonymMapper(EntityExtractor):
         # type: (...) -> EntitySynonymMapper
 
         meta = model_metadata.get(cls.name)
-        synonyms = None
-        if model_dir:
-            entity_synonyms_file = os.path.join(model_dir,
-                                                ENTITY_SYNONYMS_FILE_NAME)
+        entity_synonyms_file = os.path.join(model_dir,
+                                            ENTITY_SYNONYMS_FILE_NAME)
 
-            if os.path.isfile(entity_synonyms_file):
-                synonyms = utils.read_json_file(entity_synonyms_file)
-            else:
-                warnings.warn("Failed to load synonyms file from '{}'"
-                              "".format(entity_synonyms_file))
+        if os.path.isfile(entity_synonyms_file):
+            synonyms = utils.read_json_file(entity_synonyms_file)
+        else:
+            synonyms = None
+            warnings.warn("Failed to load synonyms file from '{}'"
+                          "".format(entity_synonyms_file))
 
         return EntitySynonymMapper(meta, synonyms)
 
