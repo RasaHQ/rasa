@@ -1,28 +1,23 @@
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
+import io
+import logging
+import os
+import time
+import warnings
+from collections import Counter
+from string import punctuation
+
+import numpy as np
 import typing
 from builtins import map
 from builtins import range
-import logging
-import os
-import re
-import time
-import warnings
-import io
-from collections import Counter
-from string import punctuation
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
 from future.utils import PY3
-from typing import Text
+from typing import Any, Dict, List, Optional, Text
 
-from rasa_nlu import config
-from rasa_nlu.components import Component
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.featurizers import Featurizer
 from rasa_nlu.training_data import Message
@@ -31,9 +26,9 @@ from rasa_nlu.training_data import TrainingData
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
-    from spacy.language import Language
-    import numpy as np
     from rasa_nlu.model import Metadata
+
+NGRAM_MODEL_FILE_NAME = "ngram_featurizer.pkl"
 
 
 class NGramFeaturizer(Featurizer):
@@ -44,33 +39,44 @@ class NGramFeaturizer(Featurizer):
     requires = ["spacy_doc"]
 
     defaults = {
+        # defines the maximum number of ngrams to collect and add
+        # to the featurization of a sentence
         "max_number_of_ngrams": 10,
+
+        # the minimal length in characters of an ngram to be eligible
         "ngram_min_length": 3,
+
+        # the maximal length in characters of an ngram to be eligible
         "ngram_max_length": 17,
+
+        # the minimal number of times an ngram needs to occur in the
+        # training data to be considered as a feature
         "ngram_min_occurrences": 5,
-        "min_intent_examples_for_ngram_classification": 4,
+
+        # during cross validation (used to detect which ngrams are most
+        # valuable) every intent with fever examples than this config
+        # value will be excluded
+        "min_intent_examples": 4,
     }
 
     def __init__(self, component_config=None):
+        super(NGramFeaturizer, self).__init__(component_config)
+
         self.best_num_ngrams = None
         self.all_ngrams = None
-        self.component_config = config.override_defaults(self.defaults,
-                                                         component_config)
 
     @classmethod
     def required_packages(cls):
         # type: () -> List[Text]
-        return ["spacy", "numpy", "sklearn", "cloudpickle"]
+        return ["spacy", "sklearn", "cloudpickle"]
 
-    def train(self, training_data, config, **kwargs):
+    def train(self, training_data, cfg, **kwargs):
         # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
-
-        self.component_config = config.for_component(self.name, self.defaults)
 
         start = time.time()
         self.train_on_sentences(training_data.intent_examples)
-        logger.debug("Ngram collection took {} seconds".format(
-                time.time() - start))
+        logger.debug("Ngram collection took {} seconds"
+                     "".format(time.time() - start))
 
         for example in training_data.training_examples:
             updated = self._text_features_with_ngrams(example,
@@ -84,7 +90,6 @@ class NGramFeaturizer(Featurizer):
         message.set("text_features", updated)
 
     def _text_features_with_ngrams(self, message, max_ngrams):
-        import numpy as np
 
         ngrams_to_use = self._ngrams_to_use(max_ngrams)
 
@@ -95,32 +100,38 @@ class NGramFeaturizer(Featurizer):
             return message.get("text_features")
 
     @classmethod
-    def load(cls, model_dir=None, model_metadata=None, cached_component=None, **kwargs):
-        # type: (Text, Metadata, Optional[Component], **Any) -> NGramFeaturizer
+    def load(cls,
+             model_dir=None,  # type: Optional[Text]
+             model_metadata=None,  # type: Optional[Metadata]
+             cached_component=None,  # type: Optional[NGramFeaturizer]
+             **kwargs  # type: **Any
+             ):
+        # type: (...) -> NGramFeaturizer
         import cloudpickle
 
-        if model_dir and model_metadata.get("ngram_featurizer"):
-            classifier_file = os.path.join(model_dir, model_metadata.get("ngram_featurizer"))
-            with io.open(classifier_file, 'rb') as f:   # pramga: no cover
+        meta = model_metadata.get(cls.name)
+        if model_dir:
+            classifier_file = os.path.join(model_dir, NGRAM_MODEL_FILE_NAME)
+            with io.open(classifier_file, 'rb') as f:  # pramga: no cover
                 if PY3:
                     return cloudpickle.load(f, encoding="latin-1")
                 else:
                     return cloudpickle.load(f)
         else:
-            return NGramFeaturizer()
+            return NGramFeaturizer(meta)
 
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]
-        """Persist this model into the passed directory. Returns the metadata necessary to load the model again."""
+        """Persist this model into the passed directory.
+
+        Return the metadata necessary to load the model again."""
         import cloudpickle
 
-        classifier_file = os.path.join(model_dir, "ngram_featurizer.pkl")
+        classifier_file = os.path.join(model_dir, NGRAM_MODEL_FILE_NAME)
         with io.open(classifier_file, 'wb') as f:
             cloudpickle.dump(self, f)
 
-        return {
-            "ngram_featurizer": "ngram_featurizer.pkl"
-        }
+        return {self.name: self.component_config}
 
     def train_on_sentences(self, examples):
         labels = [e.get("intent") for e in examples]
@@ -136,7 +147,7 @@ class NGramFeaturizer(Featurizer):
             return self.all_ngrams
 
     def _get_best_ngrams(self, examples, labels):
-        """Returns an ordered list of the best character ngrams for an intent classification problem"""
+        """Return an ordered list of the best character ngrams."""
 
         oov_strings = self._remove_in_vocab_words(examples)
         ngrams = self._generate_all_ngrams(
@@ -145,7 +156,7 @@ class NGramFeaturizer(Featurizer):
 
     def _remove_in_vocab_words(self, examples):
         """Automatically removes words with digits in them, that may be a
-        hyperlink or that _are_ in vocabulary for the nlp"""
+        hyperlink or that _are_ in vocabulary for the nlp."""
 
         new_sents = []
         for example in examples:
@@ -153,7 +164,10 @@ class NGramFeaturizer(Featurizer):
         return new_sents
 
     def _remove_in_vocab_words_from_sentence(self, example):
-        """Automatically removes words with digits in them, hyperlink and in-vocab-words."""
+        """Filter for words that do not have a word vector.
+
+        Excludes every word with digits in them, hyperlinks or
+        an assigned word vector."""
 
         cleaned_tokens = []
         for token in example.get("spacy_doc"):
@@ -183,13 +197,15 @@ class NGramFeaturizer(Featurizer):
 
         if list_of_ngrams:
             from sklearn import linear_model, preprocessing
-            import numpy as np
 
-            # filter examples where we do not have enough labeled instances for cv
+            min_intent_examples = self.component_config["min_intent_examples"]
+
+            # filter examples where we do not have
+            # enough labeled instances for cv
             usable_labels = []
             for label in np.unique(labels):
                 lab_sents = np.array(examples)[np.array(labels) == label]
-                if len(lab_sents) < self.component_config["min_intent_examples_for_ngram_classification"]:
+                if len(lab_sents) < min_intent_examples:
                     continue
                 usable_labels.append(label)
 
@@ -208,12 +224,15 @@ class NGramFeaturizer(Featurizer):
                     clf = linear_model.RandomizedLogisticRegression(C=1)
                     clf.fit(X, y)
                     scores = clf.scores_
-                    sort_idx = [i[0] for i in sorted(enumerate(scores), key=lambda x: -1 * x[1])]
+                    sort_idx = [i[0] for i in sorted(enumerate(scores),
+                                                     key=lambda x: -1 * x[1])]
 
                     return np.array(list_of_ngrams)[sort_idx]
                 except ValueError as e:
                     if "needs samples of at least 2 classes" in str(e):
-                        # we got unlucky during the random sampling :( and selected a slice that only contains one class
+                        # we got unlucky during the random
+                        # sampling :( and selected a slice that
+                        # only contains one class
                         return []
                     else:
                         raise e
@@ -236,9 +255,10 @@ class NGramFeaturizer(Featurizer):
         return all_vectors
 
     def _ngrams_in_sentence(self, example, ngrams):
-        """Given a set of sentences, returns a vector of {1,0} values indicating ngram presence"""
+        """Given a set of sentences, return a vector indicating ngram presence.
 
-        import numpy as np
+        The vector will return 1 entries if the corresponding ngram is
+        present in the sentence and 0 if it is not."""
 
         cleaned_sentence = self._remove_in_vocab_words_from_sentence(example)
         presence_vector = np.zeros(len(ngrams))
@@ -251,14 +271,15 @@ class NGramFeaturizer(Featurizer):
     def _generate_all_ngrams(self, list_of_strings, ngram_min_length):
         """Takes a list of strings and generates all character ngrams.
 
-        Generated ngrams are at least 3 characters (and at most 17), occur at least 5 times
-        and occur independently of longer superset ngrams at least once."""
+        Generated ngrams are at least 3 characters (and at most 17),
+        occur at least 5 times and occur independently of longer
+        superset ngrams at least once."""
 
         features = {}
         counters = {ngram_min_length - 1: Counter()}
+        max_length = self.component_config["ngram_max_length"]
 
-        for n in range(ngram_min_length,
-                       self.component_config["ngram_max_length"]):
+        for n in range(ngram_min_length, max_length):
             candidates = []
             features[n] = []
             counters[n] = Counter()
@@ -273,9 +294,10 @@ class NGramFeaturizer(Featurizer):
                         if cand not in candidates:
                             candidates.append(cand)
 
+            min_count = self.component_config["ngram_min_occurrences"]
             # iterate over these candidates picking only the applicable ones
             for can in candidates:
-                if counters[n][can] >= self.component_config["ngram_min_occurrences"]:
+                if counters[n][can] >= min_count:
                     features[n].append(can)
                     begin = can[:-1]
                     end = can[1:]
@@ -300,7 +322,6 @@ class NGramFeaturizer(Featurizer):
         from sklearn import preprocessing
         from sklearn.linear_model import LogisticRegression
         from sklearn.model_selection import cross_val_score
-        import numpy as np
 
         max_ngrams = self.component_config["max_number_of_ngrams"]
 

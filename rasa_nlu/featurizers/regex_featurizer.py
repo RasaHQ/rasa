@@ -29,6 +29,9 @@ if typing.TYPE_CHECKING:
     from rasa_nlu.model import Metadata
 
 
+REGEX_FEATURIZER_FILE_NAME = "regex_featurizer.json"
+
+
 class RegexFeaturizer(Featurizer):
     name = "intent_entity_featurizer_regex"
 
@@ -40,11 +43,6 @@ class RegexFeaturizer(Featurizer):
         super(RegexFeaturizer, self).__init__(component_config)
 
         self.known_patterns = known_patterns if known_patterns else []
-
-    @classmethod
-    def required_packages(cls):
-        # type: () -> List[Text]
-        return ["numpy"]
 
     def train(self, training_data, config, **kwargs):
         # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
@@ -98,16 +96,16 @@ class RegexFeaturizer(Featurizer):
              ):
         # type: (...) -> RegexFeaturizer
 
-        if model_dir and model_metadata.get("regex_featurizer"):
-            regex_file = os.path.join(model_dir,
-                                      model_metadata.get("regex_featurizer"))
+        meta = model_metadata.get(cls.name)
+        if model_dir:
+            regex_file = os.path.join(model_dir, REGEX_FEATURIZER_FILE_NAME)
             if os.path.isfile(regex_file):
                 known_patterns = utils.read_json_file(regex_file)
-                return RegexFeaturizer(known_patterns=known_patterns)
+                return RegexFeaturizer(meta, known_patterns=known_patterns)
             else:
                 warnings.warn("Failed to load regex pattern file "
                               "'{}'".format(regex_file))
-        return RegexFeaturizer()
+        return RegexFeaturizer(meta)
 
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]
@@ -116,8 +114,7 @@ class RegexFeaturizer(Featurizer):
         Return the metadata necessary to load the model again."""
 
         if self.known_patterns:
-            regex_file = os.path.join(model_dir, "regex_featurizer.json")
+            regex_file = os.path.join(model_dir, REGEX_FEATURIZER_FILE_NAME)
             utils.write_json_to_file(regex_file, self.known_patterns, indent=4)
-            return {"regex_featurizer": "regex_featurizer.json"}
-        else:
-            return {"regex_featurizer": None}
+
+        return {self.name: self.component_config}

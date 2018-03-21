@@ -409,8 +409,8 @@ def get_duckling_dimensions(interpreter, duckling_extractor_name):
     dimensions as a fallback."""
 
     component = find_component(interpreter, duckling_extractor_name)
-    if component.dimensions:
-        return component.dimensions
+    if component.component_config["dimensions"]:
+        return component.component_config["dimensions"]
     else:
         return known_duckling_dimensions
 

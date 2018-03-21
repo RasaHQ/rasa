@@ -30,7 +30,10 @@ class SpacyNLP(Component):
     provides = ["spacy_doc", "spacy_nlp"]
 
     defaults = {
-        "model": None
+        # name of the language model to load - if it is not set
+        # we will be looking for a language model that is named
+        # after the language of the model, e.g. `en`
+        "model": None,
     }
 
     def __init__(self, component_config=None, nlp=None):
@@ -48,13 +51,18 @@ class SpacyNLP(Component):
     def create(cls, cfg):
         # type: (RasaNLUModelConfig) -> SpacyNLP
         import spacy
-        component_conf = cfg.for_component(cls.name)
+
+        component_conf = cfg.for_component(cls.name, cls.defaults)
+        spacy_model_name = component_conf.get("model")
 
         # if no model is specified, we fall back to the language string
-        spacy_model_name = component_conf.setdefault("model", cfg.language)
+        if not spacy_model_name:
+            spacy_model_name = cfg.language
+            component_conf["model"] = cfg.language
 
         logger.info("Trying to load spacy model with "
                     "name '{}'".format(spacy_model_name))
+
         nlp = spacy.load(spacy_model_name, parser=False)
         cls.ensure_proper_language_model(nlp)
         return SpacyNLP(component_conf, nlp)
@@ -99,7 +107,7 @@ class SpacyNLP(Component):
         if cached_component:
             return cached_component
 
-        component_meta = model_metadata.get(cls.name, {})
+        component_meta = model_metadata.get(cls.name)
         model_name = component_meta.get("model")
 
         nlp = spacy.load(model_name, parser=False)

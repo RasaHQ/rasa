@@ -14,7 +14,8 @@ from typing import Text
 
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.extractors import EntityExtractor
-from rasa_nlu.extractors.duckling_extractor import extract_value
+from rasa_nlu.extractors.duckling_extractor import (
+    filter_irrelevant_matches, convert_duckling_format_to_rasa)
 from rasa_nlu.model import Metadata
 from rasa_nlu.training_data import Message
 
@@ -39,7 +40,7 @@ class DucklingHTTPExtractor(EntityExtractor):
     }
 
     def __init__(self, component_config=None, language=None):
-        # type: (Text, Text, Optional[List[Text]]) -> None
+        # type: (Text, Optional[List[Text]]) -> None
 
         super(DucklingHTTPExtractor, self).__init__(component_config)
         self.language = language
@@ -83,36 +84,16 @@ class DucklingHTTPExtractor(EntityExtractor):
                          "Error: {}".format(e))
             return []
 
-    def _filter_irrelevant_matches(self, matches):
-        """Only return dimensions the user configured"""
-
-        if self.dimensions:
-            return [match
-                    for match in matches
-                    if match["dim"] in self.dimensions]
-        else:
-            return matches
-
     def process(self, message, **kwargs):
         # type: (Message, **Any) -> None
 
-        extracted = []
         if self.component_config["url"] is not None:
-
             matches = self._duckling_parse(message.text)
-            relevant_matches = self._filter_irrelevant_matches(matches)
-            for match in relevant_matches:
-                value = extract_value(match)
-                entity = {
-                    "start": match["start"],
-                    "end": match["end"],
-                    "text": match["body"],
-                    "value": value,
-                    "additional_info": match["value"],
-                    "entity": match["dim"]}
-
-                extracted.append(entity)
+            dimensions = self.component_config["dimensions"]
+            relevant_matches = filter_irrelevant_matches(matches, dimensions)
+            extracted = convert_duckling_format_to_rasa(relevant_matches)
         else:
+            extracted = []
             logger.warn("Duckling HTTP component in pipeline, but no "
                         "`duckling_http_url` configuration in the config "
                         "file.")

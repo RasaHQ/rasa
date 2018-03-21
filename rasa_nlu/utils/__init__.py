@@ -271,6 +271,13 @@ def remove_model(model_dir):
                          "directory".format(model_dir))
 
 
+def as_text_type(t):
+    if isinstance(t, six.text_type):
+        return t
+    else:
+        return six.text_type(t)
+
+
 def configure_colored_logging(loglevel):
     import coloredlogs
     field_styles = coloredlogs.DEFAULT_FIELD_STYLES.copy()

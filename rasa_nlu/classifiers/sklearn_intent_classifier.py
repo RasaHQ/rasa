@@ -17,6 +17,7 @@ from typing import Tuple
 
 import numpy as np
 
+from rasa_nlu.classifiers import INTENT_RANKING_LENGTH
 from rasa_nlu.components import Component
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.model import Metadata
@@ -25,16 +26,10 @@ from rasa_nlu.training_data import TrainingData
 
 logger = logging.getLogger(__name__)
 
-# How many intents are at max put into the output intent
-# ranking, everything else will be cut off
-INTENT_RANKING_LENGTH = 10
-
-# We try to find a good number of cross folds to use during
-# intent training, this specifies the max number of folds
-MAX_CV_FOLDS = 5
-
 if typing.TYPE_CHECKING:
     import sklearn
+
+SKLEARN_MODEL_FILE_NAME = "intent_classifier_sklearn.pkl"
 
 
 class SklearnIntentClassifier(Component):
@@ -48,7 +43,10 @@ class SklearnIntentClassifier(Component):
 
     defaults = {
         "C": [1, 2, 5, 10, 20, 100],
-        "kernels": ["linear"]
+        "kernels": ["linear"],
+        # We try to find a good number of cross folds to use during
+        # intent training, this specifies the max number of folds
+        "max_cross_validation_folds": 5
     }
 
     def __init__(self,
@@ -71,7 +69,7 @@ class SklearnIntentClassifier(Component):
     @classmethod
     def required_packages(cls):
         # type: () -> List[Text]
-        return ["numpy", "sklearn"]
+        return ["sklearn"]
 
     def transform_labels_str2num(self, labels):
         # type: (List[Text]) -> np.ndarray
@@ -116,7 +114,8 @@ class SklearnIntentClassifier(Component):
                                  "kernel": [str(k) for k in kernels]}]
 
             # aim for 5 examples in each fold
-            cv_splits = max(2, min(MAX_CV_FOLDS, np.min(np.bincount(y)) // 5))
+            folds = self.component_config["max_cross_validation_folds"]
+            cv_splits = max(2, min(folds, np.min(np.bincount(y)) // 5))
 
             self.clf = GridSearchCV(SVC(C=1,
                                         probability=True,
@@ -190,22 +189,23 @@ class SklearnIntentClassifier(Component):
 
     @classmethod
     def load(cls,
-             model_dir=None,  #
-             model_metadata=None,
-             cached_component=None,
-             **kwargs):
-        # type: (Text, Metadata, Optional[Component], **Any) -> SklearnIntentClassifier
+             model_dir=None,   # type: Optional[Text]
+             model_metadata=None,   # type: Optional[Metadata]
+             cached_component=None,   # type: Optional[Component]
+             **kwargs  # type: **Any
+             ):
+        # type: (...) -> SklearnIntentClassifier
         import cloudpickle
 
-        if model_dir and model_metadata.get("intent_classifier_sklearn"):
-            classifier_file = os.path.join(model_dir, model_metadata.get("intent_classifier_sklearn"))
+        if model_dir:
+            classifier_file = os.path.join(model_dir, SKLEARN_MODEL_FILE_NAME)
             with io.open(classifier_file, 'rb') as f:  # pragma: no test
                 if PY3:
                     return cloudpickle.load(f, encoding="latin-1")
                 else:
                     return cloudpickle.load(f)
         else:
-            return cls()
+            return cls(model_metadata.get(cls.name))
 
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]
@@ -215,10 +215,8 @@ class SklearnIntentClassifier(Component):
 
         import cloudpickle
 
-        classifier_file = os.path.join(model_dir, "intent_classifier.pkl")
+        classifier_file = os.path.join(model_dir, SKLEARN_MODEL_FILE_NAME)
         with io.open(classifier_file, 'wb') as f:
             cloudpickle.dump(self, f)
 
-        return {
-            "intent_classifier_sklearn": "intent_classifier.pkl"
-        }
+        return {self.name: self.component_config}

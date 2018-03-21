@@ -26,6 +26,8 @@ logger = logging.getLogger(__name__)
 if typing.TYPE_CHECKING:
     import sklearn_crfsuite
 
+CRF_MODEL_FILE_NAME = "crf_model.pkl"
+
 
 class CRFEntityExtractor(EntityExtractor):
     name = "ner_crf"
@@ -50,8 +52,14 @@ class CRFEntityExtractor(EntityExtractor):
             ["bias", "low", "word3", "word2", "upper",
              "title", "digit", "pos", "pos2", "pattern"],
             ["low", "title", "upper", "pos", "pos2"]],
+
+        # The maximum number of iterations for optimization algorithms.
         "max_iterations": 50,
+
+        # weight of theL1 regularization
         "L1_c": 1,
+
+        # weight of the L2 regularization
         "L2_c": 1e-3
     }
 
@@ -222,13 +230,13 @@ class CRFEntityExtractor(EntityExtractor):
         # type: (...) -> CRFEntityExtractor
         from sklearn.externals import joblib
 
-        if model_dir and model_metadata.get("entity_extractor_crf"):
-            meta = model_metadata.get("entity_extractor_crf")
-            model_file = os.path.join(model_dir, "crf_model.pkl")
+        meta = model_metadata.get(cls.name)
+        if model_dir:
+            model_file = os.path.join(model_dir, CRF_MODEL_FILE_NAME)
             ent_tagger = joblib.load(model_file)
             return CRFEntityExtractor(meta, ent_tagger)
         else:
-            return CRFEntityExtractor()
+            return CRFEntityExtractor(meta)
 
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]
@@ -239,12 +247,11 @@ class CRFEntityExtractor(EntityExtractor):
         from sklearn.externals import joblib
 
         if self.ent_tagger:
-            model_file_name = os.path.join(model_dir, "crf_model.pkl")
+            model_file_name = os.path.join(model_dir, CRF_MODEL_FILE_NAME)
 
             joblib.dump(self.ent_tagger, model_file_name)
-            return {"entity_extractor_crf": self.component_config}
-        else:
-            return {"entity_extractor_crf": None}
+
+        return {self.name: self.component_config}
 
     def _sentence_to_features(self, sentence):
         # type: (List[Tuple[Text, Text, Text, Text]]) -> List[Dict[Text, Any]]
