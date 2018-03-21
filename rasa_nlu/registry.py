@@ -22,6 +22,8 @@ from rasa_nlu.classifiers.keyword_intent_classifier import \
 from rasa_nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
 from rasa_nlu.classifiers.sklearn_intent_classifier import \
     SklearnIntentClassifier
+from rasa_nlu.classifiers.fasttext_intent_classifier import \
+    FastTextIntentClassifier
 from rasa_nlu.extractors.duckling_extractor import DucklingExtractor
 from rasa_nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
 from rasa_nlu.extractors.entity_synonyms import EntitySynonymMapper
@@ -53,6 +55,7 @@ component_classes = [
     SpacyFeaturizer, MitieFeaturizer, NGramFeaturizer, RegexFeaturizer,
     MitieTokenizer, SpacyTokenizer, WhitespaceTokenizer,
     SklearnIntentClassifier, MitieIntentClassifier, KeywordIntentClassifier,
+    FastTextIntentClassifier,
 ]
 
 # Mapping from a components name to its class to allow name based lookup.
@@ -90,6 +93,9 @@ registered_pipeline_templates = {
     ],
     "keyword": [
         "intent_classifier_keyword",
+    ],
+    "fasttext": [
+        "intent_classifier_fasttext",
     ],
     # this template really is just for testing
     # every component should be in here so train-persist-load-use cycle can be

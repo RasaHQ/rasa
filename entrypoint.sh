@@ -53,5 +53,3 @@ case ${1} in
         print_help
         ;;
 esac
-
-
