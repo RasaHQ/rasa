@@ -69,7 +69,7 @@ class KerasPolicy(Policy):
         :param max_history_len: The maximum number of historical
                                 turns used to decide on next action
         """
-        from keras.layers import LSTM, Activation, Masking, Dense
+        from keras.layers import LSTM, Activation, Masking, Dense, TimeDistributed
         from keras.models import Sequential
 
         n_hidden = 32  # Neural Net and training params
@@ -77,8 +77,8 @@ class KerasPolicy(Policy):
         # Build Model
         model = Sequential()
         model.add(Masking(-1, batch_input_shape=batch_shape))
-        model.add(LSTM(n_hidden, batch_input_shape=batch_shape, dropout=0.2))
-        model.add(Dense(input_dim=n_hidden, units=num_actions))
+        model.add(LSTM(n_hidden, batch_input_shape=batch_shape, dropout=0.2, return_sequences=True))
+        model.add(TimeDistributed(Dense(input_dim=n_hidden, units=num_actions)))
         model.add(Activation('softmax'))
 
         model.compile(loss='categorical_crossentropy',
@@ -88,7 +88,7 @@ class KerasPolicy(Policy):
         logger.debug(model.summary())
         return model
 
-    def train(self, training_data, domain, **kwargs):
+    def train(self, training_data, domain, model_path=None, **kwargs):
         # type: (DialogueTrainingData, Domain, **Any) -> None
         self.model = self.model_architecture(domain.num_features,
                                              domain.num_actions,

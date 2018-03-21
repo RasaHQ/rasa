@@ -36,8 +36,12 @@ class DialogueTrainingData(object):
         return shuffled_X, shuffled_y
 
     def y_as_one_hot(self, domain):
-        y_one_hot = np.zeros((self.num_examples(), domain.num_actions))
-        y_one_hot[np.arange(self.num_examples()), self.y] = 1
+        #print(self.y)
+        #exit(0)
+        y_one_hot = np.zeros((self.num_examples(), self.max_history(), domain.num_actions))
+        for idx, _y in enumerate(self.y):
+            for jdx, label in enumerate(_y):
+                y_one_hot[idx, jdx, domain.index_for_action(label)] = 1
         return y_one_hot
 
     def random_samples(self, num_samples):
