@@ -202,12 +202,10 @@ class CRFEntityExtractor(EntityExtractor):
 
             if len(entities) > ent_word_idx and label[2:] != entity_label:
                 # words are not tagged the same entity class
-                logger.debug(
-                        "Inconsistent BILOU tagging found, B- tag, "
-                        "L- tag pair encloses multiple "
-                        "entity classes.i.e. ['B-a','I-b','L-a'] "
-                        "instead of ['B-a','I-a','L-a'].\n"
-                        "Assuming B- class is correct.")
+                logger.debug("Inconsistent BILOU tagging found, B- tag, L- "
+                             "tag pair encloses multiple entity classes.i.e. "
+                             "[B-a, I-b, L-a] instead of [B-a, I-a, L-a].\n"
+                             "Assuming B- class is correct.")
 
             if len(entities) > ent_word_idx and label.startswith('L-'):
                 # end of the entity
@@ -219,12 +217,9 @@ class CRFEntityExtractor(EntityExtractor):
                 # entity not closed by an L- tag
                 finished = True
                 ent_word_idx -= 1
-                logger.debug(
-                        "Inconsistent BILOU tagging found, B- tag "
-                        "not closed by L- tag, "
-                        "i.e ['B-a','I-a','O'] instead of "
-                        "['B-a','L-a','O'].\n"
-                        "Assuming last tag is L-")
+                logger.debug("Inconsistent BILOU tagging found, B- tag not "
+                             "closed by L- tag, i.e [B-a, I-a, O] instead of "
+                             "[B-a, L-a, O].\nAssuming last tag is L-")
         return ent_word_idx, confidence
 
     def _handle_bilou_label(self, word_idx, entities):
