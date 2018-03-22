@@ -224,7 +224,7 @@ def test_run_cv_evaluation():
     td = training_data.load_data('data/examples/rasa/demo-rasa.json')
     nlu_config = RasaNLUConfig("sample_configs/config_spacy.json")
 
-    n_folds = 3
+    n_folds = 2
     results, entity_results = run_cv_evaluation(td, n_folds, nlu_config)
 
     assert len(results.train["Accuracy"]) == n_folds
