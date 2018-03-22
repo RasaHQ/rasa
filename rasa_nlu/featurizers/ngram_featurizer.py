@@ -282,7 +282,7 @@ class NGramFeaturizer(Featurizer):
         from sklearn.linear_model import LogisticRegression
         from sklearn.model_selection import cross_val_score
 
-        if self.all_ngrams:
+        if not self.all_ngrams:
             logger.debug("Found no ngrams. Using existing features.")
             return 0
 
