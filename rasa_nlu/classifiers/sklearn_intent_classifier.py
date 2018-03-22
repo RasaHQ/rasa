@@ -91,9 +91,6 @@ class SklearnIntentClassifier(Component):
         # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
         """Train the intent classifier on a data set."""
 
-        from sklearn.model_selection import GridSearchCV
-        from sklearn.svm import SVC
-
         labels = [e.get("intent")
                   for e in training_data.intent_examples]
 
@@ -106,27 +103,37 @@ class SklearnIntentClassifier(Component):
             X = np.stack([example.get("text_features")
                           for example in training_data.intent_examples])
 
-            C = self.component_config["C"]
-            kernels = self.component_config["kernels"]
-            # dirty str fix because sklearn is expecting
-            # str not instance of basestr...
-            tuned_parameters = [{"C": C,
-                                 "kernel": [str(k) for k in kernels]}]
-
-            # aim for 5 examples in each fold
-            folds = self.component_config["max_cross_validation_folds"]
-            cv_splits = max(2, min(folds, np.min(np.bincount(y)) // 5))
-
-            self.clf = GridSearchCV(SVC(C=1,
-                                        probability=True,
-                                        class_weight='balanced'),
-                                    param_grid=tuned_parameters,
-                                    n_jobs=cfg.num_threads,
-                                    cv=cv_splits,
-                                    scoring='f1_weighted',
-                                    verbose=1)
+            self.clf = self._create_classifier(cfg.num_threads, y)
 
             self.clf.fit(X, y)
+
+    def _num_cv_splits(self, y):
+        folds = self.component_config["max_cross_validation_folds"]
+        return max(2, min(folds, np.min(np.bincount(y)) // 5))
+
+    def _create_classifier(self, num_threads, y):
+        from sklearn.model_selection import GridSearchCV
+        from sklearn.svm import SVC
+
+        C = self.component_config["C"]
+        kernels = self.component_config["kernels"]
+        # dirty str fix because sklearn is expecting
+        # str not instance of basestr...
+        tuned_parameters = [{"C": C,
+                             "kernel": [str(k) for k in kernels]}]
+
+        # aim for 5 examples in each fold
+
+        cv_splits = self._num_cv_splits(y)
+
+        return GridSearchCV(SVC(C=1,
+                                probability=True,
+                                class_weight='balanced'),
+                            param_grid=tuned_parameters,
+                            n_jobs=num_threads,
+                            cv=cv_splits,
+                            scoring='f1_weighted',
+                            verbose=1)
 
     def process(self, message, **kwargs):
         # type: (Message, **Any) -> None
@@ -189,9 +196,9 @@ class SklearnIntentClassifier(Component):
 
     @classmethod
     def load(cls,
-             model_dir=None,   # type: Optional[Text]
-             model_metadata=None,   # type: Optional[Metadata]
-             cached_component=None,   # type: Optional[Component]
+             model_dir=None,  # type: Optional[Text]
+             model_metadata=None,  # type: Optional[Metadata]
+             cached_component=None,  # type: Optional[Component]
              **kwargs  # type: **Any
              ):
         # type: (...) -> SklearnIntentClassifier
