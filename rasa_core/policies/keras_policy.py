@@ -55,7 +55,7 @@ class KerasPolicy(Policy):
                 y_pred = self.model.predict(x, batch_size=1)
         else:
             y_pred = self.model.predict(x, batch_size=1)
-        print(y_pred[0, current_idx, :].tolist())
+
         return(y_pred[0, current_idx, :].tolist())
 
     def _build_model(self, num_features, num_actions, max_history_len):
