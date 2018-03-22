@@ -17,7 +17,6 @@ from typing import Tuple
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.model import Metadata
-from rasa_nlu.tokenizers import Token
 from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
 from builtins import str
@@ -27,7 +26,6 @@ logger = logging.getLogger(__name__)
 if typing.TYPE_CHECKING:
     from spacy.language import Language
     import sklearn_crfsuite
-    from spacy.tokens import Doc
 
 
 class CRFEntityExtractor(EntityExtractor):
@@ -97,10 +95,13 @@ class CRFEntityExtractor(EntityExtractor):
 
         # checks whether there is at least one example with an entity annotation
         if training_data.entity_examples:
+            # filter out pre-trained entity examples
+            filtered_entity_examples = self.filter_trainable_entities(
+                training_data.entity_examples)
             # convert the dataset into features
             # this will train on ALL examples, even the ones
             # without annotations
-            dataset = self._create_dataset(training_data.training_examples)
+            dataset = self._create_dataset(filtered_entity_examples)
             # train the model
             self._train_model(dataset)
 

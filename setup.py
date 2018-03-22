@@ -45,7 +45,6 @@ extras_requires = {
               "scipy",
               "spacy>2.0",
               ],
-    'mitie': ["mitie"],
 }
 
 setup(

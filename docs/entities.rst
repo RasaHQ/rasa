@@ -8,7 +8,6 @@ Here we'll go through a few use cases and make recommendations of what to use.
 ================    ==========  ========================    ===================================
 Component           Requires    Model           	          notes
 ================    ==========  ========================    ===================================
-``ner_mitie``       MITIE       structured SVM              good for training custom entities
 ``ner_crf``         crfsuite    conditional random field    good for training custom entities
 ``ner_spacy``       spaCy       averaged perceptron         provides pre-trained entities
 ``ner_duckling``    duckling    context-free grammar        provides pre-trained entities
@@ -45,8 +44,7 @@ Custom, Domain-specific entities
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In the introductory tutorial we build a restaurant bot, and create custom entities for location and cuisine.
-The best components for training these domain-specific entity recognisers are the ``ner_mitie`` and ``ner_crf`` components. 
-It is recommended that you experiment with both of these to see what works best for your data set. 
+The best components for training these domain-specific entity recognisers is the ``ner_crf`` component. 
 
 Returned Entities Object
 ------------------------
@@ -65,7 +63,7 @@ The use of synonyms can also cause the ``value`` field not match the ``text`` ex
           "end": 15,
           "value": "chinese",
           "entity": "cuisine",
-          "extractor": "ner_mitie",
+          "extractor": "ner_crf",
           "processors": []
         }
       ]

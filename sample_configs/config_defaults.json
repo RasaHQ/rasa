@@ -14,7 +14,6 @@
   "data": null,
   "emulate": null,
   "log_file": null,
-  "mitie_file": "data/total_word_feature_extractor.dat",
   "spacy_model_name": null,
   "token": null,
   "cors_origins": [],
