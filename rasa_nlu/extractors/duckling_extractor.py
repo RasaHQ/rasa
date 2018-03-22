@@ -8,7 +8,7 @@ import logging
 from inspect import getmembers
 
 import typing
-from typing import Any
+from typing import Any, Dict
 from typing import List
 from typing import Optional
 from typing import Text
@@ -89,7 +89,7 @@ class DucklingExtractor(EntityExtractor):
                 if not m[0].startswith("__") and not m[0].endswith("__")]
 
     def __init__(self, component_config=None, duckling=None):
-        # type: (DucklingWrapper, Optional[List[Text]]) -> None
+        # type: (Dict[Text, Any], DucklingWrapper) -> None
 
         super(DucklingExtractor, self).__init__(component_config)
         self.duckling = duckling
