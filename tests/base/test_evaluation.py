@@ -26,7 +26,7 @@ from tests import utilities
 logging.basicConfig(level="DEBUG")
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def duckling_interpreter(component_builder, tmpdir):
     conf = RasaNLUModelConfig({"pipeline": [{"name": "ner_duckling"}]})
     return utilities.interpreter_for(

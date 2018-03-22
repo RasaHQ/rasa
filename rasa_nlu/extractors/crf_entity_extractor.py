@@ -156,7 +156,7 @@ class CRFEntityExtractor(EntityExtractor):
         if entity_probs:
             label = max(entity_probs,
                         key=lambda key: entity_probs[key])
-            if self.BILOU_flag:
+            if self.component_config["BILOU_flag"]:
                 # if we are using bilou flags, we will combine the prob
                 # of the B, I, L and U tags for an entity (so if we have a
                 # score of 60% for `B-address` and 40% and 30%
