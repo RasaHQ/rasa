@@ -148,7 +148,6 @@ class RasaNLUModelConfig(object):
             return []
 
     def set_component_attr(self, name, **kwargs):
-        # TODO: test
         for c in self.pipeline:
             if c.get("name") == name:
                 c.update(kwargs)

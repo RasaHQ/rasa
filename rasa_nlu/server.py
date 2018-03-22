@@ -17,6 +17,7 @@ from twisted.internet import reactor, threads
 from twisted.internet.defer import inlineCallbacks, returnValue
 
 from rasa_nlu import utils
+from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.data_router import DataRouter, InvalidProjectError, \
     AlreadyTrainingError
 from rasa_nlu.train import TrainingException
@@ -140,9 +141,6 @@ class RasaNLU(object):
 
         self._configure_logging(log_level, log_file)
 
-        # TODO: anything we want to print here?
-        logger.debug("Configuration: ")
-
         self.default_model_config = {}
         self.data_router = data_router
         self._testing = testing
@@ -228,8 +226,7 @@ class RasaNLU(object):
     @check_cors
     @inlineCallbacks
     def train(self, request):
-        # TODO: allow to pass in whole model configuration, for now: use
-        # default config
+        # TODO: allow to pass in whole model configuration, for now: use default
         model_config = self.default_model_config
 
         project = parameter_or_default(request, "project", default=None)
@@ -247,7 +244,7 @@ class RasaNLU(object):
         try:
             request.setResponseCode(200)
             response = yield self.data_router.start_train_process(
-                    data_string, project, model_config)
+                    data_string, project, RasaNLUModelConfig(model_config))
             returnValue(json_to_string({'info': 'new model trained: {}'
                                                 ''.format(response)}))
         except AlreadyTrainingError as e:

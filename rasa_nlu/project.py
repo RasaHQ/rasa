@@ -25,7 +25,6 @@ FALLBACK_MODEL_NAME = "fallback"
 
 
 class Project(object):
-    # TODO: add remote_storage to callers where necessary
     def __init__(self,
                  component_builder=None,
                  project=None,

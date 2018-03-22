@@ -58,3 +58,13 @@ def test_pipeline_looksup_registry():
 def test_default_config_file():
     final_config = RasaNLUModelConfig()
     assert len(final_config) > 1
+
+
+def test_set_attr_on_component(default_config):
+    cfg = config.load("sample_configs/config_spacy.yml")
+    cfg.set_component_attr("intent_classifier_sklearn", C=324)
+
+    expected = {"C": 324, "name": "intent_classifier_sklearn"}
+
+    assert cfg.for_component("intent_classifier_sklearn") == expected
+    assert cfg.for_component("tokenizer_spacy") == {"name": "tokenizer_spacy"}

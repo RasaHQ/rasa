@@ -160,11 +160,14 @@ class DataRouter(object):
         for project in projects:
             project_store[project] = Project(self.component_builder,
                                              project,
-                                             self.project_dir)
+                                             self.project_dir,
+                                             self.remote_storage)
 
         if not project_store:
             default_model = RasaNLUModelConfig.DEFAULT_PROJECT_NAME
-            project_store[default_model] = Project(project_dir=self.project_dir)
+            project_store[default_model] = Project(
+                    project_dir=self.project_dir,
+                    remote_storage=self.remote_storage)
         return project_store
 
     def _list_projects_in_cloud(self):
@@ -221,7 +224,8 @@ class DataRouter(object):
             else:
                 try:
                     self.project_store[project] = Project(
-                            self.component_builder, project, self.project_dir)
+                            self.component_builder, project,
+                            self.project_dir, self.remote_storage)
                 except Exception as e:
                     raise InvalidProjectError(
                         "Unable to load project '{}'. Error: {}".format(
@@ -291,17 +295,14 @@ class DataRouter(object):
             }
         }
 
-    def start_train_process(self, data, project, config_values):
-        # type: (Text, Text, Dict[Text, Any]) -> Deferred
+    def start_train_process(self, data, project, train_config):
+        # type: (Text, Text, RasaNLUModelConfig) -> Deferred
         """Start a model training."""
 
         if not project:
             raise InvalidProjectError("Missing project name to train")
 
         f = self.create_temporary_file(data, "_training_data")
-        # TODO: fix data location handling
-        # f.name
-        train_config = RasaNLUModelConfig(config_values)
 
         if project in self.project_store:
             if self.project_store[project].status == 1:
@@ -310,7 +311,8 @@ class DataRouter(object):
                 self.project_store[project].status = 1
         elif project not in self.project_store:
             self.project_store[project] = Project(
-                    self.component_builder, project, self.project_dir)
+                    self.component_builder, project,
+                    self.project_dir, self.remote_storage)
             self.project_store[project].status = 1
 
         def training_callback(model_path):

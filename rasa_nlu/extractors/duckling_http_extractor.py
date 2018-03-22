@@ -36,7 +36,10 @@ class DucklingHTTPExtractor(EntityExtractor):
         "dimensions": None,
 
         # http url of the running duckling server
-        "url": None
+        "url": None,
+
+        # locale - if not set, we will use the language of the model
+        "locale": None,
     }
 
     def __init__(self, component_config=None, language=None):
@@ -53,15 +56,19 @@ class DucklingHTTPExtractor(EntityExtractor):
                                                           cls.defaults),
                                      config.language)
 
+    def _locale(self):
+        if not self.component_config.get("locale"):
+            # this is king of a quick fix to generate a proper locale
+            # works most of the time
+            locale_fix = "{}_{}".format(self.language, self.language.upper())
+            self.component_config["locale"] = locale_fix
+        return self.component_config.get("locale")
+
     def _duckling_parse(self, text):
         """Sends the request to the duckling server and parses the result."""
 
         try:
-            # TODO: this is king of a quick fix to generate a proper locale
-            #       for duckling. and might not always create correct
-            #       locales. We should rather introduce a new config value.
-            locale = "{}_{}".format(self.language, self.language.upper())
-            payload = {"text": text, "locale": locale}
+            payload = {"text": text, "locale": self._locale()}
             headers = {"Content-Type": "application/x-www-form-urlencoded; "
                                        "charset=UTF-8"}
             response = requests.post(self.duckling_url + "/parse",
