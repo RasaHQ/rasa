@@ -179,8 +179,8 @@ class RasaNLU(object):
 
         if 'q' not in request_params:
             request.setResponseCode(404)
-            dumped = json_to_string({"error":
-                                         "Invalid parse parameter specified"})
+            dumped = json_to_string(
+                    {"error": "Invalid parse parameter specified"})
             returnValue(dumped)
         else:
             data = self.data_router.extract(request_params)
