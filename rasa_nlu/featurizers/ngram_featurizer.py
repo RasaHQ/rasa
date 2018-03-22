@@ -3,7 +3,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import io
 import logging
 import os
 import time
@@ -15,7 +14,6 @@ import numpy as np
 import typing
 from builtins import map
 from builtins import range
-from future.utils import PY3
 from typing import Any, Dict, List, Optional, Text
 
 from rasa_nlu import utils
@@ -201,13 +199,10 @@ class NGramFeaturizer(Featurizer):
         return usable_labels
 
     def _rank_ngrams_using_cv(self, examples, labels, list_of_ngrams):
-        from sklearn import linear_model, preprocessing
+        from sklearn import linear_model
 
         X = np.array(self._ngrams_in_sentences(examples, list_of_ngrams))
-
-        intent_encoder = preprocessing.LabelEncoder()
-        intent_encoder.fit(labels)
-        y = intent_encoder.transform(labels)
+        y = self.encode_labels(labels)
 
         clf = linear_model.RandomizedLogisticRegression(C=1)
         clf.fit(X, y)
@@ -319,24 +314,8 @@ class NGramFeaturizer(Featurizer):
 
         return [item for sublist in list(features.values()) for item in sublist]
 
-    def _cross_validation(self, examples, labels):
-        """Choose the best number of ngrams to include in bow.
-
-        Given an intent classification problem and a set of ordered ngrams
-        (ordered in terms of importance by pick_applicable_ngrams) we
-        choose the best number of ngrams to include in our bow vecs
-        by cross validation."""
-
-        from sklearn import preprocessing
-        from sklearn.linear_model import LogisticRegression
-        from sklearn.model_selection import cross_val_score
-
-        max_ngrams = self.component_config["max_number_of_ngrams"]
-
-        if not self.all_ngrams:
-            logger.debug("Found no ngrams. Using existing features.")
-            return 0
-
+    @staticmethod
+    def _collect_features(examples):
         if examples:
             collected_features = [e.get("text_features")
                                   for e in examples
@@ -345,45 +324,91 @@ class NGramFeaturizer(Featurizer):
             collected_features = []
 
         if collected_features:
-            existing_text_features = np.stack(collected_features)
+            return np.stack(collected_features)
         else:
-            existing_text_features = None
+            return None
 
-        def features_with_ngrams(max_ngrams):
-            ngrams_to_use = self._ngrams_to_use(max_ngrams)
-            extras = np.array(self._ngrams_in_sentences(examples,
-                                                        ngrams_to_use))
-            if existing_text_features is not None:
-                return np.hstack((existing_text_features, extras))
-            else:
-                return extras
+    def _append_ngram_features(self, examples, existing_features, max_ngrams):
+        ngrams_to_use = self._ngrams_to_use(max_ngrams)
+        extras = np.array(self._ngrams_in_sentences(examples,
+                                                    ngrams_to_use))
+        if existing_features is not None:
+            return np.hstack((existing_features, extras))
+        else:
+            return extras
 
-        clf2 = LogisticRegression(class_weight='balanced')
+    @staticmethod
+    def _num_cv_splits(y):
+        return min(10, np.min(np.bincount(y))) if y.size > 0 else 0
+
+    @staticmethod
+    def encode_labels(labels):
+        from sklearn import preprocessing
+
         intent_encoder = preprocessing.LabelEncoder()
         intent_encoder.fit(labels)
-        y = intent_encoder.transform(labels)
-        cv_splits = min(10, np.min(np.bincount(y))) if y.size > 0 else 0
+        return intent_encoder.transform(labels)
+
+    def _score_ngram_selection(self, examples, y, existing_text_features,
+                               cv_splits, max_ngrams):
+        from sklearn.model_selection import cross_val_score
+        from sklearn.linear_model import LogisticRegression
+
+        if existing_text_features is None:
+            return 0.0
+
+        clf = LogisticRegression(class_weight='balanced')
+
+        no_ngrams_X = self._append_ngram_features(
+                examples, existing_text_features, max_ngrams)
+        return np.mean(cross_val_score(clf, no_ngrams_X, y, cv=cv_splits))
+
+    @staticmethod
+    def _generate_test_points(max_ngrams):
+        """Generate a list of increasing numbers.
+
+        They are used to take the best n ngrams and evaluate them. This n
+        is varied to find the best number of ngrams to use. This function
+        defines the number of ngrams that get tested."""
+
+        possible_ngrams = np.linspace(0, max_ngrams, 8)
+        return np.unique(list(map(int, np.floor(possible_ngrams))))
+
+    def _cross_validation(self, examples, labels):
+        """Choose the best number of ngrams to include in bow.
+
+        Given an intent classification problem and a set of ordered ngrams
+        (ordered in terms of importance by pick_applicable_ngrams) we
+        choose the best number of ngrams to include in our bow vecs
+        by cross validation."""
+
+        max_ngrams = self.component_config["max_number_of_ngrams"]
+
+        if not self.all_ngrams:
+            logger.debug("Found no ngrams. Using existing features.")
+            return 0
+
+        existing_text_features = self._collect_features(examples)
+
+        y = self.encode_labels(labels)
+        cv_splits = self._num_cv_splits(y)
+
         if cv_splits >= 3:
             logger.debug("Started ngram cross-validation to find b"
                          "est number of ngrams to use...")
-            possible_ngrams = np.linspace(1, max_ngrams, 8)
-            num_ngrams = np.unique(list(map(int, np.floor(possible_ngrams))))
-            if existing_text_features is not None:
-                no_ngrams_X = features_with_ngrams(max_ngrams=0)
-                no_ngrams_score = np.mean(cross_val_score(clf2, no_ngrams_X, y,
-                                                          cv=cv_splits))
-            else:
-                no_ngrams_score = 0.0
+
             scores = []
+            num_ngrams = self._generate_test_points(max_ngrams)
             for n in num_ngrams:
-                X = features_with_ngrams(max_ngrams=n)
-                score = np.mean(cross_val_score(clf2, X, y, cv=cv_splits))
+                score = self._score_ngram_selection(examples, y,
+                                                    existing_text_features,
+                                                    cv_splits,
+                                                    max_ngrams=n)
                 scores.append(score)
                 logger.debug("Evaluating usage of {} ngrams. "
                              "Score: {}".format(n, score))
+
             n_top = num_ngrams[np.argmax(scores)]
-            logger.debug("Score without ngrams: "
-                         "{}".format(no_ngrams_score))
             logger.info("Best score with {} ngrams: "
                         "{}".format(n_top, np.max(scores)))
             return n_top
