@@ -48,7 +48,10 @@ def extract_training_data_from_file(
                                augmentation_factor,
                                max_history,
                                max_number_of_trackers)
-    return g.generate()
+    trackers = g.generate()
+    X, _ = featurizer.featurize_trackers(trackers, domain)
+    y = featurizer.featurize_labels(trackers, domain)
+    return DialogueTrainingData(X, y)
 
 
 def extract_trackers_from_file(
@@ -68,5 +71,5 @@ def extract_trackers_from_file(
                                tracker_limit=1000,
                                remove_duplicates=False,
                                max_number_of_trackers=max_number_of_trackers)
-    training_data = g.generate()
-    return training_data.metadata["trackers"]
+    return g.generate()
+

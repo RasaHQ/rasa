@@ -122,7 +122,7 @@ class TrainingsDataGenerator(object):
             tracker_limit=None,  # type: Optional[int]
             use_story_concatenation=True  # type: bool
     ):
-        # type: (...) -> None
+        # type: (...) -> List[DialogueStateTrackers]
         """Given a set of story parts, generates all stories that are possible.
 
         The different story parts can end and start with checkpoints
@@ -223,19 +223,7 @@ class TrainingsDataGenerator(object):
         self._issue_unused_checkpoint_notification(unused_checkpoints)
         logger.debug("Found {} action examples.".format(len(all_actions)))
 
-        X = np.array(all_features)
-        y = np.array(all_actions)
-
-        metadata = {"events": self.events_metadata,
-                    "trackers": finished_trackers}
-
-        if self.config.remove_duplicates:
-            X_unique, y_unique = self._deduplicate_training_data(X, y)
-            logger.debug("Deduplicated to {} unique action examples.".format(
-                    y_unique.shape[0]))
-            return DialogueTrainingData(X_unique, y_unique, metadata)
-        else:
-            return DialogueTrainingData(X, y, metadata)
+        return finished_trackers
 
     def _phase_names(self):
         # type: () -> List[Text]

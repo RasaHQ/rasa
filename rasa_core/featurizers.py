@@ -12,6 +12,7 @@ import numpy as np
 from builtins import str
 
 from rasa_core import utils
+from rasa_core.events import ActionExecuted
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,7 @@ class Featurizer(object):
 
     Featurizer decides how the bot will transform the conversation state to a
     format which a classifier can read."""
+
 
     def encode(self, active_features, input_feature_map):
         raise NotImplementedError("Featurizer must have the capacity to "
@@ -81,6 +83,62 @@ class BinaryFeaturizer(Featurizer):
     """Assumes all features are binary.
 
     All features should be either on or off, denoting them with 1 or 0."""
+    def __init__(self, max_history):
+        self.max_history = max_history
+
+    def featurize_trackers(self, trackers, domain):
+        rows = []
+        true_lengths = []
+        num_features = len(domain.input_feature_map)
+        trackers_as_states = []
+
+        for tracker in trackers:
+
+            states = [ domain.get_active_features(tr) for tr in
+                tracker.generate_all_prior_states()]
+
+            trackers_as_states.append(states)
+
+        for tracker_states in trackers_as_states:
+            x = np.empty((self.max_history, num_features))
+            dialogue_len = len(tracker_states)
+            # pad up to max_len or slice
+            if dialogue_len < self.max_history:
+                tracker_states += [None] * (self.max_history - dialogue_len)
+            else:
+                tracker_states = tracker_states[-self.max_history:]
+
+            for idx, state in enumerate(tracker_states):
+                x[idx,:] = self.encode(state, domain.input_feature_map)
+            rows.append(x)
+            true_lengths.append(dialogue_len)
+
+        return np.array(rows), true_lengths
+
+    def featurize_labels(self, trackers, domain, one_hot=True):
+        max_len = self.max_history
+        trackers_actions = []
+        for tracker in trackers:
+            actions = []
+            for event in tracker._applied_events():
+                 if isinstance(event, ActionExecuted):
+                     actions.append(event.action_name)
+            trackers_actions.append(actions)
+        # slice in case longer than max_len
+        trackers_actions = trackers_actions[-self.max_history:]
+
+        if one_hot:
+            y = np.zeros((len(trackers), max_len, domain.num_actions))
+            for idx, actions in enumerate(trackers_actions):
+                for jdx, action in enumerate(actions):
+                    y[idx, jdx, domain.index_for_action(action)] = 1
+        else:
+            y = np.zeros((len(trackers), max_len))
+            for idx, actions in enumerate(trackers_actions):
+                for jdx, action in enumerate(actions):
+                    y[idx, jdx] = domain.index_for_action(action)
+
+        return y
 
     def encode(self, active_features, input_feature_map):
         """Returns a binary vector indicating which features are active.

@@ -48,15 +48,15 @@ class KerasPolicy(Policy):
         return keras.backend._BACKEND == "tensorflow"
 
     def predict_action_probabilities(self, tracker, domain):
-        x = self.featurize(tracker, domain)
-        # we need to add a batch dimension with length 1
-        x = x.reshape((1, self.max_len, x.shape[1]))
+        x, lengths = self.featurizer.featurize_trackers([tracker], domain)
+        current_idx = lengths[0] - 1
         if KerasPolicy.is_using_tensorflow() and self.graph is not None:
             with self.graph.as_default():
                 y_pred = self.model.predict(x, batch_size=1)
         else:
             y_pred = self.model.predict(x, batch_size=1)
-        return y_pred[-1].tolist()
+        print(y_pred[0, current_idx, :].tolist())
+        return(y_pred[0, current_idx, :].tolist())
 
     def _build_model(self, num_features, num_actions, max_history_len):
         warnings.warn("Deprecated, use `model_architecture` instead.",
@@ -74,11 +74,12 @@ class KerasPolicy(Policy):
 
         n_hidden = 32  # Neural Net and training params
         batch_shape = (None, max_history_len, num_features)
+        input_shape = (max_history_len, num_features)
         # Build Model
         model = Sequential()
-        model.add(Masking(-1, batch_input_shape=batch_shape))
-        model.add(LSTM(n_hidden, batch_input_shape=batch_shape, dropout=0.2, return_sequences=True))
-        model.add(TimeDistributed(Dense(input_dim=n_hidden, units=num_actions)))
+        model.add(Masking(mask_value=-1, input_shape=input_shape))
+        model.add(LSTM(n_hidden, return_sequences=True))
+        model.add(TimeDistributed(Dense(units=num_actions)))
         model.add(Activation('softmax'))
 
         model.compile(loss='categorical_crossentropy',
@@ -93,7 +94,9 @@ class KerasPolicy(Policy):
         self.model = self.model_architecture(domain.num_features,
                                              domain.num_actions,
                                              training_data.max_history())
-        shuffled_X, shuffled_y = training_data.shuffled(domain)
+        #shuffled_X, shuffled_y = training_data.shuffled(domain)
+        shuffled_X = training_data.X
+        shuffled_y = training_data.y
 
         validation_split = kwargs.get("validation_split", 0.0)
         logger.info("Fitting model with {} total samples and a validation "
