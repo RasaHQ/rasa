@@ -37,15 +37,16 @@ def get_persistor(name):
 class Persistor(object):
     """Store models in cloud and fetch them when needed"""
 
-    def persist(self, mode_directory, model_name, project):
+    def persist(self, model_directory, model_name, project):
         # type: (Text) -> None
         """Uploads a model persisted in the `target_dir` to cloud storage."""
 
-        if not os.path.isdir(mode_directory):
+        if not os.path.isdir(model_directory):
             raise ValueError("Target directory '{}' not "
-                             "found.".format(mode_directory))
+                             "found.".format(model_directory))
 
-        file_key, tar_path = self._compress(mode_directory, model_name, project)
+        file_key, tar_path = self._compress(
+                model_directory, model_name, project)
         self._persist_tar(file_key, tar_path)
 
     def retrieve(self, model_name, project, target_path):
@@ -84,11 +85,13 @@ class Persistor(object):
     def _compress(self, model_directory, model_name, project):
         # type: (Text) -> Tuple[Text, Text]
         """Creates a compressed archive and returns key and tar."""
+        import tempfile
 
+        dirpath = tempfile.mkdtemp()
         base_name = self._tar_name(model_name, project, include_extension=False)
         tar_name = shutil.make_archive(base_name, 'gztar',
                                        root_dir=model_directory,
-                                       base_dir=".")
+                                       base_dir=dirpath)
         file_key = os.path.basename(tar_name)
         return file_key, tar_name
 
@@ -96,7 +99,8 @@ class Persistor(object):
     def _project_prefix(project):
         # type: (Text) -> Text
 
-        return '{}___'.format(project or RasaNLUModelConfig.DEFAULT_PROJECT_NAME)
+        p = project or RasaNLUModelConfig.DEFAULT_PROJECT_NAME
+        return '{}___'.format(p)
 
     @staticmethod
     def _project_and_model_from_filename(filename):

@@ -27,12 +27,12 @@ logging.basicConfig(level="DEBUG")
 
 
 @pytest.fixture(scope="session")
-def duckling_interpreter(component_builder, tmpdir):
+def duckling_interpreter(component_builder, tmpdir_factory):
     conf = RasaNLUModelConfig({"pipeline": [{"name": "ner_duckling"}]})
     return utilities.interpreter_for(
             component_builder,
             data="./data/examples/rasa/demo-rasa.json",
-            path=tmpdir.strpath,
+            path=tmpdir_factory.mktemp("projects").strpath,
             config=conf)
 
 
