@@ -184,7 +184,13 @@ class Project(object):
 
     def as_dict(self):
         return {'status': 'training' if self.status else 'ready',
-                'available_models': list(self._models.keys())}
+                'available_models': list(self._models.keys()),
+                'loaded_models': self._list_loaded_models()}
+
+    def _list_loaded_models(self):
+        return [
+            model for model, interpreter in self._models.items() if interpreter
+        ]
 
     def _list_models_in_cloud(self, config):
         # type: (RasaNLUConfig) -> List[Text]

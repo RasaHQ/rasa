@@ -107,6 +107,7 @@ def test_post_parse_specific_model(app):
                                   "model": model})
     response = yield app.post(query.endpoint, json=query.payload)
     assert response.code == 200
+    assert model in project["loaded_models"]
 
 
 @pytest.mark.parametrize("response_test", [
