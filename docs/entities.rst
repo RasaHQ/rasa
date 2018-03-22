@@ -64,7 +64,16 @@ The use of synonyms can also cause the ``value`` field not match the ``text`` ex
           "value": "chinese",
           "entity": "cuisine",
           "extractor": "ner_crf",
+          "confidence": 0.854,
           "processors": []
         }
       ]
     }
+
+.. note::
+
+    The `confidence` will be set by the CRF entity extractor
+    (`ner_crf` component). The duckling entity extractor will always return
+    `1`. The `ner_spacy` extractor does not provide this information and
+    returns `null`.
+

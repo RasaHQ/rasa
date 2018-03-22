@@ -103,6 +103,7 @@ class DucklingHTTPExtractor(EntityExtractor):
                     "end": match["end"],
                     "text": match["body"],
                     "value": value,
+                    "confidence": 1.0,
                     "additional_info": match["value"],
                     "entity": match["dim"]}
 
