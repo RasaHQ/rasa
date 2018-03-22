@@ -15,21 +15,25 @@ def test_crf_extractor(spacy_nlp):
     examples = [
         Message("anywhere in the west", {
             "intent": "restaurant_search",
-            "entities": [{"start": 16, "end": 20, "value": "west", "entity": "location"}],
+            "entities": [{"start": 16, "end": 20,
+                          "value": "west", "entity": "location"}],
             "spacy_doc": spacy_nlp("anywhere in the west")
         }),
         Message("central indian restaurant", {
             "intent": "restaurant_search",
             "entities": [
-                {"start": 0, "end": 7, "value": "central", "entity": "location", "extractor": "random_extractor"},
-                {"start": 8, "end": 14, "value": "indian", "entity": "cuisine", "extractor": "ner_crf"}
+                {"start": 0, "end": 7, "value": "central",
+                 "entity": "location", "extractor": "random_extractor"},
+                {"start": 8, "end": 14, "value": "indian",
+                 "entity": "cuisine", "extractor": "ner_crf"}
             ],
             "spacy_doc": spacy_nlp("central indian restaurant")
         })]
-    config = {"ner_crf": {"BILOU_flag": True, "features": ext.crf_features}}
-    ext.train(TrainingData(training_examples=examples), config)
+    cfg = {"ner_crf": {"BILOU_flag": True, "features": ext.crf_features}}
+    ext.train(TrainingData(training_examples=examples), cfg)
     sentence = 'anywhere in the west'
-    crf_format = ext._from_text_to_crf(Message(sentence, {"spacy_doc": spacy_nlp(sentence)}))
+    doc = {"spacy_doc": spacy_nlp(sentence)}
+    crf_format = ext._from_text_to_crf(Message(sentence, doc))
     assert [word[0] for word in crf_format] == ['anywhere', 'in', 'the', 'west']
     feats = ext._sentence_to_features(crf_format)
     assert 'BOS' in feats[0]
@@ -42,10 +46,13 @@ def test_crf_extractor(spacy_nlp):
         {"start": 16, "end": 20, "value": "west", "entity": "location"}
     ], 'Entity without extractor remains'
     assert filtered[1].get('entities') == [
-        {"start": 8, "end": 14, "value": "indian", "entity": "cuisine", "extractor": "ner_crf"}
+        {"start": 8, "end": 14,
+         "value": "indian", "entity": "cuisine", "extractor": "ner_crf"}
     ], 'Only ner_crf entity annotation remains'
     assert examples[1].get('entities')[0] == {
-        "start": 0, "end": 7, "value": "central", "entity": "location", "extractor": "random_extractor"
+        "start": 0, "end": 7,
+        "value": "central", "entity": "location",
+        "extractor": "random_extractor"
     }, 'Original examples are not mutated'
 
 
@@ -54,11 +61,27 @@ def test_crf_json_from_BILOU(spacy_nlp):
     ext = CRFEntityExtractor()
     ext.BILOU_flag = True
     sentence = u"I need a home cleaning close-by"
-    r = ext._from_crf_to_json(Message(sentence, {"spacy_doc": spacy_nlp(sentence)}),
-                              ['O', 'O', 'O', 'B-what', 'L-what', 'B-where', 'I-where', 'L-where'])
+    doc  = {"spacy_doc": spacy_nlp(sentence)}
+    r = ext._from_crf_to_json(Message(sentence, doc),
+                              [{'O': 1.0},
+                               {'O': 1.0},
+                               {'O': 1.0},
+                               {'B-what': 1.0},
+                               {'L-what': 1.0},
+                               {'B-where': 1.0},
+                               {'I-where': 1.0},
+                               {'L-where': 1.0}])
     assert len(r) == 2, "There should be two entities"
-    assert r[0] == {u'start': 9, u'end': 22, u'value': u'home cleaning', u'entity': u'what'}
-    assert r[1] == {u'start': 23, u'end': 31, u'value': u'close-by', u'entity': u'where'}
+
+    assert r[0]["confidence"]  # confidence should exist
+    del r[0]["confidence"]
+    assert r[0] == {'start': 9, 'end': 22,
+                    'value': 'home cleaning', 'entity': 'what'}
+
+    assert r[1]["confidence"]  # confidence should exist
+    del r[1]["confidence"]
+    assert r[1] == {'start': 23, 'end': 31,
+                    'value': 'close-by', 'entity': 'where'}
 
 
 def test_crf_json_from_non_BILOU(spacy_nlp):
@@ -66,14 +89,34 @@ def test_crf_json_from_non_BILOU(spacy_nlp):
     ext = CRFEntityExtractor()
     ext.BILOU_flag = False
     sentence = u"I need a home cleaning close-by"
-    r = ext._from_crf_to_json(Message(sentence, {"spacy_doc": spacy_nlp(sentence)}),
-                              ['O', 'O', 'O', 'what', 'what', 'where', 'where', 'where'])
-    assert len(r) == 5, "There should be five entities"  # non BILOU will split multi-word entities - hence 5
-    assert r[0] == {u'start': 9, u'end': 13, u'value': u'home', u'entity': u'what'}
-    assert r[1] == {u'start': 14, u'end': 22, u'value': u'cleaning', u'entity': u'what'}
-    assert r[2] == {u'start': 23, u'end': 28, u'value': u'close', u'entity': u'where'}
-    assert r[3] == {u'start': 28, u'end': 29, u'value': u'-', u'entity': u'where'}
-    assert r[4] == {u'start': 29, u'end': 31, u'value': u'by', u'entity': u'where'}
+    doc = {"spacy_doc": spacy_nlp(sentence)}
+    rs = ext._from_crf_to_json(Message(sentence, doc),
+                              [{'O': 1.0},
+                               {'O': 1.0},
+                               {'O': 1.0},
+                               {'what': 1.0},
+                               {'what': 1.0},
+                               {'where': 1.0},
+                               {'where': 1.0},
+                               {'where': 1.0}])
+
+    # non BILOU will split multi-word entities - hence 5
+    assert len(rs) == 5, "There should be five entities"
+
+    for r in rs:
+        assert r['confidence']  # confidence should exist
+        del r['confidence']
+
+    assert rs[0] == {'start': 9, 'end': 13,
+                    'value': 'home', 'entity': 'what'}
+    assert rs[1] == {'start': 14,'end': 22,
+                    'value': 'cleaning', 'entity': 'what'}
+    assert rs[2] == {'start': 23,'end': 28,
+                    'value': 'close', 'entity': 'where'}
+    assert rs[3] == {'start': 28,'end': 29,
+                    'value': '-', 'entity': 'where'}
+    assert rs[4] == {'start': 29,'end': 31,
+                    'value': 'by', 'entity': 'where'}
 
 
 def test_duckling_entity_extractor(component_builder):
@@ -86,7 +129,9 @@ def test_duckling_entity_extractor(component_builder):
     assert len(entities) == 3
 
     # Test duckling with a defined date
-    message = Message("Let us meet tomorrow.", time="1381536182000")  # 1381536182000 == 2013/10/12 02:03:02
+
+    # 1381536182000 == 2013/10/12 02:03:02
+    message = Message("Let us meet tomorrow.", time="1381536182000")
     duckling.process(message)
     entities = message.get("entities")
     assert len(entities) == 1
@@ -101,7 +146,8 @@ def test_duckling_entity_extractor_and_synonyms(component_builder):
     synonyms = component_builder.create_component("ner_synonyms", _config)
     message = Message("He was 6 feet away")
     duckling.process(message)
-    synonyms.process(message)  # checks that the synonym processor can handle entities that have int values
+    # checks that the synonym processor can handle entities that have int values
+    synonyms.process(message)
     assert message is not None
 
 
@@ -111,11 +157,17 @@ def test_unintentional_synonyms_capitalized(component_builder):
     examples = [
         Message("Any Mexican restaurant will do", {
             "intent": "restaurant_search",
-            "entities": [{"start": 4, "end": 11, "value": "Mexican", "entity": "cuisine"}]
+            "entities": [{"start": 4,
+                          "end": 11,
+                          "value": "Mexican",
+                          "entity": "cuisine"}]
         }),
         Message("I want Tacos!", {
             "intent": "restaurant_search",
-            "entities": [{"start": 7, "end": 12, "value": "Mexican", "entity": "cuisine"}]
+            "entities": [{"start": 7,
+                          "end": 12,
+                          "value": "Mexican",
+                          "entity": "cuisine"}]
         })
     ]
     ner_syn.train(TrainingData(training_examples=examples), _config)
@@ -134,5 +186,9 @@ def test_spacy_ner_extractor(spacy_nlp):
 
     assert len(example.get("entities", [])) == 1
     assert example.get("entities")[0] == {
-        u'start': 16, u'extractor': u'ner_spacy',
-        u'end': 20, u'value': u'West', u'entity': u'LOC'}
+        'start': 16,
+        'extractor': 'ner_spacy',
+        'end': 20,
+        'value': 'West',
+        'entity': 'LOC',
+        'confidence': None}
