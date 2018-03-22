@@ -30,6 +30,11 @@ Changed
 - The ``CRFEntityExtractor`` now only trains entity examples that have
   ``"extractor": "ner_crf"`` or no extractor at all
 - Ignore hidden files when listing projects or models
+- Docker Images now run on python 3.6 for better non-latin character set support
+
+Removed
+-------
+- MITIE support - backend is no longer supported.
 
 Fixed
 -----
