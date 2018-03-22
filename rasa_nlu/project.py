@@ -127,9 +127,11 @@ class Project(object):
 
     def unload(self, model_name):
         self._writer_lock.acquire()
-        unloaded_model = self._models.pop(model_name)
-        self._writer_lock.release()
-        return unloaded_model
+        try:
+            del self._models[model_name]
+        finally:
+            self._writer_lock.release()
+            return model_name
 
     def _latest_project_model(self):
         """Retrieves the latest trained model for an project"""

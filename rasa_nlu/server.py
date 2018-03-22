@@ -223,12 +223,30 @@ class RasaNLU(object):
         }
 
         request.setHeader('Content-Type', 'application/json')
-
         try:
             request.setResponseCode(200)
             response = self.data_router.evaluate(data_string,
                                                  params.get('project'),
                                                  params.get('model'))
+            return simplejson.dumps(response)
+        except Exception as e:
+            request.setResponseCode(500)
+            return simplejson.dumps({"error": "{}".format(e)})
+
+    @app.route("/models", methods=['DELETE'])
+    @requires_auth
+    @check_cors
+    def unload_model(self, request):
+        params = {
+            key.decode('utf-8', 'strict'): value[0].decode('utf-8', 'strict')
+            for key, value in request.args.items()
+        }
+
+        request.setHeader('Content-Type', 'application/json')
+        try:
+            request.setResponseCode(200)
+            response = self.data_router.unload_model(params.get('project'),
+                                                     params.get('model'))
             return simplejson.dumps(response)
         except Exception as e:
             request.setResponseCode(500)
