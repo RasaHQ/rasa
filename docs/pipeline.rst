@@ -16,7 +16,7 @@ the processing has finished. For example, for the sentence ``"I am looking for C
     {
         "text": "I am looking for Chinese food",
         "entities": [
-            {"start": 8, "end": 15, "value": "chinese", "entity": "cuisine", "extractor": "ner_crf"}
+            {"start": 8, "end": 15, "value": "chinese", "entity": "cuisine", "extractor": "ner_crf", "confidence": 0.864}
         ],
         "intent": {"confidence": 0.6485910906220309, "name": "restaurant_search"},
         "intent_ranking": [
@@ -173,12 +173,14 @@ ner_spacy
                           "start": 20,
                           "end": 33,
                           "entity": "city",
+                          "confidence": null,
                           "extractor": "ner_spacy"}]
         }
 
 :Description:
     Using spacy this component predicts the entities of a message. spacy uses a statistical BILUO transition model.
     As of now, this component can only use the spacy builtin entity extraction models and can not be retrained.
+    This extractor does not provide any confidence scores.
 
 ner_synonyms
 ~~~~~~~~~~~~
@@ -230,6 +232,7 @@ ner_crf
                           "start": 20,
                           "end": 33,
                           "entity": "city",
+                          "confidence": 0.874,
                           "extractor": "ner_crf"}]
         }
 
@@ -255,6 +258,7 @@ ner_duckling
                           "entity": "time",
                           "start": 48,
                           "value": "2017-04-10T00:00:00.000+02:00",
+                          "confidence": 1.0,
                           "extractor": "ner_duckling"}]
         }
 
@@ -268,6 +272,8 @@ ner_duckling
     for the duckling component, the component will extract two entities: ``10`` as a number and
     ``in 10 minutes`` as a time from the text ``I will be there in 10 minutes``. In such a
     situation, your application would have to decide which entity type is be the correct one.
+    The extractor will always return `1.0` as a confidence, as it is a rule
+    based system.
 
 Creating new Components
 -----------------------

@@ -1,24 +1,25 @@
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
+import io
+import logging
+import os
+import time
+import warnings
+from collections import Counter
+from string import punctuation
+
+import numpy as np
 import typing
 from builtins import map
 from builtins import range
-import logging
-import os
-import re
-import time
-import warnings
-import io
-from collections import Counter
-from string import punctuation
+from future.utils import PY3
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
-from future.utils import PY3
 from typing import Text
 
 from rasa_nlu.components import Component
@@ -30,8 +31,6 @@ from rasa_nlu.training_data import TrainingData
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
-    from spacy.language import Language
-    import numpy as np
     from rasa_nlu.model import Metadata
 
 
@@ -57,7 +56,7 @@ class NGramFeaturizer(Featurizer):
     @classmethod
     def required_packages(cls):
         # type: () -> List[Text]
-        return ["spacy", "numpy", "sklearn", "cloudpickle"]
+        return ["spacy", "sklearn", "cloudpickle"]
 
     def train(self, training_data, config, **kwargs):
         # type: (TrainingData, RasaNLUConfig, **Any) -> None
@@ -77,7 +76,6 @@ class NGramFeaturizer(Featurizer):
         message.set("text_features", updated)
 
     def _text_features_with_ngrams(self, message, max_ngrams):
-        import numpy as np
 
         ngrams_to_use = self._ngrams_to_use(max_ngrams)
 
@@ -175,7 +173,6 @@ class NGramFeaturizer(Featurizer):
 
         if list_of_ngrams:
             from sklearn import linear_model, preprocessing
-            import numpy as np
 
             # filter examples where we do not have enough labeled instances for cv
             usable_labels = []
@@ -201,7 +198,7 @@ class NGramFeaturizer(Featurizer):
                     scores = clf.scores_
                     sort_idx = [i[0] for i in sorted(enumerate(scores), key=lambda x: -1 * x[1])]
 
-                    return np.array(list_of_ngrams)[sort_idx]
+                    return np.array(list_of_ngrams)[sort_idx].tolist()
                 except ValueError as e:
                     if "needs samples of at least 2 classes" in str(e):
                         # we got unlucky during the random sampling :( and selected a slice that only contains one class
@@ -228,8 +225,6 @@ class NGramFeaturizer(Featurizer):
 
     def _ngrams_in_sentence(self, example, ngrams):
         """Given a set of sentences, returns a vector of {1,0} values indicating ngram presence"""
-
-        import numpy as np
 
         cleaned_sentence = self._remove_in_vocab_words_from_sentence(example)
         presence_vector = np.zeros(len(ngrams))
@@ -286,7 +281,10 @@ class NGramFeaturizer(Featurizer):
         from sklearn import preprocessing
         from sklearn.linear_model import LogisticRegression
         from sklearn.model_selection import cross_val_score
-        import numpy as np
+
+        if not self.all_ngrams:
+            logger.debug("Found no ngrams. Using existing features.")
+            return 0
 
         if examples:
             collected_features = [e.get("text_features")

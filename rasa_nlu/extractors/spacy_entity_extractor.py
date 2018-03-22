@@ -42,6 +42,7 @@ class SpacyEntityExtractor(EntityExtractor):
                 "entity": ent.label_,
                 "value": ent.text,
                 "start": ent.start_char,
+                "confidence": None,
                 "end": ent.end_char
             }
             for ent in doc.ents]
