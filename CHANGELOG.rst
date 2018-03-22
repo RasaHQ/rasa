@@ -17,7 +17,7 @@ Added
 - support for markdown files containing regex-features or synonyms only
 - added ability to list projects in cloud storage services for model loading
 - server evaluation endpoint at ``POST /evaluate``
-
+- CRF entity recognizer now returns a confidence score when extracting entities
 
 Changed
 -------

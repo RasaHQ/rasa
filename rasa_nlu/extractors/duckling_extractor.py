@@ -136,6 +136,7 @@ class DucklingExtractor(EntityExtractor):
                       "end": match["end"],
                       "text": match["text"],
                       "value": value,
+                      "confidence": 1.0,
                       "additional_info": match["value"],
                       "entity": match["dim"]}
 
