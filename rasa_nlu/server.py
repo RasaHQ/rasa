@@ -39,8 +39,6 @@ def create_argparser():
     parser.add_argument('-l', '--language',
                         choices=['de', 'en'],
                         help="model and data language")
-    parser.add_argument('-m', '--mitie_file',
-                        help='file with mitie total_word_feature_extractor')
     parser.add_argument('-p', '--path',
                         help="path where project files will be saved")
     parser.add_argument('--pipeline',
