@@ -18,6 +18,7 @@ from builtins import range
 from future.utils import PY3
 from typing import Any, Dict, List, Optional, Text
 
+from rasa_nlu import utils
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.featurizers import Featurizer
 from rasa_nlu.training_data import Message
@@ -107,30 +108,21 @@ class NGramFeaturizer(Featurizer):
              **kwargs  # type: **Any
              ):
         # type: (...) -> NGramFeaturizer
-        import cloudpickle
 
         meta = model_metadata.get(cls.name)
-        if model_dir:
-            classifier_file = os.path.join(model_dir, NGRAM_MODEL_FILE_NAME)
-            with io.open(classifier_file, 'rb') as f:  # pramga: no cover
-                if PY3:
-                    return cloudpickle.load(f, encoding="latin-1")
-                else:
-                    return cloudpickle.load(f)
+        classifier_file = os.path.join(model_dir, NGRAM_MODEL_FILE_NAME)
+
+        if os.path.exists(classifier_file):
+            return utils.pycloud_unpickle(classifier_file)
         else:
             return NGramFeaturizer(meta)
 
     def persist(self, model_dir):
-        # type: (Text) -> Dict[Text, Any]
-        """Persist this model into the passed directory.
-
-        Return the metadata necessary to load the model again."""
-        import cloudpickle
+        # type: (Text) -> Optional[Dict[Text, Any]]
+        """Persist this model into the passed directory."""
 
         classifier_file = os.path.join(model_dir, NGRAM_MODEL_FILE_NAME)
-        with io.open(classifier_file, 'wb') as f:
-            cloudpickle.dump(self, f)
-
+        utils.pycloud_pickle(classifier_file, self)
         return {self.name: self.component_config}
 
     def train_on_sentences(self, examples):
@@ -163,18 +155,22 @@ class NGramFeaturizer(Featurizer):
             new_sents.append(self._remove_in_vocab_words_from_sentence(example))
         return new_sents
 
-    def _remove_in_vocab_words_from_sentence(self, example):
-        """Filter for words that do not have a word vector.
+    @staticmethod
+    def _is_ngram_worthy(token):
+        """Decide if we should use this token for ngram counting.
 
         Excludes every word with digits in them, hyperlinks or
         an assigned word vector."""
+        return (not token.has_vector and not token.like_url
+                and not token.like_num and not token.like_email
+                and not token.is_punct)
 
-        cleaned_tokens = []
-        for token in example.get("spacy_doc"):
-            if (not token.has_vector and not token.like_url
-                    and not token.like_num and not token.like_email
-                    and not token.is_punct):
-                cleaned_tokens.append(token)
+    def _remove_in_vocab_words_from_sentence(self, example):
+        """Filter for words that do not have a word vector."""
+
+        cleaned_tokens = [token
+                          for token in example.get("spacy_doc")
+                          if self._is_ngram_worthy(token)]
 
         # keep only out-of-vocab 'non_word' words
         non_words = ' '.join([t.text for t in cleaned_tokens])
@@ -190,56 +186,68 @@ class NGramFeaturizer(Featurizer):
         # add cleaned sentence to list of these sentences
         return non_words
 
-    def _sort_applicable_ngrams(self, list_of_ngrams, examples, labels):
+    def _intents_with_enough_examples(self, labels, examples):
+        """Filter examples where we do not have a min number of examples."""
+
+        min_intent_examples = self.component_config["min_intent_examples"]
+        usable_labels = []
+
+        for label in np.unique(labels):
+            lab_sents = np.array(examples)[np.array(labels) == label]
+            if len(lab_sents) < min_intent_examples:
+                continue
+            usable_labels.append(label)
+
+        return usable_labels
+
+    def _rank_ngrams_using_cv(self, examples, labels, list_of_ngrams):
+        from sklearn import linear_model, preprocessing
+
+        X = np.array(self._ngrams_in_sentences(examples, list_of_ngrams))
+
+        intent_encoder = preprocessing.LabelEncoder()
+        intent_encoder.fit(labels)
+        y = intent_encoder.transform(labels)
+
+        clf = linear_model.RandomizedLogisticRegression(C=1)
+        clf.fit(X, y)
+
+        # sort the ngrams according to the classification score
+        scores = clf.scores_
+        sorted_idxs = sorted(enumerate(scores), key=lambda x: -1 * x[1])
+        sorted_ngrams = [list_of_ngrams[i[0]] for i in sorted_idxs]
+
+        return sorted_ngrams
+
+    def _sort_applicable_ngrams(self, ngrams_list, examples, labels):
         """Given an intent classification problem and a list of ngrams,
 
         creates ordered list of most useful ngrams."""
 
-        if list_of_ngrams:
-            from sklearn import linear_model, preprocessing
+        if not ngrams_list:
+            return []
 
-            min_intent_examples = self.component_config["min_intent_examples"]
+        # make sure we have enough labeled instances for cv
+        usable_labels = self._intents_with_enough_examples(labels, examples)
 
-            # filter examples where we do not have
-            # enough labeled instances for cv
-            usable_labels = []
-            for label in np.unique(labels):
-                lab_sents = np.array(examples)[np.array(labels) == label]
-                if len(lab_sents) < min_intent_examples:
-                    continue
-                usable_labels.append(label)
+        mask = [label in usable_labels for label in labels]
+        if any(mask) and len(usable_labels) >= 2:
+            try:
+                examples = np.array(examples)[mask]
+                labels = np.array(labels)[mask]
 
-            mask = [label in usable_labels for label in labels]
-            if any(mask) and len(usable_labels) >= 2:
-                try:
-                    examples = np.array(examples)[mask]
-                    labels = np.array(labels)[mask]
-
-                    X = np.array(self._ngrams_in_sentences(examples,
-                                                           list_of_ngrams))
-                    intent_encoder = preprocessing.LabelEncoder()
-                    intent_encoder.fit(labels)
-                    y = intent_encoder.transform(labels)
-
-                    clf = linear_model.RandomizedLogisticRegression(C=1)
-                    clf.fit(X, y)
-                    scores = clf.scores_
-                    sort_idx = [i[0] for i in sorted(enumerate(scores),
-                                                     key=lambda x: -1 * x[1])]
-
-                    return np.array(list_of_ngrams)[sort_idx].tolist()
-                except ValueError as e:
-                    if "needs samples of at least 2 classes" in str(e):
-                        # we got unlucky during the random
-                        # sampling :( and selected a slice that
-                        # only contains one class
-                        return []
-                    else:
-                        raise e
-            else:
-                # there is no example we can use for the cross validation
-                return []
+                return self._rank_ngrams_using_cv(
+                        examples, labels, ngrams_list)
+            except ValueError as e:
+                if "needs samples of at least 2 classes" in str(e):
+                    # we got unlucky during the random
+                    # sampling :( and selected a slice that
+                    # only contains one class
+                    return []
+                else:
+                    raise e
         else:
+            # there is no example we can use for the cross validation
             return []
 
     def _ngrams_in_sentences(self, examples, ngrams):

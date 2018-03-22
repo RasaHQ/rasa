@@ -14,7 +14,7 @@ import simplejson
 import six
 from builtins import str
 import yaml
-from typing import List
+from typing import List, Any
 from typing import Optional
 from typing import Text
 
@@ -290,3 +290,25 @@ def configure_colored_logging(loglevel):
             fmt='%(asctime)s %(levelname)-8s %(name)s  - %(message)s',
             level_styles=level_styles,
             field_styles=field_styles)
+
+
+def pycloud_unpickle(file_name):
+    # type: (Text) -> Any
+    """Unpickle an object from file using cloudpickle."""
+    from future.utils import PY2
+    import cloudpickle
+
+    with io.open(file_name, 'rb') as f:  # pragma: no test
+        if PY2:
+            return cloudpickle.load(f)
+        else:
+            return cloudpickle.load(f, encoding="latin-1")
+
+
+def pycloud_pickle(file_name, obj):
+    # type: (Text, Any) -> None
+    """Pickle an object to a file using cloudpickle."""
+    import cloudpickle
+
+    with io.open(file_name, 'wb') as f:
+        cloudpickle.dump(obj, f)

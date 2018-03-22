@@ -17,6 +17,7 @@ from typing import Tuple
 
 import numpy as np
 
+from rasa_nlu import utils
 from rasa_nlu.classifiers import INTENT_RANKING_LENGTH
 from rasa_nlu.components import Component
 from rasa_nlu.config import RasaNLUModelConfig
@@ -202,28 +203,19 @@ class SklearnIntentClassifier(Component):
              **kwargs  # type: **Any
              ):
         # type: (...) -> SklearnIntentClassifier
-        import cloudpickle
 
-        if model_dir:
-            classifier_file = os.path.join(model_dir, SKLEARN_MODEL_FILE_NAME)
-            with io.open(classifier_file, 'rb') as f:  # pragma: no test
-                if PY3:
-                    return cloudpickle.load(f, encoding="latin-1")
-                else:
-                    return cloudpickle.load(f)
+        classifier_file = os.path.join(model_dir, SKLEARN_MODEL_FILE_NAME)
+
+        if os.path.exists(classifier_file):
+            return utils.pycloud_unpickle(classifier_file)
         else:
             return cls(model_metadata.get(cls.name))
 
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]
-        """Persist this model into the passed directory.
-
-        Return the metadata necessary to load the model again."""
-
-        import cloudpickle
+        """Persist this model into the passed directory."""
 
         classifier_file = os.path.join(model_dir, SKLEARN_MODEL_FILE_NAME)
-        with io.open(classifier_file, 'wb') as f:
-            cloudpickle.dump(self, f)
+        utils.pycloud_pickle(classifier_file, self)
 
         return {self.name: self.component_config}
