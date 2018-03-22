@@ -38,6 +38,7 @@ def run_cmdline(model_path, component_builder=None):
             text = text.decode("utf-8")
         r = interpreter.parse(text)
         print(json.dumps(r, indent=2))
+        logger.info("Next message:")
 
 
 if __name__ == '__main__':

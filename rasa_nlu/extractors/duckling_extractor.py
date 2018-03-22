@@ -52,6 +52,7 @@ def convert_duckling_format_to_rasa(matches):
                   "end": match["end"],
                   "text": match["text"],
                   "value": value,
+                  "confidence": 1.0,
                   "additional_info": match["value"],
                   "entity": match["dim"]}
 
@@ -160,7 +161,13 @@ class DucklingExtractor(EntityExtractor):
             return
 
         ref_time = self.reference_time_from_message(message)
-        matches = self.duckling.parse(message.text, reference_time=ref_time)
+
+        try:
+            matches = self.duckling.parse(message.text, reference_time=ref_time)
+        except Exception as e:
+            logging.warn("Invalid Duckling parse. Error {e}", e)
+            matches = []
+
         dimensions = self.component_config["dimensions"]
         relevant_matches = filter_irrelevant_matches(matches, dimensions)
 

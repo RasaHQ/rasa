@@ -58,7 +58,8 @@ Download the file (json format) and open it, and you'll see a list of training e
           "start": 8, 
           "end": 15, 
           "value": "chinese", 
-          "entity": "cuisine"
+          "entity": "cuisine",
+          "confidence": 0.875
         }
       ]
     }
@@ -143,7 +144,8 @@ which should return
                 "end": 24,
                 "value": "mexican",
                 "entity": "cuisine",
-                "extractor": "ner_crf"
+                "extractor": "ner_crf",
+                "confidence": 0.875
             }
         ],
         "intent_ranking": [
@@ -197,7 +199,8 @@ With very little data, rasa NLU can in certain cases already generalise concepts
                 "value": "italian",
                 "start": 12,
                 "end": 19,
-                "extractor": "ner_crf"
+                "extractor": "ner_crf",
+                "confidence": 0.875
             }
         ],
         "text": "I want some italian food"

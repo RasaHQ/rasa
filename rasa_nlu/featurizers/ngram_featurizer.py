@@ -227,7 +227,7 @@ class NGramFeaturizer(Featurizer):
                     sort_idx = [i[0] for i in sorted(enumerate(scores),
                                                      key=lambda x: -1 * x[1])]
 
-                    return np.array(list_of_ngrams)[sort_idx]
+                    return np.array(list_of_ngrams)[sort_idx].tolist()
                 except ValueError as e:
                     if "needs samples of at least 2 classes" in str(e):
                         # we got unlucky during the random
@@ -324,6 +324,10 @@ class NGramFeaturizer(Featurizer):
         from sklearn.model_selection import cross_val_score
 
         max_ngrams = self.component_config["max_number_of_ngrams"]
+
+        if not self.all_ngrams:
+            logger.debug("Found no ngrams. Using existing features.")
+            return 0
 
         if examples:
             collected_features = [e.get("text_features")
