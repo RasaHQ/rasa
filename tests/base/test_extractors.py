@@ -61,7 +61,7 @@ def test_crf_json_from_BILOU(spacy_nlp):
     ext = CRFEntityExtractor()
     ext.BILOU_flag = True
     sentence = u"I need a home cleaning close-by"
-    doc  = {"spacy_doc": spacy_nlp(sentence)}
+    doc = {"spacy_doc": spacy_nlp(sentence)}
     r = ext._from_crf_to_json(Message(sentence, doc),
                               [{'O': 1.0},
                                {'O': 1.0},
