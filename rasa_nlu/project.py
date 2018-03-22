@@ -129,9 +129,10 @@ class Project(object):
         self._writer_lock.acquire()
         try:
             del self._models[model_name]
+            self._models[model_name] = None
+            return model_name
         finally:
             self._writer_lock.release()
-            return model_name
 
     def _latest_project_model(self):
         """Retrieves the latest trained model for an project"""
