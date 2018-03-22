@@ -147,10 +147,10 @@ class MarkdownWriter(TrainingDataWriter):
     def _generate_training_examples_md(self, training_data):
         """generates markdown training examples."""
         training_examples = sorted([e.as_dict() for e in training_data.training_examples],
-                                      key=lambda k: k['intent'])
+                                   key=lambda k: k['intent'])
         md = u''
         for i, example in enumerate(training_examples):
-            if i == 0 or training_examples[i-1]['intent'] != example['intent']:
+            if i == 0 or training_examples[i - 1]['intent'] != example['intent']:
                 md += self._generate_section_header_md(INTENT, example['intent'], i != 0)
 
             md += self._generate_item_md(self._generate_message_md(example))
@@ -160,7 +160,7 @@ class MarkdownWriter(TrainingDataWriter):
     def _generate_synonyms_md(self, training_data):
         """generates markdown for entity synomyms."""
         entity_synonyms = sorted(training_data.entity_synonyms.items(),
-                                      key=lambda x: x[1])
+                                 key=lambda x: x[1])
         md = u''
         for i, synonym in enumerate(entity_synonyms):
             if i == 0 or entity_synonyms[i - 1][1] != synonym[1]:
@@ -183,7 +183,7 @@ class MarkdownWriter(TrainingDataWriter):
 
         return md
 
-    def _generate_section_header_md(self, section_type, title, prepend_newline = True):
+    def _generate_section_header_md(self, section_type, title, prepend_newline=True):
         """generates markdown section header."""
         prefix = "\n" if prepend_newline else ""
         return prefix + "## {}:{}\n".format(section_type, title)
@@ -218,4 +218,3 @@ class MarkdownWriter(TrainingDataWriter):
             entity_type += ":{}".format(entity['value'])
 
         return '[{}]({})'.format(entity_text, entity_type)
-

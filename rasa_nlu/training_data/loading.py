@@ -42,7 +42,7 @@ def load_data(resource_name, language='en'):
     # type: (Text, Optional[Text]) -> TrainingData
     """Loads training data from disk and merges them if multiple files are found."""
 
-    files = utils.recursively_find_files(resource_name)
+    files = utils.list_files(resource_name)
     data_sets = [_load(f, language) for f in files]
     data_sets = [ds for ds in data_sets if ds]
     if len(data_sets) == 0:

@@ -175,13 +175,13 @@ class TrainingData(object):
         for intent, count in self.examples_per_intent.items():
             if count < self.MIN_EXAMPLES_PER_INTENT:
                 warnings.warn("Intent '{}' has only {} training examples! "
-                            "Minimum is {}, training may fail.".format(intent, count,
-                                                                       self.MIN_EXAMPLES_PER_INTENT))
+                              "Minimum is {}, training may fail.".format(intent, count,
+                                                                         self.MIN_EXAMPLES_PER_INTENT))
         for entity_type, count in self.examples_per_entity.items():
             if count < self.MIN_EXAMPLES_PER_ENTITY:
                 warnings.warn("Entity '{}' has only {} training examples! "
-                            "minimum is {}, training may fail.".format(entity_type, count,
-                                                                       self.MIN_EXAMPLES_PER_ENTITY))
+                              "minimum is {}, training may fail.".format(entity_type, count,
+                                                                         self.MIN_EXAMPLES_PER_ENTITY))
 
     def print_stats(self):
         logger.info("Training data stats: \n" +

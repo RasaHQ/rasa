@@ -16,7 +16,7 @@ the processing has finished. For example, for the sentence ``"I am looking for C
     {
         "text": "I am looking for Chinese food",
         "entities": [
-            {"start": 8, "end": 15, "value": "chinese", "entity": "cuisine", "extractor": "ner_crf"}
+            {"start": 8, "end": 15, "value": "chinese", "entity": "cuisine", "extractor": "ner_crf", "confidence": 0.864}
         ],
         "intent": {"confidence": 0.6485910906220309, "name": "restaurant_search"},
         "intent_ranking": [
@@ -39,10 +39,6 @@ Here is a list of the existing templates:
 +===============+===================================================================================================================================================================+
 | spacy_sklearn | ``["nlp_spacy", "tokenizer_spacy", "intent_entity_featurizer_regex", "intent_featurizer_spacy", "ner_crf", "ner_synonyms",  "intent_classifier_sklearn"]``        |
 +---------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| mitie         | ``["nlp_mitie", "tokenizer_mitie", "ner_mitie", "ner_synonyms", "intent_entity_featurizer_regex", "intent_classifier_mitie"]``                                    |
-+---------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| mitie_sklearn | ``["nlp_mitie", "tokenizer_mitie", "ner_mitie", "ner_synonyms", "intent_entity_featurizer_regex", "intent_featurizer_mitie", "intent_classifier_sklearn"]``       |
-+---------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | keyword       | ``["intent_classifier_keyword"]``                                                                                                                                 |
 +---------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
@@ -58,15 +54,6 @@ a look at the corresponding source code for the component. ``Output`` describes,
 output result of processing a message. If no output is present, the component is most likely a preprocessor for another
 component.
 
-nlp_mitie
-~~~~~~~~~
-
-:Short: MITIE initializer
-:Outputs: nothing
-:Description:
-    Initializes mitie structures. Every mitie component relies on this, hence this should be put at the beginning
-    of every pipeline that uses any mitie components.
-
 nlp_spacy
 ~~~~~~~~~
 
@@ -75,20 +62,6 @@ nlp_spacy
 :Description:
     Initializes spacy structures. Every spacy component relies on this, hence this should be put at the beginning
     of every pipeline that uses any spacy components.
-
-intent_featurizer_mitie
-~~~~~~~~~~~~~~~~~~~~~~~
-
-:Short: MITIE intent featurizer
-:Outputs: nothing, used as an input to intent classifiers that need intent features (e.g. ``intent_classifier_sklearn``)
-:Description:
-    Creates feature for intent classification using the MITIE featurizer.
-
-    .. note::
-
-        NOT used by the ``intent_classifier_mitie`` component. Currently, only ``intent_classifier_sklearn`` is able
-        to use precomputed features.
-
 
 intent_featurizer_spacy
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -127,23 +100,6 @@ intent_classifier_keyword
 :Description:
     This classifier is mostly used as a placeholder. It is able to recognize `hello` and
     `goodbye` intents by searching for these keywords in the passed messages.
-
-intent_classifier_mitie
-~~~~~~~~~~~~~~~~~~~~~~~
-
-:Short: MITIE intent classifier (using a `text categorizer <https://github.com/mit-nlp/MITIE/blob/master/examples/python/text_categorizer_pure_model.py>`_)
-:Outputs: ``intent``
-:Output-Example:
-
-    .. code-block:: json
-
-        {
-            "intent": {"name": "greet", "confidence": 0.98343}
-        }
-
-:Description:
-    This classifier uses MITIE to perform intent classification. The underlying classifier
-    is using a multi class linear SVM with a sparse linear kernel (see `mitie trainer code <https://github.com/mit-nlp/MITIE/blob/master/mitielib/src/text_categorizer_trainer.cpp#L222>`_).
 
 intent_classifier_sklearn
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -191,16 +147,9 @@ tokenizer_whitespace
 :Short: Tokenizer using whitespaces as a separator
 :Outputs: nothing
 :Description:
-    Creates a token for every whitespace separated character sequence. Can be used to define tokesn for the MITIE entity
-    extractor.
-
-tokenizer_mitie
-~~~~~~~~~~~~~~~
-
-:Short: Tokenizer using MITIE
-:Outputs: nothing
-:Description:
-        Creates tokens using the MITIE tokenizer. Can be used to define tokens for the MITIE entity extractor.
+    Creates a token for every whitespace separated character sequence. This
+    tokenizer can not be used together with spaCy. spaCy has a build-in
+    tokenizer it will use.
 
 tokenizer_spacy
 ~~~~~~~~~~~~~~~
@@ -208,29 +157,7 @@ tokenizer_spacy
 :Short: Tokenizer using spacy
 :Outputs: nothing
 :Description:
-        Creates tokens using the spacy tokenizer. Can be used to define tokens for the MITIE entity extractor.
-
-
-ner_mitie
-~~~~~~~~~
-
-:Short: MITIE entity extraction (using a `mitie ner trainer <https://github.com/mit-nlp/MITIE/blob/master/mitielib/src/ner_trainer.cpp>`_)
-:Outputs: appends ``entities``
-:Output-Example:
-
-    .. code-block:: json
-
-        {
-            "entities": [{"value": "New York City",
-                          "start": 20,
-                          "end": 33,
-                          "entity": "city",
-                          "extractor": "ner_mitie"}]
-        }
-
-:Description:
-    This uses the MITIE entitiy extraction to find entities in a message. The underlying classifier
-    is using a multi class linear SVM with a sparse linear kernel and custom features.
+        Creates tokens using the spacy tokenizer.
 
 ner_spacy
 ~~~~~~~~~
@@ -246,12 +173,14 @@ ner_spacy
                           "start": 20,
                           "end": 33,
                           "entity": "city",
+                          "confidence": null,
                           "extractor": "ner_spacy"}]
         }
 
 :Description:
     Using spacy this component predicts the entities of a message. spacy uses a statistical BILUO transition model.
     As of now, this component can only use the spacy builtin entity extraction models and can not be retrained.
+    This extractor does not provide any confidence scores.
 
 ner_synonyms
 ~~~~~~~~~~~~
@@ -303,6 +232,7 @@ ner_crf
                           "start": 20,
                           "end": 33,
                           "entity": "city",
+                          "confidence": 0.874,
                           "extractor": "ner_crf"}]
         }
 
@@ -328,6 +258,7 @@ ner_duckling
                           "entity": "time",
                           "start": 48,
                           "value": "2017-04-10T00:00:00.000+02:00",
+                          "confidence": 1.0,
                           "extractor": "ner_duckling"}]
         }
 
@@ -341,6 +272,8 @@ ner_duckling
     for the duckling component, the component will extract two entities: ``10`` as a number and
     ``in 10 minutes`` as a time from the text ``I will be there in 10 minutes``. In such a
     situation, your application would have to decide which entity type is be the correct one.
+    The extractor will always return `1.0` as a confidence, as it is a rule
+    based system.
 
 Creating new Components
 -----------------------

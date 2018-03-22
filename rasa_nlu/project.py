@@ -12,6 +12,7 @@ import logging
 from builtins import object
 from threading import Lock
 
+from rasa_nlu import utils
 from typing import Text, List
 
 from rasa_nlu.config import RasaNLUConfig
@@ -56,16 +57,54 @@ class Project(object):
             self._writer_lock.release()
         self._reader_lock.release()
 
-    def parse(self, text, time=None, model_name=None):
+    def _load_local_model(self, requested_model_name=None):
+        if requested_model_name is None:  # user want latest model
+            # NOTE: for better parse performance, currently although user may want
+            # latest model by set requested_model_name explicitly to None, we are
+            # not refresh model list from local and cloud which is pretty slow.
+            # User can specific requested_model_name to the latest model name,
+            # then model will be cached, this is a kind of workaround to
+            # refresh latest project model.
+            # BTW if refresh function is wanted, maybe add implement code to
+            # `_latest_project_model()` is a good choice.
+
+            logger.debug("No model specified. Using default")
+            return self._latest_project_model()
+
+        elif requested_model_name in self._models:  # model exists in cache
+            return requested_model_name
+
+        return None  # local model loading failed!
+
+    def _dynamic_load_model(self, requested_model_name=None):
+        # type: (Text) -> Text
+
+        # first try load from local cache
+        local_model = self._load_local_model(requested_model_name)
+        if local_model:
+            return local_model
+
+        # now model not exists in model list cache
+        # refresh model list from local and cloud
+
+        # NOTE: if a malicious user sent lots of requests
+        # with not existing model will cause performance issue.
+        # because get anything from cloud is a time-consuming task
+        self._search_for_models()
+
+        # retry after re-fresh model cache
+        local_model = self._load_local_model(requested_model_name)
+        if local_model:
+            return local_model
+
+        # still not found user specified model
+        logger.warn("Invalid model requested. Using default")
+        return self._latest_project_model()
+
+    def parse(self, text, time=None, requested_model_name=None):
         self._begin_read()
 
-        # Lazy model loading
-        if not model_name or model_name not in self._models:
-            model_name = self._latest_project_model()
-            if model_name not in self._models:
-                logger.warn("Invalid model requested. Using default")
-            else:
-                logger.debug("No model specified. Using default")
+        model_name = self._dynamic_load_model(requested_model_name)
 
         self._loader_lock.acquire()
         try:
@@ -171,6 +210,7 @@ class Project(object):
         except Exception as e:
             logger.warn("Using default interpreter, couldn't fetch "
                         "model: {}".format(e))
+            raise  # re-raise this exception because nothing we can do now
 
     @staticmethod
     def _default_model_metadata():
@@ -184,5 +224,4 @@ class Project(object):
             return []
         else:
             return [os.path.relpath(model, path)
-                    for model in glob.glob(os.path.join(path, '*'))
-                    if os.path.isdir(model)]
+                    for model in utils.list_subdirectories(path)]

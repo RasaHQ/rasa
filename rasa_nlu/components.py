@@ -201,8 +201,7 @@ class Component(object):
         add information to the context that is passed through
         the pipeline during training and message parsing. Most
         components do not need to implement this method.
-        It's mostly used to initialize framework environments
-        like MITIE and spacy
+        It's mostly used to initialize framework environments like spacy
         (e.g. loading word vectors for the pipeline)."""
         pass
 

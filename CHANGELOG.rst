@@ -15,13 +15,26 @@ Added
 - support for regex features in markdown training format
 - support for splitting and training data into multiple and mixing formats
 - support for markdown files containing regex-features or synonyms only
+- added ability to list projects in cloud storage services for model loading
+- server evaluation endpoint at ``POST /evaluate``
+- CRF entity recognizer now returns a confidence score when extracting entities
 
 Changed
 -------
-- Regex features are now sorted internally. **retrain your model if you use regex features**
-- The keyword intent classifier now returns ``null`` instead of ``"None"`` as intent name in the json result
-if there's no match
+- Regex features are now sorted internally.
+  **retrain your model if you use regex features**
+- The keyword intent classifier now returns ``null`` instead
+  of ``"None"`` as intent name in the json result if there's no match
+- in teh evaluation results, replaced ``O`` with the string
+  ``no_entity`` for better understanding
+- The ``CRFEntityExtractor`` now only trains entity examples that have
+  ``"extractor": "ner_crf"`` or no extractor at all
+- Ignore hidden files when listing projects or models
 - Docker Images now run on python 3.6 for better non-latin character set support
+
+Removed
+-------
+- MITIE support - backend is no longer supported.
 
 Fixed
 -----

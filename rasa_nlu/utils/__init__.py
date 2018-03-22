@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import errno
+import glob
 import io
 import json
 import os
@@ -52,28 +53,48 @@ def create_dir_for_file(file_path):
             raise
 
 
-def recursively_find_files(resource_name):
+def list_directory(path):
     # type: (Text) -> List[Text]
-    """Traverse directory hierarchy to find files.
+    """Returns all files and folders excluding hidden files.
 
-    `resource_name` can be a folder or a file. In both cases
-    we will return a list of files."""
+    If the path points to a file, returns the file. This is a recursive
+    implementation returning files in any depth of the path."""
 
-    if not isinstance(resource_name, six.string_types):
+    if not isinstance(path, six.string_types):
         raise ValueError("Resourcename must be a string type")
 
-    found = []
-    if os.path.isfile(resource_name):
-        found.append(resource_name)
-    elif os.path.isdir(resource_name):
-        for root, directories, files in os.walk(resource_name):
-            for f in files:
-                found.append(os.path.join(root, f))
+    if os.path.isfile(path):
+        return [path]
+    elif os.path.isdir(path):
+        results = []
+        for base, dirs, files in os.walk(path):
+            # remove hidden files
+            goodfiles = filter(lambda x: not x.startswith('.'), files)
+            results.extend(os.path.join(base, f) for f in goodfiles)
+        return results
     else:
         raise ValueError("Could not locate the resource '{}'."
-                         "".format(os.path.abspath(resource_name)))
+                         "".format(os.path.abspath(path)))
 
-    return found
+
+def list_files(path):
+    # type: (Text) -> List[Text]
+    """Returns all files excluding hidden files.
+
+    If the path points to a file, returns the file."""
+
+    return [fn for fn in list_directory(path) if os.path.isfile(fn)]
+
+
+def list_subdirectories(path):
+    # type: (Text) -> List[Text]
+    """Returns all folders excluding hidden files.
+
+    If the path points to a file, returns an empty list."""
+
+    return [fn
+            for fn in glob.glob(os.path.join(path, '*'))
+            if os.path.isdir(fn)]
 
 
 def lazyproperty(fn):
@@ -179,3 +200,28 @@ def build_entity(start, end, value, entity_type, **kwargs):
 
     entity.update(kwargs)
     return entity
+
+
+def is_model_dir(model_dir):
+    """Checks if the given directory contains a model and can be safely removed.
+
+    specifically checks if the directory has no subdirectories and
+    if all files have an appropriate ending."""
+    allowed_extensions = {".json", ".pkl", ".dat"}
+    dir_tree = list(os.walk(model_dir))
+    if len(dir_tree) != 1:
+        return False
+    model_dir, child_dirs, files = dir_tree[0]
+    file_extenstions = [os.path.splitext(f)[1] for f in files]
+    only_valid_files = all([ext in allowed_extensions for ext in file_extenstions])
+    return only_valid_files
+
+
+def remove_model(model_dir):
+    """Removes a model directory and all its content."""
+    import shutil
+    if is_model_dir(model_dir):
+        shutil.rmtree(model_dir)
+        return True
+    else:
+        raise ValueError("Cannot remove {}, it seems it is not a model directory".format(model_dir))

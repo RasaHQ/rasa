@@ -1,7 +1,7 @@
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 
 def test_luis_request():
@@ -70,7 +70,7 @@ def test_luis_response():
                 "endIndex": None,
                 "score": None
             } for e in data["entities"]
-            ]
+        ]
     }
 
 

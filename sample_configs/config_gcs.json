@@ -1,0 +1,7 @@
+{
+  "pipeline": "spacy_sklearn",
+  "path" : "./",
+  "data" : "./data/examples/rasa/demo-rasa.json",
+  "storage": "gcs",
+  "bucket_name": "rasa-models"
+}

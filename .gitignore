@@ -4,6 +4,7 @@ dist/
 data/*
 !data/examples
 !data/test
+!data/README.md
 docs/_build
 server/
 scala/
@@ -36,3 +37,4 @@ test_projects/test_project_*
 
 rasa_nlu/tmbo_test.py
 .mypy_cache/
+*.tar.gz

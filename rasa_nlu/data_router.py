@@ -3,28 +3,28 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import datetime
 import glob
 import io
 import logging
-import os
 import tempfile
 
+import datetime
+import os
 from builtins import object
-from typing import Text, Dict, Any
-from future.utils import PY3
-
 from concurrent.futures import ProcessPoolExecutor as ProcessPool
+from future.utils import PY3
+from rasa_nlu import utils
+from rasa_nlu.components import ComponentBuilder
+from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu.evaluate import get_evaluation_metrics, clean_intent_labels
+from rasa_nlu.model import InvalidProjectError
+from rasa_nlu.project import Project
+from rasa_nlu.train import do_train_in_worker
+from rasa_nlu.training_data.loading import load_data
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from twisted.logger import jsonFileLogObserver, Logger
-
-from rasa_nlu import utils
-from rasa_nlu.project import Project
-from rasa_nlu.components import ComponentBuilder
-from rasa_nlu.config import RasaNLUConfig
-from rasa_nlu.model import Metadata, InvalidProjectError, Interpreter
-from rasa_nlu.train import do_train_in_worker
+from typing import Text, Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ class AlreadyTrainingError(Exception):
 
 
 def deferred_from_future(future):
-    """Converts a concurrent.futures.Future object to a twisted.internet.defer.Deferred obejct.
+    """Converts a concurrent.futures.Future object to a twisted.internet.defer.Deferred object.
     See: https://twistedmatrix.com/pipermail/twisted-python/2011-January/023296.html
     """
     d = Deferred()
@@ -75,12 +75,13 @@ def deferred_from_future(future):
 
 class DataRouter(object):
     def __init__(self, config, component_builder):
-        self._training_processes = config['max_training_processes'] if config['max_training_processes'] > 0 else 1
+        self._training_processes = max(config['max_training_processes'], 1)
         self.config = config
         self.responses = self._create_query_logger(config)
         self.model_dir = config['path']
         self.emulator = self._create_emulator()
-        self.component_builder = component_builder if component_builder else ComponentBuilder(use_cache=True)
+        self.component_builder = component_builder if component_builder else ComponentBuilder(
+            use_cache=True)
         self.project_store = self._create_project_store()
         self.pool = ProcessPool(self._training_processes)
 
@@ -96,34 +97,58 @@ class DataRouter(object):
         if response_log_dir:
             # We need to generate a unique file name, even in multiprocess environments
             timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
-            log_file_name = "rasa_nlu_log-{}-{}.log".format(timestamp, os.getpid())
+            log_file_name = "rasa_nlu_log-{}-{}.log".format(timestamp,
+                                                            os.getpid())
             response_logfile = os.path.join(response_log_dir, log_file_name)
             # Instantiate a standard python logger, which we are going to use to log requests
             utils.create_dir_for_file(response_logfile)
-            query_logger = Logger(observer=jsonFileLogObserver(io.open(response_logfile, 'a', encoding='utf8')),
-                                  namespace='query-logger')
+            query_logger = Logger(observer=jsonFileLogObserver(
+                io.open(response_logfile, 'a', encoding='utf8')),
+                namespace='query-logger')
             # Prevents queries getting logged with parent logger --> might log them to stdout
             logger.info("Logging requests to '{}'.".format(response_logfile))
             return query_logger
         else:
             # If the user didn't provide a logging directory, we wont log!
-            logger.info("Logging of requests is disabled. (No 'request_log' directory configured)")
+            logger.info(
+                "Logging of requests is disabled. (No 'request_log' directory configured)")
             return None
 
-    def _create_project_store(self):
-        projects = []
-
+    def _collect_projects(self):
         if os.path.isdir(self.config['path']):
             projects = os.listdir(self.config['path'])
+        else:
+            projects = []
+
+        projects.extend(self._list_projects_in_cloud())
+        return projects
+
+    def _create_project_store(self):
+        projects = self._collect_projects()
 
         project_store = {}
 
         for project in projects:
-            project_store[project] = Project(self.config, self.component_builder, project)
+            project_store[project] = Project(self.config,
+                                             self.component_builder,
+                                             project)
 
         if not project_store:
-            project_store[RasaNLUConfig.DEFAULT_PROJECT_NAME] = Project(self.config)
+            project_store[RasaNLUConfig.DEFAULT_PROJECT_NAME] = Project(
+                self.config)
         return project_store
+
+    def _list_projects_in_cloud(self):
+        try:
+            from rasa_nlu.persistor import get_persistor
+            p = get_persistor(self.config)
+            if p is not None:
+                return p.list_projects()
+            else:
+                return []
+        except Exception:
+            logger.exception("Failed to list projects.")
+            return []
 
     def _create_emulator(self):
         """Sets which NLU webservice to emulate among those supported by Rasa"""
@@ -153,26 +178,70 @@ class DataRouter(object):
 
         if project not in self.project_store:
             projects = self._list_projects(self.config['path'])
+
+            cloud_provided_projects = self._list_projects_in_cloud()
+            projects.extend(cloud_provided_projects)
+
             if project not in projects:
-                raise InvalidProjectError("No project found with name '{}'.".format(project))
+                raise InvalidProjectError(
+                    "No project found with name '{}'.".format(project))
             else:
                 try:
-                    self.project_store[project] = Project(self.config, self.component_builder, project)
+                    self.project_store[project] = Project(self.config,
+                                                          self.component_builder,
+                                                          project)
                 except Exception as e:
-                    raise InvalidProjectError("Unable to load project '{}'. Error: {}".format(project, e))
+                    raise InvalidProjectError(
+                        "Unable to load project '{}'. Error: {}".format(
+                            project, e))
 
-        response, used_model = self.project_store[project].parse(data['text'], data.get('time', None), model)
+        time = data.get('time')
+        response, used_model = self.project_store[project].parse(data['text'],
+                                                                 time,
+                                                                 model)
 
         if self.responses:
-            self.responses.info('', user_input=response, project=project, model=used_model)
+            self.responses.info('', user_input=response, project=project,
+                                model=used_model)
+
         return self.format_response(response)
 
     @staticmethod
     def _list_projects(path):
         """List the projects in the path, ignoring hidden directories."""
         return [os.path.basename(fn)
-                for fn in glob.glob(os.path.join(path, '*'))
-                if os.path.isdir(fn)]
+                for fn in utils.list_subdirectories(path)]
+
+    @staticmethod
+    def create_temporary_file(data, suffix=""):
+        """Creates a tempfile.NamedTemporaryFile object for data"""
+
+        if PY3:
+            f = tempfile.NamedTemporaryFile("w+", suffix=suffix,
+                                            delete=False, encoding="utf-8")
+            f.write(data)
+        else:
+            f = tempfile.NamedTemporaryFile("w+", suffix=suffix,
+                                            delete=False)
+            f.write(data.encode("utf-8"))
+
+        f.close()
+        return f
+
+    def parse_training_examples(self, examples, project, model):
+        # type: (Optional[List[Message]], Text, Text) -> List[Dict[Text, Text]]
+        """Parses a list of training examples to the project interpreter"""
+
+        predictions = []
+        for ex in examples:
+            logger.debug("Going to parse: {}".format(ex.as_dict()))
+            response, _ = self.project_store[project].parse(ex.text,
+                                                            None,
+                                                            model)
+            logger.debug("Received response: {}".format(response))
+            predictions.append(response)
+
+        return predictions
 
     def format_response(self, data):
         return self.emulator.normalise_response_json(data)
@@ -182,20 +251,17 @@ class DataRouter(object):
         # be other trainings run in different processes we don't know about.
 
         return {
-            "available_projects": {name: project.as_dict() for name, project in self.project_store.items()}
+            "available_projects": {
+                name: project.as_dict()
+                for name, project in self.project_store.items()
+            }
         }
 
     def start_train_process(self, data, config_values):
         # type: (Text, Dict[Text, Any]) -> Deferred
         """Start a model training."""
 
-        if PY3:
-            f = tempfile.NamedTemporaryFile("w+", suffix="_training_data", delete=False, encoding="utf-8")
-            f.write(data)
-        else:
-            f = tempfile.NamedTemporaryFile("w+", suffix="_training_data", delete=False)
-            f.write(data.encode("utf-8"))
-        f.close()
+        f = self.create_temporary_file(data, "_training_data")
         # TODO: fix config handling
         _config = self.config.as_dict()
         for key, val in config_values.items():
@@ -212,7 +278,9 @@ class DataRouter(object):
             else:
                 self.project_store[project].status = 1
         elif project not in self.project_store:
-            self.project_store[project] = Project(self.config, self.component_builder, project)
+            self.project_store[project] = Project(self.config,
+                                                  self.component_builder,
+                                                  project)
             self.project_store[project].status = 1
 
         def training_callback(model_path):
@@ -221,7 +289,8 @@ class DataRouter(object):
             return model_dir
 
         def training_errback(failure):
-            target_project = self.project_store.get(failure.value.failed_target_project)
+            target_project = self.project_store.get(
+                failure.value.failed_target_project)
             if target_project:
                 target_project.status = 0
             return failure
@@ -234,3 +303,46 @@ class DataRouter(object):
         result.addErrback(training_errback)
 
         return result
+
+    def evaluate(self, data, project=None, model=None):
+        # type: (Text, Optional[Text], Optional[Text]) -> Dict[Text, Any]
+        """Perform a model evaluation."""
+
+        project = project or RasaNLUConfig.DEFAULT_PROJECT_NAME
+        model = model or None
+        f = self.create_temporary_file(data, "_training_data")
+        test_data = load_data(f.name)
+
+        if project not in self.project_store:
+            raise InvalidProjectError("Project {} could not "
+                                      "be found".format(project))
+
+        preds_json = self.parse_training_examples(test_data.intent_examples,
+                                                  project,
+                                                  model)
+
+        predictions = [
+            {"text": e.text,
+             "intent": e.data.get("intent"),
+             "predicted": p.get("intent", {}).get("name"),
+             "confidence": p.get("intent", {}).get("confidence")}
+            for e, p in zip(test_data.intent_examples, preds_json)
+        ]
+
+        y_true = [e.data.get("intent") for e in test_data.intent_examples]
+        y_true = clean_intent_labels(y_true)
+
+        y_pred = [p.get("intent", {}).get("name") for p in preds_json]
+        y_pred = clean_intent_labels(y_pred)
+
+        report, precision, f1, accuracy = get_evaluation_metrics(y_true,
+                                                                 y_pred)
+
+        return {
+            "intent_evaluation": {
+                "report": report,
+                "predictions": predictions,
+                "precision": precision,
+                "f1_score": f1,
+                "accuracy": accuracy}
+        }

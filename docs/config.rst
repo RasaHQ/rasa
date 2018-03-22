@@ -40,7 +40,7 @@ pipeline
 
 :Type: ``str`` or ``[str]``
 :Examples:
-    ``"mitie"`` or
+    ``"spacy_sklearn"`` or
     ``["nlp_spacy", "ner_spacy", "ner_synonyms"]``
 
 :Description:
@@ -151,14 +151,6 @@ emulate
 :Description:
     Format to be returned by the http server. If ``null`` (default) the rasa NLU internal format will be used.
     Otherwise, the output will be formatted according to the API specified.
-
-mitie_file
-~~~~~~~~~~
-
-:Type: ``str``
-:Examples: ``"data/total_word_feature_extractor.dat"``
-:Description:
-    File containing ``total_word_feature_extractor.dat`` (see :ref:`section_backends`)
 
 spacy_model_name
 ~~~~~~~~~~~~~~~~

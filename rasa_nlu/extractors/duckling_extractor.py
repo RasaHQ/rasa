@@ -99,7 +99,7 @@ class DucklingExtractor(EntityExtractor):
     def cache_key(cls, model_metadata):
         # type: (Metadata) -> Text
 
-        return cls.name + "-" + model_metadata.language
+        return None
 
     def process(self, message, **kwargs):
         # type: (Message, **Any) -> None
@@ -124,22 +124,25 @@ class DucklingExtractor(EntityExtractor):
                                 "current UTC time {} will be passed to "
                                 "duckling. Error: {}"
                                 "".format(message.time, ref_time, e))
+        try:
+            matches = self.duckling.parse(message.text, reference_time=ref_time)
+            relevant_matches = [match
+                                for match in matches
+                                if match["dim"] in self.dimensions]
 
-        matches = self.duckling.parse(message.text, reference_time=ref_time)
-        relevant_matches = [match
-                            for match in matches
-                            if match["dim"] in self.dimensions]
+            for match in relevant_matches:
+                value = extract_value(match)
+                entity = {"start": match["start"],
+                          "end": match["end"],
+                          "text": match["text"],
+                          "value": value,
+                          "confidence": 1.0,
+                          "additional_info": match["value"],
+                          "entity": match["dim"]}
 
-        for match in relevant_matches:
-            value = extract_value(match)
-            entity = {"start": match["start"],
-                      "end": match["end"],
-                      "text": match["text"],
-                      "value": value,
-                      "additional_info": match["value"],
-                      "entity": match["dim"]}
-
-            extracted.append(entity)
+                extracted.append(entity)
+        except Exception as e:
+            logging.warn("Invalid Duckling parse. Error {e}", e)
 
         extracted = self.add_extractor_name(extracted)
         message.set("entities", message.get("entities", []) + extracted,

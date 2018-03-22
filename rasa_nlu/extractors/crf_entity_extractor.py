@@ -17,7 +17,6 @@ from typing import Tuple
 from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.model import Metadata
-from rasa_nlu.tokenizers import Token
 from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
 from builtins import str
@@ -27,7 +26,6 @@ logger = logging.getLogger(__name__)
 if typing.TYPE_CHECKING:
     from spacy.language import Language
     import sklearn_crfsuite
-    from spacy.tokens import Doc
 
 
 class CRFEntityExtractor(EntityExtractor):
@@ -97,10 +95,13 @@ class CRFEntityExtractor(EntityExtractor):
 
         # checks whether there is at least one example with an entity annotation
         if training_data.entity_examples:
+            # filter out pre-trained entity examples
+            filtered_entity_examples = self.filter_trainable_entities(
+                training_data.entity_examples)
             # convert the dataset into features
             # this will train on ALL examples, even the ones
             # without annotations
-            dataset = self._create_dataset(training_data.training_examples)
+            dataset = self._create_dataset(filtered_entity_examples)
             # train the model
             self._train_model(dataset)
 
@@ -141,10 +142,28 @@ class CRFEntityExtractor(EntityExtractor):
         if self.ent_tagger is not None:
             text_data = self._from_text_to_crf(message)
             features = self._sentence_to_features(text_data)
-            ents = self.ent_tagger.predict_single(features)
+            ents = self.ent_tagger.predict_marginals_single(features)
             return self._from_crf_to_json(message, ents)
         else:
             return []
+
+    def most_likely_entity(self, idx, entities):
+        entity_probs = entities[idx]
+        if entity_probs:
+            label = max(entity_probs,
+                        key=lambda key: entity_probs[key])
+            if self.BILOU_flag:
+                # if we are using bilou flags, we will combine the prob
+                # of the B, I, L and U tags for an entity (so if we have a
+                # score of 60% for `B-address` and 40% and 30%
+                # for `I-address`, we will return 70%)
+                return label, sum([v
+                                   for k, v in entity_probs.items()
+                                   if k[2:] == label[2:]])
+            else:
+                return label, entity_probs[label]
+        else:
+            return "", 0.0
 
     def _from_crf_to_json(self, message, entities):
         # type: (Message, List[Any]) -> List[Dict[Text, Any]]
@@ -157,19 +176,30 @@ class CRFEntityExtractor(EntityExtractor):
         if self.BILOU_flag:
             # using the BILOU tagging scheme
             for word_idx in range(len(sentence_doc)):
-                entity = entities[word_idx]
+                bilou_label, confidence = self.most_likely_entity(
+                        word_idx, entities)
                 word = sentence_doc[word_idx]
-                if entity.startswith('U-'):
-                    ent = {'start': word.idx, 'end': word.idx + len(word),
-                           'value': word.text, 'entity': entity[2:]}
+                if bilou_label.startswith('U-'):
+                    ent = {
+                        'start': word.idx,
+                        'end': word.idx + len(word),
+                        'value': word.text,
+                        'entity': bilou_label[2:],
+                        'confidence': confidence
+                    }
                     json_ents.append(ent)
-                elif entity.startswith('B-'):
+                elif bilou_label.startswith('B-'):
                     # start of multi word-entity need to represent whole extent
+                    tagged_entity = bilou_label[2:]
                     ent_word_idx = word_idx + 1
                     finished = False
+                    confidence = 1.0
                     while not finished:
+                        bilou_label, label_confidence = self.most_likely_entity(
+                                ent_word_idx, entities)
+                        confidence = min(confidence, label_confidence)
                         if len(entities) > ent_word_idx and \
-                                entities[ent_word_idx][2:] != entity[2:]:
+                                bilou_label[2:] != tagged_entity:
                             # words are not tagged the same entity class
                             logger.debug(
                                     "Inconsistent BILOU tagging found, B- tag, "
@@ -178,11 +208,11 @@ class CRFEntityExtractor(EntityExtractor):
                                     "instead of ['B-a','I-a','L-a'].\n"
                                     "Assuming B- class is correct.")
                         if len(entities) > ent_word_idx and \
-                                entities[ent_word_idx].startswith('L-'):
+                                bilou_label.startswith('L-'):
                             # end of the entity
                             finished = True
                         elif len(entities) > ent_word_idx and \
-                                entities[ent_word_idx].startswith('I-'):
+                                bilou_label.startswith('I-'):
                             # middle part of the entity
                             ent_word_idx += 1
                         else:
@@ -200,18 +230,21 @@ class CRFEntityExtractor(EntityExtractor):
                     ent = {'start': word.idx,
                            'end': end,
                            'value': ent_value,
-                           'entity': entity[2:]}
+                           'entity': tagged_entity,
+                           'confidence': confidence}
                     json_ents.append(ent)
         elif not self.BILOU_flag:
             # not using BILOU tagging scheme, multi-word entities are split.
             for word_idx in range(len(sentence_doc)):
-                entity = entities[word_idx]
+                entity_label, confidence = self.most_likely_entity(
+                        word_idx, entities)
                 word = sentence_doc[word_idx]
-                if entity != 'O':
+                if entity_label != 'O':
                     ent = {'start': word.idx,
                            'end': word.idx + len(word),
                            'value': word.text,
-                           'entity': entity}
+                           'entity': entity_label,
+                           'confidence': confidence}
                     json_ents.append(ent)
         return json_ents
 

@@ -12,9 +12,9 @@ import tarfile
 import boto3
 import botocore
 from builtins import object
+from typing import Optional, Tuple, List, Text
+
 from rasa_nlu.config import RasaNLUConfig
-from typing import Optional, Tuple, List
-from typing import Text
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +64,12 @@ class Persistor(object):
     def list_models(self, project):
         # type: (Text) -> List[Text]
         """Lists all the trained models of a project."""
+
+        raise NotImplementedError
+
+    def list_projects(self):
+        # type: () -> List[Text]
+        """Lists all projects."""
 
         raise NotImplementedError
 
@@ -120,7 +126,7 @@ class Persistor(object):
         # type: (Text, Text) -> None
 
         with tarfile.open(compressed_path, "r:gz") as tar:
-            tar.extractall(target_path)
+            tar.extractall(target_path)  # project dir will be created if it not exists
 
 
 class AWSPersistor(Persistor):
@@ -128,13 +134,11 @@ class AWSPersistor(Persistor):
 
     Fetches them when needed, instead of storing them on the local disk."""
 
-    def __init__(self, aws_region, bucket_name, endpoint_url):
-        # type: (Text, Text, Text) -> None
-
+    def __init__(self, aws_region, bucket_name, endpoint_url=None):
+        # type: (Text, Text, Optional[Text]) -> None
         super(AWSPersistor, self).__init__()
         self.s3 = boto3.resource('s3',
                                  region_name=aws_region,
-
                                  endpoint_url=endpoint_url)
         self._ensure_bucket_exists(bucket_name, aws_region)
         self.bucket_name = bucket_name
@@ -149,6 +153,18 @@ class AWSPersistor(Persistor):
         except Exception as e:
             logger.warn("Failed to list models for project {} in "
                         "AWS. {}".format(project, e))
+            return []
+
+    def list_projects(self):
+        # type: () -> List[Text]
+        try:
+            projects_set = {self._project_and_model_from_filename(obj.key)[0]
+                            for obj in self.bucket.objects.filter()}
+            return list(projects_set)
+        except Exception:
+            logger.exception("Failed to list projects in AWS bucket {}. "
+                             "Region: {}".format(self.bucket_name,
+                                                 self.aws_region))
             return []
 
     def _ensure_bucket_exists(self, bucket_name, aws_region):
@@ -201,6 +217,19 @@ class GCSPersistor(Persistor):
         except Exception as e:
             logger.warn("Failed to list models for project {} in "
                         "google cloud storage. {}".format(project, e))
+            return []
+
+    def list_projects(self):
+        # type: () -> List[Text]
+
+        try:
+            blob_iterator = self.bucket.list_blobs()
+            projects_set = {self._project_and_model_from_filename(b.name)[0]
+                            for b in blob_iterator}
+            return list(projects_set)
+        except Exception as e:
+            logger.warning("Failed to list projects in "
+                           "google cloud storage. {}".format(e))
             return []
 
     def _ensure_bucket_exists(self, bucket_name):
