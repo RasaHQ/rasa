@@ -121,7 +121,7 @@ def parameter_or_default(request, name, default=None):
     """Return a parameters value if part of the request, or the default."""
 
     request_params = decode_parameters(request)
-    return next(iter(request_params.get(name, [])), default)
+    return request_params.get(name, default)
 
 
 class RasaNLU(object):
@@ -166,7 +166,7 @@ class RasaNLU(object):
     @requires_auth
     @check_cors
     @inlineCallbacks
-    def parse_get(self, request):
+    def parse(self, request):
         request.setHeader('Content-Type', 'application/json')
         if request.method.decode('utf-8', 'strict') == 'GET':
             request_params = decode_parameters(request)
