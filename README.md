@@ -96,12 +96,12 @@ curl --request POST --data-binary @demo-rasa.md --url 'localhost:5000/train?proj
 
 The above command does the following:
 1. It Fetches some of the example data in the repo
-2. It `POSTS` that data to the `/train` endpoint and names the model `/name=test_model`
+2. It `POSTS` that data to the `/train` endpoint and names the model `project=test_model`
 
 ### Parsing New Requests
 Make sure the above command has finished before executing the below. You can check with the `/status` command above.
 ```
-curl 'http://localhost:5000/parse?q=hello&model=test_model'
+curl 'http://localhost:5000/parse?q=hello&project=test_model'
 ```
 
 # FAQ
