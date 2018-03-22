@@ -108,6 +108,22 @@ def requires_auth(f):
     return decorated
 
 
+def decode_parameters(request):
+    """Make sure all the parameters have the same encoding.
+
+    Ensures  py2 / py3 compatibility."""
+    return {
+        key.decode('utf-8', 'strict'): value[0].decode('utf-8', 'strict')
+        for key, value in request.args.items()}
+
+
+def parameter_or_default(request, name, default=None):
+    """Return a parameters value if part of the request, or the default."""
+
+    request_params = decode_parameters(request)
+    return next(iter(request_params.get(name, [])), default)
+
+
 class RasaNLU(object):
     """Class representing Rasa NLU http server"""
 
@@ -153,8 +169,7 @@ class RasaNLU(object):
     def parse_get(self, request):
         request.setHeader('Content-Type', 'application/json')
         if request.method.decode('utf-8', 'strict') == 'GET':
-            request_params = {key.decode('utf-8', 'strict'): value[0].decode('utf-8', 'strict')
-                              for key, value in request.args.items()}
+            request_params = decode_parameters(request)
         else:
             request_params = simplejson.loads(
                     request.content.read().decode('utf-8', 'strict'))
@@ -164,7 +179,8 @@ class RasaNLU(object):
 
         if 'q' not in request_params:
             request.setResponseCode(404)
-            dumped = json_to_string({"error": "Invalid parse parameter specified"})
+            dumped = json_to_string({"error":
+                                         "Invalid parse parameter specified"})
             returnValue(dumped)
         else:
             data = self.data_router.extract(request_params)
@@ -216,7 +232,7 @@ class RasaNLU(object):
         # default config
         model_config = self.default_model_config
 
-        project = next(iter(request.args.get('project', [])), None)
+        project = parameter_or_default(request, "project", default=None)
 
         data_string = request.content.read().decode('utf-8', 'strict')
 
