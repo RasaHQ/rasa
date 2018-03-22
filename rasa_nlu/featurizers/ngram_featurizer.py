@@ -1,24 +1,25 @@
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
+import io
+import logging
+import os
+import time
+import warnings
+from collections import Counter
+from string import punctuation
+
+import numpy as np
 import typing
 from builtins import map
 from builtins import range
-import logging
-import os
-import re
-import time
-import warnings
-import io
-from collections import Counter
-from string import punctuation
+from future.utils import PY3
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
-from future.utils import PY3
 from typing import Text
 
 from rasa_nlu.components import Component
@@ -30,7 +31,6 @@ from rasa_nlu.training_data import TrainingData
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
-    import numpy as np
     from rasa_nlu.model import Metadata
 
 
@@ -56,7 +56,7 @@ class NGramFeaturizer(Featurizer):
     @classmethod
     def required_packages(cls):
         # type: () -> List[Text]
-        return ["spacy", "numpy", "sklearn", "cloudpickle"]
+        return ["spacy", "sklearn", "cloudpickle"]
 
     def train(self, training_data, config, **kwargs):
         # type: (TrainingData, RasaNLUConfig, **Any) -> None
@@ -173,7 +173,6 @@ class NGramFeaturizer(Featurizer):
 
         if list_of_ngrams:
             from sklearn import linear_model, preprocessing
-            import numpy as np
 
             # filter examples where we do not have enough labeled instances for cv
             usable_labels = []
