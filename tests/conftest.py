@@ -9,7 +9,6 @@ import pytest
 
 from rasa_nlu import data_router, config
 from rasa_nlu.components import ComponentBuilder
-from rasa_nlu.config import RasaNLUModelConfig
 
 logging.basicConfig(level="DEBUG")
 
