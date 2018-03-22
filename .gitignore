@@ -4,6 +4,7 @@ dist/
 data/*
 !data/examples
 !data/test
+!data/README.md
 docs/_build
 server/
 scala/
