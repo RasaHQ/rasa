@@ -223,3 +223,27 @@ def test_evaluate(app, rasa_default_train_data):
                                                              "precision",
                                                              "f1_score",
                                                              "accuracy"])
+
+
+@pytest.inlineCallbacks
+def test_unload_model_error(app):
+    project_err = "http://dummy-uri/models?project=my_project&model=my_model"
+    response = yield app.delete(project_err)
+    rjs = yield response.json()
+    assert response.code == 500, "Project not found"
+    assert rjs['error'] == "Project my_project could not be found"
+
+    model_err = "http://dummy-uri/models?model=my_model"
+    response = yield app.delete(model_err)
+    rjs = yield response.json()
+    assert response.code == 500, "Model not found"
+    assert rjs['error'] == "Failed to unload model my_model for project default."
+
+
+@pytest.inlineCallbacks
+def test_unload_fallback(app):
+    unload = "http://dummy-uri/models?model=fallback"
+    response = yield app.delete(unload)
+    rjs = yield response.json()
+    assert response.code == 200, "Fallback model unloaded"
+    assert rjs == "fallback"
