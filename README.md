@@ -4,7 +4,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/RasaHQ/rasa_core/badge.svg?branch=master)](https://coveralls.io/github/RasaHQ/rasa_core?branch=master)
 [![PyPI version](https://img.shields.io/pypi/v/rasa_core.svg)](https://pypi.python.org/pypi/rasa-core)
 
-- **What do Rasa Core & NLU do? 🤔** [Read About the Rasa Stack](http://rasa.com/products/rasa-stack/)
+- **What do Rasa Core & NLU do? 🤔** [Read About the Rasa Stack](https://rasa.com/products/rasa-stack/)
 
 - **I'd like to read the detailed docs 🤓** [Read The Docs](https://core.rasa.com)
 
@@ -50,7 +50,7 @@ questions.
 - [License](#license)
 
 ### How to contribute
-We are very happy to receive and merge your contributions. There is some more information about the style of the code and docs in the [documentation](http://nlu.rasa.com/contribute.html).
+We are very happy to receive and merge your contributions. There is some more information about the style of the code and docs in the [documentation](https://nlu.rasa.com/contribute.html).
 
 In general the process is rather simple:
 1. create an issue describing the feature you want to work on (or have a look at issues with the label [help wanted](https://github.com/RasaHQ/rasa_core/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22))
