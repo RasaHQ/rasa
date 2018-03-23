@@ -35,6 +35,7 @@ def create_argument_parser():
                              'simple built in format)')
     parser.add_argument('-P', '--port',
                         type=int,
+                        default=5000,
                         help='port on which to run server')
     parser.add_argument('-t', '--token',
                         help="auth token. If set, reject requests which don't "
@@ -42,11 +43,24 @@ def create_argument_parser():
     parser.add_argument('-w', '--write',
                         help='file where logs will be saved')
     parser.add_argument('--path',
-                        help="path where project files will be saved")
+                        required=True,
+                        help="working directory of the server. Models are"
+                             "loaded from this directory and trained models "
+                             "will be saved here.")
+    parser.add_argument('--cors',
+                        nargs="*",
+                        help='configures cross site access. multiple '
+                             'values possible. use "*" to allow access from '
+                             'all domains.')
+
     parser.add_argument('--max_training_processes',
+                        type=int,
+                        default=1,
                         help='Number of parallel trainings to run when '
                              'training data is submitted over HTTP.')
     parser.add_argument('--num_threads',
+                        type=int,
+                        default=1,
                         help='Number of parallel threads to use for '
                              'handling parse requests.')
     parser.add_argument('--response_log',
@@ -148,15 +162,15 @@ class RasaNLU(object):
 
     def __init__(self,
                  data_router,
-                 log_level='INFO',
-                 log_file=None,
+                 loglevel='INFO',
+                 logfile=None,
                  num_threads=1,
                  token=None,
                  cors_origins=None,
                  testing=False,
                  default_config_path=None):
 
-        self._configure_logging(log_level, log_file)
+        self._configure_logging(loglevel, logfile)
 
         self.default_model_config = self._load_default_config(
                 default_config_path)
@@ -175,9 +189,9 @@ class RasaNLU(object):
             return {}
 
     @staticmethod
-    def _configure_logging(log_level, log_file):
-        logging.basicConfig(filename=log_file,
-                            level=log_level)
+    def _configure_logging(loglevel, logfile):
+        logging.basicConfig(filename=logfile,
+                            level=loglevel)
         logging.captureWarnings(True)
 
     @app.route("/", methods=['GET', 'OPTIONS'])
@@ -321,11 +335,11 @@ if __name__ == '__main__':
                         cmdline_args.response_log)
     rasa = RasaNLU(
             router,
-            cmdline_args.path,
-            cmdline_args.log_level,
-            cmdline_args.log_file,
+            cmdline_args.loglevel,
+            cmdline_args.write,
             cmdline_args.num_threads,
             cmdline_args.token,
+            cmdline_args.cors,
             default_config_path=cmdline_args.config
     )
 

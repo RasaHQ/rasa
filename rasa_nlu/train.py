@@ -34,6 +34,7 @@ def create_argument_parser():
 
     parser.add_argument('-d', '--data',
                         default=None,
+                        required=True,
                         help="File containing training data")
 
     parser.add_argument('-c', '--config',
