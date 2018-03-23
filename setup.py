@@ -69,7 +69,7 @@ setup(
     description="Rasa NLU a natural language parser for bots",
     long_description=readme,
     author='Rasa Technologies GmbH',
-    author_email='hi@rasa.ai',
+    author_email='hi@rasa.com',
     license='Apache 2.0',
     url="https://rasa.com",
     keywords="nlp machine-learning machine-learning-library bot bots "
@@ -81,5 +81,5 @@ setup(
 
 print("\nWelcome to Rasa NLU!")
 print("If any questions please visit documentation "
-      "page https://rasahq.github.io/rasa_nlu")
+      "page https://nlu.rasa.com")
 print("or join community chat on https://gitter.im/RasaHQ/rasa_nlu")
