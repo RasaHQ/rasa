@@ -50,7 +50,7 @@ questions.
 - [License](#license)
 
 ### How to contribute
-We are very happy to receive and merge your contributions. There is some more information about the style of the code and docs in the [documentation](https://rasahq.github.io/rasa_nlu/contribute.html).
+We are very happy to receive and merge your contributions. There is some more information about the style of the code and docs in the [documentation](http://nlu.rasa.com/contribute.html).
 
 In general the process is rather simple:
 1. create an issue describing the feature you want to work on (or have a look at issues with the label [help wanted](https://github.com/RasaHQ/rasa_core/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22))
