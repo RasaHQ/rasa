@@ -335,7 +335,7 @@ class RasaNLU(object):
         try:
             request.setResponseCode(200)
             response = self.data_router.unload_model(
-                params.get('project', RasaNLUConfig.DEFAULT_PROJECT_NAME),
+                params.get('project', RasaNLUModelConfig.DEFAULT_PROJECT_NAME),
                 params.get('model')
             )
             return simplejson.dumps(response)
