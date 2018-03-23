@@ -250,6 +250,10 @@ class RasaNLU(object):
     def rasaconfig(self, request):
         """Returns the in-memory configuration of the Rasa server"""
 
+        # DEPRECATED: I don't think there is a use case for this endpoint
+        # anymore - when training a new model, the user should always post
+        # the configuration as part of the request instead of relying on
+        # the servers config.
         request.setHeader('Content-Type', 'application/json')
         return json_to_string(self.default_model_config)
 
