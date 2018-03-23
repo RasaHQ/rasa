@@ -41,4 +41,5 @@ def test_agent_handle_message(default_agent):
     message = INTENT_MESSAGE_PREFIX + 'greet{"name":"Rasa"}'
     result = default_agent.handle_message(message,
                                           sender_id="test_agent_handle_message")
-    assert result == ["hey there Rasa!"]
+    assert result == [{'recipient_id': 'test_agent_handle_message',
+                       'text': 'hey there Rasa!'}]

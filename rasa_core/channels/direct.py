@@ -16,4 +16,7 @@ class CollectingOutputChannel(OutputChannel):
             return None
 
     def send_text_message(self, recipient_id, message):
-        self.messages.append((recipient_id, message))
+        self.messages.append({"recipient_id": recipient_id, "text": message})
+
+    def send_text_with_buttons(self, recipient_id, message, buttons):
+        self.messages.append({"recipient_id": recipient_id, "text": message, "data": buttons})

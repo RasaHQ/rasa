@@ -105,8 +105,8 @@ def test_tracker_write_to_story(tmpdir, default_domain):
     recovered = trackers[0]
     assert len(recovered.events) == 8
     assert recovered.events[6].type_name == "slot"
-    assert recovered.events[6].key == "location"
-    assert recovered.events[6].value == "central"
+    assert recovered.events[6].key in {"location", "name"}
+    assert recovered.events[6].value in {"central", "holger"}
 
 
 def test_tracker_state_regression_without_bot_utterance(default_agent):

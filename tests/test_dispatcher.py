@@ -12,19 +12,20 @@ from rasa_core.domain import TemplateDomain
 def test_dispatcher_utter_attachment(default_dispatcher_collecting):
     default_dispatcher_collecting.utter_attachment("http://my-attachment")
     collected = default_dispatcher_collecting.output_channel.latest_output()
-    assert ('my-sender', 'Image: http://my-attachment') == collected
+    assert {'recipient_id': 'my-sender',
+            'text': 'Image: http://my-attachment'} == collected
 
 
 def test_dispatcher_utter_template(default_dispatcher_collecting):
     default_dispatcher_collecting.utter_template("utter_goodbye")
     collected = default_dispatcher_collecting.output_channel.latest_output()
-    assert collected[1] in {"goodbye :(", "bye bye"}
+    assert collected['text'] in {"goodbye :(", "bye bye"}
 
 
 def test_dispatcher_handle_unknown_template(default_dispatcher_collecting):
     default_dispatcher_collecting.utter_template("my_made_up_template")
     collected = default_dispatcher_collecting.output_channel.latest_output()
-    assert collected[1].startswith("Undefined utter template")
+    assert collected['text'].startswith("Undefined utter template")
 
 
 def test_dispatcher_template_invalid_vars():
@@ -37,7 +38,7 @@ def test_dispatcher_template_invalid_vars():
     dispatcher = Dispatcher("my-sender", bot, domain)
     dispatcher.utter_template("my_made_up_template")
     collected = dispatcher.output_channel.latest_output()
-    assert collected[1].startswith(
+    assert collected['text'].startswith(
             "a template referencing an invalid {variable}.")
 
 
@@ -48,10 +49,12 @@ def test_dispatcher_utter_buttons(default_dispatcher_collecting):
     ]
     default_dispatcher_collecting.utter_button_message("my message", buttons)
     collected = default_dispatcher_collecting.output_channel.messages
-    assert len(collected) == 3
-    assert collected[0][1] == "my message"
-    assert collected[1][1] == "1: Btn1 (/btn1)"
-    assert collected[2][1] == "2: Btn2 (/btn2)"
+    assert len(collected) == 1
+    assert collected[0]['text'] == "my message"
+    assert collected[0]['data'] == [
+        {'payload': u'/btn1', 'title': u'Btn1'},
+        {'payload': u'/btn2', 'title': u'Btn2'}
+    ]
 
 
 def test_dispatcher_utter_buttons_from_domain_templ():
@@ -60,10 +63,12 @@ def test_dispatcher_utter_buttons_from_domain_templ():
     bot = CollectingOutputChannel()
     dispatcher = Dispatcher("my-sender", bot, domain)
     dispatcher.utter_template("utter_greet")
-    assert len(bot.messages) == 3
-    assert bot.messages[0][1] == "Hey! How are you?"
-    assert bot.messages[1][1] == "1: great (great)"
-    assert bot.messages[2][1] == "2: super sad (super sad)"
+    assert len(bot.messages) == 1
+    assert bot.messages[0]['text'] == "Hey! How are you?"
+    assert bot.messages[0]['data'] == [
+        {'payload': 'great', 'title': 'great'},
+        {'payload': 'super sad', 'title': 'super sad'}
+    ]
 
 
 def test_dispatcher_utter_custom_message(default_dispatcher_collecting):
@@ -77,10 +82,14 @@ def test_dispatcher_utter_custom_message(default_dispatcher_collecting):
     ]
     default_dispatcher_collecting.utter_custom_message(*elements)
     collected = default_dispatcher_collecting.output_channel.messages
-    assert len(collected) == 6
-    assert collected[0][1] == "hey there : welcome"
-    assert collected[1][1] == "1: Btn1 (/btn1)"
-    assert collected[2][1] == "2: Btn2 (/btn2)"
-    assert collected[3][1] == "another title : another subtitle"
-    assert collected[4][1] == "1: Btn3 (/btn3)"
-    assert collected[5][1] == "2: Btn4 (/btn4)"
+    assert len(collected) == 2
+    assert collected[0]['text'] == "hey there : welcome"
+    assert collected[0]['data'] == [
+        {'payload': u'/btn1', 'title': u'Btn1'},
+        {'payload': u'/btn2', 'title': u'Btn2'}
+    ]
+    assert collected[1]['text'] == "another title : another subtitle"
+    assert collected[1]['data'] == [
+        {'payload': u'/btn3', 'title': u'Btn3'},
+        {'payload': u'/btn4', 'title': u'Btn4'}
+    ]
