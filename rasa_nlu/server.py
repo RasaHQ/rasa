@@ -49,23 +49,27 @@ def create_argument_parser():
                              "will be saved here.")
     parser.add_argument('--cors',
                         nargs="*",
-                        help='configures cross site access. multiple '
-                             'values possible. use "*" to allow access from '
-                             'all domains.')
+                        help='List of domain patterns from where CORS '
+                             '(cross-origin resource sharing) calls are '
+                             'allowed. The default value is `[]` which '
+                             'forbids all CORS requests.')
 
     parser.add_argument('--max_training_processes',
                         type=int,
                         default=1,
-                        help='Number of parallel trainings to run when '
-                             'training data is submitted over HTTP.')
+                        help='Number of processes used to handle training '
+                             'requests. Increasing this value will have a '
+                             'great impact on memory usage. It is '
+                             'recommended to keep the default value.')
     parser.add_argument('--num_threads',
                         type=int,
                         default=1,
                         help='Number of parallel threads to use for '
                              'handling parse requests.')
     parser.add_argument('--response_log',
-                        help='File to store responses delivered over'
-                             'the parse endpoint.')
+                        help='Directory where logs will be saved '
+                             '(containing queries and responses).'
+                             'If set to ``null`` logging will be disabled.')
     parser.add_argument('--storage',
                         help='Set the remote location where models are stored. '
                              'E.g. on AWS. If nothing is configured, the '
