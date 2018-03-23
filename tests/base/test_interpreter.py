@@ -3,9 +3,12 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import rasa_nlu
+
 import pytest
 
 from rasa_nlu import registry, training_data
+from rasa_nlu.model import Interpreter
 from tests import utilities
 
 
@@ -35,3 +38,21 @@ def test_interpreter(pipeline_template, component_builder, tmpdir):
         # require the exact entities to be found
         for entity in result['entities']:
             assert entity['entity'] in td.entities
+
+
+@pytest.mark.parametrize("metadata",
+                         [{"rasa_nlu_version": "0.11.0"},
+                          {"rasa_nlu_version": "0.10.2"},
+                          {"rasa_nlu_version": "0.12.0a1"}])
+def test_model_not_compatible(metadata):
+    with pytest.raises(rasa_nlu.model.UnsuportedModelError):
+        Interpreter.ensure_model_compatibility(metadata)
+
+
+@pytest.mark.parametrize("metadata",
+                         [{"rasa_nlu_version": "0.12.0"},
+                          {"rasa_nlu_version": "0.12.2"},
+                          {"rasa_nlu_version": "0.12.0a2"}])
+def test_model_is_compatible(metadata):
+    # should not raise an exception
+    assert Interpreter.ensure_model_compatibility(metadata) is None

@@ -27,6 +27,7 @@ install_requires = [
     "gevent",
     "klein",
     "boto3",
+    "packaging",
     "typing",
     "future",
     "six",

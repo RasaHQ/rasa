@@ -41,6 +41,20 @@ class InvalidProjectError(Exception):
         return self.message
 
 
+class UnsuportedModelError(Exception):
+    """Raised when a model is to old to be loaded.
+
+    Attributes:
+        message -- explanation of why the model is invalid
+    """
+
+    def __init__(self, message):
+        self.message = message
+
+    def __str__(self):
+        return self.message
+
+
 class Metadata(object):
     """Captures all information about a model to load and prepare it."""
 
@@ -216,19 +230,27 @@ class Interpreter(object):
         return {"intent": {"name": "", "confidence": 0.0}, "entities": []}
 
     @staticmethod
+    def ensure_model_compatibility(metadata):
+        from packaging import version
+
+        model_version = metadata.get("rasa_nlu_version", "0.0.0")
+        if version.parse(model_version) < version.parse("0.12.0a2"):
+            raise UnsuportedModelError("The model version is to old to be "
+                                       "loaded by this Rasa NLU instance. "
+                                       "Either retrain the model, or run with"
+                                       "an older version. "
+                                       "Model version: {} Instance version: {}"
+                                       "".format(model_version,
+                                                 rasa_nlu.__version__))
+
+    @staticmethod
     def load(model_dir, component_builder=None, skip_valdation=False):
         """Creates an interpreter based on a persisted model."""
 
-        if isinstance(model_dir, Metadata):
-            # this is for backwards compatibilities (metadata passed as a dict)
-            model_metadata = model_dir
-            logger.warn("Deprecated use of `Interpreter.load` with a metadata "
-                        "object. If you want to directly pass the metadata, "
-                        "use `Interpreter.create(metadata, ...)`. If you want "
-                        "to load the metadata from file, use "
-                        "`Interpreter.load(model_dir, ...)")
-        else:
-            model_metadata = Metadata.load(model_dir)
+        model_metadata = Metadata.load(model_dir)
+
+        Interpreter.ensure_model_compatibility(model_metadata)
+
         return Interpreter.create(model_metadata,
                                   component_builder,
                                   skip_valdation)

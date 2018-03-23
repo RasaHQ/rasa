@@ -16,7 +16,7 @@ from klein import Klein
 from twisted.internet import reactor, threads
 from twisted.internet.defer import inlineCallbacks, returnValue
 
-from rasa_nlu import utils
+from rasa_nlu import utils, config
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.data_router import DataRouter, InvalidProjectError, \
     AlreadyTrainingError
@@ -58,6 +58,9 @@ def create_argument_parser():
                              'E.g. on AWS. If nothing is configured, the '
                              'server will only serve the models that are '
                              'on disk in the configured `path`.')
+    parser.add_argument('-c', '--config',
+                        help="Default model configuration file used for "
+                             "training.")
 
     utils.add_logging_option_arguments(parser)
 
@@ -137,16 +140,26 @@ class RasaNLU(object):
                  num_threads=1,
                  token=None,
                  cors_origins=None,
-                 testing=False):
+                 testing=False,
+                 default_config_path=None):
 
         self._configure_logging(log_level, log_file)
 
-        self.default_model_config = {}
+        self.default_model_config = self._load_default_config(
+                default_config_path)
+
         self.data_router = data_router
         self._testing = testing
         self.cors_origins = cors_origins if cors_origins else ["*"]
         self.access_token = token
         reactor.suggestThreadPoolSize(num_threads * 5)
+
+    @staticmethod
+    def _load_default_config(path):
+        if path:
+            return config.load(path).as_dict()
+        else:
+            return {}
 
     @staticmethod
     def _configure_logging(log_level, log_file):
@@ -226,7 +239,6 @@ class RasaNLU(object):
     @check_cors
     @inlineCallbacks
     def train(self, request):
-        # TODO: allow to pass in whole model configuration, for now: use default
         model_config = self.default_model_config
 
         project = parameter_or_default(request, "project", default=None)
@@ -296,6 +308,7 @@ if __name__ == '__main__':
             cmdline_args.log_file,
             cmdline_args.num_threads,
             cmdline_args.token,
+            default_model_config=cmdline_args.config
     )
 
     logger.info('Started http server on port %s' % cmdline_args.port)
