@@ -245,4 +245,4 @@ def test_unload_fallback(app):
     response = yield app.delete(unload)
     rjs = yield response.json()
     assert response.code == 200, "Fallback model unloaded"
-    assert rjs == {"unloaded_model": "fallback"}
+    assert rjs == "fallback"

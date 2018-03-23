@@ -189,9 +189,11 @@ class Project(object):
                 'loaded_models': self._list_loaded_models()}
 
     def _list_loaded_models(self):
-        return [
-            model for model, interpreter in self._models.items() if interpreter
-        ]
+        models = []
+        for model, interpreter in self._models.items():
+            if interpreter is not None:
+                models.append(model)
+        return models
 
     def _list_models_in_cloud(self, config):
         # type: (RasaNLUConfig) -> List[Text]

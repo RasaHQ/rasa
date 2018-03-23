@@ -245,11 +245,14 @@ class RasaNLU(object):
         request.setHeader('Content-Type', 'application/json')
         try:
             request.setResponseCode(200)
-            response = self.data_router.unload_model(params.get('project'),
-                                                     params.get('model'))
+            response = self.data_router.unload_model(
+                params.get('project', RasaNLUConfig.DEFAULT_PROJECT_NAME),
+                params.get('model')
+            )
             return simplejson.dumps(response)
         except Exception as e:
             request.setResponseCode(500)
+            logger.exception(e)
             return simplejson.dumps({"error": "{}".format(e)})
 
 

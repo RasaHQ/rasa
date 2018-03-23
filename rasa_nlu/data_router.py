@@ -351,15 +351,15 @@ class DataRouter(object):
         # type: (Text, Text) -> Dict[Text]
         """Unload a model from server memory."""
 
-        project = project or RasaNLUConfig.DEFAULT_PROJECT_NAME
-
-        if project not in self.project_store:
+        if project is None:
+            raise InvalidProjectError("No project specified".format(project))
+        elif project not in self.project_store:
             raise InvalidProjectError("Project {} could not "
                                       "be found".format(project))
 
         try:
             unloaded_model = self.project_store[project].unload(model)
-            return {"unloaded_model": unloaded_model}
+            return unloaded_model
         except KeyError:
             raise InvalidProjectError("Failed to unload model {} "
                                       "for project {}.".format(model, project))
