@@ -137,7 +137,7 @@ def dump_to_data_file(data):
 
 
 def is_yaml_request(request):
-    return "yaml" in next(
+    return "yml" in next(
             iter(request.requestHeaders.getRawHeaders("Content-Type", [])), "")
 
 

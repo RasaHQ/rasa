@@ -10,8 +10,10 @@ import tempfile
 import time
 
 import pytest
+import yaml
 from treq.testing import StubTreq
 
+from rasa_nlu import utils
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.data_router import DataRouter
 from rasa_nlu.server import RasaNLU
@@ -164,8 +166,13 @@ def test_model_hot_reloading(app, rasa_default_train_data):
     query = "http://dummy-uri/parse?q=hello&project=my_keyword_model"
     response = yield app.get(query)
     assert response.code == 404, "Project should not exist yet"
-    train_u = "http://dummy-uri/train?project=my_keyword_model&pipeline=keyword"
-    response = app.post(train_u, json=rasa_default_train_data)
+    train_u = "http://dummy-uri/train?project=my_keyword_model"
+    model_config = {"pipeline": "keyword", "data": rasa_default_train_data}
+    model_str = yaml.safe_dump(model_config, default_flow_style=False,
+                               allow_unicode=True)
+    response = app.post(train_u,
+                        headers={b"Content-Type": b"application/x-yml"},
+                        data=model_str)
     time.sleep(3)
     app.flush()
     response = yield response
