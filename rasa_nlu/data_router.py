@@ -346,3 +346,20 @@ class DataRouter(object):
                 "f1_score": f1,
                 "accuracy": accuracy}
         }
+
+    def unload_model(self, project, model):
+        # type: (Text, Text) -> Dict[Text]
+        """Unload a model from server memory."""
+
+        if project is None:
+            raise InvalidProjectError("No project specified".format(project))
+        elif project not in self.project_store:
+            raise InvalidProjectError("Project {} could not "
+                                      "be found".format(project))
+
+        try:
+            unloaded_model = self.project_store[project].unload(model)
+            return unloaded_model
+        except KeyError:
+            raise InvalidProjectError("Failed to unload model {} "
+                                      "for project {}.".format(model, project))

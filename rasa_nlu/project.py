@@ -127,9 +127,12 @@ class Project(object):
 
     def unload(self, model_name):
         self._writer_lock.acquire()
-        unloaded_model = self._models.pop(model_name)
-        self._writer_lock.release()
-        return unloaded_model
+        try:
+            del self._models[model_name]
+            self._models[model_name] = None
+            return model_name
+        finally:
+            self._writer_lock.release()
 
     def _latest_project_model(self):
         """Retrieves the latest trained model for an project"""
@@ -182,7 +185,15 @@ class Project(object):
 
     def as_dict(self):
         return {'status': 'training' if self.status else 'ready',
-                'available_models': list(self._models.keys())}
+                'available_models': list(self._models.keys()),
+                'loaded_models': self._list_loaded_models()}
+
+    def _list_loaded_models(self):
+        models = []
+        for model, interpreter in self._models.items():
+            if interpreter is not None:
+                models.append(model)
+        return models
 
     def _list_models_in_cloud(self, config):
         # type: (RasaNLUConfig) -> List[Text]
