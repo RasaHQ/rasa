@@ -107,7 +107,7 @@ class SpacyNLP(Component):
         if cached_component:
             return cached_component
 
-        component_meta = model_metadata.get(cls.name)
+        component_meta = model_metadata.for_component(cls.name)
         model_name = component_meta.get("model")
 
         nlp = spacy.load(model_name, parser=False)

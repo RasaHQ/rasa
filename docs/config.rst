@@ -55,15 +55,6 @@ language
 :Description:
     Language the model is trained in. Underlying word vectors will be loaded by using this language
 
-num_threads
-~~~~~~~~~~~
-
-:Type: ``int``
-:Examples: ``4``
-:Description:
-    Number of threads used during training (not supported by all components, though.
-    Some of them might still be single threaded!).
-
 fixed_model_name
 ~~~~~~~~~~~~~~~~
 

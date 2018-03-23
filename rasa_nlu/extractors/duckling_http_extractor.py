@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
+import os
 
 import requests
 import simplejson
@@ -64,6 +65,13 @@ class DucklingHTTPExtractor(EntityExtractor):
             self.component_config["locale"] = locale_fix
         return self.component_config.get("locale")
 
+    def _url(self):
+        """Return url of the duckling service. Environment var will override."""
+        if os.environ.get("RASA_DUCKLING_HTTP_URL"):
+            return os.environ["RASA_DUCKLING_HTTP_URL"]
+
+        return self.component_config.get("url")
+
     def _duckling_parse(self, text):
         """Sends the request to the duckling server and parses the result."""
 
@@ -71,7 +79,7 @@ class DucklingHTTPExtractor(EntityExtractor):
             payload = {"text": text, "locale": self._locale()}
             headers = {"Content-Type": "application/x-www-form-urlencoded; "
                                        "charset=UTF-8"}
-            response = requests.post(self.duckling_url + "/parse",
+            response = requests.post(self._url() + "/parse",
                                      data=payload,
                                      headers=headers)
             if response.status_code == 200:
@@ -119,5 +127,5 @@ class DucklingHTTPExtractor(EntityExtractor):
              ):
         # type: (...) -> DucklingHTTPExtractor
 
-        component_config = model_metadata.get(cls.name)
+        component_config = model_metadata.for_component(cls.name)
         return cls(component_config, model_metadata.get("language"))

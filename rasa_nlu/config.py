@@ -20,7 +20,7 @@ DEFAULT_CONFIG_LOCATION = "config.yml"
 DEFAULT_CONFIG = {
     "language": "en",
     "pipeline": [],
-    "num_threads": 1      # TODO: rethink - how do we get this value to sklearn
+    "data": None
 }
 
 

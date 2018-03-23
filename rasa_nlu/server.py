@@ -1,28 +1,27 @@
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 import argparse
 import logging
-import os
-import six
 from functools import wraps
 
 import simplejson
+import six
 from builtins import str
-
 from klein import Klein
 from twisted.internet import reactor, threads
 from twisted.internet.defer import inlineCallbacks, returnValue
 
 from rasa_nlu import utils, config
 from rasa_nlu.config import RasaNLUModelConfig
-from rasa_nlu.data_router import DataRouter, InvalidProjectError, \
-    AlreadyTrainingError
+from rasa_nlu.data_router import (
+    DataRouter, InvalidProjectError,
+    AlreadyTrainingError)
 from rasa_nlu.train import TrainingException
-from rasa_nlu.version import __version__
 from rasa_nlu.utils import json_to_string
+from rasa_nlu.version import __version__
 
 logger = logging.getLogger(__name__)
 
@@ -308,7 +307,7 @@ if __name__ == '__main__':
             cmdline_args.log_file,
             cmdline_args.num_threads,
             cmdline_args.token,
-            default_model_config=cmdline_args.config
+            default_config_path=cmdline_args.config
     )
 
     logger.info('Started http server on port %s' % cmdline_args.port)

@@ -9,11 +9,7 @@ import re
 import warnings
 
 import typing
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Text
+from typing import Any, Dict, List, Optional, Text
 
 from rasa_nlu import utils
 from rasa_nlu.config import RasaNLUModelConfig
@@ -96,19 +92,18 @@ class RegexFeaturizer(Featurizer):
              ):
         # type: (...) -> RegexFeaturizer
 
-        meta = model_metadata.get(cls.name)
-        if model_dir:
-            regex_file = os.path.join(model_dir, REGEX_FEATURIZER_FILE_NAME)
-            if os.path.isfile(regex_file):
-                known_patterns = utils.read_json_file(regex_file)
-                return RegexFeaturizer(meta, known_patterns=known_patterns)
-            else:
-                warnings.warn("Failed to load regex pattern file "
-                              "'{}'".format(regex_file))
-        return RegexFeaturizer(meta)
+        meta = model_metadata.for_component(cls.name)
+        file_name = meta.get("regex_file", REGEX_FEATURIZER_FILE_NAME)
+        regex_file = os.path.join(model_dir, file_name)
+
+        if os.path.exists(regex_file):
+            known_patterns = utils.read_json_file(regex_file)
+            return RegexFeaturizer(meta, known_patterns=known_patterns)
+        else:
+            return RegexFeaturizer(meta)
 
     def persist(self, model_dir):
-        # type: (Text) -> Dict[Text, Any]
+        # type: (Text) -> Optional[Dict[Text, Any]]
         """Persist this model into the passed directory.
 
         Return the metadata necessary to load the model again."""
@@ -117,4 +112,4 @@ class RegexFeaturizer(Featurizer):
             regex_file = os.path.join(model_dir, REGEX_FEATURIZER_FILE_NAME)
             utils.write_json_to_file(regex_file, self.known_patterns, indent=4)
 
-        return {self.name: self.component_config}
+        return {"regex_file": REGEX_FEATURIZER_FILE_NAME}

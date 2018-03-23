@@ -193,5 +193,5 @@ class DucklingExtractor(EntityExtractor):
             language = model_metadata.get("language")
             duckling = cls.create_duckling_wrapper(language)
 
-        component_config = model_metadata.get(cls.name)
+        component_config = model_metadata.for_component(cls.name)
         return cls(component_config, duckling)

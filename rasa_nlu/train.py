@@ -7,7 +7,7 @@ import argparse
 import logging
 
 import typing
-from typing import Optional
+from typing import Optional, Any
 from typing import Text
 from typing import Tuple
 
@@ -115,13 +115,14 @@ def do_train_in_worker(config,  # type: RasaNLUModelConfig
         raise TrainingException(config.get("project"), e)
 
 
-def do_train(config,  # type: RasaNLUModelConfig
+def do_train(cfg,  # type: RasaNLUModelConfig
              data,  # type: Text
              path=None,  # type: Text
              project=None,  # type: Optional[Text]
              fixed_model_name=None,  # type: Optional[Text]
              storage=None,  # type: Text
-             component_builder=None  # type: Optional[ComponentBuilder]
+             component_builder=None,  # type: Optional[ComponentBuilder]
+             **kwargs   # type: Any
              ):
     # type: (...) -> Tuple[Trainer, Interpreter, Text]
     """Loads the trainer and the data and runs the training of the model."""
@@ -129,10 +130,10 @@ def do_train(config,  # type: RasaNLUModelConfig
     # Ensure we are training a model that we can save in the end
     # WARN: there is still a race condition if a model with the same name is
     # trained in another subprocess
-    trainer = Trainer(config, component_builder)
+    trainer = Trainer(cfg, component_builder)
     persistor = create_persistor(storage)
-    training_data = load_data(data, config.language)
-    interpreter = trainer.train(training_data)
+    training_data = load_data(data, cfg.language)
+    interpreter = trainer.train(training_data, **kwargs)
 
     if path:
         persisted_path = trainer.persist(path,
@@ -150,13 +151,11 @@ if __name__ == '__main__':
 
     utils.configure_colored_logging(cmdline_args.loglevel)
 
-    cfg = config.load(cmdline_args.config,
-                      num_threads=cmdline_args.num_threads)
-
-    do_train(cmdline_args.config,
+    do_train(config.load(cmdline_args.config),
              cmdline_args.data,
              cmdline_args.path,
              cmdline_args.project,
              cmdline_args.fixed_model_name,
-             cmdline_args.storage)
+             cmdline_args.storage,
+             num_threads=cmdline_args.num_threads)
     logger.info("Finished training")

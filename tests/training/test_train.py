@@ -51,12 +51,12 @@ def test_train_model_noents(component_builder, tmpdir):
 @utilities.slowtest
 def test_train_model_multithread(component_builder, tmpdir):
     _config = utilities.base_test_conf("all_components")
-    _config.num_threads = 2
     (trained, _, persisted_path) = train.do_train(
             _config,
             path=tmpdir.strpath,
             data=DEFAULT_DATA_PATH,
-            component_builder=component_builder)
+            component_builder=component_builder,
+            num_threads=2)
     assert trained.pipeline
     loaded = Interpreter.load(persisted_path, component_builder)
     assert loaded.pipeline

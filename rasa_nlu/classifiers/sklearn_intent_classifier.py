@@ -43,8 +43,13 @@ class SklearnIntentClassifier(Component):
     requires = ["text_features"]
 
     defaults = {
+        # C parameter of the svm - cross validation will select the best value
         "C": [1, 2, 5, 10, 20, 100],
+
+        # the kernels to use for the svm training - cross validation will
+        # decide which one of them performs best
         "kernels": ["linear"],
+
         # We try to find a good number of cross folds to use during
         # intent training, this specifies the max number of folds
         "max_cross_validation_folds": 5
@@ -92,6 +97,8 @@ class SklearnIntentClassifier(Component):
         # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
         """Train the intent classifier on a data set."""
 
+        num_threads = kwargs.get("num_threads", 1)
+
         labels = [e.get("intent")
                   for e in training_data.intent_examples]
 
@@ -104,7 +111,7 @@ class SklearnIntentClassifier(Component):
             X = np.stack([example.get("text_features")
                           for example in training_data.intent_examples])
 
-            self.clf = self._create_classifier(cfg.num_threads, y)
+            self.clf = self._create_classifier(num_threads, y)
 
             self.clf.fit(X, y)
 
@@ -204,18 +211,19 @@ class SklearnIntentClassifier(Component):
              ):
         # type: (...) -> SklearnIntentClassifier
 
-        classifier_file = os.path.join(model_dir, SKLEARN_MODEL_FILE_NAME)
+        meta = model_metadata.for_component(cls.name)
+        file_name = meta.get("classifier_file", SKLEARN_MODEL_FILE_NAME)
+        classifier_file = os.path.join(model_dir, file_name)
 
         if os.path.exists(classifier_file):
             return utils.pycloud_unpickle(classifier_file)
         else:
-            return cls(model_metadata.get(cls.name))
+            return cls(meta)
 
     def persist(self, model_dir):
-        # type: (Text) -> Dict[Text, Any]
+        # type: (Text) -> Optional[Dict[Text, Any]]
         """Persist this model into the passed directory."""
 
         classifier_file = os.path.join(model_dir, SKLEARN_MODEL_FILE_NAME)
         utils.pycloud_pickle(classifier_file, self)
-
-        return {self.name: self.component_config}
+        return {"classifier_file": SKLEARN_MODEL_FILE_NAME}

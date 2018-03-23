@@ -19,7 +19,7 @@ import rasa_nlu
 from rasa_nlu import components, utils, config
 from rasa_nlu.components import Component
 from rasa_nlu.components import ComponentBuilder
-from rasa_nlu.config import RasaNLUModelConfig
+from rasa_nlu.config import RasaNLUModelConfig, override_defaults
 from rasa_nlu.persistor import Persistor
 from rasa_nlu.training_data import TrainingData, Message
 from rasa_nlu.utils import create_dir, write_json_to_file
@@ -81,18 +81,25 @@ class Metadata(object):
         return self.metadata.get(property_name, default)
 
     @property
+    def component_classes(self):
+        if self.get('pipeline'):
+            return [c.get("class") for c in self.get('pipeline', [])]
+        else:
+            return []
+
+    def for_component(self, name, defaults=None):
+        for c in self.get('pipeline', []):
+            if c.get("name") == name:
+                return override_defaults(defaults, c)
+        else:
+            return defaults or {}
+
+    @property
     def language(self):
         # type: () -> Optional[Text]
         """Language of the underlying model"""
 
         return self.get('language')
-
-    @property
-    def pipeline(self):
-        # type: () -> List[Text]
-        """Names of the processing pipeline elements."""
-
-        return self.get('pipeline', [])
 
     def persist(self, model_dir):
         # type: (Text) -> None
@@ -145,13 +152,13 @@ class Trainer(object):
                     component_name, config)
             self.pipeline.append(component)
 
-    def train(self, data):
+    def train(self, data, **kwargs):
         # type: (TrainingData) -> Interpreter
         """Trains the underlying pipeline using the provided training data."""
 
         self.training_data = data
 
-        context = {}  # type: Dict[Text, Any]
+        context = kwargs  # type: Dict[Text, Any]
 
         for component in self.pipeline:
             updates = component.provide_context()
@@ -169,7 +176,8 @@ class Trainer(object):
             logger.info("Starting to train component {}"
                         "".format(component.name))
             component.prepare_partial_processing(self.pipeline[:i], context)
-            updates = component.train(working_data, self.config, **context)
+            updates = component.train(working_data, self.config,
+                                      **context)
             logger.info("Finished training component.")
             if updates:
                 context.update(updates)
@@ -186,8 +194,7 @@ class Trainer(object):
         timestamp = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
         metadata = {
             "language": self.config["language"],
-            "pipeline": [utils.module_path_from_object(component)
-                         for component in self.pipeline],
+            "pipeline": [],
         }
 
         if project_name is None:
@@ -208,8 +215,11 @@ class Trainer(object):
 
         for component in self.pipeline:
             update = component.persist(dir_name)
+            component_meta = component.component_config
             if update:
-                metadata.update(update)
+                component_meta.update(update)
+            component_meta["class"] = utils.module_path_from_object(component)
+            metadata["pipeline"].append(component_meta)
 
         Metadata(metadata, dir_name).persist(dir_name)
 
@@ -275,9 +285,9 @@ class Interpreter(object):
         # Before instantiating the component classes,
         # lets check if all required packages are available
         if not skip_valdation:
-            components.validate_requirements(model_metadata.pipeline)
+            components.validate_requirements(model_metadata.component_classes)
 
-        for component_name in model_metadata.pipeline:
+        for component_name in model_metadata.component_classes:
             component = component_builder.load_component(
                     component_name, model_metadata.model_dir,
                     model_metadata, **context)

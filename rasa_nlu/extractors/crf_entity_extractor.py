@@ -302,8 +302,9 @@ class CRFEntityExtractor(EntityExtractor):
         # type: (...) -> CRFEntityExtractor
         from sklearn.externals import joblib
 
-        meta = model_metadata.get(cls.name)
-        model_file = os.path.join(model_dir, CRF_MODEL_FILE_NAME)
+        meta = model_metadata.for_component(cls.name)
+        file_name = meta.get("classifier_file", CRF_MODEL_FILE_NAME)
+        model_file = os.path.join(model_dir, file_name)
 
         if os.path.exists(model_file):
             ent_tagger = joblib.load(model_file)
@@ -312,7 +313,7 @@ class CRFEntityExtractor(EntityExtractor):
             return CRFEntityExtractor(meta)
 
     def persist(self, model_dir):
-        # type: (Text) -> Dict[Text, Any]
+        # type: (Text) -> Optional[Dict[Text, Any]]
         """Persist this model into the passed directory.
 
         Returns the metadata necessary to load the model again."""
@@ -324,7 +325,7 @@ class CRFEntityExtractor(EntityExtractor):
 
             joblib.dump(self.ent_tagger, model_file_name)
 
-        return {self.name: self.component_config}
+        return {"classifier_file": CRF_MODEL_FILE_NAME}
 
     def _sentence_to_features(self, sentence):
         # type: (List[Tuple[Text, Text, Text, Text]]) -> List[Dict[Text, Any]]

@@ -15,6 +15,8 @@ from threading import Lock
 from rasa_nlu import utils
 from typing import Text, List
 
+from rasa_nlu.classifiers.keyword_intent_classifier import \
+    KeywordIntentClassifier
 from rasa_nlu.model import Metadata, Interpreter
 
 logger = logging.getLogger(__name__)
@@ -150,7 +152,10 @@ class Project(object):
             return FALLBACK_MODEL_NAME
 
     def _fallback_model(self):
-        meta = Metadata({"pipeline": ["intent_classifier_keyword"]}, "")
+        meta = Metadata({"pipeline": [{
+            "name": "intent_classifier_keyword",
+            "class": utils.module_path_from_object(KeywordIntentClassifier())
+        }]}, "")
         return Interpreter.create(meta, self._component_builder)
 
     def _search_for_models(self):

@@ -107,8 +107,9 @@ class NGramFeaturizer(Featurizer):
              ):
         # type: (...) -> NGramFeaturizer
 
-        meta = model_metadata.get(cls.name)
-        classifier_file = os.path.join(model_dir, NGRAM_MODEL_FILE_NAME)
+        meta = model_metadata.for_component(cls.name)
+        file_name = meta.get("classifier_file", NGRAM_MODEL_FILE_NAME)
+        classifier_file = os.path.join(model_dir, file_name)
 
         if os.path.exists(classifier_file):
             return utils.pycloud_unpickle(classifier_file)
@@ -121,7 +122,7 @@ class NGramFeaturizer(Featurizer):
 
         classifier_file = os.path.join(model_dir, NGRAM_MODEL_FILE_NAME)
         utils.pycloud_pickle(classifier_file, self)
-        return {self.name: self.component_config}
+        return {"classifier_file": NGRAM_MODEL_FILE_NAME}
 
     def train_on_sentences(self, examples):
         labels = [e.get("intent") for e in examples]

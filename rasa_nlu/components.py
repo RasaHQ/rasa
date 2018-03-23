@@ -165,7 +165,7 @@ class Component(object):
     def required_packages(cls):
         # type: () -> List[Text]
         """Specify which python packages need to be installed to use this
-        component, e.g. `["spacy", "numpy"]`.
+        component, e.g. `["spacy"]`.
 
         This list of requirements allows us to fail early during training
         if a required package is not installed."""
@@ -190,7 +190,7 @@ class Component(object):
         if cached_component:
             return cached_component
         else:
-            component_config = model_metadata.get(cls.name)
+            component_config = model_metadata.for_component(cls.name)
             return cls(component_config)
 
     @classmethod
@@ -243,7 +243,7 @@ class Component(object):
         # type: (Text) -> Optional[Dict[Text, Any]]
         """Persist this component to disk for future loading."""
 
-        return {self.name: self.component_config}
+        pass
 
     @classmethod
     def cache_key(cls, model_metadata):

@@ -1,5 +1,4 @@
 language: "en"
-num_threads: 1
 
 pipeline:
 - name: "spacy_nlp"
