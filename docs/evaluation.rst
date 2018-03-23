@@ -78,3 +78,17 @@ near [Alexanderplatz](loc) [tonight](time)          O   loc time (2)          O 
 [near](loc) Alexanderplatz [tonight](time)          loc O   time (2)          U-loc O     U-time (1)
 [near Alexanderplatz tonight](loc)                  loc loc loc  (2)          B-loc I-loc L-loc  (1)
 ==================================================  ========================  ===========================
+
+
+Evaluation Parameters
+---------------------
+
+There is a number of parameters you can pass to the evaluation script
+
+.. code-block:: bash
+
+    $ python -m rasa_nlu.evaluate --help
+
+Here is a quick overview:
+
+.. program-output:: python -m rasa_nlu.evaluate --help

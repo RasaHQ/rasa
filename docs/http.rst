@@ -197,6 +197,15 @@ This will return the default model configuration of the Rasa NLU instance.
         ...
       }
 
+``DELETE /models``
+^^^^^^^^^^^^^^^^^
+
+This will unload a model from the server memory
+
+.. code-block:: bash
+
+    $ curl -X DELETE localhost:5000/models -d '{"project": "my_restaurant_search_bot", "model": <model_XXXXXX>}'
+
 .. _section_auth:
 
 Authorization
@@ -257,3 +266,17 @@ You can also specify the model you want to use for a given project, the default 
     $ curl -XPOST localhost:5000/parse -d '{"q":"I am looking for Chinese food", "project":"my_restaurant_search_bot", "model":<model_XXXXXX>}'
 
 If no project is to be found by the server under the ``path`` directory, a ``"default"`` one will be used, using a simple fallback model.
+
+
+Server Parameters
+-----------------
+
+There is a number of parameters you can pass to the server script when running
+
+.. code-block:: bash
+
+    $ python -m rasa_nlu.server
+
+Here is a quick overview:
+
+.. program-output:: python -m rasa_nlu.server --help
