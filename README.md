@@ -31,9 +31,9 @@ If you are new to Rasa NLU and want to create a bot, you should start with the [
 
 - **What does Rasa NLU do? 🤔** [Read About the Rasa Stack](http://rasa.com/products/rasa-stack/)
 
-- **I'd like to read the detailed docs 🤓** [Read The Docs](https://nlu.rasa.ai)
+- **I'd like to read the detailed docs 🤓** [Read The Docs](https://nlu.rasa.com)
 
-- **I'm ready to install Rasa NLU! 🚀** [Installation](https://nlu.rasa.ai/installation.html)
+- **I'm ready to install Rasa NLU! 🚀** [Installation](https://nlu.rasa.com/installation.html)
 
 - **I have a question ❓** [Gitter channel](https://gitter.im/RasaHQ/rasa_nlu)
 
@@ -41,7 +41,7 @@ If you are new to Rasa NLU and want to create a bot, you should start with the [
 
 # Quick Install
 
-Fur the full installation instructions, please head over to the documenation: [Installation](https://nlu.rasa.ai/installation.html)
+Fur the full installation instructions, please head over to the documenation: [Installation](https://nlu.rasa.com/installation.html)
 
 **Via Docker Image**
 From docker hub:
@@ -117,7 +117,7 @@ The intended audience is mainly __people developing bots__, starting from scratc
 * You don't have to make a `https` call to parse every message.
 * You can tune models to work well on your particular use case.
 
-These points are laid out in more detail in a [blog post](https://medium.com/lastmile-conversations/do-it-yourself-nlp-for-bot-developers-2e2da2817f3d). Rasa is a set of tools for building more advanced bots, developed by the company [Rasa](https://rasa.ai). Rasa NLU is the natural language understanding module, and the first component to be open sourced. 
+These points are laid out in more detail in a [blog post](https://medium.com/lastmile-conversations/do-it-yourself-nlp-for-bot-developers-2e2da2817f3d). Rasa is a set of tools for building more advanced bots, developed by the company [Rasa](https://rasa.com). Rasa NLU is the natural language understanding module, and the first component to be open sourced. 
 
 ### What languages does it support?
 Short answer: English, German, and Spanish currently. 
