@@ -38,16 +38,20 @@ def create_argument_parser():
             description='evaluate a Rasa NLU pipeline with cross '
                         'validation or on external data')
 
-    parser.add_argument('-d', '--data', required=True,
+    parser.add_argument('-d', '--data',
+                        required=True,
                         help="file containing training/evaluation data")
 
-    parser.add_argument('--mode', required=False, default="evaluation",
+    parser.add_argument('--mode',
+                        default="evaluation",
                         help="evaluation|crossvalidation (evaluate "
                              "pretrained model or train model "
                              "by crossvalidation)")
 
-    parser.add_argument('-c', '--config', required=True,
-                        help="config file")
+    # todo: make the two different modes two subparsers
+    parser.add_argument('-c', '--config',
+
+                        help="model configurion file (crossvalidation only)")
 
     parser.add_argument('-m', '--model', required=False,
                         help="path to model (evaluation only)")
@@ -55,7 +59,7 @@ def create_argument_parser():
     parser.add_argument('-f', '--folds', required=False, default=10,
                         help="number of CV folds (crossvalidation only)")
 
-    utils.add_logging_option_arguments(parser)
+    utils.add_logging_option_arguments(parser, default=logging.INFO)
 
     return parser
 
@@ -520,7 +524,7 @@ def run_evaluation(data_path, model_path,
     """Evaluate intent classification and entity extraction."""
 
     # get the metadata config from the package data
-    interpreter = Interpreter.load(model_path, config, component_builder)
+    interpreter = Interpreter.load(model_path, component_builder)
     test_data = training_data.load_data(data_path,
                                         interpreter.model_metadata.language)
 
@@ -695,10 +699,15 @@ if __name__ == '__main__':  # pragma: no cover
 
     if cmdline_args.mode == "crossvalidation":
 
+        # TODO: move parsing into sub parser
         # manual check argument dependency
         if cmdline_args.model is not None:
             parser.error("Crossvalidation will train a new model "
-                         "- do not specify external model")
+                         "- do not specify external model.")
+
+        if cmdline_args.config is None:
+            parser.error("Crossvalidation will train a new model "
+                         "you need to specify a model configuration.")
 
         nlu_config = config.load(cmdline_args.config)
         data = training_data.load_data(cmdline_args.data)

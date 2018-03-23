@@ -21,7 +21,7 @@ from typing import Optional
 from typing import Text
 
 
-def add_logging_option_arguments(parser):
+def add_logging_option_arguments(parser, default=logging.WARNING):
     """Add options to an argument parser to configure logging levels."""
 
     # arguments for logging configuration
@@ -32,7 +32,7 @@ def add_logging_option_arguments(parser):
             action="store_const",
             dest="loglevel",
             const=logging.DEBUG,
-            default=logging.WARNING,
+            default=default,
     )
     parser.add_argument(
             '-v', '--verbose',

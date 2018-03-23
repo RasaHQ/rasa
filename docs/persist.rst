@@ -22,7 +22,6 @@ Rasa NLU supports using `S3 <https://aws.amazon.com/s3/>`_ and
     - ``AWS_ENDPOINT_URL``
 
 
-
 * Google Cloud Storage
     GCS is supported using the ``google-cloud-storage`` package
     which you can install with ``pip install google-cloud-storage``

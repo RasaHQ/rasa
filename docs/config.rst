@@ -16,10 +16,17 @@ so the option ``pipeline`` is specified with the ``RASA_PIPELINE`` env var.
 
 Default
 -------
-Here is the default configuration including all available parameters:
+Here is an example model configuration:
 
-.. literalinclude:: ../sample_configs/config_defaults.yml
+.. literalinclude:: ../sample_configs/config_crf.yml
     :language: yaml
+
+As you can see, there are a couple top level configuration keys, like
+``language`` and ``pipeline`` - but most of the configuration is component
+specific.
+
+Explanations for the configuration keys of the different components are part
+of the `:ref:`section_pipeline``.
 
 Options
 -------
@@ -45,7 +52,7 @@ pipeline
 
 :Description:
     The pipeline used for training. Can either be a template (passing a string) or a list of components (array). For all
-    available templates, see :ref:`section_pipeline`.
+    available templates, see `:ref:`section_pipeline``.
 
 language
 ~~~~~~~~

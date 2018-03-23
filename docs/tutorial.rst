@@ -11,7 +11,7 @@ Tutorial: A simple restaurant search bot
     existing wit/LUIS/Dialogflow app.
 
 As an example we'll start a new project covering the domain
-of searching for restaurants. We'll start with an extremely simple 
+of searching for restaurants. We'll start with an extremely simple
 model of those conversations. You can build up from there.
 
 Let's assume that `anything` our bot's users say can be
