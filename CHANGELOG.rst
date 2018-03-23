@@ -21,6 +21,8 @@ Added
 
 Changed
 -------
+- model configuration is separated from server / train configuration. This is a
+  **breaking change** and models need to be retrained. See migrations guide.
 - Regex features are now sorted internally.
   **retrain your model if you use regex features**
 - The keyword intent classifier now returns ``null`` instead
@@ -35,9 +37,6 @@ Changed
 Removed
 -------
 - MITIE support - backend is no longer supported.
-
-Fixed
------
 
 
 [0.11.1] - 2018-02-02

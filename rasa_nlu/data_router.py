@@ -248,23 +248,6 @@ class DataRouter(object):
         return [os.path.basename(fn)
                 for fn in utils.list_subdirectories(path)]
 
-    @staticmethod
-    def create_temporary_file(data, suffix=""):
-        """Creates a tempfile.NamedTemporaryFile object for data"""
-
-        if PY3:
-            f = tempfile.NamedTemporaryFile("w+", suffix=suffix,
-                                            delete=False,
-                                            encoding="utf-8")
-            f.write(data)
-        else:
-            f = tempfile.NamedTemporaryFile("w+", suffix=suffix,
-                                            delete=False)
-            f.write(data.encode("utf-8"))
-
-        f.close()
-        return f
-
     def parse_training_examples(self, examples, project, model):
         # type: (Optional[List[Message]], Text, Text) -> List[Dict[Text, Text]]
         """Parses a list of training examples to the project interpreter"""
@@ -295,14 +278,12 @@ class DataRouter(object):
             }
         }
 
-    def start_train_process(self, data, project, train_config):
+    def start_train_process(self, data_file, project, train_config):
         # type: (Text, Text, RasaNLUModelConfig) -> Deferred
         """Start a model training."""
 
         if not project:
             raise InvalidProjectError("Missing project name to train")
-
-        f = self.create_temporary_file(data, "_training_data")
 
         if project in self.project_store:
             if self.project_store[project].status == 1:
@@ -332,7 +313,7 @@ class DataRouter(object):
 
         result = self.pool.submit(do_train_in_worker,
                                   train_config,
-                                  f.name,
+                                  data_file,
                                   path=self.project_dir,
                                   project=project)
         result = deferred_from_future(result)
@@ -347,8 +328,8 @@ class DataRouter(object):
 
         project = project or RasaNLUModelConfig.DEFAULT_PROJECT_NAME
         model = model or None
-        f = self.create_temporary_file(data, "_training_data")
-        test_data = load_data(f.name)
+        file_name = utils.create_temporary_file(data, "_training_data")
+        test_data = load_data(file_name)
 
         if project not in self.project_store:
             raise InvalidProjectError("Project {} could not "

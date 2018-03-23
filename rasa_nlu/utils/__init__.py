@@ -9,11 +9,13 @@ import io
 import json
 import logging
 import os
+import tempfile
 
 import simplejson
 import six
 from builtins import str
 import yaml
+from future.utils import PY3
 from typing import List, Any
 from typing import Optional
 from typing import Text
@@ -223,6 +225,11 @@ def fix_yaml_loader():
     SafeLoader.add_constructor(u'tag:yaml.org,2002:str', construct_yaml_str)
 
 
+def read_yaml(content):
+    fix_yaml_loader()
+    return yaml.load(content)
+
+
 def read_yaml_file(filename):
     fix_yaml_loader()
     return yaml.load(read_file(filename, "utf-8"))
@@ -312,3 +319,20 @@ def pycloud_pickle(file_name, obj):
 
     with io.open(file_name, 'wb') as f:
         cloudpickle.dump(obj, f)
+
+
+def create_temporary_file(data, suffix=""):
+    """Creates a tempfile.NamedTemporaryFile object for data"""
+
+    if PY3:
+        f = tempfile.NamedTemporaryFile("w+", suffix=suffix,
+                                        delete=False,
+                                        encoding="utf-8")
+        f.write(data)
+    else:
+        f = tempfile.NamedTemporaryFile("w+", suffix=suffix,
+                                        delete=False)
+        f.write(data.encode("utf-8"))
+
+    f.close()
+    return f.name

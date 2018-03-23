@@ -127,6 +127,20 @@ def parameter_or_default(request, name, default=None):
     return request_params.get(name, default)
 
 
+def dump_to_data_file(data):
+    if isinstance(data, six.string_types):
+        data_string = data
+    else:
+        data_string = utils.json_to_string(data)
+
+    return utils.create_temporary_file(data_string, "_training_data")
+
+
+def is_yaml_request(request):
+    return "yaml" in next(
+            iter(request.requestHeaders.getRawHeaders("Content-Type", [])), "")
+
+
 class RasaNLU(object):
     """Class representing Rasa NLU http server"""
 
@@ -223,7 +237,6 @@ class RasaNLU(object):
         """Returns the in-memory configuration of the Rasa server"""
 
         request.setHeader('Content-Type', 'application/json')
-        # TODO: check if this works
         return json_to_string(self.default_model_config)
 
     @app.route("/status", methods=['GET', 'OPTIONS'])
@@ -238,24 +251,30 @@ class RasaNLU(object):
     @check_cors
     @inlineCallbacks
     def train(self, request):
-        model_config = self.default_model_config
-
         project = parameter_or_default(request, "project", default=None)
 
-        data_string = request.content.read().decode('utf-8', 'strict')
+        request_content = request.content.read().decode('utf-8', 'strict')
 
-        # update model config from get parameters
-        for key, value in request.args.items():
-            k = key.decode('utf-8', 'strict')
-            v = value[0].decode('utf-8', 'strict')
-            model_config[k] = v
+        if is_yaml_request(request):
+            # assumes the user submitted a model configuration with a data
+            # parameter attached to it
+            model_config = utils.read_yaml(request_content)
+            data = model_config.get("data")
+        else:
+            # assumes the caller just provided training data without config
+            # this will use the default model config the server
+            # was started with
+            model_config = self.default_model_config
+            data = request_content
+
+        data_file = dump_to_data_file(data)
 
         request.setHeader('Content-Type', 'application/json')
 
         try:
             request.setResponseCode(200)
             response = yield self.data_router.start_train_process(
-                    data_string, project, RasaNLUModelConfig(model_config))
+                    data_file, project, RasaNLUModelConfig(model_config))
             returnValue(json_to_string({'info': 'new model trained: {}'
                                                 ''.format(response)}))
         except AlreadyTrainingError as e:
