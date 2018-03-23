@@ -4,11 +4,11 @@
 [![Coverage Status](https://coveralls.io/repos/github/RasaHQ/rasa_core/badge.svg?branch=master)](https://coveralls.io/github/RasaHQ/rasa_core?branch=master)
 [![PyPI version](https://img.shields.io/pypi/v/rasa_core.svg)](https://pypi.python.org/pypi/rasa-core)
 
-- **What do Rasa Core & NLU do? 🤔** [Read About the Rasa Stack](http://rasa.ai/products/rasa-stack/)
+- **What do Rasa Core & NLU do? 🤔** [Read About the Rasa Stack](http://rasa.com/products/rasa-stack/)
 
-- **I'd like to read the detailed docs 🤓** [Read The Docs](https://core.rasa.ai)
+- **I'd like to read the detailed docs 🤓** [Read The Docs](https://core.rasa.com)
 
-- **I'm ready to install Rasa Core! 🚀** [Installation](https://core.rasa.ai/installation.html)
+- **I'm ready to install Rasa Core! 🚀** [Installation](https://core.rasa.com/installation.html)
 
 - **I have a question ❓** [Gitter channel](https://gitter.im/RasaHQ/rasa_core)
 
@@ -35,8 +35,8 @@ There's a lot more background information in this [blog post](https://medium.com
 
 There is extensive documentation:
 
-- [master](https://core.rasa.ai/master/)&nbsp; (if you install from **github**) or 
-- [stable](https://core.rasa.ai/)&nbsp;&nbsp; (if you install from **pypi**)
+- [master](https://core.rasa.com/master/)&nbsp; (if you install from **github**) or 
+- [stable](https://core.rasa.com/)&nbsp;&nbsp; (if you install from **pypi**)
 
 
 Please use [gitter](https://gitter.im/RasaHQ/rasa_core) for quick answers to 
