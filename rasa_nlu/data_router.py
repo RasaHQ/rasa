@@ -104,6 +104,7 @@ class DataRouter(object):
             utils.create_dir_for_file(response_logfile)
             query_logger = Logger(observer=jsonFileLogObserver(
                 io.open(response_logfile, 'a', encoding='utf8')),
+                recordSeparator='',
                 namespace='query-logger')
             # Prevents queries getting logged with parent logger --> might log them to stdout
             logger.info("Logging requests to '{}'.".format(response_logfile))
