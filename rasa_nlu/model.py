@@ -23,6 +23,7 @@ from rasa_nlu.config import RasaNLUConfig
 from rasa_nlu.persistor import Persistor
 from rasa_nlu.training_data import TrainingData, Message
 from rasa_nlu.utils import create_dir, write_json_to_file
+from rasa_nlu.components import NoLanguageSupportingError
 
 logger = logging.getLogger(__name__)
 
@@ -121,11 +122,31 @@ class Trainer(object):
         if not self.skip_validation:
             components.validate_requirements(config.pipeline)
 
-        # Transform the passed names of the pipeline components into classes
+        # build pipeline
+        self.pipeline = self._build_pipeline(config, component_builder)
+
+    @staticmethod
+    def _build_pipeline(config, component_builder):
+        # type: (RasaNLUConfig, ComponentBuilder) -> List
+        """Transform the passed names of the pipeline components into classes"""
+        pipeline = []
+
         for component_name in config.pipeline:
-            component = component_builder.create_component(
-                    component_name, config)
-            self.pipeline.append(component)
+            try:
+                component = component_builder.create_component(
+                        component_name, config)
+                pipeline.append(component)
+            except NoLanguageSupportingError as e:
+                # component don't support current language
+                if not config.component_force_language_support:
+                    # ignore this component
+                    logger.warning(e)
+                    continue
+
+                # else re-raise the exception
+                raise
+
+        return pipeline
 
     def train(self, data):
         # type: (TrainingData) -> Interpreter
