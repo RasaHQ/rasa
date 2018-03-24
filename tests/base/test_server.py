@@ -34,7 +34,7 @@ def app(tmpdir_factory):
     router = DataRouter(tmpdir_factory.mktemp("projects").strpath,
                         emulation_mode="wit")
     rasa = RasaNLU(router,
-                   log_file=nlu_log_file,
+                   logfile=nlu_log_file,
                    testing=True)
     return StubTreq(rasa.app.resource())
 

@@ -37,7 +37,7 @@ def app(component_builder):
                  os.path.join(root_dir, "data/examples/rasa/demo-rasa.json"))
 
     router = DataRouter(os.path.join(root_dir, "test_projects"))
-    rasa = RasaNLU(router, log_file=nlu_log_file, testing=True)
+    rasa = RasaNLU(router, logfile=nlu_log_file, testing=True)
 
     return StubTreq(rasa.app.resource())
 
