@@ -32,6 +32,7 @@ Changed
   ``"extractor": "ner_crf"`` or no extractor at all
 - Ignore hidden files when listing projects or models
 - Docker Images now run on python 3.6 for better non-latin character set support
+- Added recordSeparator parameter in data_router.py for generating json logs without record seperator it now works with fluentd
 
 Removed
 -------
