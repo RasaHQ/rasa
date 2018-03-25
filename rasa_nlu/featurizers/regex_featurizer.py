@@ -9,14 +9,10 @@ import re
 import warnings
 
 import typing
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Text
+from typing import Any, Dict, List, Optional, Text
 
 from rasa_nlu import utils
-from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.featurizers import Featurizer
 from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
@@ -29,6 +25,9 @@ if typing.TYPE_CHECKING:
     from rasa_nlu.model import Metadata
 
 
+REGEX_FEATURIZER_FILE_NAME = "regex_featurizer.json"
+
+
 class RegexFeaturizer(Featurizer):
     name = "intent_entity_featurizer_regex"
 
@@ -36,18 +35,13 @@ class RegexFeaturizer(Featurizer):
 
     requires = ["tokens"]
 
-    def __init__(self, known_patterns=None):
-        super(RegexFeaturizer, self).__init__()
+    def __init__(self, component_config=None, known_patterns=None):
+        super(RegexFeaturizer, self).__init__(component_config)
 
         self.known_patterns = known_patterns if known_patterns else []
 
-    @classmethod
-    def required_packages(cls):
-        # type: () -> List[Text]
-        return ["numpy"]
-
     def train(self, training_data, config, **kwargs):
-        # type: (TrainingData, RasaNLUConfig, **Any) -> None
+        # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
 
         for example in training_data.regex_features:
             self.known_patterns.append(example)
@@ -98,26 +92,24 @@ class RegexFeaturizer(Featurizer):
              ):
         # type: (...) -> RegexFeaturizer
 
-        if model_dir and model_metadata.get("regex_featurizer"):
-            regex_file = os.path.join(model_dir,
-                                      model_metadata.get("regex_featurizer"))
-            if os.path.isfile(regex_file):
-                known_patterns = utils.read_json_file(regex_file)
-                return RegexFeaturizer(known_patterns)
-            else:
-                warnings.warn("Failed to load regex pattern file "
-                              "'{}'".format(regex_file))
-        return RegexFeaturizer()
+        meta = model_metadata.for_component(cls.name)
+        file_name = meta.get("regex_file", REGEX_FEATURIZER_FILE_NAME)
+        regex_file = os.path.join(model_dir, file_name)
+
+        if os.path.exists(regex_file):
+            known_patterns = utils.read_json_file(regex_file)
+            return RegexFeaturizer(meta, known_patterns=known_patterns)
+        else:
+            return RegexFeaturizer(meta)
 
     def persist(self, model_dir):
-        # type: (Text) -> Dict[Text, Any]
+        # type: (Text) -> Optional[Dict[Text, Any]]
         """Persist this model into the passed directory.
 
         Return the metadata necessary to load the model again."""
 
         if self.known_patterns:
-            regex_file = os.path.join(model_dir, "regex_featurizer.json")
+            regex_file = os.path.join(model_dir, REGEX_FEATURIZER_FILE_NAME)
             utils.write_json_to_file(regex_file, self.known_patterns, indent=4)
-            return {"regex_featurizer": "regex_featurizer.json"}
-        else:
-            return {"regex_featurizer": None}
+
+        return {"regex_file": REGEX_FEATURIZER_FILE_NAME}

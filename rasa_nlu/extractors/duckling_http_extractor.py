@@ -8,18 +8,17 @@ import os
 
 import requests
 import simplejson
-from typing import Any, Dict
+from typing import Any
 from typing import List
 from typing import Optional
 from typing import Text
 
-from rasa_nlu import utils
-from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.extractors import EntityExtractor
-from rasa_nlu.extractors.duckling_extractor import extract_value
+from rasa_nlu.extractors.duckling_extractor import (
+    filter_irrelevant_matches, convert_duckling_format_to_rasa)
 from rasa_nlu.model import Metadata
 from rasa_nlu.training_data import Message
-from rasa_nlu.utils import write_json_to_file
 
 logger = logging.getLogger(__name__)
 
@@ -31,34 +30,56 @@ class DucklingHTTPExtractor(EntityExtractor):
 
     provides = ["entities"]
 
-    def __init__(self, duckling_url, language, dimensions=None):
-        # type: (Text, Text, Optional[List[Text]]) -> None
+    defaults = {
+        # by default all dimensions recognized by duckling are returned
+        # dimensions can be configured to contain an array of strings
+        # with the names of the dimensions to filter for
+        "dimensions": None,
 
-        super(DucklingHTTPExtractor, self).__init__()
-        self.dimensions = dimensions
-        self.duckling_url = duckling_url
+        # http url of the running duckling server
+        "url": None,
+
+        # locale - if not set, we will use the language of the model
+        "locale": None,
+    }
+
+    def __init__(self, component_config=None, language=None):
+        # type: (Text, Optional[List[Text]]) -> None
+
+        super(DucklingHTTPExtractor, self).__init__(component_config)
         self.language = language
 
     @classmethod
     def create(cls, config):
-        # type: (RasaNLUConfig) -> DucklingHTTPExtractor
+        # type: (RasaNLUModelConfig) -> DucklingHTTPExtractor
 
-        return DucklingHTTPExtractor(config["duckling_http_url"],
-                                     config["language"],
-                                     config["duckling_dimensions"])
+        return DucklingHTTPExtractor(config.for_component(cls.name,
+                                                          cls.defaults),
+                                     config.language)
+
+    def _locale(self):
+        if not self.component_config.get("locale"):
+            # this is king of a quick fix to generate a proper locale
+            # works most of the time
+            locale_fix = "{}_{}".format(self.language, self.language.upper())
+            self.component_config["locale"] = locale_fix
+        return self.component_config.get("locale")
+
+    def _url(self):
+        """Return url of the duckling service. Environment var will override."""
+        if os.environ.get("RASA_DUCKLING_HTTP_URL"):
+            return os.environ["RASA_DUCKLING_HTTP_URL"]
+
+        return self.component_config.get("url")
 
     def _duckling_parse(self, text):
         """Sends the request to the duckling server and parses the result."""
 
         try:
-            # TODO: this is king of a quick fix to generate a proper locale
-            #       for duckling. and might not always create correct
-            #       locales. We should rather introduce a new config value.
-            locale = "{}_{}".format(self.language, self.language.upper())
-            payload = {"text": text, "locale": locale}
+            payload = {"text": text, "locale": self._locale()}
             headers = {"Content-Type": "application/x-www-form-urlencoded; "
                                        "charset=UTF-8"}
-            response = requests.post(self.duckling_url + "/parse",
+            response = requests.post(self._url() + "/parse",
                                      data=payload,
                                      headers=headers)
             if response.status_code == 200:
@@ -78,37 +99,16 @@ class DucklingHTTPExtractor(EntityExtractor):
                          "Error: {}".format(e))
             return []
 
-    def _filter_irrelevant_matches(self, matches):
-        """Only return dimensions the user configured"""
-
-        if self.dimensions:
-            return [match
-                    for match in matches
-                    if match["dim"] in self.dimensions]
-        else:
-            return matches
-
     def process(self, message, **kwargs):
         # type: (Message, **Any) -> None
 
-        extracted = []
-        if self.duckling_url is not None:
-
+        if self.component_config["url"] is not None:
             matches = self._duckling_parse(message.text)
-            relevant_matches = self._filter_irrelevant_matches(matches)
-            for match in relevant_matches:
-                value = extract_value(match)
-                entity = {
-                    "start": match["start"],
-                    "end": match["end"],
-                    "text": match["body"],
-                    "value": value,
-                    "confidence": 1.0,
-                    "additional_info": match["value"],
-                    "entity": match["dim"]}
-
-                extracted.append(entity)
+            dimensions = self.component_config["dimensions"]
+            relevant_matches = filter_irrelevant_matches(matches, dimensions)
+            extracted = convert_duckling_format_to_rasa(relevant_matches)
         else:
+            extracted = []
             logger.warn("Duckling HTTP component in pipeline, but no "
                         "`duckling_http_url` configuration in the config "
                         "file.")
@@ -117,14 +117,6 @@ class DucklingHTTPExtractor(EntityExtractor):
         message.set("entities",
                     message.get("entities", []) + extracted,
                     add_to_output=True)
-
-    def persist(self, model_dir):
-        # type: (Text) -> Dict[Text, Any]
-
-        file_name = self.name + ".json"
-        full_name = os.path.join(model_dir, file_name)
-        write_json_to_file(full_name, {"dimensions": self.dimensions})
-        return {self.name: file_name}
 
     @classmethod
     def load(cls,
@@ -135,14 +127,5 @@ class DucklingHTTPExtractor(EntityExtractor):
              ):
         # type: (...) -> DucklingHTTPExtractor
 
-        persisted = os.path.join(model_dir, model_metadata.get(cls.name))
-        config = kwargs.get("config", {})
-        dimensions = None
-
-        if os.path.isfile(persisted):
-            persisted_data = utils.read_json_file(persisted)
-            dimensions = persisted_data["dimensions"]
-
-        return DucklingHTTPExtractor(config.get("duckling_http_url"),
-                                     model_metadata.get("language"),
-                                     dimensions)
+        component_config = model_metadata.for_component(cls.name)
+        return cls(component_config, model_metadata.get("language"))

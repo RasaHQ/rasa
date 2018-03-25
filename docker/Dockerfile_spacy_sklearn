@@ -90,11 +90,11 @@ RUN pip install https://github.com/explosion/spacy-models/releases/download/en_c
     && pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.0.0/de_core_news_sm-2.0.0.tar.gz --no-cache-dir > /dev/null \
     && python -m spacy link de_core_news_sm de
 
-COPY sample_configs/config_spacy.json ${RASA_NLU_HOME}/config.json
+COPY sample_configs/config_spacy.yml ${RASA_NLU_HOME}/config.yml
 
 VOLUME ["/app/projects", "/app/logs", "/app/data"]
 
 EXPOSE 5000
 
 ENTRYPOINT ["./entrypoint.sh"]
-CMD ["start", "-c", "config.json"]
+CMD ["start", "-c", "config.yml"]

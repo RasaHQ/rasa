@@ -62,6 +62,18 @@ nlp_spacy
 :Description:
     Initializes spacy structures. Every spacy component relies on this, hence this should be put at the beginning
     of every pipeline that uses any spacy components.
+:Configuration:
+    Language model, default will use the configured language.
+    If the spacy model to be used has a name that is different from the language tag (``"en"``, ``"de"``, etc.),
+    the model name can be specified using this configuration variable. The name will be passed to ``spacy.load(name)``.
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "nlp_spacy"
+          # language model to load
+          model: "en_core_web_md"
+
 
 intent_featurizer_spacy
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -82,6 +94,15 @@ intent_featurizer_ngrams
     character sequence is present in the word sequence or not.
 
     .. note:: There needs to be another intent featurizer previous to this one in the pipeline!
+:Configuration:
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "intent_featurizer_ngrams"
+          # Maximum number of ngrams to use when augmenting
+          # feature vectors with character ngrams
+          max_number_of_ngrams: 10
 
 
 intent_classifier_keyword
@@ -128,6 +149,24 @@ intent_classifier_sklearn
     The sklearn intent classifier trains a linear SVM which gets optimized using a grid search. In addition
     to other classifiers it also provides rankings of the labels that did not "win". The spacy intent classifier
     needs to be preceded by a featurizer in the pipeline. This featurizer creates the features used for the classification.
+
+:Configuration:
+    During the training of the SVM a hyperparameter search is run to
+    find the best parameter set. In the config, you can specify the parameters
+    that will get tried
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "intent_classifier_sklearn"
+          # Specifies the list of regularization values to
+          # cross-validate over for C-SVM.
+          # This is used with the ``kernel`` hyperparameter in GridSearchCV.
+          C: [1, 2, 5, 10, 20, 100]
+          # Specifies the kernel to use with C-SVM.
+          # This is used with the ``C`` hyperparameter in GridSearchCV.
+          kernels: ["linear"]
+
 
 intent_entity_featurizer_regex
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -242,6 +281,37 @@ ner_crf
     and the states are entity classes. Features of the words (capitalisation, POS tagging,
     etc.) give probabilities to certain entity classes, as are transitions between
     neighbouring entity tags: the most likely set of tags is then calculated and returned.
+:Configuration:
+   .. code-block:: yaml
+
+        pipeline:
+        - name: "ner_crf"
+          # The features are a ``[before, word, after]`` array with
+          # before, word, after holding keys about which
+          # features to use for each word, for example, ``"title"``
+          # in array before will have the feature
+          # "is the preceding word in title case?".
+          # Available features are:
+          # ``low``, ``title``, ``word3``, ``word2``, ``pos``,
+          # ``pos2``, ``bias``, ``upper`` and ``digit``
+          features: [["low", "title"], ["bias", "word3"], ["upper", "pos", "pos2"]]
+
+          # The flag determines whether to use BILOU tagging or not. BILOU
+          # tagging is more rigorous however
+          # requires more examples per entity. Rule of thumb: use only
+          # if more than 100 examples per entity.
+          BILOU_flag: true
+
+          # This is the value given to sklearn_crfcuite.CRF tagger before training.
+          max_iterations: 50
+
+          # This is the value given to sklearn_crfcuite.CRF tagger before training.
+          # Specifies the L1 regularization coefficient.
+          L1_c: 1.0
+
+          # This is the value given to sklearn_crfcuite.CRF tagger before training.
+          # Specifies the L2 regularization coefficient.
+          L2_c: 1e-3
 
 .. _section_pipeline_duckling:
 
@@ -274,6 +344,19 @@ ner_duckling
     situation, your application would have to decide which entity type is be the correct one.
     The extractor will always return `1.0` as a confidence, as it is a rule
     based system.
+
+:Configuration:
+    Configure which dimensions, i.e. entity types, the :ref:`duckling component <section_pipeline_duckling>` to extract.
+    A full list of available dimensions can be found in the `duckling documentation <https://duckling.wit.ai/>`_.
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "ner_duckling"
+          # dimensions to extract
+          dimensions: ["time", "number", "amount-of-money", "distance"]
+
+
 
 Creating new Components
 -----------------------

@@ -17,5 +17,6 @@ google-cloud-storage==1.7.0
 sphinx==1.5.2
 sphinx-autobuild==0.7.1
 sphinxcontrib-versioning==2.2.1
+sphinxcontrib-programoutput==0.11
 nbsphinx==0.2.18
 -e git://github.com/RasaHQ/sphinx_rtd_theme.git#egg=sphinx_rtd_theme

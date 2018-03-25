@@ -3,12 +3,14 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import os
+
 import mock
 import pytest
 from moto import mock_s3
 
 from tests import utilities
-from rasa_nlu import persistor
+from rasa_nlu import persistor, train
 
 
 class Object(object):
@@ -21,19 +23,23 @@ def test_if_persistor_class_has_list_projects_method():
 
 
 @mock_s3
-def test_list_projects_method_in_AWSPersistor(component_builder):
+def test_list_projects_method_in_AWSPersistor(component_builder, tmpdir):
     # artificially create a persisted model
     _config = utilities.base_test_conf("keyword")
-    _config['storage'] = 'aws'
-    _config['project'] = 'mytestproject'
-    _config['aws_region'] = 'us-east-1'
-    _config['bucket_name'] = 'rasa-test'
-    (trained, persisted_path) = utilities.run_train(_config, component_builder)
+    os.environ["BUCKET_NAME"] = 'rasa-test'
+    os.environ["AWS_DEFAULT_REGION"] = 'us-east-1'
+
+    (trained, _, persisted_path) = train.do_train(
+            _config,
+            data="data/test/demo-rasa-small.json",
+            path=tmpdir.strpath,
+            project='mytestproject',
+            storage='aws',
+            component_builder=component_builder)
 
     # We need to create the bucket since this is all in Moto's 'virtual' AWS
     # account
-    awspersistor = persistor.AWSPersistor(_config['aws_region'],
-                                          _config['bucket_name'])
+    awspersistor = persistor.AWSPersistor(os.environ["BUCKET_NAME"])
     result = awspersistor.list_projects()
 
     assert result == ['mytestproject']
@@ -41,7 +47,9 @@ def test_list_projects_method_in_AWSPersistor(component_builder):
 
 @mock_s3
 def test_list_projects_method_raise_exeception_in_AWSPersistor():
-    awspersistor = persistor.AWSPersistor("us-east-1", "rasa-test")
+    os.environ["AWS_DEFAULT_REGION"] = 'us-east-1'
+
+    awspersistor = persistor.AWSPersistor("rasa-test")
     result = awspersistor.list_projects()
 
     assert result == []

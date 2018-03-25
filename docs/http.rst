@@ -3,9 +3,14 @@
 Using rasa NLU as a HTTP server
 ===============================
 
-.. note:: Before you can use the server, you need to train a model! See :ref:`training_your_model`
+.. note::
 
-The HTTP api exists to make it easy for non-python projects to use rasa NLU, and to make it trivial for projects currently using wit/LUIS/Dialogflow to try it out.
+    Before you can use the server, you should train a model!
+    See :ref:`training_your_model`
+
+The HTTP api exists to make it easy for non-python projects to use rasa NLU,
+and to make it trivial for projects currently using wit/LUIS/Dialogflow
+to try it out.
 
 Running the server
 ------------------
@@ -13,17 +18,20 @@ You can run a simple http server that handles requests using your projects with 
 
 .. code-block:: bash
 
-    $ python -m rasa_nlu.server -c sample_configs/config_spacy.json
+    $ python -m rasa_nlu.server --path projects
 
-The server will look for existing projects under the folder defined by the ``path`` parameter in the configuration.
-By default a project will load the latest trained model.
+The server will look for existing projects under the folder defined by
+the ``path`` parameter. By default a project will load the latest
+trained model.
 
 
 Emulation
 ---------
-rasa NLU can 'emulate' any of these three services by making the ``/parse`` endpoint compatible with your existing code.
-To activate this, either add ``'emulate' : 'luis'`` to your config file or run the server with ``-e luis``.
-For example, if you would normally send your text to be parsed to LUIS, you would make a ``GET`` request to
+rasa NLU can 'emulate' any of these three services by making the ``/parse``
+endpoint compatible with your existing code. To activate this, either add
+``'emulate' : 'luis'`` to your config file or run the server with ``-e luis``.
+For example, if you would normally send your text to be parsed to LUIS,
+you would make a ``GET`` request to
 
 ``https://api.projectoxford.ai/luis/v2.0/apps/<app-id>?q=hello%20there``
 
@@ -33,6 +41,11 @@ in luis emulation mode you can call rasa by just sending this request to
 
 any extra query params are ignored by rasa, so you can safely send them along. 
 
+To use the emulation, pass the emulation mode to the server script:
+
+.. code-block:: bash
+
+    $ python -m rasa_nlu.server --path projects --emulate wit
 
 Endpoints
 ---------
@@ -40,20 +53,23 @@ Endpoints
 ``POST /parse`` (no emulation)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-You must POST data in this format ``'{"q":"<your text to parse>"}'``, you can do this with
+You must POST data in this format ``'{"q":"<your text to parse>"}'``,
+you can do this with
 
 .. code-block:: bash
 
     $ curl -XPOST localhost:5000/parse -d '{"q":"hello there"}'
 
-By default, when the project is not specified in the query, the ``"default"`` one will be used.
+By default, when the project is not specified in the query, the
+``"default"`` one will be used.
 You can (should) specify the project you want to use in your query :
 
 .. code-block:: bash
 
     $ curl -XPOST localhost:5000/parse -d '{"q":"hello there", "project": "my_restaurant_search_bot"}
 
-By default the latest trained model for the project will be loaded. You can also query against a specific model for a project :
+By default the latest trained model for the project will be loaded.
+You can also query against a specific model for a project :
 
 .. code-block:: bash
 
@@ -64,17 +80,34 @@ By default the latest trained model for the project will be loaded. You can also
 ^^^^^^^^^^^^^^^
 
 You can post your training data to this endpoint to train a new model for a project.
-This request will wait for the server answer: either the model was trained successfully or the training errored.
-Using the HTTP server, you must specify the project you want to train a new model for to be able to use it during parse requests later on :
-``/train?project=my_project``. Any parameter passed with the query string will be treated as a
-configuration parameter of the model, hence you can change all the configuration values listed in the
-configuration section by passing in their name and the adjusted value.
+This request will wait for the server answer: either the model
+was trained successfully or the training exited with an error.
+Using the HTTP server, you must specify the project you want to train a
+new model for to be able to use it during parse requests later on :
+``/train?project=my_project``. The configuration of the model should be
+posted as the content of the request:
+
+**Using training data in json format**:
+
+.. literalinclude:: ../sample_configs/config_train_server_json.yml
+
+**Using training data in md format**:
+
+.. literalinclude:: ../sample_configs/config_train_server_md.yml
+
+
+Here is an example request showcasing how to send the config to the server
+to start the training:
 
 .. code-block:: bash
 
-    $ curl -XPOST localhost:5000/train?project=my_project -d @data/examples/rasa/demo-rasa.json
+    $ curl -XPOST -H "Content-Type: application/x-yml" localhost:5000/train?project=my_project \
+        -d @sample_configs/config_train_server_md.yml
 
-You cannot send a training request for a project already training a new model (see below).
+.. note::
+
+    You cannot send a training request for a project
+    already training a new model (see below).
 
 
 ``POST /evaluate``
@@ -151,7 +184,7 @@ This will return the current version of the Rasa NLU instance.
 ``GET /config``
 ^^^^^^^^^^^^^^^
 
-This will return the currently running configuration of the Rasa NLU instance.
+This will return the default model configuration of the Rasa NLU instance.
 
 .. code-block:: bash
 
@@ -163,6 +196,15 @@ This will return the currently running configuration of the Rasa NLU instance.
         "emulate": null,
         ...
       }
+
+``DELETE /models``
+^^^^^^^^^^^^^^^^^
+
+This will unload a model from the server memory
+
+.. code-block:: bash
+
+    $ curl -X DELETE localhost:5000/models -d '{"project": "my_restaurant_search_bot", "model": <model_XXXXXX>}'
 
 .. _section_auth:
 
@@ -224,3 +266,17 @@ You can also specify the model you want to use for a given project, the default 
     $ curl -XPOST localhost:5000/parse -d '{"q":"I am looking for Chinese food", "project":"my_restaurant_search_bot", "model":<model_XXXXXX>}'
 
 If no project is to be found by the server under the ``path`` directory, a ``"default"`` one will be used, using a simple fallback model.
+
+
+Server Parameters
+-----------------
+
+There are a number of parameters you can pass when running the server.
+
+.. code-block:: bash
+
+    $ python -m rasa_nlu.server
+
+Here is a quick overview:
+
+.. program-output:: python -m rasa_nlu.server --help

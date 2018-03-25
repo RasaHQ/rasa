@@ -8,26 +8,32 @@ import logging
 
 import pytest
 
-from rasa_nlu.evaluate import is_token_within_entity, do_entities_overlap, merge_labels, patch_duckling_entities, \
-    remove_empty_intent_examples, get_entity_extractors, get_duckling_dimensions, known_duckling_dimensions, \
-    find_component, patch_duckling_extractors, drop_intents_below_freq, run_cv_evaluation, substitute_labels
+from rasa_nlu.evaluate import (
+    is_token_within_entity, do_entities_overlap,
+    merge_labels, patch_duckling_entities,
+    remove_empty_intent_examples, get_entity_extractors,
+    get_duckling_dimensions, known_duckling_dimensions,
+    find_component, patch_duckling_extractors, drop_intents_below_freq,
+    run_cv_evaluation, substitute_labels)
 from rasa_nlu.evaluate import does_token_cross_borders
 from rasa_nlu.evaluate import align_entity_predictions
 from rasa_nlu.evaluate import determine_intersection
-from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.tokenizers import Token
-from rasa_nlu import training_data
+from rasa_nlu import training_data, config
 from tests import utilities
 
 logging.basicConfig(level="DEBUG")
 
 
-@pytest.fixture(scope="module")
-def duckling_interpreter(component_builder):
-    _conf = utilities.base_test_conf("")
-    _conf["pipeline"] = ["ner_duckling"]
-    _conf["data"] = "./data/examples/rasa/demo-rasa.json"
-    return utilities.interpreter_for(component_builder, _conf)
+@pytest.fixture(scope="session")
+def duckling_interpreter(component_builder, tmpdir_factory):
+    conf = RasaNLUModelConfig({"pipeline": [{"name": "ner_duckling"}]})
+    return utilities.interpreter_for(
+            component_builder,
+            data="./data/examples/rasa/demo-rasa.json",
+            path=tmpdir_factory.mktemp("projects").strpath,
+            config=conf)
 
 
 # Chinese Example
@@ -214,7 +220,8 @@ def test_duckling_patching():
 def test_drop_intents_below_freq():
     td = training_data.load_data('data/examples/rasa/demo-rasa.json')
     clean_td = drop_intents_below_freq(td, 0)
-    assert clean_td.intents == {'affirm', 'goodbye', 'greet', 'restaurant_search'}
+    assert clean_td.intents == {'affirm', 'goodbye', 'greet',
+                                'restaurant_search'}
 
     clean_td = drop_intents_below_freq(td, 10)
     assert clean_td.intents == {'affirm', 'restaurant_search'}
@@ -222,7 +229,7 @@ def test_drop_intents_below_freq():
 
 def test_run_cv_evaluation():
     td = training_data.load_data('data/examples/rasa/demo-rasa.json')
-    nlu_config = RasaNLUConfig("sample_configs/config_spacy.json")
+    nlu_config = config.load("sample_configs/config_spacy.yml")
 
     n_folds = 2
     results, entity_results = run_cv_evaluation(td, n_folds, nlu_config)

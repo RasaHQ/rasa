@@ -76,4 +76,3 @@ The use of synonyms can also cause the ``value`` field not match the ``text`` ex
     (`ner_crf` component). The duckling entity extractor will always return
     `1`. The `ner_spacy` extractor does not provide this information and
     returns `null`.
-

@@ -6,16 +6,17 @@ from __future__ import unicode_literals
 import itertools
 import logging
 import os
+import shutil
+import tempfile
+from collections import defaultdict
+from collections import namedtuple
+
 import numpy as np
 
-from collections import defaultdict, namedtuple
-
-from typing import Dict, Text, List
-
-from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu import training_data, utils, config
+from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.model import Interpreter
 from rasa_nlu.model import Trainer, TrainingData
-from rasa_nlu import training_data, utils
 
 logger = logging.getLogger(__name__)
 
@@ -31,25 +32,35 @@ entity_processors = {"ner_synonyms"}
 CVEvaluationResult = namedtuple('Results', 'train test')
 
 
-def create_argparser():  # pragma: no cover
+def create_argument_parser():
     import argparse
     parser = argparse.ArgumentParser(
             description='evaluate a Rasa NLU pipeline with cross '
                         'validation or on external data')
 
-    parser.add_argument('-d', '--data', required=True,
+    parser.add_argument('-d', '--data',
+                        required=True,
                         help="file containing training/evaluation data")
-    parser.add_argument('--mode', required=False, default="evaluation",
+
+    parser.add_argument('--mode',
+                        default="evaluation",
                         help="evaluation|crossvalidation (evaluate "
                              "pretrained model or train model "
                              "by crossvalidation)")
-    parser.add_argument('-c', '--config', required=True,
-                        help="config file")
+
+    # todo: make the two different modes two subparsers
+    parser.add_argument('-c', '--config',
+
+                        help="model configurion file (crossvalidation only)")
 
     parser.add_argument('-m', '--model', required=False,
                         help="path to model (evaluation only)")
+
     parser.add_argument('-f', '--folds', required=False, default=10,
                         help="number of CV folds (crossvalidation only)")
+
+    utils.add_logging_option_arguments(parser, default=logging.INFO)
+
     return parser
 
 
@@ -66,7 +77,9 @@ def plot_confusion_matrix(cm, classes,
 
     zmax = cm.max()
     plt.clf()
-    plt.imshow(cm, interpolation='nearest', cmap=cmap if cmap else plt.cm.Blues,
+    if not cmap:
+        cmap = plt.cm.Blues
+    plt.imshow(cm, interpolation='nearest', cmap=cmap,
                aspect='auto', norm=LogNorm(vmin=zmin, vmax=zmax))
     plt.title(title)
     plt.colorbar()
@@ -435,8 +448,8 @@ def get_duckling_dimensions(interpreter, duckling_extractor_name):
     dimensions as a fallback."""
 
     component = find_component(interpreter, duckling_extractor_name)
-    if component.dimensions:
-        return component.dimensions
+    if component.component_config["dimensions"]:
+        return component.component_config["dimensions"]
     else:
         return known_duckling_dimensions
 
@@ -506,13 +519,15 @@ def patch_duckling(interpreter, extractors, entity_predictions):
     return extractors, entity_predictions
 
 
-def run_evaluation(config, model_path,
+def run_evaluation(data_path, model_path,
                    component_builder=None):  # pragma: no cover
     """Evaluate intent classification and entity extraction."""
 
     # get the metadata config from the package data
-    test_data = training_data.load_data(config['data'], config['language'])
-    interpreter = Interpreter.load(model_path, config, component_builder)
+    interpreter = Interpreter.load(model_path, component_builder)
+    test_data = training_data.load_data(data_path,
+                                        interpreter.model_metadata.language)
+
     intent_targets = get_intent_targets(test_data)
     entity_targets = get_entity_targets(test_data)
     intent_predictions = get_intent_predictions(interpreter, test_data)
@@ -563,11 +578,11 @@ def combine_entity_result(results, interpreter, data):
     return results
 
 
-def run_cv_evaluation(td, n_folds, nlu_config):
-    # type: (TrainingData, int, RasaNLUConfig) -> CVEvaluationResult
+def run_cv_evaluation(data, n_folds, nlu_config):
+    # type: (TrainingData, int, RasaNLUModelConfig) -> CVEvaluationResult
     """Stratified cross validation on data
 
-    :param td: Training Data
+    :param data: Training Data
     :param n_folds: integer, number of cv folds
     :param nlu_config: nlu config file
     :return: dictionary with key, list structure, where each entry in list
@@ -583,10 +598,8 @@ def run_cv_evaluation(td, n_folds, nlu_config):
     entity_test_results = defaultdict(lambda: defaultdict(list))
     tmp_dir = tempfile.mkdtemp()
 
-    for train, test in generate_folds(n_folds, td):
-        trainer.train(train)
-        model_dir = trainer.persist(tmp_dir)
-        interpreter = Interpreter.load(model_dir, nlu_config)
+    for train, test in generate_folds(n_folds, data):
+        interpreter = trainer.train(train)
 
         # calculate train accuracy
         train_results = combine_intent_result(train_results, interpreter, train)
@@ -597,10 +610,7 @@ def run_cv_evaluation(td, n_folds, nlu_config):
         entity_test_results = combine_entity_result(entity_test_results,
                                                     interpreter, test)
 
-        utils.remove_model(model_dir)
-
-    os.rmdir(os.path.join(tmp_dir, "default"))
-    os.rmdir(tmp_dir)
+    shutil.rmtree(tmp_dir, ignore_errors=True)
 
     return (CVEvaluationResult(dict(train_results), dict(test_results)),
             CVEvaluationResult(dict(entity_train_results),
@@ -682,24 +692,30 @@ def return_entity_results(results, dataset_name):
 
 
 if __name__ == '__main__':  # pragma: no cover
-    parser = create_argparser()
-    args = parser.parse_args()
+    parser = create_argument_parser()
+    cmdline_args = parser.parse_args()
 
-    # manual check argument dependency
-    if args.mode == "crossvalidation":
-        if args.model is not None:
+    utils.configure_colored_logging(cmdline_args.loglevel)
+
+    if cmdline_args.mode == "crossvalidation":
+
+        # TODO: move parsing into sub parser
+        # manual check argument dependency
+        if cmdline_args.model is not None:
             parser.error("Crossvalidation will train a new model "
-                         "- do not specify external model")
+                         "- do not specify external model.")
 
-    nlu_config = RasaNLUConfig(args.config, os.environ, vars(args))
-    logging.basicConfig(level=nlu_config['log_level'])
+        if cmdline_args.config is None:
+            parser.error("Crossvalidation will train a new model "
+                         "you need to specify a model configuration.")
 
-    if args.mode == "crossvalidation":
-        td = training_data.load_data(args.data)
-        td = drop_intents_below_freq(td, cutoff=5)
-        results, entity_results = run_cv_evaluation(td, int(args.folds),
-                                                    nlu_config)
-        logger.info("CV evaluation (n={})".format(args.folds))
+        nlu_config = config.load(cmdline_args.config)
+        data = training_data.load_data(cmdline_args.data)
+        data = drop_intents_below_freq(data, cutoff=5)
+        results, entity_results = run_cv_evaluation(
+                data, int(cmdline_args.folds), nlu_config)
+        logger.info("CV evaluation (n={})".format(cmdline_args.folds))
+
         logger.info("Intent evaluation results")
         return_results(results.train, "train")
         return_results(results.test, "test")
@@ -708,7 +724,7 @@ if __name__ == '__main__':  # pragma: no cover
         return_entity_results(entity_results.train, "train")
         return_entity_results(entity_results.test, "test")
 
-    elif args.mode == "evaluation":
-        run_evaluation(nlu_config, args.model)
+    elif cmdline_args.mode == "evaluation":
+        run_evaluation(cmdline_args.data, cmdline_args.model)
 
     logger.info("Finished evaluation")
