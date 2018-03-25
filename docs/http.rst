@@ -271,7 +271,7 @@ If no project is to be found by the server under the ``path`` directory, a ``"de
 Server Parameters
 -----------------
 
-There is a number of parameters you can pass to the server script when running
+There are a number of parameters you can pass when running the server.
 
 .. code-block:: bash
 

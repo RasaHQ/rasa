@@ -5,7 +5,7 @@ Configuration
 
 You can provide options to rasa NLU through:
 
-- a json-formatted config file
+- a yaml-formatted config file
 - environment variables
 - command line arguments
 
@@ -21,12 +21,12 @@ Here is an example model configuration:
 .. literalinclude:: ../sample_configs/config_crf.yml
     :language: yaml
 
-As you can see, there are a couple top level configuration keys, like
+As you can see, there are a couple of top-level configuration keys, like
 ``language`` and ``pipeline`` - but most of the configuration is component
 specific.
 
 Explanations for the configuration keys of the different components are part
-of the `:ref:`section_pipeline``.
+of the :ref:`section_pipeline`.
 
 Options
 -------
@@ -57,7 +57,7 @@ pipeline
     The pipeline used for training. Can either be a template
     (passing a string) or a list of components (array) and there
     configuration values. For all available templates,
-    see `:ref:`section_pipeline``. The component specific parameters
+    see :ref:`section_pipeline`. The component specific parameters
     are listed there as well.
 
 language

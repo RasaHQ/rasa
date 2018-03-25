@@ -15,7 +15,7 @@ Where **model** specifies the model to evaluate on the test data specified
 wioth **data**.
 
 If you would like to evaluate your pipeline using
-*crossvalidation*, you can run the evaluation script with the mode
+*cross-validation*, you can run the evaluation script with the mode
 crossvalidation flag. This gives you an estimate of how accurately a
 predictive model will perform in practice. Note that you cannot specify
 a model in this mode, as a new model will be trained on part of the data
@@ -83,7 +83,7 @@ near [Alexanderplatz](loc) [tonight](time)          O   loc time (2)          O 
 Evaluation Parameters
 ---------------------
 
-There is a number of parameters you can pass to the evaluation script
+There are a number of parameters you can pass to the evaluation script
 
 .. code-block:: bash
 
