@@ -37,6 +37,7 @@ install_requires = [
     "matplotlib",
     "numpy>=1.13",
     "simplejson",
+    "pyyaml",
 ]
 
 extras_requires = {
