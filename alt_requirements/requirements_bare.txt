@@ -14,3 +14,4 @@ simplejson==3.13.2
 cloudpickle==0.5.2
 msgpack-python==0.5.4
 packaging==17.1
+pyyaml==3.12
