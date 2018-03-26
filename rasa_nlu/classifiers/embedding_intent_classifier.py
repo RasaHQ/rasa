@@ -38,18 +38,46 @@ class EmbeddingIntentClassifier(Component):
 
     Based on the starspace idea from: https://arxiv.org/abs/1709.03856"""
 
-    name = "intent_classifier_embedding"
+    name = "intent_classifier_tensorflow_embedding"
 
     provides = ["intent", "intent_ranking"]
 
     requires = ["text_features"]
 
-    def __init__(self, session=None, embedding_placeholder=None, graph=None,
+    defaults = {
+        # nn architecture
+        "num_hidden_layers_a": 2,
+        "num_hidden_layers_b": 1,
+        "hidden_layer_size": 256,
+        "batch_size": 32,
+        "epochs": 100,
+
+        # embedding parameters
+        "embed_dim": 10,
+        "mu_pos": 0.8,
+        "mu_neg": -0.4,
+        "similarity_type": "cosine",
+        "num_neg": 20,
+
+        # regularization
+        "C2": 0.002,
+        "C_emb": 0.8,
+        "droprate": 0.2,
+
+        # flag if to tokenize intents
+        "intent_tokenization_flag": False,
+        "intent_split_symbol": "_"
+    }
+
+    def __init__(self, component_config=None,
+                 session=None, embedding_placeholder=None, graph=None,
                  intent_placeholder=None, similarity_op=None,
                  intent_dict={}, intent_token_dict={}):
 
         # type: () -> None
         """Declare instant variables with default values"""
+
+        super(EmbeddingIntentClassifier, self).__init__(component_config)
 
         # nn architecture
         self.num_hidden_layers_a = 2
@@ -95,8 +123,8 @@ class EmbeddingIntentClassifier(Component):
 
     def _extract_params_from_config(self, config):
         # overwrite parameters from config if they are there
-        params_dict = config.get("intent_classifier_embedding", {})
-        
+        params_dict = config.get("intent_classifier_tensorflow_embedding", {})
+
         # nn architecture
         self.num_hidden_layers_a = params_dict.get("num_hidden_layers_a",
                                                    self.num_hidden_layers_a)
@@ -106,7 +134,7 @@ class EmbeddingIntentClassifier(Component):
                                                  self.hidden_layer_size)
         self.batch_size = params_dict.get("batch_size", self.batch_size)
         self.epochs = params_dict.get("epochs", self.epochs)
-        
+
         # embedding parameters
         self.embed_dim = params_dict.get("embed_dim", self.embed_dim)
         self.mu_pos = params_dict.get("mu_pos", self.mu_pos)
@@ -114,7 +142,7 @@ class EmbeddingIntentClassifier(Component):
         self.similarity_type = params_dict.get("similarity_type",
                                                self.similarity_type)
         self.num_neg = params_dict.get("num_neg", self.num_neg)
-        
+
         # regularization
         self.C2 = params_dict.get("C2", self.C2)  # l2
         self.C_emb = params_dict.get("C_emb", self.C_emb)
@@ -146,7 +174,7 @@ class EmbeddingIntentClassifier(Component):
         # create an array for mu
         self.mu = self.mu_neg * np.ones(self.num_neg + 1)
         self.mu[0] = self.mu_pos
-        
+
         X = np.stack([example.get("text_features")
                       for example in training_data.intent_examples])
 
@@ -171,7 +199,8 @@ class EmbeddingIntentClassifier(Component):
         encoded_all_intents = self._create_encoded_intents()
 
         # stack encoded_all_intents on top of each other
-        # to create candidates for training examples to calculate training accuracy
+        # to create candidates for training examples
+        # to calculate training accuracy
         all_Y = np.stack([encoded_all_intents for _ in range(X.shape[0])])
 
         with self.graph.as_default():
@@ -182,7 +211,9 @@ class EmbeddingIntentClassifier(Component):
             self.embedding_placeholder = a_in
             self.intent_placeholder = b_in
 
-            sim, sim_emb = self._tf_sim(a_in, b_in)
+            is_training = tf.placeholder(tf.bool)
+
+            sim, sim_emb = self._tf_sim(a_in, b_in, is_training)
             self.similarity_op = sim
             loss = self._tf_loss(sim, sim_emb)
 
@@ -195,7 +226,8 @@ class EmbeddingIntentClassifier(Component):
 
             sess.run(init)
 
-            batches_per_epoch = len(X) // self.batch_size + int(len(X) % self.batch_size > 0)
+            batches_per_epoch = (len(X) // self.batch_size +
+                                 int(len(X) % self.batch_size > 0))
             for ep in range(self.epochs):
                 indices = np.random.permutation(len(X))
                 sess_out = {}
@@ -211,15 +243,19 @@ class EmbeddingIntentClassifier(Component):
 
                     sess_out = sess.run({'loss': loss, 'train_op': train_op},
                                         feed_dict={a_in: batch_a,
-                                                   b_in: batch_b})
+                                                   b_in: batch_b,
+                                                   is_training: True})
 
                 if (ep+1) % 10 == 0:
-                    train_sim = sess.run(sim, feed_dict={a_in: X, b_in: all_Y})
+                    train_sim = sess.run(sim, feed_dict={a_in: X,
+                                                         b_in: all_Y,
+                                                         is_training: False})
 
                     train_acc = np.mean(np.argmax(train_sim, -1) == intents_for_X)
-                    logger.debug('epoch {} / {}: loss {}, '
-                                 'train accuracy : {:.3f}'.format(
-                                  (ep+1), self.epochs, sess_out.get('loss'), train_acc))
+                    logger.debug("epoch {} / {}: loss {}, "
+                                 "train accuracy : {:.3f}".format(
+                                  (ep+1), self.epochs,
+                                  sess_out.get('loss'), train_acc))
 
     def _create_intent_dicts(self, training_data):
         """Create intent dictionary"""
@@ -267,22 +303,23 @@ class EmbeddingIntentClassifier(Component):
         batch_neg_b = np.zeros((batch_pos_b.shape[0], self.num_neg,
                                 batch_pos_b.shape[-1]))
         for b in range(batch_pos_b.shape[0]):
-            # create negative indexes out of possible ones except for correct index of b
-            negative_indexes = [i for i in range(encoded_all_intents.shape[0]) if i != intent_ids[b]]
+            # create negative indexes out of possible ones
+            # except for correct index of b
+            negative_indexes = [i for i in range(encoded_all_intents.shape[0])
+                                if i != intent_ids[b]]
             negs = np.random.choice(negative_indexes, size=self.num_neg)
 
             batch_neg_b[b] = encoded_all_intents[negs]
 
         return np.concatenate([batch_pos_b, batch_neg_b], 1)
 
-    def _tf_sim(self, a_in, b_in):
+    def _tf_sim(self, a_in, b_in, is_training):
         """Define tensorflow graph to calculate similarity"""
-        num_layers = self.num_hidden_layers_a+self.num_hidden_layers_b
-        is_training = False
 
         reg = tf.contrib.layers.l2_regularizer(self.C2)
         # embed sentences
         a = a_in
+        a = tf.layers.dropout(a, rate=self.droprate, training=is_training)
         for _ in range(self.num_hidden_layers_a):
             a = tf.layers.dense(inputs=a,
                                 units=self.hidden_layer_size,
@@ -295,8 +332,8 @@ class EmbeddingIntentClassifier(Component):
                             kernel_regularizer=reg)
         # embed intents
         b = b_in
-        end = self.num_hidden_layers_a + 1 + self.num_hidden_layers_b
-        for _ in range(self.num_hidden_layers_a + 1, end):
+        b = tf.layers.dropout(b, rate=self.droprate, training=is_training)
+        for _ in range(self.num_hidden_layers_b):
             b = tf.layers.dense(inputs=b,
                                 units=self.hidden_layer_size,
                                 activation=tf.nn.relu,
@@ -349,18 +386,24 @@ class EmbeddingIntentClassifier(Component):
         encoded_all_intents = self._create_encoded_intents()
 
         # stack encoded_all_intents on top of each other
-        # here is done in order to make the appropriate size b_in tensor for tf graph
+        # in order to make the appropriate size b_in tensor for tf graph
         all_Y = np.stack([encoded_all_intents for _ in range(X.shape[0])])
 
-        inv_intent_dict = {value: key for key, value in self.intent_dict.items()}
+        inv_intent_dict = {value: key
+                           for key, value in self.intent_dict.items()}
 
         # load tf graph and session
         a_in = self.embedding_placeholder
         b_in = self.intent_placeholder
+
+        is_training = tf.placeholder(tf.bool)
+
         sim = self.similarity_op
         sess = self.session
 
-        message_sim = sess.run(sim, feed_dict={a_in: X, b_in: all_Y})
+        message_sim = sess.run(sim, feed_dict={a_in: X,
+                                               b_in: all_Y,
+                                               is_training: False})
         message_sim = message_sim.flatten()  # sim is a matrix
 
         intent_ids = message_sim.argsort()[::-1]
@@ -394,8 +437,8 @@ class EmbeddingIntentClassifier(Component):
              ):
         # type: (...) -> EmbeddingIntentClassifier
 
-        if model_dir and model_metadata.get("intent_classifier_embedding"):
-            filename = model_metadata.get("intent_classifier_embedding")
+        if model_dir and model_metadata.get("intent_classifier_tensorflow_embedding"):
+            filename = model_metadata.get("intent_classifier_tensorflow_embedding")
 
             graph = tf.Graph()
             with graph.as_default():
@@ -412,10 +455,10 @@ class EmbeddingIntentClassifier(Component):
                     'similarity_op')[0]
 
             intent_token_dict = pickle.load(open(os.path.join(
-                model_dir, "intent_classifier_embedding_intent_token_dict.pkl"),
+                model_dir, "intent_classifier_tensorflow_embedding_intent_token_dict.pkl"),
                      'rb'))
             intent_dict = pickle.load(open(os.path.join(
-                model_dir, "intent_classifier_embedding_intent_dict.pkl"),
+                model_dir, "intent_classifier_tensorflow_embedding_intent_dict.pkl"),
                      'rb'))
 
             return EmbeddingIntentClassifier(
@@ -434,7 +477,7 @@ class EmbeddingIntentClassifier(Component):
         Return the metadata necessary to load the model again."""
 
         checkpoint = os.path.join(model_dir,
-                                  "intent_classifier_embedding")
+                                  "intent_classifier_tensorflow_embedding")
 
         try:
             os.makedirs(os.path.dirname(checkpoint))
@@ -459,12 +502,12 @@ class EmbeddingIntentClassifier(Component):
             path = saver.save(self.session, checkpoint)
 
             pickle.dump(self.intent_token_dict, open(os.path.join(
-                model_dir, "intent_classifier_embedding_intent_token_dict.pkl"),
+                model_dir, "intent_classifier_tensorflow_embedding_intent_token_dict.pkl"),
                 'wb'))
             pickle.dump(self.intent_dict,  open(os.path.join(
-                model_dir, "intent_classifier_embedding_intent_dict.pkl"),
+                model_dir, "intent_classifier_tensorflow_embedding_intent_dict.pkl"),
                      'wb'))
 
         return {
-                "intent_classifier_embedding": path
+                "intent_classifier_tensorflow_embedding": path
                 }
