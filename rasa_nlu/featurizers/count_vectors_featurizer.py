@@ -87,7 +87,11 @@ class CountVectorsFeaturizer(Featurizer):
         lem_exs = [self._lemmatize(example)
                    for example in training_data.intent_examples]
 
-        X = self.vect.fit_transform(lem_exs).toarray()
+        try:
+            X = self.vect.fit_transform(lem_exs).toarray()
+        except ValueError:
+            self.vect = None
+            return
 
         for i, example in enumerate(training_data.intent_examples):
             # create bag for each example
@@ -95,9 +99,9 @@ class CountVectorsFeaturizer(Featurizer):
 
     def process(self, message, **kwargs):
         # type: (Message, **Any) -> None
-
-        bag = self.vect.transform([self._lemmatize(message)]).toarray()
-        message.set("text_features", bag)
+        if self.vect is not None:
+            bag = self.vect.transform([self._lemmatize(message)]).toarray()
+            message.set("text_features", bag)
 
     @staticmethod
     def _lemmatize(message):

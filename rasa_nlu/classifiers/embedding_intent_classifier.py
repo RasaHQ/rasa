@@ -54,7 +54,7 @@ class EmbeddingIntentClassifier(Component):
         "hidden_layer_size": 256,
         "reduce_deeper_layer_sizes_by": 2,
         "batch_size": 32,
-        "epochs": 100,
+        "epochs": 200,
 
         # embedding parameters
         "embed_dim": 10,
@@ -156,6 +156,12 @@ class EmbeddingIntentClassifier(Component):
         # transform intents to numbers
         # if intent_tokenization = False these dicts are identical
         self.intent_dict, self.intent_token_dict = self._create_intent_dicts(training_data)
+
+        if len(self.intent_dict) < 2:
+            logger.warning("Can not train an intent classifier. "
+                           "Need at least 2 different classes. "
+                           "Skipping training of intent classifier.")
+            return
 
         # check if number of negatives is less than number of intents
         logger.debug("Check if num_neg {} is smaller than number of intents {}, "
@@ -463,6 +469,8 @@ class EmbeddingIntentClassifier(Component):
         # type: (Text) -> Dict[Text, Any]
         """Persist this model into the passed directory.
         Return the metadata necessary to load the model again."""
+        if self.session is None:
+            return {"classifier_file": None}
 
         checkpoint = os.path.join(model_dir, self.name + ".ckpt")
 
