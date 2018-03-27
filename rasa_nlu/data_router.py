@@ -131,7 +131,8 @@ class DataRouter(object):
             query_logger = Logger(
                     observer=jsonFileLogObserver(io.open(response_logfile,
                                                          'a',
-                                                         encoding='utf8')),
+                                                         encoding='utf8'),
+                                                         recordSeparator=''),
                     namespace='query-logger')
             # Prevents queries getting logged with parent logger
             # --> might log them to stdout
