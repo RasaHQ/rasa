@@ -56,7 +56,9 @@ class TelegramOutput(Bot, OutputChannel):
                                                resize_keyboard=True,
                                                one_time_keyboard=True)
         else:
-            raise NotImplementedError
+            logger.error('Trying to send text with buttons for unknown button type {}'.format(button_type))
+            return
+
         return self.send_message(recipient_id, text, reply_markup=reply_markup)
 
 
