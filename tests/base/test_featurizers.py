@@ -11,6 +11,7 @@ import pytest
 from rasa_nlu import training_data
 from rasa_nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa_nlu.training_data import Message
+from rasa_nlu.training_data import TrainingData
 
 
 @pytest.mark.parametrize("sentence, expected", [
@@ -106,3 +107,23 @@ def test_spacy_featurizer_casing(spacy_nlp):
         assert np.allclose(vecs, vecs_capitalized, atol=1e-5), \
             "Vectors are unequal for texts '{}' and '{}'".format(
                     e.text, e.text.capitalize())
+
+
+@pytest.mark.parametrize("sentence, expected", [
+    ("hello hello hello hello hello ", [5]),
+    ("hello goodbye hello", [1, 2]),
+    ("a b c d e f", [1, 1, 1, 1, 1, 1]),
+])
+def test_count_vector_featurizer(sentence, expected):
+    from rasa_nlu.featurizers.count_vectors_featurizer import \
+        CountVectorsFeaturizer
+
+    ftr = CountVectorsFeaturizer()
+    message = Message(sentence)
+    message.set("intent", "bla")
+    data = TrainingData([message])
+
+    ftr.train(data)
+    ftr.process(message)
+
+    assert (message.get("text_features")[0] == expected).all()

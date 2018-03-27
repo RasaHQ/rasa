@@ -22,6 +22,7 @@ Added
 - added count vector featurizer to create bag of words representation
 - added embedding intent classifier implemented in tensorflow
 - added tensorflow requirements
+- added basic tests for count vector featurizer
 
 Changed
 -------

@@ -149,7 +149,7 @@ class EmbeddingIntentClassifier(Component):
         # type: () -> List[Text]
         return ["tensorflow"]
 
-    def train(self, training_data, cfg, **kwargs):
+    def train(self, training_data, cfg=None, **kwargs):
         # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
         """Train the embedding intent classifier on a data set."""
 
@@ -313,7 +313,7 @@ class EmbeddingIntentClassifier(Component):
         for i in range(self.num_hidden_layers_a):
             reduce_coef = self.reduce_deeper_layer_sizes_by ** i
             a = tf.layers.dense(inputs=a,
-                                units=self.hidden_layer_size/reduce_coef,
+                                units=self.hidden_layer_size / reduce_coef,
                                 activation=tf.nn.relu,
                                 kernel_regularizer=reg)
             a = tf.layers.dropout(a, rate=self.droprate, training=is_training)
@@ -326,7 +326,7 @@ class EmbeddingIntentClassifier(Component):
         for i in range(self.num_hidden_layers_b):
             reduce_coef = self.reduce_deeper_layer_sizes_by ** i
             b = tf.layers.dense(inputs=b,
-                                units=self.hidden_layer_size/reduce_coef,
+                                units=self.hidden_layer_size / reduce_coef,
                                 activation=tf.nn.relu,
                                 kernel_regularizer=reg)
             b = tf.layers.dropout(b, rate=self.droprate, training=is_training)
@@ -335,11 +335,11 @@ class EmbeddingIntentClassifier(Component):
                             units=self.embed_dim,
                             kernel_regularizer=reg)
 
-        if self.similarity_type == "cosine":
+        if self.similarity_type == 'cosine':
             a = tf.nn.l2_normalize(a, -1)
             b = tf.nn.l2_normalize(b, -1)
 
-        if self.similarity_type == "inner" or self.similarity_type == "cosine":
+        if self.similarity_type == 'cosine' or self.similarity_type == 'inner':
             sim = tf.reduce_sum(tf.expand_dims(a, 1) * b, -1)
 
             # similarity between intent embeddings

@@ -72,13 +72,15 @@ class CountVectorsFeaturizer(Featurizer):
         # type: () -> List[Text]
         return ["sklearn"]
 
-    def train(self, training_data, cfg, **kwargs):
+    def train(self, training_data, cfg=None, **kwargs):
         # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
         """Take parameters from config and
             construct a new count vectorizer using the sklearn framework."""
         from sklearn.feature_extraction.text import CountVectorizer
 
-        self.vect = CountVectorizer(ngram_range=(self.min_ngram, self.max_ngram),
+        # use even single character word as a token
+        self.vect = CountVectorizer(token_pattern=r"(?u)\b\w+\b",
+                                    ngram_range=(self.min_ngram, self.max_ngram),
                                     max_df=self.max_df,
                                     min_df=self.min_df)
 
