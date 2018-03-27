@@ -19,6 +19,10 @@ Added
 - server evaluation endpoint at ``POST /evaluate``
 - CRF entity recognizer now returns a confidence score when extracting entities
 - server endpoint at ``DELETE /models`` to unload models from server memory
+- added count vector featurizer to create bag of words representation
+- added embedding intent classifier implemented in tensorflow
+- added tensorflow_embedding pipeline
+- added tensorflow requirements
 
 Changed
 -------
@@ -34,6 +38,7 @@ Changed
   ``"extractor": "ner_crf"`` or no extractor at all
 - Ignore hidden files when listing projects or models
 - Docker Images now run on python 3.6 for better non-latin character set support
+- updated requirements_full.txt to include tensorflow requirements
 
 Removed
 -------
