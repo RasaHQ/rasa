@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 if typing.TYPE_CHECKING:
     import tensorflow as tf
 
+
 class EmbeddingIntentClassifier(Component):
     """Intent classifier using supervised embeddings
 

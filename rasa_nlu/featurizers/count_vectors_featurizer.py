@@ -18,10 +18,10 @@ from rasa_nlu.components import Component
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.model import Metadata
 
+logger = logging.getLogger(__name__)
+
 if typing.TYPE_CHECKING:
     import sklearn
-
-logger = logging.getLogger(__name__)
 
 
 class CountVectorsFeaturizer(Featurizer):
