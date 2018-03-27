@@ -1,0 +1,6 @@
+allowempty: True
+mapping:
+  language:
+    type: !!python/str "str"
+  pipeline:
+    type: !!python/str "any"

@@ -33,7 +33,7 @@ from typing import Type
 
 if typing.TYPE_CHECKING:
     from rasa_nlu.components import Component
-    from rasa_nlu.config import RasaNLUConfig
+    from rasa_nlu.config import RasaNLUModelConfig, RasaNLUModelConfig
 
 # Classes of all known components. If a new component should be added,
 # its class name should be listed here.
@@ -88,6 +88,18 @@ registered_pipeline_templates = {
 }
 
 
+def pipeline_template(s):
+    components = registered_pipeline_templates.get(s)
+
+    if components:
+        # converts the list of components in the configuration
+        # format expected (one json object per component)
+        return [{"name": c} for c in components]
+
+    else:
+        return None
+
+
 def get_component_class(component_name):
     # type: (Text) -> Optional[Type[Component]]
     """Resolve component name to a registered components class."""
@@ -122,7 +134,7 @@ def load_component_by_name(component_name,  # type: Text
 
 
 def create_component_by_name(component_name, config):
-    # type: (Text, RasaNLUConfig) -> Optional[Component]
+    # type: (Text, RasaNLUModelConfig) -> Optional[Component]
     """Resolves a component and calls it's create method to init it based on a
     previously persisted model."""
 

@@ -3,6 +3,24 @@ Migration Guide
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+0.11.x to 0.12.0
+---------------
+
+model configuration
+~~~~~~~~~~~~~~~~~~~
+We have split the configuration in a model configuration and parameters used
+to configure the server, train, and evaluate scripts. The configuration
+file now only contains the ``pipeline`` as well as the ``language``
+parameters. All other parameters have either been moved to the scripts
+for training / serving models :ref:`scripts`, or put into the pipeline
+configuration (:ref:`pipeline`).
+
+persistors:
+~~~~~~~~~~~
+- renamed ``AWS_REGION`` to ``AWS_DEFAULT_REGION``
+- always make sure to specify the bucket using env ``BUCKET_NAME``
+- are now configured solely over environment variables
+
 0.9.x to 0.10.0
 ---------------
 - We introduced a new concept called a ``project``. You can have multiple versions
