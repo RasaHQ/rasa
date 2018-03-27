@@ -14,6 +14,8 @@ from rasa_nlu.classifiers.keyword_intent_classifier import \
     KeywordIntentClassifier
 from rasa_nlu.classifiers.sklearn_intent_classifier import \
     SklearnIntentClassifier
+from rasa_nlu.classifiers.tflearn_intent_classifier import \
+    TflearnIntentClassifier
 from rasa_nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa_nlu.extractors.duckling_extractor import DucklingExtractor
 from rasa_nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
@@ -44,7 +46,7 @@ component_classes = [
     EntitySynonymMapper,
     SpacyFeaturizer, NGramFeaturizer, RegexFeaturizer,
     SpacyTokenizer, WhitespaceTokenizer,
-    SklearnIntentClassifier, KeywordIntentClassifier,
+    SklearnIntentClassifier, TflearnIntentClassifier, KeywordIntentClassifier,
 ]
 
 # Mapping from a components name to its class to allow name based lookup.
@@ -62,6 +64,13 @@ registered_pipeline_templates = {
         "ner_crf",
         "ner_synonyms",
         "intent_classifier_sklearn",
+    ],
+    "spacy_tflearn": [
+        "nlp_spacy",
+        "tokenizer_spacy",
+        "ner_crf",
+        "ner_synonyms",
+        "intent_classifier_tflearn",
     ],
     "keyword": [
         "intent_classifier_keyword",
@@ -83,6 +92,7 @@ registered_pipeline_templates = {
         "ner_duckling_http",
         "ner_synonyms",
         "intent_classifier_keyword",
+        "intent_classifier_tflearn",
         "intent_classifier_sklearn",
     ]
 }

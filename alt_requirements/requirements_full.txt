@@ -4,4 +4,7 @@
 # Spacy Requirements
 -r requirements_spacy_sklearn.txt
 
+# Tflearn Requirements
+-r requirements_spacy_tflearn.txt
+
 duckling==1.7.3
