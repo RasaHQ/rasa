@@ -82,6 +82,7 @@ registered_pipeline_templates = {
         "intent_featurizer_spacy",
         "intent_featurizer_ngrams",
         "intent_entity_featurizer_regex",
+        "intent_featurizer_count_vectors",
         "ner_crf",
         "ner_spacy",
         "ner_duckling",
@@ -89,6 +90,7 @@ registered_pipeline_templates = {
         "ner_synonyms",
         "intent_classifier_keyword",
         "intent_classifier_sklearn",
+        "intent_classifier_tensorflow_embedding"
     ],
     "tensorflow_embedding": [
         "intent_featurizer_count_vectors",

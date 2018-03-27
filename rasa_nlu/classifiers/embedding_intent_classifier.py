@@ -31,7 +31,13 @@ if typing.TYPE_CHECKING:
 
 
 class EmbeddingIntentClassifier(Component):
-    """Intent classifier using supervised embeddings
+    """Intent classifier using supervised embeddings.
+
+    The embedding intent classifier embeds user inputs and intent labels into the same space.
+    Supervised embeddings are trained by maximizing similarity between them.
+    It also provides rankings of the labels that did not "win".
+    The embedding intent classifier needs to be preceded by a featurizer in the pipeline.
+    This featurizer creates the features used for the embeddings.
 
     Based on the starspace idea from: https://arxiv.org/abs/1709.03856"""
 
@@ -44,16 +50,17 @@ class EmbeddingIntentClassifier(Component):
     defaults = {
         # nn architecture
         "num_hidden_layers_a": 2,
-        "num_hidden_layers_b": 1,
+        "num_hidden_layers_b": 0,
         "hidden_layer_size": 256,
+        "reduce_deeper_layer_sizes_by": 2,
         "batch_size": 32,
         "epochs": 100,
 
         # embedding parameters
         "embed_dim": 10,
-        "mu_pos": 0.8,
-        "mu_neg": -0.4,
-        "similarity_type": "cosine",
+        "mu_pos": 0.8,  # should be 0 < ... < 1 for 'cosine'
+        "mu_neg": -0.4,  # should be -1 < ... < 1 for 'cosine'
+        "similarity_type": 'cosine',  # should be 'cosine' or 'inner'
         "num_neg": 10,
 
         # regularization
@@ -63,7 +70,7 @@ class EmbeddingIntentClassifier(Component):
 
         # flag if to tokenize intents
         "intent_tokenization_flag": False,
-        "intent_split_symbol": "_"
+        "intent_split_symbol": '_'
     }
 
     def __init__(self, component_config=None,
@@ -80,6 +87,30 @@ class EmbeddingIntentClassifier(Component):
         self.num_hidden_layers_a = self.component_config['num_hidden_layers_a']
         self.num_hidden_layers_b = self.component_config['num_hidden_layers_b']
         self.hidden_layer_size = self.component_config['hidden_layer_size']
+        self.reduce_deeper_layer_sizes_by = self.component_config['reduce_deeper_layer_sizes_by']
+
+        # check if reduce_deeper_layer_sizes_by is valid
+        if self.reduce_deeper_layer_sizes_by < 1:
+            logger.error("ERROR: reduce_deeper_layer_sizes_by = {} less than 1. Set it to 1"
+                         "".format(self.reduce_deeper_layer_sizes_by))
+            self.reduce_deeper_layer_sizes_by = 1
+        elif (self.hidden_layer_size %
+              self.reduce_deeper_layer_sizes_by ** (self.num_hidden_layers_a - 1) != 0):
+            logger.error("ERROR: the size of the last hidden layer for a = {} is not int."
+                         "Set reduce_deeper_layer_sizes_by to 1"
+                         "".format(self.hidden_layer_size /
+                                   self.reduce_deeper_layer_sizes_by **
+                                   (self.num_hidden_layers_a - 1.0)))
+            self.reduce_deeper_layer_sizes_by = 1
+        elif (self.hidden_layer_size %
+              self.reduce_deeper_layer_sizes_by ** (self.num_hidden_layers_b - 1) != 0):
+            logger.error("ERROR: the size of the last hidden layer for b = {} is not int."
+                         "Set reduce_deeper_layer_sizes_by to 1"
+                         "".format(self.hidden_layer_size /
+                                   self.reduce_deeper_layer_sizes_by **
+                                   (self.num_hidden_layers_b - 1.0)))
+            self.reduce_deeper_layer_sizes_by = 1
+
         self.batch_size = self.component_config['batch_size']
         self.epochs = self.component_config['epochs']
 
@@ -128,8 +159,8 @@ class EmbeddingIntentClassifier(Component):
 
         # check if number of negatives is less than number of intents
         logger.debug("Check if num_neg {} is smaller than number of intents {}, "
-                     "else set num_neg to the number of intents".format(
-                      self.num_neg, len(self.intent_dict)))
+                     "else set num_neg to the number of intents"
+                     "".format(self.num_neg, len(self.intent_dict)))
         self.num_neg = min(self.num_neg, len(self.intent_dict) - 1)
 
         # create an array for mu
@@ -166,8 +197,7 @@ class EmbeddingIntentClassifier(Component):
 
         with self.graph.as_default():
             a_in = tf.placeholder(tf.float32, (None, X.shape[-1]), name='a')
-            b_in = tf.placeholder(tf.float32, (None, None, Y.shape[-1]),
-                                  name='b')
+            b_in = tf.placeholder(tf.float32, (None, None, Y.shape[-1]), name='b')
 
             self.embedding_placeholder = a_in
             self.intent_placeholder = b_in
@@ -207,16 +237,16 @@ class EmbeddingIntentClassifier(Component):
                                                    b_in: batch_b,
                                                    is_training: True})
 
-                if (ep+1) % 10 == 0:
+                if (ep + 1) % 10 == 0:
                     train_sim = sess.run(sim, feed_dict={a_in: X,
                                                          b_in: all_Y,
                                                          is_training: False})
 
                     train_acc = np.mean(np.argmax(train_sim, -1) == intents_for_X)
                     logger.debug("epoch {} / {}: loss {}, "
-                                 "train accuracy : {:.3f}".format(
-                                  (ep+1), self.epochs,
-                                  sess_out.get('loss'), train_acc))
+                                 "train accuracy : {:.3f}"
+                                 "".format((ep + 1), self.epochs,
+                                           sess_out.get('loss'), train_acc))
 
     def _create_intent_dicts(self, training_data):
         """Create intent dictionary"""
@@ -280,9 +310,10 @@ class EmbeddingIntentClassifier(Component):
         reg = tf.contrib.layers.l2_regularizer(self.C2)
         # embed sentences
         a = a_in
-        for _ in range(self.num_hidden_layers_a):
+        for i in range(self.num_hidden_layers_a):
+            reduce_coef = self.reduce_deeper_layer_sizes_by ** i
             a = tf.layers.dense(inputs=a,
-                                units=self.hidden_layer_size,
+                                units=self.hidden_layer_size/reduce_coef,
                                 activation=tf.nn.relu,
                                 kernel_regularizer=reg)
             a = tf.layers.dropout(a, rate=self.droprate, training=is_training)
@@ -292,9 +323,10 @@ class EmbeddingIntentClassifier(Component):
                             kernel_regularizer=reg)
         # embed intents
         b = b_in
-        for _ in range(self.num_hidden_layers_b):
+        for i in range(self.num_hidden_layers_b):
+            reduce_coef = self.reduce_deeper_layer_sizes_by ** i
             b = tf.layers.dense(inputs=b,
-                                units=self.hidden_layer_size,
+                                units=self.hidden_layer_size/reduce_coef,
                                 activation=tf.nn.relu,
                                 kernel_regularizer=reg)
             b = tf.layers.dropout(b, rate=self.droprate, training=is_training)
@@ -459,7 +491,7 @@ class EmbeddingIntentClassifier(Component):
 
             pickle.dump(self.intent_token_dict, open(os.path.join(
                 model_dir, self.name + "_intent_token_dict.pkl"), 'wb'))
-            pickle.dump(self.intent_dict,  open(os.path.join(
+            pickle.dump(self.intent_dict, open(os.path.join(
                 model_dir, self.name + "_intent_dict.pkl"), 'wb'))
 
         return {"classifier_file": self.name + ".ckpt"}
