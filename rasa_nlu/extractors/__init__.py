@@ -28,6 +28,27 @@ class EntityExtractor(Component):
 
         return entity
 
+    @staticmethod
+    def find_entity(ent, text, tokens):
+        offsets = [token.offset for token in tokens]
+        ends = [token.end for token in tokens]
+
+        if ent["start"] not in offsets:
+            message = ("Invalid entity {} in example '{}': "
+                       "entities must span whole tokens. "
+                       "Wrong entity start.".format(ent, text))
+            raise ValueError(message)
+
+        if ent["end"] not in ends:
+            message = ("Invalid entity {} in example '{}': "
+                       "entities must span whole tokens. "
+                       "Wrong entity end.".format(ent, text))
+            raise ValueError(message)
+
+        start = offsets.index(ent["start"])
+        end = ends.index(ent["end"]) + 1
+        return start, end
+
     def filter_trainable_entities(self, entity_examples):
         # type: (List[Message]) -> List[Message]
         """Filters out untrainable entity annotations.

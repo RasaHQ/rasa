@@ -10,9 +10,12 @@ import tempfile
 import time
 
 import pytest
+import yaml
 from treq.testing import StubTreq
 
-from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu import utils
+from rasa_nlu.config import RasaNLUModelConfig
+from rasa_nlu.data_router import DataRouter
 from rasa_nlu.server import RasaNLU
 from tests import utilities
 from tests.utilities import ResponseTest
@@ -20,26 +23,19 @@ from tests.utilities import ResponseTest
 
 @pytest.fixture(scope="module")
 def app(tmpdir_factory):
-    """
-    This fixture makes use of the IResource interface of the Klein application to mock Rasa HTTP server.
+    """Use IResource interface of Klein to mock Rasa HTTP server.
+
     :param component_builder:
     :return:
     """
 
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
-    _config = {
-        'write': nlu_log_file,
-        'port': -1,  # unused in test app
-        "pipeline": "keyword",
-        "path": tmpdir_factory.mktemp("projects").strpath,
-        "server_model_dirs": {},
-        "data": "./data/demo-restaurants.json",
-        "emulate": "wit",
-        "max_training_processes": 1
-    }
 
-    config = RasaNLUConfig(cmdline_args=_config)
-    rasa = RasaNLU(config, testing=True)
+    router = DataRouter(tmpdir_factory.mktemp("projects").strpath,
+                        emulation_mode="wit")
+    rasa = RasaNLU(router,
+                   logfile=nlu_log_file,
+                   testing=True)
     return StubTreq(rasa.app.resource())
 
 
@@ -170,8 +166,13 @@ def test_model_hot_reloading(app, rasa_default_train_data):
     query = "http://dummy-uri/parse?q=hello&project=my_keyword_model"
     response = yield app.get(query)
     assert response.code == 404, "Project should not exist yet"
-    train_u = "http://dummy-uri/train?project=my_keyword_model&pipeline=keyword"
-    response = app.post(train_u, json=rasa_default_train_data)
+    train_u = "http://dummy-uri/train?project=my_keyword_model"
+    model_config = {"pipeline": "keyword", "data": rasa_default_train_data}
+    model_str = yaml.safe_dump(model_config, default_flow_style=False,
+                               allow_unicode=True)
+    response = app.post(train_u,
+                        headers={b"Content-Type": b"application/x-yml"},
+                        data=model_str)
     time.sleep(3)
     app.flush()
     response = yield response
@@ -222,3 +223,27 @@ def test_evaluate(app, rasa_default_train_data):
                                                              "precision",
                                                              "f1_score",
                                                              "accuracy"])
+
+
+@pytest.inlineCallbacks
+def test_unload_model_error(app):
+    project_err = "http://dummy-uri/models?project=my_project&model=my_model"
+    response = yield app.delete(project_err)
+    rjs = yield response.json()
+    assert response.code == 500, "Project not found"
+    assert rjs['error'] == "Project my_project could not be found"
+
+    model_err = "http://dummy-uri/models?model=my_model"
+    response = yield app.delete(model_err)
+    rjs = yield response.json()
+    assert response.code == 500, "Model not found"
+    assert rjs['error'] == "Failed to unload model my_model for project default."
+
+
+@pytest.inlineCallbacks
+def test_unload_fallback(app):
+    unload = "http://dummy-uri/models?model=fallback"
+    response = yield app.delete(unload)
+    rjs = yield response.json()
+    assert response.code == 200, "Fallback model unloaded"
+    assert rjs == "fallback"

@@ -7,14 +7,40 @@ import errno
 import glob
 import io
 import json
+import logging
 import os
+import tempfile
 
 import simplejson
 import six
 from builtins import str
-from typing import List
+import yaml
+from future.utils import PY3
+from typing import List, Any
 from typing import Optional
 from typing import Text
+
+
+def add_logging_option_arguments(parser, default=logging.WARNING):
+    """Add options to an argument parser to configure logging levels."""
+
+    # arguments for logging configuration
+    parser.add_argument(
+            '--debug',
+            help="Print lots of debugging statements. "
+                 "Sets logging level to DEBUG",
+            action="store_const",
+            dest="loglevel",
+            const=logging.DEBUG,
+            default=default,
+    )
+    parser.add_argument(
+            '-v', '--verbose',
+            help="Be verbose. Sets logging level to INFO",
+            action="store_const",
+            dest="loglevel",
+            const=logging.INFO,
+    )
 
 
 def relative_normpath(f, path):
@@ -186,6 +212,29 @@ def read_json_file(filename):
                          "{}".format(os.path.abspath(filename), e))
 
 
+def fix_yaml_loader():
+    """Ensure that any string read by yaml is represented as unicode."""
+    from yaml import Loader, SafeLoader
+
+    def construct_yaml_str(self, node):
+        # Override the default string handling function
+        # to always return unicode objects
+        return self.construct_scalar(node)
+
+    Loader.add_constructor(u'tag:yaml.org,2002:str', construct_yaml_str)
+    SafeLoader.add_constructor(u'tag:yaml.org,2002:str', construct_yaml_str)
+
+
+def read_yaml(content):
+    fix_yaml_loader()
+    return yaml.load(content)
+
+
+def read_yaml_file(filename):
+    fix_yaml_loader()
+    return yaml.load(read_file(filename, "utf-8"))
+
+
 def build_entity(start, end, value, entity_type, **kwargs):
     """Builds a standard entity dictionary.
 
@@ -213,7 +262,8 @@ def is_model_dir(model_dir):
         return False
     model_dir, child_dirs, files = dir_tree[0]
     file_extenstions = [os.path.splitext(f)[1] for f in files]
-    only_valid_files = all([ext in allowed_extensions for ext in file_extenstions])
+    only_valid_files = all([ext in allowed_extensions
+                            for ext in file_extenstions])
     return only_valid_files
 
 
@@ -224,4 +274,65 @@ def remove_model(model_dir):
         shutil.rmtree(model_dir)
         return True
     else:
-        raise ValueError("Cannot remove {}, it seems it is not a model directory".format(model_dir))
+        raise ValueError("Cannot remove {}, it seems it is not a model "
+                         "directory".format(model_dir))
+
+
+def as_text_type(t):
+    if isinstance(t, six.text_type):
+        return t
+    else:
+        return six.text_type(t)
+
+
+def configure_colored_logging(loglevel):
+    import coloredlogs
+    field_styles = coloredlogs.DEFAULT_FIELD_STYLES.copy()
+    field_styles['asctime'] = {}
+    level_styles = coloredlogs.DEFAULT_LEVEL_STYLES.copy()
+    level_styles['debug'] = {}
+    coloredlogs.install(
+            level=loglevel,
+            use_chroot=False,
+            fmt='%(asctime)s %(levelname)-8s %(name)s  - %(message)s',
+            level_styles=level_styles,
+            field_styles=field_styles)
+
+
+def pycloud_unpickle(file_name):
+    # type: (Text) -> Any
+    """Unpickle an object from file using cloudpickle."""
+    from future.utils import PY2
+    import cloudpickle
+
+    with io.open(file_name, 'rb') as f:  # pragma: no test
+        if PY2:
+            return cloudpickle.load(f)
+        else:
+            return cloudpickle.load(f, encoding="latin-1")
+
+
+def pycloud_pickle(file_name, obj):
+    # type: (Text, Any) -> None
+    """Pickle an object to a file using cloudpickle."""
+    import cloudpickle
+
+    with io.open(file_name, 'wb') as f:
+        cloudpickle.dump(obj, f)
+
+
+def create_temporary_file(data, suffix=""):
+    """Creates a tempfile.NamedTemporaryFile object for data"""
+
+    if PY3:
+        f = tempfile.NamedTemporaryFile("w+", suffix=suffix,
+                                        delete=False,
+                                        encoding="utf-8")
+        f.write(data)
+    else:
+        f = tempfile.NamedTemporaryFile("w+", suffix=suffix,
+                                        delete=False)
+        f.write(data.encode("utf-8"))
+
+    f.close()
+    return f.name

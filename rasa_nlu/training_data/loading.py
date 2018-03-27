@@ -3,16 +3,22 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import logging
 import json
+import logging
+
+from typing import Text, Optional
 
 from rasa_nlu import utils
-from rasa_nlu.training_data.formats import MarkdownReader, WitReader, LuisReader, \
-    RasaReader, DialogflowReader
 from rasa_nlu.training_data import TrainingData
-from rasa_nlu.training_data.formats.dialogflow import DIALOGFLOW_AGENT, DIALOGFLOW_PACKAGE, DIALOGFLOW_INTENT, \
-    DIALOGFLOW_ENTITIES, DIALOGFLOW_ENTITY_ENTRIES, DIALOGFLOW_INTENT_EXAMPLES
-from rasa_nlu.training_data.formats.markdown import available_sections as available_markdown_sections
+from rasa_nlu.training_data.formats import (
+    MarkdownReader, WitReader, LuisReader,
+    RasaReader, DialogflowReader)
+from rasa_nlu.training_data.formats.dialogflow import (
+    DIALOGFLOW_AGENT, DIALOGFLOW_PACKAGE, DIALOGFLOW_INTENT,
+    DIALOGFLOW_ENTITIES, DIALOGFLOW_ENTITY_ENTRIES, DIALOGFLOW_INTENT_EXAMPLES)
+
+from rasa_nlu.training_data.formats import markdown
+
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +30,8 @@ UNK = "unk"
 MARKDOWN = "md"
 DIALOGFLOW_RELEVANT = {DIALOGFLOW_ENTITIES, DIALOGFLOW_INTENT}
 
-_markdown_section_markers = ["## {}:".format(s) for s in available_markdown_sections]
+_markdown_section_markers = ["## {}:".format(s)
+                             for s in markdown.available_sections]
 _json_format_heuristics = {
     WIT: lambda js, fn: "data" in js and isinstance(js.get("data"), list),
     LUIS: lambda js, fn: "luis_schema_version" in js,
@@ -40,7 +47,7 @@ _json_format_heuristics = {
 
 def load_data(resource_name, language='en'):
     # type: (Text, Optional[Text]) -> TrainingData
-    """Loads training data from disk and merges them if multiple files are found."""
+    """Load training data from disk. Merges them if multiple files are found."""
 
     files = utils.list_files(resource_name)
     data_sets = [_load(f, language) for f in files]

@@ -7,18 +7,33 @@ The evaluation script `evaluate.py` allows you to test your models performance f
 
 .. code-block:: bash
 
-    python -m rasa_nlu.evaluate -d data/my_test.json -m models/my_model -c my_nlu_config.json 
+    python -m rasa_nlu.evaluate \
+        --data data/examples/rasa/demo-rasa.json \
+        --model projects/default/model_20180323-145833
 
-If you would like to evaluate your pipeline using crossvalidation, you can run the evaluation script with the mode crossvalidation flag. This gives you an estimate of how accurately a predictive model will perform in practice. Note that you cannot specify a model in this mode, as a new model will be trained on part of the data for every crossvalidation loop. An example invocation of your script would be:
+Where **model** specifies the model to evaluate on the test data specified
+wioth **data**.
+
+If you would like to evaluate your pipeline using
+*cross-validation*, you can run the evaluation script with the mode
+crossvalidation flag. This gives you an estimate of how accurately a
+predictive model will perform in practice. Note that you cannot specify
+a model in this mode, as a new model will be trained on part of the data
+for every crossvalidation loop. An example invocation of your script would be:
 
 .. code-block:: bash
 
-    python -m rasa_nlu.evaluate -d data/examples/rasa/demo-rasa.json -c sample_configs/config_spacy.json --mode crossvalidation
+    python -m rasa_nlu.evaluate \
+        --data data/examples/rasa/demo-rasa.json \
+        --config sample_configs/config_spacy.yml \
+        --mode crossvalidation
 
 Intent Classification
 ---------------------
-The evaluation script will log precision, recall, and f1 measure for each intent and once summarized for all.
-Furthermore, it creates a confusion matrix for you to see which intents are mistaken for which others.
+The evaluation script will log precision, recall, and f1 measure for
+each intent and once summarized for all.
+Furthermore, it creates a confusion matrix for you to see which
+intents are mistaken for which others.
 
 Entity Extraction
 -----------------
@@ -64,3 +79,16 @@ near [Alexanderplatz](loc) [tonight](time)          O   loc time (2)          O 
 [near Alexanderplatz tonight](loc)                  loc loc loc  (2)          B-loc I-loc L-loc  (1)
 ==================================================  ========================  ===========================
 
+
+Evaluation Parameters
+---------------------
+
+There are a number of parameters you can pass to the evaluation script
+
+.. code-block:: bash
+
+    $ python -m rasa_nlu.evaluate --help
+
+Here is a quick overview:
+
+.. program-output:: python -m rasa_nlu.evaluate --help
