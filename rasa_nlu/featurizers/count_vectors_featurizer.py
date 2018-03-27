@@ -8,10 +8,15 @@ import typing
 import os
 import io
 from future.utils import PY3
+from typing import Any, Dict, List, Optional, Text
 
+from rasa_nlu import utils
 from rasa_nlu.featurizers import Featurizer
 from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
+from rasa_nlu.components import Component
+from rasa_nlu.config import RasaNLUModelConfig
+from rasa_nlu.model import Metadata
 
 if typing.TYPE_CHECKING:
     import sklearn
@@ -42,22 +47,22 @@ class CountVectorsFeaturizer(Featurizer):
     }
 
     def __init__(self, component_config=None):
-        # type: () -> None
+        # type: (RasaNLUModelConfig) -> None
         """Construct a new count vectorizer using the sklearn framework."""
 
         super(CountVectorsFeaturizer, self).__init__(component_config)
 
         # default parameters
         # min number of word occurancies in the document to add to vocabulary
-        self.min_df = 1
+        self.min_df = self.component_config['min_df']
 
         # max number (fraction if float) of word occurancies
         # in the document to add to vocabulary
-        self.max_df = 1.0
+        self.max_df = self.component_config['max_df']
 
         # set ngram range
-        self.min_ngram = 1
-        self.max_ngram = 1
+        self.min_ngram = self.component_config['min_ngram']
+        self.max_ngram = self.component_config['max_ngram']
 
         # declare class instance for CountVect
         self.vect = None
@@ -67,25 +72,17 @@ class CountVectorsFeaturizer(Featurizer):
         # type: () -> List[Text]
         return ["sklearn", "cloudpickle"]
 
-    def train(self, training_data, config, **kwargs):
-        # type: (TrainingData) -> None
+    def train(self, training_data, cfg, **kwargs):
+        # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
         """Take parameters from config and
             construct a new count vectorizer using the sklearn framework."""
         from sklearn.feature_extraction.text import CountVectorizer
-
-        # overwrite parameters from config if they are there
-        params_dict = config.get("intent_featurizer_count_vectors", {})
-
-        self.min_df = params_dict.get("min_df", self.min_df)
-        self.max_df = params_dict.get("max_df", self.max_df)
-        self.min_ngram = params_dict.get("min_ngram", self.min_ngram)
-        self.max_ngram = params_dict.get("max_ngram", self.max_ngram)
 
         self.vect = CountVectorizer(ngram_range=(self.min_ngram, self.max_ngram),
                                     max_df=self.max_df,
                                     min_df=self.min_df)
 
-        lem_exs = [self._lemmetize(example)
+        lem_exs = [self._lemmatize(example)
                    for example in training_data.intent_examples]
 
         X = self.vect.fit_transform(lem_exs).toarray()
@@ -97,10 +94,11 @@ class CountVectorsFeaturizer(Featurizer):
     def process(self, message, **kwargs):
         # type: (Message, **Any) -> None
 
-        bag = self.vect.transform([self._lemmetize(message)]).toarray()
+        bag = self.vect.transform([self._lemmatize(message)]).toarray()
         message.set("text_features", bag)
 
-    def _lemmetize(self, message):
+    @staticmethod
+    def _lemmatize(message):
         if message.get("spacy_doc"):
             return ' '.join([t.lemma_ for t in message.get("spacy_doc")])
         else:
@@ -112,30 +110,22 @@ class CountVectorsFeaturizer(Featurizer):
              cached_component=None,
              **kwargs):
         # type: (Text, Metadata, Optional[Component], **Any) -> CountVectorsFeaturizer
-        import cloudpickle
 
-        if model_dir and model_metadata.get("intent_featurizer_count_vectors"):
-            featurizer_file = os.path.join(model_dir,
-                                           model_metadata.get("intent_featurizer_count_vectors"))
-            with io.open(featurizer_file, 'rb') as f:   # pramga: no cover
-                if PY3:
-                    return cloudpickle.load(f, encoding="latin-1")
-                else:
-                    return cloudpickle.load(f)
+        meta = model_metadata.for_component(cls.name)
+
+        if model_dir and meta.get("featurizer_file"):
+            file_name = meta.get("featurizer_file")
+            featurizer_file = os.path.join(model_dir, file_name)
+            return utils.pycloud_unpickle(featurizer_file)
         else:
-            return CountVectorsFeaturizer()
+            raise Exception("Failed to load featurizer. Path {} "
+                            "doesn't exist".format(os.path.abspath(model_dir)))
 
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]
         """Persist this model into the passed directory.
         Returns the metadata necessary to load the model again."""
 
-        import cloudpickle
-
-        featurizer_file = os.path.join(model_dir, "intent_featurizer_count_vectors.pkl")
-        with io.open(featurizer_file, 'wb') as f:
-            cloudpickle.dump(self, f)
-
-        return {
-                "intent_featurizer_count_vectors": "intent_featurizer_count_vectors.pkl"
-                }
+        featurizer_file = os.path.join(model_dir, self.name + ".pkl")
+        utils.pycloud_pickle(featurizer_file, self)
+        return {"featurizer_file": self.name + ".pkl"}
