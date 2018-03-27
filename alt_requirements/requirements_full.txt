@@ -4,4 +4,7 @@
 # Spacy Requirements
 -r requirements_spacy_sklearn.txt
 
+# Tensorflow Requirements
+-r requirements_tensorflow_sklearn.txt
+
 duckling==1.7.3

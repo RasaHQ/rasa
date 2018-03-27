@@ -70,7 +70,7 @@ class CountVectorsFeaturizer(Featurizer):
     @classmethod
     def required_packages(cls):
         # type: () -> List[Text]
-        return ["sklearn", "cloudpickle"]
+        return ["sklearn"]
 
     def train(self, training_data, cfg, **kwargs):
         # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
