@@ -14,9 +14,9 @@ from tests.conftest import DEFAULT_STORIES_FILE
 def test_evaluation_image_creation(tmpdir, default_agent):
     model_path = os.path.join(tmpdir.strpath, "model")
     default_agent.persist(model_path)
-    img_path = os.path.join(tmpdir.strpath, "evaltion.png")
+    img_path = os.path.join(tmpdir.strpath, "evaluation.png")
     run_story_evaluation(
-            story_file=DEFAULT_STORIES_FILE,
+            resource_name=DEFAULT_STORIES_FILE,
             policy_model_path=model_path,
             nlu_model_path=None,
             out_file=img_path,
@@ -31,7 +31,7 @@ def test_evaluation_script(tmpdir, default_agent):
     model_path = os.path.join(tmpdir.strpath, "model")
     default_agent.persist(model_path)
     actual, preds = collect_story_predictions(
-            story_file=DEFAULT_STORIES_FILE,
+            resource_name=DEFAULT_STORIES_FILE,
             policy_model_path=model_path,
             nlu_model_path=None,
             max_stories=None,

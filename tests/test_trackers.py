@@ -8,6 +8,7 @@ import json
 
 import pytest
 
+from rasa_core import training
 from rasa_core import utils
 from rasa_core.actions.action import ActionListen, ACTION_LISTEN_NAME
 from rasa_core.channels import UserMessage
@@ -19,7 +20,6 @@ from rasa_core.events import (
 from rasa_core.featurizers import BinaryFeaturizer
 from rasa_core.tracker_store import InMemoryTrackerStore, RedisTrackerStore
 from rasa_core.trackers import DialogueStateTracker
-from rasa_core.training import extract_trackers_from_file
 from tests.conftest import DEFAULT_STORIES_FILE
 from tests.utilities import tracker_from_dialogue_file, read_dialogue_file
 
@@ -99,8 +99,8 @@ def test_tracker_write_to_story(tmpdir, default_domain):
             "data/test_dialogues/enter_name.json", default_domain)
     p = tmpdir.join("export.md")
     tracker.export_stories_to_file(p.strpath)
-    trackers = extract_trackers_from_file(p.strpath, default_domain,
-                                          BinaryFeaturizer())
+    trackers = training.extract_trackers(p.strpath, default_domain,
+                                         BinaryFeaturizer())
     assert len(trackers) == 1
     recovered = trackers[0]
     assert len(recovered.events) == 8
@@ -321,7 +321,7 @@ def test_traveling_back_in_time(default_domain):
 
 
 def test_dump_and_restore_as_json(default_agent, tmpdir):
-    trackers = extract_trackers_from_file(
+    trackers = training.extract_trackers(
             DEFAULT_STORIES_FILE,
             default_agent.domain,
             default_agent.featurizer,

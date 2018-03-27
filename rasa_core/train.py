@@ -25,7 +25,7 @@ def create_argument_parser():
             '-s', '--stories',
             type=str,
             required=True,
-            help="file that contains the stories to train on")
+            help="file or folder containing the training stories")
     parser.add_argument(
             '-o', '--out',
             type=str,
