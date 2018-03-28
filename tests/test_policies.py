@@ -20,13 +20,13 @@ from rasa_core.policies.sklearn_policy import SklearnPolicy
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training import (
     DialogueTrainingData,
-    extract_training_data_from_file,
-    extract_trackers_from_file)
+    extract_training_data,
+    extract_trackers)
 from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 
 
 def train_data(max_history, domain):
-    return extract_training_data_from_file(
+    return extract_training_data(
             DEFAULT_STORIES_FILE, domain,
             BinaryFeaturizer(), max_history=max_history, remove_duplicates=True)
 
@@ -62,7 +62,7 @@ class PolicyTestCollection(object):
         loaded = trained_policy.__class__.load(tmpdir.strpath,
                                                trained_policy.featurizer,
                                                trained_policy.max_history)
-        trackers = extract_trackers_from_file(
+        trackers = extract_trackers(
                 DEFAULT_STORIES_FILE, default_domain, BinaryFeaturizer())
 
         for tracker in trackers:

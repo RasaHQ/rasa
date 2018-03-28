@@ -19,19 +19,20 @@ if typing.TYPE_CHECKING:
     from rasa_core.interpreter import NaturalLanguageInterpreter
 
 
-def extract_story_graph_from_file(
-        filename,  # type: Text
+def extract_story_graph(
+        resource_name,  # type: Text
         domain,  # type: Domain
         interpreter=RegexInterpreter()  # type: NaturalLanguageInterpreter
 ):
     # type: (...) -> StoryGraph
 
-    story_steps = StoryFileReader.read_from_file(filename, domain, interpreter)
+    story_steps = StoryFileReader.read_from_folder(resource_name,
+                                                   domain, interpreter)
     return StoryGraph(story_steps)
 
 
-def extract_training_data_from_file(
-        filename,  # type: Text
+def extract_training_data(
+        resource_name,  # type: Text
         domain,  # type: Domain
         featurizer=None,  # type: Featurizer
         interpreter=RegexInterpreter(),  # type: NaturalLanguageInterpreter
@@ -42,7 +43,7 @@ def extract_training_data_from_file(
 ):
     # type: (...) -> DialogueTrainingData
 
-    graph = extract_story_graph_from_file(filename, domain, interpreter)
+    graph = extract_story_graph(resource_name, domain, interpreter)
     g = TrainingsDataGenerator(graph, domain, featurizer,
                                remove_duplicates,
                                augmentation_factor,
@@ -54,8 +55,8 @@ def extract_training_data_from_file(
     return DialogueTrainingData(X, y)
 
 
-def extract_trackers_from_file(
-        filename,  # type: Text
+def extract_trackers(
+        resource_name,  # type: Text
         domain,  # type: Domain
         featurizer,  # type: Featurizer
         interpreter=RegexInterpreter(),  # type: NaturalLanguageInterpreter
@@ -64,7 +65,7 @@ def extract_trackers_from_file(
 ):
     # type: (...) -> List[DialogueStateTracker]
 
-    graph = extract_story_graph_from_file(filename, domain, interpreter)
+    graph = extract_story_graph(resource_name, domain, interpreter)
     g = TrainingsDataGenerator(graph, domain, featurizer,
                                use_story_concatenation=False,
                                max_history=max_history,

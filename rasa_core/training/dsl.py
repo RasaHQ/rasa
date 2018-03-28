@@ -11,6 +11,7 @@ import os
 import re
 import warnings
 
+from rasa_nlu import utils as nlu_utils
 from typing import Optional, List, Text, Any, Dict
 
 from rasa_core import utils
@@ -18,7 +19,7 @@ from rasa_core.events import (
     ActionExecuted, UserUttered, Event)
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.training.structures import (
-    Checkpoint, STORY_END, STORY_START, StoryStep)
+    Checkpoint, STORY_START, StoryStep)
 
 logger = logging.getLogger(__name__)
 
@@ -132,9 +133,21 @@ class StoryFileReader(object):
         self.template_variables = template_vars if template_vars else {}
 
     @staticmethod
+    def read_from_folder(resource_name, domain, interpreter=RegexInterpreter(),
+                         template_variables=None):
+        """Given a path reads all contained story files."""
+
+        story_steps = []
+        for f in nlu_utils.list_files(resource_name):
+            steps = StoryFileReader.read_from_file(f, domain, interpreter,
+                                                   template_variables)
+            story_steps.extend(steps)
+        return story_steps
+
+    @staticmethod
     def read_from_file(filename, domain, interpreter=RegexInterpreter(),
                        template_variables=None):
-        """Given a json file reads the contained stories."""
+        """Given a md file reads the contained stories."""
 
         try:
             with io.open(filename, "r") as f:
