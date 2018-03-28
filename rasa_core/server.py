@@ -12,6 +12,7 @@ import tempfile
 import zipfile
 from functools import wraps
 
+import six
 from builtins import str
 from klein import Klein
 from typing import Union, Text, Optional
@@ -19,12 +20,10 @@ from typing import Union, Text, Optional
 from rasa_core import utils, events
 from rasa_core.agent import Agent
 from rasa_core.channels.direct import CollectingOutputChannel
-from rasa_core.channels import UserMessage
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.tracker_store import TrackerStore
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.version import __version__
-from rasa_nlu.server import check_cors, requires_auth
 
 logger = logging.getLogger(__name__)
 
@@ -121,6 +120,51 @@ def request_parameters(request):
                          "Error: {}. Request content: "
                          "'{}'".format(e, content))
             raise
+
+
+def check_cors(f):
+    """Wraps a request handler with CORS headers checking."""
+
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        self = args[0]
+        request = args[1]
+        origin = request.getHeader('Origin')
+
+        if origin:
+            if '*' in self.config['cors_origins']:
+                request.setHeader('Access-Control-Allow-Origin', '*')
+            elif origin in self.config['cors_origins']:
+                request.setHeader('Access-Control-Allow-Origin', origin)
+            else:
+                request.setResponseCode(403)
+                return 'forbidden'
+
+        if request.method.decode('utf-8', 'strict') == 'OPTIONS':
+            return ''  # if this is an options call we skip running `f`
+        else:
+            return f(*args, **kwargs)
+
+    return decorated
+
+
+def requires_auth(f):
+    """Wraps a request handler with token authentication."""
+
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        self = args[0]
+        request = args[1]
+        if six.PY3:
+            token = request.args.get(b'token', [b''])[0].decode("utf8")
+        else:
+            token = str(request.args.get('token', [''])[0])
+        if self.config['token'] is None or token == self.config['token']:
+            return f(*args, **kwargs)
+        request.setResponseCode(401)
+        return 'unauthorized'
+
+    return decorated
 
 
 class RasaCoreServer(object):
