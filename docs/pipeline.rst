@@ -45,8 +45,17 @@ Here is a list of the existing templates:
 +----------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
 Creating your own pipelines is possible by directly passing the names of the components to rasa NLU in the ``pipeline``
-configuration variable, e.g. ``"pipeline": ["nlp_spacy", "ner_crf", "ner_synonyms"]``. This creates a pipeline
-that only does entity recognition, but no intent classification. Hence, the output will not contain any useful intents.
+configuration variable, e.g.
+
+.. code-block:: yaml
+
+    pipeline:
+    - name: "nlp_spacy"
+    - name: "ner_crf"
+    - name: "ner_synonyms"
+
+This creates a pipeline that only does entity recognition, but no intent classification.
+Hence, the output will not contain any useful intents.
 
 Built-in Components
 -------------------
@@ -113,23 +122,38 @@ intent_featurizer_count_vectors
 :Short: Creates bag-of-words representation of intent features
 :Outputs: nothing, used as an input to intent classifiers that need bag-of-words representation of intent features (e.g. ``intent_classifier_tensorflow_embedding``)
 :Description:
-    Creates bag-of-words representation of intent features using sklearn's `CountVectorizer`
+    Creates bag-of-words representation of intent features using
+    `sklearn's CountVectorizer <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_
 
 :Configuration:
+    See `sklearn's CountVectorizer docs <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_
+    for detailed description of the configuration parameters
 
     .. code-block:: yaml
 
         pipeline:
         - name: "intent_featurizer_count_vectors"
+          # the parameters are taken from
+          # sklearn's CountVectorizer
           # regular expression for tokens
           "token_pattern": r'(?u)\b\w\w+\b'
-          # min number of word occurancies in the document to add to vocabulary
-          "min_df": 1
-          # max number (fraction if float) of word occurancies in the document to add to vocabulary
-          "max_df": 1.0
+          # remove accents during the preprocessing step
+          "strip_accents": None  # {'ascii', 'unicode', None}
+          # list of stop words
+          "stop_words": None  # string {'english'}, list, or None (default)
+          # min document frequency of a word to add to vocabulary
+          # float - the parameter represents a proportion of documents
+          # integer - absolute counts
+          "min_df": 1  # float in range [0.0, 1.0] or int
+          # max document frequency of a word to add to vocabulary
+          # float - the parameter represents a proportion of documents
+          # integer - absolute counts
+          "max_df": 1.0  # float in range [0.0, 1.0] or int
           # set ngram range
           "min_ngram": 1
           "max_ngram": 1
+          # limit vocabulary size
+          "max_features": None
 
 intent_classifier_keyword
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -219,26 +243,30 @@ intent_classifier_tensorflow_embedding
 :Description:
     The embedding intent classifier embeds user inputs and intent labels into the same space. Supervised embeddings are
     trained by maximizing similarity between them. This algorithm is based on
-    the starspace idea from: https://arxiv.org/abs/1709.03856.
-    It also provides rankings of the labels that did not "win". The embedding intent classifier
-    needs to be preceded by a featurizer in the pipeline. This featurizer creates the features used for the embeddings.
+    the starspace idea from: `<https://arxiv.org/abs/1709.03856>`_. However, in this implementation
+    the ``mu`` parameter is treated differently and additional hidden layers are added together with dropout.
+    This algorithm also provides similarity rankings of the labels that did not "win".
+
+    The embedding intent classifier needs to be preceded by a featurizer in the pipeline.
+    This featurizer creates the features used for the embeddings.
+    It is recommended to use ``intent_featurizer_count_vectors`` that can be optionally preceded
+    by ``nlp_spacy`` and ``tokenizer_spacy``.
 
 :Configuration:
     There are several hyperparameters such as neural network's number of hidden layers, embedding dimension,
     droprate, regularization, etc.
     In the config, you can specify these parameters.
 
-    .. note:: There is a parameter that controls similarity `similarity_type`.
-              It should be either `cosine` or `inner`. For `cosine` similarity `mu_pos` and `mu_neg`
-              should be between `-1` and `1`. Parameter `mu_pos` controls how similar the algorithm
+    .. note:: There is a parameter that controls similarity ``similarity_type``.
+              It should be either ``cosine`` or ``inner``. For ``cosine`` similarity ``mu_pos`` and ``mu_neg``
+              should be between ``-1`` and ``1``. Parameter ``mu_pos`` controls how similar the algorithm
               should try to make embedding vectors for correct intent labels,
-              while `mu_neg` controls maximum negative similarity for incorrect intents.
+              while ``mu_neg`` controls maximum negative similarity for incorrect intents.
               It is set to negative value to mimic the original
-              starspace algorithm in the case `mu_neg = mu_pos` and `use_max_sim_neg = False`.
-              See starspace paper https://arxiv.org/abs/1709.03856 for details.
-              If `use_max_sim_neg = True` the algorithm only minimize maximum
+              starspace algorithm in the case ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``.
+              See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
+              If ``use_max_sim_neg = True`` the algorithm only minimize maximum
               similarity over incorrect intents.
-
 
     .. code-block:: yaml
 
@@ -253,9 +281,9 @@ intent_classifier_tensorflow_embedding
           "epochs": 300
           # embedding parameters
           "embed_dim": 10
-          "mu_pos": 0.8  # should be 0 < ... < 1 for 'cosine'
-          "mu_neg": -0.4  # should be -1 < ... < 1 for 'cosine'
-          "similarity_type": 'cosine'  # should be 'cosine' or 'inner'
+          "mu_pos": 0.8  # should be 0.0 < ... < 1.0 for 'cosine'
+          "mu_neg": -0.4  # should be -1.0 < ... < 1.0 for 'cosine'
+          "similarity_type": 'cosine'  # string 'cosine' or 'inner'
           "num_neg": 10
           "use_max_sim_neg": True  # flag which loss function to use
           # regularization

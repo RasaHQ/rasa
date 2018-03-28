@@ -37,19 +37,34 @@ class CountVectorsFeaturizer(Featurizer):
     requires = []
 
     defaults = {
+        # the parameters are taken from
+        # sklearn's CountVectorizer
+
         # regular expression for tokens
         "token_pattern": r'(?u)\b\w\w+\b',
 
-        # min number of word occurancies in the document to add to vocabulary
-        "min_df": 1,
+        # remove accents during the preprocessing step
+        "strip_accents": None,  # {'ascii', 'unicode', None}
 
-        # max number (fraction if float) of word occurancies
-        # in the document to add to vocabulary
-        "max_df": 1.0,
+        # list of stop words
+        "stop_words": None,  # string {'english'}, list, or None (default)
+
+        # min document frequency of a word to add to vocabulary
+        # float - the parameter represents a proportion of documents
+        # integer - absolute counts
+        "min_df": 1,  # float in range [0.0, 1.0] or int
+
+        # max document frequency of a word to add to vocabulary
+        # float - the parameter represents a proportion of documents
+        # integer - absolute counts
+        "max_df": 1.0,  # float in range [0.0, 1.0] or int
 
         # set ngram range
         "min_ngram": 1,
-        "max_ngram": 1
+        "max_ngram": 1,
+
+        # limit vocabulary size
+        "max_features": None
     }
 
     def __init__(self, component_config=None):
@@ -59,6 +74,12 @@ class CountVectorsFeaturizer(Featurizer):
 
         # regular expression for tokens
         self.token_pattern = self.component_config['token_pattern']
+
+        # remove accents during the preprocessing step
+        self.strip_accents = self.component_config['strip_accents']
+
+        # list of stop words
+        self.stop_words = self.component_config['stop_words']
 
         # min number of word occurancies in the document to add to vocabulary
         self.min_df = self.component_config['min_df']
@@ -70,6 +91,9 @@ class CountVectorsFeaturizer(Featurizer):
         # set ngram range
         self.min_ngram = self.component_config['min_ngram']
         self.max_ngram = self.component_config['max_ngram']
+
+        # limit vocabulary size
+        self.max_features = self.component_config['max_features']
 
         # declare class instance for CountVect
         self.vect = None
@@ -87,10 +111,13 @@ class CountVectorsFeaturizer(Featurizer):
 
         # use even single character word as a token
         self.vect = CountVectorizer(token_pattern=self.token_pattern,
+                                    strip_accents=self.strip_accents,
+                                    stop_words=self.stop_words,
                                     ngram_range=(self.min_ngram,
                                                  self.max_ngram),
                                     max_df=self.max_df,
-                                    min_df=self.min_df)
+                                    min_df=self.min_df,
+                                    max_features=self.max_features)
 
         lem_exs = [self._lemmatize(example)
                    for example in training_data.intent_examples]

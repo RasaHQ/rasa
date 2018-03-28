@@ -37,11 +37,16 @@ class EmbeddingIntentClassifier(Component):
     and intent labels into the same space.
     Supervised embeddings are trained by maximizing similarity between them.
     It also provides rankings of the labels that did not "win".
+
     The embedding intent classifier needs to be preceded by
     a featurizer in the pipeline.
     This featurizer creates the features used for the embeddings.
+    It is recommended to use ``intent_featurizer_count_vectors``
+    that can be optionally preceded by ``nlp_spacy`` and ``tokenizer_spacy``.
 
-    Based on the starspace idea from: https://arxiv.org/abs/1709.03856"""
+    Based on the starspace idea from: https://arxiv.org/abs/1709.03856.
+    However, in this implementation the `mu` parameter is treated differently
+    and additional hidden layers are added together with dropout."""
 
     name = "intent_classifier_tensorflow_embedding"
 
@@ -60,9 +65,9 @@ class EmbeddingIntentClassifier(Component):
 
         # embedding parameters
         "embed_dim": 10,
-        "mu_pos": 0.8,  # should be 0 < ... < 1 for 'cosine'
-        "mu_neg": -0.4,  # should be -1 < ... < 1 for 'cosine'
-        "similarity_type": 'cosine',  # should be 'cosine' or 'inner'
+        "mu_pos": 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
+        "mu_neg": -0.4,  # should be -1.0 < ... < 1.0 for 'cosine'
+        "similarity_type": 'cosine',  # string 'cosine' or 'inner'
         "num_neg": 10,
         "use_max_sim_neg": True,  # flag which loss function to use
 
