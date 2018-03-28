@@ -81,52 +81,6 @@ class EmbeddingIntentClassifier(Component):
         "intent_split_symbol": '_'
     }
 
-    def __init__(self, component_config=None,
-                 intent_dict=None,
-                 intent_token_dict=None,
-                 session=None,
-                 graph=None,
-                 intent_placeholder=None,
-                 embedding_placeholder=None,
-                 similarity_op=None):
-        """Declare instant variables with default values"""
-
-        super(EmbeddingIntentClassifier, self).__init__(component_config)
-
-        # nn architecture parameters
-        self._load_nn_architecture_params()
-        # embedding parameters
-        self._load_embedding_params()
-        # regularization
-        self._load_regularization_params()
-        # flag if tokenize intents
-        self._load_flag_if_tokenize_intents()
-
-        # check if hidden_layer_sizes are valid
-        (self.num_hidden_layers_a,
-         self.hidden_layer_size_a) = self._check_hidden_layer_sizes(
-                                        self.num_hidden_layers_a,
-                                        self.hidden_layer_size_a,
-                                        name='a')
-        (self.num_hidden_layers_b,
-         self.hidden_layer_size_b) = self._check_hidden_layer_sizes(
-                                        self.num_hidden_layers_b,
-                                        self.hidden_layer_size_b,
-                                        name='b')
-
-        # transform intents to numbers
-        # encode intents with numbers
-        self.intent_dict = intent_dict
-        # encode words in intents with numbers
-        self.intent_token_dict = intent_token_dict
-
-        # tf related instances
-        self.session = session
-        self.graph = graph if graph is not None else tf.Graph()
-        self.intent_placeholder = intent_placeholder
-        self.embedding_placeholder = embedding_placeholder
-        self.similarity_op = similarity_op
-
     def _load_nn_architecture_params(self):
         self.num_hidden_layers_a = self.component_config['num_hidden_layers_a']
         self.hidden_layer_size_a = self.component_config['hidden_layer_size_a']
@@ -189,57 +143,56 @@ class EmbeddingIntentClassifier(Component):
 
         return num_layers, layer_size
 
+    def __init__(self, component_config=None,
+                 intent_dict=None,
+                 intent_token_dict=None,
+                 session=None,
+                 graph=None,
+                 intent_placeholder=None,
+                 embedding_placeholder=None,
+                 similarity_op=None):
+        """Declare instant variables with default values"""
+
+        super(EmbeddingIntentClassifier, self).__init__(component_config)
+
+        # nn architecture parameters
+        self._load_nn_architecture_params()
+        # embedding parameters
+        self._load_embedding_params()
+        # regularization
+        self._load_regularization_params()
+        # flag if tokenize intents
+        self._load_flag_if_tokenize_intents()
+
+        # check if hidden_layer_sizes are valid
+        (self.num_hidden_layers_a,
+         self.hidden_layer_size_a) = self._check_hidden_layer_sizes(
+                                        self.num_hidden_layers_a,
+                                        self.hidden_layer_size_a,
+                                        name='a')
+        (self.num_hidden_layers_b,
+         self.hidden_layer_size_b) = self._check_hidden_layer_sizes(
+                                        self.num_hidden_layers_b,
+                                        self.hidden_layer_size_b,
+                                        name='b')
+
+        # transform intents to numbers
+        # encode intents with numbers
+        self.intent_dict = intent_dict
+        # encode words in intents with numbers
+        self.intent_token_dict = intent_token_dict
+
+        # tf related instances
+        self.session = session
+        self.graph = graph if graph is not None else tf.Graph()
+        self.intent_placeholder = intent_placeholder
+        self.embedding_placeholder = embedding_placeholder
+        self.similarity_op = similarity_op
+
     @classmethod
     def required_packages(cls):
         # type: () -> List[Text]
         return ["tensorflow"]
-
-    def train(self, training_data, cfg=None, **kwargs):
-        # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
-        """Train the embedding intent classifier on a data set."""
-
-        # transform intents to numbers
-        # if intent_tokenization = False these dicts are identical
-        self.intent_dict = self._create_intent_dict(training_data)
-
-        if len(self.intent_dict) < 2:
-            logger.error("Can not train an intent classifier. "
-                         "Need at least 2 different classes. "
-                         "Skipping training of intent classifier.")
-            return
-
-        # check if number of negatives is less than number of intents
-        logger.debug("Check if num_neg {} is smaller than "
-                     "number of intents {}, "
-                     "else set num_neg to the number of intents"
-                     "".format(self.num_neg, len(self.intent_dict)))
-        self.num_neg = min(self.num_neg, len(self.intent_dict) - 1)
-
-        X, Y, helper_data = self._prepare_data_for_training(training_data)
-
-        with self.graph.as_default():
-            a_in = tf.placeholder(tf.float32, (None, X.shape[-1]),
-                                  name='a')
-            b_in = tf.placeholder(tf.float32, (None, None, Y.shape[-1]),
-                                  name='b')
-
-            self.embedding_placeholder = a_in
-            self.intent_placeholder = b_in
-
-            is_training = tf.placeholder_with_default(False, shape=())
-
-            sim, loss = self._create_tf_graph(a_in, b_in, is_training)
-            train_op = tf.train.AdamOptimizer().minimize(loss)
-
-            # train tensorflow graph
-            sess = tf.Session()
-            self.session = sess
-
-            sess.run(tf.global_variables_initializer())
-
-            self._train_tf(X, Y, helper_data,
-                           sess, a_in, b_in, sim,
-                           loss, is_training, train_op)
 
     # training data helpers:
     @staticmethod
@@ -264,46 +217,6 @@ class EmbeddingIntentClassifier(Component):
         return intent_token_dict
 
     # data helpers:
-    def _prepare_data_for_training(self, training_data):
-        """Prepare data for training"""
-
-        X = np.stack([example.get("text_features")
-                      for example in training_data.intent_examples])
-
-        intents_for_X = self._create_intents_for_X(training_data,
-                                                   X.shape[0])
-        Y = self._create_Y(training_data, X.shape[0])
-
-        encoded_all_intents, all_Y = self._create_all_Y(X.shape[0])
-
-        helper_data = intents_for_X, encoded_all_intents, all_Y
-
-        return X, Y, helper_data
-
-    def _create_all_Y(self, size):
-        # the matrix that encodes intents as bag of words in rows
-        # if intent_tokenization = False this is identity matrix
-        encoded_all_intents = self._create_encoded_intents()
-
-        # stack encoded_all_intents on top of each other
-        # to create candidates for training examples
-        # to calculate training accuracy
-        all_Y = np.stack([encoded_all_intents for _ in range(size)])
-
-        return encoded_all_intents, all_Y
-
-    def _create_intents_for_X(self, training_data, num_examples):
-        """Create intents_for_X
-
-        Due to tokenization of the intents, special array is created
-        that stores the number of the whole intent from intent_dict"""
-
-        intents_for_X = np.zeros(num_examples, dtype=int)
-        for i, example in enumerate(training_data.intent_examples):
-            intents_for_X[i] = self.intent_dict[example.get("intent")]
-
-        return intents_for_X
-
     def _create_Y(self, training_data, num_examples):
         """Create Y
 
@@ -312,8 +225,8 @@ class EmbeddingIntentClassifier(Component):
 
         if self.intent_tokenization_flag and self.intent_split_symbol:
             self.intent_token_dict = self._create_intent_token_dict(
-                                            training_data,
-                                            self.intent_split_symbol)
+                training_data,
+                self.intent_split_symbol)
 
             Y = np.zeros([num_examples, len(self.intent_token_dict)])
             for i, example in enumerate(training_data.intent_examples):
@@ -326,6 +239,18 @@ class EmbeddingIntentClassifier(Component):
                 Y[i, self.intent_dict[example.get("intent")]] = 1
 
         return Y
+
+    def _create_intents_for_X(self, training_data, num_examples):
+        """Create intents_for_X
+
+        Due to tokenization of the intents, special array is created
+        that stores the number of the whole intent from intent_dict"""
+
+        intents_for_X = np.zeros(num_examples, dtype=int)
+        for i, example in enumerate(training_data.intent_examples):
+            intents_for_X[i] = self.intent_dict[example.get("intent")]
+
+        return intents_for_X
 
     def _create_encoded_intents(self):
         """Create matrix with intents encoded in rows as bag of words,
@@ -341,6 +266,35 @@ class EmbeddingIntentClassifier(Component):
             return encoded_all_intents
         else:
             return np.eye(len(self.intent_dict))
+
+    def _create_all_Y(self, size):
+        # the matrix that encodes intents as bag of words in rows
+        # if intent_tokenization = False this is identity matrix
+        encoded_all_intents = self._create_encoded_intents()
+
+        # stack encoded_all_intents on top of each other
+        # to create candidates for training examples
+        # to calculate training accuracy
+        all_Y = np.stack([encoded_all_intents for _ in range(size)])
+
+        return encoded_all_intents, all_Y
+
+    def _prepare_data_for_training(self, training_data):
+        """Prepare data for training"""
+
+        X = np.stack([example.get("text_features")
+                      for example in training_data.intent_examples])
+
+        Y = self._create_Y(training_data, X.shape[0])
+
+        intents_for_X = self._create_intents_for_X(training_data,
+                                                   X.shape[0])
+
+        encoded_all_intents, all_Y = self._create_all_Y(X.shape[0])
+
+        helper_data = intents_for_X, encoded_all_intents, all_Y
+
+        return X, Y, helper_data
 
     # tf helpers:
     def _create_tf_embed_nn(self, x_in, is_training,
@@ -420,45 +374,11 @@ class EmbeddingIntentClassifier(Component):
                                      self.hidden_layer_size_b,
                                      name='b')
         sim, sim_emb = self._tf_sim(a, b)
-        self.similarity_op = sim
         loss = self._tf_loss(sim, sim_emb)
 
         return sim, loss
 
     # training helpers:
-    def _train_tf(self, X, Y, helper_data,
-                  sess, a_in, b_in, sim,
-                  loss, is_training, train_op):
-        """Train tf graph"""
-
-        intents_for_X, encoded_all_intents, all_Y = helper_data
-
-        batches_per_epoch = (len(X) // self.batch_size +
-                             int(len(X) % self.batch_size > 0))
-        for ep in range(self.epochs):
-            indices = np.random.permutation(len(X))
-            sess_out = {}
-            for i in range(batches_per_epoch):
-                end_idx = (i + 1) * self.batch_size
-                start_idx = i * self.batch_size
-                batch_a = X[indices[start_idx:end_idx]]
-                batch_pos_b = Y[indices[start_idx:end_idx]]
-                intents_for_b = intents_for_X[indices[start_idx:end_idx]]
-                # add negatives
-                batch_b = self._create_batch_b(batch_pos_b, intents_for_b,
-                                               encoded_all_intents)
-
-                sess_out = sess.run({'loss': loss, 'train_op': train_op},
-                                    feed_dict={a_in: batch_a,
-                                               b_in: batch_b,
-                                               is_training: True})
-
-            if logger.isEnabledFor(logging.DEBUG) and (ep + 1) % 10 == 0:
-                self._output_training_stat(X, intents_for_X, all_Y,
-                                           sess, a_in, b_in,
-                                           sim, is_training,
-                                           ep, sess_out)
-
     def _create_batch_b(self, batch_pos_b, intent_ids, encoded_all_intents):
         """Create batch of intents, where the first is correct intent
             and the rest are wrong intents sampled randomly"""
@@ -494,43 +414,83 @@ class EmbeddingIntentClassifier(Component):
                      "".format((ep + 1), self.epochs,
                                sess_out.get('loss'), train_acc))
 
-    def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
-        """Return the most likely intent and its similarity to the input."""
+    def _train_tf(self, X, Y, helper_data,
+                  sess, a_in, b_in, sim,
+                  loss, is_training, train_op):
+        """Train tf graph"""
+        sess.run(tf.global_variables_initializer())
 
-        if self.session is None:
-            logger.error("There is no trained tf.session: "
-                         "component is either not trained or "
-                         "didn't receive enough training data")
-            intent = None
-            intent_ranking = []
-        else:
-            # get features (bag of words) for a message
-            X = message.get("text_features").reshape(1, -1)
+        intents_for_X, encoded_all_intents, all_Y = helper_data
 
-            _, all_Y = self._create_all_Y(X.shape[0])
+        batches_per_epoch = (len(X) // self.batch_size +
+                             int(len(X) % self.batch_size > 0))
+        for ep in range(self.epochs):
+            indices = np.random.permutation(len(X))
+            sess_out = {}
+            for i in range(batches_per_epoch):
+                end_idx = (i + 1) * self.batch_size
+                start_idx = i * self.batch_size
+                batch_a = X[indices[start_idx:end_idx]]
+                batch_pos_b = Y[indices[start_idx:end_idx]]
+                intents_for_b = intents_for_X[indices[start_idx:end_idx]]
+                # add negatives
+                batch_b = self._create_batch_b(batch_pos_b, intents_for_b,
+                                               encoded_all_intents)
 
-            # load tf graph and session
-            intent_ids, message_sim = self._calculate_message_sim(X, all_Y)
+                sess_out = sess.run({'loss': loss, 'train_op': train_op},
+                                    feed_dict={a_in: batch_a,
+                                               b_in: batch_b,
+                                               is_training: True})
 
-            if intent_ids.size > 0:
-                inv_intent_dict = {value: key
-                                   for key, value in self.intent_dict.items()}
+            if logger.isEnabledFor(logging.DEBUG) and (ep + 1) % 10 == 0:
+                self._output_training_stat(X, intents_for_X, all_Y,
+                                           sess, a_in, b_in,
+                                           sim, is_training,
+                                           ep, sess_out)
 
-                intent = {"name": inv_intent_dict[intent_ids[0]],
-                          "confidence": message_sim[0]}
+    def train(self, training_data, cfg=None, **kwargs):
+        # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
+        """Train the embedding intent classifier on a data set."""
 
-                ranking = list(zip(list(intent_ids), message_sim))
-                ranking = ranking[:INTENT_RANKING_LENGTH]
-                intent_ranking = [{"name": inv_intent_dict[intent_idx],
-                                   "confidence": score}
-                                  for intent_idx, score in ranking]
-            else:
-                intent = {"name": None, "confidence": 0.0}
-                intent_ranking = []
+        self.intent_dict = self._create_intent_dict(training_data)
 
-        message.set("intent", intent, add_to_output=True)
-        message.set("intent_ranking", intent_ranking, add_to_output=True)
+        if len(self.intent_dict) < 2:
+            logger.error("Can not train an intent classifier. "
+                         "Need at least 2 different classes. "
+                         "Skipping training of intent classifier.")
+            return
+
+        # check if number of negatives is less than number of intents
+        logger.debug("Check if num_neg {} is smaller than "
+                     "number of intents {}, "
+                     "else set num_neg to the number of intents"
+                     "".format(self.num_neg, len(self.intent_dict)))
+        self.num_neg = min(self.num_neg, len(self.intent_dict) - 1)
+
+        X, Y, helper_data = self._prepare_data_for_training(training_data)
+
+        with self.graph.as_default():
+            a_in = tf.placeholder(tf.float32, (None, X.shape[-1]),
+                                  name='a')
+            b_in = tf.placeholder(tf.float32, (None, None, Y.shape[-1]),
+                                  name='b')
+            self.embedding_placeholder = a_in
+            self.intent_placeholder = b_in
+
+            is_training = tf.placeholder_with_default(False, shape=())
+
+            sim, loss = self._create_tf_graph(a_in, b_in, is_training)
+            self.similarity_op = sim
+
+            train_op = tf.train.AdamOptimizer().minimize(loss)
+
+            # train tensorflow graph
+            sess = tf.Session()
+            self.session = sess
+
+            self._train_tf(X, Y, helper_data,
+                           sess, a_in, b_in, sim,
+                           loss, is_training, train_op)
 
     # process helpers
     def _calculate_message_sim(self, X, all_Y):
@@ -553,6 +513,43 @@ class EmbeddingIntentClassifier(Component):
         message_sim = message_sim.tolist()
 
         return intent_ids, message_sim
+
+    def process(self, message, **kwargs):
+        # type: (Message, **Any) -> None
+        """Return the most likely intent and its similarity to the input."""
+
+        intent = {"name": None, "confidence": 0.0}
+        intent_ranking = []
+
+        if self.session is None:
+            logger.error("There is no trained tf.session: "
+                         "component is either not trained or "
+                         "didn't receive enough training data")
+
+        else:
+            # get features (bag of words) for a message
+            X = message.get("text_features").reshape(1, -1)
+
+            _, all_Y = self._create_all_Y(X.shape[0])
+
+            # load tf graph and session
+            intent_ids, message_sim = self._calculate_message_sim(X, all_Y)
+
+            if intent_ids.size > 0:
+                inv_intent_dict = {value: key
+                                   for key, value in self.intent_dict.items()}
+
+                intent = {"name": inv_intent_dict[intent_ids[0]],
+                          "confidence": message_sim[0]}
+
+                ranking = list(zip(list(intent_ids), message_sim))
+                ranking = ranking[:INTENT_RANKING_LENGTH]
+                intent_ranking = [{"name": inv_intent_dict[intent_idx],
+                                   "confidence": score}
+                                  for intent_idx, score in ranking]
+
+        message.set("intent", intent, add_to_output=True)
+        message.set("intent_ranking", intent_ranking, add_to_output=True)
 
     @classmethod
     def load(cls,
