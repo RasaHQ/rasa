@@ -33,10 +33,12 @@ if typing.TYPE_CHECKING:
 class EmbeddingIntentClassifier(Component):
     """Intent classifier using supervised embeddings.
 
-    The embedding intent classifier embeds user inputs and intent labels into the same space.
+    The embedding intent classifier embeds user inputs
+    and intent labels into the same space.
     Supervised embeddings are trained by maximizing similarity between them.
     It also provides rankings of the labels that did not "win".
-    The embedding intent classifier needs to be preceded by a featurizer in the pipeline.
+    The embedding intent classifier needs to be preceded by
+    a featurizer in the pipeline.
     This featurizer creates the features used for the embeddings.
 
     Based on the starspace idea from: https://arxiv.org/abs/1709.03856"""
@@ -50,11 +52,11 @@ class EmbeddingIntentClassifier(Component):
     defaults = {
         # nn architecture
         "num_hidden_layers_a": 2,
+        "hidden_layer_size_a": [256, 128],
         "num_hidden_layers_b": 0,
-        "hidden_layer_size": 256,
-        "reduce_deeper_layer_sizes_by": 2,
+        "hidden_layer_size_b": [],
         "batch_size": 32,
-        "epochs": 200,
+        "epochs": 300,
 
         # embedding parameters
         "embed_dim": 10,
@@ -62,6 +64,7 @@ class EmbeddingIntentClassifier(Component):
         "mu_neg": -0.4,  # should be -1 < ... < 1 for 'cosine'
         "similarity_type": 'cosine',  # should be 'cosine' or 'inner'
         "num_neg": 10,
+        "use_max_sim_neg": True,  # flag which loss function to use
 
         # regularization
         "C2": 0.002,
@@ -74,10 +77,13 @@ class EmbeddingIntentClassifier(Component):
     }
 
     def __init__(self, component_config=None,
-                 session=None, embedding_placeholder=None, graph=None,
-                 intent_placeholder=None, similarity_op=None,
-                 intent_dict=None, intent_token_dict=None):
-
+                 session=None,
+                 embedding_placeholder=None,
+                 graph=None,
+                 intent_placeholder=None,
+                 similarity_op=None,
+                 intent_dict=None,
+                 intent_token_dict=None):
         # type: () -> None
         """Declare instant variables with default values"""
 
@@ -85,31 +91,58 @@ class EmbeddingIntentClassifier(Component):
 
         # nn architecture
         self.num_hidden_layers_a = self.component_config['num_hidden_layers_a']
+        self.hidden_layer_size_a = self.component_config['hidden_layer_size_a']
         self.num_hidden_layers_b = self.component_config['num_hidden_layers_b']
-        self.hidden_layer_size = self.component_config['hidden_layer_size']
-        self.reduce_deeper_layer_sizes_by = self.component_config['reduce_deeper_layer_sizes_by']
+        self.hidden_layer_size_b = self.component_config['hidden_layer_size_b']
 
-        # check if reduce_deeper_layer_sizes_by is valid
-        if self.reduce_deeper_layer_sizes_by < 1:
-            logger.error("ERROR: reduce_deeper_layer_sizes_by = {} less than 1. Set it to 1"
-                         "".format(self.reduce_deeper_layer_sizes_by))
-            self.reduce_deeper_layer_sizes_by = 1
-        elif (self.hidden_layer_size %
-              self.reduce_deeper_layer_sizes_by ** (self.num_hidden_layers_a - 1) != 0):
-            logger.error("ERROR: the size of the last hidden layer for a = {} is not int."
-                         "Set reduce_deeper_layer_sizes_by to 1"
-                         "".format(self.hidden_layer_size /
-                                   self.reduce_deeper_layer_sizes_by **
-                                   (self.num_hidden_layers_a - 1.0)))
-            self.reduce_deeper_layer_sizes_by = 1
-        elif (self.hidden_layer_size %
-              self.reduce_deeper_layer_sizes_by ** (self.num_hidden_layers_b - 1) != 0):
-            logger.error("ERROR: the size of the last hidden layer for b = {} is not int."
-                         "Set reduce_deeper_layer_sizes_by to 1"
-                         "".format(self.hidden_layer_size /
-                                   self.reduce_deeper_layer_sizes_by **
-                                   (self.num_hidden_layers_b - 1.0)))
-            self.reduce_deeper_layer_sizes_by = 1
+        # check if hidden_layer_sizes are valid
+        if (isinstance(self.hidden_layer_size_a, list) and
+                len(self.hidden_layer_size_a) != self.num_hidden_layers_a):
+            if len(self.hidden_layer_size_a) == 0:
+                raise ValueError("hidden_layer_size_a = {} "
+                                 "is an empty list, "
+                                 "while num_hidden_layers_a = {} > 0"
+                                 "".format(self.hidden_layer_size_a,
+                                           self.num_hidden_layers_a))
+
+            logger.error("The length of hidden_layer_size_a = {} "
+                         "does not correspond to num_hidden_layers_a "
+                         "= {}. Set hidden_layer_size_a to "
+                         "the first element = {} for all layers"
+                         "".format(len(self.hidden_layer_size_a),
+                                   self.num_hidden_layers_a,
+                                   self.hidden_layer_size_a[0]))
+
+            self.hidden_layer_size_a = self.hidden_layer_size_a[0]
+
+        if not isinstance(self.hidden_layer_size_a, list):
+            self.hidden_layer_size_a = [self.hidden_layer_size_a
+                                        for _ in range(
+                                            self.num_hidden_layers_a)]
+
+        if (isinstance(self.hidden_layer_size_b, list) and
+                len(self.hidden_layer_size_b) != self.num_hidden_layers_b):
+            if len(self.hidden_layer_size_b) == 0:
+                raise ValueError("hidden_layer_size_b = {} "
+                                 "is an empty list, "
+                                 "while num_hidden_layers_b = {} > 0"
+                                 "".format(self.hidden_layer_size_b,
+                                           self.num_hidden_layers_b))
+
+            logger.error("The length of hidden_layer_size_b  = {} "
+                         "does not correspond to num_hidden_layers_b "
+                         "= {}. Set hidden_layer_size_b to "
+                         "the first element = {} for all layers"
+                         "".format(len(self.hidden_layer_size_b),
+                                   self.num_hidden_layers_b,
+                                   self.hidden_layer_size_b[0]))
+
+            self.hidden_layer_size_b = self.hidden_layer_size_b[0]
+
+        if not isinstance(self.hidden_layer_size_b, list):
+            self.hidden_layer_size_b = [self.hidden_layer_size_b
+                                        for _ in range(
+                                            self.num_hidden_layers_b)]
 
         self.batch_size = self.component_config['batch_size']
         self.epochs = self.component_config['epochs']
@@ -120,6 +153,7 @@ class EmbeddingIntentClassifier(Component):
         self.mu_neg = self.component_config['mu_neg']
         self.similarity_type = self.component_config['similarity_type']
         self.num_neg = self.component_config['num_neg']
+        self.use_max_sim_neg = self.component_config['use_max_sim_neg']
 
         # regularization
         self.C2 = self.component_config['C2']  # l2
@@ -127,15 +161,16 @@ class EmbeddingIntentClassifier(Component):
         self.droprate = self.component_config['droprate']  # dropout
 
         # flag if tokenize intents
-        self.intent_tokenization_flag = self.component_config['intent_tokenization_flag']
-        self.intent_split_symbol = self.component_config['intent_split_symbol']
-
-        # mu is different for pos and neg intents, will be created in train()
-        self.mu = None
+        self.intent_tokenization_flag = self.component_config[
+                                            'intent_tokenization_flag']
+        self.intent_split_symbol = self.component_config[
+                                        'intent_split_symbol']
 
         # transform intents to numbers
-        self.intent_dict = intent_dict  # encode intents with numbers
-        self.intent_token_dict = intent_token_dict  # encode words in intents with numbers
+        # encode intents with numbers
+        self.intent_dict = intent_dict
+        # encode words in intents with numbers
+        self.intent_token_dict = intent_token_dict
 
         # tf related instances
         self.session = session
@@ -155,23 +190,21 @@ class EmbeddingIntentClassifier(Component):
 
         # transform intents to numbers
         # if intent_tokenization = False these dicts are identical
-        self.intent_dict, self.intent_token_dict = self._create_intent_dicts(training_data)
+        (self.intent_dict,
+         self.intent_token_dict) = self._create_intent_dicts(training_data)
 
         if len(self.intent_dict) < 2:
-            logger.warning("Can not train an intent classifier. "
-                           "Need at least 2 different classes. "
-                           "Skipping training of intent classifier.")
+            logger.error("Can not train an intent classifier. "
+                         "Need at least 2 different classes. "
+                         "Skipping training of intent classifier.")
             return
 
         # check if number of negatives is less than number of intents
-        logger.debug("Check if num_neg {} is smaller than number of intents {}, "
+        logger.debug("Check if num_neg {} is smaller than "
+                     "number of intents {}, "
                      "else set num_neg to the number of intents"
                      "".format(self.num_neg, len(self.intent_dict)))
         self.num_neg = min(self.num_neg, len(self.intent_dict) - 1)
-
-        # create an array for mu
-        self.mu = self.mu_neg * np.ones(self.num_neg + 1)
-        self.mu[0] = self.mu_pos
 
         X = np.stack([example.get("text_features")
                       for example in training_data.intent_examples])
@@ -202,8 +235,10 @@ class EmbeddingIntentClassifier(Component):
         all_Y = np.stack([encoded_all_intents for _ in range(X.shape[0])])
 
         with self.graph.as_default():
-            a_in = tf.placeholder(tf.float32, (None, X.shape[-1]), name='a')
-            b_in = tf.placeholder(tf.float32, (None, None, Y.shape[-1]), name='b')
+            a_in = tf.placeholder(tf.float32, (None, X.shape[-1]),
+                                  name='a')
+            b_in = tf.placeholder(tf.float32, (None, None, Y.shape[-1]),
+                                  name='b')
 
             self.embedding_placeholder = a_in
             self.intent_placeholder = b_in
@@ -243,16 +278,19 @@ class EmbeddingIntentClassifier(Component):
                                                    b_in: batch_b,
                                                    is_training: True})
 
-                if (ep + 1) % 10 == 0:
+                if logger.isEnabledFor(logging.DEBUG) and (ep + 1) % 10 == 0:
                     train_sim = sess.run(sim, feed_dict={a_in: X,
                                                          b_in: all_Y,
                                                          is_training: False})
 
-                    train_acc = np.mean(np.argmax(train_sim, -1) == intents_for_X)
+                    train_acc = np.mean(np.argmax(train_sim, -1) ==
+                                        intents_for_X)
                     logger.debug("epoch {} / {}: loss {}, "
                                  "train accuracy : {:.3f}"
-                                 "".format((ep + 1), self.epochs,
-                                           sess_out.get('loss'), train_acc))
+                                 "".format((ep + 1),
+                                           self.epochs,
+                                           sess_out.get('loss'),
+                                           train_acc))
 
     def _create_intent_dicts(self, training_data):
         """Create intent dictionary"""
@@ -317,9 +355,8 @@ class EmbeddingIntentClassifier(Component):
         # embed sentences
         a = a_in
         for i in range(self.num_hidden_layers_a):
-            reduce_coef = self.reduce_deeper_layer_sizes_by ** i
             a = tf.layers.dense(inputs=a,
-                                units=self.hidden_layer_size / reduce_coef,
+                                units=self.hidden_layer_size_a[i],
                                 activation=tf.nn.relu,
                                 kernel_regularizer=reg)
             a = tf.layers.dropout(a, rate=self.droprate, training=is_training)
@@ -330,9 +367,8 @@ class EmbeddingIntentClassifier(Component):
         # embed intents
         b = b_in
         for i in range(self.num_hidden_layers_b):
-            reduce_coef = self.reduce_deeper_layer_sizes_by ** i
             b = tf.layers.dense(inputs=b,
-                                units=self.hidden_layer_size / reduce_coef,
+                                units=self.hidden_layer_size_b[i],
                                 activation=tf.nn.relu,
                                 kernel_regularizer=reg)
             b = tf.layers.dropout(b, rate=self.droprate, training=is_training)
@@ -353,20 +389,32 @@ class EmbeddingIntentClassifier(Component):
 
             return sim, sim_emb
         else:
-            raise Exception("ERROR: wrong similarity type {}, "
+            raise NameError("Wrong similarity type {}, "
                             "should be 'cosine' or 'inner'"
                             "".format(self.similarity_type))
 
     def _tf_loss(self, sim, sim_emb):
         """Define loss"""
 
-        factors = tf.concat([-1 * tf.ones([1, 1]),
-                             tf.ones([1, tf.shape(sim)[1] - 1])], 1)
-        max_margin = tf.maximum(0., self.mu + factors * sim)
+        if self.use_max_sim_neg:
+            max_sim_neg = tf.reduce_max(sim[:, 1:], -1)
+            loss = tf.reduce_mean(tf.maximum(0., self.mu_pos - sim[:, 0]) +
+                                  tf.maximum(0., self.mu_neg + max_sim_neg))
+        else:
+            # create an array for mu
+            mu = self.mu_neg * np.ones(self.num_neg + 1)
+            mu[0] = self.mu_pos
 
-        loss = (tf.reduce_mean(tf.reduce_sum(max_margin, 1)) +
+            factors = tf.concat([-1 * tf.ones([1, 1]),
+                                 tf.ones([1, tf.shape(sim)[1] - 1])], 1)
+            max_margin = tf.maximum(0., mu + factors * sim)
+            loss = tf.reduce_mean(tf.reduce_sum(max_margin, -1))
+
+        max_sim_emb = tf.maximum(0., tf.reduce_max(sim_emb, -1))
+
+        loss = (loss +
                 # penalize max similarity between intent embeddings
-                tf.reduce_mean(tf.maximum(0., tf.reduce_max(sim_emb, 1))) * self.C_emb +
+                tf.reduce_mean(max_sim_emb) * self.C_emb +
                 # add regularization losses
                 tf.losses.get_regularization_loss())
         return loss
@@ -375,49 +423,56 @@ class EmbeddingIntentClassifier(Component):
         # type: (Message, **Any) -> None
         """Return the most likely intent and its similarity to the input."""
 
-        # get features (bag of words) for a message
-        X = message.get("text_features").reshape(1, -1)
-
-        # the matrix that encodes intents as bag of words in rows
-        # if intent_tokenization = False this is identity matrix
-        encoded_all_intents = self._create_encoded_intents()
-
-        # stack encoded_all_intents on top of each other
-        # in order to make the appropriate size b_in tensor for tf graph
-        all_Y = np.stack([encoded_all_intents for _ in range(X.shape[0])])
-
-        inv_intent_dict = {value: key
-                           for key, value in self.intent_dict.items()}
-
-        # load tf graph and session
-        a_in = self.embedding_placeholder
-        b_in = self.intent_placeholder
-
-        sim = self.similarity_op
-        sess = self.session
-
-        message_sim = sess.run(sim, feed_dict={a_in: X,
-                                               b_in: all_Y})
-        message_sim = message_sim.flatten()  # sim is a matrix
-
-        intent_ids = message_sim.argsort()[::-1]
-        message_sim[::-1].sort()
-
-        # transform sim to python list for JSON serializing
-        message_sim = message_sim.tolist()
-
-        if intent_ids.size > 0:
-            intent = {"name": inv_intent_dict[intent_ids[0]],
-                      "confidence": message_sim[0]}
-
-            ranking = list(zip(list(intent_ids), message_sim))
-            ranking = ranking[:INTENT_RANKING_LENGTH]
-            intent_ranking = [{"name": inv_intent_dict[intent_idx],
-                               "confidence": score}
-                              for intent_idx, score in ranking]
-        else:
-            intent = {"name": None, "confidence": 0.0}
+        if self.session is None:
+            logger.error("There is no trained tf.session: "
+                         "component is either not trained or "
+                         "didn't receive enough training data")
+            intent = None
             intent_ranking = []
+        else:
+            # get features (bag of words) for a message
+            X = message.get("text_features").reshape(1, -1)
+
+            # the matrix that encodes intents as bag of words in rows
+            # if intent_tokenization = False this is identity matrix
+            encoded_all_intents = self._create_encoded_intents()
+
+            # stack encoded_all_intents on top of each other
+            # in order to make the appropriate size b_in tensor for tf graph
+            all_Y = np.stack([encoded_all_intents for _ in range(X.shape[0])])
+
+            inv_intent_dict = {value: key
+                               for key, value in self.intent_dict.items()}
+
+            # load tf graph and session
+            a_in = self.embedding_placeholder
+            b_in = self.intent_placeholder
+
+            sim = self.similarity_op
+            sess = self.session
+
+            message_sim = sess.run(sim, feed_dict={a_in: X,
+                                                   b_in: all_Y})
+            message_sim = message_sim.flatten()  # sim is a matrix
+
+            intent_ids = message_sim.argsort()[::-1]
+            message_sim[::-1].sort()
+
+            # transform sim to python list for JSON serializing
+            message_sim = message_sim.tolist()
+
+            if intent_ids.size > 0:
+                intent = {"name": inv_intent_dict[intent_ids[0]],
+                          "confidence": message_sim[0]}
+
+                ranking = list(zip(list(intent_ids), message_sim))
+                ranking = ranking[:INTENT_RANKING_LENGTH]
+                intent_ranking = [{"name": inv_intent_dict[intent_idx],
+                                   "confidence": score}
+                                  for intent_idx, score in ranking]
+            else:
+                intent = {"name": None, "confidence": 0.0}
+                intent_ranking = []
 
         message.set("intent", intent, add_to_output=True)
         message.set("intent_ranking", intent_ranking, add_to_output=True)
@@ -426,7 +481,7 @@ class EmbeddingIntentClassifier(Component):
     def load(cls,
              model_dir=None,  # type: Text
              model_metadata=None,  # type: Metadata
-             cached_component=None,  # type: Optional[EmbeddingIntentClassifier]
+             cached_component=None,  # type: Optional[Component]
              **kwargs  # type: **Any
              ):
         # type: (...) -> EmbeddingIntentClassifier
@@ -456,14 +511,19 @@ class EmbeddingIntentClassifier(Component):
                 model_dir, cls.name + "_intent_dict.pkl"), 'rb'))
 
             return EmbeddingIntentClassifier(
-                        session=sess, embedding_placeholder=embedding_placeholder,
-                        graph=graph, intent_placeholder=intent_placeholder,
-                        intent_token_dict=intent_token_dict, intent_dict=intent_dict,
+                        session=sess,
+                        embedding_placeholder=embedding_placeholder,
+                        graph=graph,
+                        intent_placeholder=intent_placeholder,
+                        intent_token_dict=intent_token_dict,
+                        intent_dict=intent_dict,
                         similarity_op=similarity_op)
 
         else:
-            raise Exception("Failed to load nlu model. Path {} "
-                            "doesn't exist".format(os.path.abspath(model_dir)))
+            logger.warning("Failed to load nlu model. Maybe path {} "
+                           "doesn't exist"
+                           "".format(os.path.abspath(model_dir)))
+            return EmbeddingIntentClassifier(meta)
 
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]

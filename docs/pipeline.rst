@@ -121,6 +121,8 @@ intent_featurizer_count_vectors
 
         pipeline:
         - name: "intent_featurizer_count_vectors"
+            # regular expression for tokens
+            "token_pattern": r'(?u)\b\w\w+\b'
             # min number of word occurancies in the document to add to vocabulary
             "min_df": 1
             # max number (fraction if float) of word occurancies in the document to add to vocabulary
@@ -226,31 +228,36 @@ intent_classifier_tensorflow_embedding
     droprate, regularization, etc.
     In the config, you can specify these parameters.
 
-    .. note:: There is a parameter that controls similarity type `similarity_type`.
+    .. note:: There is a parameter that controls similarity `similarity_type`.
               It should be either `cosine` or `inner`. For `cosine` similarity `mu_pos` and `mu_neg`
-              should be smaller than `1`. Where `mu_pos` parameter controls how similar the algorithm
-              should try to make embedding vectors for correct intent labels and `mu_neg` controls
-              the maximum negative similarity for incorrect intents. It is set to negative value to mimic the original
-              starspace algorithm in the case `mu_neg = mu_pos`.
+              should be between `-1` and `1`. Parameter `mu_pos` controls how similar the algorithm
+              should try to make embedding vectors for correct intent labels,
+              while `mu_neg` controls maximum negative similarity for incorrect intents.
+              It is set to negative value to mimic the original
+              starspace algorithm in the case `mu_neg = mu_pos` and `use_max_sim_neg = False`.
               See starspace paper https://arxiv.org/abs/1709.03856 for details.
+              If `use_max_sim_neg = True` the algorithm only minimize maximum
+              similarity over incorrect intents.
+
 
     .. code-block:: yaml
 
         pipeline:
         - name: "intent_classifier_tensorflow_embedding"
         # nn architecture
-        "num_hidden_layers_a": 2
-        "num_hidden_layers_b": 0
-        "hidden_layer_size": 256
-        "reduce_deeper_layer_sizes_by": 2
+        "num_hidden_layers_a": 2,
+        "hidden_layer_size_a": [256, 128],
+        "num_hidden_layers_b": 0,
+        "hidden_layer_size_b": [],
         "batch_size": 32
-        "epochs": 100
+        "epochs": 300
         # embedding parameters
         "embed_dim": 10
         "mu_pos": 0.8  # should be 0 < ... < 1 for 'cosine'
         "mu_neg": -0.4  # should be -1 < ... < 1 for 'cosine'
         "similarity_type": 'cosine'  # should be 'cosine' or 'inner'
         "num_neg": 10
+        "use_max_sim_neg": True  # flag which loss function to use
         # regularization
         "C2": 0.002
         "C_emb": 0.8

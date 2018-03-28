@@ -41,6 +41,7 @@ Changed
 - updated requirements_full.txt to include tensorflow requirements
 - updated documentation, added info about tensorflow_embedding pipeline
 - updated registry, added tensorflow_embedding pipeline
+- changed key name for a file in ngram featurizer
 
 Removed
 -------

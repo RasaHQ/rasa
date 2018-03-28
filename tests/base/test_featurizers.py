@@ -118,7 +118,7 @@ def test_count_vector_featurizer(sentence, expected):
     from rasa_nlu.featurizers.count_vectors_featurizer import \
         CountVectorsFeaturizer
 
-    ftr = CountVectorsFeaturizer()
+    ftr = CountVectorsFeaturizer({"token_pattern": r'(?u)\b\w+\b'})
     message = Message(sentence)
     message.set("intent", "bla")
     data = TrainingData([message])
@@ -126,4 +126,4 @@ def test_count_vector_featurizer(sentence, expected):
     ftr.train(data)
     ftr.process(message)
 
-    assert (message.get("text_features")[0] == expected).all()
+    assert np.all(message.get("text_features")[0] == expected)

@@ -108,11 +108,11 @@ class NGramFeaturizer(Featurizer):
         # type: (...) -> NGramFeaturizer
 
         meta = model_metadata.for_component(cls.name)
-        file_name = meta.get("classifier_file", NGRAM_MODEL_FILE_NAME)
-        classifier_file = os.path.join(model_dir, file_name)
+        file_name = meta.get("featurizer_file", NGRAM_MODEL_FILE_NAME)
+        featurizer_file = os.path.join(model_dir, file_name)
 
-        if os.path.exists(classifier_file):
-            return utils.pycloud_unpickle(classifier_file)
+        if os.path.exists(featurizer_file):
+            return utils.pycloud_unpickle(featurizer_file)
         else:
             return NGramFeaturizer(meta)
 
@@ -120,9 +120,9 @@ class NGramFeaturizer(Featurizer):
         # type: (Text) -> Optional[Dict[Text, Any]]
         """Persist this model into the passed directory."""
 
-        classifier_file = os.path.join(model_dir, NGRAM_MODEL_FILE_NAME)
-        utils.pycloud_pickle(classifier_file, self)
-        return {"classifier_file": NGRAM_MODEL_FILE_NAME}
+        featurizer_file = os.path.join(model_dir, NGRAM_MODEL_FILE_NAME)
+        utils.pycloud_pickle(featurizer_file, self)
+        return {"featurizer_file": NGRAM_MODEL_FILE_NAME}
 
     def train_on_sentences(self, examples):
         labels = [e.get("intent") for e in examples]

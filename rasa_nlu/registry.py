@@ -24,7 +24,8 @@ from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa_nlu.featurizers.ngram_featurizer import NGramFeaturizer
 from rasa_nlu.featurizers.regex_featurizer import RegexFeaturizer
 from rasa_nlu.featurizers.spacy_featurizer import SpacyFeaturizer
-from rasa_nlu.featurizers.count_vectors_featurizer import CountVectorsFeaturizer
+from rasa_nlu.featurizers.count_vectors_featurizer import \
+    CountVectorsFeaturizer
 from rasa_nlu.model import Metadata
 from rasa_nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa_nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
