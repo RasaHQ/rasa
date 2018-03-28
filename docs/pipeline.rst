@@ -253,7 +253,7 @@ intent_classifier_tensorflow_embedding
     by ``nlp_spacy`` and ``tokenizer_spacy``.
 
 :Configuration:
-    There are several hyperparameters such as neural network's number of hidden layers, embedding dimension,
+    There are several hyperparameters such as the neural network's number of hidden layers, embedding dimension,
     droprate, regularization, etc.
     In the config, you can specify these parameters.
 
@@ -262,11 +262,10 @@ intent_classifier_tensorflow_embedding
               should be between ``-1`` and ``1``. Parameter ``mu_pos`` controls how similar the algorithm
               should try to make embedding vectors for correct intent labels,
               while ``mu_neg`` controls maximum negative similarity for incorrect intents.
-              It is set to negative value to mimic the original
+              It is set to a negative value to mimic the original
               starspace algorithm in the case ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``.
               See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
-              If ``use_max_sim_neg = True`` the algorithm only minimize maximum
-              similarity over incorrect intents.
+              If ``use_max_sim_neg = True`` the algorithm only minimizes maximum similarity over incorrect intents.
 
     .. code-block:: yaml
 

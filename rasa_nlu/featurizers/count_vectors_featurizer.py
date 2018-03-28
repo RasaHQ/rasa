@@ -59,7 +59,7 @@ class CountVectorsFeaturizer(Featurizer):
         # integer - absolute counts
         "max_df": 1.0,  # float in range [0.0, 1.0] or int
 
-        # set ngram range
+        # set range of ngrams to be extracted
         "min_ngram": 1,
         "max_ngram": 1,
 
