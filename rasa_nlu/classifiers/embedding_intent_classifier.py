@@ -215,21 +215,7 @@ class EmbeddingIntentClassifier(Component):
                      "".format(self.num_neg, len(self.intent_dict)))
         self.num_neg = min(self.num_neg, len(self.intent_dict) - 1)
 
-        X = np.stack([example.get("text_features")
-                      for example in training_data.intent_examples])
-
-        intents_for_X = self._create_intents_for_X(training_data,
-                                                   X.shape[0])
-        Y = self._create_Y(training_data, X.shape[0])
-
-        # the matrix that encodes intents as bag of words in rows
-        # if intent_tokenization = False this is identity matrix
-        encoded_all_intents = self._create_encoded_intents()
-
-        # stack encoded_all_intents on top of each other
-        # to create candidates for training examples
-        # to calculate training accuracy
-        all_Y = np.stack([encoded_all_intents for _ in range(X.shape[0])])
+        X, Y, helper_data = self._prepare_data_for_training(training_data)
 
         with self.graph.as_default():
             a_in = tf.placeholder(tf.float32, (None, X.shape[-1]),
@@ -251,10 +237,9 @@ class EmbeddingIntentClassifier(Component):
 
             sess.run(tf.global_variables_initializer())
 
-            self._train_tf(X, intents_for_X, Y,
-                           encoded_all_intents, all_Y,
-                           sess, a_in, b_in, sim, loss,
-                           is_training, train_op)
+            self._train_tf(X, Y, helper_data,
+                           sess, a_in, b_in, sim,
+                           loss, is_training, train_op)
 
     # training data helpers:
     @staticmethod
@@ -277,6 +262,35 @@ class EmbeddingIntentClassifier(Component):
                 if t not in intent_token_dict:
                     intent_token_dict[t] = len(intent_token_dict)
         return intent_token_dict
+
+    # data helpers:
+    def _prepare_data_for_training(self, training_data):
+        """Prepare data for training"""
+
+        X = np.stack([example.get("text_features")
+                      for example in training_data.intent_examples])
+
+        intents_for_X = self._create_intents_for_X(training_data,
+                                                   X.shape[0])
+        Y = self._create_Y(training_data, X.shape[0])
+
+        encoded_all_intents, all_Y = self._create_all_Y(X.shape[0])
+
+        helper_data = intents_for_X, encoded_all_intents, all_Y
+
+        return X, Y, helper_data
+
+    def _create_all_Y(self, size):
+        # the matrix that encodes intents as bag of words in rows
+        # if intent_tokenization = False this is identity matrix
+        encoded_all_intents = self._create_encoded_intents()
+
+        # stack encoded_all_intents on top of each other
+        # to create candidates for training examples
+        # to calculate training accuracy
+        all_Y = np.stack([encoded_all_intents for _ in range(size)])
+
+        return encoded_all_intents, all_Y
 
     def _create_intents_for_X(self, training_data, num_examples):
         """Create intents_for_X
@@ -412,10 +426,12 @@ class EmbeddingIntentClassifier(Component):
         return sim, loss
 
     # training helpers:
-    def _train_tf(self,
-                  X, intents_for_X, Y, encoded_all_intents, all_Y,
-                  sess, a_in, b_in, sim, loss, is_training, train_op):
+    def _train_tf(self, X, Y, helper_data,
+                  sess, a_in, b_in, sim,
+                  loss, is_training, train_op):
         """Train tf graph"""
+
+        intents_for_X, encoded_all_intents, all_Y = helper_data
 
         batches_per_epoch = (len(X) // self.batch_size +
                              int(len(X) % self.batch_size > 0))
@@ -492,21 +508,15 @@ class EmbeddingIntentClassifier(Component):
             # get features (bag of words) for a message
             X = message.get("text_features").reshape(1, -1)
 
-            # the matrix that encodes intents as bag of words in rows
-            # if intent_tokenization = False this is identity matrix
-            encoded_all_intents = self._create_encoded_intents()
-
-            # stack encoded_all_intents on top of each other
-            # in order to make the appropriate size b_in tensor for tf graph
-            all_Y = np.stack([encoded_all_intents for _ in range(X.shape[0])])
-
-            inv_intent_dict = {value: key
-                               for key, value in self.intent_dict.items()}
+            _, all_Y = self._create_all_Y(X.shape[0])
 
             # load tf graph and session
             intent_ids, message_sim = self._calculate_message_sim(X, all_Y)
 
             if intent_ids.size > 0:
+                inv_intent_dict = {value: key
+                                   for key, value in self.intent_dict.items()}
+
                 intent = {"name": inv_intent_dict[intent_ids[0]],
                           "confidence": message_sim[0]}
 
