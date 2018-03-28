@@ -121,15 +121,15 @@ intent_featurizer_count_vectors
 
         pipeline:
         - name: "intent_featurizer_count_vectors"
-            # regular expression for tokens
-            "token_pattern": r'(?u)\b\w\w+\b'
-            # min number of word occurancies in the document to add to vocabulary
-            "min_df": 1
-            # max number (fraction if float) of word occurancies in the document to add to vocabulary
-            "max_df": 1.0
-            # set ngram range
-            "min_ngram": 1
-            "max_ngram": 1
+          # regular expression for tokens
+          "token_pattern": r'(?u)\b\w\w+\b'
+          # min number of word occurancies in the document to add to vocabulary
+          "min_df": 1
+          # max number (fraction if float) of word occurancies in the document to add to vocabulary
+          "max_df": 1.0
+          # set ngram range
+          "min_ngram": 1
+          "max_ngram": 1
 
 intent_classifier_keyword
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -244,27 +244,27 @@ intent_classifier_tensorflow_embedding
 
         pipeline:
         - name: "intent_classifier_tensorflow_embedding"
-        # nn architecture
-        "num_hidden_layers_a": 2,
-        "hidden_layer_size_a": [256, 128],
-        "num_hidden_layers_b": 0,
-        "hidden_layer_size_b": [],
-        "batch_size": 32
-        "epochs": 300
-        # embedding parameters
-        "embed_dim": 10
-        "mu_pos": 0.8  # should be 0 < ... < 1 for 'cosine'
-        "mu_neg": -0.4  # should be -1 < ... < 1 for 'cosine'
-        "similarity_type": 'cosine'  # should be 'cosine' or 'inner'
-        "num_neg": 10
-        "use_max_sim_neg": True  # flag which loss function to use
-        # regularization
-        "C2": 0.002
-        "C_emb": 0.8
-        "droprate": 0.2
-        # flag if to tokenize intents
-        "intent_tokenization_flag": False
-        "intent_split_symbol": '_'
+          # nn architecture
+          "num_hidden_layers_a": 2,
+          "hidden_layer_size_a": [256, 128],
+          "num_hidden_layers_b": 0,
+          "hidden_layer_size_b": [],
+          "batch_size": 32
+          "epochs": 300
+          # embedding parameters
+          "embed_dim": 10
+          "mu_pos": 0.8  # should be 0 < ... < 1 for 'cosine'
+          "mu_neg": -0.4  # should be -1 < ... < 1 for 'cosine'
+          "similarity_type": 'cosine'  # should be 'cosine' or 'inner'
+          "num_neg": 10
+          "use_max_sim_neg": True  # flag which loss function to use
+          # regularization
+          "C2": 0.002
+          "C_emb": 0.8
+          "droprate": 0.2
+          # flag if to tokenize intents
+          "intent_tokenization_flag": False
+          "intent_split_symbol": '_'
 
 intent_entity_featurizer_regex
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
