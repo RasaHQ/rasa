@@ -23,6 +23,9 @@ def create_argument_parser():
 
     parser.add_argument('-m', '--model', required=True,
                         help="path to model")
+
+    utils.add_logging_option_arguments(parser, default=logging.INFO)
+
     return parser
 
 
