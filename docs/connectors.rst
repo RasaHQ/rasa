@@ -80,6 +80,24 @@ facebook developer portal.
 Slack Setup
 -----------
 
+.. note::
+
+   **How to get the Slack credentials:** You need to set up a Slack app.
+
+      1. To create the app go to: https://api.slack.com/apps and click on *"Create New App"*.
+      2. Activate the following features: interactive components, event subscriptions, bot users,
+         permissions (for basic functionality you should subscribe to the ``message.channel``,
+         ``message.groups``, ``message.im`` and ``message.mpim`` events)
+      3. The ``slack_channel`` is the target your bot posts to. This can be a channel,
+         an app or an individual person
+      4. Use the entry for ``Bot User OAuth Access Token`` in the "OAuth & Permissions" tab
+         as your ``slack_token``
+
+
+   For more detailed steps, visit the
+   `slack api docs <https://api.slack.com/incoming-webhooks>`_.
+
+
 Using run script
 ^^^^^^^^^^^^^^^^
 If you want to connect to the slack input channel using the run script, e.g. using
@@ -88,6 +106,18 @@ If you want to connect to the slack input channel using the run script, e.g. usi
 
   python -m rasa_core.run -d models/dialogue -u models/nlu/current \
       --port 5002 --connector slack --credentials slack_credentials.yml
+
+Setting Up Webhook
+^^^^^^^^^^^^^^^^^^
+In order to use this with slack you need a external webhook, typically the best way to do this is use https://ngrok.com/ in order to expose ports externally from your machine.  So in the above example we are using port 5002 so using ngrok we would run:
+
+.. code-block:: bash
+  
+  ngrok httpd 5002
+  
+This will then give a output showing a https address that you need to supply for the interactive components request URL and for the incoming webhook and the address should be whatever ngrok supplies you with /webhook added to the end.  
+
+This is what allows slack to send the messages from it to your bot to get the responses.  Once you put in your webhook address in the OAuth & Permissions section and save it you will have the credentials you need for the slack_credentials.yml file.
 
 you need to supply a ``slack_credentials.yml`` with the following content:
 
@@ -102,7 +132,7 @@ A ``SlackInput`` instance provides a flask blueprint for creating
 a webserver. This lets you separate the exact endpoints and implementation
 from your webserver creation logic.
 
-Code to create a Messenger-compatible webserver looks like this:
+Code to create a slack-compatible webserver looks like this:
 
 
 .. code-block:: python
@@ -128,22 +158,6 @@ The default endpoint for receiving facebook messenger messages is ``/webhook``, 
 above would listen for messages on ``/app/webhook``. This is the url you should add in the
 facebook developer portal.
 
-.. note::
-
-   **How to get the Slack credentials:** You need to set up a Slack app.
-
-      1. To create the app go to: https://api.slack.com/apps and click on *"Create New App"*.
-      2. Activate the following features: interactive components, event subscriptions, bot users,
-         permissions (for basic functionality you should subscribe to the ``message.channel``,
-         ``message.groups``, ``message.im`` and ``message.mpim`` events)
-      3. The ``slack_channel`` is the target your bot posts to. This can be a channel,
-         an app or an individual person
-      4. Use the entry for ``Bot User OAuth Access Token`` in the "OAuth & Permissions" tab
-         as your ``slack_token``
-
-
-   For more detailed steps, visit the
-   `slack api docs <https://api.slack.com/incoming-webhooks>`_.
 
 .. _telegram_connector:
 
