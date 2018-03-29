@@ -40,10 +40,16 @@ class TelegramOutput(Bot, OutputChannel):
 
         :button_type custom: custom keyboard
         """
-        if button_type in ("inline", "vertical"):
+        if button_type == "inline":
             button_list = [[InlineKeyboardButton(s["title"],
                             callback_data=s["payload"]) for s in buttons]]
             reply_markup = InlineKeyboardMarkup(button_list)
+            
+        elif button_type == "vertical":
+            button_list = [[InlineKeyboardButton(s["title"],
+                            callback_data=s["payload"])] for s in buttons]
+            reply_markup = InlineKeyboardMarkup(button_list)
+            
         elif button_type == "custom":
             button_list = []
             for bttn in buttons:
