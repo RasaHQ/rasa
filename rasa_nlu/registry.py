@@ -14,6 +14,8 @@ from rasa_nlu.classifiers.keyword_intent_classifier import \
     KeywordIntentClassifier
 from rasa_nlu.classifiers.sklearn_intent_classifier import \
     SklearnIntentClassifier
+from rasa_nlu.classifiers.embedding_intent_classifier import \
+    EmbeddingIntentClassifier
 from rasa_nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa_nlu.extractors.duckling_extractor import DucklingExtractor
 from rasa_nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
@@ -22,6 +24,8 @@ from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from rasa_nlu.featurizers.ngram_featurizer import NGramFeaturizer
 from rasa_nlu.featurizers.regex_featurizer import RegexFeaturizer
 from rasa_nlu.featurizers.spacy_featurizer import SpacyFeaturizer
+from rasa_nlu.featurizers.count_vectors_featurizer import \
+    CountVectorsFeaturizer
 from rasa_nlu.model import Metadata
 from rasa_nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa_nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
@@ -43,8 +47,10 @@ component_classes = [
     CRFEntityExtractor, DucklingHTTPExtractor,
     EntitySynonymMapper,
     SpacyFeaturizer, NGramFeaturizer, RegexFeaturizer,
+    CountVectorsFeaturizer,
     SpacyTokenizer, WhitespaceTokenizer,
     SklearnIntentClassifier, KeywordIntentClassifier,
+    EmbeddingIntentClassifier
 ]
 
 # Mapping from a components name to its class to allow name based lookup.
@@ -77,6 +83,7 @@ registered_pipeline_templates = {
         "intent_featurizer_spacy",
         "intent_featurizer_ngrams",
         "intent_entity_featurizer_regex",
+        "intent_featurizer_count_vectors",
         "ner_crf",
         "ner_spacy",
         "ner_duckling",
@@ -84,6 +91,11 @@ registered_pipeline_templates = {
         "ner_synonyms",
         "intent_classifier_keyword",
         "intent_classifier_sklearn",
+        "intent_classifier_tensorflow_embedding"
+    ],
+    "tensorflow_embedding": [
+        "intent_featurizer_count_vectors",
+        "intent_classifier_tensorflow_embedding"
     ]
 }
 
