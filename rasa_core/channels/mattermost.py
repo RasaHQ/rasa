@@ -27,7 +27,7 @@ class MattermostBot(MattermostAPI, OutputChannel):
 
 
     def send_text_message(self, recipient_id, message):
-        super(MattermostBot, self).post_message(
+        super(MattermostBot, self).post_channel(
                                        channel_name=recipient_id,
                                        message=message)
 
@@ -70,7 +70,7 @@ class MattermostInput(HttpInputComponent):
             print(output)
             out_channel = MattermostBot(self.url, self.team, self.user, self.pw)
             user_msg = UserMessage(text, out_channel, sender_id)
-            on_new_message(UserMessage(user_msg))
+            on_new_message(user_msg)
             return "success"
 
         return mattermost_webhook
