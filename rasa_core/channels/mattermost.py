@@ -54,13 +54,13 @@ class MattermostInput(HttpInputComponent):
         self.pw = pw
 
     def blueprint(self, on_new_message):
-        custom_webhook = Blueprint('custom_webhook', __name__)
+        mattermost_webhook = Blueprint('mattermost_webhook', __name__)
 
-        @custom_webhook.route("/", methods=['GET'])
+        @mattermost_webhook.route("/", methods=['GET'])
         def health():
             return jsonify({"status": "ok"})
 
-        @custom_webhook.route("/webhook", methods=['POST'])
+        @mattermost_webhook.route("/webhook", methods=['POST'])
         def webhook():
             request.get_data()
             if request.json:
@@ -70,7 +70,7 @@ class MattermostInput(HttpInputComponent):
             print(output)
             out_channel = MattermostBot(self.url, self.team, self.user, self.pw)
             user_msg = UserMessage(text, out_channel, sender_id)
-            on_new_message(UserMessage(text, self.out_channel, sender_id))
+            on_new_message(UserMessage(user_msg))
             return "success"
 
-        return custom_webhook
+        return mattermost_webhook
