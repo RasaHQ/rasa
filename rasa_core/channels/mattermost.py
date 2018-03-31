@@ -65,6 +65,7 @@ class MattermostInput(HttpInputComponent):
             request.get_data()
             if request.json:
                 output = request.json
+                # splitting to get rid of the @botmention trigger we are using for this
                 text = output['text'].split(" ", 1)
                 text = text[1]
                 sender_id = output['user_id']
