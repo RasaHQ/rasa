@@ -17,19 +17,19 @@ logger = logging.getLogger(__name__)
 class MattermostBot(MattermostAPI, OutputChannel):
     """A Mattermost communication channel"""
 
-    def __init__(self, url, team, user, pw):
+    def __init__(self, url, team, user, pw, bot_channel):
         self.url = url
         self.team = team
         self.user = user
         self.pw = pw
+        self.bot_channel = bot_channel
         super(MattermostBot, self).__init__(url, team)
         super(MattermostBot, self).login(user, pw)
+        print(self.bot_channel)
 
 
     def send_text_message(self, recipient_id, message):
-        super(MattermostBot, self).post_channel(
-                                       channel_name=recipient_id,
-                                       message=message)
+        super(MattermostBot, self).post_channel(bot_channel, message)
 
 
 class MattermostInput(HttpInputComponent):
@@ -67,10 +67,11 @@ class MattermostInput(HttpInputComponent):
                 output = request.json
                 text = output['text']
                 sender_id = output['user_id']
-            print(output)
-            out_channel = MattermostBot(self.url, self.team, self.user, self.pw)
-            user_msg = UserMessage(text, out_channel, sender_id)
-            on_new_message(user_msg)
-            return "success"
+                bot_channel = output['channel_id']
+                print(output)
+                out_channel = MattermostBot(self.url, self.team, self.user, self.pw, bot_channel)
+                user_msg = UserMessage(text, out_channel, sender_id)
+                on_new_message(user_msg)
+                return "success"
 
         return mattermost_webhook
