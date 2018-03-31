@@ -29,7 +29,7 @@ class MattermostBot(MattermostAPI, OutputChannel):
 
 
     def send_text_message(self, recipient_id, message):
-        super(MattermostBot, self).post_channel(channel=bot_channel, text=message)
+        super(MattermostBot, self).post_channel(self.bot_channel, message)
 
 
 class MattermostInput(HttpInputComponent):
