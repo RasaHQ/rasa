@@ -212,7 +212,7 @@ facebook developer portal.
 
 
       For more detailed steps, visit the
-      `slack api docs <https://api.slack.com/incoming-webhooks>`_.
+      `mattermost docs at <https://docs.mattermost.com/guides/developer.html>`_.
 
 .. _telegram_connector:
 
