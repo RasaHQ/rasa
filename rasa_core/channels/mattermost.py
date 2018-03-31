@@ -29,7 +29,7 @@ class MattermostBot(MattermostAPI, OutputChannel):
 
 
     def send_text_message(self, recipient_id, message):
-        super(MattermostBot, self).post_channel(bot_channel, message)
+        super(MattermostBot, self).post_channel(channel=bot_channel, text=message)
 
 
 class MattermostInput(HttpInputComponent):
@@ -67,9 +67,9 @@ class MattermostInput(HttpInputComponent):
                 output = request.json
                 text = output['text']
                 sender_id = output['user_id']
-                bot_channel = output['channel_id']
+                self.bot_channel = output['channel_id']
                 print(output)
-                out_channel = MattermostBot(self.url, self.team, self.user, self.pw, bot_channel)
+                out_channel = MattermostBot(self.url, self.team, self.user, self.pw, self.bot_channel)
                 user_msg = UserMessage(text, out_channel, sender_id)
                 on_new_message(user_msg)
                 return "success"
