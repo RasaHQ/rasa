@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 
 import logging
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, make_response
 import requests
 from mattermostwrapper import MattermostAPI
 from rasa_core.channels.channel import UserMessage, OutputChannel
@@ -78,4 +78,6 @@ class MattermostInput(HttpInputComponent):
                              "message.{0}".format(e))
                 logger.error(e, exc_info=True)
                 pass
+            return make_response()
+
         return mattermost_webhook
