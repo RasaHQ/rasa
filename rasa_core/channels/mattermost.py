@@ -68,10 +68,14 @@ class MattermostInput(HttpInputComponent):
                 text = output['text']
                 sender_id = output['user_id']
                 self.bot_channel = output['channel_id']
-                print(output)
+            print(output)
+            try:
                 out_channel = MattermostBot(self.url, self.team, self.user, self.pw, self.bot_channel)
                 user_msg = UserMessage(text, out_channel, sender_id)
                 on_new_message(user_msg)
-                return "success"
-
+            except Exception as e:
+                logger.error("Exception when trying to handle "
+                             "message.{0}".format(e))
+                logger.error(e, exc_info=True)
+                pass
         return mattermost_webhook
