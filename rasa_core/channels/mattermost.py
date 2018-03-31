@@ -65,7 +65,8 @@ class MattermostInput(HttpInputComponent):
             request.get_data()
             if request.json:
                 output = request.json
-                text = output['text']
+                text = output['text'].split(" ", 1)
+                text = text[1]
                 sender_id = output['user_id']
                 self.bot_channel = output['channel_id']
             print(output)
