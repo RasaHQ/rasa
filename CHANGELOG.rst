@@ -19,6 +19,10 @@ Added
 - server evaluation endpoint at ``POST /evaluate``
 - CRF entity recognizer now returns a confidence score when extracting entities
 - server endpoint at ``DELETE /models`` to unload models from server memory
+- added count vector featurizer to create bag of words representation
+- added embedding intent classifier implemented in tensorflow
+- added tensorflow requirements
+- added basic tests for count vector featurizer
 
 Changed
 -------
@@ -34,7 +38,14 @@ Changed
   ``"extractor": "ner_crf"`` or no extractor at all
 - Ignore hidden files when listing projects or models
 - Docker Images now run on python 3.6 for better non-latin character set support
+<<<<<<< HEAD
 - Added recordSeparator parameter in data_router.py for generating json logs without record seperator it now works with fluentd
+=======
+- updated requirements_full.txt to include tensorflow requirements
+- updated documentation, added info about tensorflow_embedding pipeline
+- updated registry, added tensorflow_embedding pipeline
+- changed key name for a file in ngram featurizer
+>>>>>>> 429f955b86e816a521ca4f5480a6502e5d613ee3
 
 Removed
 -------
