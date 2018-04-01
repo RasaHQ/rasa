@@ -229,7 +229,7 @@ class RasaCoreServer(object):
                methods=['GET', 'OPTIONS'])
     @check_cors
     @ensure_loaded_agent
-    def list_trackers(self, request, sender_id):
+    def list_trackers(self, request):
         return json.dumps(self.agent.tracker_store.keys())
 
     @app.route("/conversations/<sender_id>/tracker",
