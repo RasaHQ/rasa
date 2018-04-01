@@ -225,6 +225,13 @@ class RasaCoreServer(object):
         self.agent.tracker_store.save(tracker)
         return json.dumps(tracker.current_state())
 
+    @app.route("/conversations",
+               methods=['GET', 'OPTIONS'])
+    @check_cors
+    @ensure_loaded_agent
+    def list_trackers(self, request, sender_id):
+        return json.dumps(self.agent.tracker_store.keys())
+
     @app.route("/conversations/<sender_id>/tracker",
                methods=['GET', 'OPTIONS'])
     @check_cors

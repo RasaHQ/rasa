@@ -49,6 +49,10 @@ class TrackerStore(object):
         # type: (Text) -> Optional[DialogueStateTracker]
         raise NotImplementedError()
 
+    def keys(self):
+        # type: (Text) -> List[Text]
+        raise NotImplementedError()
+
     @staticmethod
     def serialise_tracker(tracker):
         dialogue = tracker.as_dialogue()
@@ -81,6 +85,8 @@ class InMemoryTrackerStore(TrackerStore):
                          'id \'{}\'.'.format(sender_id))
             return None
 
+    def keys(self):
+        return self.store.keys()
 
 class RedisTrackerStore(TrackerStore):
 
