@@ -21,6 +21,7 @@ from rasa_nlu.extractors.duckling_extractor import DucklingExtractor
 from rasa_nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
 from rasa_nlu.extractors.entity_synonyms import EntitySynonymMapper
 from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
+from rasa_nlu.extractors.spacy_dependancy_extractor import SpacyDependancyExtractor
 from rasa_nlu.featurizers.ngram_featurizer import NGramFeaturizer
 from rasa_nlu.featurizers.regex_featurizer import RegexFeaturizer
 from rasa_nlu.featurizers.spacy_featurizer import SpacyFeaturizer
@@ -50,7 +51,7 @@ component_classes = [
     CountVectorsFeaturizer,
     SpacyTokenizer, WhitespaceTokenizer,
     SklearnIntentClassifier, KeywordIntentClassifier,
-    EmbeddingIntentClassifier
+    EmbeddingIntentClassifier, SpacyDependancyExtractor
 ]
 
 # Mapping from a components name to its class to allow name based lookup.
@@ -67,6 +68,7 @@ registered_pipeline_templates = {
         "intent_entity_featurizer_regex",
         "ner_crf",
         "ner_synonyms",
+        "dep_spacy",
         "intent_classifier_sklearn",
     ],
     "keyword": [
@@ -89,6 +91,7 @@ registered_pipeline_templates = {
         "ner_duckling",
         "ner_duckling_http",
         "ner_synonyms",
+        "dep_spacy",
         "intent_classifier_keyword",
         "intent_classifier_sklearn",
         "intent_classifier_tensorflow_embedding"
