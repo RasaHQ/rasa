@@ -29,12 +29,16 @@ class SpacyDependancyExtractor(EntityExtractor):
         updated_entities = message.get("entities", [])[:]
         doc = message.get("spacy_doc")
 
-        for token in doc:
-            for entity in updated_entities:
-                entity_value = str(entity["value"]).lower()
+        self.parse_dependencies(doc, updated_entities)
+        message.set("entities", updated_entities, add_to_output=True)
 
-                if entity_value.find(token.text) != -1 and token.head.pos_ == 'ADP':
+    def parse_dependencies(self, doc, entities):
+        for token in doc:
+            for entity in entities:
+                entity_value = str(entity["value"]).lower()
+                token_found = entity_value.find(token.text) != -1
+                token_ad = token.head.pos_ == 'ADP'
+
+                if token_found and token_ad:
                     entity["adposition"] = token.head.text
                     self.add_processor_name(entity)
-
-        message.set("entities", updated_entities, add_to_output=True)
