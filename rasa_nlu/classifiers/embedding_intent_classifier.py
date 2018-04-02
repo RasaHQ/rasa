@@ -17,7 +17,6 @@ from rasa_nlu.model import Metadata
 from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
 import numpy as np
-import tensorflow as tf
 
 try:
     import cPickle as pickle
@@ -29,6 +28,10 @@ logger = logging.getLogger(__name__)
 if typing.TYPE_CHECKING:
     import tensorflow as tf
 
+try:
+    import tensorflow as tf
+except ImportError:
+    logger.debug("No module named tensorflow")
 
 class EmbeddingIntentClassifier(Component):
     """Intent classifier using supervised embeddings.
