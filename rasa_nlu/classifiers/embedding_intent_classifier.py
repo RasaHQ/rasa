@@ -33,6 +33,7 @@ try:
 except ImportError:
     logger.debug("No module named tensorflow")
 
+
 class EmbeddingIntentClassifier(Component):
     """Intent classifier using supervised embeddings.
 
