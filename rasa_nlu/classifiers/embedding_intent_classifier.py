@@ -31,7 +31,11 @@ if typing.TYPE_CHECKING:
 try:
     import tensorflow as tf
 except ImportError:
-    logger.debug("No module named tensorflow")
+    logger.debug('Unable to import tensorflow. '
+                 'If you are not using the tensorflow pipeline, '
+                 'you can safely ignore this message. '
+                 'If you are using pipeline: "tensorflow_embedding", '
+                 'this will create an error.')
 
 
 class EmbeddingIntentClassifier(Component):
