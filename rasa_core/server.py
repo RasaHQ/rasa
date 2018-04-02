@@ -101,8 +101,8 @@ def bool_arg(request, name, default=True):
     Checks the `name` parameter of the request if it contains a valid
     boolean value. If not, `default` is returned."""
 
-    d = str(default)
-    return request.args.get(name, d).lower() == 'true'
+    d = [str(default)]
+    return request.args.get(name, d)[0].lower() == 'true'
 
 
 def request_parameters(request):
