@@ -17,7 +17,6 @@ from rasa_nlu.model import Metadata
 from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
 import numpy as np
-import tensorflow as tf
 
 try:
     import cPickle as pickle
@@ -28,6 +27,15 @@ logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     import tensorflow as tf
+
+try:
+    import tensorflow as tf
+except ImportError:
+    logger.debug('Unable to import tensorflow. '
+                 'If you are not using the tensorflow pipeline, '
+                 'you can safely ignore this message. '
+                 'If you are using pipeline: "tensorflow_embedding", '
+                 'this will create an error.')
 
 
 class EmbeddingIntentClassifier(Component):
