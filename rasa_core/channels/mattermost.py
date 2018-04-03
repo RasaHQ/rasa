@@ -25,7 +25,7 @@ class MattermostBot(MattermostAPI, OutputChannel):
         self.bot_channel = bot_channel
         super(MattermostBot, self).__init__(url, team)
         super(MattermostBot, self).login(user, pw)
-        print(self.bot_channel)
+        
 
 
     def send_text_message(self, recipient_id, message):
@@ -70,7 +70,6 @@ class MattermostInput(HttpInputComponent):
                 text = text[1]
                 sender_id = output['user_id']
                 self.bot_channel = output['channel_id']
-            print(output)
             try:
                 out_channel = MattermostBot(self.url, self.team, self.user, self.pw, self.bot_channel)
                 user_msg = UserMessage(text, out_channel, sender_id)
