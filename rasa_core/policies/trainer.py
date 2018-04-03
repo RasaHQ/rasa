@@ -20,7 +20,7 @@ class PolicyTrainer(object):
         self.ensemble = ensemble
         self.featurizer = featurizer
 
-    def train(self, resource_name=None, max_history=3,
+    def train(self, resource_name=None, max_history=None,
               augmentation_factor=20, max_training_samples=None,
               max_number_of_trackers=2000, remove_duplicates=True, **kwargs):
         """Trains a policy on a domain using training data from a file.

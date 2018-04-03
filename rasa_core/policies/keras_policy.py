@@ -48,15 +48,17 @@ class KerasPolicy(Policy):
         return keras.backend._BACKEND == "tensorflow"
 
     def predict_action_probabilities(self, tracker, domain):
-        x, lengths = self.featurizer.featurize_trackers([tracker], domain)
+        x, lengths = self.featurizer.featurize_trackers([tracker], domain, is_training=False)
+
         current_idx = lengths[0] - 1
+
         if KerasPolicy.is_using_tensorflow() and self.graph is not None:
             with self.graph.as_default():
                 y_pred = self.model.predict(x, batch_size=1)
         else:
             y_pred = self.model.predict(x, batch_size=1)
-        print(y_pred[0, current_idx, :].tolist())
-        return(y_pred[0, current_idx, :].tolist())
+
+        return y_pred[0, current_idx, :].tolist()
 
     def _build_model(self, num_features, num_actions, max_history_len):
         warnings.warn("Deprecated, use `model_architecture` instead.",
@@ -95,6 +97,7 @@ class KerasPolicy(Policy):
                                              domain.num_actions,
                                              training_data.max_history())
         #shuffled_X, shuffled_y = training_data.shuffled(domain)
+        # TODO actually shuffle?
         shuffled_X = training_data.X
         shuffled_y = training_data.y
 

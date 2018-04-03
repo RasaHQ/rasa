@@ -83,60 +83,87 @@ class BinaryFeaturizer(Featurizer):
     """Assumes all features are binary.
 
     All features should be either on or off, denoting them with 1 or 0."""
-    def __init__(self, max_history):
+    def __init__(self, max_history=None):
         self.max_history = max_history
 
-    def featurize_trackers(self, trackers, domain):
-        rows = []
-        true_lengths = []
-        num_features = len(domain.input_feature_map)
+    def _calculate_max_history(self, as_states):
+        if self.max_history is None:
+            self.max_history = 0
+            for states in as_states:
+                self.max_history = max(self.max_history, len(states))
+
+    def featurize_trackers(self, trackers, domain, is_training=True):
+        """Create X"""
+
         trackers_as_states = []
 
         for tracker in trackers:
+            states = domain.features_for_tracker_history(tracker)
+            if is_training:
+                # the last one is ['intent_...', 'prev_action_listen']
+                trackers_as_states.append(states[:-1])
+            else:
+                trackers_as_states.append(states)
 
-            states = [ domain.get_active_features(tr) for tr in
-                tracker.generate_all_prior_states()]
+        self._calculate_max_history(trackers_as_states)
 
-            trackers_as_states.append(states)
+        num_features = len(domain.input_feature_map)
+        X = np.empty((len(trackers_as_states), self.max_history, num_features))
+        true_lengths = []
 
-        for tracker_states in trackers_as_states:
-            x = np.empty((self.max_history, num_features))
+        for story_idx, tracker_states in enumerate(trackers_as_states):
             dialogue_len = len(tracker_states)
+            true_lengths.append(dialogue_len)
+
             # pad up to max_len or slice
             if dialogue_len < self.max_history:
                 tracker_states += [None] * (self.max_history - dialogue_len)
             else:
                 tracker_states = tracker_states[-self.max_history:]
 
-            for idx, state in enumerate(tracker_states):
-                x[idx,:] = self.encode(state, domain.input_feature_map)
-            rows.append(x)
-            true_lengths.append(dialogue_len)
+            for utter_idx, state in enumerate(tracker_states):
+                X[story_idx, utter_idx, :] = self.encode(state, domain.input_feature_map)
 
-        return np.array(rows), true_lengths
+        return X, true_lengths
 
     def featurize_labels(self, trackers, domain, one_hot=True):
-        max_len = self.max_history
-        trackers_actions = []
+        """Create y"""
+
+        trackers_as_actions = []
+
         for tracker in trackers:
             actions = []
             for event in tracker._applied_events():
-                 if isinstance(event, ActionExecuted):
-                     actions.append(event.action_name)
-            trackers_actions.append(actions)
-        # slice in case longer than max_len
-        trackers_actions = trackers_actions[-self.max_history:]
+                if isinstance(event, ActionExecuted):
+                    if not event.unpredictable:
+                        # only actions which can be predicted at a stories start
+                        actions.append(event.action_name)
+                    else:
+                        # TODO need to align X then
+                        print("action {} is unpredictable".format(event.action_name))
+
+            trackers_as_actions.append(actions)
+
+        self._calculate_max_history(trackers_as_actions)
 
         if one_hot:
-            y = np.zeros((len(trackers), max_len, domain.num_actions))
-            for idx, actions in enumerate(trackers_actions):
-                for jdx, action in enumerate(actions):
-                    y[idx, jdx, domain.index_for_action(action)] = 1
+            y = np.zeros((len(trackers_as_actions), self.max_history, domain.num_actions))
+
+            for story_idx, tracker_actions in enumerate(trackers_as_actions):
+                # slice in case longer than max_history
+                tracker_actions = tracker_actions[-self.max_history:]
+
+                for utter_idx, action in enumerate(tracker_actions):
+                    y[story_idx, utter_idx, domain.index_for_action(action)] = 1
+
         else:
-            y = np.zeros((len(trackers), max_len))
-            for idx, actions in enumerate(trackers_actions):
-                for jdx, action in enumerate(actions):
-                    y[idx, jdx] = domain.index_for_action(action)
+            y = np.zeros((len(trackers_as_actions), self.max_history))
+            for story_idx, tracker_actions in enumerate(trackers_as_actions):
+                # slice in case longer than max_history
+                tracker_actions = tracker_actions[-self.max_history:]
+
+                for utter_idx, action in enumerate(tracker_actions):
+                    y[story_idx, utter_idx] = domain.index_for_action(action)
 
         return y
 

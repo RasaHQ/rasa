@@ -38,31 +38,28 @@ ExtractorConfig = namedtuple("ExtractorConfig", "remove_duplicates "
                                                 "use_story_concatenation "
                                                 "rand")
 
-TrackerResult = namedtuple("TrackerResult", "features "
-                                            "labels "
-                                            "unique_trackers")
 
-
-class FeaturizedTracker(object):
+class FeaturizedTrackerWrapper(object):
     """A tracker wrapper that caches the featurization of the tracker."""
 
-    def __init__(self, tracker, max_history, featurization=None):
+    def __init__(self, tracker, max_history=None, featurization=None):
         # type: (DialogueStateTracker, int) -> None
 
         self.tracker = tracker
         self.max_history = max_history
 
         if featurization is None:
-            self.featurization = deque([], max_history + 1)
+            self.featurization = deque([])#, max_history + 1)
         else:
             self.featurization = featurization
 
     def create_copy(self):
         """Creates a deep copy of this featurized tracker. """
 
-        features = deque(self.featurization, self.max_history + 1)
+        # features = deque(self.featurization, self.max_history + 1)
         tracker_copy = copy.deepcopy(self.tracker)
-        return FeaturizedTracker(tracker_copy, self.max_history, features)
+        # return FeaturizedTracker(tracker_copy, self.max_history, features)
+        return FeaturizedTrackerWrapper(tracker_copy, self.max_history, self.featurization)
 
     def undo_last_action(self):
         # type: () -> None
@@ -93,11 +90,12 @@ class FeaturizedTracker(object):
         return None
 
     @classmethod
-    def from_domain(cls, domain, max_history, tracker_limit=None):
-        # type: (Domain, int) -> FeaturizedTracker
+    def from_domain(cls, domain, max_history=None, tracker_limit=None):
+        # type: (Domain, int) -> FeaturizedTrackerWrapper
         """Creates a featurized tracker from a domain."""
 
-        tracker_limit = max_history * 2 if not tracker_limit else tracker_limit
+        if not tracker_limit and max_history:
+            tracker_limit = max_history * 2
         tracker = DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
                                        domain.slots,
                                        domain.topics,
@@ -106,7 +104,8 @@ class FeaturizedTracker(object):
         return cls(tracker, max_history)
 
 
-TrackerLookupDict = Dict[Optional[Text], List[FeaturizedTracker]]
+# define type
+TrackerLookupDict = Dict[Optional[Text], List[FeaturizedTrackerWrapper]]
 
 
 class TrainingsDataGenerator(object):
@@ -117,12 +116,11 @@ class TrainingsDataGenerator(object):
             featurizer,  # type: Featurizer
             remove_duplicates=True,  # type: bool
             augmentation_factor=20,  # type: int
-            max_history=1,  # type: int
+            max_history=None,  # type: int
             max_number_of_trackers=2000,  # type: int
             tracker_limit=None,  # type: Optional[int]
             use_story_concatenation=True  # type: bool
     ):
-        # type: (...) -> List[DialogueStateTrackers]
         """Given a set of story parts, generates all stories that are possible.
 
         The different story parts can end and start with checkpoints
@@ -130,7 +128,6 @@ class TrainingsDataGenerator(object):
         connect complete stories. Afterwards, duplicate stories will be
         removed and the data is augmented (if augmentation is enabled)."""
 
-        self.events_metadata = defaultdict(set)
         self.story_graph = story_graph.with_cycles_removed()
         self.domain = domain
         self.featurizer = featurizer
@@ -141,26 +138,25 @@ class TrainingsDataGenerator(object):
                 max_number_of_trackers=max_number_of_trackers,
                 tracker_limit=tracker_limit,
                 use_story_concatenation=use_story_concatenation,
-                rand=random.Random(42))
+                rand=None)#random.Random(42))
 
     def generate(self):
-        # type: () -> DialogueTrainingData
+        # type: () -> List[DialogueStateTracker]
 
         self._mark_first_action_in_story_steps_as_unpredictable()
 
-        all_features = []  # type: List[ndarray]
-        all_actions = []  # type: List[int]
         unused_checkpoints = set()  # type: Set[Text]
         used_checkpoints = set()  # type: Set[Text]
+        active_trackers = defaultdict(list)  # type: TrackerLookupDict
 
-        init_tracker = FeaturizedTracker.from_domain(
+        init_tracker = FeaturizedTrackerWrapper.from_domain(
                 self.domain, self.config.max_history,
                 self.config.tracker_limit)
-        active_trackers = defaultdict(list)
         active_trackers[STORY_START].append(init_tracker)
+
         finished_trackers = []
 
-        phases = self._phase_names()
+        phases = self._phase_names(num_aug_rounds=0)
 
         for i, phase_name in enumerate(phases):
             num_trackers = self._count_trackers(active_trackers)
@@ -189,18 +185,11 @@ class TrainingsDataGenerator(object):
                     incoming_trackers = self._subsample_trackers(
                             incoming_trackers, phase_idx=i)
 
-                    features, labels, trackers = self._process_step(
-                            step, incoming_trackers)
-
-                    # collect all the training samples created while
-                    # processing the steps events with the trackers
-                    all_features.extend(features)
-                    all_actions.extend(labels)
+                    trackers = self._process_step(step, incoming_trackers)
 
                     # update progress bar
                     pbar.set_postfix({
-                        "# trackers": len(incoming_trackers),
-                        "samples": len(all_actions)})
+                        "# trackers": len(incoming_trackers)})
 
                     # update our tracker dictionary with the trackers
                     # that handled the events of the step and
@@ -217,20 +206,20 @@ class TrainingsDataGenerator(object):
             finished_trackers.extend(completed)
             active_trackers = self._create_start_trackers(active_trackers)
             logger.debug("Finished phase. ({} training samples found)".format(
-                    len(all_actions)))
+                    len(finished_trackers)))
 
         unused_checkpoints -= used_checkpoints
         self._issue_unused_checkpoint_notification(unused_checkpoints)
-        logger.debug("Found {} action examples.".format(len(all_actions)))
+        #logger.debug("Found {} action examples.".format(len(finished_trackers)))
 
         return finished_trackers
 
-    def _phase_names(self):
+    def _phase_names(self, num_aug_rounds=0):
         # type: () -> List[Text]
         """Create names for the different data generation phases"""
 
         phases = ["normal generation"]
-        for i in range(1, self.config.max_history + 1):
+        for i in range(1, num_aug_rounds + 1):
             phases.append("augmentation round {})".format(i))
         return phases
 
@@ -241,7 +230,7 @@ class TrainingsDataGenerator(object):
         return sum(len(ts) for ts in active_trackers.values())
 
     def _subsample_trackers(self, incoming_trackers, phase_idx):
-        # type: (List[FeaturizedTracker], int) -> List[FeaturizedTracker]
+        # type: (List[FeaturizedTrackerWrapper], int) -> List[FeaturizedTrackerWrapper]
         """Subsample the list of trackers to retrieve a random subset."""
 
         # if flows get very long and have a lot of forks we
@@ -292,7 +281,7 @@ class TrainingsDataGenerator(object):
         return next_active_trackers
 
     def _process_step(self, step, incoming_trackers):
-        # type: (StoryStep, List[FeaturizedTracker]) -> TrackerResult
+        # type: (StoryStep, List[FeaturizedTrackerWrapper]) -> List[FeaturizedTrackerWrapper]
         """Processes a steps events with all trackers.
 
         The trackers that reached the steps starting checkpoint will
@@ -306,19 +295,12 @@ class TrainingsDataGenerator(object):
         trackers = [tracker.create_copy() for tracker in
                     incoming_trackers] if events else []  # small optimization
 
-        training_features = []
-        training_labels = []
-
         for event in events:
-            result = self._process_event_with_trackers(
-                    event, trackers)
-            training_features.extend(result.features)
-            training_labels.extend(result.labels)
-            trackers = result.unique_trackers
-        return TrackerResult(training_features, training_labels, trackers)
+            trackers = self._process_event_with_trackers(event, trackers)
+        return trackers
 
     def _process_event_with_trackers(self, event, trackers):
-        # type: (Event, List[FeaturizedTracker]) -> TrackerResult
+        # type: (Event, List[FeaturizedTrackerWrapper]) -> List[FeaturizedTrackerWrapper]
         """Logs an event to all trackers.
 
         Removes trackers that create equal featurizations.
@@ -334,37 +316,37 @@ class TrainingsDataGenerator(object):
         featurizations = set()
 
         # collected training data
-        features = []
-        labels = []
 
         for tracker in trackers:
             if isinstance(event, ActionExecuted):
                 state_features = tracker.feauturize_current_state(self.domain)
-                feature_vector = self.domain.slice_feature_history(
-                        self.featurizer, state_features,
-                        self.config.max_history)
+
+                # TODO don't like that: encoding after each event
+                # TODO might not work with label_featurizer encoding,
+                # TODO because we save only intents and slots
+
+                encoded_features = [self.featurizer.encode(f, self.domain.input_feature_map)
+                                    for f in state_features]
+                feature_vector = np.vstack(encoded_features)
+
                 hashed = utils.HashableNDArray(feature_vector)
 
                 # only continue with trackers that created a
                 # featurization we haven't observed at this event
                 if (hashed not in featurizations
                         or not self.config.remove_duplicates):
-                    featurizations.add(hashed)
-                    if not event.unpredictable:
-                        # only actions which can be predicted at a stories start
-                        a_idx = self.domain.index_for_action(event.action_name)
 
-                        features.append(feature_vector)
-                        labels.append(a_idx)
+                    featurizations.add(hashed)
+                    # if not event.unpredictable:
+                        # only actions which can be predicted at a stories start
+
                     unique_trackers.append(tracker)
             else:
                 unique_trackers.append(tracker)
-            tracker.update(event)
-            if not isinstance(event, ActionExecuted):
-                action_name = tracker.previously_executed_action()
-                self.events_metadata[action_name].add(event)
 
-        return TrackerResult(features, labels, unique_trackers)
+            tracker.update(event)
+
+        return unique_trackers
 
     @staticmethod
     def _deduplicate_training_data(X, y):
@@ -439,5 +421,5 @@ class TrainingsDataGenerator(object):
                     collected.add((start.name, step.block_name))
         for cp, block_name in collected:
             if not cp.startswith(GENERATED_CHECKPOINT_PREFIX):
-                logger.warn("Unsatisfied start checkpoint '{}' "
-                            "in block '{}'".format(cp, block_name))
+                logger.warning("Unsatisfied start checkpoint '{}' "
+                               "in block '{}'".format(cp, block_name))

@@ -37,7 +37,7 @@ def extract_training_data(
         featurizer=None,  # type: Featurizer
         interpreter=RegexInterpreter(),  # type: NaturalLanguageInterpreter
         augmentation_factor=20,  # type: int
-        max_history=1,  # type: int
+        max_history=None,  # type: int
         remove_duplicates=True,
         max_number_of_trackers=2000  # type: int
 ):
