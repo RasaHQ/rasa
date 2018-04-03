@@ -25,7 +25,7 @@ def create_argument_parser():
             '-s', '--stories',
             type=str,
             required=True,
-            help="file that contains the stories to train on")
+            help="file or folder containing the training stories")
     parser.add_argument(
             '-o', '--out',
             type=str,
@@ -51,6 +51,12 @@ def create_argument_parser():
             type=int,
             default=100,
             help="number of epochs to train the model")
+    parser.add_argument(
+            '--validation_split',
+            type=float,
+            default=0.1,
+            help="Percentage of training samples used for validation, "
+                 "0.1 by default")
     parser.add_argument(
             '--batch_size',
             type=int,
@@ -87,12 +93,11 @@ def train_dialogue_model(domain_file, stories_file, output_path,
         agent.train_online(
                 stories_file,
                 input_channel=ConsoleInputChannel(),
-                epochs=10,
-                model_path=output_path)
+                model_path=output_path,
+                **kwargs)
     else:
         agent.train(
                 stories_file,
-                validation_split=0.1,
                 **kwargs
         )
 
@@ -111,6 +116,7 @@ if __name__ == '__main__':
         "max_history": cmdline_args.history,
         "epochs": cmdline_args.epochs,
         "batch_size": cmdline_args.batch_size,
+        "validation_split": cmdline_args.validation_split,
         "augmentation_factor": cmdline_args.augmentation
     }
 

@@ -12,17 +12,18 @@ import tempfile
 import zipfile
 from functools import wraps
 
+import six
 from builtins import str
 from klein import Klein
 from typing import Union, Text, Optional
 
 from rasa_core import utils, events
 from rasa_core.agent import Agent
+from rasa_core.channels.direct import CollectingOutputChannel
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.tracker_store import TrackerStore
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.version import __version__
-from rasa_nlu.server import check_cors, requires_auth
 
 logger = logging.getLogger(__name__)
 
@@ -102,6 +103,68 @@ def bool_arg(request, name, default=True):
 
     d = str(default)
     return request.args.get(name, d).lower() == 'true'
+
+
+def request_parameters(request):
+    if request.method.decode('utf-8', 'strict') == 'GET':
+        return {
+            key.decode('utf-8', 'strict'): value[0].decode('utf-8',
+                                                           'strict')
+            for key, value in request.args.items()}
+    else:
+        content = request.content.read()
+        try:
+            return json.loads(content.decode('utf-8', 'strict'))
+        except ValueError as e:
+            logger.error("Failed to decode json during respond request. "
+                         "Error: {}. Request content: "
+                         "'{}'".format(e, content))
+            raise
+
+
+def check_cors(f):
+    """Wraps a request handler with CORS headers checking."""
+
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        self = args[0]
+        request = args[1]
+        origin = request.getHeader('Origin')
+
+        if origin:
+            if '*' in self.config['cors_origins']:
+                request.setHeader('Access-Control-Allow-Origin', '*')
+            elif origin in self.config['cors_origins']:
+                request.setHeader('Access-Control-Allow-Origin', origin)
+            else:
+                request.setResponseCode(403)
+                return 'forbidden'
+
+        if request.method.decode('utf-8', 'strict') == 'OPTIONS':
+            return ''  # if this is an options call we skip running `f`
+        else:
+            return f(*args, **kwargs)
+
+    return decorated
+
+
+def requires_auth(f):
+    """Wraps a request handler with token authentication."""
+
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        self = args[0]
+        request = args[1]
+        if six.PY3:
+            token = request.args.get(b'token', [b''])[0].decode("utf8")
+        else:
+            token = str(request.args.get('token', [''])[0])
+        if self.config['token'] is None or token == self.config['token']:
+            return f(*args, **kwargs)
+        request.setResponseCode(401)
+        return 'unauthorized'
+
+    return decorated
 
 
 class RasaCoreServer(object):
@@ -255,20 +318,7 @@ class RasaCoreServer(object):
     @ensure_loaded_agent
     def parse(self, request, sender_id):
         request.setHeader('Content-Type', 'application/json')
-        if request.method.decode('utf-8', 'strict') == 'GET':
-            request_params = {
-                key.decode('utf-8', 'strict'): value[0].decode('utf-8',
-                                                               'strict')
-                for key, value in request.args.items()}
-        else:
-            content = request.content.read()
-            try:
-                request_params = json.loads(content.decode('utf-8', 'strict'))
-            except ValueError as e:
-                logger.error("Failed to decode json during parse request. "
-                             "Error: {}. Request content: "
-                             "'{}'".format(e, content))
-                raise
+        request_params = request_parameters(request)
 
         if 'query' in request_params:
             message = request_params.pop('query')
@@ -286,6 +336,37 @@ class RasaCoreServer(object):
             request.setResponseCode(500)
             logger.error("Caught an exception during "
                          "parse: {}".format(e), exc_info=1)
+            return json.dumps({"error": "{}".format(e)})
+
+    @app.route("/conversations/<sender_id>/respond",
+               methods=['GET', 'POST', 'OPTIONS'])
+    @check_cors
+    @requires_auth
+    @ensure_loaded_agent
+    def respond(self, request, sender_id):
+        request.setHeader('Content-Type', 'application/json')
+        request_params = request_parameters(request)
+
+        if 'query' in request_params:
+            message = request_params.pop('query')
+        elif 'q' in request_params:
+            message = request_params.pop('q')
+        else:
+            request.setResponseCode(400)
+            return json.dumps({"error": "Invalid respond parameter specified"})
+
+        try:
+            out = CollectingOutputChannel()
+            responses = self.agent.handle_message(message,
+                                                  output_channel=out,
+                                                  sender_id=sender_id)
+            request.setResponseCode(200)
+            return json.dumps(responses)
+
+        except Exception as e:
+            request.setResponseCode(500)
+            logger.error("Caught an exception during "
+                         "respond: {}".format(e), exc_info=1)
             return json.dumps({"error": "{}".format(e)})
 
     @app.route("/load", methods=['POST', 'OPTIONS'])

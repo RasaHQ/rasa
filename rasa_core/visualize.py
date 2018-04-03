@@ -26,7 +26,8 @@ def create_argument_parser():
     parser.add_argument('-s', '--stories',
                         required=True,
                         type=str,
-                        help="story file")
+                        help="story file or folder containing the stories"
+                             "to visualize")
     parser.add_argument('-d', '--domain',
                         required=True,
                         type=str,
