@@ -15,8 +15,8 @@ class DialogueTrainingData(object):
         self.metadata = metadata if metadata else {}
 
     def limit_training_data_to(self, max_samples):
-        self.X = self.X[:max_samples, :, :]
-        self.y = self.y[:max_samples, :, :]
+        self.X = self.X[:max_samples]
+        self.y = self.y[:max_samples]
 
     def is_empty(self):
         return utils.is_training_data_empty(self.X)
@@ -30,8 +30,8 @@ class DialogueTrainingData(object):
     def shuffled_X_y(self):
         idx = np.arange(self.num_examples())
         np.random.shuffle(idx)
-        shuffled_X = self.X[idx, :, :]
-        shuffled_y = self.y[idx, :]
+        shuffled_X = self.X[idx]
+        shuffled_y = self.y[idx]
         return shuffled_X, shuffled_y
 
     def random_samples(self, num_samples):
@@ -40,7 +40,7 @@ class DialogueTrainingData(object):
                                        size=min(num_samples,
                                                 self.num_examples()))
 
-        return self.X[padding_idx, :, :], self.y[padding_idx, :, :]
+        return self.X[padding_idx], self.y[padding_idx]
 
     def reset_metadata(self):
         self.metadata = {}

@@ -31,7 +31,6 @@ if typing.TYPE_CHECKING:
 
 ExtractorConfig = namedtuple("ExtractorConfig", "remove_duplicates "
                                                 "augmentation_factor "
-                                                "max_history "
                                                 "max_number_of_trackers "
                                                 "tracker_limit "
                                                 "use_story_concatenation "
@@ -41,11 +40,10 @@ ExtractorConfig = namedtuple("ExtractorConfig", "remove_duplicates "
 class FeaturizedTrackerWrapper(object):
     """A tracker wrapper that caches the featurization of the tracker."""
 
-    def __init__(self, tracker, max_history=None, featurization=None):
-        # type: (DialogueStateTracker, int) -> None
+    def __init__(self, tracker, featurization=None):
+        # type: (DialogueStateTracker) -> None
 
         self.tracker = tracker
-        self.max_history = max_history
 
         if featurization is None:
             self.featurization = deque([])#, max_history + 1)
@@ -58,7 +56,7 @@ class FeaturizedTrackerWrapper(object):
         # features = deque(self.featurization, self.max_history + 1)
         tracker_copy = copy.deepcopy(self.tracker)
         # return FeaturizedTracker(tracker_copy, self.max_history, features)
-        return FeaturizedTrackerWrapper(tracker_copy, self.max_history, self.featurization)
+        return FeaturizedTrackerWrapper(tracker_copy, self.featurization)
 
     def undo_last_action(self):
         # type: () -> None
@@ -89,18 +87,16 @@ class FeaturizedTrackerWrapper(object):
         return None
 
     @classmethod
-    def from_domain(cls, domain, max_history=None, tracker_limit=None):
+    def from_domain(cls, domain, tracker_limit=None):
         # type: (Domain, int) -> FeaturizedTrackerWrapper
         """Creates a featurized tracker from a domain."""
 
-        if not tracker_limit and max_history:
-            tracker_limit = max_history * 2
         tracker = DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
                                        domain.slots,
                                        domain.topics,
                                        domain.default_topic,
                                        max_event_history=tracker_limit)
-        return cls(tracker, max_history)
+        return cls(tracker)
 
 
 # define type
@@ -114,7 +110,6 @@ class TrainingsDataGenerator(object):
             domain,  # type: Domain
             remove_duplicates=True,  # type: bool
             augmentation_factor=20,  # type: int
-            max_history=None,  # type: int
             max_number_of_trackers=2000,  # type: int
             tracker_limit=None,  # type: Optional[int]
             use_story_concatenation=True  # type: bool
@@ -131,7 +126,6 @@ class TrainingsDataGenerator(object):
         self.config = ExtractorConfig(
                 remove_duplicates=remove_duplicates,
                 augmentation_factor=augmentation_factor,
-                max_history=max_history,
                 max_number_of_trackers=max_number_of_trackers,
                 tracker_limit=tracker_limit,
                 use_story_concatenation=use_story_concatenation,
@@ -147,7 +141,7 @@ class TrainingsDataGenerator(object):
         active_trackers = defaultdict(list)  # type: TrackerLookupDict
 
         init_tracker = FeaturizedTrackerWrapper.from_domain(
-                self.domain, self.config.max_history,
+                self.domain,
                 self.config.tracker_limit)
         active_trackers[STORY_START].append(init_tracker)
 
@@ -207,7 +201,7 @@ class TrainingsDataGenerator(object):
 
         unused_checkpoints -= used_checkpoints
         self._issue_unused_checkpoint_notification(unused_checkpoints)
-        #logger.debug("Found {} action examples.".format(len(finished_trackers)))
+        logger.debug("Found {} training examples.".format(len(finished_trackers)))
 
         return finished_trackers
 
@@ -333,27 +327,6 @@ class TrainingsDataGenerator(object):
             tracker.update(event)
 
         return unique_trackers
-
-    @staticmethod
-    def _deduplicate_training_data(X, y):
-        # type: (ndarray, ndarray) -> Tuple[ndarray, ndarray]
-        """Make sure every training example in X occurs exactly once."""
-
-        # we need to concat X and y to make sure that
-        # we do NOT throw out contradicting examples
-        # (same featurization but different labels).
-        # appends y to X so it appears to be just another feature
-        if not utils.is_training_data_empty(X):
-            casted_y = np.broadcast_to(
-                    np.reshape(y, (y.shape[0], 1, 1)),
-                    (y.shape[0], X.shape[1], 1))
-            concatenated = np.concatenate((X, casted_y), axis=2)
-            t_data = np.unique(concatenated, axis=0)
-            X_unique = t_data[:, :, :-1]
-            y_unique = np.array(t_data[:, 0, -1], dtype=casted_y.dtype)
-            return X_unique, y_unique
-        else:
-            return X, y
 
     def _mark_first_action_in_story_steps_as_unpredictable(self):
         # type: () -> None

@@ -30,7 +30,7 @@ from rasa_core.actions.factories import (
 from rasa_core.conversation import DefaultTopic
 from rasa_core.conversation import Topic
 from rasa_core.events import ActionExecuted
-from rasa_core.featurizers import Featurizer
+from rasa_core.featurizers import FeaturizeMechanism
 from rasa_core.slots import Slot
 from rasa_core.trackers import DialogueStateTracker, SlotSet
 from rasa_core.utils import read_yaml_file
@@ -169,7 +169,7 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
                               featurizer,
                               tracker_history,
                               slice_length):
-        # type: (Featurizer, List[Dict[Text, float]], int) -> np.ndarray
+        # type: (FeaturizeMechanism, List[Dict[Text, float]], int) -> np.ndarray
         """Slices a featurization from the trackers history.
 
         If the slice is at the array borders, padding will be added to ensure
@@ -179,7 +179,7 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         slice_start = max(0, slice_end - slice_length)
         padding = [None] * max(0, slice_length - slice_end)
         state_features = padding + tracker_history[slice_start:]
-        encoded_features = [featurizer.encode(f, self.input_feature_map)
+        encoded_features = [featurizer.encode(f, domain=self)
                             for f in state_features]
         return np.vstack(encoded_features)
 
@@ -283,7 +283,7 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
             if prev_action_name in self.input_feature_map:
                 return {prev_action_name: 1}
             else:
-                logger.warn(
+                logger.warning(
                         "Failed to use action '{}' in history. "
                         "Please make sure all actions are listed in the "
                         "domains action list. If you recently removed an "
@@ -343,7 +343,7 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         raise NotImplementedError
 
     def persist_specification(self, model_path):
-        # type: (Text, List[Text]) -> None
+        # type: (Text) -> None
         """Persists the domain specification to storage."""
 
         domain_spec_path = os.path.join(model_path, 'domain.json')

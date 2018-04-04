@@ -20,7 +20,7 @@ class PolicyTrainer(object):
         self.ensemble = ensemble
         self.featurizer = featurizer
 
-    def train(self, resource_name=None, max_history=None,
+    def train(self, resource_name=None,
               augmentation_factor=20, max_training_samples=None,
               max_number_of_trackers=2000, remove_duplicates=True, **kwargs):
         """Trains a policy on a domain using training data from a file.
@@ -28,8 +28,6 @@ class PolicyTrainer(object):
         :param augmentation_factor: how many stories should be created by
                                     randomly concatenating stories
         :param resource_name: story file containing the training conversations
-        :param max_history: number of past actions to consider for the
-                            prediction of the next action
         :param max_training_samples: specifies how many training samples to
                                      train on - `None` to use all examples
         :param max_number_of_trackers: limits the tracker generation during
@@ -45,13 +43,13 @@ class PolicyTrainer(object):
         check_domain_sanity(self.domain)
 
         training_data = self._prepare_training_data(
-                resource_name, max_history, augmentation_factor,
+                resource_name, augmentation_factor,
                 max_training_samples, max_number_of_trackers, remove_duplicates)
 
         self.ensemble.train(training_data, self.domain, self.featurizer,
                             **kwargs)
 
-    def _prepare_training_data(self, resource_name, max_history,
+    def _prepare_training_data(self, resource_name,
                                augmentation_factor,
                                max_training_samples=None,
                                max_number_of_trackers=2000,
@@ -67,7 +65,6 @@ class PolicyTrainer(object):
                     self.featurizer,
                     interpreter=RegexInterpreter(),
                     augmentation_factor=augmentation_factor,
-                    max_history=max_history,
                     remove_duplicates=remove_duplicates,
                     max_number_of_trackers=max_number_of_trackers)
             if max_training_samples is not None:

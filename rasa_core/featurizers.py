@@ -23,14 +23,18 @@ class FeaturizeMechanism(object):
     FeaturizeMecahnism decides how the bot will transform the conversation state to a
     format which a classifier can read."""
 
-    def features_sizes(self, domain, all_input=None):
-        return len(domain.input_feature_map), domain.num_actions
+    def create_helpers(self, domain, all_input):
+        # will be used in label_featurizer
+        return
 
     def encode(self, active_features, domain):
         raise NotImplementedError("FeaturizeMechanism must have the capacity to "
                                   "encode features to a vector")
 
     def encode_label(self, label, domain):
+        if label is None:
+            return np.ones(domain.num_actions, dtype=int) * -1
+
         y = np.zeros(domain.num_actions, dtype=int)
         y[domain.index_for_action(label)] = 1
         return y
@@ -205,54 +209,64 @@ class Featurizer(object):
 
 
 class FullDialogueFeaturizer(Featurizer):
-    def __init__(self, featurizer, max_history=None):
-        super(FullDialogueFeaturizer, self).__init__(featurizer)
+    def __init__(self, featurize_mechanism, max_history=None):
+        super(FullDialogueFeaturizer, self).__init__(featurize_mechanism)
 
         self.max_len = max_history
-
-        self.num_state_features = None
-        self.num_label_features = None
 
     def _calculate_max_len(self, as_states):
         self.max_len = 0
         for states in as_states:
             self.max_len = max(self.max_len, len(states))
 
+    def _pad_states(self, states):
+        # pad up to max_len or slice
+        if len(states) < self.max_len:
+            states += [None] * (self.max_len - len(states))
+        else:
+            # TODO questinable thing: to delete beginning of stories
+            states = states[-self.max_len:]
+
+        return states
+
     def _featurize_states(self, trackers_as_states, domain):
         """Create X"""
 
-        X = np.empty((len(trackers_as_states), self.max_len, self.num_state_features))
+        features = []
         true_lengths = []
 
-        for story_idx, tracker_states in enumerate(trackers_as_states):
+        for tracker_states in trackers_as_states:
+
+            tracker_states = self._pad_states(tracker_states)
             dialogue_len = len(tracker_states)
 
-            # pad up to max_len or slice
-            if dialogue_len < self.max_len:
-                tracker_states += [None] * (self.max_len - dialogue_len)
-            else:
-                # TODO questinable thing: to delete begining of stories
-                tracker_states = tracker_states[-self.max_len:]
-                dialogue_len = self.max_len
+            story_features = []
+            for state in tracker_states:
+                story_features.append(self.featurize_mechanism.encode(state, domain))
 
-            for utter_idx, state in enumerate(tracker_states):
-                X[story_idx, utter_idx, :] = self.featurize_mechanism.encode(
-                                                state, domain)
+            features.append(story_features)
             true_lengths.append(dialogue_len)
+
+        X = np.array(features)
 
         return X, true_lengths
 
     def _featurize_labels(self, trackers_as_actions, domain):
         """Create y"""
 
-        y = np.zeros((len(trackers_as_actions), self.max_len, self.num_label_features))
+        labels = []
         for story_idx, tracker_actions in enumerate(trackers_as_actions):
-            # slice in case longer than max_history
-            tracker_actions = tracker_actions[-self.max_len:]
 
-            for utter_idx, action in enumerate(tracker_actions):
-                y[story_idx, utter_idx, :] = self.featurize_mechanism.encode_label(
-                                                action, domain)
+            tracker_actions = self._pad_states(tracker_actions)
+
+            story_labels = []
+            for action in tracker_actions:
+                story_labels.append(self.featurize_mechanism.encode_label(
+                                        action, domain))
+            labels.append(story_labels)
+
+        y = np.array(labels)
+
         return y
 
     def featurize_trackers(self, trackers, domain):
@@ -284,9 +298,7 @@ class FullDialogueFeaturizer(Featurizer):
         if self.max_len is None:
             self._calculate_max_len(trackers_as_actions)
 
-        (self.num_state_features,
-         self.num_label_features) = self.featurize_mechanism.features_sizes(
-                                        domain, trackers_as_states)
+        self.featurize_mechanism.create_helpers(domain, trackers_as_states)
 
         X, true_lengths = self._featurize_states(trackers_as_states, domain)
         y = self._featurize_labels(trackers_as_actions, domain)
@@ -302,3 +314,84 @@ class FullDialogueFeaturizer(Featurizer):
 
         X, true_lengths = self._featurize_states(trackers_as_states, domain)
         return X, true_lengths
+
+
+class MaxHistoryFeaturizer(Featurizer):
+    def __init__(self, featurizer, max_history=5, remove_duplicates=True):
+        super(MaxHistoryFeaturizer, self).__init__(featurizer)
+
+        self.max_history = max_history
+
+        self.remove_duplicates = remove_duplicates
+
+    def featurize_trackers(self, trackers, domain):
+        features = []
+        labels = []
+        for tracker in trackers:
+            states = domain.features_for_tracker_history(tracker)
+            idx = 0
+            for event in tracker._applied_events():
+                if isinstance(event, ActionExecuted):
+                    if not event.unpredictable:
+                        # only actions which can be predicted at a stories start
+                        y = self.featurize_mechanism.encode_label(
+                                    event.action_name, domain)
+
+                        prior_states = states[:idx+1]
+
+                        feature_vector = domain.slice_feature_history(
+                            self.featurize_mechanism, prior_states,
+                            self.max_history)
+
+                        features.append(feature_vector)
+                        labels.append(y)
+                    idx += 1
+
+        X = np.array(features)
+        y = np.array(labels)
+
+        if self.remove_duplicates:
+            logger.debug("Got {} action examples."
+                         "".format(y.shape[0]))
+            X, y = self._deduplicate_training_data(X, y)
+            logger.debug("Deduplicated to {} unique action examples."
+                         "".format(y.shape[0]))
+
+        return X, y, [self.max_history]
+
+    def create_X(self, trackers, domain):
+        features = []
+        for tracker in trackers:
+            states = domain.features_for_tracker_history(tracker)
+
+            feature_vector = domain.slice_feature_history(
+                self.featurize_mechanism, states,
+                self.max_history)
+
+            features.append(feature_vector)
+
+        X = np.array(features)
+
+        return X, [self.max_history]
+
+    @staticmethod
+    def _deduplicate_training_data(X, y):
+        # type: (ndarray, ndarray) -> Tuple[ndarray, ndarray]
+        """Make sure every training example in X occurs exactly once."""
+
+        # we need to concat X and y to make sure that
+        # we do NOT throw out contradicting examples
+        # (same featurization but different labels).
+        # appends y to X so it appears to be just another feature
+        if not utils.is_training_data_empty(X):
+            casted_y = np.broadcast_to(
+                    y[:, np.newaxis, :], (y.shape[0], X.shape[1], y.shape[1]))
+
+            concatenated = np.concatenate((X, casted_y), axis=2)
+
+            t_data = np.unique(concatenated, axis=0)
+            X_unique = t_data[:, :, :X.shape[2]]
+            y_unique = t_data[:, 0, X.shape[2]:]
+            return X_unique, y_unique
+        else:
+            return X, y

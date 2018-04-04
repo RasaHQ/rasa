@@ -37,7 +37,6 @@ def extract_training_data(
         featurizer=None,  # type: Featurizer
         interpreter=RegexInterpreter(),  # type: NaturalLanguageInterpreter
         augmentation_factor=20,  # type: int
-        max_history=None,  # type: int
         remove_duplicates=True,
         max_number_of_trackers=2000  # type: int
 ):
@@ -47,7 +46,6 @@ def extract_training_data(
     g = TrainingsDataGenerator(graph, domain,
                                remove_duplicates,
                                augmentation_factor,
-                               max_history,
                                max_number_of_trackers)
     trackers = g.generate()
     X, y, _ = featurizer.featurize_trackers(trackers, domain)
@@ -67,7 +65,6 @@ def extract_trackers(
     graph = extract_story_graph(resource_name, domain, interpreter)
     g = TrainingsDataGenerator(graph, domain,
                                use_story_concatenation=False,
-                               max_history=max_history,
                                tracker_limit=1000,
                                remove_duplicates=False,
                                max_number_of_trackers=max_number_of_trackers)

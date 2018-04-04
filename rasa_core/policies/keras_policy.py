@@ -58,14 +58,17 @@ class KerasPolicy(Policy):
         else:
             y_pred = self.model.predict(x, batch_size=1)
 
-        return y_pred[0, current_idx, :].tolist()
+        if len(y_pred.shape) == 2:
+            return y_pred[-1].tolist()
+        elif len(y_pred.shape) == 3:
+            return y_pred[0, current_idx, :].tolist()
 
     def _build_model(self, num_features, num_actions, max_history_len):
         warnings.warn("Deprecated, use `model_architecture` instead.",
                       DeprecationWarning, stacklevel=2)
         return
 
-    def model_architecture(self, num_features, num_actions, max_history_len):
+    def model_architecture(self, input_shape, output_shape):
         """Build a keras model and return a compiled model.
 
         :param max_history_len: The maximum number of historical
@@ -75,12 +78,22 @@ class KerasPolicy(Policy):
         from keras.models import Sequential
 
         n_hidden = 32  # Neural Net and training params
-        input_shape = (max_history_len, num_features)
         # Build Model
         model = Sequential()
         model.add(Masking(mask_value=-1, input_shape=input_shape))
-        model.add(LSTM(n_hidden, return_sequences=True))
-        model.add(TimeDistributed(Dense(units=num_actions)))
+
+        if len(output_shape) == 1:
+            model.add(LSTM(n_hidden, dropout=0.2))
+            model.add(Dense(input_dim=n_hidden, units=output_shape[-1]))
+        elif len(output_shape) == 2:
+            model.add(LSTM(n_hidden, return_sequences=True, dropout=0.2))
+            model.add(TimeDistributed(Dense(units=output_shape[-1])))
+        else:
+            raise ValueError("Cannot construct the model because"
+                             "length of output_shape = {} "
+                             "should be 1 or 2."
+                             "".format(len(output_shape)))
+
         model.add(Activation('softmax'))
 
         model.compile(loss='categorical_crossentropy',
@@ -88,14 +101,16 @@ class KerasPolicy(Policy):
                       metrics=['accuracy'])
 
         logger.debug(model.summary())
+
         return model
 
     def train(self, training_data, domain, model_path=None, **kwargs):
         # type: (DialogueTrainingData, Domain, **Any) -> None
-        self.model = self.model_architecture(domain.num_features,
-                                             domain.num_actions,
-                                             training_data.max_history())
+
         shuffled_X, shuffled_y = training_data.shuffled_X_y()
+
+        self.model = self.model_architecture(shuffled_X.shape[1:],
+                                             shuffled_y.shape[1:])
 
         validation_split = kwargs.get("validation_split", 0.0)
         logger.info("Fitting model with {} total samples and a validation "
