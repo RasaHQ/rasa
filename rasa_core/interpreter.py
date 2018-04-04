@@ -233,8 +233,5 @@ class RasaNLUInterpreter(NaturalLanguageInterpreter):
 
     def _load_interpreter(self):
         from rasa_nlu.model import Interpreter
-        from rasa_nlu.config import RasaNLUModelConfig
-        from rasa_nlu import utils as nlu_utils
 
-        cfg = nlu_utils.read_yaml_file(self.config_file)
-        self.interpreter = Interpreter.load(self.model_directory, cfg)
+        self.interpreter = Interpreter.load(self.model_directory)
