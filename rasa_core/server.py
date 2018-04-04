@@ -104,6 +104,18 @@ def bool_arg(request, name, default=True):
     d = [str(default)]
     return request.args.get(name, d)[0].lower() == 'true'
 
+def default_arg(request, name, default=None):
+    # type: (Request, Text, Any) -> Any
+    """Return a passed boolean argument of the request or a default.
+
+    Checks the `name` parameter of the request if it contains a value. 
+    If not, `default` is returned."""
+
+    values = request.args.get(name) 
+    if values is None or len(values) < 1:
+        return default
+    else:
+       return values[0]
 
 def request_parameters(request):
     if request.method.decode('utf-8', 'strict') == 'GET':
@@ -286,7 +298,7 @@ class RasaCoreServer(object):
         # parameters
         use_history = bool_arg(request, 'ignore_restarts', default=False)
         should_include_events = bool_arg(request, 'events', default=True)
-        until_time = request.args.get('until', None)
+        until_time = default_arg(request, 'until', None)
 
         # retrieve tracker and set to requested state
         tracker = self.agent.tracker_store.get_or_create_tracker(sender_id)
