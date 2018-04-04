@@ -12,7 +12,8 @@ from typing import Text, List, Optional, Callable, Any, Dict, Union
 from rasa_core.channels import UserMessage, InputChannel, OutputChannel
 from rasa_core.domain import TemplateDomain, Domain
 from rasa_core.events import Event
-from rasa_core.featurizers import Featurizer, BinaryFeaturizer
+from rasa_core.featurizers import \
+    Featurizer, FullDialogueFeaturizer, BinaryFeaturizeMechanism
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.policies import PolicyTrainer, Policy
 from rasa_core.policies.ensemble import SimplePolicyEnsemble, PolicyEnsemble
@@ -225,12 +226,14 @@ class Agent(object):
                 self.interpreter, self.policy_ensemble, self.domain,
                 self.tracker_store, message_preprocessor=preprocessor)
 
-    @classmethod
-    def _create_featurizer(cls, featurizer):
-        return featurizer if featurizer is not None else BinaryFeaturizer()
+    @staticmethod
+    def _create_featurizer(featurizer):
+        if featurizer is None:
+            featurizer = FullDialogueFeaturizer(BinaryFeaturizeMechanism())
+        return featurizer
 
-    @classmethod
-    def _create_domain(cls, domain):
+    @staticmethod
+    def _create_domain(domain):
         if isinstance(domain, string_types):
             return TemplateDomain.load(domain)
         elif isinstance(domain, Domain):
@@ -241,8 +244,8 @@ class Agent(object):
                     "specification or a domain instance. But got "
                     "type '{}' with value '{}'".format(type(domain), domain))
 
-    @classmethod
-    def create_tracker_store(cls, store, domain):
+    @staticmethod
+    def create_tracker_store(store, domain):
         # type: (Optional[TrackerStore], Domain) -> TrackerStore
         if store is not None:
             store.domain = domain

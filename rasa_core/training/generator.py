@@ -10,6 +10,7 @@ import random
 from collections import defaultdict, namedtuple, deque
 
 import io
+import json
 import numpy as np
 import typing
 from numpy import ndarray
@@ -20,7 +21,6 @@ from rasa_core import utils
 from rasa_core.channels import UserMessage
 from rasa_core.events import ActionExecuted, UserUttered, Event, ActionReverted
 from rasa_core.trackers import DialogueStateTracker
-from rasa_core.training.data import DialogueTrainingData
 from rasa_core.training.structures import (
     StoryGraph, STORY_END, STORY_START, StoryStep, GENERATED_CHECKPOINT_PREFIX)
 
@@ -28,7 +28,6 @@ logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from rasa_core.domain import Domain
-    from rasa_core.featurizers import Featurizer
 
 ExtractorConfig = namedtuple("ExtractorConfig", "remove_duplicates "
                                                 "augmentation_factor "
@@ -113,7 +112,6 @@ class TrainingsDataGenerator(object):
             self,
             story_graph,  # type: StoryGraph
             domain,  # type: Domain
-            featurizer,  # type: Featurizer
             remove_duplicates=True,  # type: bool
             augmentation_factor=20,  # type: int
             max_history=None,  # type: int
@@ -130,7 +128,6 @@ class TrainingsDataGenerator(object):
 
         self.story_graph = story_graph.with_cycles_removed()
         self.domain = domain
-        self.featurizer = featurizer
         self.config = ExtractorConfig(
                 remove_duplicates=remove_duplicates,
                 augmentation_factor=augmentation_factor,
@@ -313,32 +310,21 @@ class TrainingsDataGenerator(object):
 
         # collected trackers that created different featurizations
         unique_trackers = []
-        featurizations = set()
+        hashed_featurizations = set()
 
         # collected training data
 
         for tracker in trackers:
             if isinstance(event, ActionExecuted):
                 state_features = tracker.feauturize_current_state(self.domain)
-
-                # TODO don't like that: encoding after each event
-                # TODO might not work with label_featurizer encoding,
-                # TODO because we save only intents and slots
-
-                encoded_features = [self.featurizer.encode(f, self.domain.input_feature_map)
-                                    for f in state_features]
-                feature_vector = np.vstack(encoded_features)
-
-                hashed = utils.HashableNDArray(feature_vector)
+                hashed = json.dumps(state_features, sort_keys=True)
 
                 # only continue with trackers that created a
-                # featurization we haven't observed at this event
-                if (hashed not in featurizations
+                # hashed_featurization we haven't observed at this event
+                if (hashed not in hashed_featurizations
                         or not self.config.remove_duplicates):
 
-                    featurizations.add(hashed)
-                    # if not event.unpredictable:
-                        # only actions which can be predicted at a stories start
+                    hashed_featurizations.add(hashed)
 
                     unique_trackers.append(tracker)
             else:

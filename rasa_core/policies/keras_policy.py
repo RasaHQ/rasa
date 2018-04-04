@@ -48,7 +48,7 @@ class KerasPolicy(Policy):
         return keras.backend._BACKEND == "tensorflow"
 
     def predict_action_probabilities(self, tracker, domain):
-        x, lengths = self.featurizer.featurize_trackers([tracker], domain, is_training=False)
+        x, lengths = self.featurizer.create_X([tracker], domain)
 
         current_idx = lengths[0] - 1
 
@@ -75,7 +75,6 @@ class KerasPolicy(Policy):
         from keras.models import Sequential
 
         n_hidden = 32  # Neural Net and training params
-        batch_shape = (None, max_history_len, num_features)
         input_shape = (max_history_len, num_features)
         # Build Model
         model = Sequential()
@@ -96,10 +95,7 @@ class KerasPolicy(Policy):
         self.model = self.model_architecture(domain.num_features,
                                              domain.num_actions,
                                              training_data.max_history())
-        #shuffled_X, shuffled_y = training_data.shuffled(domain)
-        # TODO actually shuffle?
-        shuffled_X = training_data.X
-        shuffled_y = training_data.y
+        shuffled_X, shuffled_y = training_data.shuffled_X_y()
 
         validation_split = kwargs.get("validation_split", 0.0)
         logger.info("Fitting model with {} total samples and a validation "
@@ -113,7 +109,7 @@ class KerasPolicy(Policy):
         # fit to one extra example
 
         self.current_epoch += 1
-        self.model.fit(training_data.X, training_data.y_as_one_hot(domain),
+        self.model.fit(training_data.X, training_data.y,
                        epochs=self.current_epoch + 1,
                        batch_size=1,
                        verbose=0,

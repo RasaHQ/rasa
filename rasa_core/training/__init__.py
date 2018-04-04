@@ -44,14 +44,13 @@ def extract_training_data(
     # type: (...) -> DialogueTrainingData
 
     graph = extract_story_graph(resource_name, domain, interpreter)
-    g = TrainingsDataGenerator(graph, domain, featurizer,
+    g = TrainingsDataGenerator(graph, domain,
                                remove_duplicates,
                                augmentation_factor,
                                max_history,
                                max_number_of_trackers)
     trackers = g.generate()
-    X, _ = featurizer.featurize_trackers(trackers, domain)
-    y = featurizer.featurize_labels(trackers, domain)
+    X, y, _ = featurizer.featurize_trackers(trackers, domain)
     return DialogueTrainingData(X, y)
 
 
@@ -66,11 +65,10 @@ def extract_trackers(
     # type: (...) -> List[DialogueStateTracker]
 
     graph = extract_story_graph(resource_name, domain, interpreter)
-    g = TrainingsDataGenerator(graph, domain, featurizer,
+    g = TrainingsDataGenerator(graph, domain,
                                use_story_concatenation=False,
                                max_history=max_history,
                                tracker_limit=1000,
                                remove_duplicates=False,
                                max_number_of_trackers=max_number_of_trackers)
     return g.generate()
-
