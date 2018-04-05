@@ -50,8 +50,6 @@ class KerasPolicy(Policy):
     def predict_action_probabilities(self, tracker, domain):
         x, lengths = self.featurizer.create_X([tracker], domain)
 
-        current_idx = lengths[0] - 1
-
         if KerasPolicy.is_using_tensorflow() and self.graph is not None:
             with self.graph.as_default():
                 y_pred = self.model.predict(x, batch_size=1)
@@ -61,6 +59,7 @@ class KerasPolicy(Policy):
         if len(y_pred.shape) == 2:
             return y_pred[-1].tolist()
         elif len(y_pred.shape) == 3:
+            current_idx = lengths[0] - 1
             return y_pred[0, current_idx, :].tolist()
 
     def _build_model(self, num_features, num_actions, max_history_len):
@@ -80,12 +79,13 @@ class KerasPolicy(Policy):
         n_hidden = 32  # Neural Net and training params
         # Build Model
         model = Sequential()
-        model.add(Masking(mask_value=-1, input_shape=input_shape))
 
         if len(output_shape) == 1:
+            model.add(Masking(mask_value=-1, input_shape=input_shape))
             model.add(LSTM(n_hidden, dropout=0.2))
             model.add(Dense(input_dim=n_hidden, units=output_shape[-1]))
         elif len(output_shape) == 2:
+            model.add(Masking(mask_value=-1, input_shape=(None, input_shape[1])))
             model.add(LSTM(n_hidden, return_sequences=True, dropout=0.2))
             model.add(TimeDistributed(Dense(units=output_shape[-1])))
         else:
