@@ -477,6 +477,7 @@ class EmbeddingIntentClassifier(Component):
 
         X, Y, helper_data = self._prepare_data_for_training(training_data)
 
+        self.graph = tf.Graph()
         with self.graph.as_default():
             a_in = tf.placeholder(tf.float32, (None, X.shape[-1]),
                                   name='a')
