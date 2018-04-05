@@ -166,7 +166,7 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         return isinstance(event, ActionExecuted) and not event.unpredictable
 
     def slice_feature_history(self,
-                              featurizer,
+                              featurize_mechanism,
                               tracker_history,
                               slice_length):
         # type: (FeaturizeMechanism, List[Dict[Text, float]], int) -> np.ndarray
@@ -179,7 +179,7 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         slice_start = max(0, slice_end - slice_length)
         padding = [None] * max(0, slice_length - slice_end)
         state_features = padding + tracker_history[slice_start:]
-        encoded_features = [featurizer.encode(f, domain=self)
+        encoded_features = [featurize_mechanism.encode(f, domain=self)
                             for f in state_features]
         return np.vstack(encoded_features)
 
@@ -189,7 +189,8 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         return [self.get_active_features(tr) for tr in
                 tracker.generate_all_prior_states()]
 
-    def feature_vector_for_tracker(self, featurizer, tracker, max_history):
+    def feature_vector_for_tracker(self, featurize_mechanism, tracker, max_history):
+        # type: (FeaturizeMechanism, DialogueStateTracker, int) -> np.ndarray
         """Creates a 2D array of shape (max_history,num_features)
 
         max_history specifies the number of previous steps to be included
@@ -198,7 +199,7 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         there are fewer than `max_history` states present."""
 
         all_features = self.features_for_tracker_history(tracker)
-        return self.slice_feature_history(featurizer, all_features, max_history)
+        return self.slice_feature_history(featurize_mechanism, all_features, max_history)
 
     def random_template_for(self, utter_action):
         if utter_action in self.templates:

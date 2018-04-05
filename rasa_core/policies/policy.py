@@ -38,6 +38,7 @@ class Policy(object):
         The tracker, consisting of multiple turns, will be transformed
         into a float vector which can be used by a ML model."""
 
+        # TODO due to the new system, change below
         x = domain.feature_vector_for_tracker(self.featurizer, tracker,
                                               self.max_history)
         return np.array(x)

@@ -9,7 +9,6 @@ import os
 
 import jsonpickle
 import numpy as np
-from numpy import ndarray
 from typing import Tuple
 from builtins import str
 
@@ -487,7 +486,7 @@ class MaxHistoryFeaturizer(Featurizer):
 
     @staticmethod
     def _deduplicate_training_data(X, y):
-        # type: (ndarray, ndarray) -> Tuple[ndarray, ndarray]
+        # type: (np.ndarray, np.ndarray) -> Tuple[np.ndarray, np.ndarray]
         """Make sure every training example in X occurs exactly once."""
 
         # we need to concat X and y to make sure that

@@ -10,8 +10,7 @@ import os
 
 import numpy as np
 import typing
-from builtins import str
-from typing import Text, Optional
+from typing import Text, Optional, Any
 
 import rasa_core
 from rasa_core import utils
