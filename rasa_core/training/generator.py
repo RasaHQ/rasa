@@ -7,7 +7,7 @@ from __future__ import unicode_literals
 import copy
 import logging
 import random
-from collections import defaultdict, namedtuple, deque
+from collections import defaultdict, namedtuple
 
 import json
 import typing
@@ -63,7 +63,7 @@ class TrainingsDataGenerator(object):
                 max_number_of_trackers=max_number_of_trackers,
                 tracker_limit=tracker_limit,
                 use_story_concatenation=use_story_concatenation,
-                rand=None)#random.Random(42))
+                rand=None)  # random.Random(42))
 
     def generate(self):
         # type: () -> List[DialogueStateTracker]
@@ -82,8 +82,11 @@ class TrainingsDataGenerator(object):
         active_trackers[STORY_START].append(init_tracker)
 
         finished_trackers = []
-
-        phases = self._phase_names(1)#self.config.augmentation_factor)
+        num_aug_rounds = 0
+        if self.config.augmentation_factor > 0:
+            # TODO find a number a pass it as an argument
+            num_aug_rounds = 2
+        phases = self._phase_names(num_aug_rounds)
 
         for i, phase_name in enumerate(phases):
             num_trackers = self._count_trackers(active_trackers)
@@ -110,7 +113,7 @@ class TrainingsDataGenerator(object):
                     # these are the trackers that reached this story
                     # step and that need to handle all events of the step
                     incoming_trackers = self._subsample_trackers(
-                            incoming_trackers, phase_idx=i)
+                            incoming_trackers)
 
                     trackers = self._process_step(step, incoming_trackers)
 
@@ -141,7 +144,8 @@ class TrainingsDataGenerator(object):
 
         return finished_trackers
 
-    def _phase_names(self, num_aug_rounds=0):
+    @staticmethod
+    def _phase_names(num_aug_rounds=0):
         # type: () -> List[Text]
         """Create names for the different data generation phases"""
 
@@ -156,8 +160,8 @@ class TrainingsDataGenerator(object):
         """Count the number of trackers in the tracker dictionary."""
         return sum(len(ts) for ts in active_trackers.values())
 
-    def _subsample_trackers(self, incoming_trackers, phase_idx):
-        # type: (List[DialogueStateTracker], int) -> List[DialogueStateTracker]
+    def _subsample_trackers(self, incoming_trackers):
+        # type: (List[DialogueStateTracker]) -> List[DialogueStateTracker]
         """Subsample the list of trackers to retrieve a random subset."""
 
         # if flows get very long and have a lot of forks we
