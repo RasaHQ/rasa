@@ -165,11 +165,13 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
     def _is_predictable_event(event):
         return isinstance(event, ActionExecuted) and not event.unpredictable
 
-    def slice_feature_history(self,
-                              featurize_mechanism,
-                              tracker_history,
-                              slice_length):
-        # type: (FeaturizeMechanism, List[Dict[Text, float]], int) -> np.ndarray
+    def slice_feature_history(
+            self,
+            featurize_mechanism,  # type: FeaturizeMechanism
+            tracker_history,  # type: List[Dict[Text, float]]
+            slice_length  # type: int
+    ):
+        # type: (...) -> np.ndarray
         """Slices a featurization from the trackers history.
 
         If the slice is at the array borders, padding will be added to ensure
@@ -189,7 +191,8 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         return [self.get_active_features(tr) for tr in
                 tracker.generate_all_prior_states()]
 
-    def feature_vector_for_tracker(self, featurize_mechanism, tracker, max_history):
+    def feature_vector_for_tracker(self, featurize_mechanism,
+                                   tracker, max_history):
         # type: (FeaturizeMechanism, DialogueStateTracker, int) -> np.ndarray
         """Creates a 2D array of shape (max_history,num_features)
 
@@ -199,7 +202,9 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         there are fewer than `max_history` states present."""
 
         all_features = self.features_for_tracker_history(tracker)
-        return self.slice_feature_history(featurize_mechanism, all_features, max_history)
+        return self.slice_feature_history(featurize_mechanism,
+                                          all_features,
+                                          max_history)
 
     def random_template_for(self, utter_action):
         if utter_action in self.templates:

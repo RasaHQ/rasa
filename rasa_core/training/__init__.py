@@ -37,7 +37,7 @@ def extract_training_data(
         featurizer=None,  # type: Featurizer
         interpreter=RegexInterpreter(),  # type: NaturalLanguageInterpreter
         augmentation_factor=20,  # type: int
-        remove_duplicates=True,
+        remove_duplicates=True,  # type: bool
         max_number_of_trackers=2000  # type: int
 ):
     # type: (...) -> DialogueTrainingData
@@ -48,16 +48,18 @@ def extract_training_data(
                                augmentation_factor,
                                max_number_of_trackers)
     trackers = g.generate()
-    X, y, _ = featurizer.featurize_trackers(trackers, domain)
-    return DialogueTrainingData(X, y)
+
+    if featurizer is None:
+        return DialogueTrainingData.empty(domain)
+    else:
+        X, y, _ = featurizer.featurize_trackers(trackers, domain)
+        return DialogueTrainingData(X, y)
 
 
 def extract_trackers(
         resource_name,  # type: Text
         domain,  # type: Domain
-        featurizer,  # type: Featurizer
         interpreter=RegexInterpreter(),  # type: NaturalLanguageInterpreter
-        max_history=1,  # type: int
         max_number_of_trackers=2000  # type: int
 ):
     # type: (...) -> List[DialogueStateTracker]

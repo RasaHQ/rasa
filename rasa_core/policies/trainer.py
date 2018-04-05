@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import logging
 
 from builtins import object
+from typing import Text, Optional, Any
 
 from rasa_core.domain import check_domain_sanity
 from rasa_core.interpreter import RegexInterpreter
@@ -20,14 +21,20 @@ class PolicyTrainer(object):
         self.ensemble = ensemble
         self.featurizer = featurizer
 
-    def train(self, resource_name=None,
-              augmentation_factor=20, max_training_samples=None,
-              max_number_of_trackers=2000, remove_duplicates=True, **kwargs):
+    def train(self,
+              resource_name=None,  # type: Optional[Text]
+              augmentation_factor=20,  # type: int
+              max_training_samples=None,  # type: Optional[Text]
+              max_number_of_trackers=2000,  # type: int
+              remove_duplicates=True,  # type: bool
+              **kwargs  # type: **Any
+              ):
+        # type: (...) -> None
         """Trains a policy on a domain using training data from a file.
 
+        :param resource_name: story file containing the training conversations
         :param augmentation_factor: how many stories should be created by
                                     randomly concatenating stories
-        :param resource_name: story file containing the training conversations
         :param max_training_samples: specifies how many training samples to
                                      train on - `None` to use all examples
         :param max_number_of_trackers: limits the tracker generation during

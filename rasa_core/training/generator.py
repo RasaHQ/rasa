@@ -147,7 +147,7 @@ class TrainingsDataGenerator(object):
 
     @staticmethod
     def _phase_names(num_aug_rounds=0):
-        # type: () -> List[Text]
+        # type: (int) -> List[Text]
         """Create names for the different data generation phases"""
 
         phases = ["normal generation"]

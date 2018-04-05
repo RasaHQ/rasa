@@ -68,11 +68,7 @@ class KerasPolicy(Policy):
         return
 
     def model_architecture(self, input_shape, output_shape):
-        """Build a keras model and return a compiled model.
-
-        :param max_history_len: The maximum number of historical
-                                turns used to decide on next action
-        """
+        """Build a keras model and return a compiled model."""
         from keras.layers import LSTM, Activation, Masking, Dense, TimeDistributed
         from keras.models import Sequential
 

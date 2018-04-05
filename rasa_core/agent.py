@@ -141,7 +141,7 @@ class Agent(object):
 
     def train(self, resource_name=None, model_path=None, remove_duplicates=True,
               **kwargs):
-        # type: (Optional[Text], Optional[Text], **Any) -> None
+        # type: (Optional[Text], Optional[Text], bool, **Any) -> None
         """Train the policies / policy ensemble using dialogue data from file"""
 
         trainer = PolicyTrainer(self.policy_ensemble, self.domain,
@@ -194,6 +194,7 @@ class Agent(object):
                   output_file,
                   max_history,
                   nlu_training_data=None,
+                  should_merge_nodes=True,
                   fontsize=12
                   ):
         from rasa_core.training.visualization import visualize_stories
@@ -202,7 +203,8 @@ class Agent(object):
         story_steps = StoryFileReader.read_from_folder(resource_name,
                                                        self.domain)
         visualize_stories(story_steps, self.domain, output_file, max_history,
-                          self.interpreter, nlu_training_data, fontsize)
+                          self.interpreter, nlu_training_data,
+                          should_merge_nodes, fontsize)
 
     def _ensure_agent_is_prepared(self):
         # type: () -> None
