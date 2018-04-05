@@ -177,6 +177,116 @@ class ProbabilisticFeaturizeMechanism(FeaturizeMechanism):
             return used_features
 
 
+class LabelTokenizerFeaturizeMechanism(FeaturizeMechanism):
+    def __init__(self, split_symbol='_', share_vocab=False):
+        """inits vocabulary for label bag of words representation"""
+
+        self.share_vocab = share_vocab
+        self.split_symbol = split_symbol
+
+        self.bot_actions = None
+        self.bot_vocab = None
+        self.user_vocab = None
+
+        self.additional_features = []
+
+        self.labels = None
+
+    @staticmethod
+    def _parse_feature_map(input_feature_map):
+        """Create vocabularies for a user and the bot"""
+        user_labels = []  # ['intent_listen']
+        bot_labels = []
+        other_labels = []
+        for feature_name in input_feature_map.keys():
+            if feature_name.startswith('intent_'):
+                user_labels.append(feature_name)
+            elif feature_name.startswith('prev_'):
+                bot_labels.append(feature_name[len('prev_'):])
+            else:
+                other_labels.append(feature_name)
+
+        return user_labels, bot_labels, other_labels
+
+    @staticmethod
+    def _create_label_dict(labels):
+        """Create label dictionary"""
+        label_dict = {}
+        for label in labels:
+            if label not in label_dict:
+                label_dict[label] = len(label_dict)
+        return label_dict
+
+    @staticmethod
+    def _create_label_token_dict(labels, split_symbol='_'):
+        """Create label dictionary"""
+        label_token_dict = {}
+        for label in labels:
+            for t in label.split(split_symbol):
+                if t not in label_token_dict:
+                    label_token_dict[t] = len(label_token_dict)
+        return label_token_dict
+
+    def create_helpers(self, domain):
+
+        self.labels = self._parse_feature_map(domain.input_feature_map)
+        user_labels, bot_labels, other_labels = self.labels
+
+        self.bot_actions = self._create_label_dict(bot_labels)
+
+        if not self.share_vocab:
+            self.bot_vocab = self._create_label_token_dict(bot_labels,
+                                                           self.split_symbol)
+            self.user_vocab = self._create_label_token_dict(user_labels,
+                                                            self.split_symbol)
+        else:
+            self.bot_vocab = self._create_label_token_dict(bot_labels + user_labels)
+            self.user_vocab = self.bot_vocab
+
+        self.additional_features = other_labels
+
+    def encode(self, active_features, domain):
+
+        user_labels, bot_labels, other_labels = self.labels
+
+        num_features = (len(self.user_vocab) +
+                        len(self.bot_vocab) +
+                        len(self.additional_features))
+
+        if active_features is None or None in active_features:
+            return np.ones(num_features, dtype=np.int32) * -1
+
+        used_features = np.zeros(num_features, dtype=int)
+        for feature_name, prob in active_features.items():
+
+            if feature_name in user_labels:
+                if 'prev_action_listen' not in active_features:
+                    # we predict next action from bot action
+                    # feature_name = 'intent_listen'
+                    used_features[:len(self.user_vocab)] = 0
+                else:
+                    for t in feature_name.split('_'):
+                        used_features[self.user_vocab[t]] += 1
+
+            elif feature_name[len('prev_'):] in bot_labels:
+                for t in feature_name[len('prev_'):].split('_'):
+                    used_features[len(self.user_vocab) +
+                                  self.bot_vocab[t]] += 1
+
+            elif feature_name in self.additional_features:
+                if prob > 0:
+                    idx = (len(self.user_vocab) +
+                           len(self.bot_vocab) +
+                           self.additional_features.index(feature_name))
+                    used_features[idx] += 1
+            else:
+                logger.warning(
+                    "Feature '{}' could not be found in "
+                    "feature map.".format(feature_name))
+
+        return used_features
+
+
 class Featurizer(object):
 
     def __init__(self, featurize_mechanism):
@@ -184,7 +294,7 @@ class Featurizer(object):
 
     def featurize_trackers(self, trackers, domain):
         raise NotImplementedError("Featurizer must have the capacity to "
-                                  "encode features to a vector")
+                                  "encode trackers to feature vectors")
 
     def create_X(self, trackers, domain):
         raise NotImplementedError("Featurizer must have the capacity to "
@@ -322,6 +432,7 @@ class MaxHistoryFeaturizer(Featurizer):
         self.remove_duplicates = remove_duplicates
 
     def featurize_trackers(self, trackers, domain):
+        """Create training data"""
         self.featurize_mechanism.create_helpers(domain)
 
         features = []
@@ -359,7 +470,7 @@ class MaxHistoryFeaturizer(Featurizer):
         return X, y, [self.max_history]*len(trackers)
 
     def create_X(self, trackers, domain):
-
+        """Create X for prediction"""
         features = []
         for tracker in trackers:
             states = domain.features_for_tracker_history(tracker)
