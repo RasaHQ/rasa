@@ -15,14 +15,14 @@ from rasa_core.channels.rest import HttpInputComponent
 logger = logging.getLogger(__name__)
 
 
-class TwilioOutputChannel(Client, OutputChannel):
+class TwilioOutput(Client, OutputChannel):
     """Output channel for Twilio"""
-    max_retry = 5
 
     def __init__(self, account_sid, auth_token, twilio_number):
-        super(TwilioOutputChannel, self).__init__(account_sid, auth_token)
+        super(TwilioOutput, self).__init__(account_sid, auth_token)
         self.twilio_number = twilio_number
         self.send_retry = 0
+        self.max_retry = 5
 
     def send_text_message(self, recipient_number, text):
         from twilio.base.exceptions import TwilioRestException
@@ -51,13 +51,37 @@ class TwilioOutputChannel(Client, OutputChannel):
 class TwilioInput(HttpInputComponent):
     """Twilio input channel"""
 
-    def __init__()
-    @app.route("/helvetia-demo/webhook", methods=['GET', 'POST'])
-    def hello():
-        sender = request.values.get('From', None)
-        message = request.values.get('Body', None)
+    def __init__(self, account_sid, auth_token, twilio_number, debug_mode=True):
+        self.account_sid = account_sid
+        self.auth_token = auth_token
+        self.twilio_number = twilio_number
+        self.debug_mode = debug_mode
 
-        if sender != None and message != None:
-            # do stuff
+    def blueprint(self, on_new_message):
+        twilio_webhook = Blueprint('twilio_webhook', __name__)
+        out_channel = TwilioOutput(self.account_sid, self.auth_token,
+                                   self.twilio_number)
 
-        return "success"
+        @twilio_webhook.route("/", methods=['GET'])
+        def health():
+            return jsonify({"status": "ok"})
+
+        @twilio_webhook.route("/webhook", methods=['POST'])
+        def message():
+            sender = request.values.get('From', None)
+            text = request.values.get('Body', None)
+
+            if sender is not None and message is not None:
+                try:
+                    on_new_message(UserMessage(text, out_channel, sender))
+                except Exception as e:
+                    logger.error("Exception when trying to handle "
+                                 "message.{0}".format(e))
+                    logger.error(e, exc_info=True)
+                    if self.debug_mode:
+                        raise
+                    pass
+            else:
+                logger.debug("Invalid message")
+
+            return "success"
