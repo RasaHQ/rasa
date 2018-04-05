@@ -82,9 +82,10 @@ class TrainingsDataGenerator(object):
         active_trackers[STORY_START].append(init_tracker)
 
         finished_trackers = []
+
         num_aug_rounds = 0
         if self.config.augmentation_factor > 0:
-            # TODO find a number a pass it as an argument
+            # TODO find a number or pass it as an argument
             num_aug_rounds = 2
         phases = self._phase_names(num_aug_rounds)
 
