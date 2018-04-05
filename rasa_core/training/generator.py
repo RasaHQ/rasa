@@ -9,17 +9,14 @@ import logging
 import random
 from collections import defaultdict, namedtuple, deque
 
-import io
 import json
-import numpy as np
 import typing
-from numpy import ndarray
 from tqdm import tqdm
-from typing import Optional, List, Text, Tuple, Set, Dict, Any
+from typing import Optional, List, Text, Set, Dict
 
 from rasa_core import utils
 from rasa_core.channels import UserMessage
-from rasa_core.events import ActionExecuted, UserUttered, Event, ActionReverted
+from rasa_core.events import ActionExecuted, UserUttered, ActionReverted
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.structures import (
     StoryGraph, STORY_END, STORY_START, StoryStep, GENERATED_CHECKPOINT_PREFIX)
@@ -36,71 +33,8 @@ ExtractorConfig = namedtuple("ExtractorConfig", "remove_duplicates "
                                                 "use_story_concatenation "
                                                 "rand")
 
-
-class FeaturizedTrackerWrapper(object):
-    """A tracker wrapper that caches the featurization of the tracker."""
-
-    def __init__(self, tracker, featurization=None):
-        # type: (DialogueStateTracker) -> None
-
-        self.tracker = tracker
-
-        if featurization is None:
-            self.featurization = deque([])#, max_history + 1)
-        else:
-            self.featurization = featurization
-
-    def create_copy(self):
-        """Creates a deep copy of this featurized tracker. """
-
-        # features = deque(self.featurization, self.max_history + 1)
-        tracker_copy = copy.deepcopy(self.tracker)
-        # return FeaturizedTracker(tracker_copy, self.max_history, features)
-        return FeaturizedTrackerWrapper(tracker_copy, self.featurization)
-
-    def undo_last_action(self):
-        # type: () -> None
-        """Reverts the last action of the tracker (usually action listen)."""
-
-        self.tracker.update(ActionReverted())
-        self.featurization.pop()
-
-    def feauturize_current_state(self, domain):
-        # type: (Domain) -> List[Dict[Text, Any]]
-        """Featurizes the tracker and caches the featurization."""
-
-        self.featurization.append(domain.get_active_features(self.tracker))
-        return list(self.featurization)
-
-    def update(self, event):
-        # type: (Event) -> None
-        """Logs an event on the tracker"""
-
-        self.tracker.update(event)
-
-    def previously_executed_action(self):
-        """Returns the previously logged action."""
-
-        for e in reversed(self.tracker.events):
-            if isinstance(e, ActionExecuted):
-                return e.action_name
-        return None
-
-    @classmethod
-    def from_domain(cls, domain, tracker_limit=None):
-        # type: (Domain, int) -> FeaturizedTrackerWrapper
-        """Creates a featurized tracker from a domain."""
-
-        tracker = DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
-                                       domain.slots,
-                                       domain.topics,
-                                       domain.default_topic,
-                                       max_event_history=tracker_limit)
-        return cls(tracker)
-
-
 # define type
-TrackerLookupDict = Dict[Optional[Text], List[FeaturizedTrackerWrapper]]
+TrackerLookupDict = Dict[Optional[Text], List[DialogueStateTracker]]
 
 
 class TrainingsDataGenerator(object):
@@ -120,7 +54,7 @@ class TrainingsDataGenerator(object):
         and this generator will match start and end checkpoints to
         connect complete stories. Afterwards, duplicate stories will be
         removed and the data is augmented (if augmentation is enabled)."""
-
+        self.hashed_featurizations = []
         self.story_graph = story_graph.with_cycles_removed()
         self.domain = domain
         self.config = ExtractorConfig(
@@ -140,14 +74,16 @@ class TrainingsDataGenerator(object):
         used_checkpoints = set()  # type: Set[Text]
         active_trackers = defaultdict(list)  # type: TrackerLookupDict
 
-        init_tracker = FeaturizedTrackerWrapper.from_domain(
-                self.domain,
-                self.config.tracker_limit)
+        init_tracker = DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
+                                            self.domain.slots,
+                                            self.domain.topics,
+                                            self.domain.default_topic,
+                                            max_event_history=self.config.tracker_limit)
         active_trackers[STORY_START].append(init_tracker)
 
         finished_trackers = []
 
-        phases = self._phase_names(num_aug_rounds=0)
+        phases = self._phase_names(1)#self.config.augmentation_factor)
 
         for i, phase_name in enumerate(phases):
             num_trackers = self._count_trackers(active_trackers)
@@ -193,7 +129,7 @@ class TrainingsDataGenerator(object):
                         active_trackers[STORY_END].extend(trackers)
 
             # trackers that reached the end of a story
-            completed = [t.tracker for t in active_trackers[STORY_END]]
+            completed = [t for t in active_trackers[STORY_END]]
             finished_trackers.extend(completed)
             active_trackers = self._create_start_trackers(active_trackers)
             logger.debug("Finished phase. ({} training samples found)".format(
@@ -221,7 +157,7 @@ class TrainingsDataGenerator(object):
         return sum(len(ts) for ts in active_trackers.values())
 
     def _subsample_trackers(self, incoming_trackers, phase_idx):
-        # type: (List[FeaturizedTrackerWrapper], int) -> List[FeaturizedTrackerWrapper]
+        # type: (List[DialogueStateTracker], int) -> List[DialogueStateTracker]
         """Subsample the list of trackers to retrieve a random subset."""
 
         # if flows get very long and have a lot of forks we
@@ -267,12 +203,12 @@ class TrainingsDataGenerator(object):
                 # contain action listen followed by action listen.
                 # to fix this we are going to "undo" the last action listen
                 if start == STORY_START:
-                    t.undo_last_action()
+                    t.update(ActionReverted())
                 next_active_trackers[start].append(t)
         return next_active_trackers
 
     def _process_step(self, step, incoming_trackers):
-        # type: (StoryStep, List[FeaturizedTrackerWrapper]) -> List[FeaturizedTrackerWrapper]
+        # type: (StoryStep, List[DialogueStateTracker]) -> List[DialogueStateTracker]
         """Processes a steps events with all trackers.
 
         The trackers that reached the steps starting checkpoint will
@@ -283,15 +219,20 @@ class TrainingsDataGenerator(object):
         # need to copy the tracker as multiple story steps
         # might start with the same checkpoint and all of them
         # will use the same set of incoming trackers
-        trackers = [tracker.create_copy() for tracker in
+        trackers = [copy.deepcopy(tracker) for tracker in
                     incoming_trackers] if events else []  # small optimization
 
         for event in events:
-            trackers = self._process_event_with_trackers(event, trackers)
+            for tracker in trackers:
+                tracker.update(event)
+
+        if self.config.remove_duplicates:
+            trackers = self._remove_duplicate_trackers(trackers)
+
         return trackers
 
-    def _process_event_with_trackers(self, event, trackers):
-        # type: (Event, List[FeaturizedTrackerWrapper]) -> List[FeaturizedTrackerWrapper]
+    def _remove_duplicate_trackers(self, trackers):
+        # type: (List[DialogueStateTracker]) -> List[DialogueStateTracker]
         """Logs an event to all trackers.
 
         Removes trackers that create equal featurizations.
@@ -304,27 +245,16 @@ class TrainingsDataGenerator(object):
 
         # collected trackers that created different featurizations
         unique_trackers = []
-        hashed_featurizations = set()
-
-        # collected training data
 
         for tracker in trackers:
-            if isinstance(event, ActionExecuted):
-                state_features = tracker.feauturize_current_state(self.domain)
-                hashed = json.dumps(state_features, sort_keys=True)
+            states = self.domain.features_for_tracker_history(tracker)
+            hashed = json.dumps(states, sort_keys=True)
 
-                # only continue with trackers that created a
-                # hashed_featurization we haven't observed at this event
-                if (hashed not in hashed_featurizations
-                        or not self.config.remove_duplicates):
-
-                    hashed_featurizations.add(hashed)
-
-                    unique_trackers.append(tracker)
-            else:
+            # only continue with trackers that created a
+            # hashed_featurization we haven't observed
+            if hashed not in self.hashed_featurizations:
+                self.hashed_featurizations.append(hashed)
                 unique_trackers.append(tracker)
-
-            tracker.update(event)
 
         return unique_trackers
 

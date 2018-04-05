@@ -9,6 +9,8 @@ import os
 
 import jsonpickle
 import numpy as np
+from numpy import ndarray
+from typing import Tuple
 from builtins import str
 
 from rasa_core import utils
@@ -254,7 +256,7 @@ class LabelTokenizerFeaturizeMechanism(FeaturizeMechanism):
                         len(self.additional_features))
 
         if active_features is None or None in active_features:
-            return np.ones(num_features, dtype=np.int32) * -1
+            return np.ones(num_features, dtype=int) * -1
 
         used_features = np.zeros(num_features, dtype=int)
         for feature_name, prob in active_features.items():
@@ -338,7 +340,6 @@ class FullDialogueFeaturizer(Featurizer):
 
     def _featurize_states(self, trackers_as_states, domain):
         """Create X"""
-
         features = []
         true_lengths = []
 
@@ -413,7 +414,6 @@ class FullDialogueFeaturizer(Featurizer):
 
     def create_X(self, trackers, domain):
         """Create X for prediction"""
-
         trackers_as_states = []
         for tracker in trackers:
             states = domain.features_for_tracker_history(tracker)
