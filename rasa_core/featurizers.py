@@ -10,7 +10,7 @@ import typing
 
 import jsonpickle
 import numpy as np
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional, Dict, Text, Any
 from builtins import str
 from collections import defaultdict
 
@@ -304,32 +304,91 @@ class Featurizer(object):
         # type: (Optional[FeaturizeMechanism]) -> None
         self.featurize_mechanism = featurize_mechanism
 
-        self.events_metadata = defaultdict(set)
+    def _pad_states(self, states):
+        return states
 
-    @staticmethod
-    def _previously_executed_action(tracker):
-        """Returns the previously logged action."""
+    def _featurize_states(self, trackers_as_states, domain):
+        """Create X"""
+        features = []
+        true_lengths = []
 
-        for e in reversed(tracker._applied_events()):
-            if isinstance(e, ActionExecuted):
-                return e.action_name
-        return None
+        for tracker_states in trackers_as_states:
+            if len(trackers_as_states) > 1:
+                tracker_states = self._pad_states(tracker_states)
+            dialogue_len = len(tracker_states)
+
+            story_features = [self.featurize_mechanism.encode(state, domain)
+                              for state in tracker_states]
+
+            features.append(story_features)
+            true_lengths.append(dialogue_len)
+
+        X = np.array(features)
+
+        return X, true_lengths
+
+    def _featurize_labels(self, trackers_as_actions, domain):
+        """Create y"""
+
+        labels = []
+        for tracker_actions in trackers_as_actions:
+            if len(trackers_as_actions) > 1:
+                tracker_actions = self._pad_states(tracker_actions)
+
+            story_labels = [self.featurize_mechanism.encode_action(action, domain)
+                            for action in tracker_actions]
+
+            labels.append(story_labels)
+
+        y = np.array(labels)
+
+        return y
+
+    def training_states_and_actions(
+            self,
+            trackers,  # type: List[DialogueStateTracker]
+            domain  # type: Domain
+    ):
+        # type: (...) -> Tuple[List[List[Dict]], List[List[Dict]], Dict[Text, Any]]
+        raise NotImplementedError("Featurizer must have the capacity to "
+                                  "encode trackers to feature vectors")
 
     def featurize_trackers(self,
                            trackers,  # type: List[DialogueStateTracker]
                            domain  # type: Domain
                            ):
         # type: (...) -> Tuple[DialogueTrainingData, List[int]]
+        """Create training data"""
+        self.featurize_mechanism.create_helpers(domain)
+
+        (trackers_as_states,
+         trackers_as_actions,
+         metadata) = self.training_states_and_actions(trackers, domain)
+
+        X, true_lengths = self._featurize_states(trackers_as_states, domain)
+        y = self._featurize_labels(trackers_as_actions, domain)
+
+        return (DialogueTrainingData(X, y, metadata),
+                true_lengths)
+
+    def prediction_states(self,
+                          trackers,  # type: List[DialogueStateTracker]
+                          domain  # type: Domain
+                          ):
+        # type: (...) -> List[List[Dict[Text, float]]]
         raise NotImplementedError("Featurizer must have the capacity to "
-                                  "encode trackers to feature vectors")
+                                  "create feature vector")
 
     def create_X(self,
                  trackers,  # type: List[DialogueStateTracker]
                  domain  # type: Domain
                  ):
         # type: (...) -> Tuple[np.ndarray, List[int]]
-        raise NotImplementedError("Featurizer must have the capacity to "
-                                  "create feature vector")
+        """Create X for prediction"""
+
+        trackers_as_states = self.prediction_states(trackers, domain)
+        X, true_lengths = self._featurize_states(trackers_as_states, domain)
+        return X, true_lengths
 
     def persist(self, path):
         featurizer_file = os.path.join(path, "featurizer.json")
@@ -360,6 +419,8 @@ class FullDialogueFeaturizer(Featurizer):
         self.max_len = 0
         for states in as_states:
             self.max_len = max(self.max_len, len(states))
+        logger.info("The longest dialogue has {} actions."
+                    "".format(self.max_len))
 
     def _pad_states(self, states):
         # pad up to max_len
@@ -368,55 +429,16 @@ class FullDialogueFeaturizer(Featurizer):
 
         return states
 
-    def _featurize_states(self, trackers_as_states, domain):
-        """Create X"""
-        features = []
-        true_lengths = []
+    def training_states_and_actions(
+            self,
+            trackers,  # type: List[DialogueStateTracker]
+            domain  # type: Domain
+    ):
+        # type: (...) -> Tuple[List[List[Dict]], List[List[Dict]], Dict[Text, Any]]
 
-        for tracker_states in trackers_as_states:
-            if len(trackers_as_states) > 1:
-                tracker_states = self._pad_states(tracker_states)
-            dialogue_len = len(tracker_states)
-
-            story_features = []
-            for state in tracker_states:
-                story_features.append(self.featurize_mechanism.encode(state, domain))
-
-            features.append(story_features)
-            true_lengths.append(dialogue_len)
-
-        X = np.array(features)
-
-        return X, true_lengths
-
-    def _featurize_labels(self, trackers_as_actions, domain):
-        """Create y"""
-
-        labels = []
-        for story_idx, tracker_actions in enumerate(trackers_as_actions):
-            if len(trackers_as_actions) > 1:
-                tracker_actions = self._pad_states(tracker_actions)
-
-            story_labels = []
-            for action in tracker_actions:
-                story_labels.append(self.featurize_mechanism.encode_action(
-                                        action, domain))
-            labels.append(story_labels)
-
-        y = np.array(labels)
-
-        return y
-
-    def featurize_trackers(self,
-                           trackers,  # type: List[DialogueStateTracker]
-                           domain  # type: Domain
-                           ):
-        # type: (...) -> Tuple[DialogueTrainingData, List[int]]
-        """Create training data"""
-        self.featurize_mechanism.create_helpers(domain)
-
-        trackers_as_actions = []
         trackers_as_states = []
+        trackers_as_actions = []
+        events_metadata = defaultdict(set)
 
         for tracker in trackers:
             states = domain.states_for_tracker_history(tracker)
@@ -432,40 +454,33 @@ class FullDialogueFeaturizer(Featurizer):
                         # unpredictable actions can be only the first in the story
                         delete_first_state = True
                 else:
-                    action_name = self._previously_executed_action(tracker)
-                    self.events_metadata[action_name].add(event)
+                    action_name = tracker.latest_action_name
+                    events_metadata[action_name].add(event)
 
             if delete_first_state:
                 states = states[1:]
 
-            trackers_as_actions.append(actions)
             trackers_as_states.append(states[:-1])
+            trackers_as_actions.append(actions)
 
         if self.max_len is None:
             self._calculate_max_len(trackers_as_actions)
 
-        X, true_lengths = self._featurize_states(trackers_as_states, domain)
-        y = self._featurize_labels(trackers_as_actions, domain)
-
         # TODO do we need that?
-        metadata = {"events": self.events_metadata,
+        metadata = {"events": events_metadata,
                     "trackers": trackers}
-        return (DialogueTrainingData(X, y, metadata),
-                true_lengths)
+        return trackers_as_states, trackers_as_actions, metadata
 
-    def create_X(self,
-                 trackers,  # type: List[DialogueStateTracker]
-                 domain  # type: Domain
-                 ):
-        # type: (...) -> Tuple[np.ndarray, List[int]]
-        """Create X for prediction"""
-        trackers_as_states = []
-        for tracker in trackers:
-            states = domain.states_for_tracker_history(tracker)
-            trackers_as_states.append(states)
+    def prediction_states(self,
+                          trackers,  # type: List[DialogueStateTracker]
+                          domain  # type: Domain
+                          ):
+        # type: (...) -> List[List[Dict[Text, float]]]
 
-        X, true_lengths = self._featurize_states(trackers_as_states, domain)
-        return X, true_lengths
+        trackers_as_states = [domain.states_for_tracker_history(tracker)
+                              for tracker in trackers]
+
+        return trackers_as_states
 
 
 class MaxHistoryFeaturizer(Featurizer):
@@ -478,24 +493,17 @@ class MaxHistoryFeaturizer(Featurizer):
 
         self.remove_duplicates = remove_duplicates
 
-    def _states_to_vector(self, states, domain):
-        state_features = domain.slice_feature_history(states,
-                                                      self.max_history)
+    def training_states_and_actions(
+            self,
+            trackers,  # type: List[DialogueStateTracker]
+            domain  # type: Domain
+    ):
+        # type: (...) -> Tuple[List[List[Dict]], List[List[Dict]], Dict[Text, Any]]
 
-        encoded_features = [self.featurize_mechanism.encode(f, domain)
-                            for f in state_features]
-        return np.vstack(encoded_features)
+        trackers_as_states = []
+        trackers_as_actions = []
+        events_metadata = defaultdict(set)
 
-    def featurize_trackers(self,
-                           trackers,  # type: List[DialogueStateTracker]
-                           domain  # type: Domain
-                           ):
-        # type: (...) -> Tuple[DialogueTrainingData, List[int]]
-        """Create training data"""
-        self.featurize_mechanism.create_helpers(domain)
-
-        features = []
-        labels = []
         for tracker in trackers:
             states = domain.states_for_tracker_history(tracker)
             idx = 0
@@ -503,22 +511,33 @@ class MaxHistoryFeaturizer(Featurizer):
                 if isinstance(event, ActionExecuted):
                     if not event.unpredictable:
                         # only actions which can be predicted at a stories start
-                        y = self.featurize_mechanism.encode_action(
-                                    event.action_name, domain)
-
-                        prior_states = states[:idx+1]
-
-                        feature_vector = self._states_to_vector(prior_states, domain)
-
-                        features.append(feature_vector)
-                        labels.append(y)
+                        sliced_states = domain.slice_feature_history(
+                            states[:idx + 1], self.max_history)
+                        trackers_as_states.append(sliced_states)
+                        trackers_as_actions.append([event.action_name])
                     idx += 1
                 else:
-                    action_name = self._previously_executed_action(tracker)
-                    self.events_metadata[action_name].add(event)
+                    action_name = tracker.latest_action_name
+                    events_metadata[action_name].add(event)
 
-        X = np.array(features)
-        y = np.array(labels)
+        # TODO do we need that?
+        metadata = {"events": events_metadata,
+                    "trackers": trackers}
+        return trackers_as_states, trackers_as_actions, metadata
+
+    def featurize_trackers(self,
+                           trackers,  # type: List[DialogueStateTracker]
+                           domain  # type: Domain
+                           ):
+        # type: (...) -> Tuple[DialogueTrainingData, List[int]]
+        """Create training data"""
+        (training_data,
+         true_lengths) = super(MaxHistoryFeaturizer,
+                               self).featurize_trackers(trackers, domain)
+
+        X = training_data.X
+        y = training_data.y[:, 0, :]
+        metadata = training_data.metadata
 
         if self.remove_duplicates:
             logger.debug("Got {} action examples."
@@ -527,29 +546,22 @@ class MaxHistoryFeaturizer(Featurizer):
             logger.debug("Deduplicated to {} unique action examples."
                          "".format(y.shape[0]))
 
-        # TODO do we need that?
-        metadata = {"events": self.events_metadata,
-                    "trackers": trackers}
         return (DialogueTrainingData(X, y, metadata),
-                [self.max_history] * len(trackers))
+                true_lengths)
 
-    def create_X(self,
-                 trackers,  # type: List[DialogueStateTracker]
-                 domain  # type: Domain
-                 ):
-        # type: (...) -> Tuple[np.ndarray, List[int]]
-        """Create X for prediction"""
-        features = []
-        for tracker in trackers:
-            states = domain.states_for_tracker_history(tracker)
+    def prediction_states(self,
+                          trackers,  # type: List[DialogueStateTracker]
+                          domain  # type: Domain
+                          ):
+        # type: (...) -> List[List[Dict[Text, float]]]
 
-            feature_vector = self._states_to_vector(states, domain)
+        trackers_as_states = [domain.states_for_tracker_history(tracker)
+                              for tracker in trackers]
+        trackers_as_states = [domain.slice_feature_history(states,
+                                                           self.max_history)
+                              for states in trackers_as_states]
 
-            features.append(feature_vector)
-
-        X = np.array(features)
-
-        return X, [self.max_history] * len(trackers)
+        return trackers_as_states
 
     @staticmethod
     def _deduplicate_training_data(X, y):

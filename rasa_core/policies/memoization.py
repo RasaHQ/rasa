@@ -13,11 +13,10 @@ import typing
 
 import numpy as np
 from builtins import bytes
-from typing import Optional, Any, Dict
+from typing import Optional, Any, Dict, List, Text
 
 from rasa_core.policies.policy import Policy
 from rasa_core import utils
-from rasa_core.training.data import DialogueTrainingData
 from rasa_core.featurizers import MaxHistoryFeaturizer
 
 logger = logging.getLogger(__name__)
@@ -97,10 +96,14 @@ class MemoizationPolicy(Policy):
             x = np.squeeze(x, axis=(0,))
         return self.lookup.get(self._feature_vector_to_str(x, domain))
 
-    def train(self, training_data, domain, **kwargs):
-        # type: (DialogueTrainingData, Domain, **Any) -> None
+    def train(self, training_trackers, domain, **kwargs):
+        # type: (List[DialogueStateTracker], Domain, **Any) -> Dict[Text: Any]
         """Trains the policy on given training data."""
-
+        (trackers_as_states,
+         trackers_as_actions,
+         metadata) = self.featurizer.training_states_and_actions(
+            training_trackers, domain)
+        
         self.max_history = training_data.max_history()
         self.memorise(training_data, domain)
 

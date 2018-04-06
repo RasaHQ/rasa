@@ -184,6 +184,7 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         return state_features
 
     def states_for_tracker_history(self, tracker):
+        # type: (DialogueStateTracker) -> List[Dict[Text, float]]
         """Array of states for each state of the trackers history."""
 
         return [self.get_active_features(tr) for tr in
