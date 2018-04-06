@@ -533,10 +533,8 @@ def run_evaluation(data_path, model_path,
     interpreter = Interpreter.load(model_path, component_builder)
     test_data = training_data.load_data(data_path,
                                         interpreter.model_metadata.language)
-
-    intent_targets = get_intent_targets(test_data)
-    intent_predictions = get_intent_predictions(interpreter, test_data)
     extractors = get_entity_extractors(interpreter)
+
     if extractors:
         entity_targets = get_entity_targets(test_data)
         entity_predictions, tokens = get_entity_predictions(interpreter,
@@ -549,6 +547,8 @@ def run_evaluation(data_path, model_path,
                           extractors)
 
     if get_intent_classifier(interpreter):
+        intent_targets = get_intent_targets(test_data)
+        intent_predictions = get_intent_predictions(interpreter, test_data)
         logger.info("Intent evaluation results:")
         evaluate_intents(intent_targets, intent_predictions)
 
