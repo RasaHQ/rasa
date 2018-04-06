@@ -216,7 +216,6 @@ def evaluate_entities(targets,
 
     aligned_predictions = align_all_entity_predictions(targets, predictions,
                                                        tokens, extractors)
-
     merged_targets = merge_labels(aligned_predictions)
     merged_targets = substitute_labels(merged_targets, "O", "no_entity")
 
@@ -418,7 +417,11 @@ def get_entity_predictions(interpreter, test_data):  # pragma: no cover
     for e in test_data.training_examples:
         res = interpreter.parse(e.text, only_output_properties=False)
         entity_predictions.append(extract_entities(res))
-        tokens.append(res["tokens"])
+        try:
+            tokens.append(res["tokens"])
+        except KeyError:
+            logger.debug("No tokens present, which is fine if you don't have a"
+                         " tokenizer in your pipeline")
     return entity_predictions, tokens
 
 
@@ -523,6 +526,29 @@ def patch_duckling(interpreter, extractors, entity_predictions):
         extractors = patch_duckling_extractors(interpreter, extractors)
 
     return extractors, entity_predictions
+
+
+def merge_duckling(results):
+    """Merges the results of the duckling exctractors"""
+
+    if any(results.keys().startswith('ner_duckling_http')):
+        duckling_http_results = defaultdict(list)
+        for k, v in {k: v for k, v in results if
+                     k.startswith('ner_duckling_http')}:
+            for key, val in v:
+                duckling_http_results[key] += val
+            results.remove(k)
+        results['ner_duckling_http'] = duckling_http_results
+
+    if any(results.keys().startswith('ner_duckling')):
+        duckling_results = {}
+        for k, v in {k: v for k, v in results if k.startswith('ner_duckling')}:
+            for key, val in v:
+                duckling_results[key] += val
+            results.remove(k)
+        results['ner_duckling'] = duckling_results
+
+    return results
 
 
 def run_evaluation(data_path, model_path,
@@ -731,6 +757,7 @@ if __name__ == '__main__':  # pragma: no cover
         data = drop_intents_below_freq(data, cutoff=5)
         results, entity_results = run_cv_evaluation(
                 data, int(cmdline_args.folds), nlu_config)
+        entity_results = merge_duckling(entity_results)
         logger.info("CV evaluation (n={})".format(cmdline_args.folds))
 
         if any(results):
