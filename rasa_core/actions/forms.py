@@ -52,6 +52,13 @@ class BooleanFormField(FormField):
         return [SlotSet(self.slot_name, value)]
 
 
+class FreeTextFormField(FormField):
+    def __init__(self, slot_name, affirm_intent, deny_intent):
+        self.slot_name = slot_name
+
+    def extract(self, tracker):
+        return [SlotSet(self.slot_name, tracker.latest_message.text)]
+
 
 class FormAction(Action):
 
