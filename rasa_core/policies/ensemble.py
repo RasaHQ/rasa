@@ -17,6 +17,7 @@ from rasa_core import utils
 from rasa_core.events import SlotSet
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.data import DialogueTrainingData
+from rasa_core.featurizers import MaxHistoryFeaturizer
 
 logger = logging.getLogger(__name__)
 
@@ -40,16 +41,16 @@ class PolicyEnsemble(object):
         """Return max history, only works if the ensemble is already trained."""
 
         if self.policies:
-            return self.policies[0].max_history
-        else:
-            return None
+            featurizer = self.policies[0].featurizer
+            if isinstance(featurizer, MaxHistoryFeaturizer):
+                return featurizer.max_history
+        return None
 
     def train(self, training_data, domain, featurizer, **kwargs):
         # type: (DialogueTrainingData, Domain, Featurizer, **Any) -> None
         if not training_data.is_empty():
             for policy in self.policies:
-                policy.prepare(featurizer,
-                               max_history=training_data.max_history())
+                policy.prepare(featurizer)
                 policy.train(training_data, domain, **kwargs)
                 self.training_metadata.update(training_data.metadata)
         else:
@@ -133,7 +134,7 @@ class PolicyEnsemble(object):
         policies = []
         for policy_name in metadata["policy_names"]:
             policy_cls = utils.class_from_module_path(policy_name)
-            policy = policy_cls.load(path, featurizer, metadata["max_history"])
+            policy = policy_cls.load(path, featurizer)
             policies.append(policy)
         ensemble_cls = utils.class_from_module_path(metadata["ensemble_name"])
         fingerprints = metadata.get("action_fingerprints", {})

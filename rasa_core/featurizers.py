@@ -6,10 +6,11 @@ from __future__ import unicode_literals
 import io
 import logging
 import os
+import typing
 
 import jsonpickle
 import numpy as np
-from typing import Tuple
+from typing import Tuple, List
 from builtins import str
 
 from rasa_core import utils
@@ -17,7 +18,12 @@ from rasa_core.events import ActionExecuted
 
 logger = logging.getLogger(__name__)
 
+if typing.TYPE_CHECKING:
+    from rasa_core.trackers import DialogueStateTracker
+    from rasa_core.domain import Domain
 
+
+# mechanisms to be used to encode concrete state
 class FeaturizeMechanism(object):
     """Transform the conversations state into machine learning formats.
 
@@ -25,7 +31,7 @@ class FeaturizeMechanism(object):
     format which a classifier can read."""
 
     def create_helpers(self, domain):
-        # will be used in label_featurizer
+        # will be used in label_tokenizer_featurize_mechanism
         return
 
     def encode(self, active_features, domain):
@@ -196,11 +202,12 @@ class LabelTokenizerFeaturizeMechanism(FeaturizeMechanism):
     @staticmethod
     def _parse_feature_map(input_feature_map):
         """Create vocabularies for a user and the bot"""
-        user_labels = []  # ['intent_listen']
-        bot_labels = []
-        other_labels = []
+        user_labels = []  # intents and entities
+        bot_labels = []  # actions and utters
+        other_labels = []  # slots
         for feature_name in input_feature_map.keys():
-            if feature_name.startswith('intent_'):
+            if (feature_name.startswith('intent_')
+                    or feature_name.startswith('entity_')):
                 user_labels.append(feature_name)
             elif feature_name.startswith('prev_'):
                 bot_labels.append(feature_name[len('prev_'):])
@@ -288,16 +295,26 @@ class LabelTokenizerFeaturizeMechanism(FeaturizeMechanism):
         return used_features
 
 
+# actual tracker featurizers
 class Featurizer(object):
 
     def __init__(self, featurize_mechanism):
+        # type: (FeaturizeMechanism) -> None
         self.featurize_mechanism = featurize_mechanism
 
-    def featurize_trackers(self, trackers, domain):
+    def featurize_trackers(self,
+                           trackers,  # type: List[DialogueStateTracker]
+                           domain  # type: Domain
+                           ):
+        # type: (...) -> Tuple[np.ndarray, np.ndarray, List[int]]
         raise NotImplementedError("Featurizer must have the capacity to "
                                   "encode trackers to feature vectors")
 
-    def create_X(self, trackers, domain):
+    def create_X(self,
+                 trackers,  # type: List[DialogueStateTracker]
+                 domain  # type: Domain
+                 ):
+        # type: (...) -> Tuple[np.ndarray, List[int]]
         raise NotImplementedError("Featurizer must have the capacity to "
                                   "create feature vector")
 
@@ -321,6 +338,7 @@ class Featurizer(object):
 
 class FullDialogueFeaturizer(Featurizer):
     def __init__(self, featurize_mechanism):
+        # type: (FeaturizeMechanism) -> None
         super(FullDialogueFeaturizer, self).__init__(featurize_mechanism)
 
         self.max_len = None
@@ -376,7 +394,11 @@ class FullDialogueFeaturizer(Featurizer):
 
         return y
 
-    def featurize_trackers(self, trackers, domain):
+    def featurize_trackers(self,
+                           trackers,  # type: List[DialogueStateTracker]
+                           domain  # type: Domain
+                           ):
+        # type: (...) -> Tuple[np.ndarray, np.ndarray, List[int]]
         """Create training data"""
         self.featurize_mechanism.create_helpers(domain)
 
@@ -384,7 +406,7 @@ class FullDialogueFeaturizer(Featurizer):
         trackers_as_states = []
 
         for tracker in trackers:
-            states = domain.features_for_tracker_history(tracker)
+            states = domain.states_for_tracker_history(tracker)
 
             delete_first_state = False
             actions = []
@@ -411,11 +433,15 @@ class FullDialogueFeaturizer(Featurizer):
 
         return X, y, true_lengths
 
-    def create_X(self, trackers, domain):
+    def create_X(self,
+                 trackers,  # type: List[DialogueStateTracker]
+                 domain  # type: Domain
+                 ):
+        # type: (...) -> Tuple[np.ndarray, List[int]]
         """Create X for prediction"""
         trackers_as_states = []
         for tracker in trackers:
-            states = domain.features_for_tracker_history(tracker)
+            states = domain.states_for_tracker_history(tracker)
             trackers_as_states.append(states)
 
         X, true_lengths = self._featurize_states(trackers_as_states, domain)
@@ -423,21 +449,34 @@ class FullDialogueFeaturizer(Featurizer):
 
 
 class MaxHistoryFeaturizer(Featurizer):
-    def __init__(self, featurizer, max_history=5, remove_duplicates=True):
-        super(MaxHistoryFeaturizer, self).__init__(featurizer)
+    def __init__(self, featurize_mechanism, max_history=5, remove_duplicates=True):
+        # type: (FeaturizeMechanism, int, bool) -> None
+        super(MaxHistoryFeaturizer, self).__init__(featurize_mechanism)
 
         self.max_history = max_history
 
         self.remove_duplicates = remove_duplicates
 
-    def featurize_trackers(self, trackers, domain):
+    def _states_to_vector(self, states, domain):
+        state_features = domain.slice_feature_history(states,
+                                                      self.max_history)
+
+        encoded_features = [self.featurize_mechanism.encode(f, domain)
+                            for f in state_features]
+        return np.vstack(encoded_features)
+
+    def featurize_trackers(self,
+                           trackers,  # type: List[DialogueStateTracker]
+                           domain  # type: Domain
+                           ):
+        # type: (...) -> Tuple[np.ndarray, np.ndarray, List[int]]
         """Create training data"""
         self.featurize_mechanism.create_helpers(domain)
 
         features = []
         labels = []
         for tracker in trackers:
-            states = domain.features_for_tracker_history(tracker)
+            states = domain.states_for_tracker_history(tracker)
             idx = 0
             for event in tracker._applied_events():
                 if isinstance(event, ActionExecuted):
@@ -448,9 +487,7 @@ class MaxHistoryFeaturizer(Featurizer):
 
                         prior_states = states[:idx+1]
 
-                        feature_vector = domain.slice_feature_history(
-                            self.featurize_mechanism, prior_states,
-                            self.max_history)
+                        feature_vector = self._states_to_vector(prior_states, domain)
 
                         features.append(feature_vector)
                         labels.append(y)
@@ -466,23 +503,25 @@ class MaxHistoryFeaturizer(Featurizer):
             logger.debug("Deduplicated to {} unique action examples."
                          "".format(y.shape[0]))
 
-        return X, y, [self.max_history]*len(trackers)
+        return X, y, [self.max_history] * len(trackers)
 
-    def create_X(self, trackers, domain):
+    def create_X(self,
+                 trackers,  # type: List[DialogueStateTracker]
+                 domain  # type: Domain
+                 ):
+        # type: (...) -> Tuple[np.ndarray, List[int]]
         """Create X for prediction"""
         features = []
         for tracker in trackers:
-            states = domain.features_for_tracker_history(tracker)
+            states = domain.states_for_tracker_history(tracker)
 
-            feature_vector = domain.slice_feature_history(
-                self.featurize_mechanism, states,
-                self.max_history)
+            feature_vector = self._states_to_vector(states, domain)
 
             features.append(feature_vector)
 
         X = np.array(features)
 
-        return X, [self.max_history]*len(trackers)
+        return X, [self.max_history] * len(trackers)
 
     @staticmethod
     def _deduplicate_training_data(X, y):

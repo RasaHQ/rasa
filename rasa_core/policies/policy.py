@@ -5,9 +5,7 @@ from __future__ import unicode_literals
 
 import logging
 
-import numpy as np
 from builtins import object
-from numpy.core.records import ndarray
 from typing import Any
 from typing import List
 from typing import Optional
@@ -25,32 +23,19 @@ class Policy(object):
     SUPPORTS_ONLINE_TRAINING = False
     MAX_HISTORY_DEFAULT = 3
 
-    def __init__(self, featurizer=None, max_history=None):
+    def __init__(self, featurizer=None):
         # type: (Optional[Featurizer]) -> None
 
         self.featurizer = featurizer
-        self.max_history = max_history
-
-    def featurize(self, tracker, domain):
-        # type: (DialogueStateTracker, Domain) -> ndarray
-        """Transform tracker into a vector representation.
-
-        The tracker, consisting of multiple turns, will be transformed
-        into a float vector which can be used by a ML model."""
-
-        # TODO due to the new system, change below
-        x = domain.feature_vector_for_tracker(self.featurizer, tracker,
-                                              self.max_history)
-        return np.array(x)
 
     def predict_action_probabilities(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> List[float]
 
         return []
 
-    def prepare(self, featurizer, max_history):
+    def prepare(self, featurizer):
+        # type: (Featurizer) -> None
         self.featurizer = featurizer
-        self.max_history = max_history
 
     def train(self, training_data, domain, **kwargs):
         # type: (DialogueTrainingData, Domain, **Any) -> None
@@ -74,5 +59,5 @@ class Policy(object):
         pass
 
     @classmethod
-    def load(cls, path, featurizer, max_history):
+    def load(cls, path, featurizer):
         raise NotImplementedError

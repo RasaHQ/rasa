@@ -9,11 +9,11 @@ import json
 import logging
 import os
 import zlib
+import typing
 
 import numpy as np
-from builtins import str, bytes
-from rasa_core.trackers import DialogueStateTracker
-from typing import Optional, List, Any
+from builtins import bytes
+from typing import Optional, Any, Dict
 
 from rasa_core.policies.policy import Policy
 from rasa_core import utils
@@ -21,16 +21,23 @@ from rasa_core.training.data import DialogueTrainingData
 
 logger = logging.getLogger(__name__)
 
+if typing.TYPE_CHECKING:
+    from rasa_core.trackers import DialogueStateTracker
+    from rasa_core.domain import Domain
+    from rasa_core.featurizers import Featurizer
+
 ENABLE_FEATURE_STRING_COMPRESSION = True
 
 
 class MemoizationPolicy(Policy):
     SUPPORTS_ONLINE_TRAINING = True
 
-    def __init__(self, lookup=None, featurizer=None, max_history=None):
+    def __init__(self, lookup=None, featurizer=None):
+        # type: (Optional[Dict], Optional[Featurizer]) -> None
+
         self.lookup = lookup if lookup is not None else {}
         self.is_enabled = True
-        super(MemoizationPolicy, self).__init__(featurizer, max_history)
+        super(MemoizationPolicy, self).__init__(featurizer)
 
     def toggle(self, activate):
         self.is_enabled = activate

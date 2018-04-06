@@ -9,7 +9,6 @@ import logging
 import os
 import warnings
 
-from builtins import str
 from typing import Any
 
 from rasa_core import utils
@@ -24,10 +23,10 @@ class KerasPolicy(Policy):
     SUPPORTS_ONLINE_TRAINING = True
 
     def __init__(self, model=None, graph=None, current_epoch=0,
-                 featurizer=None, max_history=None):
+                 featurizer=None):
         import keras
 
-        super(KerasPolicy, self).__init__(featurizer, max_history)
+        super(KerasPolicy, self).__init__(featurizer)
         if KerasPolicy.is_using_tensorflow() and not graph:
             self.graph = keras.backend.tf.get_default_graph()
         else:
@@ -170,7 +169,7 @@ class KerasPolicy(Policy):
         return model
 
     @classmethod
-    def load(cls, path, featurizer, max_history):
+    def load(cls, path, featurizer):
         if os.path.exists(path):
             meta_path = os.path.join(path, "keras_policy.json")
             if os.path.isfile(meta_path):
@@ -180,12 +179,10 @@ class KerasPolicy(Policy):
                 return cls(
                         cls._load_weights_for_model(path, model_arch, meta),
                         current_epoch=meta["epochs"],
-                        max_history=max_history,
                         featurizer=featurizer
                 )
             else:
-                return cls(max_history=max_history,
-                           featurizer=featurizer)
+                return cls(featurizer=featurizer)
         else:
             raise Exception("Failed to load dialogue model. Path {} "
                             "doesn't exist".format(os.path.abspath(path)))

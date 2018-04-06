@@ -252,7 +252,7 @@ class TrainingsDataGenerator(object):
         unique_trackers = []
 
         for tracker in trackers:
-            states = self.domain.features_for_tracker_history(tracker)
+            states = self.domain.states_for_tracker_history(tracker)
             hashed = json.dumps(states, sort_keys=True)
 
             # only continue with trackers that created a

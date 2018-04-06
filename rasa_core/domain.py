@@ -9,6 +9,7 @@ import io
 import json
 import logging
 import os
+import warnings
 
 import numpy as np
 import pkg_resources
@@ -167,12 +168,11 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
 
     def slice_feature_history(
             self,
-            featurize_mechanism,  # type: FeaturizeMechanism
             tracker_history,  # type: List[Dict[Text, float]]
             slice_length  # type: int
     ):
-        # type: (...) -> np.ndarray
-        """Slices a featurization from the trackers history.
+        # type: (...) -> List[Optional[Dict[Text, float]]]
+        """Slices states from the trackers history.
 
         If the slice is at the array borders, padding will be added to ensure
         he slice length."""
@@ -181,30 +181,30 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         slice_start = max(0, slice_end - slice_length)
         padding = [None] * max(0, slice_length - slice_end)
         state_features = padding + tracker_history[slice_start:]
-        encoded_features = [featurize_mechanism.encode(f, domain=self)
-                            for f in state_features]
-        return np.vstack(encoded_features)
+        return state_features
 
-    def features_for_tracker_history(self, tracker):
-        """Array of features for each state of the trackers history."""
+    def states_for_tracker_history(self, tracker):
+        """Array of states for each state of the trackers history."""
 
         return [self.get_active_features(tr) for tr in
                 tracker.generate_all_prior_states()]
 
     def feature_vector_for_tracker(self, featurize_mechanism,
                                    tracker, max_history):
-        # type: (FeaturizeMechanism, DialogueStateTracker, int) -> np.ndarray
-        """Creates a 2D array of shape (max_history,num_features)
+        raise("Deprecated, featurization is done by featurizer", DeprecationWarning)
 
-        max_history specifies the number of previous steps to be included
-        in the input. Each row in the array corresponds to the binarised
-        features of each state. Result is padded with default values if
-        there are fewer than `max_history` states present."""
 
-        all_features = self.features_for_tracker_history(tracker)
-        return self.slice_feature_history(featurize_mechanism,
-                                          all_features,
-                                          max_history)
+        # """Creates a 2D array of shape (max_history,num_features)
+        #
+        # max_history specifies the number of previous steps to be included
+        # in the input. Each row in the array corresponds to the binarised
+        # features of each state. Result is padded with default values if
+        # there are fewer than `max_history` states present."""
+        #
+        # all_features = self.states_for_tracker_history(tracker)
+        # return self.slice_feature_history(featurize_mechanism,
+        #                                   all_features,
+        #                                   max_history)
 
     def random_template_for(self, utter_action):
         if utter_action in self.templates:
