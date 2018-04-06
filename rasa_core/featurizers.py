@@ -10,11 +10,13 @@ import typing
 
 import jsonpickle
 import numpy as np
-from typing import Tuple, List
+from typing import Tuple, List, Optional
 from builtins import str
+from collections import defaultdict
 
 from rasa_core import utils
 from rasa_core.events import ActionExecuted
+from rasa_core.training.data import DialogueTrainingData
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +34,7 @@ class FeaturizeMechanism(object):
 
     def create_helpers(self, domain):
         # will be used in label_tokenizer_featurize_mechanism
-        return
+        pass
 
     def encode(self, active_features, domain):
         raise NotImplementedError("FeaturizeMechanism must have the capacity to "
@@ -273,11 +275,11 @@ class LabelTokenizerFeaturizeMechanism(FeaturizeMechanism):
                     # feature_name = 'intent_listen'
                     used_features[:len(self.user_vocab)] = 0
                 else:
-                    for t in feature_name.split('_'):
+                    for t in feature_name.split(self.split_symbol):
                         used_features[self.user_vocab[t]] += 1
 
             elif feature_name[len('prev_'):] in bot_labels:
-                for t in feature_name[len('prev_'):].split('_'):
+                for t in feature_name[len('prev_'):].split(self.split_symbol):
                     used_features[len(self.user_vocab) +
                                   self.bot_vocab[t]] += 1
 
@@ -298,15 +300,26 @@ class LabelTokenizerFeaturizeMechanism(FeaturizeMechanism):
 # actual tracker featurizers
 class Featurizer(object):
 
-    def __init__(self, featurize_mechanism):
-        # type: (FeaturizeMechanism) -> None
+    def __init__(self, featurize_mechanism=None):
+        # type: (Optional[FeaturizeMechanism]) -> None
         self.featurize_mechanism = featurize_mechanism
+
+        self.events_metadata = defaultdict(set)
+
+    @staticmethod
+    def _previously_executed_action(tracker):
+        """Returns the previously logged action."""
+
+        for e in reversed(tracker._applied_events()):
+            if isinstance(e, ActionExecuted):
+                return e.action_name
+        return None
 
     def featurize_trackers(self,
                            trackers,  # type: List[DialogueStateTracker]
                            domain  # type: Domain
                            ):
-        # type: (...) -> Tuple[np.ndarray, np.ndarray, List[int]]
+        # type: (...) -> Tuple[DialogueTrainingData, List[int]]
         raise NotImplementedError("Featurizer must have the capacity to "
                                   "encode trackers to feature vectors")
 
@@ -398,7 +411,7 @@ class FullDialogueFeaturizer(Featurizer):
                            trackers,  # type: List[DialogueStateTracker]
                            domain  # type: Domain
                            ):
-        # type: (...) -> Tuple[np.ndarray, np.ndarray, List[int]]
+        # type: (...) -> Tuple[DialogueTrainingData, List[int]]
         """Create training data"""
         self.featurize_mechanism.create_helpers(domain)
 
@@ -418,6 +431,9 @@ class FullDialogueFeaturizer(Featurizer):
                     else:
                         # unpredictable actions can be only the first in the story
                         delete_first_state = True
+                else:
+                    action_name = self._previously_executed_action(tracker)
+                    self.events_metadata[action_name].add(event)
 
             if delete_first_state:
                 states = states[1:]
@@ -431,7 +447,11 @@ class FullDialogueFeaturizer(Featurizer):
         X, true_lengths = self._featurize_states(trackers_as_states, domain)
         y = self._featurize_labels(trackers_as_actions, domain)
 
-        return X, y, true_lengths
+        # TODO do we need that?
+        metadata = {"events": self.events_metadata,
+                    "trackers": trackers}
+        return (DialogueTrainingData(X, y, metadata),
+                true_lengths)
 
     def create_X(self,
                  trackers,  # type: List[DialogueStateTracker]
@@ -449,8 +469,9 @@ class FullDialogueFeaturizer(Featurizer):
 
 
 class MaxHistoryFeaturizer(Featurizer):
-    def __init__(self, featurize_mechanism, max_history=5, remove_duplicates=True):
-        # type: (FeaturizeMechanism, int, bool) -> None
+    def __init__(self, featurize_mechanism=None,
+                 max_history=5, remove_duplicates=True):
+        # type: (Optional(FeaturizeMechanism), int, bool) -> None
         super(MaxHistoryFeaturizer, self).__init__(featurize_mechanism)
 
         self.max_history = max_history
@@ -469,7 +490,7 @@ class MaxHistoryFeaturizer(Featurizer):
                            trackers,  # type: List[DialogueStateTracker]
                            domain  # type: Domain
                            ):
-        # type: (...) -> Tuple[np.ndarray, np.ndarray, List[int]]
+        # type: (...) -> Tuple[DialogueTrainingData, List[int]]
         """Create training data"""
         self.featurize_mechanism.create_helpers(domain)
 
@@ -492,6 +513,9 @@ class MaxHistoryFeaturizer(Featurizer):
                         features.append(feature_vector)
                         labels.append(y)
                     idx += 1
+                else:
+                    action_name = self._previously_executed_action(tracker)
+                    self.events_metadata[action_name].add(event)
 
         X = np.array(features)
         y = np.array(labels)
@@ -503,7 +527,11 @@ class MaxHistoryFeaturizer(Featurizer):
             logger.debug("Deduplicated to {} unique action examples."
                          "".format(y.shape[0]))
 
-        return X, y, [self.max_history] * len(trackers)
+        # TODO do we need that?
+        metadata = {"events": self.events_metadata,
+                    "trackers": trackers}
+        return (DialogueTrainingData(X, y, metadata),
+                [self.max_history] * len(trackers))
 
     def create_X(self,
                  trackers,  # type: List[DialogueStateTracker]

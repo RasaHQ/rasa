@@ -8,27 +8,38 @@ import json
 import logging
 import os
 import warnings
+import typing
 
-from typing import Any
+from typing import Any, List, Dict, Text, Optional, Tuple
 
 from rasa_core import utils
-from rasa_core.domain import Domain
+
 from rasa_core.policies import Policy
-from rasa_core.training.data import DialogueTrainingData
 
 logger = logging.getLogger(__name__)
+
+if typing.TYPE_CHECKING:
+    import keras
+    from rasa_core.domain import Domain
+    from rasa_core.featurizers import Featurizer
+    from rasa_core.trackers import DialogueStateTracker
+    from rasa_core.training.data import DialogueTrainingData
 
 
 class KerasPolicy(Policy):
     SUPPORTS_ONLINE_TRAINING = True
 
-    def __init__(self, model=None, graph=None, current_epoch=0,
-                 featurizer=None):
-        import keras
-
+    def __init__(self,
+                 featurizer=None,  # type: Optional[Featurizer]
+                 model=None,  # type: Optional[keras.models.Sequential]
+                 graph=None,  # type: Optional[keras.backend.tf.Graph]
+                 current_epoch=0  # type: int
+                 ):
+        # type: (...) -> None
         super(KerasPolicy, self).__init__(featurizer)
         if KerasPolicy.is_using_tensorflow() and not graph:
-            self.graph = keras.backend.tf.get_default_graph()
+            from keras.backend import tf
+            self.graph = tf.get_default_graph()
         else:
             self.graph = graph
         self.model = model
@@ -43,10 +54,12 @@ class KerasPolicy(Policy):
 
     @staticmethod
     def is_using_tensorflow():
-        import keras
-        return keras.backend._BACKEND == "tensorflow"
+        from keras.backend import _BACKEND
+        return _BACKEND == "tensorflow"
 
     def predict_action_probabilities(self, tracker, domain):
+        # type: (DialogueStateTracker, Domain) -> List[float]
+
         x, lengths = self.featurizer.create_X([tracker], domain)
 
         if KerasPolicy.is_using_tensorflow() and self.graph is not None:
@@ -66,10 +79,17 @@ class KerasPolicy(Policy):
                       DeprecationWarning, stacklevel=2)
         return
 
-    def model_architecture(self, input_shape, output_shape):
+    def model_architecture(
+            self,
+            input_shape,  # type: Tuple[int, int]
+            output_shape  # type: Tuple[int, Optional[int]]
+    ):
+        # type: (...) -> keras.models.Sequential
         """Build a keras model and return a compiled model."""
-        from keras.layers import LSTM, Activation, Masking, Dense, TimeDistributed
+
         from keras.models import Sequential
+        from keras.layers import \
+            Masking, LSTM, Dense, TimeDistributed, Activation
 
         n_hidden = 32  # Neural Net and training params
         # Build Model
@@ -80,7 +100,8 @@ class KerasPolicy(Policy):
             model.add(LSTM(n_hidden, dropout=0.2))
             model.add(Dense(input_dim=n_hidden, units=output_shape[-1]))
         elif len(output_shape) == 2:
-            model.add(Masking(mask_value=-1, input_shape=(None, input_shape[1])))
+            model.add(Masking(mask_value=-1,
+                              input_shape=(None,input_shape[1])))
             model.add(LSTM(n_hidden, return_sequences=True, dropout=0.2))
             model.add(TimeDistributed(Dense(units=output_shape[-1])))
         else:
@@ -99,8 +120,17 @@ class KerasPolicy(Policy):
 
         return model
 
-    def train(self, training_data, domain, model_path=None, **kwargs):
-        # type: (DialogueTrainingData, Domain, **Any) -> None
+    def train(self,
+              training_trackers,  # type: List[DialogueStateTracker]
+              domain,  # type: Domain
+              max_training_samples=None,  # type: Optional[int]
+              **kwargs  # type: **Any
+              ):
+        # type: (...) -> Dict[Text: Any]
+
+        training_data = self.featurize_for_training(training_trackers,
+                                                    domain,
+                                                    max_training_samples)
 
         shuffled_X, shuffled_y = training_data.shuffled_X_y()
 
@@ -115,7 +145,10 @@ class KerasPolicy(Policy):
         self.current_epoch = kwargs.get("epochs", 10)
         logger.info("Done fitting keras policy model")
 
+        return training_data.metadata
+
     def continue_training(self, training_data, domain, **kwargs):
+        # type: (DialogueTrainingData, Domain, **Any) -> None
         # fit to one extra example
 
         self.current_epoch += 1
@@ -134,6 +167,7 @@ class KerasPolicy(Policy):
         utils.dump_obj_as_json_to_file(config_file, model_config)
 
     def persist(self, path):
+        # type: (Text) -> None
         if self.model:
             arch_file = os.path.join(path, 'keras_arch.json')
             weights_file = os.path.join(path, 'keras_weights.h5')
@@ -170,6 +204,7 @@ class KerasPolicy(Policy):
 
     @classmethod
     def load(cls, path, featurizer):
+        # type: (Text, Featurizer) -> KerasPolicy
         if os.path.exists(path):
             meta_path = os.path.join(path, "keras_policy.json")
             if os.path.isfile(meta_path):
@@ -177,10 +212,11 @@ class KerasPolicy(Policy):
                     meta = json.loads(f.read())
                 model_arch = cls._load_model_arch(path, meta)
                 return cls(
-                        cls._load_weights_for_model(path, model_arch, meta),
-                        current_epoch=meta["epochs"],
-                        featurizer=featurizer
-                )
+                        featurizer=featurizer,
+                        model=cls._load_weights_for_model(path,
+                                                          model_arch,
+                                                          meta),
+                        current_epoch=meta["epochs"])
             else:
                 return cls(featurizer=featurizer)
         else:

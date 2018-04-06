@@ -4,16 +4,21 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
+import typing
 
 from builtins import object
-from typing import Text, Optional, Any
+from typing import Text, Optional, Any, List
 
 from rasa_core.domain import check_domain_sanity
 from rasa_core.interpreter import RegexInterpreter
-from rasa_core.training.data import DialogueTrainingData
+from rasa_core.training.generator import TrainingsDataGenerator
 
 logger = logging.getLogger(__name__)
 
+if typing.TYPE_CHECKING:
+    from rasa_core.domain import Domain
+    from rasa_core.trackers import DialogueStateTracker
+    from rasa_core.interpreter import NaturalLanguageInterpreter
 
 class PolicyTrainer(object):
     def __init__(self, ensemble, domain, featurizer):
@@ -24,7 +29,7 @@ class PolicyTrainer(object):
     def train(self,
               resource_name=None,  # type: Optional[Text]
               augmentation_factor=20,  # type: int
-              max_training_samples=None,  # type: Optional[Text]
+              max_training_samples=None,  # type: Optional[int]
               max_number_of_trackers=2000,  # type: int
               remove_duplicates=True,  # type: bool
               **kwargs  # type: **Any
@@ -49,33 +54,35 @@ class PolicyTrainer(object):
         logger.debug("Policy trainer got kwargs: {}".format(kwargs))
         check_domain_sanity(self.domain)
 
-        training_data = self._prepare_training_data(
-                resource_name, augmentation_factor,
-                max_training_samples, max_number_of_trackers, remove_duplicates)
+        training_trackers = self.extract_training_trackers(
+                resource_name,
+                self.domain,
+                interpreter=RegexInterpreter(),
+                augmentation_factor=augmentation_factor,
+                remove_duplicates=remove_duplicates,
+                max_number_of_trackers=max_number_of_trackers)
 
-        self.ensemble.train(training_data, self.domain, self.featurizer,
-                            **kwargs)
+        self.ensemble.train(training_trackers, self.domain, self.featurizer,
+                            max_training_samples=max_training_samples, **kwargs)
 
-    def _prepare_training_data(self, resource_name,
-                               augmentation_factor,
-                               max_training_samples=None,
-                               max_number_of_trackers=2000,
-                               remove_duplicates=True):
-        """Reads training data from file and prepares it for the training."""
-
+    @staticmethod
+    def extract_training_trackers(
+            resource_name,  # type: Text
+            domain,  # type: Domain
+            interpreter=RegexInterpreter(),  # type: NaturalLanguageInterpreter
+            augmentation_factor=20,  # type: int
+            remove_duplicates=True,  # type: bool
+            max_number_of_trackers=2000  # type: int
+    ):
         from rasa_core import training
-
+        # type: (...) -> List[DialogueStateTracker]
         if resource_name:
-            training_data = training.extract_training_data(
-                    resource_name,
-                    self.domain,
-                    self.featurizer,
-                    interpreter=RegexInterpreter(),
-                    augmentation_factor=augmentation_factor,
-                    remove_duplicates=remove_duplicates,
-                    max_number_of_trackers=max_number_of_trackers)
-            if max_training_samples is not None:
-                training_data.limit_training_data_to(max_training_samples)
-            return training_data
+            graph = training.extract_story_graph(resource_name, domain, interpreter)
+            g = TrainingsDataGenerator(graph, domain,
+                                       remove_duplicates,
+                                       augmentation_factor,
+                                       max_number_of_trackers)
+            return g.generate()
         else:
-            return DialogueTrainingData.empty(self.domain)
+            return []
+

@@ -10,13 +10,11 @@ import os
 
 import numpy as np
 import typing
-from typing import Text, Optional, Any
+from typing import Text, Optional, Any, List, Dict
 
 import rasa_core
 from rasa_core import utils
 from rasa_core.events import SlotSet
-from rasa_core.trackers import DialogueStateTracker
-from rasa_core.training.data import DialogueTrainingData
 from rasa_core.featurizers import MaxHistoryFeaturizer
 
 logger = logging.getLogger(__name__)
@@ -24,10 +22,13 @@ logger = logging.getLogger(__name__)
 if typing.TYPE_CHECKING:
     from rasa_core.domain import Domain
     from rasa_core.featurizers import Featurizer
+    from rasa_core.policies.policy import Policy
+    from rasa_core.trackers import DialogueStateTracker
 
 
 class PolicyEnsemble(object):
     def __init__(self, policies, action_fingerprints=None):
+        # type: (List[Policy], Optional[Dict]) -> None
         self.policies = policies
         self.training_metadata = {}
 
@@ -46,13 +47,13 @@ class PolicyEnsemble(object):
                 return featurizer.max_history
         return None
 
-    def train(self, training_data, domain, featurizer, **kwargs):
-        # type: (DialogueTrainingData, Domain, Featurizer, **Any) -> None
-        if not training_data.is_empty():
+    def train(self, training_trackers, domain, featurizer, **kwargs):
+        # type: (List[DialogueStateTracker], Domain, Featurizer, **Any) -> None
+        if training_trackers:
             for policy in self.policies:
                 policy.prepare(featurizer)
-                policy.train(training_data, domain, **kwargs)
-                self.training_metadata.update(training_data.metadata)
+                metadata = policy.train(training_trackers, domain, **kwargs)
+                self.training_metadata.update(metadata)
         else:
             logger.info("Skipped training, because there are no "
                         "training samples.")

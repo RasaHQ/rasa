@@ -54,6 +54,7 @@ class TrainingsDataGenerator(object):
         and this generator will match start and end checkpoints to
         connect complete stories. Afterwards, duplicate stories will be
         removed and the data is augmented (if augmentation is enabled)."""
+
         self.hashed_featurizations = []
         self.story_graph = story_graph.with_cycles_removed()
         self.domain = domain

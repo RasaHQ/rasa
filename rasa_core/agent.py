@@ -12,8 +12,7 @@ from typing import Text, List, Optional, Callable, Any, Dict, Union
 from rasa_core.channels import UserMessage, InputChannel, OutputChannel
 from rasa_core.domain import TemplateDomain, Domain
 from rasa_core.events import Event
-from rasa_core.featurizers import \
-    Featurizer, FullDialogueFeaturizer, BinaryFeaturizeMechanism
+from rasa_core.featurizers import Featurizer
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.policies import PolicyTrainer, Policy
 from rasa_core.policies.ensemble import SimplePolicyEnsemble, PolicyEnsemble
@@ -41,7 +40,7 @@ class Agent(object):
             tracker_store=None  # type: Optional[TrackerStore]
     ):
         self.domain = self._create_domain(domain)
-        self.featurizer = self._create_featurizer(featurizer)
+        self.featurizer = featurizer
         self.policy_ensemble = self._create_ensemble(policies)
         self.interpreter = NaturalLanguageInterpreter.create(interpreter)
         self.tracker_store = self.create_tracker_store(
@@ -227,12 +226,6 @@ class Agent(object):
         return MessageProcessor(
                 self.interpreter, self.policy_ensemble, self.domain,
                 self.tracker_store, message_preprocessor=preprocessor)
-
-    @staticmethod
-    def _create_featurizer(featurizer):
-        if featurizer is None:
-            featurizer = FullDialogueFeaturizer(BinaryFeaturizeMechanism())
-        return featurizer
 
     @staticmethod
     def _create_domain(domain):

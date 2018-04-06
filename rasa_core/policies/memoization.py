@@ -18,6 +18,7 @@ from typing import Optional, Any, Dict
 from rasa_core.policies.policy import Policy
 from rasa_core import utils
 from rasa_core.training.data import DialogueTrainingData
+from rasa_core.featurizers import MaxHistoryFeaturizer
 
 logger = logging.getLogger(__name__)
 
@@ -32,12 +33,24 @@ ENABLE_FEATURE_STRING_COMPRESSION = True
 class MemoizationPolicy(Policy):
     SUPPORTS_ONLINE_TRAINING = True
 
-    def __init__(self, lookup=None, featurizer=None):
-        # type: (Optional[Dict], Optional[Featurizer]) -> None
+    @staticmethod
+    def _standard_featurizer():
+        # Memoization policy always uses MaxHistoryFeaturizer
+        # without featurize_mechanism
+        return MaxHistoryFeaturizer()
 
+    def __init__(self, lookup=None):
+        # type: (Optional[Dict]) -> None
+
+        featurizer = self._standard_featurizer()
+        super(MemoizationPolicy, self).__init__(featurizer)
+        self.max_history = None
         self.lookup = lookup if lookup is not None else {}
         self.is_enabled = True
-        super(MemoizationPolicy, self).__init__(featurizer)
+
+    def prepare(self, featurizer):
+        # type: (Featurizer) -> None
+        pass
 
     def toggle(self, activate):
         self.is_enabled = activate
@@ -65,9 +78,12 @@ class MemoizationPolicy(Policy):
                 self.lookup[feature_key] = _y.item()
 
     def _feature_vector_to_str(self, x, domain):
-        decoded_features = self.featurizer.decode(x,
+        print(x)
+        decoded_features = self.featurizer.featurize_mechanism.decode(x,
                                                   domain.input_features,
                                                   ndigits=8)
+        print(decoded_features)
+        exit()
         feature_str = json.dumps(decoded_features).replace("\"", "")
         if ENABLE_FEATURE_STRING_COMPRESSION:
             compressed = zlib.compress(bytes(feature_str, "utf-8"))
@@ -85,6 +101,7 @@ class MemoizationPolicy(Policy):
         # type: (DialogueTrainingData, Domain, **Any) -> None
         """Trains the policy on given training data."""
 
+        self.max_history = training_data.max_history()
         self.memorise(training_data, domain)
 
     def continue_training(self, training_data, domain, **kwargs):
@@ -120,14 +137,13 @@ class MemoizationPolicy(Policy):
         utils.dump_obj_as_json_to_file(memorized_file, data)
 
     @classmethod
-    def load(cls, path, featurizer, max_history):
+    def load(cls, path, featurizer):
         memorized_file = os.path.join(path, 'memorized_turns.json')
         if os.path.isfile(memorized_file):
             with io.open(memorized_file) as f:
                 data = json.loads(f.read())
             return cls(data["lookup"],
-                       featurizer=featurizer,
-                       max_history=max_history)
+                       featurizer=featurizer)
         else:
             logger.info("Couldn't load memoization for policy. "
                         "File '{}' doesn't exist. Falling back to empty "
