@@ -18,7 +18,7 @@ from rasa_core.events import (
     UserUttered, TopicSet, ActionExecuted, Restarted, ActionReverted,
     UserUtteranceReverted)
 from rasa_core.featurizers import BinaryFeaturizer
-from rasa_core.tracker_store import InMemoryTrackerStore#, RedisTrackerStore
+from rasa_core.tracker_store import InMemoryTrackerStore, RedisTrackerStore
 from rasa_core.trackers import DialogueStateTracker
 from tests.conftest import DEFAULT_STORIES_FILE
 from tests.utilities import tracker_from_dialogue_file, read_dialogue_file
@@ -27,11 +27,13 @@ domain = TemplateDomain.load("data/test_domains/default_with_topic.yml")
 
 
 def stores_to_be_tested():
-    return [InMemoryTrackerStore(domain)]
+    return [RedisTrackerStore(domain, mock=True),
+            InMemoryTrackerStore(domain)]
 
 
 def stores_to_be_tested_ids():
-    return ["in-memory-tracker"]
+    return ["redis-tracker",
+            "in-memory-tracker"]
 
 
 def test_tracker_duplicate():
@@ -97,10 +99,12 @@ def test_tracker_write_to_story(tmpdir, default_domain):
             "data/test_dialogues/enter_name.json", default_domain)
     p = tmpdir.join("export.md")
     tracker.export_stories_to_file(p.strpath)
+    print(tracker.as_dialogue())
     trackers = training.extract_trackers(p.strpath, default_domain,
                                          BinaryFeaturizer())
     assert len(trackers) == 1
     recovered = trackers[0]
+    print(recovered.as_dialogue())
     assert len(recovered.events) == 7
     assert recovered.events[5].type_name == "slot"
     assert recovered.events[5].key == "name"
