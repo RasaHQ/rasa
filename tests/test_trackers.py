@@ -105,7 +105,7 @@ def test_tracker_write_to_story(tmpdir, default_domain):
     assert len(trackers) == 1
     recovered = trackers[0]
     print(recovered.as_dialogue())
-    assert len(recovered.events) == 8
+    assert len(recovered.events) == 7
     assert recovered.events[6].type_name == "slot"
     assert recovered.events[6].key in {"location", "name"}
     assert recovered.events[6].value in {"central", "holger"}
