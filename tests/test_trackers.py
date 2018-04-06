@@ -99,6 +99,7 @@ def test_tracker_write_to_story(tmpdir, default_domain):
             "data/test_dialogues/enter_name.json", default_domain)
     p = tmpdir.join("export.md")
     tracker.export_stories_to_file(p.strpath)
+    print(tracker.as_dialogue())
     trackers = training.extract_trackers(p.strpath, default_domain,
                                          BinaryFeaturizer())
     assert len(trackers) == 1
