@@ -13,15 +13,14 @@ import typing
 from typing import Any, List, Dict, Text, Optional, Tuple
 
 from rasa_core import utils
-
 from rasa_core.policies import Policy
+from rasa_core.featurizers import Featurizer
 
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     import keras
     from rasa_core.domain import Domain
-    from rasa_core.featurizers import Featurizer
     from rasa_core.trackers import DialogueStateTracker
     from rasa_core.training.data import DialogueTrainingData
 
@@ -36,7 +35,9 @@ class KerasPolicy(Policy):
                  current_epoch=0  # type: int
                  ):
         # type: (...) -> None
+
         super(KerasPolicy, self).__init__(featurizer)
+
         if KerasPolicy.is_using_tensorflow() and not graph:
             from keras.backend import tf
             self.graph = tf.get_default_graph()
@@ -101,7 +102,7 @@ class KerasPolicy(Policy):
             model.add(Dense(input_dim=n_hidden, units=output_shape[-1]))
         elif len(output_shape) == 2:
             model.add(Masking(mask_value=-1,
-                              input_shape=(None,input_shape[1])))
+                              input_shape=(None, input_shape[1])))
             model.add(LSTM(n_hidden, return_sequences=True, dropout=0.2))
             model.add(TimeDistributed(Dense(units=output_shape[-1])))
         else:
@@ -150,7 +151,7 @@ class KerasPolicy(Policy):
     def continue_training(self, training_data, domain, **kwargs):
         # type: (DialogueTrainingData, Domain, **Any) -> None
         # fit to one extra example
-
+        # TODO pass trackers
         self.current_epoch += 1
         self.model.fit(training_data.X, training_data.y,
                        epochs=self.current_epoch + 1,
@@ -168,6 +169,9 @@ class KerasPolicy(Policy):
 
     def persist(self, path):
         # type: (Text) -> None
+
+        super(KerasPolicy, self).persist(path)
+
         if self.model:
             arch_file = os.path.join(path, 'keras_arch.json')
             weights_file = os.path.join(path, 'keras_weights.h5')
@@ -203,9 +207,10 @@ class KerasPolicy(Policy):
         return model
 
     @classmethod
-    def load(cls, path, featurizer):
-        # type: (Text, Featurizer) -> KerasPolicy
+    def load(cls, path):
+        # type: (Text) -> KerasPolicy
         if os.path.exists(path):
+            featurizer = Featurizer.load(path)
             meta_path = os.path.join(path, "keras_policy.json")
             if os.path.isfile(meta_path):
                 with io.open(meta_path) as f:

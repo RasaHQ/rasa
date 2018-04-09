@@ -239,9 +239,7 @@ class TrainingsDataGenerator(object):
 
     def _remove_duplicate_trackers(self, trackers):
         # type: (List[DialogueStateTracker]) -> List[DialogueStateTracker]
-        """Logs an event to all trackers.
-
-        Removes trackers that create equal featurizations.
+        """Removes trackers that create equal featurizations.
 
         From multiple trackers that create equal featurizations
         we only need to keep one. Because as we continue processing

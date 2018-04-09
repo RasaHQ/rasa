@@ -9,7 +9,7 @@ import typing
 from builtins import object
 from typing import Any, List, Optional, Text, Dict
 from rasa_core.featurizers import \
-    FullDialogueFeaturizer, BinaryFeaturizeMechanism
+    MaxHistoryFeaturizer, BinaryFeaturizeMechanism
 
 if typing.TYPE_CHECKING:
     from rasa_core.domain import Domain
@@ -43,8 +43,9 @@ class Policy(object):
                                      type(featurizer)))
 
     @staticmethod
-    def _standard_featurizer():
-        return FullDialogueFeaturizer(BinaryFeaturizeMechanism())
+    def _standard_featurizer(max_history=5):
+        return MaxHistoryFeaturizer(BinaryFeaturizeMechanism(),
+                                    max_history)
 
     def featurize_for_training(
             self,
@@ -69,15 +70,22 @@ class Policy(object):
 
     def predict_action_probabilities(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> List[float]
+        """Predicts the next action the bot should take
+        after seeing the tracker.
 
-        return []
+        Returns the list of probabilities for the next actions"""
+
+        raise NotImplementedError("Policy must have the capacity "
+                                  "to predict.")
 
     def train(self, training_trackers, domain, **kwargs):
         # type: (List[DialogueStateTracker], Domain, **Any) -> Dict[Text: Any]
-        """Trains the policy on given training data.
-        And returns training metadata."""
+        """Trains the policy on given training trackers.
 
-        raise NotImplementedError
+        Returns training metadata."""
+
+        raise NotImplementedError("Policy must have the capacity "
+                                  "to train.")
 
     def continue_training(self, training_data, domain, **kwargs):
         # type: (DialogueTrainingData, Domain, **Any) -> None
@@ -92,12 +100,14 @@ class Policy(object):
     def persist(self, path):
         # type: (Text) -> None
         """Persists the policy to a storage."""
-
-        pass
+        self.featurizer.persist(path)
 
     @classmethod
-    def load(cls, path, featurizer):
-        # type: (Text, Featurizer) -> Policy
-        """Loads a policy from the storage."""
+    def load(cls, path):
+        # type: (Text) -> Policy
+        """Loads a policy from the storage.
 
-        raise NotImplementedError
+        Needs to load its featurizer"""
+
+        raise NotImplementedError("Policy must have the capacity "
+                                  "to load itself.")

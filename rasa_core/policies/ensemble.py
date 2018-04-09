@@ -117,6 +117,8 @@ class PolicyEnsemble(object):
         self._persist_metadata(path, self.max_history())
 
         for policy in self.policies:
+            # TODO change path so that we could have several
+            # TODO keras policies with different featurizers
             policy.persist(path)
 
     @classmethod
@@ -127,15 +129,15 @@ class PolicyEnsemble(object):
         return metadata
 
     @classmethod
-    def load(cls, path, featurizer):
-        # type: (Text, Optional[Featurizer]) -> PolicyEnsemble
+    def load(cls, path):
+        # type: (Text) -> PolicyEnsemble
         """Loads policy and domain specification from storage"""
 
         metadata = cls.load_metadata(path)
         policies = []
         for policy_name in metadata["policy_names"]:
             policy_cls = utils.class_from_module_path(policy_name)
-            policy = policy_cls.load(path, featurizer)
+            policy = policy_cls.load(path)
             policies.append(policy)
         ensemble_cls = utils.class_from_module_path(metadata["ensemble_name"])
         fingerprints = metadata.get("action_fingerprints", {})

@@ -57,11 +57,11 @@ class Agent(object):
                                      action_factory)
         # ensures the domain hasn't changed between test and train
         domain.compare_with_specification(path)
-        featurizer = Featurizer.load(path)
-        ensemble = PolicyEnsemble.load(path, featurizer)
+        #featurizer = Featurizer.load(path)
+        ensemble = PolicyEnsemble.load(path)
         _interpreter = NaturalLanguageInterpreter.create(interpreter)
         _tracker_store = cls.create_tracker_store(tracker_store, domain)
-        return cls(domain, ensemble, featurizer, _interpreter, _tracker_store)
+        return cls(domain, ensemble, None, _interpreter, _tracker_store)
 
     def handle_message(
             self,
@@ -183,7 +183,6 @@ class Agent(object):
         self.policy_ensemble.persist(model_path)
         self.domain.persist(os.path.join(model_path, "domain.yml"))
         self.domain.persist_specification(model_path)
-        self.featurizer.persist(model_path)
 
         logger.info("Persisted model to '{}'"
                     "".format(os.path.abspath(model_path)))

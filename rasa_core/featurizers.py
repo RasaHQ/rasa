@@ -7,6 +7,7 @@ import io
 import logging
 import os
 import typing
+import json
 
 import jsonpickle
 import numpy as np
@@ -302,7 +303,10 @@ class Featurizer(object):
 
     def __init__(self, featurize_mechanism=None):
         # type: (Optional[FeaturizeMechanism]) -> None
-        self.featurize_mechanism = featurize_mechanism
+        if featurize_mechanism is not None:
+            self.featurize_mechanism = featurize_mechanism
+        else:
+            self.featurize_mechanism = FeaturizeMechanism()
 
     def _pad_states(self, states):
         return states
@@ -332,16 +336,22 @@ class Featurizer(object):
 
         labels = []
         for tracker_actions in trackers_as_actions:
-            if len(trackers_as_actions) > 1:
-                tracker_actions = self._pad_states(tracker_actions)
+            if isinstance(tracker_actions, list):
+                if len(trackers_as_actions) > 1:
+                    tracker_actions = self._pad_states(tracker_actions)
 
-            story_labels = [self.featurize_mechanism.encode_action(action, domain)
-                            for action in tracker_actions]
+                story_labels = [self.featurize_mechanism.encode_action(action, domain)
+                                for action in tracker_actions]
+            else:
+                story_labels = self.featurize_mechanism.encode_action(tracker_actions,
+                                                                      domain)
 
             labels.append(story_labels)
 
         y = np.array(labels)
-
+        assert len(y.shape) > 1, \
+            ("Label trainnig data has less than 2 dimensions "
+             "{}".format(len(y.shape)))
         return y
 
     def training_states_and_actions(
@@ -349,7 +359,7 @@ class Featurizer(object):
             trackers,  # type: List[DialogueStateTracker]
             domain  # type: Domain
     ):
-        # type: (...) -> Tuple[List[List[Dict]], List[List[Dict]], Dict[Text, Any]]
+        # type: (...) -> Tuple[List[List[Dict]], List[List[Dict]], Dict]
         raise NotImplementedError("Featurizer must have the capacity to "
                                   "encode trackers to feature vectors")
 
@@ -434,7 +444,7 @@ class FullDialogueFeaturizer(Featurizer):
             trackers,  # type: List[DialogueStateTracker]
             domain  # type: Domain
     ):
-        # type: (...) -> Tuple[List[List[Dict]], List[List[Dict]], Dict[Text, Any]]
+        # type: (...) -> Tuple[List[List[Dict]], List[List[Dict]], Dict]
 
         trackers_as_states = []
         trackers_as_actions = []
@@ -498,7 +508,7 @@ class MaxHistoryFeaturizer(Featurizer):
             trackers,  # type: List[DialogueStateTracker]
             domain  # type: Domain
     ):
-        # type: (...) -> Tuple[List[List[Dict]], List[List[Dict]], Dict[Text, Any]]
+        # type: (...) -> Tuple[List[List[Dict]], List[List[Dict]], Dict]
 
         trackers_as_states = []
         trackers_as_actions = []
@@ -514,40 +524,26 @@ class MaxHistoryFeaturizer(Featurizer):
                         sliced_states = domain.slice_feature_history(
                             states[:idx + 1], self.max_history)
                         trackers_as_states.append(sliced_states)
-                        trackers_as_actions.append([event.action_name])
+                        trackers_as_actions.append(event.action_name)
                     idx += 1
                 else:
                     action_name = tracker.latest_action_name
                     events_metadata[action_name].add(event)
 
+        if self.remove_duplicates:
+            logger.debug("Got {} action examples."
+                         "".format(len(trackers_as_actions)))
+            (trackers_as_states,
+             trackers_as_actions) = self._remove_duplicate_states(
+                                        trackers_as_states,
+                                        trackers_as_actions)
+            logger.debug("Deduplicated to {} unique action examples."
+                         "".format(len(trackers_as_actions)))
+
         # TODO do we need that?
         metadata = {"events": events_metadata,
                     "trackers": trackers}
         return trackers_as_states, trackers_as_actions, metadata
-
-    def featurize_trackers(self,
-                           trackers,  # type: List[DialogueStateTracker]
-                           domain  # type: Domain
-                           ):
-        # type: (...) -> Tuple[DialogueTrainingData, List[int]]
-        """Create training data"""
-        (training_data,
-         true_lengths) = super(MaxHistoryFeaturizer,
-                               self).featurize_trackers(trackers, domain)
-
-        X = training_data.X
-        y = training_data.y[:, 0, :]
-        metadata = training_data.metadata
-
-        if self.remove_duplicates:
-            logger.debug("Got {} action examples."
-                         "".format(y.shape[0]))
-            X, y = self._deduplicate_training_data(X, y)
-            logger.debug("Deduplicated to {} unique action examples."
-                         "".format(y.shape[0]))
-
-        return (DialogueTrainingData(X, y, metadata),
-                true_lengths)
 
     def prediction_states(self,
                           trackers,  # type: List[DialogueStateTracker]
@@ -564,6 +560,39 @@ class MaxHistoryFeaturizer(Featurizer):
         return trackers_as_states
 
     @staticmethod
+    def _remove_duplicate_states(
+            trackers_as_states,  # type: List[List[Dict[Text, float]]]
+            trackers_as_actions,  # type: List[List[Dict[Text, float]]]
+    ):
+        # type: (...) -> Tuple[List[List[Dict]], List[List[Dict]]]
+        """Removes states that create equal featurizations.
+
+        From multiple states that create equal featurizations
+        we only need to keep one."""
+
+        hashed_featurizations = []
+
+        # collected trackers_as_states that created different featurizations
+        unique_trackers_as_states = []
+        unique_trackers_as_actions = []
+
+        for (tracker_states,
+             tracker_actions) in zip(trackers_as_states,
+                                     trackers_as_actions):
+
+            states = tracker_states + [tracker_actions]
+            hashed = json.dumps(states, sort_keys=True)
+
+            # only continue with tracker_states that created a
+            # hashed_featurization we haven't observed
+            if hashed not in hashed_featurizations:
+                hashed_featurizations.append(hashed)
+                unique_trackers_as_states.append(tracker_states)
+                unique_trackers_as_actions.append(tracker_actions)
+
+        return unique_trackers_as_states, unique_trackers_as_actions
+
+    @staticmethod
     def _deduplicate_training_data(X, y):
         # type: (np.ndarray, np.ndarray) -> Tuple[np.ndarray, np.ndarray]
         """Make sure every training example in X occurs exactly once."""
@@ -574,13 +603,16 @@ class MaxHistoryFeaturizer(Featurizer):
         # appends y to X so it appears to be just another feature
         if not utils.is_training_data_empty(X):
             casted_y = np.broadcast_to(
-                    y[:, np.newaxis, :], (y.shape[0], X.shape[1], y.shape[1]))
+                    y[:, np.newaxis, :], (y.shape[0],
+                                          X.shape[1],
+                                          y.shape[1]))
 
             concatenated = np.concatenate((X, casted_y), axis=2)
 
             t_data = np.unique(concatenated, axis=0)
             X_unique = t_data[:, :, :X.shape[2]]
             y_unique = t_data[:, 0, X.shape[2]:]
+
             return X_unique, y_unique
         else:
             return X, y
