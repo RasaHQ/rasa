@@ -342,9 +342,9 @@ class EmbeddingIntentClassifier(Component):
 
             return sim, sim_emb
         else:
-            raise NameError("Wrong similarity type {}, "
-                            "should be 'cosine' or 'inner'"
-                            "".format(self.similarity_type))
+            raise ValueError("Wrong similarity type {}, "
+                             "should be 'cosine' or 'inner'"
+                             "".format(self.similarity_type))
 
     def _tf_loss(self, sim, sim_emb):
         """Define loss"""
