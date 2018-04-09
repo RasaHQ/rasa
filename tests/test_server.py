@@ -194,6 +194,7 @@ def test_put_tracker(core_server, app):
     assert len(tracker.events) == len(test_events)
     assert list(tracker.events) == test_events
 
+
 @pytest.inlineCallbacks
 def test_list_conversations(app):
     data = json.dumps({"query": "/greet"})
