@@ -145,6 +145,75 @@ facebook developer portal.
    For more detailed steps, visit the
    `slack api docs <https://api.slack.com/incoming-webhooks>`_.
 
+   .. _mattermost_connector:
+
+   Mattermost Setup
+   -----------
+
+   Using run script
+   ^^^^^^^^^^^^^^^^
+   If you want to connect to the mattermost input channel using the run script, e.g. using
+
+   .. code-block:: bash
+
+     python -m rasa_core.run -d models/dialogue -u models/nlu/current \
+         --port 5002 --connector mattermost --credentials mattermost_credentials.yml
+
+   you need to supply a ``mattermost_credentials.yml`` with the following content:
+
+   .. literalinclude:: ../examples/moodbot/mattermost_credentials.yml
+      :linenos:
+
+
+   Directly using python
+   ^^^^^^^^^^^^^^^^^^^^^
+
+   A ``MattermostInput`` instance provides a flask blueprint for creating
+   a webserver. This lets you separate the exact endpoints and implementation
+   from your webserver creation logic.
+
+   Code to create a Mattermost-compatible webserver looks like this:
+
+
+   .. code-block:: python
+       :linenos:
+
+       from rasa_core.channels import HttpInputChannel
+       from rasa_core.channels.slack import MattermostInput
+       from rasa_core.agent import Agent
+       from rasa_core.interpreter import RegexInterpreter
+
+       # load your trained agent
+       agent = Agent.load("dialogue", interpreter=RegexInterpreter())
+
+       input_channel = MattermostInput(
+          url="http://chat.example.com/api/v4",  # this is the url of the api for your mattermost instance
+          team="community"  # the name of your team for mattermost
+          user="user@email.com" # the username of your bot user that will post messages
+          pw="password" # the password of your bot user that will post messages
+       )
+
+       agent.handle_channel(HttpInputChannel(5004, "/app", input_channel))
+
+   The arguments for the ``HttpInputChannel`` are the port, the url prefix, and the input channel.
+   The default endpoint for receiving mattermost channel messages is ``/webhook``, so the example
+   above would listen for messages on ``/app/webhook``. This is the url you should add in the
+   mattermost outgoing webhook.
+
+   .. note::
+
+      **How to setup the outgoing webhook:**
+
+         1. To create the mattermost outgoing webhook login to your mattermost team site and go to **Main Menu > Integrations > Outgoing Webhooks**
+         2. Click **Add outgoing webhook**
+         3. Fill out the details including the channel you want the bot in.  You will need to ensure the **trigger words** section is setup with @yourbotname so that way it doesn't trigger on everything that is said.
+         4. Make sure **trigger when** section is set to value **first word matches a trigger word exactly**
+         5. For the callback url this needs to be your ngrok url where you have your webhook running in core or your public address with /webhook example: ``http://test.example.com/webhook``
+
+
+      For more detailed steps, visit the
+      `mattermost docs at <https://docs.mattermost.com/guides/developer.html>`_.
+
 .. _telegram_connector:
 
 Telegram Setup

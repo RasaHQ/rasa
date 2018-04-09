@@ -103,10 +103,10 @@ def test_tracker_write_to_story(tmpdir, default_domain):
                                          BinaryFeaturizer())
     assert len(trackers) == 1
     recovered = trackers[0]
-    assert len(recovered.events) == 8
-    assert recovered.events[6].type_name == "slot"
-    assert recovered.events[6].key in {"location", "name"}
-    assert recovered.events[6].value in {"central", "holger"}
+    assert len(recovered.events) == 7
+    assert recovered.events[5].type_name == "slot"
+    assert recovered.events[5].key == "name"
+    assert recovered.events[5].value == "holger"
 
 
 def test_tracker_state_regression_without_bot_utterance(default_agent):
