@@ -12,7 +12,6 @@ import zlib
 import typing
 from tqdm import tqdm
 
-import numpy as np
 from builtins import bytes
 from typing import Optional, Any, Dict, List, Text
 
@@ -105,8 +104,12 @@ class MemoizationPolicy(Policy):
         else:
             return feature_str
 
-    def train(self, training_trackers, domain, **kwargs):
-        # type: (List[DialogueStateTracker], Domain, **Any) -> Dict[Text: Any]
+    def train(self,
+              training_trackers,  # type: List[DialogueStateTracker]
+              domain,  # type: Domain
+              **kwargs  # type: **Any
+              ):
+        # type: (...) -> Dict[Text: Any]
         """Trains the policy on given training trackers."""
         (trackers_as_states,
          trackers_as_actions,
@@ -120,7 +123,8 @@ class MemoizationPolicy(Policy):
                     "".format(len(self.lookup)))
         return metadata
 
-    def continue_training(self, training_data, domain, **kwargs):
+    def continue_training(self, tracker, domain, **kwargs):
+        # type: (DialogueStateTracker, Domain, **Any) -> None
         # fit to one extra example
         #TODO pass trackers?
         self._add(training_data, domain)

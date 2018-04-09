@@ -78,8 +78,12 @@ class Policy(object):
         raise NotImplementedError("Policy must have the capacity "
                                   "to predict.")
 
-    def train(self, training_trackers, domain, **kwargs):
-        # type: (List[DialogueStateTracker], Domain, **Any) -> Dict[Text: Any]
+    def train(self,
+              training_trackers,  # type: List[DialogueStateTracker]
+              domain,  # type: Domain
+              **kwargs  # type: **Any
+              ):
+        # type: (...) -> Dict[Text: Any]
         """Trains the policy on given training trackers.
 
         Returns training metadata."""
@@ -87,8 +91,8 @@ class Policy(object):
         raise NotImplementedError("Policy must have the capacity "
                                   "to train.")
 
-    def continue_training(self, training_data, domain, **kwargs):
-        # type: (DialogueTrainingData, Domain, **Any) -> None
+    def continue_training(self, tracker, domain, **kwargs):
+        # type: (DialogueStateTracker, Domain, **Any) -> None
         """Continues training an already trained policy.
 
         This doesn't need to be supported by every policy. If it is supported,

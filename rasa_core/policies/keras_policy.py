@@ -22,7 +22,6 @@ if typing.TYPE_CHECKING:
     import keras
     from rasa_core.domain import Domain
     from rasa_core.trackers import DialogueStateTracker
-    from rasa_core.training.data import DialogueTrainingData
 
 
 class KerasPolicy(Policy):
@@ -148,8 +147,8 @@ class KerasPolicy(Policy):
 
         return training_data.metadata
 
-    def continue_training(self, training_data, domain, **kwargs):
-        # type: (DialogueTrainingData, Domain, **Any) -> None
+    def continue_training(self, tracker, domain, **kwargs):
+        # type: (DialogueStateTracker, Domain, **Any) -> None
         # fit to one extra example
         # TODO pass trackers
         self.current_epoch += 1

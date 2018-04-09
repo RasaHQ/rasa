@@ -7,6 +7,9 @@ import logging
 import os
 import pickle
 import warnings
+import typing
+
+from typing import Optional, Any, List, Text, Dict, Callable
 
 import numpy as np
 from sklearn.base import clone
@@ -18,6 +21,12 @@ from sklearn.utils import shuffle as sklearn_shuffle
 from rasa_core.policies import Policy
 
 logger = logging.getLogger(__name__)
+
+if typing.TYPE_CHECKING:
+    import sklearn
+    from rasa_core.domain import Domain
+    from rasa_core.featurizers import Featurizer
+    from rasa_core.trackers import DialogueStateTracker
 
 
 class SklearnPolicy(Policy):
@@ -51,17 +60,15 @@ class SklearnPolicy(Policy):
     """
     def __init__(
             self,
-            featurizer=None,
-            max_history=None,
-            model=LogisticRegression(),
-            cv=None,
-            param_grid=None,
-            scoring='accuracy',
-            label_encoder=LabelEncoder(),
-            shuffle=True,
+            featurizer=None,  # type: Optional[Featurizer]
+            model=LogisticRegression(),  # type: sklearn.base.ClassifierMixin
+            param_grid=None,  # type: Dict[Text, List] or List[Dict]
+            cv=None,  # type: Optional[int]
+            scoring='accuracy',  # type: Optional[Text or List or Dict or Callable]
+            label_encoder=LabelEncoder(),  # type:
+            shuffle=True,  # type:
     ):
         self.featurizer = featurizer
-        self.max_history = max_history
         self.model = model
         self.cv = cv
         self.param_grid = param_grid
@@ -118,7 +125,11 @@ class SklearnPolicy(Policy):
             X, y = sklearn_shuffle(X, y)
         return X, y
 
-    def train(self, training_data, domain, **kwargs):
+    def train(self,
+              training_trackers,  # type: List[DialogueStateTracker]
+              domain,  # type: Domain
+              **kwargs  # type: **Any
+              ):
         # Note: clone is called throughout to avoid mutating default
         # arguments.
         X, y = self._extract_training_data(training_data)
@@ -139,7 +150,8 @@ class SklearnPolicy(Policy):
         if score is not None:
             logger.info("Cross validation score: {:.5f}".format(score))
 
-    def continue_training(self, training_data, domain, **kwargs):
+    def continue_training(self, tracker, domain, **kwargs):
+        # type: (DialogueStateTracker, Domain, **Any) -> None
         X, y = self._extract_training_data(training_data)
         Xt, yt = self._preprocess_data(X, y)
         if not hasattr(self.model, 'partial_fit'):
@@ -148,12 +160,14 @@ class SklearnPolicy(Policy):
         self.model.partial_fit(Xt, yt)
 
     def predict_action_probabilities(self, tracker, domain):
+        # type: (DialogueStateTracker, Domain) -> List[float]
         X_feat = self.featurize(tracker, domain)
         Xt = self._preprocess_data(X_feat[np.newaxis])
         y_proba = self.model.predict_proba(Xt)
         return self._postprocess_prediction(y_proba)
 
     def persist(self, path):
+        # type: (Text) -> None
         if not self.model:
             warnings.warn("Persist called without a trained model present. "
                           "Nothing to persist then!")
@@ -164,7 +178,8 @@ class SklearnPolicy(Policy):
             pickle.dump(self._state, f)
 
     @classmethod
-    def load(cls, path, featurizer, max_history):
+    def load(cls, path):
+        # type: (Text) -> Policy
         filename = os.path.join(path, 'sklearn_model.pkl')
         if not os.path.exists(path):
             raise OSError("Failed to load dialogue model. Path {} "
