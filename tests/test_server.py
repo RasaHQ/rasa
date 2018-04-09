@@ -206,4 +206,5 @@ def test_list_conversations(app):
     content = yield response.json()
     assert response.code == 200
 
-    assert content == ["myid"]
+    assert len(content) > 0
+    assert "myid" in content
