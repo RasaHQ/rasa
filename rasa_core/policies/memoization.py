@@ -166,7 +166,7 @@ class MemoizationPolicy(Policy):
 
         featurizer = Featurizer.load(path)
         assert isinstance(featurizer, MaxHistoryFeaturizer), \
-            ("Loaded featurizer of type {}, should be"
+            ("Loaded featurizer of type {}, should be "
              "MaxHistoryFeaturizer.".format(type(featurizer)))
 
         memorized_file = os.path.join(path, 'memorized_turns.json')

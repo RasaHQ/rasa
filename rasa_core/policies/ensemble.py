@@ -116,10 +116,11 @@ class PolicyEnsemble(object):
 
         self._persist_metadata(path, self.max_history())
 
-        for policy in self.policies:
-            # TODO change path so that we could have several
-            # TODO keras policies with different featurizers
-            policy.persist(path)
+        for i, policy in enumerate(self.policies):
+            # TODO better way then many folders?
+            # TODO delete old files from these folders
+            policy_path = os.path.join(path, 'policy_{}'.format(i))
+            policy.persist(policy_path)
 
     @classmethod
     def load_metadata(cls, path):
@@ -135,9 +136,10 @@ class PolicyEnsemble(object):
 
         metadata = cls.load_metadata(path)
         policies = []
-        for policy_name in metadata["policy_names"]:
+        for i, policy_name in enumerate(metadata["policy_names"]):
             policy_cls = utils.class_from_module_path(policy_name)
-            policy = policy_cls.load(path)
+            policy_path = os.path.join(path, 'policy_{}'.format(i))
+            policy = policy_cls.load(policy_path)
             policies.append(policy)
         ensemble_cls = utils.class_from_module_path(metadata["ensemble_name"])
         fingerprints = metadata.get("action_fingerprints", {})
