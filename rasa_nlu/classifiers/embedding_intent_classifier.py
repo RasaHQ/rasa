@@ -7,15 +7,10 @@ import logging
 import os
 
 import typing
-from future.utils import PY3
 from typing import List, Text, Any, Optional, Dict
 
 from rasa_nlu.classifiers import INTENT_RANKING_LENGTH
 from rasa_nlu.components import Component
-from rasa_nlu.config import RasaNLUModelConfig
-from rasa_nlu.model import Metadata
-from rasa_nlu.training_data import Message
-from rasa_nlu.training_data import TrainingData
 import numpy as np
 
 try:
@@ -27,6 +22,10 @@ logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     import tensorflow as tf
+    from rasa_nlu.config import RasaNLUModelConfig
+    from rasa_nlu.training_data import TrainingData
+    from rasa_nlu.model import Metadata
+    from rasa_nlu.training_data import Message
 
 try:
     import tensorflow as tf
@@ -151,14 +150,17 @@ class EmbeddingIntentClassifier(Component):
 
         return num_layers, layer_size
 
-    def __init__(self, component_config=None,
-                 intent_dict=None,
-                 intent_token_dict=None,
-                 session=None,
-                 graph=None,
-                 intent_placeholder=None,
-                 embedding_placeholder=None,
-                 similarity_op=None):
+    def __init__(self,
+                 component_config=None,  # type: Optional[Dict[Text, Any]]
+                 intent_dict=None,  # type: Optional[Dict[Text, int]]
+                 intent_token_dict=None,  # type: Optional[Dict[Text, int]]
+                 session=None,  # type: Optional[tf.Session]
+                 graph=None,  # type: Optional[tf.Graph]
+                 intent_placeholder=None,  # type: Optional[tf.Tensor]
+                 embedding_placeholder=None,  # type: Optional[tf.Tensor]
+                 similarity_op=None   # type: Optional[tf.Tensor]
+                 ):
+        # type: (...) -> None
         """Declare instant variables with default values"""
 
         super(EmbeddingIntentClassifier, self).__init__(component_config)
@@ -340,9 +342,9 @@ class EmbeddingIntentClassifier(Component):
 
             return sim, sim_emb
         else:
-            raise NameError("Wrong similarity type {}, "
-                            "should be 'cosine' or 'inner'"
-                            "".format(self.similarity_type))
+            raise ValueError("Wrong similarity type {}, "
+                             "should be 'cosine' or 'inner'"
+                             "".format(self.similarity_type))
 
     def _tf_loss(self, sim, sim_emb):
         """Define loss"""
@@ -457,7 +459,7 @@ class EmbeddingIntentClassifier(Component):
                                            ep, sess_out)
 
     def train(self, training_data, cfg=None, **kwargs):
-        # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
+        # type: (TrainingData, Optional[RasaNLUModelConfig], **Any) -> None
         """Train the embedding intent classifier on a data set."""
 
         self.intent_dict = self._create_intent_dict(training_data)
