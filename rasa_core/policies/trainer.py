@@ -57,7 +57,6 @@ class PolicyTrainer(object):
         training_trackers = self.extract_training_trackers(
                 resource_name,
                 self.domain,
-                interpreter=RegexInterpreter(),
                 augmentation_factor=augmentation_factor,
                 remove_duplicates=remove_duplicates,
                 max_number_of_trackers=max_number_of_trackers)
@@ -69,15 +68,19 @@ class PolicyTrainer(object):
     def extract_training_trackers(
             resource_name,  # type: Text
             domain,  # type: Domain
-            interpreter=RegexInterpreter(),  # type: NaturalLanguageInterpreter
             augmentation_factor=20,  # type: int
             remove_duplicates=True,  # type: bool
             max_number_of_trackers=2000  # type: int
     ):
-        from rasa_core import training
         # type: (...) -> List[DialogueStateTracker]
         if resource_name:
-            graph = training.extract_story_graph(resource_name, domain, interpreter)
+
+            # TODO pass extract_story_graph as a function or
+            # TODO pass graph to agent
+            # TODO to support code creating stories
+            from rasa_core.training import extract_story_graph
+            graph = extract_story_graph(resource_name, domain)
+
             g = TrainingsDataGenerator(graph, domain,
                                        remove_duplicates,
                                        augmentation_factor,

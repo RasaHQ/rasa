@@ -4,7 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import typing
-from typing import Text, List
+from typing import Text
 
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.training.data import DialogueTrainingData
@@ -13,9 +13,7 @@ from rasa_core.training.generator import TrainingsDataGenerator
 from rasa_core.training.structures import StoryGraph, STORY_END, STORY_START
 
 if typing.TYPE_CHECKING:
-    from rasa_core.trackers import DialogueStateTracker
     from rasa_core.domain import Domain
-    from rasa_core.featurizers import Featurizer
     from rasa_core.interpreter import NaturalLanguageInterpreter
 
 
@@ -29,45 +27,3 @@ def extract_story_graph(
     story_steps = StoryFileReader.read_from_folder(resource_name,
                                                    domain, interpreter)
     return StoryGraph(story_steps)
-
-
-def extract_training_data(
-        resource_name,  # type: Text
-        domain,  # type: Domain
-        featurizer=None,  # type: Featurizer
-        interpreter=RegexInterpreter(),  # type: NaturalLanguageInterpreter
-        augmentation_factor=20,  # type: int
-        remove_duplicates=True,  # type: bool
-        max_number_of_trackers=2000  # type: int
-):
-    # type: (...) -> DialogueTrainingData
-
-    graph = extract_story_graph(resource_name, domain, interpreter)
-    g = TrainingsDataGenerator(graph, domain,
-                               remove_duplicates,
-                               augmentation_factor,
-                               max_number_of_trackers)
-    trackers = g.generate()
-
-    if featurizer is None:
-        return DialogueTrainingData.empty(domain)
-    else:
-        X, y, _ = featurizer.featurize_trackers(trackers, domain)
-        return DialogueTrainingData(X, y)
-
-
-def extract_trackers(
-        resource_name,  # type: Text
-        domain,  # type: Domain
-        interpreter=RegexInterpreter(),  # type: NaturalLanguageInterpreter
-        max_number_of_trackers=2000  # type: int
-):
-    # type: (...) -> List[DialogueStateTracker]
-
-    graph = extract_story_graph(resource_name, domain, interpreter)
-    g = TrainingsDataGenerator(graph, domain,
-                               use_story_concatenation=False,
-                               tracker_limit=1000,
-                               remove_duplicates=False,
-                               max_number_of_trackers=max_number_of_trackers)
-    return g.generate()
