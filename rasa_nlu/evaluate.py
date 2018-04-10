@@ -528,29 +528,6 @@ def patch_duckling(interpreter, extractors, entity_predictions):
     return extractors, entity_predictions
 
 
-def merge_duckling(results):
-    """Merges the results of the duckling exctractors"""
-
-    if any(results.keys().startswith('ner_duckling_http')):
-        duckling_http_results = defaultdict(list)
-        for k, v in {k: v for k, v in results if
-                     k.startswith('ner_duckling_http')}:
-            for key, val in v:
-                duckling_http_results[key] += val
-            results.remove(k)
-        results['ner_duckling_http'] = duckling_http_results
-
-    if any(results.keys().startswith('ner_duckling')):
-        duckling_results = {}
-        for k, v in {k: v for k, v in results if k.startswith('ner_duckling')}:
-            for key, val in v:
-                duckling_results[key] += val
-            results.remove(k)
-        results['ner_duckling'] = duckling_results
-
-    return results
-
-
 def run_evaluation(data_path, model_path,
                    component_builder=None):  # pragma: no cover
     """Evaluate intent classification and entity extraction."""
@@ -757,7 +734,6 @@ if __name__ == '__main__':  # pragma: no cover
         data = drop_intents_below_freq(data, cutoff=5)
         results, entity_results = run_cv_evaluation(
                 data, int(cmdline_args.folds), nlu_config)
-        entity_results = merge_duckling(entity_results)
         logger.info("CV evaluation (n={})".format(cmdline_args.folds))
 
         if any(results):
