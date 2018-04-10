@@ -65,10 +65,10 @@ class MemoizationPolicy(Policy):
 
     def _create_partial_histories(self, states):
         augmented = [list(states)]
-        original_states = list(states)
-        for i in range(0, self.max_history - 1):
-            original_states[i] = None
-            augmented.append(list(original_states))
+        augmented_states = list(states)
+        for i in range(self.max_history - 1):
+            augmented_states[i] = None
+            augmented.append(list(augmented_states))
         return augmented
 
     def _add(self, trackers_as_states, trackers_as_actions, domain):
@@ -145,8 +145,9 @@ class MemoizationPolicy(Policy):
         states = tracker_as_states[0]
         logger.debug('Current tracker state {}'.format(states))
 
-        memorised = self._recall(states)
         result = [0.0] * domain.num_actions
+
+        memorised = self._recall(states)
         if memorised is not None and self.is_enabled:
             logger.debug("Used memorised next action '{}'".format(memorised))
             result[memorised] = 1.0
