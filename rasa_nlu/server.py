@@ -9,6 +9,7 @@ from functools import wraps
 
 import simplejson
 import six
+import time
 from builtins import str
 from klein import Klein
 from twisted.internet import reactor, threads
@@ -312,6 +313,7 @@ class RasaNLU(object):
     @app.route("/evaluate", methods=['POST'])
     @requires_auth
     @check_cors
+    @inlineCallbacks
     def evaluate(self, request):
         data_string = request.content.read().decode('utf-8', 'strict')
         params = {
@@ -320,15 +322,16 @@ class RasaNLU(object):
         }
 
         request.setHeader('Content-Type', 'application/json')
+
         try:
             request.setResponseCode(200)
-            response = self.data_router.evaluate(data_string,
-                                                 params.get('project'),
-                                                 params.get('model'))
-            return simplejson.dumps(response)
+            response = yield self.data_router.evaluate(data_string,
+                                                       params.get('project'),
+                                                       params.get('model'))
+            returnValue(json_to_string(response))
         except Exception as e:
             request.setResponseCode(500)
-            return simplejson.dumps({"error": "{}".format(e)})
+            returnValue(json_to_string({"error": "{}".format(e)}))
 
     @app.route("/models", methods=['DELETE'])
     @requires_auth
