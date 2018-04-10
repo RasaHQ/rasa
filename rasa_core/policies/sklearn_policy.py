@@ -176,8 +176,10 @@ class SklearnPolicy(Policy):
 
         return training_data.metadata
 
-    def continue_training(self, tracker, domain, **kwargs):
-        # type: (DialogueStateTracker, Domain, **Any) -> None
+    def continue_training(self, trackers, domain):
+        # type: (list[DialogueStateTracker], Domain) -> None
+        training_data = self.featurize_for_training(trackers,
+                                                    domain)
         X, y = self._extract_training_data(training_data)
         Xt, yt = self._preprocess_data(X, y)
         if not hasattr(self.model, 'partial_fit'):

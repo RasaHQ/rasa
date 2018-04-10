@@ -71,14 +71,15 @@ class MemoizationPolicy(Policy):
             augmented.append(list(augmented_states))
         return augmented
 
-    def _add(self, trackers_as_states, trackers_as_actions, domain):
+    def _add(self, trackers_as_states, trackers_as_actions,
+             domain, disable_bar=False):
 
         assert len(trackers_as_states[0]) == self.max_history, \
             ("Trying to mem featurized data with {} historic turns. Expected: "
              "{}".format(len(trackers_as_states[0]), self.max_history))
 
         pbar = tqdm(zip(trackers_as_states, trackers_as_actions),
-                    desc="Processed actions")
+                    desc="Processed actions", disable=disable_bar)
         for states, action in pbar:
             for states_augmented in self._create_partial_histories(states):
                 feature_key = self._create_feature_key(states_augmented)
@@ -123,11 +124,15 @@ class MemoizationPolicy(Policy):
                     "".format(len(self.lookup)))
         return metadata
 
-    def continue_training(self, tracker, domain, **kwargs):
-        # type: (DialogueStateTracker, Domain, **Any) -> None
+    def continue_training(self, trackers, domain):
+        # type: (List[DialogueStateTracker], Domain) -> None
+        (trackers_as_states,
+         trackers_as_actions,
+         _) = self.featurizer.training_states_and_actions(trackers,
+                                                          domain)
         # fit to one extra example
-        #TODO pass trackers?
-        self._add(training_data, domain)
+        self._add(trackers_as_states, trackers_as_actions,
+                  domain, disable_bar=True)
 
     def _recall(self, states):
         return self.lookup.get(self._create_feature_key(states))

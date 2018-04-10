@@ -21,6 +21,7 @@ from rasa_core.events import UserUtteranceReverted, StoryExported
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.policies import PolicyTrainer
 from rasa_core.policies.ensemble import PolicyEnsemble
+from rasa_core.events import ActionExecuted
 
 logger = logging.getLogger(__name__)
 
@@ -115,8 +116,8 @@ class OnlinePolicyEnsemble(PolicyEnsemble):
 
     def probabilities_using_best_policy(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> List[float]
-        # [tracker, domain] -> int
         # given a state, predict next action via asking a human
+
         probabilities = self.base_ensemble.probabilities_using_best_policy(
                 tracker, domain)
         pred_out = int(np.argmax(probabilities))
@@ -155,10 +156,15 @@ class OnlinePolicyEnsemble(PolicyEnsemble):
             # action wrong
             y = self._request_action(probabilities, domain, tracker)
 
-            # TODO update tracker with last action
-            tracker.
+            # update tracker with new action
+            new_action_name = domain.action_for_index(y).name()
+            # need to copy tracker, because the tracker will be
+            # updated with the new event somewhere else
+            # TODO change it?
+            training_tracker = copy.deepcopy(tracker)
+            training_tracker.update(ActionExecuted(new_action_name))
 
-            self._fit_example(tracker, domain)
+            self._fit_example(training_tracker, domain)
 
             self.write_out_story(tracker)
 
@@ -193,10 +199,10 @@ class OnlinePolicyEnsemble(PolicyEnsemble):
         logger.info("Stories got exported to '{}'.".format(
                 os.path.abspath(exported.path)))
 
-    def continue_training(self, tracker, domain):
-        # type: (DialogueStateTracker, Domain) -> None
+    def continue_training(self, trackers, domain):
+        # type: (List[DialogueStateTracker], Domain) -> None
         for p in self.policies:
-            p.continue_training(tracker, domain)
+            p.continue_training(trackers, domain)
 
     def _fit_example(self, tracker, domain):
         # takes the new example labelled and learns it
@@ -205,13 +211,17 @@ class OnlinePolicyEnsemble(PolicyEnsemble):
         # ask the network to fit the example without overemphasising
         # its importance (and therefore throwing off the biases)
         num_samples = self.batch_size - 1
+        num_examples = len(self.training_trackers)
         for _ in range(self.epochs):
-            sampled_X, sampled_y = self.train_data.random_samples(num_samples)
-            batch_X = np.vstack((sampled_X, X))
-            batch_y = np.hstack((sampled_y, y))
-            data = DialogueTrainingData(batch_X, batch_y)
-            self.continue_training(data, domain)
-        self.train_data.append(X, y)
+            sampled_idx = np.random.choice(range(num_examples),
+                                           replace=False,
+                                           size=min(num_samples,
+                                                    num_examples))
+            trackers = [self.training_trackers[i]
+                        for i in sampled_idx] + [tracker]
+            self.continue_training(trackers, domain)
+
+        self.training_trackers.append(tracker)
 
     def write_out_story(self, tracker):
         # takes our new example and writes it in markup story format

@@ -133,14 +133,16 @@ class KerasPolicy(Policy):
 
         return training_data.metadata
 
-    def continue_training(self, tracker, domain, **kwargs):
-        # type: (DialogueStateTracker, Domain, **Any) -> None
-        # fit to one extra example
-        # TODO pass trackers
+    def continue_training(self, trackers, domain):
+        # type: (List[DialogueStateTracker], Domain) -> None
+
+        training_data = self.featurize_for_training(trackers,
+                                                    domain)
+        # fit to one extra example using updated trackers
         self.current_epoch += 1
         self.model.fit(training_data.X, training_data.y,
                        epochs=self.current_epoch + 1,
-                       batch_size=1,
+                       batch_size=len(trackers),
                        verbose=0,
                        initial_epoch=self.current_epoch)
 
