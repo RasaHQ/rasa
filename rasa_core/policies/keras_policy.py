@@ -57,23 +57,6 @@ class KerasPolicy(Policy):
         from keras.backend import _BACKEND
         return _BACKEND == "tensorflow"
 
-    def predict_action_probabilities(self, tracker, domain):
-        # type: (DialogueStateTracker, Domain) -> List[float]
-
-        x, lengths = self.featurizer.create_X([tracker], domain)
-
-        if KerasPolicy.is_using_tensorflow() and self.graph is not None:
-            with self.graph.as_default():
-                y_pred = self.model.predict(x, batch_size=1)
-        else:
-            y_pred = self.model.predict(x, batch_size=1)
-
-        if len(y_pred.shape) == 2:
-            return y_pred[-1].tolist()
-        elif len(y_pred.shape) == 3:
-            current_idx = lengths[0] - 1
-            return y_pred[0, current_idx, :].tolist()
-
     def _build_model(self, num_features, num_actions, max_history_len):
         warnings.warn("Deprecated, use `model_architecture` instead.",
                       DeprecationWarning, stacklevel=2)
@@ -123,11 +106,11 @@ class KerasPolicy(Policy):
     def train(self,
               training_trackers,  # type: List[DialogueStateTracker]
               domain,  # type: Domain
-              max_training_samples=None,  # type: Optional[int]
               **kwargs  # type: **Any
               ):
         # type: (...) -> Dict[Text: Any]
 
+        max_training_samples = kwargs.get('max_training_samples')
         training_data = self.featurize_for_training(training_trackers,
                                                     domain,
                                                     max_training_samples)
@@ -141,8 +124,11 @@ class KerasPolicy(Policy):
         logger.info("Fitting model with {} total samples and a validation "
                     "split of {}".format(training_data.num_examples(),
                                          validation_split))
-        self.model.fit(shuffled_X, shuffled_y, **kwargs)
-        self.current_epoch = kwargs.get("epochs", 10)
+        # filter out kwargs that cannot be passed to fit
+        params = self._get_valid_params(self.model.fit, **kwargs)
+
+        self.model.fit(shuffled_X, shuffled_y, **params)
+        self.current_epoch = kwargs.get("epochs", 1)
         logger.info("Done fitting keras policy model")
 
         return training_data.metadata
@@ -157,6 +143,23 @@ class KerasPolicy(Policy):
                        batch_size=1,
                        verbose=0,
                        initial_epoch=self.current_epoch)
+
+    def predict_action_probabilities(self, tracker, domain):
+        # type: (DialogueStateTracker, Domain) -> List[float]
+
+        X, lengths = self.featurizer.create_X([tracker], domain)
+
+        if KerasPolicy.is_using_tensorflow() and self.graph is not None:
+            with self.graph.as_default():
+                y_pred = self.model.predict(X, batch_size=1)
+        else:
+            y_pred = self.model.predict(X, batch_size=1)
+
+        if len(y_pred.shape) == 2:
+            return y_pred[-1].tolist()
+        elif len(y_pred.shape) == 3:
+            current_idx = lengths[0] - 1
+            return y_pred[0, current_idx, :].tolist()
 
     def _persist_configuration(self, config_file):
         model_config = {

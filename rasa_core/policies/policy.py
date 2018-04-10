@@ -6,8 +6,10 @@ from __future__ import unicode_literals
 import logging
 import typing
 
+from inspect import signature
 from builtins import object
-from typing import Any, List, Optional, Text, Dict
+from typing import \
+    Any, List, Optional, Text, Dict, Callable
 from rasa_core.featurizers import \
     MaxHistoryFeaturizer, BinaryFeaturizeMechanism
 
@@ -47,11 +49,25 @@ class Policy(object):
         return MaxHistoryFeaturizer(BinaryFeaturizeMechanism(),
                                     max_history)
 
+    @staticmethod
+    def _get_valid_params(func, **kwargs):
+        # type: (Callable, **Any) -> Dict
+        # filter out kwargs that cannot be passed to func
+        valid_keys = signature(func).parameters.keys()
+        params = {key: kwargs.get(key)
+                  for key in valid_keys if kwargs.get(key)}
+        ignored_params = {key: kwargs.get(key)
+                          for key in kwargs.keys()
+                          if not params.get(key)}
+        logger.debug("Ignored parameters: {}"
+                     "".format(ignored_params))
+        return params
+
     def featurize_for_training(
             self,
             trackers,  # type: List[DialogueStateTracker]
             domain,  # type: Domain
-            max_training_samples=None  # type: Optional[int]
+            max_training_samples=None,  # type: Optional[int]
     ):
         # type: (...) -> DialogueTrainingData
         """Transform training trackers into a vector representation.
@@ -67,16 +83,6 @@ class Policy(object):
             training_data.limit_training_data_to(max_training_samples)
 
         return training_data
-
-    def predict_action_probabilities(self, tracker, domain):
-        # type: (DialogueStateTracker, Domain) -> List[float]
-        """Predicts the next action the bot should take
-        after seeing the tracker.
-
-        Returns the list of probabilities for the next actions"""
-
-        raise NotImplementedError("Policy must have the capacity "
-                                  "to predict.")
 
     def train(self,
               training_trackers,  # type: List[DialogueStateTracker]
@@ -100,6 +106,16 @@ class Policy(object):
         the continued training should be put into this function."""
 
         pass
+
+    def predict_action_probabilities(self, tracker, domain):
+        # type: (DialogueStateTracker, Domain) -> List[float]
+        """Predicts the next action the bot should take
+        after seeing the tracker.
+
+        Returns the list of probabilities for the next actions"""
+
+        raise NotImplementedError("Policy must have the capacity "
+                                  "to predict.")
 
     def persist(self, path):
         # type: (Text) -> None
