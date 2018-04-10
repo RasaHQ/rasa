@@ -6,6 +6,9 @@ from __future__ import unicode_literals
 import copy
 import logging
 import os
+import typing
+
+from typing import Text, Optional, Any, List
 
 import numpy as np
 from builtins import range
@@ -18,9 +21,15 @@ from rasa_core.events import UserUtteranceReverted, StoryExported
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.policies import PolicyTrainer
 from rasa_core.policies.ensemble import PolicyEnsemble
-from rasa_core.training.data import DialogueTrainingData
 
 logger = logging.getLogger(__name__)
+
+if typing.TYPE_CHECKING:
+    from rasa_core.domain import Domain
+    from rasa_core.trackers import DialogueStateTracker
+    from rasa_core.interpreter import NaturalLanguageInterpreter
+    from rasa_core.featurizers import Featurizer
+    from rasa_core.channels import InputChannel
 
 
 class TrainingFinishedException(Exception):
@@ -30,33 +39,46 @@ class TrainingFinishedException(Exception):
 
 class OnlinePolicyTrainer(PolicyTrainer):
     def train(self,
-              resource_name=None, interpreter=None, input_channel=None,
-              max_history=3, augmentation_factor=20, max_training_samples=None,
-              max_number_of_trackers=2000, **kwargs):
+              resource_name=None,  # type: Optional[Text]
+              interpreter=None,  # type: NaturalLanguageInterpreter
+              input_channel=None,  # type: Optional[InputChannel]
+              max_history=2,  # type: int
+              augmentation_factor=20,  # type: int
+              max_training_samples=None,  # type: Optional[int]
+              max_number_of_trackers=2000,  # type: int
+              **kwargs  # type: **Any
+              ):
+        # type: (...) -> None
+
         logger.debug("Policy trainer got kwargs: {}".format(kwargs))
         check_domain_sanity(self.domain)
 
-        training_data = self._prepare_training_data(
-                resource_name, max_history, augmentation_factor,
-                max_training_samples, max_number_of_trackers)
+        training_trackers = self.extract_training_trackers(
+                resource_name,
+                self.domain,
+                augmentation_factor=augmentation_factor,
+                max_number_of_trackers=max_number_of_trackers)
 
-        self.ensemble.train(training_data, self.domain, self.featurizer,
-                            **kwargs)
+        self.ensemble.train(training_trackers, self.domain, self.featurizer,
+                            max_training_samples=max_training_samples, **kwargs)
 
-        training_data.reset_metadata()  # online learning doesn't support it yet
-
-        ensemble = OnlinePolicyEnsemble(self.ensemble, self.featurizer,
-                                        max_history, training_data)
-        self.run_online_training(ensemble, self.domain, interpreter,
+        ensemble = OnlinePolicyEnsemble(self.ensemble, training_trackers,
+                                        self.featurizer, max_history)
+        self.run_online_training(ensemble, interpreter,
                                  input_channel)
 
-    def run_online_training(self, ensemble, domain, interpreter=None,
-                            input_channel=None):
+    def run_online_training(
+            self,
+            ensemble,  # type: OnlinePolicyEnsemble
+            interpreter,  # type: NaturalLanguageInterpreter
+            input_channel=None  # type: Optional[InputChannel]
+    ):
+        # type: (...) -> None
         from rasa_core.agent import Agent
         if interpreter is None:
             interpreter = RegexInterpreter()
 
-        bot = Agent(domain, ensemble,
+        bot = Agent(self.domain, ensemble,
                     featurizer=self.featurizer,
                     interpreter=interpreter)
         bot.toggle_memoization(False)
@@ -69,27 +91,35 @@ class OnlinePolicyTrainer(PolicyTrainer):
 
 
 class OnlinePolicyEnsemble(PolicyEnsemble):
-    def __init__(self, base_ensemble, featurizer, max_history, train_data,
-                 use_visualization=False):
+    def __init__(self,
+                 base_ensemble,  # type: PolicyEnsemble
+                 training_trackers,  # type: List[DialogueStateTracker]
+                 featurizer=None,  # type: Optional[Featurizer]
+                 max_history=2,  # type: int
+                 use_visualization=False  # type: bool
+                 ):
         super(OnlinePolicyEnsemble, self).__init__(base_ensemble.policies)
+
         self.base_ensemble = base_ensemble
+        self.training_trackers = training_trackers
+        self.featurizer = featurizer
+        self.max_history = max_history
+        self.use_visualization = use_visualization
+
         self.current_id = 0
         self.extra_intent_examples = []
         self.stories = []
-        self.featurizer = featurizer
 
-        self.max_history = max_history
         self.batch_size = 5
         self.epochs = 50
-        self.train_data = train_data
-        self.use_visualization = use_visualization
 
     def probabilities_using_best_policy(self, tracker, domain):
-        # [feature vector, tracker, domain] -> int
+        # type: (DialogueStateTracker, Domain) -> List[float]
+        # [tracker, domain] -> int
         # given a state, predict next action via asking a human
         probabilities = self.base_ensemble.probabilities_using_best_policy(
                 tracker, domain)
-        pred_out = np.argmax(probabilities)
+        pred_out = int(np.argmax(probabilities))
         latest_action_was_listen = self._print_history(tracker)
 
         action_name = domain.action_for_index(pred_out).name()
@@ -114,21 +144,26 @@ class OnlinePolicyEnsemble(PolicyEnsemble):
                     "\t2.\tNo, the action is wrong.\n" +
                     "\t0.\tExport current conversations as stories and quit\n")
 
-        feature_vector = domain.feature_vector_for_tracker(
-                self.featurizer, tracker, self.max_history)
-        X = np.expand_dims(np.array(feature_vector), 0)
         if user_input == "1":
             # max prob prediction was correct
             if action_name == ACTION_LISTEN_NAME:
                 print("Next user input:")
             return probabilities
+
         elif user_input == "2":
             # max prob prediction was false, new action required
             # action wrong
             y = self._request_action(probabilities, domain, tracker)
-            self._fit_example(X, y, domain)
+
+            # TODO update tracker with last action
+            tracker.
+
+            self._fit_example(tracker, domain)
+
             self.write_out_story(tracker)
+
             return utils.one_hot(y, domain.num_actions)
+
         elif user_input == "3":
             # intent wrong and maybe action wrong
             intent = self._request_intent(tracker, domain)
@@ -139,9 +174,11 @@ class OnlinePolicyEnsemble(PolicyEnsemble):
             for e in domain.slots_for_entities(latest_message.entities):
                 tracker.update(e)
             return self.probabilities_using_best_policy(tracker, domain)
+
         elif user_input == "0":
             self._export_stories(tracker)
             raise TrainingFinishedException()
+
         else:
             raise Exception(
                     "Incorrect user input received '{}'".format(user_input))
@@ -156,11 +193,12 @@ class OnlinePolicyEnsemble(PolicyEnsemble):
         logger.info("Stories got exported to '{}'.".format(
                 os.path.abspath(exported.path)))
 
-    def continue_training(self, training_data, domain):
+    def continue_training(self, tracker, domain):
+        # type: (DialogueStateTracker, Domain) -> None
         for p in self.policies:
-            p.continue_training(training_data, domain)
+            p.continue_training(tracker, domain)
 
-    def _fit_example(self, X, y, domain):
+    def _fit_example(self, tracker, domain):
         # takes the new example labelled and learns it
         # via taking `epochs` samples of n_batch-1 parts of the training data,
         # inserting our new example and learning them. this means that we can

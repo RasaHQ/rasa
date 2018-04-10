@@ -10,7 +10,6 @@ from builtins import object
 from typing import Text, Optional, Any, List
 
 from rasa_core.domain import check_domain_sanity
-from rasa_core.interpreter import RegexInterpreter
 from rasa_core.training.generator import TrainingsDataGenerator
 
 logger = logging.getLogger(__name__)
@@ -18,10 +17,13 @@ logger = logging.getLogger(__name__)
 if typing.TYPE_CHECKING:
     from rasa_core.domain import Domain
     from rasa_core.trackers import DialogueStateTracker
-    from rasa_core.interpreter import NaturalLanguageInterpreter
+    from rasa_core.policies.ensemble import PolicyEnsemble
+    from rasa_core.featurizers import Featurizer
+
 
 class PolicyTrainer(object):
-    def __init__(self, ensemble, domain, featurizer):
+    def __init__(self, ensemble, domain, featurizer=None):
+        # type: (PolicyEnsemble, Domain, Optional[Featurizer]) -> None
         self.domain = domain
         self.ensemble = ensemble
         self.featurizer = featurizer

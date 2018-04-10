@@ -37,16 +37,6 @@ class PolicyEnsemble(object):
         else:
             self.action_fingerprints = {}
 
-    def max_history(self):
-        # type: () -> Optional[int]
-        """Return max history, only works if the ensemble is already trained."""
-
-        if self.policies:
-            featurizer = self.policies[0].featurizer
-            if isinstance(featurizer, MaxHistoryFeaturizer):
-                return featurizer.max_history
-        return None
-
     def train(self, training_trackers, domain, featurizer, **kwargs):
         # type: (List[DialogueStateTracker], Domain, Featurizer, **Any) -> None
         if training_trackers:
@@ -58,21 +48,34 @@ class PolicyEnsemble(object):
             logger.info("Skipped training, because there are no "
                         "training samples.")
 
+    def probabilities_using_best_policy(self, tracker, domain):
+        # type: (DialogueStateTracker, Domain) -> List[float]
+        raise NotImplementedError
+
     def predict_next_action(self, tracker, domain):
-        # type: (DialogueStateTracker, Domain) -> (float, int)
+        # type: (DialogueStateTracker, Domain) -> int
         """Predicts the next action the bot should take after seeing x.
 
         This should be overwritten by more advanced policies to use ML to
         predict the action. Returns the index of the next action"""
         probabilities = self.probabilities_using_best_policy(tracker, domain)
-        max_index = np.argmax(probabilities)
+        max_index = int(np.argmax(probabilities))
         logger.debug("Predicted next action '{}' with prob {:.2f}.".format(
                 domain.action_for_index(max_index).name(),
                 probabilities[max_index]))
         return max_index
 
-    def probabilities_using_best_policy(self, tracker, domain):
-        raise NotImplementedError
+    def _max_histories(self):
+        # type: () -> List[Optional[int]]
+        """Return max history, only works if the ensemble is already trained."""
+
+        max_histories = []
+        for p in self.policies:
+            if isinstance(p.featurizer, MaxHistoryFeaturizer):
+                max_histories.append(p.featurizer.max_history)
+            else:
+                max_histories.append(None)
+        return max_histories
 
     @staticmethod
     def _create_action_fingerprints(training_events):
@@ -87,8 +90,8 @@ class PolicyEnsemble(object):
             action_fingerprints[k] = {"slots": slots}
         return action_fingerprints
 
-    def _persist_metadata(self, path, max_history):
-        # type: (Text, Optional[int]) -> None
+    def _persist_metadata(self, path, max_histories):
+        # type: (Text, List[Optional[int]]) -> None
         """Persists the domain specification to storage."""
 
         # make sure the directory we persist to exists
@@ -103,7 +106,7 @@ class PolicyEnsemble(object):
         metadata = {
             "action_fingerprints": action_fingerprints,
             "rasa_core": rasa_core.__version__,
-            "max_history": max_history,
+            "max_histories": max_histories,
             "ensemble_name": self.__module__ + "." + self.__class__.__name__,
             "policy_names": policy_names
         }
@@ -114,7 +117,7 @@ class PolicyEnsemble(object):
         # type: (Text) -> None
         """Persists the policy to storage."""
 
-        self._persist_metadata(path, self.max_history())
+        self._persist_metadata(path, self._max_histories())
 
         for i, policy in enumerate(self.policies):
             # TODO better way then many folders?
@@ -149,9 +152,12 @@ class PolicyEnsemble(object):
 
 class SimplePolicyEnsemble(PolicyEnsemble):
     def __init__(self, policies, known_slot_events=None):
+        # TODO is known_slot_events is the same as action_fingerprints?
+        # TODO if so remove this init, else here is an error
         super(SimplePolicyEnsemble, self).__init__(policies, known_slot_events)
 
     def probabilities_using_best_policy(self, tracker, domain):
+        # type: (DialogueStateTracker, Domain) -> List[float]
         result = None
         max_confidence = -1
         for p in self.policies:
