@@ -40,9 +40,9 @@ class Policy(object):
             logger.warning("Trying to reset featurizer {} "
                            "for policy {} by agent featurizer {}. "
                            "Agent featurizer is ignored."
-                           "".format(type(self.featurizer),
-                                     type(self),
-                                     type(featurizer)))
+                           "".format(type(self.featurizer).__name__,
+                                     type(self).__name__,
+                                     type(featurizer).__name__))
 
     @staticmethod
     def _standard_featurizer(max_history=5):

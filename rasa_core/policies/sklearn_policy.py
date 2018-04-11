@@ -85,26 +85,21 @@ class SklearnPolicy(Policy):
     def prepare(self, featurizer):
         # type: (Featurizer) -> None
 
-        if featurizer and not isinstance(featurizer,
-                                         MaxHistoryFeaturizer):
+        if (not self.featurizer and
+                featurizer and
+                not isinstance(featurizer,
+                               MaxHistoryFeaturizer)):
             featurizer = MaxHistoryFeaturizer(featurizer.featurize_mechanism)
             logger.debug("SklearnPolicy only works with "
                          "MaxHistoryFeaturizer. "
                          "The new MaxHistoryFeaturizer was "
                          "created with provided FeaturizeMechanism={} "
                          "and default max_history={}."
-                         "".format(type(featurizer.featurize_mechanism),
-                                   featurizer.max_history))
+                         "".format(
+                            type(featurizer.featurize_mechanism).__name__,
+                            featurizer.max_history))
 
-        if self.featurizer is None:
-            self.featurizer = featurizer
-        else:
-            logger.warning("Trying to reset featurizer {} "
-                           "for policy {} by agent featurizer {}. "
-                           "Agent featurizer is ignored."
-                           "".format(type(self.featurizer),
-                                     type(self),
-                                     type(featurizer)))
+        super(SklearnPolicy, self).prepare(featurizer)
 
     @property
     def _state(self):
