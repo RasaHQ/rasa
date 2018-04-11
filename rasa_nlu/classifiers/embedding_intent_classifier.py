@@ -596,6 +596,7 @@ class EmbeddingIntentClassifier(Component):
                 model_dir, cls.name + "_intent_dict.pkl"), 'rb'))
 
             return EmbeddingIntentClassifier(
+                        component_config=meta,
                         intent_dict=intent_dict,
                         intent_token_dict=intent_token_dict,
                         session=sess,
