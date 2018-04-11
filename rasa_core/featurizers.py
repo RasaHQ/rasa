@@ -70,7 +70,7 @@ class BinaryFeaturizeMechanism(FeaturizeMechanism):
         padding vectors are specified by a `None` or `[None]`
         value for active_features."""
 
-        num_features = len(domain.input_feature_map.keys())
+        num_features = domain.num_features
         if active_features is None or None in active_features:
             return np.ones(num_features, dtype=np.int32) * -1
         else:
@@ -136,7 +136,7 @@ class ProbabilisticFeaturizeMechanism(FeaturizeMechanism):
         padding vectors are specified by a `None` or `[None]`
         value for active_features."""
 
-        num_features = len(domain.input_feature_map.keys())
+        num_features = domain.num_features
         if active_features is None or None in active_features:
             return np.ones(num_features, dtype=np.int32) * -1
         else:

@@ -7,25 +7,23 @@ import numpy as np
 import pytest
 
 from rasa_core.domain import TemplateDomain
-# from rasa_core.featurizers import BinaryFeaturizer
+from rasa_core.featurizers import MaxHistoryFeaturizer
+from rasa_core.policies.trainer import PolicyTrainer
 from tests import utilities
 from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 
 
-# TODO creation of training data changed
 def test_create_train_data_no_history(default_domain):
-    featurizer = BinaryFeaturizer()
-    training_data = extract_training_data(
+    featurizer = MaxHistoryFeaturizer(None, max_history=1)
+    training_trackers = PolicyTrainer.extract_trackers(
             DEFAULT_STORIES_FILE,
             default_domain,
-            featurizer,
-            augmentation_factor=0,
-            max_history=1
+            augmentation_factor=0
     )
-    assert training_data.X.shape == (11, 1, 10)
-    decoded = [featurizer.decode(training_data.X[i, :, :],
-                                 default_domain.input_features)
-               for i in range(0, 11)]
+    assert len(training_trackers) == 11
+    (decoded, _, _) = featurizer.training_states_and_actions(
+            training_trackers, default_domain)
+
     assert decoded == [
         [None],
         [[('intent_goodbye', 1), ('prev_utter_goodbye', 1)]],
@@ -45,18 +43,18 @@ def test_create_train_data_no_history(default_domain):
 
 
 def test_create_train_data_with_history(default_domain):
-    featurizer = BinaryFeaturizer()
-    training_data = extract_training_data(
-            DEFAULT_STORIES_FILE,
-            default_domain,
-            featurizer,
-            augmentation_factor=0,
-            max_history=4
+    featurizer = MaxHistoryFeaturizer(None, max_history=4)
+    training_trackers = PolicyTrainer.extract_trackers(
+        DEFAULT_STORIES_FILE,
+        default_domain,
+        augmentation_factor=0
     )
-    assert training_data.X.shape == (11, 4, 10)
-    decoded = [featurizer.decode(training_data.X[i, :, :],
-                                 default_domain.input_features)
-               for i in range(0, 11)]
+    assert len(training_trackers) == 11
+    (decoded, _, _) = featurizer.training_states_and_actions(
+        training_trackers, default_domain)
+    (decoded, _, _) = featurizer.training_states_and_actions(
+        training_trackers, default_domain)
+
     assert decoded == [
         [
             None,

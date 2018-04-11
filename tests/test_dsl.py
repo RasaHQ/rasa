@@ -12,6 +12,8 @@ from rasa_core.training import extract_story_graph
 from rasa_core.policies import PolicyTrainer
 from rasa_core.events import ActionExecuted, UserUttered
 from rasa_core.training.structures import Story
+from rasa_core.featurizers import MaxHistoryFeaturizer, \
+    BinaryFeaturizeMechanism
 
 
 def test_can_read_test_story(default_domain):
@@ -92,20 +94,21 @@ def test_read_story_file_with_cycles(tmpdir, default_domain):
     assert len(graph_without_cycles.story_end_checkpoints) == 2
 
 
-# TODO creation of training data changed
 def test_generate_training_data_with_cycles(tmpdir, default_domain):
-    featurizer = BinaryFeaturizer()
-    training_data = training.extract_training_data(
-            "data/test_stories/stories_with_cycle.md",
-            default_domain,
-            featurizer,
-            augmentation_factor=0,
-            max_history=4)
+    featurizer = MaxHistoryFeaturizer(BinaryFeaturizeMechanism(),
+                                      max_history=4)
+    training_trackers = PolicyTrainer.extract_trackers(
+        "data/test_stories/stories_with_cycle.md",
+        default_domain,
+        augmentation_factor=0
+    )
+    assert len(training_trackers) == 15
 
-    assert training_data.num_examples() == 15
-
+    training_data, _ = featurizer.featurize_trackers(training_trackers,
+                                                     default_domain)
+    y = training_data.y.argmax(axis=-1)
     np.testing.assert_array_equal(
-            training_data.y,
+            y,
             [2, 4, 0, 2, 4, 0, 1, 0, 2, 4, 0, 1, 0, 0, 3])
 
 
@@ -129,21 +132,28 @@ def test_visualize_training_data_graph(tmpdir, default_domain):
     assert len(G.edges()) == 16
 
 
-# TODO creation of training data changed
 def test_load_multi_file_training_data(default_domain):
     # the stories file in `data/test_multifile_stories` is the same as in
     # `data/test_stories/stories.md`, but split across multiple files
+    featurizer = MaxHistoryFeaturizer(BinaryFeaturizeMechanism(),
+                                      max_history=2)
+    trackers = PolicyTrainer.extract_trackers(
+        "data/test_stories/stories.md",
+        default_domain
+    )
+    data, _ = featurizer.featurize_trackers(trackers,
+                                            default_domain)
 
-    data = training.extract_training_data("data/test_stories/stories.md",
-                                          default_domain,
-                                          featurizer=BinaryFeaturizer(),
+    featurizer_mul = MaxHistoryFeaturizer(BinaryFeaturizeMechanism(),
                                           max_history=2)
+    trackers_mul = PolicyTrainer.extract_trackers(
+        "data/test_multifile_stories",
+        default_domain
+    )
+    data_mul, _ = featurizer_mul.featurize_trackers(trackers_mul,
+                                                    default_domain)
 
-    data_mul = training.extract_training_data("data/test_multifile_stories",
-                                              default_domain,
-                                              featurizer=BinaryFeaturizer(),
-                                              max_history=2)
-
+    # TODO do we want to assert if trackers are the same?
     assert np.all(data.X == data_mul.X)
     assert np.all(data.y == data_mul.y)
 
@@ -156,10 +166,14 @@ def test_load_training_data_handles_hidden_files(tmpdir, default_domain):
     normal_file = os.path.join(tmpdir.strpath, "normal_file")
     open(normal_file, 'a').close()
 
-    data = training.extract_training_data(tmpdir.strpath,
-                                          default_domain,
-                                          featurizer=BinaryFeaturizer(),
-                                          max_history=2)
+    featurizer = MaxHistoryFeaturizer(BinaryFeaturizeMechanism(),
+                                      max_history=2)
+    trackers = PolicyTrainer.extract_trackers(
+        tmpdir.strpath,
+        default_domain
+    )
+    data, _ = featurizer.featurize_trackers(trackers,
+                                            default_domain)
 
     assert len(data.X) == 0
     assert len(data.y) == 0
