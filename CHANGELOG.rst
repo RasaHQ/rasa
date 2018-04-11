@@ -42,10 +42,15 @@ Changed
 - updated documentation, added info about tensorflow_embedding pipeline
 - updated registry, added tensorflow_embedding pipeline
 - changed key name for a file in ngram featurizer
+- changed jsonObserver to generate logs without a record seperator
 
 Removed
 -------
 - MITIE support - backend is no longer supported.
+
+Fixed
+-----
+- fixed certain command line arguments not getting passed into the data_router
 
 
 [0.11.1] - 2018-02-02
@@ -55,6 +60,7 @@ Fixed
 -----
 - Changelog doc formatting
 - fixed project loading for newly added projects to a running server
+- fixed certain command line arguments not getting passed into the data_router
 
 
 [0.11.0] - 2018-01-30
