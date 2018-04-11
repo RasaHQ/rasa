@@ -5,14 +5,12 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from rasa_core.actions.action import Action
-from rasa_core.dispatcher import Button
-from rasa_core.events import ConversationPaused, SlotSet
+from rasa_core.events import SlotSet
 
 import logging
 import random
 
 logger = logging.getLogger(__name__)
-
 
 
 class FormField(object):
@@ -68,17 +66,18 @@ class FormAction(Action):
     def should_request_slot(self, tracker, slot_name, events):
         existing_val = tracker.get_slot(slot_name)
         pending = [e.key for e in events if e.key == slot_name]
-        return existing_val is None and not slot_name in pending
+        return existing_val is None and slot_name not in pending
 
     def get_requested_slot(self, tracker):
         requested_slot = tracker.get_slot("requested_slot")
 
+        if self.RANDOMIZE:
+            random.shuffle(self.REQUIRED_FIELDS)
+        required = self.REQUIRED_FIELDS[:]
+
         if requested_slot is None:
             return []
         else:
-            required = self.REQUIRED_FIELDS[:]
-            if self.RANDOMIZE:
-                random.shuffle(required)
             fields = [f for f in required if f.slot_name == requested_slot]
             if len(fields) > 0:
                 return fields[0].extract(tracker)
@@ -89,7 +88,6 @@ class FormAction(Action):
         return not any([
             self.should_request_slot(tracker, field.slot_name, events)
             for field in self.REQUIRED_FIELDS])
-
 
     def run(self, dispatcher, tracker, domain):
 
@@ -107,8 +105,6 @@ class FormAction(Action):
 
         return self.submit(dispatcher, tracker, domain)
 
-
     def submit(self, dispatcher, tracker, domain):
         dispatcher.utter_message("done!")
         return []
-
