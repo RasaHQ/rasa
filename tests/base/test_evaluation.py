@@ -10,10 +10,10 @@ import pytest
 
 from rasa_nlu.evaluate import (
     is_token_within_entity, do_entities_overlap,
-    merge_labels, patch_duckling_entities,
+    merge_labels, remove_duckling_entities,
     remove_empty_intent_examples, get_entity_extractors,
     get_duckling_dimensions, known_duckling_dimensions,
-    find_component, patch_duckling_extractors, drop_intents_below_freq,
+    find_component, remove_duckling_extractors, drop_intents_below_freq,
     run_cv_evaluation, substitute_labels)
 from rasa_nlu.evaluate import does_token_cross_borders
 from rasa_nlu.evaluate import align_entity_predictions
@@ -204,17 +204,9 @@ def test_duckling_patching():
             "value": "near Alexanderplatz",
             "entity": "location",
             "extractor": "ner_crf"
-        },
-        {
-            "start": 57,
-            "end": 64,
-            "value": "tonight",
-            "entity": "Time",
-            "extractor": "ner_duckling (Time)"
-
         }
     ]]
-    assert patch_duckling_entities(entities) == patched
+    assert remove_duckling_entities(entities) == patched
 
 
 def test_drop_intents_below_freq():
@@ -288,11 +280,10 @@ def test_find_component(duckling_interpreter):
     assert name == "ner_duckling"
 
 
-def test_patch_duckling_extractors(duckling_interpreter):
-    target = {"ner_duckling ({})".format(dim)
-              for dim in known_duckling_dimensions}
+def test_remove_duckling_extractors(duckling_interpreter):
+    target = {}
 
-    patched = patch_duckling_extractors(duckling_interpreter, {"ner_duckling"})
+    patched = remove_duckling_extractors(duckling_interpreter, {"ner_duckling"})
     assert patched == target
 
 
