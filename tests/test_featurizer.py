@@ -3,8 +3,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from rasa_core.featurizers import Featurizer, BinaryFeaturizer, \
-    ProbabilisticFeaturizer
+# from rasa_core.featurizers import Featurizer, BinaryFeaturizer, \
+#     ProbabilisticFeaturizer
 import numpy as np
 
 
@@ -12,6 +12,7 @@ def test_fail_to_load_non_existent_featurizer():
     assert Featurizer.load("non_existent_class") is None
 
 
+# TODO featurizers changed quite a lot this is more like for testing FeaturizeMechanism
 def test_binary_featurizer_handles_on_non_existing_features():
     f = BinaryFeaturizer()
     encoded = f.encode({"a": 1.0, "b": 1.0, "c": 0.0, "e": 1.0},

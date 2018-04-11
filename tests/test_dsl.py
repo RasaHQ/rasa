@@ -8,16 +8,16 @@ import os
 
 import numpy as np
 
-from rasa_core import training
+from rasa_core.training import extract_story_graph
+from rasa_core.policies import PolicyTrainer
 from rasa_core.events import ActionExecuted, UserUttered
-from rasa_core.featurizers import BinaryFeaturizer
 from rasa_core.training.structures import Story
 
 
 def test_can_read_test_story(default_domain):
-    trackers = training.extract_trackers("data/test_stories/stories.md",
-                                         default_domain,
-                                         featurizer=BinaryFeaturizer())
+    trackers = PolicyTrainer.extract_trackers(
+            "data/test_stories/stories.md",
+            default_domain)
     assert len(trackers) == 7
     # this should be the story simple_story_with_only_end -> show_it_all
     # the generated stories are in a non stable order - therefore we need to
@@ -38,19 +38,17 @@ def test_can_read_test_story(default_domain):
 
 
 def test_persist_and_read_test_story_graph(tmpdir, default_domain):
-    graph = training.extract_story_graph("data/test_stories/stories.md",
-                                         default_domain)
+    graph = extract_story_graph("data/test_stories/stories.md",
+                                default_domain)
     out_path = tmpdir.join("persisted_story.md")
     with io.open(out_path.strpath, "w") as f:
         f.write(graph.as_story_string())
 
-    recovered_trackers = training.extract_trackers(out_path.strpath,
-                                                   default_domain,
-                                                   BinaryFeaturizer())
-    existing_trackers = training.extract_trackers(
+    recovered_trackers = PolicyTrainer.extract_trackers(out_path.strpath,
+                                                        default_domain)
+    existing_trackers = PolicyTrainer.extract_trackers(
             "data/test_stories/stories.md",
-            default_domain,
-            BinaryFeaturizer())
+            default_domain)
 
     existing_stories = {t.export_stories() for t in existing_trackers}
     for t in recovered_trackers:
@@ -60,18 +58,16 @@ def test_persist_and_read_test_story_graph(tmpdir, default_domain):
 
 
 def test_persist_and_read_test_story(tmpdir, default_domain):
-    graph = training.extract_story_graph("data/test_stories/stories.md",
-                                         default_domain)
+    graph = extract_story_graph("data/test_stories/stories.md",
+                                default_domain)
     out_path = tmpdir.join("persisted_story.md")
     Story(graph.story_steps).dump_to_file(out_path.strpath)
 
-    recovered_trackers = training.extract_trackers(out_path.strpath,
-                                                   default_domain,
-                                                   BinaryFeaturizer())
-    existing_trackers = training.extract_trackers(
+    recovered_trackers = PolicyTrainer.extract_trackers(out_path.strpath,
+                                                        default_domain)
+    existing_trackers = PolicyTrainer.extract_trackers(
             "data/test_stories/stories.md",
-            default_domain,
-            BinaryFeaturizer())
+            default_domain)
     existing_stories = {t.export_stories() for t in existing_trackers}
     for t in recovered_trackers:
         story_str = t.export_stories()
@@ -80,9 +76,9 @@ def test_persist_and_read_test_story(tmpdir, default_domain):
 
 
 def test_read_story_file_with_cycles(tmpdir, default_domain):
-    graph = training.extract_story_graph(
-            "data/test_stories/stories_with_cycle.md",
-            default_domain)
+    graph = extract_story_graph(
+                "data/test_stories/stories_with_cycle.md",
+                default_domain)
 
     assert len(graph.story_steps) == 5
 
@@ -96,6 +92,7 @@ def test_read_story_file_with_cycles(tmpdir, default_domain):
     assert len(graph_without_cycles.story_end_checkpoints) == 2
 
 
+# TODO creation of training data changed
 def test_generate_training_data_with_cycles(tmpdir, default_domain):
     featurizer = BinaryFeaturizer()
     training_data = training.extract_training_data(
@@ -113,9 +110,9 @@ def test_generate_training_data_with_cycles(tmpdir, default_domain):
 
 
 def test_visualize_training_data_graph(tmpdir, default_domain):
-    graph = training.extract_story_graph(
-            "data/test_stories/stories_with_cycle.md",
-            default_domain)
+    graph = extract_story_graph(
+                "data/test_stories/stories_with_cycle.md",
+                default_domain)
 
     graph = graph.with_cycles_removed()
 
@@ -132,6 +129,7 @@ def test_visualize_training_data_graph(tmpdir, default_domain):
     assert len(G.edges()) == 16
 
 
+# TODO creation of training data changed
 def test_load_multi_file_training_data(default_domain):
     # the stories file in `data/test_multifile_stories` is the same as in
     # `data/test_stories/stories.md`, but split across multiple files

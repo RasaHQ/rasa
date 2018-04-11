@@ -13,7 +13,6 @@ from rasa_core.channels.console import ConsoleOutputChannel
 from rasa_core.channels.direct import CollectingOutputChannel
 from rasa_core.dispatcher import Dispatcher
 from rasa_core.domain import TemplateDomain
-from rasa_core.featurizers import BinaryFeaturizer
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.policies import PolicyTrainer
 from rasa_core.policies.ensemble import SimplePolicyEnsemble
@@ -68,9 +67,8 @@ def default_dispatcher_collecting(default_domain):
 def default_processor(default_domain):
     ensemble = SimplePolicyEnsemble([ScoringPolicy()])
     interpreter = RegexInterpreter()
-    PolicyTrainer(ensemble, default_domain, BinaryFeaturizer()).train(
-        DEFAULT_STORIES_FILE,
-        max_history=3)
+    PolicyTrainer(ensemble, default_domain).train(
+        DEFAULT_STORIES_FILE)
     tracker_store = InMemoryTrackerStore(default_domain)
     return MessageProcessor(interpreter,
                             ensemble,

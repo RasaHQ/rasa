@@ -56,7 +56,7 @@ class PolicyTrainer(object):
         logger.debug("Policy trainer got kwargs: {}".format(kwargs))
         check_domain_sanity(self.domain)
 
-        training_trackers = self.extract_training_trackers(
+        training_trackers = self.extract_trackers(
                 resource_name,
                 self.domain,
                 augmentation_factor=augmentation_factor,
@@ -67,7 +67,7 @@ class PolicyTrainer(object):
                             max_training_samples=max_training_samples, **kwargs)
 
     @staticmethod
-    def extract_training_trackers(
+    def extract_trackers(
             resource_name,  # type: Text
             domain,  # type: Domain
             augmentation_factor=20,  # type: int

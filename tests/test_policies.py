@@ -12,19 +12,17 @@ import pytest
 
 from rasa_core.channels import UserMessage
 from rasa_core.domain import TemplateDomain
-from rasa_core.featurizers import BinaryFeaturizer
 from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.policies.scoring_policy import ScoringPolicy
 from rasa_core.policies.sklearn_policy import SklearnPolicy
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training import (
-    DialogueTrainingData,
-    extract_training_data,
-    extract_trackers)
+    DialogueTrainingData)
 from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 
 
+# TODO new tests due to new system
 def train_data(max_history, domain):
     return extract_training_data(
             DEFAULT_STORIES_FILE, domain,

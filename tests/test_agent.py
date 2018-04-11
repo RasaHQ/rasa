@@ -15,7 +15,7 @@ def test_agent_train(tmpdir, default_domain):
     agent = Agent("examples/moodbot/domain.yml",
                   policies=[ScoringPolicy()])
 
-    agent.train(training_data_file, max_history=3)
+    agent.train(training_data_file)
     agent.persist(tmpdir.strpath)
 
     loaded = Agent.load(tmpdir.strpath)

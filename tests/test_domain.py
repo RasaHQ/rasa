@@ -7,12 +7,12 @@ import numpy as np
 import pytest
 
 from rasa_core.domain import TemplateDomain
-from rasa_core.featurizers import BinaryFeaturizer
-from rasa_core.training import extract_training_data
+# from rasa_core.featurizers import BinaryFeaturizer
 from tests import utilities
 from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 
 
+# TODO creation of training data changed
 def test_create_train_data_no_history(default_domain):
     featurizer = BinaryFeaturizer()
     training_data = extract_training_data(
