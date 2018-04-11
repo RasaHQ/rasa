@@ -123,6 +123,11 @@ def test_post_parse_specific_model(app):
 
     response = yield app.post(query.endpoint, json=query.payload)
     assert response.code == 200
+
+    # check that that model now is loaded in the server
+    status = yield app.get("http://dummy-uri/status")
+    sjs = yield status.json()
+    project = sjs["available_projects"]["test_project_spacy_sklearn"]
     assert model in project["loaded_models"]
 
 

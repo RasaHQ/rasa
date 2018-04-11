@@ -24,7 +24,7 @@ if typing.TYPE_CHECKING:
 class MitieNLP(Component):
     name = "nlp_mitie"
 
-    provides = ["mitie_feature_extractor"]
+    provides = ["mitie_feature_extractor", "mitie_file"]
 
     defaults = {
         # name of the language model to load - this contains
@@ -82,7 +82,8 @@ class MitieNLP(Component):
     def provide_context(self):
         # type: () -> Dict[Text, Any]
 
-        return {"mitie_feature_extractor": self.extractor}
+        return {"mitie_feature_extractor": self.extractor,
+                "mitie_file": self.component_config.get("model")}
 
     @staticmethod
     def ensure_proper_language_model(extractor):
@@ -115,5 +116,5 @@ class MitieNLP(Component):
 
         return {
             "mitie_feature_extractor_fingerprint": self.extractor.fingerprint,
-            "model": self.mitie_file
+            "model": self.component_config.get("model")
         }

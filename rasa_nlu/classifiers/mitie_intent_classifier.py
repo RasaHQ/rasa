@@ -29,7 +29,7 @@ class MitieIntentClassifier(Component):
 
     provides = ["intent"]
 
-    requires = ["tokens"]
+    requires = ["tokens", "mitie_feature_extractor", "mitie_file"]
 
     def __init__(self,
                  component_config=None,  # type: Dict[Text, Any]
@@ -51,9 +51,13 @@ class MitieIntentClassifier(Component):
         # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
         import mitie
 
-        mitie_file = kwargs.get("mitie_file")
+        model_file = kwargs.get("mitie_file")
+        if not model_file:
+            raise Exception("Can not run MITIE entity extractor without a "
+                            "language model. Make sure this component is "
+                            "preceeded by the 'nlp_mitie' component.")
 
-        trainer = mitie.text_categorizer_trainer(mitie_file)
+        trainer = mitie.text_categorizer_trainer(model_file)
         trainer.num_threads = kwargs.get("num_threads", 1)
 
         for example in training_data.intent_examples:

@@ -35,7 +35,8 @@ def test_mitie_featurizer(mitie_feature_extractor, default_config):
     sentence = "Hey how are you today"
     tokens = MitieTokenizer().tokenize(sentence)
     vecs = ftr.features_for_tokens(tokens, mitie_feature_extractor)
-    assert np.allclose(vecs[:5], np.array([0., -4.4551446, 0.26073121, -1.46632245, -1.84205751]), atol=1e-5)
+    expected = np.array([0., -4.4551446, 0.26073121, -1.46632245, -1.84205751])
+    assert np.allclose(vecs[:5], expected, atol=1e-5)
 
 
 def test_ngram_featurizer(spacy_nlp):

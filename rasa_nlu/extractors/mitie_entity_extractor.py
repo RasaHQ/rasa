@@ -33,7 +33,7 @@ class MitieEntityExtractor(EntityExtractor):
 
     provides = ["entities"]
 
-    requires = ["tokens"]
+    requires = ["tokens", "mitie_feature_extractor", "mitie_file"]
 
     def __init__(self,
                  component_config=None,  # type: Dict[Text, Any]
@@ -75,7 +75,13 @@ class MitieEntityExtractor(EntityExtractor):
         # type: (TrainingData, RasaNLUModelConfig) -> None
         import mitie
 
-        trainer = mitie.ner_trainer(kwargs.get("mitie_file"))
+        model_file = kwargs.get("mitie_file")
+        if not model_file:
+            raise Exception("Can not run MITIE entity extractor without a "
+                            "language model. Make sure this component is "
+                            "preceeded by the 'nlp_mitie' component.")
+
+        trainer = mitie.ner_trainer(model_file)
         trainer.num_threads = kwargs.get("num_threads", 1)
         found_one_entity = False
 
@@ -94,6 +100,8 @@ class MitieEntityExtractor(EntityExtractor):
             self.ner = trainer.train()
 
     def _prepare_mitie_sample(self, training_example):
+        import mitie
+
         text = training_example.text
         tokens = training_example.get("tokens")
         sample = mitie.ner_training_instance([t.text for t in tokens])
@@ -143,13 +151,16 @@ class MitieEntityExtractor(EntityExtractor):
         meta = model_metadata.for_component(cls.name)
 
         file_name = meta.get("classifier_file", MITIE_ENTITY_MODEL_FILE_NAME)
-        classifier_file = os.path.join(model_dir, file_name)
 
+        if not file_name:
+            return MitieEntityExtractor(meta)
+
+        classifier_file = os.path.join(model_dir, file_name)
         if os.path.exists(classifier_file):
             extractor = mitie.named_entity_extractor(classifier_file)
             return MitieEntityExtractor(meta, extractor)
         else:
-            return MitieEntityExtractor(meta, )
+            return MitieEntityExtractor(meta)
 
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]
