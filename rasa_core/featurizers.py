@@ -11,7 +11,7 @@ import json
 
 import jsonpickle
 import numpy as np
-from typing import Tuple, List, Optional, Dict, Text, Any
+from typing import Tuple, List, Optional, Dict, Text
 from builtins import str
 from collections import defaultdict
 
@@ -26,12 +26,12 @@ if typing.TYPE_CHECKING:
     from rasa_core.domain import Domain
 
 
-# mechanisms to be used to encode concrete state
 class FeaturizeMechanism(object):
-    """Transform the conversations state into machine learning formats.
+    """Base class for mechanisms to transform the conversations state
+    into machine learning formats.
 
-    FeaturizeMecahnism decides how the bot will transform the conversation state to a
-    format which a classifier can read."""
+    FeaturizeMecahnism decides how the bot will transform
+    the conversation state to a format which a classifier can read."""
 
     def create_helpers(self, domain):
         # will be used in label_tokenizer_featurize_mechanism
@@ -48,40 +48,6 @@ class FeaturizeMechanism(object):
         y = np.zeros(domain.num_actions, dtype=int)
         y[domain.index_for_action(action)] = 1
         return y
-
-    @staticmethod
-    def decode(feature_vec, input_feature_map, ndigits=8):
-        """Reverse operation to binary_encoded_features
-
-        :param feature_vec: binary feature vector
-        :param input_feature_map: map of all features
-        :param ndigits: number of digits to round to
-        :return: dictionary of active features
-        """
-
-        reversed_features = []
-        for bf in feature_vec:
-            non_zero_feature_idxs = np.where((0 != bf) & (bf != -1))
-            if np.any(non_zero_feature_idxs):
-                feature_tuples = []
-                for feature_idx in np.nditer(non_zero_feature_idxs):
-                    feat_name = input_feature_map[feature_idx]
-
-                    # round if necessary
-                    if ndigits is not None:
-                        feat_value = round(bf[feature_idx], ndigits)
-                    else:
-                        feat_value = bf[feature_idx]
-
-                    # convert numpy types to primitives
-                    if isinstance(feat_value, np.generic):
-                        feat_value = np.asscalar(feat_value)
-
-                    feature_tuples.append((feat_name, feat_value))
-                reversed_features.append(feature_tuples)
-            else:
-                reversed_features.append(None)
-        return reversed_features
 
 
 class BinaryFeaturizeMechanism(FeaturizeMechanism):
@@ -210,6 +176,7 @@ class LabelTokenizerFeaturizeMechanism(FeaturizeMechanism):
         other_labels = []  # slots
         for feature_name in input_feature_map.keys():
             if (feature_name.startswith('intent_')
+                    # include entity as user input
                     or feature_name.startswith('entity_')):
                 user_labels.append(feature_name)
             elif feature_name.startswith('prev_'):
@@ -298,9 +265,8 @@ class LabelTokenizerFeaturizeMechanism(FeaturizeMechanism):
         return used_features
 
 
-# actual tracker featurizers
 class Featurizer(object):
-
+    """Base class for actual tracker featurizers"""
     def __init__(self, featurize_mechanism=None):
         # type: (Optional[FeaturizeMechanism]) -> None
         if featurize_mechanism is not None:
@@ -592,28 +558,3 @@ class MaxHistoryFeaturizer(Featurizer):
                 unique_trackers_as_actions.append(tracker_actions)
 
         return unique_trackers_as_states, unique_trackers_as_actions
-
-    @staticmethod
-    def _deduplicate_training_data(X, y):
-        # type: (np.ndarray, np.ndarray) -> Tuple[np.ndarray, np.ndarray]
-        """Make sure every training example in X occurs exactly once."""
-
-        # we need to concat X and y to make sure that
-        # we do NOT throw out contradicting examples
-        # (same featurization but different labels).
-        # appends y to X so it appears to be just another feature
-        if not utils.is_training_data_empty(X):
-            casted_y = np.broadcast_to(
-                    y[:, np.newaxis, :], (y.shape[0],
-                                          X.shape[1],
-                                          y.shape[1]))
-
-            concatenated = np.concatenate((X, casted_y), axis=2)
-
-            t_data = np.unique(concatenated, axis=0)
-            X_unique = t_data[:, :, :X.shape[2]]
-            y_unique = t_data[:, 0, X.shape[2]:]
-
-            return X_unique, y_unique
-        else:
-            return X, y

@@ -9,11 +9,9 @@ import io
 import json
 import logging
 import os
-import warnings
 
 import numpy as np
 import pkg_resources
-from builtins import str
 from pykwalify.errors import SchemaError
 from six import string_types
 from six import with_metaclass
@@ -31,7 +29,6 @@ from rasa_core.actions.factories import (
 from rasa_core.conversation import DefaultTopic
 from rasa_core.conversation import Topic
 from rasa_core.events import ActionExecuted
-from rasa_core.featurizers import FeaturizeMechanism
 from rasa_core.slots import Slot
 from rasa_core.trackers import DialogueStateTracker, SlotSet
 from rasa_core.utils import read_yaml_file
@@ -166,8 +163,8 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
     def _is_predictable_event(event):
         return isinstance(event, ActionExecuted) and not event.unpredictable
 
+    @staticmethod
     def slice_feature_history(
-            self,
             tracker_history,  # type: List[Dict[Text, float]]
             slice_length  # type: int
     ):
@@ -189,23 +186,6 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
 
         return [self.get_active_features(tr) for tr in
                 tracker.generate_all_prior_states()]
-
-    def feature_vector_for_tracker(self, featurize_mechanism,
-                                   tracker, max_history):
-        raise("Deprecated, featurization is done by featurizer", DeprecationWarning)
-
-
-        # """Creates a 2D array of shape (max_history,num_features)
-        #
-        # max_history specifies the number of previous steps to be included
-        # in the input. Each row in the array corresponds to the binarised
-        # features of each state. Result is padded with default values if
-        # there are fewer than `max_history` states present."""
-        #
-        # all_features = self.states_for_tracker_history(tracker)
-        # return self.slice_feature_history(featurize_mechanism,
-        #                                   all_features,
-        #                                   max_history)
 
     def random_template_for(self, utter_action):
         if utter_action in self.templates:
