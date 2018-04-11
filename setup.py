@@ -7,6 +7,7 @@ exec(open('rasa_nlu/version.py').read())
 
 try:
     import pypandoc
+
     readme = pypandoc.convert_file('README.md', 'rst')
 except (IOError, ImportError):
     with io.open('README.md', encoding='utf-8') as f:
@@ -47,6 +48,9 @@ extras_requires = {
               "scipy",
               "spacy>2.0",
               ],
+    'tensorflow': ["scikit-learn",
+                   "tensorflow",
+                   ],
 }
 
 setup(
