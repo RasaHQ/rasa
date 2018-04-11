@@ -128,23 +128,43 @@ class KerasPolicy(Policy):
         params = self._get_valid_params(self.model.fit, **kwargs)
 
         self.model.fit(shuffled_X, shuffled_y, **params)
+        # the default parameter for epochs in keras fit is 1
         self.current_epoch = kwargs.get("epochs", 1)
         logger.info("Done fitting keras policy model")
 
         return training_data.metadata
 
-    def continue_training(self, trackers, domain):
-        # type: (List[DialogueStateTracker], Domain) -> None
+    def continue_training(self, training_trackers, domain, **kwargs):
+        # type: (List[DialogueStateTracker], Domain, **Any) -> None
+        import numpy as np
 
-        training_data = self.featurize_for_training(trackers,
-                                                    domain)
-        # fit to one extra example using updated trackers
-        self.current_epoch += 1
-        self.model.fit(training_data.X, training_data.y,
-                       epochs=self.current_epoch + 1,
-                       batch_size=len(trackers),
-                       verbose=0,
-                       initial_epoch=self.current_epoch)
+        # takes the new example labelled and learns it
+        # via taking `epochs` samples of n_batch-1 parts of the training data,
+        # inserting our new example and learning them. this means that we can
+        # ask the network to fit the example without overemphasising
+        # its importance (and therefore throwing off the biases)
+
+        batch_size = kwargs.get('batch_size', 5)
+        epochs = kwargs.get('epochs', 50)
+
+        num_samples = batch_size - 1
+        num_prev_examples = len(training_trackers) - 1
+        for _ in range(epochs):
+            sampled_idx = np.random.choice(range(num_prev_examples),
+                                           replace=False,
+                                           size=min(num_samples,
+                                                    num_prev_examples))
+            trackers = [training_trackers[i]
+                        for i in sampled_idx] + training_trackers[-1:]
+            training_data = self.featurize_for_training(trackers,
+                                                        domain)
+            # fit to one extra example using updated trackers
+            self.model.fit(training_data.X, training_data.y,
+                           epochs=self.current_epoch + 1,
+                           batch_size=len(training_data.y),
+                           verbose=0,
+                           initial_epoch=self.current_epoch)
+            self.current_epoch += 1
 
     def predict_action_probabilities(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> List[float]

@@ -72,24 +72,36 @@ class MemoizationPolicy(Policy):
         return augmented
 
     def _add(self, trackers_as_states, trackers_as_actions,
-             domain, disable_bar=False):
+             domain, online=False):
 
         assert len(trackers_as_states[0]) == self.max_history, \
             ("Trying to mem featurized data with {} historic turns. Expected: "
              "{}".format(len(trackers_as_states[0]), self.max_history))
 
         pbar = tqdm(zip(trackers_as_states, trackers_as_actions),
-                    desc="Processed actions", disable=disable_bar)
+                    desc="Processed actions", disable=online)
         for states, action in pbar:
-            for states_augmented in self._create_partial_histories(states):
+            for i, states_augmented in enumerate(
+                    self._create_partial_histories(states)):
                 feature_key = self._create_feature_key(states_augmented)
                 feature_item = domain.index_for_action(action)
 
                 if feature_key in self.lookup.keys():
                     if self.lookup[feature_key] != feature_item:
-                        # delete contradicting example created by
-                        # partial history augmentation from memory
-                        self.lookup[feature_key] = None
+                        if online and i == 0:
+                            logger.info("Original stories are "
+                                        "different for {} -- {}\n"
+                                        "Memorized the new ones for "
+                                        "now. Delete contradicting "
+                                        "examples after exporting "
+                                        "the new stories."
+                                        "".format(states_augmented,
+                                                  action))
+                            self.lookup[feature_key] = feature_item
+                        else:
+                            # delete contradicting example created by
+                            # partial history augmentation from memory
+                            self.lookup[feature_key] = None
                 else:
                     self.lookup[feature_key] = feature_item
 
@@ -124,15 +136,17 @@ class MemoizationPolicy(Policy):
                     "".format(len(self.lookup)))
         return metadata
 
-    def continue_training(self, trackers, domain):
-        # type: (List[DialogueStateTracker], Domain) -> None
+    def continue_training(self, trackers, domain, **kwargs):
+        # type: (List[DialogueStateTracker], Domain, **Any) -> None
+
+        # add only the last tracker, because it is the only new one
         (trackers_as_states,
          trackers_as_actions,
-         _) = self.featurizer.training_states_and_actions(trackers,
+         _) = self.featurizer.training_states_and_actions(trackers[-1:],
                                                           domain)
         # fit to one extra example
         self._add(trackers_as_states, trackers_as_actions,
-                  domain, disable_bar=True)
+                  domain, online=True)
 
     def _recall(self, states):
         return self.lookup.get(self._create_feature_key(states))

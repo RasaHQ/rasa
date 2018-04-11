@@ -176,16 +176,35 @@ class SklearnPolicy(Policy):
 
         return training_data.metadata
 
-    def continue_training(self, trackers, domain):
-        # type: (list[DialogueStateTracker], Domain) -> None
-        training_data = self.featurize_for_training(trackers,
-                                                    domain)
-        X, y = self._extract_training_data(training_data)
-        Xt, yt = self._preprocess_data(X, y)
-        if not hasattr(self.model, 'partial_fit'):
-            raise TypeError("Continuing training is only possible with "
-                            "sklearn models that support 'partial_fit'.")
-        self.model.partial_fit(Xt, yt)
+    def continue_training(self, training_trackers, domain, **kwargs):
+        # type: (list[DialogueStateTracker], Domain, **Any) -> None
+
+        # takes the new example labelled and learns it
+        # via taking `epochs` samples of n_batch-1 parts of the training data,
+        # inserting our new example and learning them. this means that we can
+        # ask the network to fit the example without overemphasising
+        # its importance (and therefore throwing off the biases)
+        batch_size = kwargs.get('batch_size', 5)
+        epochs = kwargs.get('epochs', 50)
+
+        num_samples = batch_size - 1
+        num_prev_examples = len(training_trackers) - 1
+        for _ in range(epochs):
+            sampled_idx = np.random.choice(range(num_prev_examples),
+                                           replace=False,
+                                           size=min(num_samples,
+                                                    num_prev_examples))
+            trackers = [training_trackers[i]
+                        for i in sampled_idx] + training_trackers[-1:]
+
+            training_data = self.featurize_for_training(trackers,
+                                                        domain)
+            X, y = self._extract_training_data(training_data)
+            Xt, yt = self._preprocess_data(X, y)
+            if not hasattr(self.model, 'partial_fit'):
+                raise TypeError("Continuing training is only possible with "
+                                "sklearn models that support 'partial_fit'.")
+            self.model.partial_fit(Xt, yt)
 
     def _postprocess_prediction(self, y_proba):
         yp = y_proba[0].tolist()

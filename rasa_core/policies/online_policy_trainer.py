@@ -199,10 +199,10 @@ class OnlinePolicyEnsemble(PolicyEnsemble):
         logger.info("Stories got exported to '{}'.".format(
                 os.path.abspath(exported.path)))
 
-    def continue_training(self, trackers, domain):
-        # type: (List[DialogueStateTracker], Domain) -> None
+    def continue_training(self, trackers, domain, **kwargs):
+        # type: (List[DialogueStateTracker], Domain, **Any) -> None
         for p in self.policies:
-            p.continue_training(trackers, domain)
+            p.continue_training(trackers, domain, **kwargs)
 
     def _fit_example(self, tracker, domain):
         # takes the new example labelled and learns it
@@ -219,9 +219,11 @@ class OnlinePolicyEnsemble(PolicyEnsemble):
                                                     num_examples))
             trackers = [self.training_trackers[i]
                         for i in sampled_idx] + [tracker]
-            self.continue_training(trackers, domain)
 
         self.training_trackers.append(tracker)
+        self.continue_training(self.training_trackers, domain,
+                               batch_size=self.batch_size,
+                               epochs=self.epochs)
 
     def write_out_story(self, tracker):
         # takes our new example and writes it in markup story format
