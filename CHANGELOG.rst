@@ -43,6 +43,7 @@ Changed
 - updated registry, added tensorflow_embedding pipeline
 - changed key name for a file in ngram featurizer
 - changed jsonObserver to generate logs without a record seperator
+- Improve jsonschema validation: text attribute of training data samples can not be empty
 
 Removed
 -------
