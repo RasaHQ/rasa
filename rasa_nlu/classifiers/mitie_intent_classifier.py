@@ -104,6 +104,9 @@ class MitieIntentClassifier(Component):
 
         meta = model_metadata.for_component(cls.name)
         file_name = meta.get("classifier_file", MITIE_MODEL_FILE_NAME)
+
+        if not file_name:
+            return cls(meta)
         classifier_file = os.path.join(model_dir, file_name)
         if os.path.exists(classifier_file):
             classifier = mitie.text_categorizer(classifier_file)

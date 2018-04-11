@@ -153,14 +153,14 @@ class MitieEntityExtractor(EntityExtractor):
         file_name = meta.get("classifier_file", MITIE_ENTITY_MODEL_FILE_NAME)
 
         if not file_name:
-            return MitieEntityExtractor(meta)
+            return cls(meta)
 
         classifier_file = os.path.join(model_dir, file_name)
         if os.path.exists(classifier_file):
             extractor = mitie.named_entity_extractor(classifier_file)
-            return MitieEntityExtractor(meta, extractor)
+            return cls(meta, extractor)
         else:
-            return MitieEntityExtractor(meta)
+            return cls(meta)
 
     def persist(self, model_dir):
         # type: (Text) -> Dict[Text, Any]
