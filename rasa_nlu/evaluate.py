@@ -472,58 +472,38 @@ def find_component(interpreter, component_name):
     return None
 
 
-def patch_duckling_extractors(interpreter, extractors):  # pragma: no cover
-    """Removes the basic duckling extractor from the set of extractors and
-    adds dimension-suffixed ones.
+def remove_duckling_extractors(extractors):
+    """Removes duckling exctractors"""
 
-    :param interpreter: a rasa nlu interpreter object
-    :param extractors: a set of entity extractor names used in the interpreter
-    """
-
-    extractors = extractors.copy()
     used_duckling_extractors = duckling_extractors.intersection(extractors)
     for duckling_extractor in used_duckling_extractors:
+        logger.info("Skipping evaluation of {}".format(duckling_extractor))
         extractors.remove(duckling_extractor)
-        for dim in get_duckling_dimensions(interpreter, duckling_extractor):
-            new_extractor_name = combine_extractor_and_dimension_name(
-                    duckling_extractor, dim)
-            extractors.add(new_extractor_name)
+
     return extractors
 
 
-def patch_duckling_entity(entity):
-    """Patches a single entity by combining extractor and dimension name."""
-
-    if entity["extractor"] in duckling_extractors:
-        entity = entity.copy()
-        entity["extractor"] = combine_extractor_and_dimension_name(
-                entity["extractor"], entity["entity"])
-
-    return entity
-
-
-def patch_duckling_entities(entity_predictions):
-    """Adds the duckling dimension as a suffix to the extractor name.
-
-    As a result, there is only is one prediction per
-    token per extractor name."""
+def remove_duckling_entities(entity_predictions):
+    """Removes duckling entity predictions"""
 
     patched_entity_predictions = []
     for entities in entity_predictions:
         patched_entities = []
         for e in entities:
-            patched_entities.append(patch_duckling_entity(e))
-        patched_entity_predictions.append(patched_entities)
+            if e["extractor"] not in duckling_extractors:
+                patched_entities.append(e)
+            patched_entity_predictions.append(patched_entities)
 
     return patched_entity_predictions
 
 
-def patch_duckling(interpreter, extractors, entity_predictions):
-    """combines patch_duckling_entities and patch_duckling_extractors"""
+def remove_duckling(extractors, entity_predictions):
+    """Removes duckling from evaluation (both extractors and
+    entity predictions)"""
 
     if extractors.intersection(duckling_extractors):
-        entity_predictions = patch_duckling_entities(entity_predictions)
-        extractors = patch_duckling_extractors(interpreter, extractors)
+        entity_predictions = remove_duckling_entities(entity_predictions)
+        extractors = remove_duckling_extractors(extractors)
 
     return extractors, entity_predictions
 
@@ -542,9 +522,8 @@ def run_evaluation(data_path, model_path,
         entity_targets = get_entity_targets(test_data)
         entity_predictions, tokens = get_entity_predictions(interpreter,
                                                             test_data)
-        extractors, entity_predictions = patch_duckling(interpreter,
-                                                        extractors,
-                                                        entity_predictions)
+        extractors, entity_predictions = remove_duckling(extractors,
+                                                         entity_predictions)
         logger.info("Entity evaluation results:")
         evaluate_entities(entity_targets, entity_predictions, tokens,
                           extractors)
@@ -663,10 +642,8 @@ def compute_entity_metrics(interpreter, corpus):
 
     entity_targets = get_entity_targets(corpus)
     entity_predictions, tokens = get_entity_predictions(interpreter, corpus)
-
-    extractors, entity_predictions = patch_duckling(interpreter, extractors,
-                                                    entity_predictions)
-
+    extractors, entity_predictions = remove_duckling(extractors,
+                                                     entity_predictions)
     aligned_predictions = align_all_entity_predictions(entity_targets,
                                                        entity_predictions,
                                                        tokens, extractors)
