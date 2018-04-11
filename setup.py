@@ -3,7 +3,7 @@ import io
 
 # Avoids IDE errors, but actual version is read from version.py
 __version__ = None
-exec (open('rasa_nlu/version.py').read())
+exec(open('rasa_nlu/version.py').read())
 
 try:
     import pypandoc
