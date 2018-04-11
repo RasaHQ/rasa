@@ -8,7 +8,7 @@ import json
 
 import pytest
 
-from rasa_core import training
+from rasa_core.policies import PolicyTrainer
 from rasa_core import utils
 from rasa_core.actions.action import ActionListen, ACTION_LISTEN_NAME
 from rasa_core.channels import UserMessage
@@ -17,7 +17,6 @@ from rasa_core.domain import TemplateDomain
 from rasa_core.events import (
     UserUttered, TopicSet, ActionExecuted, Restarted, ActionReverted,
     UserUtteranceReverted)
-from rasa_core.featurizers import BinaryFeaturizer
 from rasa_core.tracker_store import InMemoryTrackerStore, RedisTrackerStore
 from rasa_core.trackers import DialogueStateTracker
 from tests.conftest import DEFAULT_STORIES_FILE
@@ -99,8 +98,7 @@ def test_tracker_write_to_story(tmpdir, default_domain):
             "data/test_dialogues/enter_name.json", default_domain)
     p = tmpdir.join("export.md")
     tracker.export_stories_to_file(p.strpath)
-    trackers = training.extract_trackers(p.strpath, default_domain,
-                                         BinaryFeaturizer())
+    trackers = PolicyTrainer.extract_trackers(p.strpath, default_domain)
     assert len(trackers) == 1
     recovered = trackers[0]
     assert len(recovered.events) == 7
@@ -321,12 +319,9 @@ def test_traveling_back_in_time(default_domain):
 
 
 def test_dump_and_restore_as_json(default_agent, tmpdir):
-    trackers = training.extract_trackers(
+    trackers = PolicyTrainer.extract_trackers(
             DEFAULT_STORIES_FILE,
-            default_agent.domain,
-            default_agent.featurizer,
-            default_agent.interpreter,
-            default_agent.policy_ensemble.max_history())
+            default_agent.domain)
 
     out_path = tmpdir.join("dumped_tracker.json")
 
