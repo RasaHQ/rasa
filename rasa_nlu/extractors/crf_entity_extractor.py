@@ -195,10 +195,12 @@ class CRFEntityExtractor(EntityExtractor):
         entity_label = self._entity_from_label(label)
 
         while not finished:
-            label, label_confidence = self.most_likely_entity(
-                    ent_word_idx, entities)
-
-            confidence = min(confidence, label_confidence)
+            try:
+                label, label_confidence = self.most_likely_entity(
+                        ent_word_idx, entities)
+                confidence = min(confidence, label_confidence)
+            except IndexError:
+                pass
 
             if len(entities) > ent_word_idx and label[2:] != entity_label:
                 # words are not tagged the same entity class
