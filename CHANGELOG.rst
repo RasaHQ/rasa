@@ -15,6 +15,7 @@ Added
   all files in that directory
 - parameter to specify NLU project when instantiating a ``RasaNLUInterpreter``
 - simple ``/respond`` endpoint to get bot response to a user message
+- ``/conversations`` endpoint for listing sender ids of running conversations
 
 Changed
 -------

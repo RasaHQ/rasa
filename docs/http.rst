@@ -474,6 +474,29 @@ Endpoints
 
    :statuscode 200: no error
 
+
+.. http:get:: /conversations
+
+   List the sender ids of all the running conversations.
+
+   **Example request**:
+
+   .. sourcecode:: bash
+
+      curl http://localhost:5005/conversations | python -mjson.tool
+
+   **Example response**:
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Vary: Accept
+      Content-Type: text/javascript
+
+      ["default"]
+
+   :statuscode 200: no error
+
 .. http:get:: /version
 
    Version of Rasa Core that is currently running.
