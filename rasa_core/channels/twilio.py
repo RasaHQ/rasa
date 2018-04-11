@@ -29,9 +29,9 @@ class TwilioOutput(Client, OutputChannel):
         message = None
         try:
             while not message and self.send_retry < self.max_retry:
-                message = self.client.messages.create(body=text,
-                                                      to=recipient_number,
-                                                      from_=self.twilio_number)
+                message = self.messages.create(body=text,
+                                               to=recipient_number,
+                                               from_=self.twilio_number)
                 self.send_retry += 1
         except TwilioRestException as e:
             logger.error("Something went wrong " + repr(e.msg))
@@ -59,8 +59,6 @@ class TwilioInput(HttpInputComponent):
 
     def blueprint(self, on_new_message):
         twilio_webhook = Blueprint('twilio_webhook', __name__)
-        out_channel = TwilioOutput(self.account_sid, self.auth_token,
-                                   self.twilio_number)
 
         @twilio_webhook.route("/", methods=['GET'])
         def health():
@@ -70,6 +68,9 @@ class TwilioInput(HttpInputComponent):
         def message():
             sender = request.values.get('From', None)
             text = request.values.get('Body', None)
+
+            out_channel = TwilioOutput(self.account_sid, self.auth_token,
+                                       self.twilio_number)
 
             if sender is not None and message is not None:
                 try:
@@ -85,3 +86,4 @@ class TwilioInput(HttpInputComponent):
                 logger.debug("Invalid message")
 
             return "success"
+        return twilio_webhook
