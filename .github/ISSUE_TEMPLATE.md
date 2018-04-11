@@ -2,7 +2,7 @@
 
 **Rasa NLU version** (e.g. `0.7.3`):
 
-**Used backend / pipeline** (`spacy_sklearn`, ...):
+**Used backend / pipeline** (`mitie`, `spacy_sklearn`, ...):
 
 **Operating system** (windows, osx, ...):
 

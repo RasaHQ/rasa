@@ -149,7 +149,7 @@ Try to create your regular expressions in a way that they match as few words as 
 instead of ``hey.*``, as the later one might match the whole message whereas the first one only matches a single word.
 
 Regex features for entity extraction are currently only supported by the ``ner_crf`` component! Hence, other entity
-extractors, like ``ner_spacy`` won't use the generated features and their presence will not improve entity recognition
+extractors, like ``ner_mitie`` won't use the generated features and their presence will not improve entity recognition
 for these extractors. Currently, all intent classifiers make use of available regex features.
 
 .. note::
