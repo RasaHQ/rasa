@@ -110,10 +110,9 @@ class KerasPolicy(Policy):
               ):
         # type: (...) -> Dict[Text: Any]
 
-        max_training_samples = kwargs.get('max_training_samples')
         training_data = self.featurize_for_training(training_trackers,
                                                     domain,
-                                                    max_training_samples)
+                                                    **kwargs)
 
         shuffled_X, shuffled_y = training_data.shuffled_X_y()
 

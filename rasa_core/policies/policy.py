@@ -36,16 +36,17 @@ class Policy(object):
 
         if self.featurizer is None:
             self.featurizer = featurizer
-        else:
-            logger.warning("Trying to reset featurizer {} "
-                           "for policy {} by agent featurizer {}. "
-                           "Agent featurizer is ignored."
+        elif featurizer:
+            logger.warning("Trying to reset {} "
+                           "for {} by agent's {}. "
+                           "Agent's featurizer is ignored."
                            "".format(type(self.featurizer).__name__,
                                      type(self).__name__,
                                      type(featurizer).__name__))
 
     @staticmethod
-    def _standard_featurizer(max_history=5):
+    def _standard_featurizer(max_history=None):
+        max_history = max_history or 5
         return MaxHistoryFeaturizer(BinaryFeaturizeMechanism(),
                                     max_history)
 
@@ -67,15 +68,32 @@ class Policy(object):
             self,
             trackers,  # type: List[DialogueStateTracker]
             domain,  # type: Domain
-            max_training_samples=None,  # type: Optional[int]
+            **kwargs  # type: **Any
     ):
         # type: (...) -> DialogueTrainingData
         """Transform training trackers into a vector representation.
         The trackers, consisting of multiple turns, will be transformed
         into a float vector which can be used by a ML model."""
 
+        max_training_samples = kwargs.get('max_training_samples')
+        max_history = kwargs.get('max_history')
         if self.featurizer is None:
-            self.featurizer = self._standard_featurizer()
+            self.featurizer = self._standard_featurizer(max_history)
+        elif max_history:
+            if isinstance(self.featurizer,
+                          MaxHistoryFeaturizer):
+                logger.warning("Trying to reset {}'s "
+                               "max_history={} by agent's max_history={}. "
+                               "Agent's max_history is ignored."
+                               "".format(type(self.featurizer).__name__,
+                                         self.featurizer.max_history,
+                                         max_history))
+            else:
+                logger.warning("Trying to set max_history={} "
+                               "for {} by agent. "
+                               "Agent's max_history is ignored."
+                               "".format(max_history,
+                                         type(self.featurizer).__name__))
 
         training_data, _ = self.featurizer.featurize_trackers(trackers,
                                                               domain)
@@ -120,7 +138,8 @@ class Policy(object):
     def persist(self, path):
         # type: (Text) -> None
         """Persists the policy to a storage."""
-        self.featurizer.persist(path)
+        if self.featurizer:
+            self.featurizer.persist(path)
 
     @classmethod
     def load(cls, path):

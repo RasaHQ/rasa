@@ -17,9 +17,14 @@ from rasa_core.featurizers import MaxHistoryFeaturizer, \
 
 
 def test_can_read_test_story(default_domain):
+    # TODO max_history was controlling augmentation
     trackers = PolicyTrainer.extract_trackers(
             "data/test_stories/stories.md",
-            default_domain)
+            default_domain,
+            use_story_concatenation=False,
+            tracker_limit=1000,
+            remove_duplicates=False
+    )
     assert len(trackers) == 7
     # this should be the story simple_story_with_only_end -> show_it_all
     # the generated stories are in a non stable order - therefore we need to
@@ -46,11 +51,20 @@ def test_persist_and_read_test_story_graph(tmpdir, default_domain):
     with io.open(out_path.strpath, "w") as f:
         f.write(graph.as_story_string())
 
-    recovered_trackers = PolicyTrainer.extract_trackers(out_path.strpath,
-                                                        default_domain)
+    recovered_trackers = PolicyTrainer.extract_trackers(
+            out_path.strpath,
+            default_domain,
+            use_story_concatenation=False,
+            tracker_limit=1000,
+            remove_duplicates=False
+    )
     existing_trackers = PolicyTrainer.extract_trackers(
             "data/test_stories/stories.md",
-            default_domain)
+            default_domain,
+            use_story_concatenation=False,
+            tracker_limit=1000,
+            remove_duplicates=False
+    )
 
     existing_stories = {t.export_stories() for t in existing_trackers}
     for t in recovered_trackers:
@@ -65,11 +79,20 @@ def test_persist_and_read_test_story(tmpdir, default_domain):
     out_path = tmpdir.join("persisted_story.md")
     Story(graph.story_steps).dump_to_file(out_path.strpath)
 
-    recovered_trackers = PolicyTrainer.extract_trackers(out_path.strpath,
-                                                        default_domain)
+    recovered_trackers = PolicyTrainer.extract_trackers(
+            out_path.strpath,
+            default_domain,
+            use_story_concatenation=False,
+            tracker_limit=1000,
+            remove_duplicates=False
+    )
     existing_trackers = PolicyTrainer.extract_trackers(
             "data/test_stories/stories.md",
-            default_domain)
+            default_domain,
+            use_story_concatenation=False,
+            tracker_limit=1000,
+            remove_duplicates=False
+    )
     existing_stories = {t.export_stories() for t in existing_trackers}
     for t in recovered_trackers:
         story_str = t.export_stories()

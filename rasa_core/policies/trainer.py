@@ -70,9 +70,12 @@ class PolicyTrainer(object):
     def extract_trackers(
             resource_name,  # type: Text
             domain,  # type: Domain
-            augmentation_factor=20,  # type: int
             remove_duplicates=True,  # type: bool
-            max_number_of_trackers=2000  # type: int
+            augmentation_factor=20,  # type: int
+            max_number_of_trackers=2000,  # type: int
+            tracker_limit=None,  # type: Optional[int]
+            use_story_concatenation=True  # type: bool
+
     ):
         # type: (...) -> List[DialogueStateTracker]
         if resource_name:
@@ -86,7 +89,9 @@ class PolicyTrainer(object):
             g = TrainingsDataGenerator(graph, domain,
                                        remove_duplicates,
                                        augmentation_factor,
-                                       max_number_of_trackers)
+                                       max_number_of_trackers,
+                                       tracker_limit,
+                                       use_story_concatenation)
             return g.generate()
         else:
             return []

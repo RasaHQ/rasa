@@ -20,7 +20,7 @@ def test_create_train_data_no_history(default_domain):
             default_domain,
             augmentation_factor=0
     )
-    assert len(training_trackers) == 11
+    assert len(training_trackers) == 3
     (decoded, _, _) = featurizer.training_states_and_actions(
             training_trackers, default_domain)
 
@@ -49,7 +49,7 @@ def test_create_train_data_with_history(default_domain):
         default_domain,
         augmentation_factor=0
     )
-    assert len(training_trackers) == 11
+    assert len(training_trackers) == 3
     (decoded, _, _) = featurizer.training_states_and_actions(
         training_trackers, default_domain)
     (decoded, _, _) = featurizer.training_states_and_actions(

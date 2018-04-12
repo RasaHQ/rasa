@@ -98,7 +98,13 @@ def test_tracker_write_to_story(tmpdir, default_domain):
             "data/test_dialogues/enter_name.json", default_domain)
     p = tmpdir.join("export.md")
     tracker.export_stories_to_file(p.strpath)
-    trackers = PolicyTrainer.extract_trackers(p.strpath, default_domain)
+    trackers = PolicyTrainer.extract_trackers(
+            p.strpath,
+            default_domain,
+            use_story_concatenation=False,
+            tracker_limit=1000,
+            remove_duplicates=False
+    )
     assert len(trackers) == 1
     recovered = trackers[0]
     assert len(recovered.events) == 7

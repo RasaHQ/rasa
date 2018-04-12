@@ -311,13 +311,13 @@ class Featurizer(object):
             else:
                 story_labels = self.featurize_mechanism.encode_action(tracker_actions,
                                                                       domain)
-
+            if labels:
+                assert type(labels[-1]) == type(story_labels), \
+                    "Label trainnig data is not uniformly sized."
             labels.append(story_labels)
 
         y = np.array(labels)
-        assert len(y.shape) > 1, \
-            ("Label trainnig data has less than 2 dimensions "
-             "{}".format(len(y.shape)))
+
         return y
 
     def training_states_and_actions(

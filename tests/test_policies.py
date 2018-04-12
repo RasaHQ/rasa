@@ -17,8 +17,6 @@ from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.policies.scoring_policy import ScoringPolicy
 from rasa_core.policies.sklearn_policy import SklearnPolicy
 from rasa_core.trackers import DialogueStateTracker
-from rasa_core.training import (
-    DialogueTrainingData)
 from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 from rasa_core.policies import PolicyTrainer
 from rasa_core.featurizers import MaxHistoryFeaturizer, \
@@ -67,9 +65,7 @@ class PolicyTestCollection(object):
 
     def test_persist_and_load(self, trained_policy, default_domain, tmpdir):
         trained_policy.persist(tmpdir.strpath)
-        loaded = trained_policy.__class__.load(tmpdir.strpath,
-                                               trained_policy.featurizer,
-                                               trained_policy.max_history)
+        loaded = trained_policy.__class__.load(tmpdir.strpath)
         trackers = train_trackers(default_domain)
 
         for tracker in trackers:
@@ -237,7 +233,7 @@ class TestSklearnPolicy(PolicyTestCollection):
                                                default_domain.slots,
                                                default_domain.topics,
                                                default_domain.default_topic)
-            for e in tracker._aplied_events():
+            for e in tracker._applied_events():
                 if isinstance(e, ActionExecuted):
                     new_action = default_domain.action_for_index(
                         np.random.choice(classes)).name()

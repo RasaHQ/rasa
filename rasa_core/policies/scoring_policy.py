@@ -51,12 +51,12 @@ class ScoringPolicy(MemoizationPolicy):
         # trying to recall with cleared slots and entities
         augmented_states = list(states)  # COPY!
         for i in range(self.max_history):
-
-            for slot in domain.slot_features:
-                augmented_states[i][slot] = 0.0
-            for entity in domain.entity_features:
-                if augmented_states[i].get(entity):
-                    augmented_states[i][entity] = 0.0
+            if augmented_states[i]:
+                for slot in domain.slot_features:
+                    augmented_states[i][slot] = 0.0
+                for entity in domain.entity_features:
+                    if augmented_states[i].get(entity):
+                        augmented_states[i][entity] = 0.0
 
             logger.debug('trying to recall {}'.format(augmented_states))
             memorised = self._recall(augmented_states)
@@ -68,12 +68,12 @@ class ScoringPolicy(MemoizationPolicy):
         # trying to recall with cleared slots and entities and history
         augmented_states = list(states)  # COPY!
         for i in range(self.max_history):
-
-            for slot in domain.slot_features:
-                augmented_states[i][slot] = 0.0
-            for entity in domain.entity_features:
-                if augmented_states[i].get(entity):
-                    augmented_states[i][entity] = 0.0
+            if augmented_states[i]:
+                for slot in domain.slot_features:
+                    augmented_states[i][slot] = 0.0
+                for entity in domain.entity_features:
+                    if augmented_states[i].get(entity):
+                        augmented_states[i][entity] = 0.0
 
             if i > 0:
                 augmented_states[i - 1] = None

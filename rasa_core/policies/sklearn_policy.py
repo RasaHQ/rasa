@@ -85,10 +85,9 @@ class SklearnPolicy(Policy):
     def prepare(self, featurizer):
         # type: (Featurizer) -> None
 
-        if (not self.featurizer and
-                featurizer and
-                not isinstance(featurizer,
-                               MaxHistoryFeaturizer)):
+        if (self.featurizer is None and
+                featurizer and not isinstance(featurizer,
+                                              MaxHistoryFeaturizer)):
             featurizer = MaxHistoryFeaturizer(featurizer.featurize_mechanism)
             logger.debug("SklearnPolicy only works with "
                          "MaxHistoryFeaturizer. "
@@ -144,10 +143,9 @@ class SklearnPolicy(Policy):
               ):
         # type: (...) -> Dict[Text: Any]
 
-        max_training_samples = kwargs.get('max_training_samples')
         training_data = self.featurize_for_training(training_trackers,
                                                     domain,
-                                                    max_training_samples)
+                                                    **kwargs)
 
         X, y = self._extract_training_data(training_data)
         model = self.model_architecture(**kwargs)
