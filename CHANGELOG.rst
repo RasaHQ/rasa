@@ -42,6 +42,7 @@ Changed
 - updated documentation, added info about tensorflow_embedding pipeline
 - updated registry, added tensorflow_embedding pipeline
 - changed key name for a file in ngram featurizer
+- made the NLU server's ``/evaluate`` endpoint asynchronous
 
 Removed
 -------
