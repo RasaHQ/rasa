@@ -172,7 +172,7 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         """Slices states from the trackers history.
 
         If the slice is at the array borders, padding will be added to ensure
-        he slice length."""
+        the slice length."""
 
         slice_end = len(tracker_history)
         slice_start = max(0, slice_end - slice_length)

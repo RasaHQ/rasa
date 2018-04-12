@@ -537,7 +537,7 @@ class MaxHistoryFeaturizer(Featurizer):
         From multiple states that create equal featurizations
         we only need to keep one."""
 
-        hashed_featurizations = []
+        hashed_featurizations = set()
 
         # collected trackers_as_states that created different featurizations
         unique_trackers_as_states = []
@@ -553,7 +553,7 @@ class MaxHistoryFeaturizer(Featurizer):
             # only continue with tracker_states that created a
             # hashed_featurization we haven't observed
             if hashed not in hashed_featurizations:
-                hashed_featurizations.append(hashed)
+                hashed_featurizations.add(hashed)
                 unique_trackers_as_states.append(tracker_states)
                 unique_trackers_as_actions.append(tracker_actions)
 

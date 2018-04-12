@@ -55,7 +55,7 @@ class TrainingsDataGenerator(object):
         connect complete stories. Afterwards, duplicate stories will be
         removed and the data is augmented (if augmentation is enabled)."""
 
-        self.hashed_featurizations = []
+        self.hashed_featurizations = set()
         self.story_graph = story_graph.with_cycles_removed()
         self.domain = domain
         self.config = ExtractorConfig(
@@ -257,7 +257,7 @@ class TrainingsDataGenerator(object):
             # only continue with trackers that created a
             # hashed_featurization we haven't observed
             if hashed not in self.hashed_featurizations:
-                self.hashed_featurizations.append(hashed)
+                self.hashed_featurizations.add(hashed)
                 unique_trackers.append(tracker)
 
         return unique_trackers

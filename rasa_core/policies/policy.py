@@ -10,6 +10,8 @@ from inspect import signature
 from builtins import object
 from typing import \
     Any, List, Optional, Text, Dict, Callable
+
+from copy import deepcopy
 from rasa_core.featurizers import \
     MaxHistoryFeaturizer, BinaryFeaturizeMechanism
 
@@ -35,7 +37,9 @@ class Policy(object):
         # type: (Featurizer) -> None
 
         if self.featurizer is None:
-            self.featurizer = featurizer
+            # we need to make a copy to allow for different policies
+            # to have different featurizers of the same type
+            self.featurizer = deepcopy(featurizer)
         elif featurizer:
             logger.warning("Trying to reset {} "
                            "for {} by agent's {}. "
