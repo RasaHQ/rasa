@@ -118,7 +118,7 @@ Code to create a Messenger-compatible webserver looks like this:
 
     input_channel = SlackInput(
        slack_token="YOUR_SLACK_TOKEN",  # this is the `bot_user_o_auth_access_token`
-       slack_channel="YOUR_SLACK_CHANNEL"  # the name of your channel to which the bot posts
+       slack_channel="YOUR_SLACK_CHANNEL"  # the name of your channel to which the bot posts (optional)
     )
 
     agent.handle_channel(HttpInputChannel(5004, "/app", input_channel))
@@ -126,7 +126,7 @@ Code to create a Messenger-compatible webserver looks like this:
 The arguments for the ``HttpInputChannel`` are the port, the url prefix, and the input channel.
 The default endpoint for receiving facebook messenger messages is ``/webhook``, so the example
 above would listen for messages on ``/app/webhook``. This is the url you should add in the
-facebook developer portal.
+facebook developer portal. N.b. if you do not set the ``slack_channel`` keyword argument, messages will by delivered back to the user who sent them.
 
 .. note::
 
