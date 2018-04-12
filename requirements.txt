@@ -26,3 +26,4 @@ requests==2.18.4
 python-telegram-bot==8.1.1
 rasa_nlu==0.12.0a2
 mattermostwrapper==2.1
+twilio==6.11.0
