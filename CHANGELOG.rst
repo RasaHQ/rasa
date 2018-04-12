@@ -26,6 +26,7 @@ Removed
 
 Fixed
 -----
+- Slack connector: ``slack_channel`` kwarg is used to send messages either back to the user or to a static channel
 
 [0.8.2] - 2018-02-13
 ^^^^^^^^^^^^^^^^^^^^
