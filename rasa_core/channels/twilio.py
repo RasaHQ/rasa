@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -25,6 +26,7 @@ class TwilioOutput(Client, OutputChannel):
         self.max_retry = 5
 
     def send_text_message(self, recipient_number, text):
+        """Sends text message"""
         from twilio.base.exceptions import TwilioRestException
         message = None
         try:
@@ -74,6 +76,8 @@ class TwilioInput(HttpInputComponent):
 
             if sender is not None and message is not None:
                 try:
+                    # @ signs get corrupted in SMSes by some carriers
+                    text = text.replace('¡', '@')
                     on_new_message(UserMessage(text, out_channel, sender))
                 except Exception as e:
                     logger.error("Exception when trying to handle "

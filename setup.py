@@ -50,7 +50,8 @@ install_requires = [
     'scikit-learn',
     'rasa_nlu>=0.12.0a2',
     'slackclient',
-    'python-telegram-bot'
+    'python-telegram-bot',
+    'twilio'
 ]
 
 extras_requires = {

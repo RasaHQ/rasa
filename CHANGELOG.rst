@@ -15,6 +15,8 @@ Added
   all files in that directory
 - parameter to specify NLU project when instantiating a ``RasaNLUInterpreter``
 - simple ``/respond`` endpoint to get bot response to a user message
+- added a Mattermost channel that allows Rasa Core to communicate via a Mattermost app
+- added a Twilio channel that allows Rasa Core to communicate via SMS
 
 Changed
 -------
