@@ -123,8 +123,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
             training_trackers, default_domain)
 
         for ii in range(len(trackers_as_states)):
-            recalled = trained_policy._recall(trackers_as_states[ii],
-                                              default_domain)
+            recalled = trained_policy._recall(trackers_as_states[ii])
             assert recalled == default_domain.index_for_action(
                 trackers_as_actions[ii])
 
