@@ -9,7 +9,6 @@ from functools import wraps
 
 import simplejson
 import six
-import time
 from builtins import str
 from klein import Klein
 from twisted.internet import reactor, threads
@@ -310,7 +309,7 @@ class RasaNLU(object):
             request.setResponseCode(500)
             returnValue(json_to_string({"error": "{}".format(e)}))
 
-    @app.route("/evaluate", methods=['POST'])
+    @app.route("/evaluate", methods=['POST', 'OPTIONS'])
     @requires_auth
     @check_cors
     @inlineCallbacks
@@ -333,7 +332,7 @@ class RasaNLU(object):
             request.setResponseCode(500)
             returnValue(json_to_string({"error": "{}".format(e)}))
 
-    @app.route("/models", methods=['DELETE'])
+    @app.route("/models", methods=['DELETE', 'OPTIONS'])
     @requires_auth
     @check_cors
     def unload_model(self, request):
