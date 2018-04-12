@@ -490,7 +490,7 @@ def remove_duckling_entities(entity_predictions):
         for e in entities:
             if e["extractor"] not in duckling_extractors:
                 patched_entities.append(e)
-            patched_entity_predictions.append(patched_entities)
+        patched_entity_predictions.append(patched_entities)
 
     return patched_entity_predictions
 
