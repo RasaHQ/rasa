@@ -281,7 +281,7 @@ def test_find_component(duckling_interpreter):
 
 
 def test_remove_duckling_extractors(duckling_interpreter):
-    target = {}
+    target = set([])
 
     patched = remove_duckling_extractors({"ner_duckling"})
     assert patched == target
