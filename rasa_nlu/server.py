@@ -363,7 +363,9 @@ if __name__ == '__main__':
 
     router = DataRouter(cmdline_args.path,
                         cmdline_args.max_training_processes,
-                        cmdline_args.response_log)
+                        cmdline_args.response_log,
+                        cmdline_args.emulate,
+                        cmdline_args.storage)
     rasa = RasaNLU(
             router,
             cmdline_args.loglevel,
