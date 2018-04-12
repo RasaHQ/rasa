@@ -436,13 +436,12 @@ def get_entity_extractors(interpreter):
     return extractors - entity_processors
 
 
-def get_intent_classifier(interpreter):
-    """Gets the intent classifier. The purpose of this is to check whether
-    evaluation of intent classification is required"""
+def is_intent_classifier_present(interpreter):
+    """Checks whether intent classifier is present"""
 
     intent_classifier = [c.name for c in interpreter.pipeline
                          if "intent" in c.provides]
-    return intent_classifier
+    return intent_classifier != []
 
 
 def combine_extractor_and_dimension_name(extractor, dim):
@@ -474,7 +473,6 @@ def find_component(interpreter, component_name):
 
 def remove_duckling_extractors(extractors):
     """Removes duckling exctractors"""
-
     used_duckling_extractors = duckling_extractors.intersection(extractors)
     for duckling_extractor in used_duckling_extractors:
         logger.info("Skipping evaluation of {}".format(duckling_extractor))
@@ -497,17 +495,6 @@ def remove_duckling_entities(entity_predictions):
     return patched_entity_predictions
 
 
-def remove_duckling(extractors, entity_predictions):
-    """Removes duckling from evaluation (both extractors and
-    entity predictions)"""
-
-    if extractors.intersection(duckling_extractors):
-        entity_predictions = remove_duckling_entities(entity_predictions)
-        extractors = remove_duckling_extractors(extractors)
-
-    return extractors, entity_predictions
-
-
 def run_evaluation(data_path, model_path,
                    component_builder=None):  # pragma: no cover
     """Evaluate intent classification and entity extraction."""
@@ -517,22 +504,24 @@ def run_evaluation(data_path, model_path,
     test_data = training_data.load_data(data_path,
                                         interpreter.model_metadata.language)
     extractors = get_entity_extractors(interpreter)
+    entity_predictions, tokens = get_entity_predictions(interpreter,
+                                                        test_data)
+    if duckling_extractors.intersection(extractors):
+        entity_predictions = remove_duckling_entities(entity_predictions)
+        extractors = remove_duckling_extractors(extractors)
 
-    if extractors:
-        entity_targets = get_entity_targets(test_data)
-        entity_predictions, tokens = get_entity_predictions(interpreter,
-                                                            test_data)
-        extractors, entity_predictions = remove_duckling(extractors,
-                                                         entity_predictions)
-        logger.info("Entity evaluation results:")
-        evaluate_entities(entity_targets, entity_predictions, tokens,
-                          extractors)
-
-    if get_intent_classifier(interpreter):
+    if is_intent_classifier_present(interpreter):
         intent_targets = get_intent_targets(test_data)
         intent_predictions = get_intent_predictions(interpreter, test_data)
         logger.info("Intent evaluation results:")
         evaluate_intents(intent_targets, intent_predictions)
+
+    if extractors:
+        entity_targets = get_entity_targets(test_data)
+
+        logger.info("Entity evaluation results:")
+        evaluate_entities(entity_targets, entity_predictions, tokens,
+                          extractors)
 
 
 def generate_folds(n, td):
@@ -616,7 +605,7 @@ def compute_intent_metrics(interpreter, corpus):
     """Computes intent evaluation metrics for a given corpus and
     returns the results
     """
-    if not get_intent_classifier(interpreter):
+    if not is_intent_classifier_present(interpreter):
         return {}
     intent_targets = get_intent_targets(corpus)
     intent_predictions = get_intent_predictions(interpreter, corpus)
@@ -636,14 +625,17 @@ def compute_entity_metrics(interpreter, corpus):
     """
     entity_results = defaultdict(lambda: defaultdict(list))
     extractors = get_entity_extractors(interpreter)
+    entity_predictions, tokens = get_entity_predictions(interpreter, corpus)
+
+    if duckling_extractors.intersection(extractors):
+        entity_predictions = remove_duckling_entities(entity_predictions)
+        extractors = remove_duckling_extractors(extractors)
 
     if not extractors:
         return entity_results
 
     entity_targets = get_entity_targets(corpus)
-    entity_predictions, tokens = get_entity_predictions(interpreter, corpus)
-    extractors, entity_predictions = remove_duckling(extractors,
-                                                     entity_predictions)
+
     aligned_predictions = align_all_entity_predictions(entity_targets,
                                                        entity_predictions,
                                                        tokens, extractors)
