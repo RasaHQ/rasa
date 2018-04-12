@@ -19,7 +19,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.utils import shuffle as sklearn_shuffle
 
 from rasa_core.policies import Policy
-from rasa_core.featurizers import Featurizer, MaxHistoryFeaturizer
+from rasa_core.featurizers import MaxHistoryTrackerFeaturizer
 
 logger = logging.getLogger(__name__)
 
@@ -58,9 +58,11 @@ class SklearnPolicy(Policy):
       Whether to shuffle training data.
 
     """
+    SUPPORTS_ONLINE_TRAINING = True
+
     def __init__(
             self,
-            featurizer=None,  # type: Optional[Featurizer]
+            featurizer=None,  # type: Optional[MaxHistoryTrackerFeaturizer]
             model=LogisticRegression(),  # type: sklearn.base.ClassifierMixin
             param_grid=None,  # type: Optional[Dict[Text, List] or List[Dict]]
             cv=None,  # type: Optional[int]
@@ -68,8 +70,12 @@ class SklearnPolicy(Policy):
             label_encoder=LabelEncoder(),  # type: sklearn.base.TransformerMixin
             shuffle=True,  # type: bool
     ):
-        self.featurizer = None
-        self.prepare(featurizer)
+        if featurizer:
+            assert isinstance(featurizer, MaxHistoryTrackerFeaturizer), \
+                ("Passed featurizer of type {}, should be "
+                 "MaxHistoryTrackerFeaturizer."
+                 "".format(type(featurizer).__name__))
+        super(SklearnPolicy, self).__init__(featurizer)
 
         self.model = model
         self.cv = cv
@@ -81,24 +87,6 @@ class SklearnPolicy(Policy):
         # attributes that need to be restored after loading
         self._pickle_params = [
             'model', 'cv', 'param_grid', 'scoring', 'label_encoder']
-
-    def prepare(self, featurizer):
-        # type: (Featurizer) -> None
-
-        if (self.featurizer is None and
-                featurizer and not isinstance(featurizer,
-                                              MaxHistoryFeaturizer)):
-            featurizer = MaxHistoryFeaturizer(featurizer.featurize_mechanism)
-            logger.debug("SklearnPolicy only works with "
-                         "MaxHistoryFeaturizer. "
-                         "The new MaxHistoryFeaturizer was "
-                         "created with provided FeaturizeMechanism={} "
-                         "and default max_history={}."
-                         "".format(
-                            type(featurizer.featurize_mechanism).__name__,
-                            featurizer.max_history))
-
-        super(SklearnPolicy, self).prepare(featurizer)
 
     @property
     def _state(self):

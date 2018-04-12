@@ -13,7 +13,7 @@ from typing import \
 
 from copy import deepcopy
 from rasa_core.featurizers import \
-    MaxHistoryFeaturizer, BinaryFeaturizeMechanism
+    MaxHistoryTrackerFeaturizer, BinaryStateFeaturizer
 
 if typing.TYPE_CHECKING:
     from rasa_core.domain import Domain
@@ -28,31 +28,22 @@ class Policy(object):
     SUPPORTS_ONLINE_TRAINING = False
     MAX_HISTORY_DEFAULT = 3
 
+    @classmethod
+    def _standard_featurizer(cls):
+        return MaxHistoryTrackerFeaturizer(BinaryStateFeaturizer(),
+                                    cls.MAX_HISTORY_DEFAULT)
+
+    @classmethod
+    def _create_featurizer(cls, featurizer=None):
+        return featurizer if featurizer else cls._standard_featurizer()
+
     def __init__(self, featurizer=None):
         # type: (Optional[Featurizer]) -> None
+        self.__featurizer = self._create_featurizer(featurizer)
 
-        self.featurizer = featurizer
-
-    def prepare(self, featurizer):
-        # type: (Featurizer) -> None
-
-        if self.featurizer is None:
-            # we need to make a copy to allow for different policies
-            # to have different featurizers of the same type
-            self.featurizer = deepcopy(featurizer)
-        elif featurizer:
-            logger.warning("Trying to reset {} "
-                           "for {} by agent's {}. "
-                           "Agent's featurizer is ignored."
-                           "".format(type(self.featurizer).__name__,
-                                     type(self).__name__,
-                                     type(featurizer).__name__))
-
-    @staticmethod
-    def _standard_featurizer(max_history=None):
-        max_history = max_history or 5
-        return MaxHistoryFeaturizer(BinaryFeaturizeMechanism(),
-                                    max_history)
+    @property
+    def featurizer(self):
+        return self.__featurizer
 
     @staticmethod
     def _get_valid_params(func, **kwargs):
@@ -79,28 +70,16 @@ class Policy(object):
         The trackers, consisting of multiple turns, will be transformed
         into a float vector which can be used by a ML model."""
 
-        max_training_samples = kwargs.get('max_training_samples')
         max_history = kwargs.get('max_history')
-        if self.featurizer is None:
-            self.featurizer = self._standard_featurizer(max_history)
-        elif max_history:
-            if isinstance(self.featurizer,
-                          MaxHistoryFeaturizer):
-                logger.warning("Trying to reset {}'s "
-                               "max_history={} by agent's max_history={}. "
-                               "Agent's max_history is ignored."
-                               "".format(type(self.featurizer).__name__,
-                                         self.featurizer.max_history,
-                                         max_history))
-            else:
-                logger.warning("Trying to set max_history={} "
-                               "for {} by agent. "
-                               "Agent's max_history is ignored."
-                               "".format(max_history,
-                                         type(self.featurizer).__name__))
+        if max_history:
+            logger.warning("Passing `max_history` through agent is "
+                           "deprecated. Pass appropriate featurizer "
+                           "to the policy instead.")
 
         training_data, _ = self.featurizer.featurize_trackers(trackers,
                                                               domain)
+
+        max_training_samples = kwargs.get('max_training_samples')
         if max_training_samples:
             training_data.limit_training_data_to(max_training_samples)
 

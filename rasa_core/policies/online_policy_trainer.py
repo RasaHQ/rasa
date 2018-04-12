@@ -29,7 +29,6 @@ if typing.TYPE_CHECKING:
     from rasa_core.domain import Domain
     from rasa_core.trackers import DialogueStateTracker
     from rasa_core.interpreter import NaturalLanguageInterpreter
-    from rasa_core.featurizers import Featurizer
     from rasa_core.channels import InputChannel
 
 
@@ -43,7 +42,7 @@ class OnlinePolicyTrainer(PolicyTrainer):
               resource_name=None,  # type: Optional[Text]
               interpreter=None,  # type: NaturalLanguageInterpreter
               input_channel=None,  # type: Optional[InputChannel]
-              max_history=2,  # type: int
+              max_history=3,  # type: int
               augmentation_factor=20,  # type: int
               max_training_samples=None,  # type: Optional[int]
               max_number_of_trackers=2000,  # type: int
@@ -61,11 +60,10 @@ class OnlinePolicyTrainer(PolicyTrainer):
                 max_number_of_trackers=max_number_of_trackers
         )
 
-        self.ensemble.train(training_trackers, self.domain, self.featurizer,
+        self.ensemble.train(training_trackers, self.domain,
                             max_training_samples=max_training_samples, **kwargs)
 
-        ensemble = OnlinePolicyEnsemble(self.ensemble, training_trackers,
-                                        self.featurizer, max_history)
+        ensemble = OnlinePolicyEnsemble(self.ensemble, training_trackers, max_history)
         self.run_online_training(ensemble, interpreter,
                                  input_channel)
 
@@ -81,7 +79,6 @@ class OnlinePolicyTrainer(PolicyTrainer):
             interpreter = RegexInterpreter()
 
         bot = Agent(self.domain, ensemble,
-                    featurizer=self.featurizer,
                     interpreter=interpreter)
         bot.toggle_memoization(False)
 
@@ -96,7 +93,6 @@ class OnlinePolicyEnsemble(PolicyEnsemble):
     def __init__(self,
                  base_ensemble,  # type: PolicyEnsemble
                  training_trackers,  # type: List[DialogueStateTracker]
-                 featurizer=None,  # type: Optional[Featurizer]
                  max_history=2,  # type: int
                  use_visualization=False  # type: bool
                  ):
@@ -104,7 +100,6 @@ class OnlinePolicyEnsemble(PolicyEnsemble):
 
         self.base_ensemble = base_ensemble
         self.training_trackers = training_trackers
-        self.featurizer = featurizer
         self.max_history = max_history
         self.use_visualization = use_visualization
 
@@ -211,15 +206,6 @@ class OnlinePolicyEnsemble(PolicyEnsemble):
         # inserting our new example and learning them. this means that we can
         # ask the network to fit the example without overemphasising
         # its importance (and therefore throwing off the biases)
-        num_samples = self.batch_size - 1
-        num_examples = len(self.training_trackers)
-        for _ in range(self.epochs):
-            sampled_idx = np.random.choice(range(num_examples),
-                                           replace=False,
-                                           size=min(num_samples,
-                                                    num_examples))
-            trackers = [self.training_trackers[i]
-                        for i in sampled_idx] + [tracker]
 
         self.training_trackers.append(tracker)
         self.continue_training(self.training_trackers, domain,
@@ -257,7 +243,7 @@ class OnlinePolicyEnsemble(PolicyEnsemble):
         # to help with correctly identifying the action
         latest_listen_flag = False
         tr_json = []
-        for tr in tracker.generate_all_prior_states():
+        for tr in tracker.generate_all_prior_trackers():
             tr_json.append({
                 'action': tr.latest_action_name,
                 'intent': tr.latest_message.intent[

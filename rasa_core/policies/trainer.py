@@ -18,15 +18,13 @@ if typing.TYPE_CHECKING:
     from rasa_core.domain import Domain
     from rasa_core.trackers import DialogueStateTracker
     from rasa_core.policies.ensemble import PolicyEnsemble
-    from rasa_core.featurizers import Featurizer
 
 
 class PolicyTrainer(object):
-    def __init__(self, ensemble, domain, featurizer=None):
-        # type: (PolicyEnsemble, Domain, Optional[Featurizer]) -> None
+    def __init__(self, ensemble, domain):
+        # type: (PolicyEnsemble, Domain) -> None
         self.domain = domain
         self.ensemble = ensemble
-        self.featurizer = featurizer
 
     def train(self,
               resource_name=None,  # type: Optional[Text]
@@ -64,7 +62,7 @@ class PolicyTrainer(object):
                 max_number_of_trackers=max_number_of_trackers
         )
 
-        self.ensemble.train(training_trackers, self.domain, self.featurizer,
+        self.ensemble.train(training_trackers, self.domain,
                             max_training_samples=max_training_samples, **kwargs)
 
     @staticmethod

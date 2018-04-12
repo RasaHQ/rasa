@@ -19,13 +19,13 @@ from rasa_core.policies.sklearn_policy import SklearnPolicy
 from rasa_core.trackers import DialogueStateTracker
 from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 from rasa_core.policies import PolicyTrainer
-from rasa_core.featurizers import MaxHistoryFeaturizer, \
-    BinaryFeaturizeMechanism
+from rasa_core.featurizers import MaxHistoryTrackerFeaturizer, \
+    BinaryStateFeaturizer
 from rasa_core.events import ActionExecuted
 
 
 def train_featurizer(max_history):
-    featurizer = MaxHistoryFeaturizer(BinaryFeaturizeMechanism(),
+    featurizer = MaxHistoryTrackerFeaturizer(BinaryStateFeaturizer(),
                                       max_history=max_history)
     return featurizer
 
@@ -129,8 +129,10 @@ class TestMemoizationPolicy(PolicyTestCollection):
 
         nums = np.random.randn(default_domain.num_features)
         random_states = {f: num
-                         for f, num in zip(default_domain.input_feautures, nums)}
-        assert trained_policy._recall(random_states, default_domain) is None
+                         for f, num in
+                            zip(default_domain.input_features, nums)}
+        assert trained_policy._recall(random_states,
+                                      default_domain) is None
 
 
 class TestSklearnPolicy(PolicyTestCollection):

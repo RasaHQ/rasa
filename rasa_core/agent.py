@@ -12,7 +12,6 @@ from typing import Text, List, Optional, Callable, Any, Dict, Union
 from rasa_core.channels import UserMessage, InputChannel, OutputChannel
 from rasa_core.domain import TemplateDomain, Domain
 from rasa_core.events import Event
-from rasa_core.featurizers import Featurizer
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.policies import PolicyTrainer, Policy
 from rasa_core.policies.ensemble import SimplePolicyEnsemble, PolicyEnsemble
@@ -35,12 +34,10 @@ class Agent(object):
             self,
             domain,  # type: Union[Text, Domain]
             policies=None,  # type: Optional[Union[PolicyEnsemble, List[Policy]]
-            featurizer=None,  # type: Optional[Featurizer]
             interpreter=None,  # type: Optional[NaturalLanguageInterpreter]
             tracker_store=None  # type: Optional[TrackerStore]
     ):
         self.domain = self._create_domain(domain)
-        self.featurizer = featurizer
         self.policy_ensemble = self._create_ensemble(policies)
         self.interpreter = NaturalLanguageInterpreter.create(interpreter)
         self.tracker_store = self.create_tracker_store(
@@ -60,8 +57,8 @@ class Agent(object):
         ensemble = PolicyEnsemble.load(path)
         _interpreter = NaturalLanguageInterpreter.create(interpreter)
         _tracker_store = cls.create_tracker_store(tracker_store, domain)
-        # policies are responsible for loading their featurizers
-        return cls(domain, ensemble, None, _interpreter, _tracker_store)
+
+        return cls(domain, ensemble, _interpreter, _tracker_store)
 
     def handle_message(
             self,
@@ -143,8 +140,7 @@ class Agent(object):
         # type: (Optional[Text], Optional[Text], bool, **Any) -> None
         """Train the policies / policy ensemble using dialogue data from file"""
 
-        trainer = PolicyTrainer(self.policy_ensemble, self.domain,
-                                self.featurizer)
+        trainer = PolicyTrainer(self.policy_ensemble, self.domain)
         trainer.train(resource_name, remove_duplicates=remove_duplicates,
                       **kwargs)
 
@@ -170,8 +166,7 @@ class Agent(object):
             raise ValueError(
                     "When using online learning, you need to specify "
                     "an interpreter for the agent to use.")
-        trainer = OnlinePolicyTrainer(self.policy_ensemble, self.domain,
-                                      self.featurizer)
+        trainer = OnlinePolicyTrainer(self.policy_ensemble, self.domain)
         trainer.train(resource_name, self.interpreter, input_channel,
                       max_history, **kwargs)
 

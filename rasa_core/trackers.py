@@ -189,11 +189,12 @@ class DialogueStateTracker(object):
                                     self.topics,
                                     self.default_topic)
 
-    def generate_all_prior_states(self):
+    def generate_all_prior_trackers(self):
         # type: () -> Generator[DialogueStateTracker, None, None]
-        """Returns a generator of the previous states of this tracker.
+        """Returns an array of all the previous trackers for this tracker.
 
-        The resulting array is representing the state before each action."""
+        The resulting array is representing
+        the trackers before each action."""
 
         tracker = self._init_copy()
 

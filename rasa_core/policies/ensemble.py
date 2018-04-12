@@ -15,7 +15,7 @@ from typing import Text, Optional, Any, List, Dict
 import rasa_core
 from rasa_core import utils
 from rasa_core.events import SlotSet
-from rasa_core.featurizers import MaxHistoryFeaturizer
+from rasa_core.featurizers import MaxHistoryTrackerFeaturizer
 
 logger = logging.getLogger(__name__)
 
@@ -37,11 +37,10 @@ class PolicyEnsemble(object):
         else:
             self.action_fingerprints = {}
 
-    def train(self, training_trackers, domain, featurizer, **kwargs):
-        # type: (List[DialogueStateTracker], Domain, Featurizer, **Any) -> None
+    def train(self, training_trackers, domain, **kwargs):
+        # type: (List[DialogueStateTracker], Domain, **Any) -> None
         if training_trackers:
             for policy in self.policies:
-                policy.prepare(featurizer)
                 metadata = policy.train(training_trackers, domain, **kwargs)
                 self.training_metadata.update(metadata)
         else:
@@ -71,7 +70,7 @@ class PolicyEnsemble(object):
 
         max_histories = []
         for p in self.policies:
-            if isinstance(p.featurizer, MaxHistoryFeaturizer):
+            if isinstance(p.featurizer, MaxHistoryTrackerFeaturizer):
                 max_histories.append(p.featurizer.max_history)
             else:
                 max_histories.append(None)

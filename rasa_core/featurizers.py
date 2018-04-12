@@ -18,6 +18,7 @@ from collections import defaultdict
 from rasa_core import utils
 from rasa_core.events import ActionExecuted
 from rasa_core.training.data import DialogueTrainingData
+from rasa_core.actions.action import ACTION_LISTEN_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -26,20 +27,21 @@ if typing.TYPE_CHECKING:
     from rasa_core.domain import Domain
 
 
-class FeaturizeMechanism(object):
+class StateFeaturizer(object):
     """Base class for mechanisms to transform the conversations state
     into machine learning formats.
 
-    FeaturizeMecahnism decides how the bot will transform
-    the conversation state to a format which a classifier can read."""
+    StateFeaturizer decides how the bot will transform
+    the conversation state to a format which a classifier can read:
+    feature vector."""
 
-    def create_helpers(self, domain):
-        # will be used in label_tokenizer_featurize_mechanism
+    def prepare(self, domain):
+        """Helper method for some StateFeaturizers"""
         pass
 
-    def encode(self, active_features, input_feature_map):
-        raise NotImplementedError("FeaturizeMechanism must have the capacity to "
-                                  "encode features to a vector")
+    def encode(self, active_features, input_state_map):
+        raise NotImplementedError("StateFeaturizer must have the capacity to "
+                                  "encode states to a feature vector")
 
     def encode_action(self, action, domain):
         if action is None:
@@ -50,12 +52,12 @@ class FeaturizeMechanism(object):
         return y
 
 
-class BinaryFeaturizeMechanism(FeaturizeMechanism):
+class BinaryStateFeaturizer(StateFeaturizer):
     """Assumes all features are binary.
 
     All features should be either on or off, denoting them with 1 or 0."""
 
-    def encode(self, active_features, input_feature_map):
+    def encode(self, active_features, input_state_map):
         """Returns a binary vector indicating which features are active.
 
         Given a dictionary of active_features (e.g. 'intent_greet',
@@ -70,7 +72,7 @@ class BinaryFeaturizeMechanism(FeaturizeMechanism):
         padding vectors are specified by a `None` or `[None]`
         value for active_features."""
 
-        num_features = len(input_feature_map)
+        num_features = len(input_state_map)
         if active_features is None or None in active_features:
             return np.ones(num_features, dtype=np.int32) * -1
         else:
@@ -85,9 +87,9 @@ class BinaryFeaturizeMechanism(FeaturizeMechanism):
                     if prob >= best_intent_prob:
                         best_intent = feature_name
                         best_intent_prob = prob
-                elif feature_name in input_feature_map:
+                elif feature_name in input_state_map:
                     if prob != 0.0:
-                        idx = input_feature_map[feature_name]
+                        idx = input_state_map[feature_name]
                         used_features[idx] = prob
                         using_only_ints = using_only_ints and utils.is_int(prob)
                 else:
@@ -99,7 +101,7 @@ class BinaryFeaturizeMechanism(FeaturizeMechanism):
             if best_intent is not None:
                 # finding the maximum confidence intent and
                 # appending it to the active_features val
-                index_in_feature_list = input_feature_map.get(best_intent)
+                index_in_feature_list = input_state_map.get(best_intent)
                 if index_in_feature_list is not None:
                     used_features[index_in_feature_list] = 1
                 else:
@@ -116,10 +118,10 @@ class BinaryFeaturizeMechanism(FeaturizeMechanism):
                 return used_features
 
 
-class ProbabilisticFeaturizeMechanism(FeaturizeMechanism):
+class ProbabilisticStateFeaturizer(StateFeaturizer):
     """Uses intent probabilities of the NLU and feeds them into the model."""
 
-    def encode(self, active_features, input_feature_map):
+    def encode(self, active_features, input_state_map):
         """Returns a binary vector indicating active features,
         but with intent features given with a probability.
 
@@ -136,15 +138,15 @@ class ProbabilisticFeaturizeMechanism(FeaturizeMechanism):
         padding vectors are specified by a `None` or `[None]`
         value for active_features."""
 
-        num_features = len(input_feature_map)
+        num_features = len(input_state_map)
         if active_features is None or None in active_features:
             return np.ones(num_features, dtype=np.int32) * -1
         else:
 
             used_features = np.zeros(num_features, dtype=np.float)
             for active_feature, value in active_features.items():
-                if active_feature in input_feature_map:
-                    idx = input_feature_map[active_feature]
+                if active_feature in input_state_map:
+                    idx = input_state_map[active_feature]
                     used_features[idx] = value
                 else:
                     logger.debug(
@@ -153,8 +155,9 @@ class ProbabilisticFeaturizeMechanism(FeaturizeMechanism):
             return used_features
 
 
-class LabelTokenizerFeaturizeMechanism(FeaturizeMechanism):
+class LabelTokenizerStateFeaturizer(StateFeaturizer):
     def __init__(self, split_symbol='_', share_vocab=False):
+        # type: (Text, bool) -> None
         """inits vocabulary for label bag of words representation"""
 
         self.share_vocab = share_vocab
@@ -169,12 +172,12 @@ class LabelTokenizerFeaturizeMechanism(FeaturizeMechanism):
         self.labels = None
 
     @staticmethod
-    def _parse_feature_map(input_feature_map):
+    def _parse_feature_map(input_state_map):
         """Create vocabularies for a user and the bot"""
         user_labels = []  # intents and entities
         bot_labels = []  # actions and utters
         other_labels = []  # slots
-        for feature_name in input_feature_map.keys():
+        for feature_name in input_state_map.keys():
             if (feature_name.startswith('intent_')
                     # include entity as user input
                     or feature_name.startswith('entity_')):
@@ -205,10 +208,9 @@ class LabelTokenizerFeaturizeMechanism(FeaturizeMechanism):
                     label_token_dict[t] = len(label_token_dict)
         return label_token_dict
 
-    def create_helpers(self, domain):
+    def prepare(self, domain):
 
-        self.labels = self._parse_feature_map(domain.input_feature_map)
-        user_labels, bot_labels, other_labels = self.labels
+        user_labels, bot_labels, other_labels = self._parse_feature_map(domain.input_state_map)
 
         self.bot_actions = self._create_label_dict(bot_labels)
 
@@ -223,7 +225,7 @@ class LabelTokenizerFeaturizeMechanism(FeaturizeMechanism):
 
         self.additional_features = other_labels
 
-    def encode(self, active_features, input_feature_map):
+    def encode(self, active_features, input_state_map):
 
         user_labels, bot_labels, other_labels = self.labels
 
@@ -265,14 +267,14 @@ class LabelTokenizerFeaturizeMechanism(FeaturizeMechanism):
         return used_features
 
 
-class Featurizer(object):
+class TrackerFeaturizer(object):
     """Base class for actual tracker featurizers"""
-    def __init__(self, featurize_mechanism=None):
-        # type: (Optional[FeaturizeMechanism]) -> None
-        if featurize_mechanism is not None:
-            self.featurize_mechanism = featurize_mechanism
+    def __init__(self, state_featurizer=None):
+        # type: (Optional[StateFeaturizer]) -> None
+        if state_featurizer is not None:
+            self.state_featurizer = state_featurizer
         else:
-            self.featurize_mechanism = FeaturizeMechanism()
+            self.state_featurizer = StateFeaturizer()
 
     def _pad_states(self, states):
         return states
@@ -287,8 +289,8 @@ class Featurizer(object):
                 tracker_states = self._pad_states(tracker_states)
             dialogue_len = len(tracker_states)
 
-            story_features = [self.featurize_mechanism.encode(state,
-                                                              domain.input_feature_map)
+            story_features = [self.state_featurizer.encode(state,
+                                                              domain.input_state_map)
                               for state in tracker_states]
 
             features.append(story_features)
@@ -307,11 +309,11 @@ class Featurizer(object):
                 if len(trackers_as_actions) > 1:
                     tracker_actions = self._pad_states(tracker_actions)
 
-                story_labels = [self.featurize_mechanism.encode_action(action,
+                story_labels = [self.state_featurizer.encode_action(action,
                                                                        domain)
                                 for action in tracker_actions]
             else:
-                story_labels = self.featurize_mechanism.encode_action(tracker_actions,
+                story_labels = self.state_featurizer.encode_action(tracker_actions,
                                                                       domain)
             if labels:
                 assert type(labels[-1]) == type(story_labels), \
@@ -337,7 +339,7 @@ class Featurizer(object):
                            ):
         # type: (...) -> Tuple[DialogueTrainingData, List[int]]
         """Create training data"""
-        self.featurize_mechanism.create_helpers(domain)
+        self.state_featurizer.prepare(domain)
 
         (trackers_as_states,
          trackers_as_actions,
@@ -387,22 +389,19 @@ class Featurizer(object):
             return None
 
 
-class FullDialogueFeaturizer(Featurizer):
-    def __init__(self, featurize_mechanism):
-        # type: (FeaturizeMechanism) -> None
-        super(FullDialogueFeaturizer, self).__init__(featurize_mechanism)
+class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
+    def __init__(self, state_featurizer):
+        # type: (StateFeaturizer) -> None
+        super(FullDialogueTrackerFeaturizer, self).__init__(state_featurizer)
 
         self.max_len = None
 
-    def _calculate_max_len(self, as_states):
-
+    @staticmethod
+    def _calculate_max_len(as_states):
         if as_states:
-
             return max([len(states) for states in as_states])
         else:
             return 0
-        logger.info("The longest dialogue has {} actions."
-                    "".format(self.max_len))
 
     def _pad_states(self, states):
         # pad up to max_len
@@ -445,8 +444,9 @@ class FullDialogueFeaturizer(Featurizer):
             trackers_as_states.append(states[:-1])
             trackers_as_actions.append(actions)
 
-        if self.max_len is None:
-            self._calculate_max_len(trackers_as_actions)
+        self.max_len = self._calculate_max_len(trackers_as_actions)
+        logger.info("The longest dialogue has {} actions."
+                    "".format(self.max_len))
 
         # TODO do we need that?
         metadata = {"events": events_metadata,
@@ -465,15 +465,32 @@ class FullDialogueFeaturizer(Featurizer):
         return trackers_as_states
 
 
-class MaxHistoryFeaturizer(Featurizer):
-    def __init__(self, featurize_mechanism=None,
+class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
+    def __init__(self, state_featurizer=None,
                  max_history=5, remove_duplicates=True):
-        # type: (Optional(FeaturizeMechanism), int, bool) -> None
-        super(MaxHistoryFeaturizer, self).__init__(featurize_mechanism)
+        # type: (Optional(StateFeaturizer), int, bool) -> None
+        super(MaxHistoryTrackerFeaturizer, self).__init__(state_featurizer)
 
         self.max_history = max_history
 
         self.remove_duplicates = remove_duplicates
+
+    @staticmethod
+    def slice_state_history(
+            states,  # type: List[Dict[Text, float]]
+            slice_length  # type: int
+    ):
+        # type: (...) -> List[Optional[Dict[Text, float]]]
+        """Slices states from the trackers history.
+
+        If the slice is at the array borders, padding will be added to ensure
+        the slice length."""
+
+        slice_end = len(states)
+        slice_start = max(0, slice_end - slice_length)
+        padding = [None] * max(0, slice_length - slice_end)
+        state_features = padding + states[slice_start:]
+        return state_features
 
     def training_states_and_actions(
             self,

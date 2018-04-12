@@ -195,7 +195,7 @@ class CategoricalSlot(Slot):
                             "Categorical slot '{}' is set to a value ('{}') "
                             "that is not specified in the domain. "
                             "Value will be ignored and the slot will "
-                            "behave as if it no value is set. "
+                            "behave as if no value is set. "
                             "Make sure to add all values a categorical "
                             "slot should store to the domain."
                             "".format(self.name, self.value))

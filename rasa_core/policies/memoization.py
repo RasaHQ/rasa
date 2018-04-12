@@ -17,7 +17,7 @@ from typing import Optional, Any, Dict, List, Text
 
 from rasa_core.policies.policy import Policy
 from rasa_core import utils
-from rasa_core.featurizers import Featurizer, MaxHistoryFeaturizer
+from rasa_core.featurizers import Featurizer, MaxHistoryTrackerFeaturizer
 
 logger = logging.getLogger(__name__)
 
@@ -31,13 +31,14 @@ ENABLE_FEATURE_STRING_COMPRESSION = True
 class MemoizationPolicy(Policy):
     SUPPORTS_ONLINE_TRAINING = True
 
-    @staticmethod
-    def _standard_featurizer(max_history=5):
-        # Memoization policy always uses MaxHistoryFeaturizer
-        # without featurize_mechanism
-        return MaxHistoryFeaturizer(None, max_history)
+    @classmethod
+    def _standard_featurizer(cls, max_history=None):
+        max_history = max_history or cls.MAX_HISTORY_DEFAULT
+        # Memoization policy always uses MaxHistoryTrackerFeaturizer
+        # without state_featurizer
+        return MaxHistoryTrackerFeaturizer(None, max_history)
 
-    def __init__(self, max_history=5, lookup=None):
+    def __init__(self, max_history=None, lookup=None):
         # type: (int, Optional[Dict]) -> None
 
         featurizer = self._standard_featurizer(max_history)
@@ -46,14 +47,6 @@ class MemoizationPolicy(Policy):
         self.max_history = max_history
         self.lookup = lookup if lookup is not None else {}
         self.is_enabled = True
-
-    def prepare(self, featurizer):
-        # type: (Featurizer) -> None
-        if featurizer is not None:
-            logger.debug("The featurizer passed to Agent "
-                         "is ignored, because "
-                         "MemoizationPolicy can be used only with "
-                         "its standard MaxHistoryFeaturizer.")
 
     def toggle(self, activate):
         # type: (bool) -> None
@@ -191,9 +184,9 @@ class MemoizationPolicy(Policy):
         # type: (Text) -> MemoizationPolicy
 
         featurizer = Featurizer.load(path)
-        assert isinstance(featurizer, MaxHistoryFeaturizer), \
+        assert isinstance(featurizer, MaxHistoryTrackerFeaturizer), \
             ("Loaded featurizer of type {}, should be "
-             "MaxHistoryFeaturizer.".format(type(featurizer).__name__))
+             "MaxHistoryTrackerFeaturizer.".format(type(featurizer).__name__))
 
         memorized_file = os.path.join(path, 'memorized_turns.json')
         if os.path.isfile(memorized_file):
