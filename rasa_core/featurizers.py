@@ -37,7 +37,7 @@ class FeaturizeMechanism(object):
         # will be used in label_tokenizer_featurize_mechanism
         pass
 
-    def encode(self, active_features, domain):
+    def encode(self, active_features, input_feature_map):
         raise NotImplementedError("FeaturizeMechanism must have the capacity to "
                                   "encode features to a vector")
 
@@ -55,7 +55,7 @@ class BinaryFeaturizeMechanism(FeaturizeMechanism):
 
     All features should be either on or off, denoting them with 1 or 0."""
 
-    def encode(self, active_features, domain):
+    def encode(self, active_features, input_feature_map):
         """Returns a binary vector indicating which features are active.
 
         Given a dictionary of active_features (e.g. 'intent_greet',
@@ -70,7 +70,7 @@ class BinaryFeaturizeMechanism(FeaturizeMechanism):
         padding vectors are specified by a `None` or `[None]`
         value for active_features."""
 
-        num_features = domain.num_features
+        num_features = len(input_feature_map)
         if active_features is None or None in active_features:
             return np.ones(num_features, dtype=np.int32) * -1
         else:
@@ -85,9 +85,9 @@ class BinaryFeaturizeMechanism(FeaturizeMechanism):
                     if prob >= best_intent_prob:
                         best_intent = feature_name
                         best_intent_prob = prob
-                elif feature_name in domain.input_feature_map:
+                elif feature_name in input_feature_map:
                     if prob != 0.0:
-                        idx = domain.input_feature_map[feature_name]
+                        idx = input_feature_map[feature_name]
                         used_features[idx] = prob
                         using_only_ints = using_only_ints and utils.is_int(prob)
                 else:
@@ -99,7 +99,7 @@ class BinaryFeaturizeMechanism(FeaturizeMechanism):
             if best_intent is not None:
                 # finding the maximum confidence intent and
                 # appending it to the active_features val
-                index_in_feature_list = domain.input_feature_map.get(best_intent)
+                index_in_feature_list = input_feature_map.get(best_intent)
                 if index_in_feature_list is not None:
                     used_features[index_in_feature_list] = 1
                 else:
@@ -119,7 +119,7 @@ class BinaryFeaturizeMechanism(FeaturizeMechanism):
 class ProbabilisticFeaturizeMechanism(FeaturizeMechanism):
     """Uses intent probabilities of the NLU and feeds them into the model."""
 
-    def encode(self, active_features, domain):
+    def encode(self, active_features, input_feature_map):
         """Returns a binary vector indicating active features,
         but with intent features given with a probability.
 
@@ -136,15 +136,15 @@ class ProbabilisticFeaturizeMechanism(FeaturizeMechanism):
         padding vectors are specified by a `None` or `[None]`
         value for active_features."""
 
-        num_features = domain.num_features
+        num_features = len(input_feature_map)
         if active_features is None or None in active_features:
             return np.ones(num_features, dtype=np.int32) * -1
         else:
 
             used_features = np.zeros(num_features, dtype=np.float)
             for active_feature, value in active_features.items():
-                if active_feature in domain.input_feature_map:
-                    idx = domain.input_feature_map[active_feature]
+                if active_feature in input_feature_map:
+                    idx = input_feature_map[active_feature]
                     used_features[idx] = value
                 else:
                     logger.debug(
@@ -223,7 +223,7 @@ class LabelTokenizerFeaturizeMechanism(FeaturizeMechanism):
 
         self.additional_features = other_labels
 
-    def encode(self, active_features, domain):
+    def encode(self, active_features, input_feature_map):
 
         user_labels, bot_labels, other_labels = self.labels
 
@@ -287,7 +287,8 @@ class Featurizer(object):
                 tracker_states = self._pad_states(tracker_states)
             dialogue_len = len(tracker_states)
 
-            story_features = [self.featurize_mechanism.encode(state, domain)
+            story_features = [self.featurize_mechanism.encode(state,
+                                                              domain.input_feature_map)
                               for state in tracker_states]
 
             features.append(story_features)
@@ -306,7 +307,8 @@ class Featurizer(object):
                 if len(trackers_as_actions) > 1:
                     tracker_actions = self._pad_states(tracker_actions)
 
-                story_labels = [self.featurize_mechanism.encode_action(action, domain)
+                story_labels = [self.featurize_mechanism.encode_action(action,
+                                                                       domain)
                                 for action in tracker_actions]
             else:
                 story_labels = self.featurize_mechanism.encode_action(tracker_actions,
@@ -393,9 +395,12 @@ class FullDialogueFeaturizer(Featurizer):
         self.max_len = None
 
     def _calculate_max_len(self, as_states):
-        self.max_len = 0
-        for states in as_states:
-            self.max_len = max(self.max_len, len(states))
+
+        if as_states:
+
+            return max([len(states) for states in as_states])
+        else:
+            return 0
         logger.info("The longest dialogue has {} actions."
                     "".format(self.max_len))
 

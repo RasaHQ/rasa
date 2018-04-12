@@ -54,11 +54,12 @@ class OnlinePolicyTrainer(PolicyTrainer):
         logger.debug("Policy trainer got kwargs: {}".format(kwargs))
         check_domain_sanity(self.domain)
 
-        training_trackers = self.extract_training_trackers(
+        training_trackers = self.extract_trackers(
                 resource_name,
                 self.domain,
                 augmentation_factor=augmentation_factor,
-                max_number_of_trackers=max_number_of_trackers)
+                max_number_of_trackers=max_number_of_trackers
+        )
 
         self.ensemble.train(training_trackers, self.domain, self.featurizer,
                             max_training_samples=max_training_samples, **kwargs)

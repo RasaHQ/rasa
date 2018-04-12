@@ -61,7 +61,8 @@ class PolicyTrainer(object):
                 self.domain,
                 augmentation_factor=augmentation_factor,
                 remove_duplicates=remove_duplicates,
-                max_number_of_trackers=max_number_of_trackers)
+                max_number_of_trackers=max_number_of_trackers
+        )
 
         self.ensemble.train(training_trackers, self.domain, self.featurizer,
                             max_training_samples=max_training_samples, **kwargs)

@@ -128,6 +128,8 @@ class MemoizationPolicy(Policy):
          trackers_as_actions,
          metadata) = self.featurizer.training_states_and_actions(
             training_trackers, domain)
+        # TODO deal with setting self.featurizer directly
+        self.max_history = len(trackers_as_states[0])
 
         self._memorise(trackers_as_states,
                        trackers_as_actions,
