@@ -13,7 +13,7 @@ One of your users got halfway through a task and then stopped messaging your bot
 Now you want to remind them to get back to you. 
 Don't worry! Rasa has you covered.
 
-To schedule an action for later execution, there is a special event called ``Reminder``. 
+To schedule an action for later execution, there is a special event called ``ReminderScheduled``. 
 Let's make our example a bit more specific: 
 We want a confirmation to book a restaurant table - without it the reservation won't be made.
 
@@ -44,7 +44,7 @@ Here is an example implementation for our ``action_confirm_booking``:
 .. doctest::
 
     from rasa_core.actions import Action
-    from rasa_core.events import Reminder
+    from rasa_core.events import ReminderScheduled
     import datetime
     from datetime import timedelta
 
@@ -54,7 +54,7 @@ Here is an example implementation for our ``action_confirm_booking``:
 
         def run(self, dispatcher, tracker, domain):
             dispatcher.utter_message("Do you want to confirm your booking at Papi's pizza?")
-            return [Reminder("action_booking_reminder", datetime.now() + timedelta(hours=5)]
+            return [ReminderScheduled("action_booking_reminder", datetime.now() + timedelta(hours=5)]
 
 This action schedules a reminder in 5 hours. The reminder will trigger the action ``action_booking_reminder``.
 
@@ -66,7 +66,7 @@ example could look like this:
 .. doctest::
 
     from rasa_core.actions import Action
-    from rasa_core.events import Reminder
+    from rasa_core.events import ReminderScheduled
 
 
     class ActionBookingReminder(Action):
@@ -79,7 +79,7 @@ example could look like this:
 
 By default, reminders will be cancelled if the user sends *any* message to the bot before the scheduled reminder time. 
 If you do not want that to happen you need so set the ``kill_on_user_message`` flag when creating the reminder:
-``Reminder("action_booking_reminder", datetime.now() + timedelta(hours=5), kill_on_user_message=False)``
+``ReminderScheduled("action_booking_reminder", datetime.now() + timedelta(hours=5), kill_on_user_message=False)``
 
 After the action is triggered, the action execution continues as though the user had sent the bot an
 empty message. 

@@ -193,3 +193,19 @@ def test_put_tracker(core_server, app):
     assert tracker is not None
     assert len(tracker.events) == len(test_events)
     assert list(tracker.events) == test_events
+
+
+@pytest.inlineCallbacks
+def test_list_conversations(app):
+    data = json.dumps({"query": "/greet"})
+    response = yield app.post("http://dummy/conversations/myid/parse",
+                              data=data, content_type='application/json')
+    content = yield response.json()
+    assert response.code == 200
+
+    response = yield app.get("http://dummy/conversations")
+    content = yield response.json()
+    assert response.code == 200
+
+    assert len(content) > 0
+    assert "myid" in content
