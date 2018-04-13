@@ -78,12 +78,6 @@ Some important things to consider:
 - Any slots that are already set won't be asked for. E.g. if someone says "I'd like a Chinese restaurant for 8 people" the ``submit`` function should get called right away.
 
 
-Optional Slots
-~~~~~~~~~~~~~~
-
-If some of the information is not essential for completing the request, you can override the ``ready_to_submit`` method
-of the ``FormAction`` class. 
-
 
 Collecting Information using Slots
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

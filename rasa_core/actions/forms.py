@@ -80,21 +80,18 @@ class FormAction(Action):
         else:
             fields = [f for f in required if f.slot_name == requested_slot]
             if len(fields) > 0:
-                return fields[0].extract(tracker)
-            else:
-                return []
-
-    def ready_to_submit(self, tracker, events):
-        return not any([
-            self.should_request_slot(tracker, field.slot_name, events)
-            for field in self.REQUIRED_FIELDS])
+                field = fields[0]
+                value = field.extract(tracker)
+                if field.validate(value) is not None:
+                    return value
+                else:
+                    logger.debug("unable to extract value "
+                                 "for requested slot: {}".format(field.slot_name))
+            return []
 
     def run(self, dispatcher, tracker, domain):
 
         events = self.get_requested_slot(tracker)
-
-        if self.ready_to_submit(tracker, events):
-            return self.submit(dispatcher, tracker, domain)
 
         for field in self.REQUIRED_FIELDS:
             if self.should_request_slot(tracker, field.slot_name, events):
