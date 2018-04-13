@@ -9,7 +9,7 @@ from rasa_core.events import (
     SlotSet,
     UserUttered
 )
-from rasa_core.actions.forms import ( 
+from rasa_core.actions.forms import (
     EntityFormField,
     FormAction,
     FreeTextFormField
