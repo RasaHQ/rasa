@@ -210,6 +210,15 @@ class LabelTokenizerStateFeaturizer(StateFeaturizer):
 
     def prepare(self, domain):
 
+
+        domain.input_states
+        domain.entity_states
+
+        domain.prev_action_states
+
+        domain.slot_states
+
+
         user_labels, bot_labels, other_labels = self._parse_feature_map(domain.input_state_map)
 
         self.bot_actions = self._create_label_dict(bot_labels)
@@ -510,7 +519,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                 if isinstance(event, ActionExecuted):
                     if not event.unpredictable:
                         # only actions which can be predicted at a stories start
-                        sliced_states = domain.slice_feature_history(
+                        sliced_states = self.slice_state_history(
                             states[:idx + 1], self.max_history)
                         trackers_as_states.append(sliced_states)
                         trackers_as_actions.append(event.action_name)

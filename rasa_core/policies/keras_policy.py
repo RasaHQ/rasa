@@ -14,7 +14,7 @@ from typing import Any, List, Dict, Text, Optional, Tuple
 
 from rasa_core import utils
 from rasa_core.policies import Policy
-from rasa_core.featurizers import Featurizer
+from rasa_core.featurizers import TrackerFeaturizer
 
 logger = logging.getLogger(__name__)
 
@@ -233,7 +233,7 @@ class KerasPolicy(Policy):
     def load(cls, path):
         # type: (Text) -> KerasPolicy
         if os.path.exists(path):
-            featurizer = Featurizer.load(path)
+            featurizer = TrackerFeaturizer.load(path)
             meta_path = os.path.join(path, "keras_policy.json")
             if os.path.isfile(meta_path):
                 with io.open(meta_path) as f:

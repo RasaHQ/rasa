@@ -17,7 +17,8 @@ from typing import Optional, Any, Dict, List, Text
 
 from rasa_core.policies.policy import Policy
 from rasa_core import utils
-from rasa_core.featurizers import Featurizer, MaxHistoryTrackerFeaturizer
+from rasa_core.featurizers import \
+    TrackerFeaturizer, MaxHistoryTrackerFeaturizer
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,7 @@ class MemoizationPolicy(Policy):
         featurizer = self._standard_featurizer(max_history)
         super(MemoizationPolicy, self).__init__(featurizer)
 
-        self.max_history = max_history
+        self.max_history = self.featurizer.max_history
         self.lookup = lookup if lookup is not None else {}
         self.is_enabled = True
 
@@ -71,6 +72,8 @@ class MemoizationPolicy(Policy):
             ("Trying to mem featurized data with {} historic turns. Expected: "
              "{}".format(len(trackers_as_states[0]), self.max_history))
 
+        ambiguous_feature_keys = set()
+
         pbar = tqdm(zip(trackers_as_states, trackers_as_actions),
                     desc="Processed actions", disable=online)
         for states, action in pbar:
@@ -94,8 +97,9 @@ class MemoizationPolicy(Policy):
                         else:
                             # delete contradicting example created by
                             # partial history augmentation from memory
-                            self.lookup[feature_key] = None
-                else:
+                            ambiguous_feature_keys.add(feature_key)
+                            del self.lookup[feature_key]
+                elif feature_key not in ambiguous_feature_keys:
                     self.lookup[feature_key] = feature_item
 
                 pbar.set_postfix({
@@ -121,13 +125,11 @@ class MemoizationPolicy(Policy):
          trackers_as_actions,
          metadata) = self.featurizer.training_states_and_actions(
             training_trackers, domain)
-        # TODO deal with setting self.featurizer directly
-        self.max_history = len(trackers_as_states[0])
 
         self._memorise(trackers_as_states,
                        trackers_as_actions,
                        domain)
-        logger.info("Memorized {} unique examples."
+        logger.info("Memorized {} unique augmented examples."
                     "".format(len(self.lookup)))
         return metadata
 
@@ -183,7 +185,7 @@ class MemoizationPolicy(Policy):
     def load(cls, path):
         # type: (Text) -> MemoizationPolicy
 
-        featurizer = Featurizer.load(path)
+        featurizer = TrackerFeaturizer.load(path)
         assert isinstance(featurizer, MaxHistoryTrackerFeaturizer), \
             ("Loaded featurizer of type {}, should be "
              "MaxHistoryTrackerFeaturizer.".format(type(featurizer).__name__))
