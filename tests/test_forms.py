@@ -98,7 +98,7 @@ def test_restaurant_form_unhappy_1():
                     intent={"name": "inform"}))
 
     events = ActionSearchRestaurants().run(dispatcher, tracker, domain)
-    assert len(events) == 2
+    assert len(events) == 1
     assert isinstance(events[0], SlotSet)
 
     # same slot requested again
@@ -116,7 +116,7 @@ def test_people_form():
 
     # first user utterance
     tracker.update(UserUttered("", intent={"name": "inform"}))
-    events = ActionSearchRestaurants().run(dispatcher, tracker, domain)
+    events = ActionSearchPeople().run(dispatcher, tracker, domain)
     assert len(events) == 1
     assert isinstance(events[0], SlotSet)
     assert events[0].key == "requested_slot"
@@ -129,7 +129,7 @@ def test_people_form():
         UserUttered(name,
                     intent={"name": "inform"}))
 
-    events = ActionSearchRestaurants().run(dispatcher, tracker, domain)
+    events = ActionSearchPeople().run(dispatcher, tracker, domain)
     assert len(events) == 1
     assert isinstance(events[0], SlotSet)
 
