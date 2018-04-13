@@ -156,8 +156,6 @@ class SklearnPolicy(Policy):
         if score is not None:
             logger.info("Cross validation score: {:.5f}".format(score))
 
-        return training_data.metadata
-
     def continue_training(self, training_trackers, domain, **kwargs):
         # type: (list[DialogueStateTracker], Domain, **Any) -> None
 

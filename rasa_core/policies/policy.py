@@ -13,7 +13,7 @@ from typing import \
 
 from copy import deepcopy
 from rasa_core.featurizers import \
-    MaxHistoryTrackerFeaturizer, BinaryStateFeaturizer
+    MaxHistoryTrackerFeaturizer, BinarySingleStateFeaturizer
 
 if typing.TYPE_CHECKING:
     from rasa_core.domain import Domain
@@ -30,7 +30,7 @@ class Policy(object):
 
     @classmethod
     def _standard_featurizer(cls):
-        return MaxHistoryTrackerFeaturizer(BinaryStateFeaturizer(),
+        return MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
                                     cls.MAX_HISTORY_DEFAULT)
 
     @classmethod
@@ -76,8 +76,8 @@ class Policy(object):
                            "deprecated. Pass appropriate featurizer "
                            "to the policy instead.")
 
-        training_data, _ = self.featurizer.featurize_trackers(trackers,
-                                                              domain)
+        training_data = self.featurizer.featurize_trackers(trackers,
+                                                           domain)
 
         max_training_samples = kwargs.get('max_training_samples')
         if max_training_samples:
@@ -90,7 +90,7 @@ class Policy(object):
               domain,  # type: Domain
               **kwargs  # type: **Any
               ):
-        # type: (...) -> Dict[Text: Any]
+        # type: (...) -> None
         """Trains the policy on given training trackers.
 
         Returns training metadata."""

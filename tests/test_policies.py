@@ -20,12 +20,12 @@ from rasa_core.trackers import DialogueStateTracker
 from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 from rasa_core.policies import PolicyTrainer
 from rasa_core.featurizers import MaxHistoryTrackerFeaturizer, \
-    BinaryStateFeaturizer
+    BinarySingleStateFeaturizer
 from rasa_core.events import ActionExecuted
 
 
 def train_featurizer(max_history):
-    featurizer = MaxHistoryTrackerFeaturizer(BinaryStateFeaturizer(),
+    featurizer = MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
                                       max_history=max_history)
     return featurizer
 

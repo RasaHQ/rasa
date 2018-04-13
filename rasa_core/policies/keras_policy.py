@@ -131,8 +131,6 @@ class KerasPolicy(Policy):
         self.current_epoch = kwargs.get("epochs", 1)
         logger.info("Done fitting keras policy model")
 
-        return training_data.metadata
-
     def continue_training(self, training_trackers, domain, **kwargs):
         # type: (List[DialogueStateTracker], Domain, **Any) -> None
         import numpy as np

@@ -13,7 +13,7 @@ from rasa_core.policies import PolicyTrainer
 from rasa_core.events import ActionExecuted, UserUttered
 from rasa_core.training.structures import Story
 from rasa_core.featurizers import MaxHistoryTrackerFeaturizer, \
-    BinaryStateFeaturizer
+    BinarySingleStateFeaturizer
 
 
 def test_can_read_test_story(default_domain):
@@ -118,7 +118,7 @@ def test_read_story_file_with_cycles(tmpdir, default_domain):
 
 
 def test_generate_training_data_with_cycles(tmpdir, default_domain):
-    featurizer = MaxHistoryTrackerFeaturizer(BinaryStateFeaturizer(),
+    featurizer = MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
                                       max_history=4)
     training_trackers = PolicyTrainer.extract_trackers(
         "data/test_stories/stories_with_cycle.md",
@@ -158,7 +158,7 @@ def test_visualize_training_data_graph(tmpdir, default_domain):
 def test_load_multi_file_training_data(default_domain):
     # the stories file in `data/test_multifile_stories` is the same as in
     # `data/test_stories/stories.md`, but split across multiple files
-    featurizer = MaxHistoryTrackerFeaturizer(BinaryStateFeaturizer(),
+    featurizer = MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
                                       max_history=2)
     trackers = PolicyTrainer.extract_trackers(
         "data/test_stories/stories.md",
@@ -167,7 +167,7 @@ def test_load_multi_file_training_data(default_domain):
     data, _ = featurizer.featurize_trackers(trackers,
                                             default_domain)
 
-    featurizer_mul = MaxHistoryTrackerFeaturizer(BinaryStateFeaturizer(),
+    featurizer_mul = MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
                                           max_history=2)
     trackers_mul = PolicyTrainer.extract_trackers(
         "data/test_multifile_stories",
@@ -189,7 +189,7 @@ def test_load_training_data_handles_hidden_files(tmpdir, default_domain):
     normal_file = os.path.join(tmpdir.strpath, "normal_file")
     open(normal_file, 'a').close()
 
-    featurizer = MaxHistoryTrackerFeaturizer(BinaryStateFeaturizer(),
+    featurizer = MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
                                       max_history=2)
     trackers = PolicyTrainer.extract_trackers(
         tmpdir.strpath,
