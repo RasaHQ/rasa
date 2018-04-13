@@ -71,12 +71,12 @@ Rasa is a set of tools for building more advanced bots, developed by `Rasa
 and the first component to be open sourced.
 
 .. note::
- Rasa NLU allows you to turn natural language into structured data,
- but this might not be enough if you want to build a bot that handles what
- has been said in context and adjusts the flow of the conversation
- accordingly. rasa's open-source solution to handle contextual dialogue is
- `Rasa Core <https://github.com/RasaHQ/rasa_core>`_, but there are other tools
- out there such as `Dialogflow <https://dialogflow.com>`_.
+    Rasa NLU allows you to turn natural language into structured data,
+    but this might not be enough if you want to build a bot that handles what
+    has been said in context and adjusts the flow of the conversation
+    accordingly. rasa's open-source solution to handle contextual dialogue is
+    `Rasa Core <https://github.com/RasaHQ/rasa_core>`_, but there are other tools
+    out there such as `Dialogflow <https://dialogflow.com>`_.
 
 .. toctree::
    :maxdepth: 1
