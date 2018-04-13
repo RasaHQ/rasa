@@ -75,6 +75,37 @@ def test_restaurant_form():
     assert events[1].value == "people"
 
 
+def test_restaurant_form_unhappy_1():
+    domain = TemplateDomain.load("data/test_domains/restaurant_form.yml")
+    tracker_store = InMemoryTrackerStore(domain)
+    out = CollectingOutputChannel()
+    sender_id = "test-restaurant"
+    dispatcher = Dispatcher(sender_id, out, domain)
+    tracker = tracker_store.get_or_create_tracker(sender_id)
+
+    # first user utterance
+    tracker.update(UserUttered("", intent={"name": "inform"}))
+    events = ActionSearchRestaurants().run(dispatcher, tracker, domain)
+    assert len(events) == 1
+    assert isinstance(events[0], SlotSet)
+    assert events[0].key == "requested_slot"
+    assert events[0].value == "cuisine"
+    tracker.update(events[0])
+
+    # second user utterance does not provide what's asked
+    tracker.update(
+        UserUttered("",
+                    intent={"name": "inform"}))
+
+    events = ActionSearchRestaurants().run(dispatcher, tracker, domain)
+    assert len(events) == 2
+    assert isinstance(events[0], SlotSet)
+
+    # same slot requested again
+    assert events[0].key == "requested_slot"
+    assert events[0].value == "cuisine"
+
+
 def test_people_form():
     domain = TemplateDomain.load("data/test_domains/people_form.yml")
     tracker_store = InMemoryTrackerStore(domain)
