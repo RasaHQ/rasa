@@ -8,6 +8,8 @@ intents:
 slots:
   person_name:
     type: text
+  requested_slot:
+    type: unfeaturized
 
 templates:
   utter_ask_person_name:

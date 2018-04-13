@@ -22,9 +22,6 @@ class ActionSearchRestaurants(FormAction):
     def name(self):
         return 'action_search_restaurants'
 
-    def submit(self, dispatcher, tracker, domain):
-        pass
-
 
 class ActionSearchPeople(FormAction):
 
@@ -34,9 +31,6 @@ class ActionSearchPeople(FormAction):
 
     def name(self):
         return 'action_search_people'
-
-    def submit(self, dispatcher, tracker, domain):
-        pass
 
 
 
@@ -98,6 +92,7 @@ def test_restaurant_form_unhappy_1():
                     intent={"name": "inform"}))
 
     events = ActionSearchRestaurants().run(dispatcher, tracker, domain)
+    print([(e.key, e.value) for e in events])
     assert len(events) == 1
     assert isinstance(events[0], SlotSet)
 

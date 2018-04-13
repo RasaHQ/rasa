@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class FormField(object):
 
     def validate(self, value):
-        return value is not None
+        return value or None
 
 
 class EntityFormField(FormField):
@@ -27,8 +27,9 @@ class EntityFormField(FormField):
 
     def extract(self, tracker):
         value = next(tracker.get_latest_entity_values(self.entity_name), None)
-        if value:
-            return [SlotSet(self.slot_name, value)]
+        validated = self.validate(value)
+        if validated is not None:
+            return [SlotSet(self.slot_name, validated)]
         else:
             return []
 
@@ -55,7 +56,10 @@ class FreeTextFormField(FormField):
         self.slot_name = slot_name
 
     def extract(self, tracker):
-        return [SlotSet(self.slot_name, tracker.latest_message.text)]
+        validated = self.validate(tracker.latest_message.text)
+        if validated is not None:
+            return [SlotSet(self.slot_name, validated)]
+        return []
 
 
 class FormAction(Action):
@@ -80,14 +84,11 @@ class FormAction(Action):
         else:
             fields = [f for f in required if f.slot_name == requested_slot]
             if len(fields) > 0:
-                field = fields[0]
-                value = field.extract(tracker)
-                if field.validate(value) is not None:
-                    return value
-                else:
-                    logger.debug("unable to extract value "
-                                 "for requested slot: {}".format(field.slot_name))
-            return []
+                return fields[0].extract(tracker)
+            else:
+                logger.debug("unable to extract value "
+                             "for requested slot: {}".format(field.slot_name))
+                return []
 
     def run(self, dispatcher, tracker, domain):
 
@@ -100,8 +101,8 @@ class FormAction(Action):
                 events.append(SlotSet("requested_slot", field.slot_name))
                 return events
 
-        return self.submit(dispatcher, tracker, domain)
+        return self.submit(dispatcher, tracker, domain, events)
 
-    def submit(self, dispatcher, tracker, domain):
+    def submit(self, dispatcher, tracker, domain, events):
         dispatcher.utter_message("done!")
-        return []
+        return events
