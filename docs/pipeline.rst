@@ -48,7 +48,7 @@ Here is a list of the existing templates:
 | tensorflow_embedding | ``["intent_featurizer_count_vectors", "intent_classifier_tensorflow_embedding"]``                                                                                 |
 +----------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
-Creating your own pipelines is possible by directly passing the names of the components to rasa NLU in the ``pipeline``
+Creating your own pipelines is possible by directly passing the names of the components to Rasa NLU in the ``pipeline``
 configuration variable, e.g.
 
 .. code-block:: yaml

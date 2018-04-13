@@ -52,7 +52,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'rasa NLU'
+project = u'Rasa NLU'
 copyright = u'2017, Rasa Technologies GmbH'
 author = u'Alan Nichol'
 

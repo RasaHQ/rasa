@@ -23,6 +23,7 @@ Added
 - added embedding intent classifier implemented in tensorflow
 - added tensorflow requirements
 - added basic tests for count vector featurizer
+- added docs blurb on handling contextual dialogue
 
 Changed
 -------
