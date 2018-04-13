@@ -13,7 +13,6 @@ import jsonpickle
 import numpy as np
 from typing import Tuple, List, Optional, Dict, Text
 from builtins import str
-from collections import defaultdict
 
 from rasa_core import utils
 from rasa_core.events import ActionExecuted
@@ -33,19 +32,23 @@ class SingleStateFeaturizer(object):
     """Base class for mechanisms to transform the conversations state
     into machine learning formats.
 
-    SingleStateFeaturizer decides how the bot will transform
+    Subclasses of SingleStateFeaturizer decide how the bot will transform
     the conversation state to a format which a classifier can read:
     feature vector."""
 
     def prepare_from_domain(self, domain):
+        # type: (Domain) -> None
         """Helper method to init based on domain"""
         pass
 
     def encode(self, states):
-        raise NotImplementedError("SingleStateFeaturizer must have the capacity to "
+        # type: (Optional[Text, float]) -> np.ndarray
+        raise NotImplementedError("SingleStateFeaturizer must have "
+                                  "the capacity to "
                                   "encode states to a feature vector")
 
     def encode_action(self, action, domain):
+        # type: (Optional[Text, float], Domain) -> np.ndarray
         if action is None:
             return np.ones(domain.num_actions, dtype=int) * -1
 
@@ -60,16 +63,17 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
     All features should be either on or off, denoting them with 1 or 0."""
 
     def __init__(self):
-        """inits input_state_map"""
-
+        """Declares instant variables."""
         self.num_features = None
         self.input_state_map = None
 
     def prepare_from_domain(self, domain):
+        # type: (Domain) -> None
         self.num_features = domain.num_states
         self.input_state_map = domain.input_state_map
 
     def encode(self, states):
+        # type: (Optional[Text, float]) -> np.ndarray
         """Returns a binary vector indicating which features are active.
 
         Given a dictionary of states (e.g. 'intent_greet',
@@ -83,6 +87,11 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
         If this is just a padding vector we set all values to `-1`.
         padding vectors are specified by a `None` or `[None]`
         value for states."""
+
+        if not self.num_features:
+            raise Exception("BinarySingleStateFeaturizer "
+                            "was not prepared "
+                            "before encoding.")
 
         if states is None or None in states:
             return np.ones(self.num_features, dtype=np.int32) * -1
@@ -133,6 +142,7 @@ class ProbabilisticSingleStateFeaturizer(BinarySingleStateFeaturizer):
     """Uses intent probabilities of the NLU and feeds them into the model."""
 
     def encode(self, states):
+        # type: (Optional[Text, float]) -> np.ndarray
         """Returns a binary vector indicating active features,
         but with intent features given with a probability.
 
@@ -148,6 +158,11 @@ class ProbabilisticSingleStateFeaturizer(BinarySingleStateFeaturizer):
         If this is just a padding vector we set all values to `-1`.
         padding vectors are specified by a `None` or `[None]`
         value for states."""
+
+        if not self.num_features:
+            raise Exception("ProbabilisticSingleStateFeaturizer "
+                            "was not prepared "
+                            "before encoding.")
 
         if states is None or None in states:
             return np.ones(self.num_features, dtype=np.int32) * -1
@@ -166,6 +181,17 @@ class ProbabilisticSingleStateFeaturizer(BinarySingleStateFeaturizer):
 
 
 class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
+    """SingleStateFeaturizer that splits user intents and
+    bot action names into tokens and uses these tokens to
+    create bag-of-words feature vectors.
+
+    :param Text split_symbol:
+      The symbol that separates words in intets and action names.
+
+    :param bool share_vocab:
+      The flag that specifies if to create the same vocabulary for
+      user intents and bot actions."""
+
     def __init__(self, split_symbol='_', share_vocab=False):
         # type: (Text, bool) -> None
         """inits vocabulary for label bag of words representation"""
@@ -183,7 +209,9 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
 
     @staticmethod
     def _create_label_token_dict(labels, split_symbol='_'):
-        """Create a dictionary for labels splitted by symbol"""
+        """Splits labels into tokens by using provided symbol.
+        Creates the lookup dictionary for this tokens.
+        Values in this dict are used for featurization."""
 
         distinct_tokens = set([token
                                for label in labels
@@ -192,7 +220,9 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
                 for idx, token in enumerate(sorted(distinct_tokens))}
 
     def prepare_from_domain(self, domain):
-        """Creates internal vocablurary"""
+        # type: (Domain) -> None
+        """Creates internal vocabularies for user intents
+        and bot actions to use for featurization"""
         self.user_labels = domain.intent_states + domain.entity_states
         self.bot_labels = domain.action_names
         self.other_labels = domain.slot_states
@@ -213,6 +243,11 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
                              len(self.other_labels))
 
     def encode(self, states):
+        # type: (Optional[Text, float]) -> np.ndarray
+        if not self.num_features:
+            raise Exception("LabelTokenizerSingleStateFeaturizer "
+                            "was not prepared "
+                            "before encoding.")
 
         if states is None or None in states:
             return np.ones(self.num_features, dtype=int) * -1
@@ -303,6 +338,7 @@ class TrackerFeaturizer(object):
             domain  # type: Domain
     ):
         # type: (...) -> Tuple[List[List[Dict]], List[List[Dict]], Dict]
+        """Transforms list of trackers to lists of states and actions"""
         raise NotImplementedError("Featurizer must have the capacity to "
                                   "encode trackers to feature vectors")
 
@@ -327,6 +363,7 @@ class TrackerFeaturizer(object):
                           domain  # type: Domain
                           ):
         # type: (...) -> List[List[Dict[Text, float]]]
+        """Transforms list of trackers to lists of states for prediction"""
         raise NotImplementedError("Featurizer must have the capacity to "
                                   "create feature vector")
 
@@ -361,6 +398,12 @@ class TrackerFeaturizer(object):
 
 
 class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
+    """Tracker featurizer that takes the trackers
+    and creates full dialogue training data for
+    time distributed rnn.
+    Training data is padded up to the length of the longest
+    dialogue with -1"""
+
     def __init__(self, state_featurizer):
         # type: (SingleStateFeaturizer) -> None
         super(FullDialogueTrackerFeaturizer, self).__init__(state_featurizer)
@@ -435,6 +478,12 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
 
 
 class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
+    """Tracker featurizer that takes the trackers,
+    slices them into max_history batches and
+    creates  training data for rnn that uses last output
+    for prediction.
+    Training data is padded up to the max_history with -1"""
+
     def __init__(self, state_featurizer=None,
                  max_history=5, remove_duplicates=True):
         # type: (Optional(SingleStateFeaturizer), int, bool) -> None
@@ -478,6 +527,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                 if isinstance(event, ActionExecuted):
                     if not event.unpredictable:
                         # only actions which can be predicted at a stories start
+                        # TODO unite with padding
                         sliced_states = self.slice_state_history(
                             states[:idx + 1], self.max_history)
                         trackers_as_states.append(sliced_states)

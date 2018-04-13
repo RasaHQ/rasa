@@ -15,13 +15,13 @@ from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 
 def test_create_train_data_no_history(default_domain):
     featurizer = MaxHistoryTrackerFeaturizer(None, max_history=1)
-    training_trackers = PolicyTrainer.extract_trackers(
+    training_trackers, _ = PolicyTrainer.extract_trackers(
             DEFAULT_STORIES_FILE,
             default_domain,
             augmentation_factor=0
     )
     assert len(training_trackers) == 3
-    (decoded, _, _) = featurizer.training_states_and_actions(
+    (decoded, _) = featurizer.training_states_and_actions(
             training_trackers, default_domain)
 
     assert decoded == [
@@ -44,15 +44,15 @@ def test_create_train_data_no_history(default_domain):
 
 def test_create_train_data_with_history(default_domain):
     featurizer = MaxHistoryTrackerFeaturizer(None, max_history=4)
-    training_trackers = PolicyTrainer.extract_trackers(
+    training_trackers, _ = PolicyTrainer.extract_trackers(
         DEFAULT_STORIES_FILE,
         default_domain,
         augmentation_factor=0
     )
     assert len(training_trackers) == 3
-    (decoded, _, _) = featurizer.training_states_and_actions(
+    (decoded, _) = featurizer.training_states_and_actions(
         training_trackers, default_domain)
-    (decoded, _, _) = featurizer.training_states_and_actions(
+    (decoded, _) = featurizer.training_states_and_actions(
         training_trackers, default_domain)
 
     assert decoded == [

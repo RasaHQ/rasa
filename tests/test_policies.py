@@ -31,7 +31,7 @@ def train_featurizer(max_history):
 
 
 def train_trackers(domain):
-    trackers = PolicyTrainer.extract_trackers(
+    trackers, _ = PolicyTrainer.extract_trackers(
         DEFAULT_STORIES_FILE,
         domain
     )

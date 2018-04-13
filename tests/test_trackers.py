@@ -98,7 +98,7 @@ def test_tracker_write_to_story(tmpdir, default_domain):
             "data/test_dialogues/enter_name.json", default_domain)
     p = tmpdir.join("export.md")
     tracker.export_stories_to_file(p.strpath)
-    trackers = PolicyTrainer.extract_trackers(
+    trackers, _ = PolicyTrainer.extract_trackers(
             p.strpath,
             default_domain,
             use_story_concatenation=False,
@@ -325,7 +325,7 @@ def test_traveling_back_in_time(default_domain):
 
 
 def test_dump_and_restore_as_json(default_agent, tmpdir):
-    trackers = PolicyTrainer.extract_trackers(
+    trackers, _ = PolicyTrainer.extract_trackers(
             DEFAULT_STORIES_FILE,
             default_agent.domain)
 
