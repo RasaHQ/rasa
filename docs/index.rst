@@ -1,13 +1,13 @@
 
-Language Understanding with rasa NLU
+Language Understanding with Rasa NLU
 ====================================
 
 .. note::
-    This is the documentation for version |release| of rasa NLU. Make sure you select
+    This is the documentation for version |release| of Rasa NLU. Make sure you select
     the appropriate version of the documentation for your local installation!
 
 
-rasa NLU is an open source tool for intent classification and entity extraction. For example, taking a sentence like 
+Rasa NLU is an open source tool for intent classification and entity extraction. For example, taking a sentence like
 
 .. code-block:: console
 
@@ -52,22 +52,31 @@ The quickest quickstart in the west
 
 There you go! you just parsed some text. Next step, do the :ref:`section_tutorial`.
 
-.. note:: This demo uses a very limited ML model. To apply rasa NLU to your use case, you need to train your own model! Follow the tutorial to get to know how to apply rasa_nlu to your data.
+.. note:: This demo uses a very limited ML model. To apply Rasa NLU to your use case, you need to train your own model! Follow the tutorial to get to know how to apply rasa_nlu to your data.
 
 About 
 -----
 
-You can think of rasa NLU as a set of high level APIs for building your own language parser using existing NLP and ML libraries.
+You can think of Rasa NLU as a set of high level APIs for building your own language parser using existing NLP and ML libraries.
 The setup process is designed to be as simple as possible. If you're currently using wit, LUIS, or Dialogflow, you just:
 
-1. download your app data from wit or LUIS and feed it into rasa NLU
-2. run rasa NLU on your machine and switch the URL of your wit/LUIS/Dialogflow api calls to ``localhost:5000/parse``.
+1. download your app data from wit or LUIS and feed it into Rasa NLU
+2. run Rasa NLU on your machine and switch the URL of your wit/LUIS/Dialogflow api calls to ``localhost:5000/parse``.
 
-rasa NLU is written in Python, but it you can use it from any language through :ref:`section_http`.
+Rasa NLU is written in Python, but it you can use it from any language through :ref:`section_http`.
 If your project *is* written in Python you can simply import the relevant classes.
 
-rasa is a set of tools for building more advanced bots, developed by `Rasa <https://rasa.com>`_ . This is the natural language understanding module, and the first component to be open sourced.
+rasa is a set of tools for building more advanced bots, developed by `Rasa
+<https://rasa.com>`_. This is the natural language  understanding module,
+and the first component to be open sourced.
 
+.. note::
+ Rasa NLU allows you to turn natural language into structured data,
+ but this might not be enough if you want to build a bot that handles what
+ has been said in context and adjusts the flow of the conversation
+ accordingly. rasa's open-source solution to handle contextual dialogue is
+ `Rasa Core <https://github.com/RasaHQ/rasa_core>`_, but there are other tools
+ out there such as `Dialogflow <https://dialogflow.com>`_.
 
 .. toctree::
    :maxdepth: 1
