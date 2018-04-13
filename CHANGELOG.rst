@@ -44,7 +44,8 @@ Changed
 - changed key name for a file in ngram featurizer
 - changed jsonObserver to generate logs without a record seperator
 - Improve jsonschema validation: text attribute of training data samples can not be empty
-
+- made the NLU server's ``/evaluate`` endpoint asynchronous
+  
 Removed
 -------
 - MITIE support - backend is no longer supported.
