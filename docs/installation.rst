@@ -7,9 +7,9 @@ Rasa NLU itself doesn't have any external requirements,
 but to do something useful with it you need to
 install & configure a backend. Which backend you want to use is up to you.
 
-Setting up rasa NLU
+Setting up Rasa NLU
 ~~~~~~~~~~~~~~~~~~~
-The recommended way to install rasa NLU is using pip:
+The recommended way to install Rasa NLU is using pip:
 
 .. code-block:: bash
 

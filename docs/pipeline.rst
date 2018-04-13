@@ -44,7 +44,7 @@ Here is a list of the existing templates:
 | tensorflow_embedding | ``["intent_featurizer_count_vectors", "intent_classifier_tensorflow_embedding"]``                                                                                 |
 +----------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
-Creating your own pipelines is possible by directly passing the names of the components to rasa NLU in the ``pipeline``
+Creating your own pipelines is possible by directly passing the names of the components to Rasa NLU in the ``pipeline``
 configuration variable, e.g.
 
 .. code-block:: yaml
@@ -485,7 +485,7 @@ ner_duckling
 
 Creating new Components
 -----------------------
-Currently you need to rely on the components that are shipped with rasa NLU, but we plan to add the possibility to
+Currently you need to rely on the components that are shipped with Rasa NLU, but we plan to add the possibility to
 create your own components in your code. Nevertheless, we are looking forward to your contribution of a new component
 (e.g. a component to do sentiment analysis). A glimpse into the code of ``rasa_nlu.components.Component`` will reveal
 which functions need to be implemented to create a new component.

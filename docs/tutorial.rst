@@ -33,7 +33,7 @@ And even more ways to say that you want to look for restaurants:
 - `I'm in the North of town and I want chinese food`
 - `I'm hungry`
 
-The first job of rasa NLU is to assign any given sentence to one of
+The first job of Rasa NLU is to assign any given sentence to one of
 the **intent** categories: ``greet``, ``restaurant_search``, or ``thankyou``.
 
 The second job is to label words like "Mexican" and "center" as
@@ -135,7 +135,7 @@ What do these parameters mean?
 - **path**: output path where the model is persisted to
 
 If you want to know more about the parameters, there is an overview of the
-:ref:`section_configuration`. After a few minutes, rasa NLU will finish
+:ref:`section_configuration`. After a few minutes, Rasa NLU will finish
 training, and you'll see a new folder named as
 ``projects/default/model_YYYYMMDD-HHMMSS`` with the timestamp
 when training finished.
@@ -228,7 +228,7 @@ asking the user again if the confidence is low) and it's also
 helpful for prioritising which intents need more training data.
 
 
-With very little data, rasa NLU can in certain cases
+With very little data, Rasa NLU can in certain cases
 already generalise concepts, for example:
 
 .. code-block:: console

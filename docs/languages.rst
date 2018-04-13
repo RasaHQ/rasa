@@ -2,7 +2,7 @@
 
 Language Support
 ================
-Currently rasa NLU is tested and readily available for the following languages:
+Currently Rasa NLU is tested and readily available for the following languages:
 
 =============  ==============================
 backend        supported languages
@@ -33,4 +33,4 @@ spaCy already provides a really good documentation page about `Adding languages 
 This will help you train a tokenizer and vocabulary for a new language in spaCy.
 
 As described in the documentation, you need to register your language using ``set_lang_class()`` which will
-allow rasa NLU to load and use your new language by passing in your language identifier as the ``language`` :ref:`section_configuration` option.
+allow Rasa NLU to load and use your new language by passing in your language identifier as the ``language`` :ref:`section_configuration` option.

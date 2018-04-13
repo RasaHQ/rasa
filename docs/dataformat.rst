@@ -7,7 +7,7 @@ Training and Data Format
 Data Format
 ~~~~~~~~~~~
 
-The training data for rasa NLU is structured into different parts,
+The training data for Rasa NLU is structured into different parts,
 ``common_examples``, ``entity_synonyms`` and ``regex_features``.
 The most important one is ``common_examples``.
 

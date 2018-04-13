@@ -27,9 +27,9 @@ and returning structured data like
 
 
 The intended audience is mainly people developing bots. 
-You can use rasa as a drop-in replacement for `wit <https://wit.ai>`_ , `LUIS <https://www.luis.ai>`_ , or `Dialogflow <https://dialogflow.com>`_, the only change in your code is to send requests to ``localhost`` instead (see :ref:`section_migration` for details).
+You can use Rasa as a drop-in replacement for `wit <https://wit.ai>`_ , `LUIS <https://www.luis.ai>`_ , or `Dialogflow <https://dialogflow.com>`_, the only change in your code is to send requests to ``localhost`` instead (see :ref:`section_migration` for details).
 
-Why might you use rasa instead of one of those services?
+Why might you use Rasa instead of one of those services?
 
 - you don't have to hand over your data to FB/MSFT/GOOG
 - you don't have to make a ``https`` call every time.
@@ -66,7 +66,7 @@ The setup process is designed to be as simple as possible. If you're currently u
 Rasa NLU is written in Python, but it you can use it from any language through :ref:`section_http`.
 If your project *is* written in Python you can simply import the relevant classes.
 
-rasa is a set of tools for building more advanced bots, developed by `Rasa
+Rasa is a set of tools for building more advanced bots, developed by `Rasa
 <https://rasa.com>`_. This is the natural language  understanding module,
 and the first component to be open sourced.
 

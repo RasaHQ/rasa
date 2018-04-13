@@ -29,7 +29,7 @@ Please refer to this `cheat sheet <http://python-future.org/compatible_idioms.ht
 Code of conduct
 ^^^^^^^^^^^^^^^
 
-rasa NLU adheres to the `Contributor Covenant Code of Conduct <http://contributor-covenant.org/version/1/4/>`_.
+Rasa NLU adheres to the `Contributor Covenant Code of Conduct <http://contributor-covenant.org/version/1/4/>`_.
 By participating, you are expected to uphold this code.
 
 Documentation
