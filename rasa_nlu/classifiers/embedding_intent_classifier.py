@@ -113,7 +113,7 @@ class EmbeddingIntentClassifier(Component):
         self.intent_tokenization_flag = self.component_config[
                                             'intent_tokenization_flag']
         self.intent_split_symbol = self.component_config[
-                                            'intent_split_symbol']
+                                        'intent_split_symbol']
         if self.intent_tokenization_flag and not self.intent_split_symbol:
             logger.warning("intent_split_symbol was not specified, "
                            "so intent tokenization will be ignored")
@@ -208,23 +208,22 @@ class EmbeddingIntentClassifier(Component):
     @staticmethod
     def _create_intent_dict(training_data):
         """Create intent dictionary"""
-        intent_dict = {}
-        for example in training_data.intent_examples:
-            intent = example.get("intent")
-            if intent not in intent_dict:
-                intent_dict[intent] = len(intent_dict)
-        return intent_dict
+
+        distinct_intents = set([example.get("intent")
+                               for example in training_data.intent_examples])
+        return {intent: idx
+                for idx, intent in enumerate(sorted(distinct_intents))}
 
     @staticmethod
     def _create_intent_token_dict(training_data, intent_split_symbol='_'):
         """Create intent token dictionary"""
-        intent_token_dict = {}
-        for example in training_data.intent_examples:
-            intent = example.get("intent")
-            for t in intent.split(intent_split_symbol):
-                if t not in intent_token_dict:
-                    intent_token_dict[t] = len(intent_token_dict)
-        return intent_token_dict
+
+        distinct_tokens = set([token
+                               for example in training_data.intent_examples
+                               for token in example.get("intent").split(
+                                        intent_split_symbol)])
+        return {token: idx
+                for idx, token in enumerate(sorted(distinct_tokens))}
 
     # data helpers:
     def _create_Y(self, training_data, num_examples):
@@ -235,8 +234,7 @@ class EmbeddingIntentClassifier(Component):
 
         if self.intent_tokenization_flag and self.intent_split_symbol:
             self.intent_token_dict = self._create_intent_token_dict(
-                training_data,
-                self.intent_split_symbol)
+                training_data, self.intent_split_symbol)
 
             Y = np.zeros([num_examples, len(self.intent_token_dict)])
             for i, example in enumerate(training_data.intent_examples):
