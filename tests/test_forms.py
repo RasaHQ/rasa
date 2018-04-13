@@ -3,8 +3,17 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from rasa_core.events import ActionExecuted, UserUttered, BotUttered, SlotSet
-from rasa_core.actions.forms import FormAction, EntityFormField, FreeTextFormField
+from rasa_core.events import (
+    ActionExecuted,
+    BotUttered,
+    SlotSet,
+    UserUttered
+)
+from rasa_core.actions.forms import ( 
+    EntityFormField,
+    FormAction,
+    FreeTextFormField
+)
 from rasa_core.domain import TemplateDomain
 from rasa_core.tracker_store import InMemoryTrackerStore
 from rasa_core.channels.direct import CollectingOutputChannel
@@ -26,12 +35,11 @@ class ActionSearchRestaurants(FormAction):
 class ActionSearchPeople(FormAction):
 
     REQUIRED_FIELDS = [
-	FreeTextFormField("person_name")
+        FreeTextFormField("person_name")
     ]
 
     def name(self):
         return 'action_search_people'
-
 
 
 def test_restaurant_form():
