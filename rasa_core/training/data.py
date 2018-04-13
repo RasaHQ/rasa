@@ -15,7 +15,7 @@ class DialogueTrainingData(object):
         self.metadata = metadata if metadata else {}
 
     def limit_training_data_to(self, max_samples):
-        self.X = self.X[:max_samples, :]
+        self.X = self.X[:max_samples]
         self.y = self.y[:max_samples]
 
     def is_empty(self):
@@ -27,22 +27,12 @@ class DialogueTrainingData(object):
     def num_examples(self):
         return len(self.y)
 
-    def shuffled(self, domain):
-        y_one_hot = self.y_as_one_hot(domain)
+    def shuffled_X_y(self):
         idx = np.arange(self.num_examples())
         np.random.shuffle(idx)
-        shuffled_X = self.X[idx, :, :]
-        shuffled_y = y_one_hot[idx, :]
+        shuffled_X = self.X[idx]
+        shuffled_y = self.y[idx]
         return shuffled_X, shuffled_y
-
-    def y_as_one_hot(self, domain):
-        #print(self.y)
-        #exit(0)
-        y_one_hot = np.zeros((self.num_examples(), self.max_history(), domain.num_actions))
-        for idx, _y in enumerate(self.y):
-            for jdx, label in enumerate(_y):
-                y_one_hot[idx, jdx, domain.index_for_action(label)] = 1
-        return y_one_hot
 
     def random_samples(self, num_samples):
         padding_idx = np.random.choice(range(self.num_examples()),
@@ -50,17 +40,18 @@ class DialogueTrainingData(object):
                                        size=min(num_samples,
                                                 self.num_examples()))
 
-        return self.X[padding_idx, :, :], self.y[padding_idx]
+        return self.X[padding_idx], self.y[padding_idx]
 
     def reset_metadata(self):
         self.metadata = {}
 
     def append(self, X, y):
         self.X = np.vstack((self.X, X))
-        self.y = np.hstack((self.y, y))
+        self.y = np.vstack((self.y, y))
 
     @classmethod
     def empty(cls, domain):
+        # TODO is it correct?
         X = np.zeros((0, domain.num_features))
-        y = np.zeros(domain.num_actions)
+        y = np.zeros((0, domain.num_actions))
         return cls(X, y, {})

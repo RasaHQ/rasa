@@ -4,32 +4,42 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
+import typing
 
 from builtins import object
+from typing import Text, Optional, Any, List
 
 from rasa_core.domain import check_domain_sanity
-from rasa_core.interpreter import RegexInterpreter
-from rasa_core.training.data import DialogueTrainingData
+from rasa_core.training.generator import TrainingsDataGenerator
 
 logger = logging.getLogger(__name__)
 
+if typing.TYPE_CHECKING:
+    from rasa_core.domain import Domain
+    from rasa_core.trackers import DialogueStateTracker
+    from rasa_core.policies.ensemble import PolicyEnsemble
+
 
 class PolicyTrainer(object):
-    def __init__(self, ensemble, domain, featurizer):
+    def __init__(self, ensemble, domain):
+        # type: (PolicyEnsemble, Domain) -> None
         self.domain = domain
         self.ensemble = ensemble
-        self.featurizer = featurizer
 
-    def train(self, filename=None, max_history=3,
-              augmentation_factor=20, max_training_samples=None,
-              max_number_of_trackers=2000, remove_duplicates=True, **kwargs):
+    def train(self,
+              resource_name=None,  # type: Optional[Text]
+              augmentation_factor=20,  # type: int
+              max_training_samples=None,  # type: Optional[int]
+              max_number_of_trackers=2000,  # type: int
+              remove_duplicates=True,  # type: bool
+              **kwargs  # type: **Any
+              ):
+        # type: (...) -> None
         """Trains a policy on a domain using training data from a file.
 
+        :param resource_name: story file containing the training conversations
         :param augmentation_factor: how many stories should be created by
                                     randomly concatenating stories
-        :param filename: story file containing the training conversations
-        :param max_history: number of past actions to consider for the
-                            prediction of the next action
         :param max_training_samples: specifies how many training samples to
                                      train on - `None` to use all examples
         :param max_number_of_trackers: limits the tracker generation during
@@ -44,34 +54,44 @@ class PolicyTrainer(object):
         logger.debug("Policy trainer got kwargs: {}".format(kwargs))
         check_domain_sanity(self.domain)
 
-        training_data = self._prepare_training_data(filename, max_history,
-                                           augmentation_factor,
-                                           max_training_samples,
-                                           max_number_of_trackers,
-                                           remove_duplicates)
+        training_trackers = self.extract_trackers(
+                resource_name,
+                self.domain,
+                augmentation_factor=augmentation_factor,
+                remove_duplicates=remove_duplicates,
+                max_number_of_trackers=max_number_of_trackers
+        )
 
-        self.ensemble.train(training_data, self.domain, self.featurizer, **kwargs)
+        self.ensemble.train(training_trackers, self.domain,
+                            max_training_samples=max_training_samples, **kwargs)
 
-    def _prepare_training_data(self, filename, max_history, augmentation_factor,
-                               max_training_samples=None,
-                               max_number_of_trackers=2000,
-                               remove_duplicates=True):
-        """Reads training data from file and prepares it for the training."""
+    @staticmethod
+    def extract_trackers(
+            resource_name,  # type: Text
+            domain,  # type: Domain
+            remove_duplicates=True,  # type: bool
+            augmentation_factor=20,  # type: int
+            max_number_of_trackers=2000,  # type: int
+            tracker_limit=None,  # type: Optional[int]
+            use_story_concatenation=True  # type: bool
 
-        from rasa_core.training import extract_training_data_from_file
+    ):
+        # type: (...) -> List[DialogueStateTracker]
+        if resource_name:
 
-        if filename:
-            training_data = extract_training_data_from_file(
-                    filename,
-                    self.domain,
-                    self.featurizer,
-                    interpreter=RegexInterpreter(),
-                    augmentation_factor=augmentation_factor,
-                    max_history=max_history,
-                    remove_duplicates=remove_duplicates,
-                    max_number_of_trackers=max_number_of_trackers)
-            if max_training_samples is not None:
-                training_data.limit_training_data_to(max_training_samples)
-            return training_data
+            # TODO pass extract_story_graph as a function or
+            # TODO pass graph to agent
+            # TODO to support code creating stories
+            from rasa_core.training import extract_story_graph
+            graph = extract_story_graph(resource_name, domain)
+
+            g = TrainingsDataGenerator(graph, domain,
+                                       remove_duplicates,
+                                       augmentation_factor,
+                                       max_number_of_trackers,
+                                       tracker_limit,
+                                       use_story_concatenation)
+            return g.generate()
         else:
-            return DialogueTrainingData.empty(self.domain)
+            return []
+

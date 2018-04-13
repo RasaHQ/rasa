@@ -8,28 +8,38 @@ import json
 import logging
 import os
 import warnings
+import typing
 
-from builtins import str
-from typing import Any
+from typing import Any, List, Dict, Text, Optional, Tuple
 
 from rasa_core import utils
-from rasa_core.domain import Domain
 from rasa_core.policies import Policy
-from rasa_core.training.data import DialogueTrainingData
+from rasa_core.featurizers import Featurizer
 
 logger = logging.getLogger(__name__)
+
+if typing.TYPE_CHECKING:
+    import keras
+    from rasa_core.domain import Domain
+    from rasa_core.trackers import DialogueStateTracker
 
 
 class KerasPolicy(Policy):
     SUPPORTS_ONLINE_TRAINING = True
 
-    def __init__(self, model=None, graph=None, current_epoch=0,
-                 featurizer=None, max_history=None):
-        import keras
+    def __init__(self,
+                 featurizer=None,  # type: Optional[Featurizer]
+                 model=None,  # type: Optional[keras.models.Sequential]
+                 graph=None,  # type: Optional[keras.backend.tf.Graph]
+                 current_epoch=0  # type: int
+                 ):
+        # type: (...) -> None
 
-        super(KerasPolicy, self).__init__(featurizer, max_history)
+        super(KerasPolicy, self).__init__(featurizer)
+
         if KerasPolicy.is_using_tensorflow() and not graph:
-            self.graph = keras.backend.tf.get_default_graph()
+            from keras.backend import tf
+            self.graph = tf.get_default_graph()
         else:
             self.graph = graph
         self.model = model
@@ -44,42 +54,45 @@ class KerasPolicy(Policy):
 
     @staticmethod
     def is_using_tensorflow():
-        import keras
-        return keras.backend._BACKEND == "tensorflow"
-
-    def predict_action_probabilities(self, tracker, domain):
-        x, lengths = self.featurizer.featurize_trackers([tracker], domain)
-        current_idx = lengths[0] - 1
-        if KerasPolicy.is_using_tensorflow() and self.graph is not None:
-            with self.graph.as_default():
-                y_pred = self.model.predict(x, batch_size=1)
-        else:
-            y_pred = self.model.predict(x, batch_size=1)
-
-        return(y_pred[0, current_idx, :].tolist())
+        from keras.backend import _BACKEND
+        return _BACKEND == "tensorflow"
 
     def _build_model(self, num_features, num_actions, max_history_len):
         warnings.warn("Deprecated, use `model_architecture` instead.",
                       DeprecationWarning, stacklevel=2)
         return
 
-    def model_architecture(self, num_features, num_actions, max_history_len):
-        """Build a keras model and return a compiled model.
+    def model_architecture(
+            self,
+            input_shape,  # type: Tuple[int, int]
+            output_shape  # type: Tuple[int, Optional[int]]
+    ):
+        # type: (...) -> keras.models.Sequential
+        """Build a keras model and return a compiled model."""
 
-        :param max_history_len: The maximum number of historical
-                                turns used to decide on next action
-        """
-        from keras.layers import LSTM, Activation, Masking, Dense, TimeDistributed
         from keras.models import Sequential
+        from keras.layers import \
+            Masking, LSTM, Dense, TimeDistributed, Activation
 
         n_hidden = 32  # Neural Net and training params
-        batch_shape = (None, max_history_len, num_features)
-        input_shape = (max_history_len, num_features)
         # Build Model
         model = Sequential()
-        model.add(Masking(mask_value=-1, input_shape=input_shape))
-        model.add(LSTM(n_hidden, return_sequences=True))
-        model.add(TimeDistributed(Dense(units=num_actions)))
+
+        if len(output_shape) == 1:
+            model.add(Masking(mask_value=-1, input_shape=input_shape))
+            model.add(LSTM(n_hidden, dropout=0.2))
+            model.add(Dense(input_dim=n_hidden, units=output_shape[-1]))
+        elif len(output_shape) == 2:
+            model.add(Masking(mask_value=-1,
+                              input_shape=(None, input_shape[1])))
+            model.add(LSTM(n_hidden, return_sequences=True, dropout=0.2))
+            model.add(TimeDistributed(Dense(units=output_shape[-1])))
+        else:
+            raise ValueError("Cannot construct the model because"
+                             "length of output_shape = {} "
+                             "should be 1 or 2."
+                             "".format(len(output_shape)))
+
         model.add(Activation('softmax'))
 
         model.compile(loss='categorical_crossentropy',
@@ -87,34 +100,87 @@ class KerasPolicy(Policy):
                       metrics=['accuracy'])
 
         logger.debug(model.summary())
+
         return model
 
-    def train(self, training_data, domain, model_path=None, **kwargs):
-        # type: (DialogueTrainingData, Domain, **Any) -> None
-        self.model = self.model_architecture(domain.num_features,
-                                             domain.num_actions,
-                                             training_data.max_history())
-        #shuffled_X, shuffled_y = training_data.shuffled(domain)
-        shuffled_X = training_data.X
-        shuffled_y = training_data.y
+    def train(self,
+              training_trackers,  # type: List[DialogueStateTracker]
+              domain,  # type: Domain
+              **kwargs  # type: **Any
+              ):
+        # type: (...) -> Dict[Text: Any]
+
+        training_data = self.featurize_for_training(training_trackers,
+                                                    domain,
+                                                    **kwargs)
+
+        shuffled_X, shuffled_y = training_data.shuffled_X_y()
+
+        self.model = self.model_architecture(shuffled_X.shape[1:],
+                                             shuffled_y.shape[1:])
 
         validation_split = kwargs.get("validation_split", 0.0)
         logger.info("Fitting model with {} total samples and a validation "
                     "split of {}".format(training_data.num_examples(),
                                          validation_split))
-        self.model.fit(shuffled_X, shuffled_y, **kwargs)
-        self.current_epoch = kwargs.get("epochs", 10)
+        # filter out kwargs that cannot be passed to fit
+        params = self._get_valid_params(self.model.fit, **kwargs)
+
+        self.model.fit(shuffled_X, shuffled_y, **params)
+        # the default parameter for epochs in keras fit is 1
+        self.current_epoch = kwargs.get("epochs", 1)
         logger.info("Done fitting keras policy model")
 
-    def continue_training(self, training_data, domain, **kwargs):
-        # fit to one extra example
+        return training_data.metadata
 
-        self.current_epoch += 1
-        self.model.fit(training_data.X, training_data.y_as_one_hot(domain),
-                       epochs=self.current_epoch + 1,
-                       batch_size=1,
-                       verbose=0,
-                       initial_epoch=self.current_epoch)
+    def continue_training(self, training_trackers, domain, **kwargs):
+        # type: (List[DialogueStateTracker], Domain, **Any) -> None
+        import numpy as np
+
+        # takes the new example labelled and learns it
+        # via taking `epochs` samples of n_batch-1 parts of the training data,
+        # inserting our new example and learning them. this means that we can
+        # ask the network to fit the example without overemphasising
+        # its importance (and therefore throwing off the biases)
+
+        batch_size = kwargs.get('batch_size', 5)
+        epochs = kwargs.get('epochs', 50)
+
+        num_samples = batch_size - 1
+        num_prev_examples = len(training_trackers) - 1
+        for _ in range(epochs):
+            sampled_idx = np.random.choice(range(num_prev_examples),
+                                           replace=False,
+                                           size=min(num_samples,
+                                                    num_prev_examples))
+            trackers = [training_trackers[i]
+                        for i in sampled_idx] + training_trackers[-1:]
+            training_data = self.featurize_for_training(trackers,
+                                                        domain)
+            # fit to one extra example using updated trackers
+            self.model.fit(training_data.X, training_data.y,
+                           epochs=self.current_epoch + 1,
+                           batch_size=len(training_data.y),
+                           verbose=0,
+                           initial_epoch=self.current_epoch)
+            self.current_epoch += 1
+
+    def predict_action_probabilities(self, tracker, domain):
+        # type: (DialogueStateTracker, Domain) -> List[float]
+
+        X, lengths = self.featurizer.create_X([tracker], domain)
+
+        if KerasPolicy.is_using_tensorflow() and self.graph is not None:
+            with self.graph.as_default():
+                y_pred = self.model.predict(X, batch_size=1)
+        else:
+            y_pred = self.model.predict(X, batch_size=1)
+
+        if len(y_pred.shape) == 2:
+            return y_pred[-1].tolist()
+        elif len(y_pred.shape) == 3:
+            current_idx = lengths[0] - 1
+            return y_pred[0, current_idx, :].tolist()
 
     def _persist_configuration(self, config_file):
         model_config = {
@@ -125,6 +191,10 @@ class KerasPolicy(Policy):
         utils.dump_obj_as_json_to_file(config_file, model_config)
 
     def persist(self, path):
+        # type: (Text) -> None
+
+        super(KerasPolicy, self).persist(path)
+
         if self.model:
             arch_file = os.path.join(path, 'keras_arch.json')
             weights_file = os.path.join(path, 'keras_weights.h5')
@@ -160,22 +230,23 @@ class KerasPolicy(Policy):
         return model
 
     @classmethod
-    def load(cls, path, featurizer, max_history):
+    def load(cls, path):
+        # type: (Text) -> KerasPolicy
         if os.path.exists(path):
+            featurizer = Featurizer.load(path)
             meta_path = os.path.join(path, "keras_policy.json")
             if os.path.isfile(meta_path):
                 with io.open(meta_path) as f:
                     meta = json.loads(f.read())
                 model_arch = cls._load_model_arch(path, meta)
                 return cls(
-                        cls._load_weights_for_model(path, model_arch, meta),
-                        current_epoch=meta["epochs"],
-                        max_history=max_history,
-                        featurizer=featurizer
-                )
+                        featurizer=featurizer,
+                        model=cls._load_weights_for_model(path,
+                                                          model_arch,
+                                                          meta),
+                        current_epoch=meta["epochs"])
             else:
-                return cls(max_history=max_history,
-                           featurizer=featurizer)
+                return cls(featurizer=featurizer)
         else:
             raise Exception("Failed to load dialogue model. Path {} "
                             "doesn't exist".format(os.path.abspath(path)))

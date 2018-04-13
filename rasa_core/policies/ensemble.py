@@ -10,24 +10,25 @@ import os
 
 import numpy as np
 import typing
-from builtins import str
-from typing import Text, Optional
+from typing import Text, Optional, Any, List, Dict
 
 import rasa_core
 from rasa_core import utils
 from rasa_core.events import SlotSet
-from rasa_core.trackers import DialogueStateTracker
-from rasa_core.training.data import DialogueTrainingData
+from rasa_core.featurizers import MaxHistoryTrackerFeaturizer
 
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from rasa_core.domain import Domain
     from rasa_core.featurizers import Featurizer
+    from rasa_core.policies.policy import Policy
+    from rasa_core.trackers import DialogueStateTracker
 
 
 class PolicyEnsemble(object):
     def __init__(self, policies, action_fingerprints=None):
+        # type: (List[Policy], Optional[Dict]) -> None
         self.policies = policies
         self.training_metadata = {}
 
@@ -36,42 +37,44 @@ class PolicyEnsemble(object):
         else:
             self.action_fingerprints = {}
 
-    def max_history(self):
-        # type: () -> Optional[int]
-        """Return max history, only works if the ensemble is already trained."""
-
-        if self.policies:
-            return self.policies[0].max_history
-        else:
-            return None
-
-    def train(self, training_data, domain, featurizer, **kwargs):
-        # type: (DialogueTrainingData, Domain, Featurizer, **Any) -> None
-        if not training_data.is_empty():
+    def train(self, training_trackers, domain, **kwargs):
+        # type: (List[DialogueStateTracker], Domain, **Any) -> None
+        if training_trackers:
             for policy in self.policies:
-                policy.prepare(featurizer,
-                               max_history=training_data.max_history())
-                policy.train(training_data, domain, **kwargs)
-                self.training_metadata.update(training_data.metadata)
+                metadata = policy.train(training_trackers, domain, **kwargs)
+                self.training_metadata.update(metadata)
         else:
             logger.info("Skipped training, because there are no "
                         "training samples.")
 
+    def probabilities_using_best_policy(self, tracker, domain):
+        # type: (DialogueStateTracker, Domain) -> List[float]
+        raise NotImplementedError
+
     def predict_next_action(self, tracker, domain):
-        # type: (DialogueStateTracker, Domain) -> (float, int)
+        # type: (DialogueStateTracker, Domain) -> int
         """Predicts the next action the bot should take after seeing x.
 
         This should be overwritten by more advanced policies to use ML to
         predict the action. Returns the index of the next action"""
         probabilities = self.probabilities_using_best_policy(tracker, domain)
-        max_index = np.argmax(probabilities)
+        max_index = int(np.argmax(probabilities))
         logger.debug("Predicted next action '{}' with prob {:.2f}.".format(
                 domain.action_for_index(max_index).name(),
                 probabilities[max_index]))
         return max_index
 
-    def probabilities_using_best_policy(self, tracker, domain):
-        raise NotImplementedError
+    def _max_histories(self):
+        # type: () -> List[Optional[int]]
+        """Return max history, only works if the ensemble is already trained."""
+
+        max_histories = []
+        for p in self.policies:
+            if isinstance(p.featurizer, MaxHistoryTrackerFeaturizer):
+                max_histories.append(p.featurizer.max_history)
+            else:
+                max_histories.append(None)
+        return max_histories
 
     @staticmethod
     def _create_action_fingerprints(training_events):
@@ -86,8 +89,8 @@ class PolicyEnsemble(object):
             action_fingerprints[k] = {"slots": slots}
         return action_fingerprints
 
-    def _persist_metadata(self, path, max_history):
-        # type: (Text, Optional[int]) -> None
+    def _persist_metadata(self, path, max_histories):
+        # type: (Text, List[Optional[int]]) -> None
         """Persists the domain specification to storage."""
 
         # make sure the directory we persist to exists
@@ -102,7 +105,7 @@ class PolicyEnsemble(object):
         metadata = {
             "action_fingerprints": action_fingerprints,
             "rasa_core": rasa_core.__version__,
-            "max_history": max_history,
+            "max_histories": max_histories,
             "ensemble_name": self.__module__ + "." + self.__class__.__name__,
             "policy_names": policy_names
         }
@@ -113,10 +116,13 @@ class PolicyEnsemble(object):
         # type: (Text) -> None
         """Persists the policy to storage."""
 
-        self._persist_metadata(path, self.max_history())
+        self._persist_metadata(path, self._max_histories())
 
-        for policy in self.policies:
-            policy.persist(path)
+        for i, policy in enumerate(self.policies):
+            # TODO better way then many folders?
+            # TODO delete old files from these folders
+            policy_path = os.path.join(path, 'policy_{}'.format(i))
+            policy.persist(policy_path)
 
     @classmethod
     def load_metadata(cls, path):
@@ -126,15 +132,16 @@ class PolicyEnsemble(object):
         return metadata
 
     @classmethod
-    def load(cls, path, featurizer):
-        # type: (Text, Optional[Featurizer]) -> PolicyEnsemble
+    def load(cls, path):
+        # type: (Text) -> PolicyEnsemble
         """Loads policy and domain specification from storage"""
 
         metadata = cls.load_metadata(path)
         policies = []
-        for policy_name in metadata["policy_names"]:
+        for i, policy_name in enumerate(metadata["policy_names"]):
             policy_cls = utils.class_from_module_path(policy_name)
-            policy = policy_cls.load(path, featurizer, metadata["max_history"])
+            policy_path = os.path.join(path, 'policy_{}'.format(i))
+            policy = policy_cls.load(policy_path)
             policies.append(policy)
         ensemble_cls = utils.class_from_module_path(metadata["ensemble_name"])
         fingerprints = metadata.get("action_fingerprints", {})
@@ -144,9 +151,12 @@ class PolicyEnsemble(object):
 
 class SimplePolicyEnsemble(PolicyEnsemble):
     def __init__(self, policies, known_slot_events=None):
+        # TODO is known_slot_events is the same as action_fingerprints?
+        # TODO if so remove this init, else here is an error
         super(SimplePolicyEnsemble, self).__init__(policies, known_slot_events)
 
     def probabilities_using_best_policy(self, tracker, domain):
+        # type: (DialogueStateTracker, Domain) -> List[float]
         result = None
         max_confidence = -1
         for p in self.policies:

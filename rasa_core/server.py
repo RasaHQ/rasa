@@ -12,6 +12,7 @@ import tempfile
 import zipfile
 from functools import wraps
 
+import six
 from builtins import str
 from klein import Klein
 from typing import Union, Text, Optional
@@ -19,12 +20,10 @@ from typing import Union, Text, Optional
 from rasa_core import utils, events
 from rasa_core.agent import Agent
 from rasa_core.channels.direct import CollectingOutputChannel
-from rasa_core.channels import UserMessage
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.tracker_store import TrackerStore
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.version import __version__
-from rasa_nlu.server import check_cors, requires_auth
 
 logger = logging.getLogger(__name__)
 
@@ -102,9 +101,21 @@ def bool_arg(request, name, default=True):
     Checks the `name` parameter of the request if it contains a valid
     boolean value. If not, `default` is returned."""
 
-    d = str(default)
-    return request.args.get(name, d).lower() == 'true'
+    d = [str(default)]
+    return request.args.get(name, d)[0].lower() == 'true'
 
+def default_arg(request, name, default=None):
+    # type: (Request, Text, Any) -> Any
+    """Return a passed boolean argument of the request or a default.
+
+    Checks the `name` parameter of the request if it contains a value. 
+    If not, `default` is returned."""
+
+    values = request.args.get(name) 
+    if values is None or len(values) < 1:
+        return default
+    else:
+       return values[0]
 
 def request_parameters(request):
     if request.method.decode('utf-8', 'strict') == 'GET':
@@ -121,6 +132,51 @@ def request_parameters(request):
                          "Error: {}. Request content: "
                          "'{}'".format(e, content))
             raise
+
+
+def check_cors(f):
+    """Wraps a request handler with CORS headers checking."""
+
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        self = args[0]
+        request = args[1]
+        origin = request.getHeader('Origin')
+
+        if origin:
+            if '*' in self.config['cors_origins']:
+                request.setHeader('Access-Control-Allow-Origin', '*')
+            elif origin in self.config['cors_origins']:
+                request.setHeader('Access-Control-Allow-Origin', origin)
+            else:
+                request.setResponseCode(403)
+                return 'forbidden'
+
+        if request.method.decode('utf-8', 'strict') == 'OPTIONS':
+            return ''  # if this is an options call we skip running `f`
+        else:
+            return f(*args, **kwargs)
+
+    return decorated
+
+
+def requires_auth(f):
+    """Wraps a request handler with token authentication."""
+
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        self = args[0]
+        request = args[1]
+        if six.PY3:
+            token = request.args.get(b'token', [b''])[0].decode("utf8")
+        else:
+            token = str(request.args.get('token', [''])[0])
+        if self.config['token'] is None or token == self.config['token']:
+            return f(*args, **kwargs)
+        request.setResponseCode(401)
+        return 'unauthorized'
+
+    return decorated
 
 
 class RasaCoreServer(object):
@@ -225,6 +281,13 @@ class RasaCoreServer(object):
         self.agent.tracker_store.save(tracker)
         return json.dumps(tracker.current_state())
 
+    @app.route("/conversations",
+               methods=['GET', 'OPTIONS'])
+    @check_cors
+    @ensure_loaded_agent
+    def list_trackers(self, request):
+        return json.dumps(list(self.agent.tracker_store.keys()))
+
     @app.route("/conversations/<sender_id>/tracker",
                methods=['GET', 'OPTIONS'])
     @check_cors
@@ -235,7 +298,7 @@ class RasaCoreServer(object):
         # parameters
         use_history = bool_arg(request, 'ignore_restarts', default=False)
         should_include_events = bool_arg(request, 'events', default=True)
-        until_time = request.args.get('until', None)
+        until_time = default_arg(request, 'until', None)
 
         # retrieve tracker and set to requested state
         tracker = self.agent.tracker_store.get_or_create_tracker(sender_id)

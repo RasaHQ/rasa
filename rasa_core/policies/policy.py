@@ -4,19 +4,22 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
+import typing
 
-import numpy as np
+from inspect import signature
 from builtins import object
-from numpy.core.records import ndarray
-from typing import Any
-from typing import List
-from typing import Optional
-from typing import Text
+from typing import \
+    Any, List, Optional, Text, Dict, Callable
 
-from rasa_core.domain import Domain
-from rasa_core.featurizers import Featurizer
-from rasa_core.trackers import DialogueStateTracker
-from rasa_core.training.data import DialogueTrainingData
+from copy import deepcopy
+from rasa_core.featurizers import \
+    MaxHistoryTrackerFeaturizer, BinaryStateFeaturizer
+
+if typing.TYPE_CHECKING:
+    from rasa_core.domain import Domain
+    from rasa_core.featurizers import Featurizer
+    from rasa_core.trackers import DialogueStateTracker
+    from rasa_core.training.data import DialogueTrainingData
 
 logger = logging.getLogger(__name__)
 
@@ -25,53 +28,108 @@ class Policy(object):
     SUPPORTS_ONLINE_TRAINING = False
     MAX_HISTORY_DEFAULT = 3
 
-    def __init__(self, featurizer=None, max_history=None):
+    @classmethod
+    def _standard_featurizer(cls):
+        return MaxHistoryTrackerFeaturizer(BinaryStateFeaturizer(),
+                                    cls.MAX_HISTORY_DEFAULT)
+
+    @classmethod
+    def _create_featurizer(cls, featurizer=None):
+        return featurizer if featurizer else cls._standard_featurizer()
+
+    def __init__(self, featurizer=None):
         # type: (Optional[Featurizer]) -> None
+        self.__featurizer = self._create_featurizer(featurizer)
 
-        self.featurizer = featurizer
-        self.max_history = max_history
+    @property
+    def featurizer(self):
+        return self.__featurizer
 
-    def featurize(self, tracker, domain):
-        # type: (DialogueStateTracker, Domain) -> ndarray
-        """Transform tracker into a vector representation.
+    @staticmethod
+    def _get_valid_params(func, **kwargs):
+        # type: (Callable, **Any) -> Dict
+        # filter out kwargs that cannot be passed to func
+        valid_keys = signature(func).parameters.keys()
+        params = {key: kwargs.get(key)
+                  for key in valid_keys if kwargs.get(key)}
+        ignored_params = {key: kwargs.get(key)
+                          for key in kwargs.keys()
+                          if not params.get(key)}
+        logger.debug("Ignored parameters: {}"
+                     "".format(ignored_params))
+        return params
 
-        The tracker, consisting of multiple turns, will be transformed
+    def featurize_for_training(
+            self,
+            trackers,  # type: List[DialogueStateTracker]
+            domain,  # type: Domain
+            **kwargs  # type: **Any
+    ):
+        # type: (...) -> DialogueTrainingData
+        """Transform training trackers into a vector representation.
+        The trackers, consisting of multiple turns, will be transformed
         into a float vector which can be used by a ML model."""
 
-        x = domain.feature_vector_for_tracker(self.featurizer, tracker,
-                                              self.max_history)
-        return np.array(x)
+        max_history = kwargs.get('max_history')
+        if max_history:
+            logger.warning("Passing `max_history` through agent is "
+                           "deprecated. Pass appropriate featurizer "
+                           "to the policy instead.")
 
-    def predict_action_probabilities(self, tracker, domain):
-        # type: (DialogueStateTracker, Domain) -> List[float]
+        training_data, _ = self.featurizer.featurize_trackers(trackers,
+                                                              domain)
 
-        return []
+        max_training_samples = kwargs.get('max_training_samples')
+        if max_training_samples:
+            training_data.limit_training_data_to(max_training_samples)
 
-    def prepare(self, featurizer, max_history):
-        self.featurizer = featurizer
-        self.max_history = max_history
+        return training_data
 
-    def train(self, training_data, domain, **kwargs):
-        # type: (DialogueTrainingData, Domain, **Any) -> None
-        """Trains the policy on given training data."""
+    def train(self,
+              training_trackers,  # type: List[DialogueStateTracker]
+              domain,  # type: Domain
+              **kwargs  # type: **Any
+              ):
+        # type: (...) -> Dict[Text: Any]
+        """Trains the policy on given training trackers.
 
-        raise NotImplementedError
+        Returns training metadata."""
 
-    def continue_training(self, training_data, domain, **kwargs):
-        # type: (DialogueTrainingData, Domain, **Any) -> None
+        raise NotImplementedError("Policy must have the capacity "
+                                  "to train.")
+
+    def continue_training(self, trackers, domain, **kwargs):
+        # type: (List[DialogueStateTracker], Domain, **Any) -> None
         """Continues training an already trained policy.
 
         This doesn't need to be supported by every policy. If it is supported,
         the policy can be used for online training and the implementation for
         the continued training should be put into this function."""
+
         pass
+
+    def predict_action_probabilities(self, tracker, domain):
+        # type: (DialogueStateTracker, Domain) -> List[float]
+        """Predicts the next action the bot should take
+        after seeing the tracker.
+
+        Returns the list of probabilities for the next actions"""
+
+        raise NotImplementedError("Policy must have the capacity "
+                                  "to predict.")
 
     def persist(self, path):
         # type: (Text) -> None
-        """Persists the policy to storage."""
-
-        pass
+        """Persists the policy to a storage."""
+        if self.featurizer:
+            self.featurizer.persist(path)
 
     @classmethod
-    def load(cls, path, featurizer, max_history):
-        raise NotImplementedError
+    def load(cls, path):
+        # type: (Text) -> Policy
+        """Loads a policy from the storage.
+
+        Needs to load its featurizer"""
+
+        raise NotImplementedError("Policy must have the capacity "
+                                  "to load itself.")

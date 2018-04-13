@@ -17,8 +17,8 @@ from rasa_core import utils
 from rasa_core.agent import Agent
 from rasa_core.events import ActionExecuted, UserUttered
 from rasa_core.interpreter import RegexInterpreter, RasaNLUInterpreter
-from rasa_core.training import (
-    extract_story_graph_from_file, TrainingsDataGenerator)
+from rasa_core import training
+from rasa_core.training import TrainingsDataGenerator
 from rasa_nlu.evaluate import plot_confusion_matrix, log_evaluation_table
 
 logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ def create_argument_parser():
             '-s', '--stories',
             type=str,
             required=True,
-            help="file that contains the stories to evaluate on")
+            help="file or folder containing stories to evaluate on")
     parser.add_argument(
             '-m', '--max_stories',
             type=int,
@@ -94,7 +94,7 @@ def actions_since_last_utterance(tracker):
     return actions
 
 
-def collect_story_predictions(story_file, policy_model_path, nlu_model_path,
+def collect_story_predictions(resource_name, policy_model_path, nlu_model_path,
                               max_stories=None, shuffle_stories=True):
     """Test the stories from a file, running them through the stored model."""
 
@@ -104,21 +104,16 @@ def collect_story_predictions(story_file, policy_model_path, nlu_model_path,
         interpreter = RegexInterpreter()
 
     agent = Agent.load(policy_model_path, interpreter=interpreter)
-    story_graph = extract_story_graph_from_file(story_file, agent.domain,
-                                                interpreter)
+    story_graph = training.extract_story_graph(resource_name, agent.domain,
+                                               interpreter)
     preds = []
     actual = []
 
-    max_history = agent.policy_ensemble.policies[0].max_history
-
     g = TrainingsDataGenerator(story_graph, agent.domain,
-                               agent.featurizer,
-                               max_history=max_history,
                                use_story_concatenation=False,
                                tracker_limit=100)
-    data = g.generate()
+    completed_trackers = g.generate()
 
-    completed_trackers = data.metadata["trackers"]
     logger.info(
             "Evaluating {} stories\nProgress:".format(len(completed_trackers)))
 
@@ -157,13 +152,13 @@ def collect_story_predictions(story_file, policy_model_path, nlu_model_path,
     return actual, preds
 
 
-def run_story_evaluation(story_file, policy_model_path, nlu_model_path,
+def run_story_evaluation(resource_name, policy_model_path, nlu_model_path,
                          out_file, max_stories):
     """Run the evaluation of the stories, plots the results."""
     from sklearn.metrics import confusion_matrix
     from sklearn.utils.multiclass import unique_labels
 
-    test_y, preds = collect_story_predictions(story_file, policy_model_path,
+    test_y, preds = collect_story_predictions(resource_name, policy_model_path,
                                               nlu_model_path, max_stories)
 
     log_evaluation_table(test_y, preds)

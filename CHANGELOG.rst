@@ -11,8 +11,11 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+- supported loading training data from a folder - loads all stories from
+  all files in that directory
 - parameter to specify NLU project when instantiating a ``RasaNLUInterpreter``
 - simple ``/respond`` endpoint to get bot response to a user message
+- ``/conversations`` endpoint for listing sender ids of running conversations
 
 Changed
 -------

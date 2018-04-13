@@ -12,7 +12,6 @@ from typing import Text, List, Optional, Callable, Any, Dict, Union
 from rasa_core.channels import UserMessage, InputChannel, OutputChannel
 from rasa_core.domain import TemplateDomain, Domain
 from rasa_core.events import Event
-from rasa_core.featurizers import Featurizer, BinaryFeaturizer
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.policies import PolicyTrainer, Policy
 from rasa_core.policies.ensemble import SimplePolicyEnsemble, PolicyEnsemble
@@ -35,12 +34,10 @@ class Agent(object):
             self,
             domain,  # type: Union[Text, Domain]
             policies=None,  # type: Optional[Union[PolicyEnsemble, List[Policy]]
-            featurizer=None,  # type: Optional[Featurizer]
             interpreter=None,  # type: Optional[NaturalLanguageInterpreter]
             tracker_store=None  # type: Optional[TrackerStore]
     ):
         self.domain = self._create_domain(domain)
-        self.featurizer = self._create_featurizer(featurizer)
         self.policy_ensemble = self._create_ensemble(policies)
         self.interpreter = NaturalLanguageInterpreter.create(interpreter)
         self.tracker_store = self.create_tracker_store(
@@ -57,11 +54,11 @@ class Agent(object):
                                      action_factory)
         # ensures the domain hasn't changed between test and train
         domain.compare_with_specification(path)
-        featurizer = Featurizer.load(path)
-        ensemble = PolicyEnsemble.load(path, featurizer)
+        ensemble = PolicyEnsemble.load(path)
         _interpreter = NaturalLanguageInterpreter.create(interpreter)
         _tracker_store = cls.create_tracker_store(tracker_store, domain)
-        return cls(domain, ensemble, featurizer, _interpreter, _tracker_store)
+
+        return cls(domain, ensemble, _interpreter, _tracker_store)
 
     def handle_message(
             self,
@@ -71,11 +68,7 @@ class Agent(object):
             sender_id=UserMessage.DEFAULT_SENDER_ID  # type: Optional[Text]
     ):
         # type: (...) -> Optional[List[Text]]
-        """
-
-
-
-        Handle a single message.
+        """Handle a single message.
 
         If a message preprocessor is passed, the message will be passed to that
         function first and the return value is then used as the
@@ -142,22 +135,23 @@ class Agent(object):
             if type(p) == MemoizationPolicy:
                 p.toggle(activate)
 
-    def train(self, filename=None, model_path=None, remove_duplicates=True,
+    def train(self, resource_name=None, model_path=None, remove_duplicates=True,
               **kwargs):
-        # type: (Optional[Text], Optional[Text], **Any) -> None
+        # type: (Optional[Text], Optional[Text], bool, **Any) -> None
         """Train the policies / policy ensemble using dialogue data from file"""
 
-        trainer = PolicyTrainer(self.policy_ensemble, self.domain,
-                                self.featurizer)
-        trainer.train(filename, remove_duplicates=remove_duplicates, **kwargs)
+        trainer = PolicyTrainer(self.policy_ensemble, self.domain)
+        trainer.train(resource_name, remove_duplicates=remove_duplicates,
+                      **kwargs)
 
         if model_path:
             self.persist(model_path)
 
     def train_online(self,
-                     filename=None,  # type: Optional[Text]
+                     resource_name=None,  # type: Optional[Text]
                      input_channel=None,  # type: Optional[InputChannel]
                      model_path=None,  # type: Optional[Text]
+                     max_history=2,  # type: int
                      **kwargs  # type: **Any
                      ):
         # type: (...) -> None
@@ -172,9 +166,9 @@ class Agent(object):
             raise ValueError(
                     "When using online learning, you need to specify "
                     "an interpreter for the agent to use.")
-        trainer = OnlinePolicyTrainer(self.policy_ensemble, self.domain,
-                                      self.featurizer)
-        trainer.train(filename, self.interpreter, input_channel, **kwargs)
+        trainer = OnlinePolicyTrainer(self.policy_ensemble, self.domain)
+        trainer.train(resource_name, self.interpreter, input_channel,
+                      max_history, **kwargs)
 
         if model_path:
             self.persist(model_path)
@@ -186,24 +180,26 @@ class Agent(object):
         self.policy_ensemble.persist(model_path)
         self.domain.persist(os.path.join(model_path, "domain.yml"))
         self.domain.persist_specification(model_path)
-        self.featurizer.persist(model_path)
 
         logger.info("Persisted model to '{}'"
                     "".format(os.path.abspath(model_path)))
 
     def visualize(self,
-                  filename,
+                  resource_name,
                   output_file,
                   max_history,
                   nlu_training_data=None,
+                  should_merge_nodes=True,
                   fontsize=12
                   ):
         from rasa_core.training.visualization import visualize_stories
         from rasa_core.training import StoryFileReader
 
-        story_steps = StoryFileReader.read_from_file(filename, self.domain)
+        story_steps = StoryFileReader.read_from_folder(resource_name,
+                                                       self.domain)
         visualize_stories(story_steps, self.domain, output_file, max_history,
-                          self.interpreter, nlu_training_data, fontsize)
+                          self.interpreter, nlu_training_data,
+                          should_merge_nodes, fontsize)
 
     def _ensure_agent_is_prepared(self):
         # type: () -> None
@@ -227,12 +223,8 @@ class Agent(object):
                 self.interpreter, self.policy_ensemble, self.domain,
                 self.tracker_store, message_preprocessor=preprocessor)
 
-    @classmethod
-    def _create_featurizer(cls, featurizer):
-        return featurizer if featurizer is not None else BinaryFeaturizer()
-
-    @classmethod
-    def _create_domain(cls, domain):
+    @staticmethod
+    def _create_domain(domain):
         if isinstance(domain, string_types):
             return TemplateDomain.load(domain)
         elif isinstance(domain, Domain):
@@ -243,8 +235,8 @@ class Agent(object):
                     "specification or a domain instance. But got "
                     "type '{}' with value '{}'".format(type(domain), domain))
 
-    @classmethod
-    def create_tracker_store(cls, store, domain):
+    @staticmethod
+    def create_tracker_store(store, domain):
         # type: (Optional[TrackerStore], Domain) -> TrackerStore
         if store is not None:
             store.domain = domain

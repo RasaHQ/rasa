@@ -48,9 +48,10 @@ install_requires = [
     'ruamel.yaml',
     'flask',
     'scikit-learn',
-    'rasa_nlu',
+    'rasa_nlu>=0.12.0a2',
     'slackclient',
-    'python-telegram-bot'
+    'python-telegram-bot',
+    'mattermostwrapper'
 ]
 
 extras_requires = {
@@ -78,7 +79,7 @@ setup(
                 "for conversational software.",
     long_description=readme,
     author='Rasa Technologies GmbH',
-    author_email='hi@rasa.ai',
+    author_email='hi@rasa.com',
     license='Apache 2.0',
     keywords="nlp machine-learning machine-learning-library bot bots "
              "botkit rasa conversational-agents conversational-ai chatbot"
@@ -88,5 +89,5 @@ setup(
 )
 
 print("\nWelcome to Rasa Core!")
-print("If any questions please visit documentation page https://rasahq.github.io/rasa_core")
+print("If any questions please visit documentation page https://core.rasa.com")
 print("or join community chat on https://gitter.im/RasaHQ/rasa_core")
