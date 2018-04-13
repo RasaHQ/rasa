@@ -70,12 +70,19 @@ The story will look something like this:
 Some important things to consider:
 
 - Your domain needs to have a slot called ``requested_slot``. This can be unfeaturized, but if you want
-  to support contextual questions like *"why do you need to know that information?"* you should make this
+  to support contextual questions like *"why do you need to know that information?"* it will help if you make this
   a categorical slot. 
 - You need to define utterances for asking for each slot in your domain, e.g. ``utter_ask_{slot_name}``.
 - We strongly recommend that you create these stories using interactive learning, because if you
   type these by hand you will probably forget to add all of the slots.
 - Any slots that are already set won't be asked for. E.g. if someone says "I'd like a Chinese restaurant for 8 people" the ``submit`` function should get called right away.
+
+
+Optional Slots
+~~~~~~~~~~~~~~
+
+If some of the information is not essential for completing the request, you can override the ``ready_to_submit`` method
+of the ``FormAction`` class. 
 
 
 Collecting Information using Slots
