@@ -78,6 +78,19 @@ Some important things to consider:
 - Any slots that are already set won't be asked for. E.g. if someone says "I'd like a Chinese restaurant for 8 people" the ``submit`` function should get called right away.
 
 
+Validation and Free-text Input
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For any subclass of  ``FormField``, it's ``validate()`` method will be called before setting it 
+as a slot. By default this just checks that the value isn't ``None``, but if you want to check 
+the value against a DB, or check a pattern is matched, you can do so by defining your own class
+like ``MyCustomFormField`` and overriding the ``validate()`` method.
+
+There is also a ``FreeTextFormField`` class which will just extract the user message as a value.
+However, there is no way to write a 'wildcard' intent in Rasa Core stories as of now. Typically
+your NLU model will assign this free-text input to 2-3 different intents. 
+It's easiest to add stories for each of these. 
+
 
 Collecting Information using Slots
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
