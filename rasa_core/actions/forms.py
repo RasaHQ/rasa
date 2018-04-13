@@ -51,7 +51,7 @@ class BooleanFormField(FormField):
 
 
 class FreeTextFormField(FormField):
-    def __init__(self, slot_name, affirm_intent, deny_intent):
+    def __init__(self, slot_name):
         self.slot_name = slot_name
 
     def extract(self, tracker):
