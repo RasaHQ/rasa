@@ -30,6 +30,10 @@
       "description": "where to save logs",
       "value": "/app/logs"
     },
+    "RASA_MITIE_FILE": {
+      "description": "file containing mitie feature extractor",
+      "value": "${RASA_PATH}/total_word_feature_extractor.dat"
+    },
     "RASA_SERVER_MODEL_DIRS": {
       "description": "dir containing model which should be used to process requests",
       "required": false

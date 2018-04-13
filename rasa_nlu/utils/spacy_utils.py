@@ -71,7 +71,7 @@ class SpacyNLP(Component):
     def cache_key(cls, model_metadata):
         # type: (Metadata) -> Text
 
-        component_meta = model_metadata.metadata.get("ner_spacy", {})
+        component_meta = model_metadata.for_component(cls.name)
 
         # Fallback, use the language name, e.g. "en",
         # as the model name if no explicit name is defined

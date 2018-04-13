@@ -190,7 +190,7 @@ This will return the default model configuration of the Rasa NLU instance.
 
     $ curl localhost:5000/config | python -mjson.tool
     {
-        "config": "/app/rasa_shared/config_spacy_sklearn.json",
+        "config": "/app/rasa_shared/config_mitie.json",
         "data": "/app/rasa_nlu/data/examples/rasa/demo-rasa.json",
         "duckling_dimensions": null,
         "emulate": null,
