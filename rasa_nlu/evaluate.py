@@ -5,9 +5,7 @@ from __future__ import unicode_literals
 
 import itertools
 import logging
-import os
 import shutil
-import tempfile
 from collections import defaultdict
 from collections import namedtuple
 
@@ -108,7 +106,6 @@ def log_evaluation_table(targets, predictions):  # pragma: no cover
     report, precision, f1, accuracy = get_evaluation_metrics(targets,
                                                              predictions)
 
-    logger.info("Intent Evaluation Results")
     logger.info("F1-Score:  {}".format(f1))
     logger.info("Precision: {}".format(precision))
     logger.info("Accuracy:  {}".format(accuracy))
@@ -219,7 +216,6 @@ def evaluate_entities(targets,
 
     aligned_predictions = align_all_entity_predictions(targets, predictions,
                                                        tokens, extractors)
-
     merged_targets = merge_labels(aligned_predictions)
     merged_targets = substitute_labels(merged_targets, "O", "no_entity")
 
@@ -421,7 +417,11 @@ def get_entity_predictions(interpreter, test_data):  # pragma: no cover
     for e in test_data.training_examples:
         res = interpreter.parse(e.text, only_output_properties=False)
         entity_predictions.append(extract_entities(res))
-        tokens.append(res["tokens"])
+        try:
+            tokens.append(res["tokens"])
+        except KeyError:
+            logger.debug("No tokens present, which is fine if you don't have a"
+                         " tokenizer in your pipeline")
     return entity_predictions, tokens
 
 
@@ -434,6 +434,14 @@ def get_entity_extractors(interpreter):
     extractors = set([c.name for c in interpreter.pipeline
                       if "entities" in c.provides])
     return extractors - entity_processors
+
+
+def is_intent_classifier_present(interpreter):
+    """Checks whether intent classifier is present"""
+
+    intent_classifier = [c.name for c in interpreter.pipeline
+                         if "intent" in c.provides]
+    return intent_classifier != []
 
 
 def combine_extractor_and_dimension_name(extractor, dim):
@@ -463,60 +471,28 @@ def find_component(interpreter, component_name):
     return None
 
 
-def patch_duckling_extractors(interpreter, extractors):  # pragma: no cover
-    """Removes the basic duckling extractor from the set of extractors and
-    adds dimension-suffixed ones.
-
-    :param interpreter: a rasa nlu interpreter object
-    :param extractors: a set of entity extractor names used in the interpreter
-    """
-
-    extractors = extractors.copy()
+def remove_duckling_extractors(extractors):
+    """Removes duckling exctractors"""
     used_duckling_extractors = duckling_extractors.intersection(extractors)
     for duckling_extractor in used_duckling_extractors:
+        logger.info("Skipping evaluation of {}".format(duckling_extractor))
         extractors.remove(duckling_extractor)
-        for dim in get_duckling_dimensions(interpreter, duckling_extractor):
-            new_extractor_name = combine_extractor_and_dimension_name(
-                    duckling_extractor, dim)
-            extractors.add(new_extractor_name)
+
     return extractors
 
 
-def patch_duckling_entity(entity):
-    """Patches a single entity by combining extractor and dimension name."""
-
-    if entity["extractor"] in duckling_extractors:
-        entity = entity.copy()
-        entity["extractor"] = combine_extractor_and_dimension_name(
-                entity["extractor"], entity["entity"])
-
-    return entity
-
-
-def patch_duckling_entities(entity_predictions):
-    """Adds the duckling dimension as a suffix to the extractor name.
-
-    As a result, there is only is one prediction per
-    token per extractor name."""
+def remove_duckling_entities(entity_predictions):
+    """Removes duckling entity predictions"""
 
     patched_entity_predictions = []
     for entities in entity_predictions:
         patched_entities = []
         for e in entities:
-            patched_entities.append(patch_duckling_entity(e))
+            if e["extractor"] not in duckling_extractors:
+                patched_entities.append(e)
         patched_entity_predictions.append(patched_entities)
 
     return patched_entity_predictions
-
-
-def patch_duckling(interpreter, extractors, entity_predictions):
-    """combines patch_duckling_entities and patch_duckling_extractors"""
-
-    if extractors.intersection(duckling_extractors):
-        entity_predictions = patch_duckling_entities(entity_predictions)
-        extractors = patch_duckling_extractors(interpreter, extractors)
-
-    return extractors, entity_predictions
 
 
 def run_evaluation(data_path, model_path,
@@ -527,17 +503,25 @@ def run_evaluation(data_path, model_path,
     interpreter = Interpreter.load(model_path, component_builder)
     test_data = training_data.load_data(data_path,
                                         interpreter.model_metadata.language)
-
-    intent_targets = get_intent_targets(test_data)
-    entity_targets = get_entity_targets(test_data)
-    intent_predictions = get_intent_predictions(interpreter, test_data)
-    entity_predictions, tokens = get_entity_predictions(interpreter, test_data)
     extractors = get_entity_extractors(interpreter)
-    extractors, entity_predictions = patch_duckling(interpreter, extractors,
-                                                    entity_predictions)
+    entity_predictions, tokens = get_entity_predictions(interpreter,
+                                                        test_data)
+    if duckling_extractors.intersection(extractors):
+        entity_predictions = remove_duckling_entities(entity_predictions)
+        extractors = remove_duckling_extractors(extractors)
 
-    evaluate_intents(intent_targets, intent_predictions)
-    evaluate_entities(entity_targets, entity_predictions, tokens, extractors)
+    if is_intent_classifier_present(interpreter):
+        intent_targets = get_intent_targets(test_data)
+        intent_predictions = get_intent_predictions(interpreter, test_data)
+        logger.info("Intent evaluation results:")
+        evaluate_intents(intent_targets, intent_predictions)
+
+    if extractors:
+        entity_targets = get_entity_targets(test_data)
+
+        logger.info("Entity evaluation results:")
+        evaluate_entities(entity_targets, entity_predictions, tokens,
+                          extractors)
 
 
 def generate_folds(n, td):
@@ -621,7 +605,8 @@ def compute_intent_metrics(interpreter, corpus):
     """Computes intent evaluation metrics for a given corpus and
     returns the results
     """
-
+    if not is_intent_classifier_present(interpreter):
+        return {}
     intent_targets = get_intent_targets(corpus)
     intent_predictions = get_intent_predictions(interpreter, corpus)
     intent_targets, intent_predictions = remove_empty_intent_examples(
@@ -638,13 +623,18 @@ def compute_entity_metrics(interpreter, corpus):
     """Computes entity evaluation metrics for a given corpus and
     returns the results
     """
-
-    entity_targets = get_entity_targets(corpus)
+    entity_results = defaultdict(lambda: defaultdict(list))
+    extractors = get_entity_extractors(interpreter)
     entity_predictions, tokens = get_entity_predictions(interpreter, corpus)
 
-    extractors = get_entity_extractors(interpreter)
-    extractors, entity_predictions = patch_duckling(interpreter, extractors,
-                                                    entity_predictions)
+    if duckling_extractors.intersection(extractors):
+        entity_predictions = remove_duckling_entities(entity_predictions)
+        extractors = remove_duckling_extractors(extractors)
+
+    if not extractors:
+        return entity_results
+
+    entity_targets = get_entity_targets(corpus)
 
     aligned_predictions = align_all_entity_predictions(entity_targets,
                                                        entity_predictions,
@@ -652,7 +642,6 @@ def compute_entity_metrics(interpreter, corpus):
 
     merged_targets = merge_labels(aligned_predictions)
     merged_targets = substitute_labels(merged_targets, "O", "no_entity")
-    entity_results = defaultdict(lambda: defaultdict(list))
 
     for extractor in extractors:
         merged_predictions = merge_labels(aligned_predictions, extractor)
@@ -716,13 +705,14 @@ if __name__ == '__main__':  # pragma: no cover
                 data, int(cmdline_args.folds), nlu_config)
         logger.info("CV evaluation (n={})".format(cmdline_args.folds))
 
-        logger.info("Intent evaluation results")
-        return_results(results.train, "train")
-        return_results(results.test, "test")
-
-        logger.info("Entity evaluation results")
-        return_entity_results(entity_results.train, "train")
-        return_entity_results(entity_results.test, "test")
+        if any(results):
+            logger.info("Intent evaluation results")
+            return_results(results.train, "train")
+            return_results(results.test, "test")
+        if any(entity_results):
+            logger.info("Entity evaluation results")
+            return_entity_results(entity_results.train, "train")
+            return_entity_results(entity_results.test, "test")
 
     elif cmdline_args.mode == "evaluation":
         run_evaluation(cmdline_args.data, cmdline_args.model)
