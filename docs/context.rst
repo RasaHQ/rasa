@@ -6,9 +6,9 @@ Context-aware Dialogue
 Rasa NLU allows you to turn natural language into structured data,
 but this might not be enough if you want to build a bot that handles what
 has been said in context and adjusts the flow of the conversation
-accordingly. rasa's open-source solution to handle contextual dialogue is
+accordingly. Rasa's open-source solution to handle contextual dialogue is
 `Rasa Core <https://github.com/RasaHQ/rasa_core>`_, but there are other tools
-out there such as `Dialogflow <https://dialogflow.com>`_.
+out there such as `Dialogflow <https://dialogflow.com>`_ (not open-sourced).
 
 Rasa Core uses machine learning to predict the evolution of a conversation,
 and does away with the need for tedious and poorly-scaling ``if/else`` logic.

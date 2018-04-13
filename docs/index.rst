@@ -67,10 +67,9 @@ Rasa NLU is written in Python, but it you can use it from any language through :
 If your project *is* written in Python you can simply import the relevant classes.
 
 Rasa is a set of tools for building more advanced bots, developed by `Rasa
-<https://rasa.com>`_. This is the natural language  understanding module,
-and the first component to be open-sourced. To build conversational chatbots,
-you can interface Rasa NLU with libraries that steer the flow of the
-conversation - more on this in :ref:`section_context`.
+<https://rasa.com>`_. This is the natural language understanding module. To
+build conversational chatbots, you can interface Rasa NLU with libraries
+that steer the flow of the conversation - more on this in :ref:`section_context`.
 
 .. toctree::
    :maxdepth: 1

@@ -120,7 +120,7 @@ The intended audience is mainly __people developing bots__, starting from scratc
 * You don't have to make a `https` call to parse every message.
 * You can tune models to work well on your particular use case.
 
-These points are laid out in more detail in a [blog post](https://medium.com/lastmile-conversations/do-it-yourself-nlp-for-bot-developers-2e2da2817f3d). Rasa is a set of tools for building more advanced bots, developed by the company [Rasa](https://rasa.com). Rasa NLU is the natural language understanding module, and the first component to be open-sourced. 
+These points are laid out in more detail in a [blog post](https://blog.rasa.com/put-on-your-robot-costume-and-be-the-minimum-viable-bot-yourself/). Rasa is a set of tools for building more advanced bots, developed by the company [Rasa](https://rasa.com). Rasa NLU is the natural language understanding module, and the first component to be open-sourced. 
 
 ### What languages does it support?
 Short answer: English, German, and Spanish currently. 
