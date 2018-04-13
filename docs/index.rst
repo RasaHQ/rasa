@@ -7,7 +7,7 @@ Language Understanding with Rasa NLU
     the appropriate version of the documentation for your local installation!
 
 
-Rasa NLU is an open source tool for intent classification and entity extraction. For example, taking a sentence like
+Rasa NLU is an open-source tool for intent classification and entity extraction. For example, taking a sentence like
 
 .. code-block:: console
 
@@ -68,15 +68,9 @@ If your project *is* written in Python you can simply import the relevant classe
 
 Rasa is a set of tools for building more advanced bots, developed by `Rasa
 <https://rasa.com>`_. This is the natural language  understanding module,
-and the first component to be open sourced.
-
-.. note::
-    Rasa NLU allows you to turn natural language into structured data,
-    but this might not be enough if you want to build a bot that handles what
-    has been said in context and adjusts the flow of the conversation
-    accordingly. rasa's open-source solution to handle contextual dialogue is
-    `Rasa Core <https://github.com/RasaHQ/rasa_core>`_, but there are other tools
-    out there such as `Dialogflow <https://dialogflow.com>`_.
+and the first component to be open-sourced. To build conversational chatbots,
+you can interface Rasa NLU with libraries that steer the flow of the
+conversation - more on this in :ref:`section_context`.
 
 .. toctree::
    :maxdepth: 1
@@ -100,6 +94,7 @@ and the first component to be open sourced.
    languages
    pipeline
    evaluation
+   context
    faq
    migrations
    license
