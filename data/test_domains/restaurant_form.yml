@@ -13,6 +13,8 @@ slots:
     type: text
   people:
     type: text
+  vegetarian:
+    type: bool
   requested_slot:
     type: unfeaturized
 

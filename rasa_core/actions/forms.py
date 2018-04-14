@@ -16,7 +16,13 @@ logger = logging.getLogger(__name__)
 class FormField(object):
 
     def validate(self, value):
-        return value or None
+        """Check if extracted value for a requested slot is valid.
+
+        Users should override this to implement custom validation logic,
+        returning None indicates a negative validation result, and the slot
+        will not be set.
+        """
+        return value
 
 
 class EntityFormField(FormField):
@@ -35,23 +41,30 @@ class EntityFormField(FormField):
 
 
 class BooleanFormField(FormField):
-
+    """A form field that prompts the user for a yes or no answer.
+    The interpreter should map positive and negative answers to
+    the intents ``affirm_intent`` and ``deny_intent``.
+    """
     def __init__(self, slot_name, affirm_intent, deny_intent):
         self.slot_name = slot_name
         self.affirm_intent = affirm_intent
         self.deny_intent = deny_intent
 
     def extract(self, tracker):
-        value = None
+
         intent = tracker.latest_message.intent.get("name")
         if intent == self.affirm_intent:
             value = True
         elif intent == self.deny_intent:
             value = False
+        else:
+            value = None
+
         return [SlotSet(self.slot_name, value)]
 
 
 class FreeTextFormField(FormField):
+
     def __init__(self, slot_name):
         self.slot_name = slot_name
 
@@ -64,8 +77,11 @@ class FreeTextFormField(FormField):
 
 class FormAction(Action):
 
-    REQUIRED_FIELDS = []
     RANDOMIZE = True
+
+    @staticmethod
+    def required_fields():
+        return []
 
     def should_request_slot(self, tracker, slot_name, events):
         existing_val = tracker.get_slot(slot_name)
@@ -75,26 +91,27 @@ class FormAction(Action):
     def get_requested_slot(self, tracker):
         requested_slot = tracker.get_slot("requested_slot")
 
+        required = self.required_fields()
+
         if self.RANDOMIZE:
-            random.shuffle(self.REQUIRED_FIELDS)
-        required = self.REQUIRED_FIELDS[:]
+            random.shuffle(required)
 
         if requested_slot is None:
             return []
         else:
             fields = [f for f in required if f.slot_name == requested_slot]
-            if len(fields) > 0:
+            if len(fields) == 1:
                 return fields[0].extract(tracker)
             else:
                 logger.debug("unable to extract value "
-                             "for requested slot: {}".format(field.slot_name))
+                             "for requested slot: {}".format(requested_slot))
                 return []
 
     def run(self, dispatcher, tracker, domain):
 
         events = self.get_requested_slot(tracker)
 
-        for field in self.REQUIRED_FIELDS:
+        for field in self.required_fields():
             if self.should_request_slot(tracker, field.slot_name, events):
                 dispatcher.utter_template("utter_ask_{}".format(field.slot_name))
 

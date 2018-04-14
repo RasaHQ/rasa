@@ -15,8 +15,10 @@ Slots are for storing information that's relevant over multiple turns. For examp
 our restaurant example, we would want to keep track of things like the cuisine and number of 
 people for the duration of the conversation. 
 
-Slot Filling
-^^^^^^^^^^^^
+
+Collecting Information to Complete a Request (Slot Filling)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 
 Probably the most common pattern of all is to collect a few pieces of information
 from a user in order to do something (book a restaurant, call an API, search a database, etc.).
@@ -30,22 +32,9 @@ You don't *have* to use ``FormAction`` s to do slot filling, but it can be easie
 
 A form action has a set of required fields, which you define for the class:
 
-.. code-block:: python
+.. literalinclude:: ../rasa_core/tests/test_forms.py
+   :pyobject: ActionSearchRestaurants
 
-   class RestaurantSearch(FormAction):
-   
-       REQUIRED_FIELDS = [
-          EntityFormField("number", "num_people"),
-          EntityFormField("cuisine", "cuisine")
-       ]
-
-       def name(self):
-           return 'action_search_restaurants'
-
-       def submit(self, dispatcher, tracker, domain):
-           results = RestaurantAPI.search(tracker.get_slot("cuisine"),
-                                         tracker.get_slot("num_people"))
-           return [SlotSet("results", results)]
 
 
 The way this works is that every time you call this action, it will pick one of the 

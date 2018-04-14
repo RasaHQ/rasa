@@ -10,6 +10,7 @@ from rasa_core.events import (
     UserUttered
 )
 from rasa_core.actions.forms import (
+    BooleanFormField,
     EntityFormField,
     FormAction,
     FreeTextFormField
@@ -20,23 +21,40 @@ from rasa_core.channels.direct import CollectingOutputChannel
 from rasa_core.dispatcher import Dispatcher
 
 
+class RestaurantAPI(object):
+    def search(self, *args):
+        return
+
+
 class ActionSearchRestaurants(FormAction):
 
-    REQUIRED_FIELDS = [
-        EntityFormField("cuisine", "cuisine"),
-        EntityFormField("number", "people")
-    ]
     RANDOMIZE = False
+
+    @staticmethod
+    def required_fields():
+        return [
+            EntityFormField("cuisine", "cuisine"),
+            EntityFormField("number", "people"),
+            BooleanFormField("vegetarian", "affirm", "deny")
+        ]
 
     def name(self):
         return 'action_search_restaurants'
 
+    def submit(self):
+        results = RestaurantAPI.search(
+            tracker.get_slot("cuisine"),
+            tracker.get_slot("people"),
+            tracker.get_slot("vegetarian"))
+
 
 class ActionSearchPeople(FormAction):
 
-    REQUIRED_FIELDS = [
-        FreeTextFormField("person_name")
-    ]
+    @staticmethod
+    def required_fields():
+        return [
+            FreeTextFormField("person_name")
+        ]
 
     def name(self):
         return 'action_search_people'
@@ -60,10 +78,15 @@ def test_restaurant_form():
     tracker.update(events[0])
 
     # second user utterance
+    entities = [{"entity": "cuisine", "value": "chinese"}]
     tracker.update(
         UserUttered("",
                     intent={"name": "inform"},
-                    entities=[{"entity": "cuisine", "value": "chinese"}]))
+                    entities=entities))
+
+    # store all entities as slots
+    #for e in domain.slots_for_entities(entities):
+    #    tracker.update(e)
 
     events = ActionSearchRestaurants().run(dispatcher, tracker, domain)
     assert len(events) == 2
@@ -107,6 +130,52 @@ def test_restaurant_form_unhappy_1():
     # same slot requested again
     assert events[0].key == "requested_slot"
     assert events[0].value == "cuisine"
+
+
+def test_restaurant_form_unhappy_2():
+    domain = TemplateDomain.load("data/test_domains/restaurant_form.yml")
+    tracker_store = InMemoryTrackerStore(domain)
+    out = CollectingOutputChannel()
+    sender_id = "test-restaurant"
+    dispatcher = Dispatcher(sender_id, out, domain)
+    tracker = tracker_store.get_or_create_tracker(sender_id)
+
+    # second user utterance
+    entities = [{"entity": "cuisine", "value": "chinese"},
+        {"entity": "number", "value": 8}]
+
+    tracker.update(
+        UserUttered("",
+                    intent={"name": "inform"},
+                    entities=entities))
+
+    # store all entities as slots
+    for e in domain.slots_for_entities(entities):
+        tracker.update(e)
+    events = ActionSearchRestaurants().run(dispatcher, tracker, domain)
+
+    cuisine = tracker.get_slot("cuisine")
+    people = tracker.get_slot("people")
+    assert cuisine == "chinese"
+    assert people == 8
+
+    events = ActionSearchRestaurants().run(dispatcher, tracker, domain)
+    assert len(events) == 1
+    assert isinstance(events[0], SlotSet)
+    assert events[0].key == "requested_slot"
+    assert events[0].value == "vegetarian"
+    tracker.update(events[0])
+
+    # second user utterance does not provide what's asked
+    tracker.update(
+        UserUttered("",
+                    intent={"name": "random"}))
+
+    events = ActionSearchRestaurants().run(dispatcher, tracker, domain)
+    assert events == []
+
+    # same slot requested again
+    assert tracker.get_slot("requested_slot") == "cuisine"
 
 
 def test_people_form():
