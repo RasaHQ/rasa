@@ -58,7 +58,7 @@ class BooleanFormField(FormField):
         elif intent == self.deny_intent:
             value = False
         else:
-            value = None
+            return []
 
         return [SlotSet(self.slot_name, value)]
 
@@ -113,7 +113,8 @@ class FormAction(Action):
 
         for field in self.required_fields():
             if self.should_request_slot(tracker, field.slot_name, events):
-                dispatcher.utter_template("utter_ask_{}".format(field.slot_name))
+                dispatcher.utter_template(
+                    "utter_ask_{}".format(field.slot_name))
 
                 events.append(SlotSet("requested_slot", field.slot_name))
                 return events
@@ -121,5 +122,4 @@ class FormAction(Action):
         return self.submit(dispatcher, tracker, domain, events)
 
     def submit(self, dispatcher, tracker, domain, events):
-        raise NotImplementedError("Your FormAction class should implement"
-                                  " a submit() method which completes the action.")
+        return events

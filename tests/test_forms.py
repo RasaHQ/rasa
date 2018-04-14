@@ -41,11 +41,12 @@ class ActionSearchRestaurants(FormAction):
     def name(self):
         return 'action_search_restaurants'
 
-    def submit(self):
+    def submit(self, dispatcher, tracker, domain, events):
         results = RestaurantAPI.search(
             tracker.get_slot("cuisine"),
             tracker.get_slot("people"),
             tracker.get_slot("vegetarian"))
+        return events
 
 
 class ActionSearchPeople(FormAction):
@@ -58,6 +59,9 @@ class ActionSearchPeople(FormAction):
 
     def name(self):
         return 'action_search_people'
+
+    def submit(self, dispatcher, tracker, domain, events):
+        return events
 
 
 def test_restaurant_form():
@@ -83,10 +87,6 @@ def test_restaurant_form():
         UserUttered("",
                     intent={"name": "inform"},
                     entities=entities))
-
-    # store all entities as slots
-    #for e in domain.slots_for_entities(entities):
-    #    tracker.update(e)
 
     events = ActionSearchRestaurants().run(dispatcher, tracker, domain)
     assert len(events) == 2
@@ -141,8 +141,9 @@ def test_restaurant_form_unhappy_2():
     tracker = tracker_store.get_or_create_tracker(sender_id)
 
     # second user utterance
-    entities = [{"entity": "cuisine", "value": "chinese"},
-        {"entity": "number", "value": 8}]
+    entities = [
+        {"entity": "cuisine", "value": "chinese"},
+        {"entity": "people", "value": 8}]
 
     tracker.update(
         UserUttered("",
@@ -172,10 +173,10 @@ def test_restaurant_form_unhappy_2():
                     intent={"name": "random"}))
 
     events = ActionSearchRestaurants().run(dispatcher, tracker, domain)
-    assert events == []
-
-    # same slot requested again
-    assert tracker.get_slot("requested_slot") == "cuisine"
+    s = events[0].as_story_string()
+    assert len(events) == 1
+    assert events[0].key == "requested_slot"
+    assert events[0].value == "vegetarian"
 
 
 def test_people_form():
