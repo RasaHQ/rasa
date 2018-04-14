@@ -121,5 +121,5 @@ class FormAction(Action):
         return self.submit(dispatcher, tracker, domain, events)
 
     def submit(self, dispatcher, tracker, domain, events):
-        dispatcher.utter_message("done!")
-        return events
+        raise NotImplementedError("Your FormAction class should implement"
+                                  " a submit() method which completes the action.")
