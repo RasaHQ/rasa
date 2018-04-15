@@ -63,7 +63,7 @@ jobs:
       provider: pypi
       user: amn41
       server: https://test.pypi.org/legacy/
-      distributions: bdist_wheel
+      distributions: "sdist bdist_wheel"
       on:
         branch: wheel
       #  tags: true
