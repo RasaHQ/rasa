@@ -56,8 +56,7 @@ jobs:
     - export ${!TRAVIS*}
     - sphinx-versioning push docs gh-pages .
   - stage: deploy
-    install:
-    - pip install pypandoc==1.4
+    install: skip
     script: skip
     deploy:
       provider: pypi
