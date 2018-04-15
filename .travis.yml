@@ -61,7 +61,6 @@ jobs:
     deploy:
       provider: pypi
       user: amn41
-      server: https://test.pypi.org/legacy/
       distributions: "sdist bdist_wheel"
       on:
         branch: master
