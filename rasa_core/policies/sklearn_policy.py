@@ -19,7 +19,8 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.utils import shuffle as sklearn_shuffle
 
 from rasa_core.policies import Policy
-from rasa_core.featurizers import MaxHistoryTrackerFeaturizer
+from rasa_core.featurizers import \
+    TrackerFeaturizer, MaxHistoryTrackerFeaturizer
 
 logger = logging.getLogger(__name__)
 
@@ -155,8 +156,6 @@ class SklearnPolicy(Policy):
         if score is not None:
             logger.info("Cross validation score: {:.5f}".format(score))
 
-        return training_data.metadata
-
     def continue_training(self, training_trackers, domain, **kwargs):
         # type: (list[DialogueStateTracker], Domain, **Any) -> None
 
@@ -228,7 +227,11 @@ class SklearnPolicy(Policy):
             raise OSError("Failed to load dialogue model. Path {} "
                           "doesn't exist".format(os.path.abspath(filename)))
 
-        featurizer = Featurizer.load(path)
+        featurizer = TrackerFeaturizer.load(path)
+        assert isinstance(featurizer, MaxHistoryTrackerFeaturizer), \
+            ("Loaded featurizer of type {}, should be "
+             "MaxHistoryTrackerFeaturizer.".format(type(featurizer).__name__))
+
         policy = cls(featurizer=featurizer)
 
         with open(filename, 'rb') as f:

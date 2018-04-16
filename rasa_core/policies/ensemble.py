@@ -30,19 +30,19 @@ class PolicyEnsemble(object):
     def __init__(self, policies, action_fingerprints=None):
         # type: (List[Policy], Optional[Dict]) -> None
         self.policies = policies
-        self.training_metadata = {}
+        self.training_events = None
 
         if action_fingerprints:
             self.action_fingerprints = action_fingerprints
         else:
             self.action_fingerprints = {}
 
-    def train(self, training_trackers, domain, **kwargs):
-        # type: (List[DialogueStateTracker], Domain, **Any) -> None
+    def train(self, training_trackers, training_events, domain, **kwargs):
+        # type: (List[DialogueStateTracker], Dict, Domain, **Any) -> None
         if training_trackers:
             for policy in self.policies:
-                metadata = policy.train(training_trackers, domain, **kwargs)
-                self.training_metadata.update(metadata)
+                policy.train(training_trackers, domain, **kwargs)
+            self.training_events = training_events
         else:
             logger.info("Skipped training, because there are no "
                         "training samples.")
@@ -82,12 +82,14 @@ class PolicyEnsemble(object):
 
         This allows us to emit warnings when the model is used
         if an action does things it hasn't done during training."""
-
-        action_fingerprints = {}
-        for k, vs in training_events.items():
-            slots = list({v.key for v in vs if isinstance(v, SlotSet)})
-            action_fingerprints[k] = {"slots": slots}
-        return action_fingerprints
+        if training_events:
+            action_fingerprints = {}
+            for k, vs in training_events.items():
+                slots = list({v.key for v in vs if isinstance(v, SlotSet)})
+                action_fingerprints[k] = {"slots": slots}
+            return action_fingerprints
+        else:
+            return None
 
     def _persist_metadata(self, path, max_histories):
         # type: (Text, List[Optional[int]]) -> None
@@ -99,8 +101,7 @@ class PolicyEnsemble(object):
 
         policy_names = [utils.module_path_from_instance(p)
                         for p in self.policies]
-        training_events = self.training_metadata.get("events", {})
-        action_fingerprints = self._create_action_fingerprints(training_events)
+        action_fingerprints = self._create_action_fingerprints(self.training_events)
 
         metadata = {
             "action_fingerprints": action_fingerprints,

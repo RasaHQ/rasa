@@ -12,7 +12,8 @@ from collections import defaultdict, namedtuple
 import json
 import typing
 from tqdm import tqdm
-from typing import Optional, List, Text, Set, Dict
+from typing import Optional, List, Text, Set, Dict, Tuple
+from rasa_core.events import Event
 
 from rasa_core import utils
 from rasa_core.channels import UserMessage
@@ -33,8 +34,9 @@ ExtractorConfig = namedtuple("ExtractorConfig", "remove_duplicates "
                                                 "use_story_concatenation "
                                                 "rand")
 
-# define type
+# define types
 TrackerLookupDict = Dict[Optional[Text], List[DialogueStateTracker]]
+GeneratorOut = List[DialogueStateTracker], Dict[Text, Set[Event]]
 
 
 class TrainingsDataGenerator(object):
@@ -55,6 +57,7 @@ class TrainingsDataGenerator(object):
         connect complete stories. Afterwards, duplicate stories will be
         removed and the data is augmented (if augmentation is enabled)."""
 
+        self.events_metadata = defaultdict(set)
         self.hashed_featurizations = set()
         self.story_graph = story_graph.with_cycles_removed()
         self.domain = domain
@@ -67,7 +70,7 @@ class TrainingsDataGenerator(object):
                 rand=None)  # random.Random(42))
 
     def generate(self):
-        # type: () -> List[DialogueStateTracker]
+        # type: () -> GeneratorOut
 
         self._mark_first_action_in_story_steps_as_unpredictable()
 
@@ -144,7 +147,7 @@ class TrainingsDataGenerator(object):
         self._issue_unused_checkpoint_notification(unused_checkpoints)
         logger.debug("Found {} training examples.".format(len(finished_trackers)))
 
-        return finished_trackers
+        return finished_trackers, self.events_metadata
 
     @staticmethod
     def _phase_names(num_aug_rounds=0):
@@ -231,6 +234,9 @@ class TrainingsDataGenerator(object):
         for event in events:
             for tracker in trackers:
                 tracker.update(event)
+                if not isinstance(event, ActionExecuted):
+                    action_name = tracker.latest_action_name
+                    self.events_metadata[action_name].add(event)
 
         if self.config.remove_duplicates:
             trackers = self._remove_duplicate_trackers(trackers)

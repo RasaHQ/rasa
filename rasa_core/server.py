@@ -15,7 +15,7 @@ from functools import wraps
 import six
 from builtins import str
 from klein import Klein
-from typing import Union, Text, Optional
+from typing import Union, Text, Optional, Any
 
 from rasa_core import utils, events
 from rasa_core.agent import Agent

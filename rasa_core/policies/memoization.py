@@ -17,7 +17,8 @@ from typing import Optional, Any, Dict, List, Text
 
 from rasa_core.policies.policy import Policy
 from rasa_core import utils
-from rasa_core.featurizers import Featurizer, MaxHistoryTrackerFeaturizer
+from rasa_core.featurizers import \
+    TrackerFeaturizer, MaxHistoryTrackerFeaturizer
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,7 @@ class MemoizationPolicy(Policy):
         featurizer = self._standard_featurizer(max_history)
         super(MemoizationPolicy, self).__init__(featurizer)
 
-        self.max_history = max_history
+        self.max_history = self.featurizer.max_history
         self.lookup = lookup if lookup is not None else {}
         self.is_enabled = True
 
@@ -71,32 +72,37 @@ class MemoizationPolicy(Policy):
             ("Trying to mem featurized data with {} historic turns. Expected: "
              "{}".format(len(trackers_as_states[0]), self.max_history))
 
+        ambiguous_feature_keys = set()
+
         pbar = tqdm(zip(trackers_as_states, trackers_as_actions),
                     desc="Processed actions", disable=online)
-        for states, action in pbar:
+        for states, actions in pbar:
+            action = actions[0]
             for i, states_augmented in enumerate(
                     self._create_partial_histories(states)):
                 feature_key = self._create_feature_key(states_augmented)
                 feature_item = domain.index_for_action(action)
 
-                if feature_key in self.lookup.keys():
-                    if self.lookup[feature_key] != feature_item:
-                        if online and i == 0:
-                            logger.info("Original stories are "
-                                        "different for {} -- {}\n"
-                                        "Memorized the new ones for "
-                                        "now. Delete contradicting "
-                                        "examples after exporting "
-                                        "the new stories."
-                                        "".format(states_augmented,
-                                                  action))
-                            self.lookup[feature_key] = feature_item
-                        else:
-                            # delete contradicting example created by
-                            # partial history augmentation from memory
-                            self.lookup[feature_key] = None
-                else:
-                    self.lookup[feature_key] = feature_item
+                if feature_key not in ambiguous_feature_keys:
+                    if feature_key in self.lookup.keys():
+                        if self.lookup[feature_key] != feature_item:
+                            if online and i == 0:
+                                logger.info("Original stories are "
+                                            "different for {} -- {}\n"
+                                            "Memorized the new ones for "
+                                            "now. Delete contradicting "
+                                            "examples after exporting "
+                                            "the new stories."
+                                            "".format(states_augmented,
+                                                      action))
+                                self.lookup[feature_key] = feature_item
+                            else:
+                                # delete contradicting example created by
+                                # partial history augmentation from memory
+                                ambiguous_feature_keys.add(feature_key)
+                                del self.lookup[feature_key]
+                    else:
+                        self.lookup[feature_key] = feature_item
 
                 pbar.set_postfix({
                     "# examples": len(self.lookup)})
@@ -118,18 +124,14 @@ class MemoizationPolicy(Policy):
         # type: (...) -> Dict[Text: Any]
         """Trains the policy on given training trackers."""
         (trackers_as_states,
-         trackers_as_actions,
-         metadata) = self.featurizer.training_states_and_actions(
-            training_trackers, domain)
-        # TODO deal with setting self.featurizer directly
-        self.max_history = len(trackers_as_states[0])
+         trackers_as_actions) = self.featurizer.training_states_and_actions(
+                                    training_trackers, domain)
 
         self._memorise(trackers_as_states,
                        trackers_as_actions,
                        domain)
-        logger.info("Memorized {} unique examples."
+        logger.info("Memorized {} unique augmented examples."
                     "".format(len(self.lookup)))
-        return metadata
 
     def continue_training(self, trackers, domain, **kwargs):
         # type: (List[DialogueStateTracker], Domain, **Any) -> None
@@ -183,7 +185,7 @@ class MemoizationPolicy(Policy):
     def load(cls, path):
         # type: (Text) -> MemoizationPolicy
 
-        featurizer = Featurizer.load(path)
+        featurizer = TrackerFeaturizer.load(path)
         assert isinstance(featurizer, MaxHistoryTrackerFeaturizer), \
             ("Loaded featurizer of type {}, should be "
              "MaxHistoryTrackerFeaturizer.".format(type(featurizer).__name__))

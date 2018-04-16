@@ -9,14 +9,15 @@ from rasa_core import utils
 
 
 class DialogueTrainingData(object):
-    def __init__(self, X, y, metadata=None):
+    def __init__(self, X, y, true_length=None):
         self.X = X
         self.y = y
-        self.metadata = metadata if metadata else {}
+        self.true_length = true_length
 
     def limit_training_data_to(self, max_samples):
         self.X = self.X[:max_samples]
         self.y = self.y[:max_samples]
+        self.true_length = self.true_length[:max_samples]
 
     def is_empty(self):
         return utils.is_training_data_empty(self.X)
@@ -41,9 +42,6 @@ class DialogueTrainingData(object):
                                                 self.num_examples()))
 
         return self.X[padding_idx], self.y[padding_idx]
-
-    def reset_metadata(self):
-        self.metadata = {}
 
     def append(self, X, y):
         self.X = np.vstack((self.X, X))

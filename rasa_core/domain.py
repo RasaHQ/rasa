@@ -35,6 +35,8 @@ from rasa_core.utils import read_yaml_file
 
 logger = logging.getLogger(__name__)
 
+PREV_PREFIX = 'prev_'
+
 
 def check_domain_sanity(domain):
     """Makes sure the domain is properly configured.
@@ -86,7 +88,6 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
 
     A Domain subclass provides the actions the bot can take, the intents
     and entities it can recognise, and the topics it knows about."""
-    PREV_PREFIX = 'prev_'
 
     DEFAULT_ACTIONS = [ActionListen(), ActionRestart()]
 
@@ -160,10 +161,6 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
                 "as that name is not a registered action for this domain. "
                 "Available actions are: \n{}".format(action_name, actions))
 
-    @staticmethod
-    def _is_predictable_event(event):
-        return isinstance(event, ActionExecuted) and not event.unpredictable
-
     def random_template_for(self, utter_action):
         if utter_action in self.templates:
             return np.random.choice(self.templates[utter_action])
@@ -186,7 +183,7 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         # type: () -> List[Text]
         """Returns all available previous action state strings."""
 
-        return [self.PREV_PREFIX + a.name()
+        return [PREV_PREFIX + a.name()
                 for a in self.actions]
 
     # noinspection PyTypeChecker
@@ -241,14 +238,13 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
             key = "entity_{0}".format(entity["entity"])
             state_dict[key] = 1.
 
-        # TODO do not set the value of the slots to zero
-        # TODO that were not actually set
         # Set all set slots with the featurization of the stored value
         for key, slot in tracker.slots.items():
             if slot is not None:
-                for i, slot_value in enumerate(slot.as_state()):
-                    slot_id = "slot_{}_{}".format(key, i)
-                    state_dict[slot_id] = slot_value
+                for i, slot_value in enumerate(slot.as_feature()):
+                    if slot_value != 0:
+                        slot_id = "slot_{}_{}".format(key, i)
+                        state_dict[slot_id] = slot_value
 
         latest_msg = tracker.latest_message
 
@@ -270,7 +266,7 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
 
         latest_action = tracker.latest_action_name
         if latest_action:
-            prev_action_name = self.PREV_PREFIX + latest_action
+            prev_action_name = PREV_PREFIX + latest_action
             if prev_action_name in self.input_state_map:
                 return {prev_action_name: 1}
             else:
@@ -360,7 +356,6 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
             return True
 
     # Abstract Methods : These have to be implemented in any domain subclass
-
     @abc.abstractproperty
     def slots(self):
         # type: () -> List[Slot]

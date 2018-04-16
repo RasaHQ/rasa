@@ -274,7 +274,7 @@ def visualize_stories(
                                use_story_concatenation=False,
                                tracker_limit=100,
                                augmentation_factor=0)
-    completed_trackers = g.generate()
+    completed_trackers, _ = g.generate()
 
     for tracker in completed_trackers:
         message = None

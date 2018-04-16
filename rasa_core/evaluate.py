@@ -112,7 +112,7 @@ def collect_story_predictions(resource_name, policy_model_path, nlu_model_path,
     g = TrainingsDataGenerator(story_graph, agent.domain,
                                use_story_concatenation=False,
                                tracker_limit=100)
-    completed_trackers = g.generate()
+    completed_trackers, _ = g.generate()
 
     logger.info(
             "Evaluating {} stories\nProgress:".format(len(completed_trackers)))

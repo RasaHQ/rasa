@@ -18,6 +18,7 @@ if typing.TYPE_CHECKING:
     from rasa_core.domain import Domain
     from rasa_core.trackers import DialogueStateTracker
     from rasa_core.policies.ensemble import PolicyEnsemble
+    from rasa_core.training.generator import GeneratorOut
 
 
 class PolicyTrainer(object):
@@ -54,7 +55,7 @@ class PolicyTrainer(object):
         logger.debug("Policy trainer got kwargs: {}".format(kwargs))
         check_domain_sanity(self.domain)
 
-        training_trackers = self.extract_trackers(
+        training_trackers, events_metadata = self.extract_trackers(
                 resource_name,
                 self.domain,
                 augmentation_factor=augmentation_factor,
@@ -62,7 +63,7 @@ class PolicyTrainer(object):
                 max_number_of_trackers=max_number_of_trackers
         )
 
-        self.ensemble.train(training_trackers, self.domain,
+        self.ensemble.train(training_trackers, events_metadata, self.domain,
                             max_training_samples=max_training_samples, **kwargs)
 
     @staticmethod
@@ -76,7 +77,7 @@ class PolicyTrainer(object):
             use_story_concatenation=True  # type: bool
 
     ):
-        # type: (...) -> List[DialogueStateTracker]
+        # type: (...) -> GeneratorOut
         if resource_name:
 
             # TODO pass extract_story_graph as a function or
@@ -93,5 +94,5 @@ class PolicyTrainer(object):
                                        use_story_concatenation)
             return g.generate()
         else:
-            return []
+            return [], None
 
