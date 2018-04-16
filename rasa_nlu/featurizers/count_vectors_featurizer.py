@@ -29,7 +29,9 @@ class CountVectorsFeaturizer(Featurizer):
     """Bag of words featurizer
 
     Creates bag-of-words representation of intent features
-    using sklearn's `CountVectorizer`"""
+    using sklearn's `CountVectorizer`.
+    All tokens which consist only of digits (e.g. 123 and 99
+    but not ab12d) will be represented by a single feature."""
 
     name = "intent_featurizer_count_vectors"
 
