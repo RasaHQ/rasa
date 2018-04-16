@@ -126,6 +126,7 @@ def test_spacy_featurizer_casing(spacy_nlp):
     ("hello hello hello hello hello ", [5]),
     ("hello goodbye hello", [1, 2]),
     ("a b c d e f", [1, 1, 1, 1, 1, 1]),
+    ("a 1 2", [2, 1])
 ])
 def test_count_vector_featurizer(sentence, expected):
     from rasa_nlu.featurizers.count_vectors_featurizer import \

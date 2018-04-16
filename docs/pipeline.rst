@@ -171,7 +171,7 @@ intent_featurizer_count_vectors
 :Outputs: nothing, used as an input to intent classifiers that need bag-of-words representation of intent features (e.g. ``intent_classifier_tensorflow_embedding``)
 :Description:
     Creates bag-of-words representation of intent features using
-    `sklearn's CountVectorizer <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_
+    `sklearn's CountVectorizer <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_. All tokens which consist only of digits (e.g. 123 and 99 but not a123d) will be assigned to the same feature.
 
 :Configuration:
     See `sklearn's CountVectorizer docs <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_
