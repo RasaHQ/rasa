@@ -475,7 +475,7 @@ class EmbeddingIntentClassifier(Component):
         # check if number of negatives is less than number of intents
         logger.debug("Check if num_neg {} is smaller than "
                      "number of intents {}, "
-                     "else set num_neg to the number of intents"
+                     "else set num_neg to the number of intents - 1"
                      "".format(self.num_neg, len(self.intent_dict)))
         self.num_neg = min(self.num_neg, len(self.intent_dict) - 1)
 
