@@ -136,8 +136,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
         random_states = {f: num
                          for f, num in
                          zip(default_domain.input_states, nums)}
-        assert trained_policy._recall(random_states,
-                                      default_domain) is None
+        assert trained_policy._recall(random_states) is None
 
 
 class TestSklearnPolicy(PolicyTestCollection):
@@ -232,8 +231,7 @@ class TestSklearnPolicy(PolicyTestCollection):
             cv=None,
         )
 
-        #classes = [3, 4, 7]
-        classes = [1, 2]
+        classes = [1, 3]
         new_trackers = []
         for tr in trackers:
             new_tracker = DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,

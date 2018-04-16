@@ -125,7 +125,7 @@ def test_generate_training_data_with_cycles(tmpdir, default_domain):
         default_domain,
         augmentation_factor=0
     )
-    assert len(training_trackers) == 1
+    assert len(training_trackers) == 2
 
     training_data = featurizer.featurize_trackers(training_trackers,
                                                   default_domain)
