@@ -6,9 +6,9 @@ from __future__ import unicode_literals
 import argparse
 import logging
 import uuid
+import io
 from difflib import SequenceMatcher
 
-import matplotlib.pyplot as plt
 from tqdm import tqdm
 from typing import Text, List, Tuple
 
@@ -53,6 +53,13 @@ def create_argument_parser():
             type=str,
             default="story_confmat.pdf",
             help="output path for the created evaluation plot")
+    parser.add_argument(
+            '-f', '--failed',
+            type=str,
+            default="failed_stories.txt",
+            help="output path for the failed stories")
+    parser.add_argument('--no-plot', dest='do_plot', action='store_false')
+
 
     utils.add_logging_option_arguments(parser)
     return parser
@@ -114,12 +121,14 @@ def collect_story_predictions(resource_name, policy_model_path, nlu_model_path,
                                tracker_limit=100)
     completed_trackers, _ = g.generate()
 
+    failed_stories = []
+
     logger.info(
             "Evaluating {} stories\nProgress:".format(len(completed_trackers)))
 
     for tracker in tqdm(completed_trackers):
         sender_id = "default-" + uuid.uuid4().hex
-
+        story = {"predicted": [], "actual": [] }
         events = list(tracker.events)
         actions_between_utterances = []
         last_prediction = []
@@ -129,7 +138,8 @@ def collect_story_predictions(resource_name, policy_model_path, nlu_model_path,
                 p, a = align_lists(last_prediction, actions_between_utterances)
                 preds.extend(p)
                 actual.extend(a)
-
+                story["predicted"].extend(p)
+                story["actual"].extend(a)
                 actions_between_utterances = []
                 agent.handle_message(event.text, sender_id=sender_id)
                 tracker = agent.tracker_store.retrieve(sender_id)
@@ -139,27 +149,57 @@ def collect_story_predictions(resource_name, policy_model_path, nlu_model_path,
                 actions_between_utterances.append(event.action_name)
 
         if last_prediction:
+
             preds.extend(last_prediction)
             preds_padding = len(actions_between_utterances) - \
                             len(last_prediction)
             preds.extend(["None"] * preds_padding)
+            story["predicted"].extend(["None"] * preds_padding)
 
             actual.extend(actions_between_utterances)
             actual_padding = len(last_prediction) - \
                              len(actions_between_utterances)
             actual.extend(["None"] * actual_padding)
 
-    return actual, preds
+            story["actual"].extend(["None"] * actual_padding)
+
+        if story["predicted"] != story["actual"]:
+            failed_stories.append(story)
+
+    return actual, preds, failed_stories
+
+def log_failed_stories(failed_stories, failed_output):    
+    """Takes stories as a list of dicts"""
+
+    with io.open(failed_output, 'w') as f:
+        if len(failed_stories) == 0:
+            f.write("All stories passed")
+        else:
+            for i, story in enumerate(failed_stories):
+                f.write("\n## failed story {}\n".format(i))
+                for (p, a) in zip(story["predicted"], story["actual"]):
+                    if p == a:
+                        f.write("{:40}\n".format(a))
+                    else:
+                        f.write("{:40} predicted: {:40}\n".format(a, p))
 
 
 def run_story_evaluation(resource_name, policy_model_path, nlu_model_path,
-                         out_file, max_stories):
-    """Run the evaluation of the stories, plots the results."""
+                         out_file, failed_output, max_stories, do_plot):
+    """Run the evaluation of the stories, optionally plots the results."""
+    test_y, preds, failed_stories = collect_story_predictions(resource_name, policy_model_path,
+                                              nlu_model_path, max_stories)
+    if do_plot:
+        plot_story_evaluation(test_y, preds)
+
+    log_failed_stories(failed_stories, failed_output)
+
+
+def plot_story_evaluation(test_y, preds):
+    """Plot the results. of story evaluation"""
     from sklearn.metrics import confusion_matrix
     from sklearn.utils.multiclass import unique_labels
-
-    test_y, preds = collect_story_predictions(resource_name, policy_model_path,
-                                              nlu_model_path, max_stories)
+    import matplotlib.pyplot as plt
 
     log_evaluation_table(test_y, preds)
     cnf_matrix = confusion_matrix(test_y, preds)
@@ -181,5 +221,7 @@ if __name__ == '__main__':
                          cmdline_args.core,
                          cmdline_args.nlu,
                          cmdline_args.output,
-                         cmdline_args.max_stories)
+                         cmdline_args.failed,
+                         cmdline_args.max_stories,
+                         cmdline_args.do_plot)
     logger.info("Finished evaluation")
