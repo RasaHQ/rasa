@@ -54,7 +54,7 @@ def create_argument_parser():
             default="story_confmat.pdf",
             help="output path for the created evaluation plot")
     parser.add_argument(
-            '-f', '--failed',
+            '--failed',
             type=str,
             default="failed_stories.txt",
             help="output path for the failed stories")
@@ -136,8 +136,6 @@ def collect_story_predictions(resource_name, policy_model_path, nlu_model_path,
         for i, event in enumerate(events[1:]):
             if isinstance(event, UserUttered):
                 p, a = align_lists(last_prediction, actions_between_utterances)
-                preds.extend(p)
-                actual.extend(a)
                 story["predicted"].extend(p)
                 story["actual"].extend(a)
                 actions_between_utterances = []
@@ -153,15 +151,16 @@ def collect_story_predictions(resource_name, policy_model_path, nlu_model_path,
             preds.extend(last_prediction)
             preds_padding = len(actions_between_utterances) - \
                             len(last_prediction)
-            preds.extend(["None"] * preds_padding)
+
             story["predicted"].extend(["None"] * preds_padding)
+            preds.extend(story["predicted"])
 
             actual.extend(actions_between_utterances)
             actual_padding = len(last_prediction) - \
                              len(actions_between_utterances)
-            actual.extend(["None"] * actual_padding)
 
             story["actual"].extend(["None"] * actual_padding)
+            actual.extend(story["actual"])
 
         if story["predicted"] != story["actual"]:
             failed_stories.append(story)
