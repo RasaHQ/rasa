@@ -138,9 +138,8 @@ class MemoizationPolicy(Policy):
 
         # add only the last tracker, because it is the only new one
         (trackers_as_states,
-         trackers_as_actions,
-         _) = self.featurizer.training_states_and_actions(trackers[-1:],
-                                                          domain)
+         trackers_as_actions) = self.featurizer.training_states_and_actions(
+                                    trackers[-1:], domain)
         # fit to one extra example
         self._add(trackers_as_states, trackers_as_actions,
                   domain, online=True)

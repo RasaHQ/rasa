@@ -9,10 +9,6 @@ HTTP server
     data, and train a model. You can then use the trained model for remote code
     execution! See :ref:`tutorial_basics` for an introduction.
 
-.. warning::
-
-    The HTTP API is still experimental and we'd appreciate your feedback (e.g.
-    via `Gitter <https://gitter.im/RasaHQ/rasa_core>`_).
 
 The HTTP api exists to make it easy for non-python projects to use Rasa Core.
 

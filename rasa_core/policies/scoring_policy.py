@@ -52,9 +52,9 @@ class ScoringPolicy(MemoizationPolicy):
         augmented_states = list(states)  # COPY!
         for i in range(self.max_history):
             if augmented_states[i]:
-                for slot in domain.slot_features:
+                for slot in domain.slot_states:
                     augmented_states[i][slot] = 0.0
-                for entity in domain.entity_features:
+                for entity in domain.entity_states:
                     if augmented_states[i].get(entity):
                         augmented_states[i][entity] = 0.0
 
@@ -69,9 +69,9 @@ class ScoringPolicy(MemoizationPolicy):
         augmented_states = list(states)  # COPY!
         for i in range(self.max_history):
             if augmented_states[i]:
-                for slot in domain.slot_features:
+                for slot in domain.slot_states:
                     augmented_states[i][slot] = 0.0
-                for entity in domain.entity_features:
+                for entity in domain.entity_states:
                     if augmented_states[i].get(entity):
                         augmented_states[i][entity] = 0.0
 

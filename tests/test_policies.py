@@ -26,7 +26,7 @@ from rasa_core.events import ActionExecuted
 
 def train_featurizer(max_history):
     featurizer = MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
-                                      max_history=max_history)
+                                             max_history=max_history)
     return featurizer
 
 
@@ -51,15 +51,14 @@ class PolicyTestCollection(object):
 
     max_history = 3  # this is the amount of history we test on
 
-    def create_policy(self):
+    def create_policy(self, featurizer):
         raise NotImplementedError
 
     @pytest.fixture(scope="module")
     def trained_policy(self):
         default_domain = TemplateDomain.load(DEFAULT_DOMAIN_PATH)
-        policy = self.create_policy()
+        policy = self.create_policy(train_featurizer(self.max_history))
         training_trackers = train_trackers(default_domain)
-        policy.featurizer = train_featurizer(self.max_history)
         policy.train(training_trackers, default_domain)
         return policy
 
@@ -95,22 +94,28 @@ class PolicyTestCollection(object):
 
 class TestKerasPolicy(PolicyTestCollection):
     @pytest.fixture(scope="module")
-    def create_policy(self):
-        p = KerasPolicy()
+    def create_policy(self, featurizer):
+        p = KerasPolicy(featurizer)
         return p
 
 
 class TestScoringPolicy(PolicyTestCollection):
     @pytest.fixture(scope="module")
-    def create_policy(self):
-        p = ScoringPolicy()
+    def create_policy(self, featurizer):
+        max_history = None
+        if isinstance(featurizer, MaxHistoryTrackerFeaturizer):
+            max_history = featurizer.max_history
+        p = ScoringPolicy(max_history)
         return p
 
 
 class TestMemoizationPolicy(PolicyTestCollection):
     @pytest.fixture(scope="module")
-    def create_policy(self):
-        p = MemoizationPolicy()
+    def create_policy(self, featurizer):
+        max_history = None
+        if isinstance(featurizer, MaxHistoryTrackerFeaturizer):
+            max_history = featurizer.max_history
+        p = MemoizationPolicy(max_history)
         return p
 
     def test_memorise(self, trained_policy, default_domain):
@@ -130,14 +135,14 @@ class TestMemoizationPolicy(PolicyTestCollection):
         nums = np.random.randn(default_domain.num_features)
         random_states = {f: num
                          for f, num in
-                            zip(default_domain.input_features, nums)}
+                         zip(default_domain.input_features, nums)}
         assert trained_policy._recall(random_states,
                                       default_domain) is None
 
 
 class TestSklearnPolicy(PolicyTestCollection):
-    def create_policy(self, **kwargs):
-        p = SklearnPolicy(**kwargs)
+    def create_policy(self, featurizer, **kwargs):
+        p = SklearnPolicy(featurizer, **kwargs)
         return p
 
     @pytest.yield_fixture

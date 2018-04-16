@@ -16,6 +16,8 @@ Added
 - parameter to specify NLU project when instantiating a ``RasaNLUInterpreter``
 - simple ``/respond`` endpoint to get bot response to a user message
 - ``/conversations`` endpoint for listing sender ids of running conversations
+- added a Mattermost channel that allows Rasa Core to communicate via a Mattermost app
+- added a Twilio channel that allows Rasa Core to communicate via SMS
 
 Changed
 -------
@@ -26,6 +28,7 @@ Removed
 
 Fixed
 -----
+- Slack connector: ``slack_channel`` kwarg is used to send messages either back to the user or to a static channel
 
 [0.8.2] - 2018-02-13
 ^^^^^^^^^^^^^^^^^^^^
