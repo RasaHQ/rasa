@@ -32,24 +32,131 @@ Pre-configured Pipelines
 ------------------------
 To ease the burden of coming up with your own processing pipelines, we provide a couple of ready to use templates
 which can be used by setting the ``pipeline`` configuration value to the name of the template you want to use.
-Here is a list of the existing templates:
+Here is a list of the **existing templates**:
 
-+----------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| template name        | corresponding pipeline                                                                                                                                            |
-+======================+===================================================================================================================================================================+
-| spacy_sklearn        | ``["nlp_spacy", "tokenizer_spacy", "intent_entity_featurizer_regex", "intent_featurizer_spacy", "ner_crf", "ner_synonyms",  "intent_classifier_sklearn"]``        |
-+----------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| mitie                | ``["nlp_mitie", "tokenizer_mitie", "ner_mitie", "ner_synonyms", "intent_entity_featurizer_regex", "intent_classifier_mitie"]``                                    |
-+----------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| mitie_sklearn        | ``["nlp_mitie", "tokenizer_mitie", "ner_mitie", "ner_synonyms", "intent_entity_featurizer_regex", "intent_featurizer_mitie", "intent_classifier_sklearn"]``       |
-+----------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| keyword              | ``["intent_classifier_keyword"]``                                                                                                                                 |
-+----------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| tensorflow_embedding | ``["intent_featurizer_count_vectors", "intent_classifier_tensorflow_embedding"]``                                                                                 |
-+----------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+spacy_sklearn
+~~~~~~~~~~~~~
 
-Creating your own pipelines is possible by directly passing the names of the components to Rasa NLU in the ``pipeline``
-configuration variable, e.g.
+to use it as a template:
+
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline: "spacy_sklearn
+
+to use the components and configure them separately:
+
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline:
+    - name: "nlp_spacy"
+    - name: "tokenizer_spacy"
+    - name: "intent_entity_featurizer_regex"
+    - name: "intent_featurizer_spacy"
+    - name: "ner_crf"
+    - name: "ner_synonyms"
+    - name: "intent_classifier_sklearn"
+
+mitie
+~~~~~
+
+to use it as a template:
+
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline: "mitie"
+
+to use the components and configure them separately:
+
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline:
+    - name: "nlp_mitie"
+    - name: "tokenizer_mitie"
+    - name: "ner_synonyms"
+    - name: "intent_entity_featurizer_regex"
+    - name: "intent_classifier_mitie"
+
+mitie_sklearn
+~~~~~~~~~~~~~
+
+to use it as a template:
+
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline: "mitie_sklearn"
+
+to use the components and configure them separately:
+
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline:
+    - name: "nlp_mitie"
+    - name: "tokenizer_mitie"
+    - name: "ner_mitie"
+    - name: "ner_synonyms"
+    - name: "intent_entity_featurizer_regex"
+    - name: "intent_featurizer_mitie"
+    - name: "intent_classifier_sklearn"
+
+keyword
+~~~~~~~
+
+to use it as a template:
+
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline: "keyword"
+
+to use the components and configure them separately:
+
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline:
+    - name: "intent_classifier_keyword"
+
+
+tensorflow_embedding
+~~~~~~~~~~~~~~~~~~~
+
+to use it as a template:
+
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline: "tensorflow_embedding"
+
+to use the components and configure them separately:
+
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline:
+    - name: "intent_featurizer_count_vectors"
+    - name: "intent_classifier_tensorflow_embedding"
+
+Custom pipelines
+~~~~~~~~~~~~~~~
+
+Creating your own pipelines is possible by directly passing the names of the ~
+components to Rasa NLU in the ``pipeline`` configuration variable, e.g.
 
 .. code-block:: yaml
 
@@ -58,8 +165,9 @@ configuration variable, e.g.
     - name: "ner_crf"
     - name: "ner_synonyms"
 
-This creates a pipeline that only does entity recognition, but no intent classification.
-Hence, the output will not contain any useful intents.
+This creates a pipeline that only does entity recognition, but no
+intent classification. Hence, the output will not contain any
+useful intents.
 
 Built-in Components
 -------------------
@@ -344,26 +452,26 @@ intent_classifier_tensorflow_embedding
         pipeline:
         - name: "intent_classifier_tensorflow_embedding"
           # nn architecture
-          "num_hidden_layers_a": 2,
-          "hidden_layer_size_a": [256, 128],
-          "num_hidden_layers_b": 0,
-          "hidden_layer_size_b": [],
+          "num_hidden_layers_a": 2
+          "hidden_layer_size_a": [256, 128]
+          "num_hidden_layers_b": 0
+          "hidden_layer_size_b": []
           "batch_size": 32
           "epochs": 300
           # embedding parameters
           "embed_dim": 10
           "mu_pos": 0.8  # should be 0.0 < ... < 1.0 for 'cosine'
           "mu_neg": -0.4  # should be -1.0 < ... < 1.0 for 'cosine'
-          "similarity_type": 'cosine'  # string 'cosine' or 'inner'
+          "similarity_type": "cosine"  # string 'cosine' or 'inner'
           "num_neg": 10
-          "use_max_sim_neg": True  # flag which loss function to use
+          "use_max_sim_neg": true  # flag which loss function to use
           # regularization
           "C2": 0.002
           "C_emb": 0.8
           "droprate": 0.2
           # flag if to tokenize intents
-          "intent_tokenization_flag": False
-          "intent_split_symbol": '_'
+          "intent_tokenization_flag": false
+          "intent_split_symbol": "_"
 
 intent_entity_featurizer_regex
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
