@@ -123,9 +123,9 @@ class TestMemoizationPolicy(PolicyTestCollection):
         trained_policy.train(training_trackers, default_domain)
 
         (trackers_as_states,
-         trackers_as_actions,
-         _) = trained_policy.featurizer.training_states_and_actions(
-            training_trackers, default_domain)
+         trackers_as_actions
+         ) = trained_policy.featurizer.training_states_and_actions(
+                                training_trackers, default_domain)
 
         for ii in range(len(trackers_as_states)):
             recalled = trained_policy._recall(trackers_as_states[ii])
@@ -254,7 +254,7 @@ class TestSklearnPolicy(PolicyTestCollection):
         predicted_probabilities = policy.predict_action_probabilities(
             tracker, default_domain)
 
-        assert len(predicted_probabilities) == 8
+        assert len(predicted_probabilities) == default_domain.num_actions
         assert np.allclose(sum(predicted_probabilities), 1.0)
         for i, prob in enumerate(predicted_probabilities):
             if i in classes:

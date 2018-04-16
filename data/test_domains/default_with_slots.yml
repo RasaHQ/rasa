@@ -6,13 +6,18 @@ intents:
  - affirm
  - thank_you
  - change_bank_details
+ - simple
+ - hello
+ - why
+ - next_intent
 
 entities:
  - name
- - nice_person
 
 slots:
   name:
+    type: text
+  nice_person:
     type: text
 
 templates:

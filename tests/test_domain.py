@@ -119,8 +119,8 @@ def test_create_train_data_with_history(default_domain):
 def test_domain_from_template():
     domain_file = DEFAULT_DOMAIN_PATH
     domain = TemplateDomain.load(domain_file)
-    assert len(domain.intents) == 3
-    assert len(domain.actions) == 5
+    assert len(domain.intents) == 6
+    assert len(domain.actions) == 3
 
 
 def test_utter_templates():

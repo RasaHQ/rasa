@@ -7,7 +7,7 @@
 
 ## why does the user want to leave?
 > check_goodbye
-* default
+* why
     - utter_default
 > check_greet
 
@@ -15,9 +15,10 @@
 > check_greet
 > check_hello                   <!-- allows multiple entry points -->
 
-## intermediate checkpoint
-* greet
+* next_intent
     - utter_greet              <!-- actions taken by the bot -->
+
 > check_intermediate            <!-- allows intermediate checkpoints -->
+
 * change_bank_details
     - utter_default            <!-- allows to end without checkpoints -->
