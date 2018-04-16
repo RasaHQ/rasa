@@ -50,6 +50,6 @@ class DialogueTrainingData(object):
     @classmethod
     def empty(cls, domain):
         # TODO is it correct?
-        X = np.zeros((0, domain.num_features))
+        X = np.zeros((0, domain.num_states))
         y = np.zeros((0, domain.num_actions))
         return cls(X, y, {})

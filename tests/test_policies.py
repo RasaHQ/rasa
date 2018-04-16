@@ -132,10 +132,10 @@ class TestMemoizationPolicy(PolicyTestCollection):
             assert recalled == default_domain.index_for_action(
                 trackers_as_actions[ii][0])
 
-        nums = np.random.randn(default_domain.num_features)
+        nums = np.random.randn(default_domain.num_states)
         random_states = {f: num
                          for f, num in
-                         zip(default_domain.input_features, nums)}
+                         zip(default_domain.input_states, nums)}
         assert trained_policy._recall(random_states,
                                       default_domain) is None
 
@@ -235,12 +235,12 @@ class TestSklearnPolicy(PolicyTestCollection):
         #classes = [3, 4, 7]
         classes = [1, 2]
         new_trackers = []
-        for tracker in trackers:
+        for tr in trackers:
             new_tracker = DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
                                                default_domain.slots,
                                                default_domain.topics,
                                                default_domain.default_topic)
-            for e in tracker._applied_events():
+            for e in tr._applied_events():
                 if isinstance(e, ActionExecuted):
                     new_action = default_domain.action_for_index(
                         np.random.choice(classes)).name()
@@ -253,8 +253,6 @@ class TestSklearnPolicy(PolicyTestCollection):
         policy.train(new_trackers, domain=default_domain)
         predicted_probabilities = policy.predict_action_probabilities(
             tracker, default_domain)
-
-        print(default_domain.action_names)
 
         assert len(predicted_probabilities) == default_domain.num_actions
         assert np.allclose(sum(predicted_probabilities), 1.0)

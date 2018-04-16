@@ -186,14 +186,14 @@ class SklearnPolicy(Policy):
                                 "sklearn models that support 'partial_fit'.")
             self.model.partial_fit(Xt, yt)
 
-    def _postprocess_prediction(self, y_proba):
+    def _postprocess_prediction(self, y_proba, domain):
         yp = y_proba[0].tolist()
 
         # Some classes might not be part of the training labels. Since
         # sklearn does not predict labels it has never encountered
         # during training, it is necessary to insert missing classes.
         indices = self.label_encoder.inverse_transform(np.arange(len(yp)))
-        y_filled = [0.0 for _ in range(max(indices + 1))]
+        y_filled = [0.0 for _ in range(domain.num_actions)]
         for i, pred in zip(indices, yp):
             y_filled[i] = pred
 
@@ -204,7 +204,7 @@ class SklearnPolicy(Policy):
         X, _ = self.featurizer.create_X([tracker], domain)
         Xt = self._preprocess_data(X)
         y_proba = self.model.predict_proba(Xt)
-        return self._postprocess_prediction(y_proba)
+        return self._postprocess_prediction(y_proba, domain)
 
     def persist(self, path):
         # type: (Text) -> None
