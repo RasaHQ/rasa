@@ -418,9 +418,9 @@ class EmbeddingIntentClassifier(Component):
                                              is_training: False})
 
         train_acc = np.mean(np.argmax(train_sim, -1) == intents_for_X)
-        logger.debug("epoch {} / {}: loss {}, train accuracy : {:.3f}"
-                     "".format((ep + 1), self.epochs,
-                               sess_out.get('loss'), train_acc))
+        logger.info("epoch {} / {}: loss {}, train accuracy : {:.3f}"
+                    "".format((ep + 1), self.epochs,
+                              sess_out.get('loss'), train_acc))
 
     def _train_tf(self, X, Y, helper_data,
                   sess, a_in, b_in, sim,
@@ -450,7 +450,7 @@ class EmbeddingIntentClassifier(Component):
                                                b_in: batch_b,
                                                is_training: True})
 
-            if logger.isEnabledFor(logging.DEBUG) and (ep + 1) % 10 == 0:
+            if logger.isEnabledFor(logging.INFO) and (ep + 1) % 10 == 0:
                 self._output_training_stat(X, intents_for_X, all_Y,
                                            sess, a_in, b_in,
                                            sim, is_training,
