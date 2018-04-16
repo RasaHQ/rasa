@@ -127,8 +127,8 @@ def test_generate_training_data_with_cycles(tmpdir, default_domain):
     )
     assert len(training_trackers) == 1
 
-    training_data, _ = featurizer.featurize_trackers(training_trackers,
-                                                     default_domain)
+    training_data = featurizer.featurize_trackers(training_trackers,
+                                                  default_domain)
     y = training_data.y.argmax(axis=-1)
     np.testing.assert_array_equal(
             y,
@@ -164,8 +164,8 @@ def test_load_multi_file_training_data(default_domain):
         "data/test_stories/stories.md",
         default_domain
     )
-    data, _ = featurizer.featurize_trackers(trackers,
-                                            default_domain)
+    data = featurizer.featurize_trackers(trackers,
+                                         default_domain)
 
     featurizer_mul = MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
                                           max_history=2)
@@ -173,8 +173,8 @@ def test_load_multi_file_training_data(default_domain):
         "data/test_multifile_stories",
         default_domain
     )
-    data_mul, _ = featurizer_mul.featurize_trackers(trackers_mul,
-                                                    default_domain)
+    data_mul = featurizer_mul.featurize_trackers(trackers_mul,
+                                                 default_domain)
 
     # TODO do we want to assert if trackers are the same?
     assert np.all(data.X == data_mul.X)
@@ -195,8 +195,8 @@ def test_load_training_data_handles_hidden_files(tmpdir, default_domain):
         tmpdir.strpath,
         default_domain
     )
-    data, _ = featurizer.featurize_trackers(trackers,
-                                            default_domain)
+    data = featurizer.featurize_trackers(trackers,
+                                         default_domain)
 
     assert len(data.X) == 0
     assert len(data.y) == 0

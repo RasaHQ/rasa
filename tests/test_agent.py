@@ -19,8 +19,6 @@ def test_agent_train(tmpdir, default_domain):
     agent.persist(tmpdir.strpath)
 
     loaded = Agent.load(tmpdir.strpath)
-    # test featurizer
-    assert type(loaded.featurizer) is type(agent.featurizer)    # nopep8
 
     # test domain
     assert [a.name() for a in loaded.domain.actions] == \
