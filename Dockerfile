@@ -29,15 +29,10 @@ RUN pip install -r requirements.txt
 
 COPY . /app
 
-ARG CORE_MODEL
-
-COPY $CORE_MODEL /app/model
-
 RUN pip install -e .
 
 VOLUME ["/app/model"]
 
 EXPOSE 5005
 
-CMD ["python", "-m", "rasa_core.server", "--core", "./model"]
-
+CMD ["python", "-m", "rasa_core.server", "--core", "./model/dialogue", "--nlu", "./model/nlu"]
