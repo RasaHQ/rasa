@@ -3,9 +3,13 @@ intents:
  - greet
  - default
  - goodbye
+ - affirm
+ - thank_you
+ - change_bank_details
 
 entities:
  - name
+ - nice_person
 
 slots:
   name:

@@ -86,7 +86,7 @@ class PolicyTestCollection(object):
         assert min(probabilities) >= 0.0
 
     def test_persist_and_load_empty_policy(self, tmpdir):
-        empty_policy = self.create_policy()
+        empty_policy = self.create_policy(None)
         empty_policy.persist(tmpdir.strpath)
         loaded = empty_policy.__class__.load(tmpdir.strpath)
         assert loaded is not None
@@ -232,7 +232,8 @@ class TestSklearnPolicy(PolicyTestCollection):
             cv=None,
         )
 
-        classes = [3, 4, 7]
+        #classes = [3, 4, 7]
+        classes = [1, 2]
         new_trackers = []
         for tracker in trackers:
             new_tracker = DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
@@ -270,6 +271,9 @@ class TestSklearnPolicy(PolicyTestCollection):
         assert policy.model.C == 123
 
     def test_train_with_shuffle_false(self, default_domain, trackers):
-        policy = self.create_policy(shuffle=False)
+        policy = self.create_policy(
+            featurizer=train_featurizer(self.max_history),
+            shuffle=False
+        )
         # does not raise
         policy.train(trackers, domain=default_domain)

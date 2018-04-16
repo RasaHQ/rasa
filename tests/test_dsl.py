@@ -119,7 +119,7 @@ def test_read_story_file_with_cycles(tmpdir, default_domain):
 
 def test_generate_training_data_with_cycles(tmpdir, default_domain):
     featurizer = MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
-                                      max_history=4)
+                                             max_history=4)
     training_trackers, _ = PolicyTrainer.extract_trackers(
         "data/test_stories/stories_with_cycle.md",
         default_domain,
@@ -159,7 +159,7 @@ def test_load_multi_file_training_data(default_domain):
     # the stories file in `data/test_multifile_stories` is the same as in
     # `data/test_stories/stories.md`, but split across multiple files
     featurizer = MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
-                                      max_history=2)
+                                             max_history=2)
     trackers, _ = PolicyTrainer.extract_trackers(
         "data/test_stories/stories.md",
         default_domain
@@ -168,7 +168,7 @@ def test_load_multi_file_training_data(default_domain):
                                          default_domain)
 
     featurizer_mul = MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
-                                          max_history=2)
+                                                 max_history=2)
     trackers_mul, _ = PolicyTrainer.extract_trackers(
         "data/test_multifile_stories",
         default_domain
@@ -190,7 +190,7 @@ def test_load_training_data_handles_hidden_files(tmpdir, default_domain):
     open(normal_file, 'a').close()
 
     featurizer = MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
-                                      max_history=2)
+                                             max_history=2)
     trackers, _ = PolicyTrainer.extract_trackers(
         tmpdir.strpath,
         default_domain
