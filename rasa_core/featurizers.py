@@ -246,8 +246,7 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
         # type: (Optional[Text, float]) -> np.ndarray
         if not self.num_features:
             raise Exception("LabelTokenizerSingleStateFeaturizer "
-                            "was not prepared "
-                            "before encoding.")
+                            "was not prepared before encoding.")
 
         if states is None or None in states:
             return np.ones(self.num_features, dtype=int) * -1
@@ -298,9 +297,9 @@ class TrackerFeaturizer(object):
         true_lengths = []
 
         for tracker_states in trackers_as_states:
+            dialogue_len = len(tracker_states)
             if len(trackers_as_states) > 1:
                 tracker_states = self._pad_states(tracker_states)
-            dialogue_len = len(tracker_states)
 
             story_features = [self.state_featurizer.encode(state)
                               for state in tracker_states]

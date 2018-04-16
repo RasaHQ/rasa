@@ -17,7 +17,7 @@ from rasa_core.featurizers import \
 
 if typing.TYPE_CHECKING:
     from rasa_core.domain import Domain
-    from rasa_core.featurizers import Featurizer
+    from rasa_core.featurizers import TrackerFeaturizer
     from rasa_core.trackers import DialogueStateTracker
     from rasa_core.training.data import DialogueTrainingData
 
@@ -31,14 +31,14 @@ class Policy(object):
     @classmethod
     def _standard_featurizer(cls):
         return MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
-                                    cls.MAX_HISTORY_DEFAULT)
+                                           cls.MAX_HISTORY_DEFAULT)
 
     @classmethod
     def _create_featurizer(cls, featurizer=None):
-        return featurizer if featurizer else cls._standard_featurizer()
+        return deepcopy(featurizer) if featurizer else cls._standard_featurizer()
 
     def __init__(self, featurizer=None):
-        # type: (Optional[Featurizer]) -> None
+        # type: (Optional[TrackerFeaturizer]) -> None
         self.__featurizer = self._create_featurizer(featurizer)
 
     @property
@@ -91,9 +91,7 @@ class Policy(object):
               **kwargs  # type: **Any
               ):
         # type: (...) -> None
-        """Trains the policy on given training trackers.
-
-        Returns training metadata."""
+        """Trains the policy on given training trackers."""
 
         raise NotImplementedError("Policy must have the capacity "
                                   "to train.")

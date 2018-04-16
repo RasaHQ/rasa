@@ -24,11 +24,12 @@ if typing.TYPE_CHECKING:
     from rasa_core.trackers import DialogueStateTracker
 
 
+
 class KerasPolicy(Policy):
     SUPPORTS_ONLINE_TRAINING = True
 
     def __init__(self,
-                 featurizer=None,  # type: Optional[Featurizer]
+                 featurizer=None,  # type: Optional[TrackerFeaturizer]
                  model=None,  # type: Optional[keras.models.Sequential]
                  graph=None,  # type: Optional[keras.backend.tf.Graph]
                  current_epoch=0  # type: int
