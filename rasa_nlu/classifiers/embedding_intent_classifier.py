@@ -30,11 +30,7 @@ if typing.TYPE_CHECKING:
 try:
     import tensorflow as tf
 except ImportError:
-    logger.debug('Unable to import tensorflow. '
-                 'If you are not using the tensorflow pipeline, '
-                 'you can safely ignore this message. '
-                 'If you are using pipeline: "tensorflow_embedding", '
-                 'this will create an error.')
+    tf = None
 
 
 class EmbeddingIntentClassifier(Component):
@@ -150,6 +146,14 @@ class EmbeddingIntentClassifier(Component):
 
         return num_layers, layer_size
 
+    @staticmethod
+    def _check_tensorflow():
+        if tf is None:
+            raise ImportError(
+                'Failed to import `tensorflow`. '
+                'Please install `tensorflow`. '
+                'For example with `pip install tensorflow`.')
+
     def __init__(self,
                  component_config=None,  # type: Optional[Dict[Text, Any]]
                  intent_dict=None,  # type: Optional[Dict[Text, int]]
@@ -162,7 +166,7 @@ class EmbeddingIntentClassifier(Component):
                  ):
         # type: (...) -> None
         """Declare instant variables with default values"""
-
+        self._check_tensorflow()
         super(EmbeddingIntentClassifier, self).__init__(component_config)
 
         # nn architecture parameters
@@ -194,7 +198,7 @@ class EmbeddingIntentClassifier(Component):
 
         # tf related instances
         self.session = session
-        self.graph = graph if graph is not None else tf.Graph()
+        self.graph = graph
         self.intent_placeholder = intent_placeholder
         self.embedding_placeholder = embedding_placeholder
         self.similarity_op = similarity_op
