@@ -130,7 +130,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
         for ii in range(len(trackers_as_states)):
             recalled = trained_policy._recall(trackers_as_states[ii])
             assert recalled == default_domain.index_for_action(
-                trackers_as_actions[ii])
+                trackers_as_actions[ii][0])
 
         nums = np.random.randn(default_domain.num_features)
         random_states = {f: num
@@ -253,6 +253,8 @@ class TestSklearnPolicy(PolicyTestCollection):
         policy.train(new_trackers, domain=default_domain)
         predicted_probabilities = policy.predict_action_probabilities(
             tracker, default_domain)
+
+        print(default_domain.action_names)
 
         assert len(predicted_probabilities) == default_domain.num_actions
         assert np.allclose(sum(predicted_probabilities), 1.0)

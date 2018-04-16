@@ -72,8 +72,11 @@ class MemoizationPolicy(Policy):
             ("Trying to mem featurized data with {} historic turns. Expected: "
              "{}".format(len(trackers_as_states[0]), self.max_history))
 
-        ambiguous_feature_keys = set()
+        assert len(trackers_as_actions[0]) == 1, \
+            ("The second dimension of trackers_as_action should be 1, "
+             "instead of {}".format(len(trackers_as_actions[0])))
 
+        ambiguous_feature_keys = set()
         pbar = tqdm(zip(trackers_as_states, trackers_as_actions),
                     desc="Processed actions", disable=online)
         for states, actions in pbar:

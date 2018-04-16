@@ -28,7 +28,6 @@ from rasa_core.actions.factories import (
     ensure_action_name_uniqueness)
 from rasa_core.conversation import DefaultTopic
 from rasa_core.conversation import Topic
-from rasa_core.events import ActionExecuted
 from rasa_core.slots import Slot
 from rasa_core.trackers import DialogueStateTracker, SlotSet
 from rasa_core.utils import read_yaml_file
