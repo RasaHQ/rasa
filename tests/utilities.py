@@ -1,21 +1,17 @@
-from __future__ import unicode_literals
-from __future__ import print_function
-from __future__ import division
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
-import os
-
-from builtins import object
 import tempfile
-import pytest
-import json
 
-from rasa_nlu import registry
-from rasa_nlu.project import Project
+import pytest
+import yaml
+from builtins import object
+
 from rasa_nlu.config import RasaNLUModelConfig
-from rasa_nlu.model import Interpreter, Metadata
+from rasa_nlu.model import Interpreter
 from rasa_nlu.train import do_train
-from rasa_nlu.utils import json_to_string
 
 slowtest = pytest.mark.slowtest
 
@@ -31,9 +27,9 @@ def base_test_conf(pipeline_template):
 
 def write_file_config(file_config):
     with tempfile.NamedTemporaryFile("w+",
-                                     suffix="_tmp_config_file.json",
+                                     suffix="_tmp_config_file.yml",
                                      delete=False) as f:
-        f.write(json_to_string(file_config))
+        f.write(yaml.safe_dump(file_config))
         f.flush()
         return f
 

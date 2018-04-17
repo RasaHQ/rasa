@@ -14,6 +14,7 @@ from typing import Optional
 from typing import Set
 from typing import Text
 from typing import Tuple
+from typing import Hashable
 
 from rasa_nlu import config
 from rasa_nlu.config import RasaNLUModelConfig
@@ -103,6 +104,27 @@ class MissingArgumentError(ValueError):
         return self.message
 
 
+class UnsupportedLanguageError(Exception):
+    """Raised when a component is created but the language is not supported.
+
+    Attributes:
+        component -- component name
+        language -- language that component doesn't support
+    """
+
+    def __init__(self, component, language):
+        # type: (Text, Text) -> None
+        self.component = component
+        self.language = language
+
+        super(UnsupportedLanguageError, self).__init__(component, language)
+
+    def __str__(self):
+        return "component {} does not support language {}".format(
+            self.component, self.language
+        )
+
+
 class Component(object):
     """A component is a message processing unit in a pipeline.
 
@@ -143,7 +165,17 @@ class Component(object):
     # within the above described `provides` property.
     requires = []
 
+    # Defines the default configuration parameters of a component
+    # these values can be overwritten in the pipeline configuration
+    # of the model. The component should choose sensible defaults
+    # and should be able to create reasonable results with the defaults.
     defaults = {}
+
+    # Defines what language(s) this component can handle.
+    # This attribute is designed for instance method: `can_handle_language`.
+    # Default value is None which means it can handle all languages.
+    # This is an important feature for backwards compatibility of components.
+    language_list = None
 
     def __init__(self, component_config=None):
         self.component_config = config.override_defaults(
@@ -199,6 +231,13 @@ class Component(object):
         """Creates this component (e.g. before a training is started).
 
         Method can access all configuration parameters."""
+
+        # Check language supporting
+        language = cfg.language
+        if not cls.can_handle_language(language):
+            # check failed
+            raise UnsupportedLanguageError(cls.name, language)
+
         return cls(cfg.for_component(cls.name, cls.defaults))
 
     def provide_context(self):
@@ -287,6 +326,20 @@ class Component(object):
             logger.info("Failed to run partial processing due "
                         "to missing pipeline.")
         return message
+
+    @classmethod
+    def can_handle_language(cls, language):
+        # type: (Hashable) -> bool
+        """Check if component supports a specific language.
+
+        This method can be overwritten when needed. (e.g. dynamically
+        determine which language is supported.)"""
+
+        # if language_list is set to `None` it means: support all languages
+        if language is None or cls.language_list is None:
+            return True
+
+        return language in cls.language_list
 
 
 class ComponentBuilder(object):
