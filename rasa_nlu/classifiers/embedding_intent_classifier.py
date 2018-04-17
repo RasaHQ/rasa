@@ -80,7 +80,7 @@ class EmbeddingIntentClassifier(Component):
         "droprate": 0.2,
 
         # flag if tokenize intents
-        "intent_tokenization_flag": True,
+        "intent_tokenization_flag": False,
         "intent_split_symbol": '_'
     }
 
