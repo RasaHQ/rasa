@@ -1,0 +1,403 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Entity Extraction &mdash; rasa NLU 0.11.4 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="_static/banner.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="rasa NLU 0.11.4 documentation" href="index.html"/>
+        <link rel="next" title="Improving your models from feedback" href="closeloop.html"/>
+        <link rel="prev" title="Using rasa NLU from python" href="python.html"/>
+<link href="_static/css/rasa_theme.css" rel="stylesheet" type="text/css">
+
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> rasa NLU
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.11
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial: A simple restaurant search bot</a></li>
+</ul>
+<p class="caption"><span class="caption-text">User Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migrating.html">Migrating an existing app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Training Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http.html">Using rasa NLU as a HTTP server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python.html">Using rasa NLU from python</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Entity Extraction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#use-cases">Use Cases</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#places-dates-people-organisations">Places, Dates, People, Organisations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#dates-amounts-of-money-durations-distances-ordinals">Dates, Amounts of Money, Durations, Distances, Ordinals</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#custom-domain-specific-entities">Custom, Domain-specific entities</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#returned-entities-object">Returned Entities Object</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="closeloop.html">Improving your models from feedback</a></li>
+<li class="toctree-l1"><a class="reference internal" href="persist.html">Model Persistence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="languages.html">Language Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline.html">Processing Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="evaluation.html">Evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migrations.html">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/RasaHQ/rasa_nlu/projects/2">Roadmap</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Change Log</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">rasa NLU</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Entity Extraction</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/entities.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+
+
+
+
+
+<div class="section" id="entity-extraction">
+<span id="section-entities"></span><h1>Entity Extraction<a class="headerlink" href="#entity-extraction" title="Permalink to this headline">¶</a></h1>
+<p>There are a number of different entity extraction components, which can seem intimidating for new users.
+Here we&#8217;ll go through a few use cases and make recommendations of what to use.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="19%" />
+<col width="12%" />
+<col width="28%" />
+<col width="41%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Component</th>
+<th class="head">Requires</th>
+<th class="head">Model</th>
+<th class="head">notes</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">ner_mitie</span></code></td>
+<td>MITIE</td>
+<td>structured SVM</td>
+<td>good for training custom entities</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">ner_crf</span></code></td>
+<td>crfsuite</td>
+<td>conditional random field</td>
+<td>good for training custom entities</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">ner_spacy</span></code></td>
+<td>spaCy</td>
+<td>averaged perceptron</td>
+<td>provides pre-trained entities</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">ner_duckling</span></code></td>
+<td>duckling</td>
+<td>context-free grammar</td>
+<td>provides pre-trained entities</td>
+</tr>
+</tbody>
+</table>
+<p>The exact required packages can be found in <code class="docutils literal"><span class="pre">dev-requirements.txt</span></code> and they should also be shown when they are missing
+and a component is used that requires them.</p>
+<p>To improve entity extraction, you can use regex features if your entities have a distinctive format (e.g. zipcodes).
+More information can be found in the <a class="reference internal" href="dataformat.html#section-dataformat"><span class="std std-ref">Training Data Format</span></a>.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">To use these components, you will probably want to define a custom pipeline, see <a class="reference internal" href="pipeline.html#section-pipeline"><span class="std std-ref">Processing Pipeline</span></a>.
+You can add multiple ner components to your pipeline; the results from each will be combined in the final output.</p>
+</div>
+<div class="section" id="use-cases">
+<h2>Use Cases<a class="headerlink" href="#use-cases" title="Permalink to this headline">¶</a></h2>
+<p>Here we&#8217;ll outline some common use cases for entity extraction, and make recommendations on which components to use.</p>
+<div class="section" id="places-dates-people-organisations">
+<h3>Places, Dates, People, Organisations<a class="headerlink" href="#places-dates-people-organisations" title="Permalink to this headline">¶</a></h3>
+<p>spaCy has excellent pre-trained named-entity recognisers in a number of models. You can test them out in this <a class="reference external" href="https://demos.explosion.ai/displacy-ent/">awesome interactive demo</a>. We don&#8217;t recommend that you try to train your own NER using spaCy, unless you have a lot of data and know what you are doing. Note that some spaCy models are highly case-sensitive.</p>
+</div>
+<div class="section" id="dates-amounts-of-money-durations-distances-ordinals">
+<h3>Dates, Amounts of Money, Durations, Distances, Ordinals<a class="headerlink" href="#dates-amounts-of-money-durations-distances-ordinals" title="Permalink to this headline">¶</a></h3>
+<p>The <a class="reference external" href="https://duckling.wit.ai/">duckling</a> package does a great job of turning expressions like &#8220;next Thursday at 8pm&#8221; into actual datetime objects that you can use. It can also handle durations like &#8220;two hours&#8221;, amounts of money, distances, etc. Fortunately, there is also a <a class="reference external" href="https://github.com/FraBle/python-duckling">python wrapper</a> for duckling! You can use this component by installing the duckling package from PyPI and adding <code class="docutils literal"><span class="pre">ner_duckling</span></code> to your pipeline.</p>
+</div>
+<div class="section" id="custom-domain-specific-entities">
+<h3>Custom, Domain-specific entities<a class="headerlink" href="#custom-domain-specific-entities" title="Permalink to this headline">¶</a></h3>
+<p>In the introductory tutorial we build a restaurant bot, and create custom entities for location and cuisine.
+The best components for training these domain-specific entity recognisers are the <code class="docutils literal"><span class="pre">ner_mitie</span></code> and <code class="docutils literal"><span class="pre">ner_crf</span></code> components.
+It is recommended that you experiment with both of these to see what works best for your data set.</p>
+</div>
+</div>
+<div class="section" id="returned-entities-object">
+<h2>Returned Entities Object<a class="headerlink" href="#returned-entities-object" title="Permalink to this headline">¶</a></h2>
+<p>In the object returned after parsing there are two fields that show information about how the pipeline impacted the entities returned. The <code class="docutils literal"><span class="pre">extractor</span></code> field of an entity tells you which entity extractor found this particular entity. The <code class="docutils literal"><span class="pre">processors</span></code> field contains the name of components that altered this specific entity.</p>
+<p>The use of synonyms can also cause the <code class="docutils literal"><span class="pre">value</span></code> field not match the <code class="docutils literal"><span class="pre">text</span></code> exactly. Instead it will return the trained synonym.</p>
+<div class="highlight-json"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;show me chinese restaurants&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;intent&quot;</span><span class="p">:</span> <span class="s2">&quot;restaurant_search&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;entities&quot;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="nt">&quot;start&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">,</span>
+      <span class="nt">&quot;end&quot;</span><span class="p">:</span> <span class="mi">15</span><span class="p">,</span>
+      <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;chinese&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;entity&quot;</span><span class="p">:</span> <span class="s2">&quot;cuisine&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;extractor&quot;</span><span class="p">:</span> <span class="s2">&quot;ner_mitie&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;processors&quot;</span><span class="p">:</span> <span class="p">[]</span>
+    <span class="p">}</span>
+  <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="closeloop.html" class="btn btn-neutral float-right" title="Improving your models from feedback" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="python.html" class="btn btn-neutral" title="Using rasa NLU from python" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Rasa Technologies GmbH.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+        <span class="fa fa-book"> Other Versions</span>
+        v: 0.11.4
+        <span class="fa fa-caret-down"></span>
+    </span>
+    <div class="rst-other-versions">
+        <dl>
+            <dt>Tags</dt>
+            <dd><a href="entities.html">0.11.4</a></dd>
+            <dd><a href="../0.11.3/entities.html">0.11.3</a></dd>
+            <dd><a href="../0.11.2/entities.html">0.11.2</a></dd>
+            <dd><a href="../0.11.1/entities.html">0.11.1</a></dd>
+            <dd><a href="../0.11.0/entities.html">0.11.0</a></dd>
+            <dd><a href="../0.10.6/entities.html">0.10.6</a></dd>
+            <dd><a href="../0.9.2/entities.html">0.9.2</a></dd>
+            <dd><a href="../0.8.12/entities.html">0.8.12</a></dd>
+            <dd><a href="../0.7.4/index.html">0.7.4</a></dd>
+        </dl>
+        <dl>
+            <dt>Branches</dt>
+            <dd><a href="../master/entities.html">master</a></dd>
+        </dl>
+    </div>
+</div>
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.11.4',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+  
+ 
+<!-- Global Site Tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-87333416-1"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments)};
+gtag('js', new Date());
+
+gtag('config', 'UA-87333416-1');
+</script>
+
+
+</body>
+</html>

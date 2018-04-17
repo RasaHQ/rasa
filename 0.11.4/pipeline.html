@@ -1,0 +1,838 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Processing Pipeline &mdash; rasa NLU 0.11.4 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="_static/banner.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="rasa NLU 0.11.4 documentation" href="index.html"/>
+        <link rel="next" title="Evaluation" href="evaluation.html"/>
+        <link rel="prev" title="Language Support" href="languages.html"/>
+<link href="_static/css/rasa_theme.css" rel="stylesheet" type="text/css">
+
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> rasa NLU
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.11
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial: A simple restaurant search bot</a></li>
+</ul>
+<p class="caption"><span class="caption-text">User Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migrating.html">Migrating an existing app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Training Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http.html">Using rasa NLU as a HTTP server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python.html">Using rasa NLU from python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="entities.html">Entity Extraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="closeloop.html">Improving your models from feedback</a></li>
+<li class="toctree-l1"><a class="reference internal" href="persist.html">Model Persistence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="languages.html">Language Support</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Processing Pipeline</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#pre-configured-pipelines">Pre-configured Pipelines</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#built-in-components">Built-in Components</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#nlp-mitie">nlp_mitie</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nlp-spacy">nlp_spacy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#intent-featurizer-mitie">intent_featurizer_mitie</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#intent-featurizer-spacy">intent_featurizer_spacy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#intent-featurizer-ngrams">intent_featurizer_ngrams</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#intent-classifier-keyword">intent_classifier_keyword</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#intent-classifier-mitie">intent_classifier_mitie</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#intent-classifier-sklearn">intent_classifier_sklearn</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#intent-entity-featurizer-regex">intent_entity_featurizer_regex</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#tokenizer-whitespace">tokenizer_whitespace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#tokenizer-mitie">tokenizer_mitie</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#tokenizer-spacy">tokenizer_spacy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ner-mitie">ner_mitie</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ner-spacy">ner_spacy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ner-synonyms">ner_synonyms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ner-crf">ner_crf</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ner-duckling">ner_duckling</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#creating-new-components">Creating new Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#component-lifecycle">Component Lifecycle</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="evaluation.html">Evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migrations.html">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/RasaHQ/rasa_nlu/projects/2">Roadmap</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Change Log</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">rasa NLU</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Processing Pipeline</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/pipeline.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+
+
+
+
+
+<div class="section" id="processing-pipeline">
+<span id="section-pipeline"></span><h1>Processing Pipeline<a class="headerlink" href="#processing-pipeline" title="Permalink to this headline">¶</a></h1>
+<p>The process of incoming messages is split into different components. These components are executed one after another
+in a so called processing pipeline. There are components for entity extraction, for intent classification,
+pre-processing and there will be many more in the future.</p>
+<p>Each component processes the input and creates an output. The ouput can be used by any component that comes after
+this component in the pipeline. There are components which only produce information that is used by other components
+in the pipeline and there are other components that produce <code class="docutils literal"><span class="pre">Output</span></code> attributes which will be returned after
+the processing has finished. For example, for the sentence <code class="docutils literal"><span class="pre">&quot;I</span> <span class="pre">am</span> <span class="pre">looking</span> <span class="pre">for</span> <span class="pre">Chinese</span> <span class="pre">food&quot;</span></code> the output</p>
+<div class="highlight-json"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;I am looking for Chinese food&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;entities&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span><span class="nt">&quot;start&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">,</span> <span class="nt">&quot;end&quot;</span><span class="p">:</span> <span class="mi">15</span><span class="p">,</span> <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;chinese&quot;</span><span class="p">,</span> <span class="nt">&quot;entity&quot;</span><span class="p">:</span> <span class="s2">&quot;cuisine&quot;</span><span class="p">,</span> <span class="nt">&quot;extractor&quot;</span><span class="p">:</span> <span class="s2">&quot;ner_crf&quot;</span><span class="p">}</span>
+    <span class="p">],</span>
+    <span class="nt">&quot;intent&quot;</span><span class="p">:</span> <span class="p">{</span><span class="nt">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">0.6485910906220309</span><span class="p">,</span> <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;restaurant_search&quot;</span><span class="p">},</span>
+    <span class="nt">&quot;intent_ranking&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span><span class="nt">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">0.6485910906220309</span><span class="p">,</span> <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;restaurant_search&quot;</span><span class="p">},</span>
+        <span class="p">{</span><span class="nt">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">0.1416153159565678</span><span class="p">,</span> <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;affirm&quot;</span><span class="p">}</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>is created as a combination of the results of the different components in the pre-configured pipeline <code class="docutils literal"><span class="pre">spacy_sklearn</span></code>.
+For example, the <code class="docutils literal"><span class="pre">entities</span></code> attribute is created by the <code class="docutils literal"><span class="pre">ner_crf</span></code> component.</p>
+<div class="section" id="pre-configured-pipelines">
+<h2>Pre-configured Pipelines<a class="headerlink" href="#pre-configured-pipelines" title="Permalink to this headline">¶</a></h2>
+<p>To ease the burden of coming up with your own processing pipelines, we provide a couple of ready to use templates
+which can be used by setting the <code class="docutils literal"><span class="pre">pipeline</span></code> configuration value to the name of the template you want to use.
+Here is a list of the existing templates:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="8%" />
+<col width="92%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">template name</th>
+<th class="head">corresponding pipeline</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>spacy_sklearn</td>
+<td><code class="docutils literal"><span class="pre">[&quot;nlp_spacy&quot;,</span> <span class="pre">&quot;tokenizer_spacy&quot;,</span> <span class="pre">&quot;intent_entity_featurizer_regex&quot;,</span> <span class="pre">&quot;intent_featurizer_spacy&quot;,</span> <span class="pre">&quot;ner_crf&quot;,</span> <span class="pre">&quot;ner_synonyms&quot;,</span>&#160; <span class="pre">&quot;intent_classifier_sklearn&quot;]</span></code></td>
+</tr>
+<tr class="row-odd"><td>mitie</td>
+<td><code class="docutils literal"><span class="pre">[&quot;nlp_mitie&quot;,</span> <span class="pre">&quot;tokenizer_mitie&quot;,</span> <span class="pre">&quot;ner_mitie&quot;,</span> <span class="pre">&quot;ner_synonyms&quot;,</span> <span class="pre">&quot;intent_entity_featurizer_regex&quot;,</span> <span class="pre">&quot;intent_classifier_mitie&quot;]</span></code></td>
+</tr>
+<tr class="row-even"><td>mitie_sklearn</td>
+<td><code class="docutils literal"><span class="pre">[&quot;nlp_mitie&quot;,</span> <span class="pre">&quot;tokenizer_mitie&quot;,</span> <span class="pre">&quot;ner_mitie&quot;,</span> <span class="pre">&quot;ner_synonyms&quot;,</span> <span class="pre">&quot;intent_entity_featurizer_regex&quot;,</span> <span class="pre">&quot;intent_featurizer_mitie&quot;,</span> <span class="pre">&quot;intent_classifier_sklearn&quot;]</span></code></td>
+</tr>
+<tr class="row-odd"><td>keyword</td>
+<td><code class="docutils literal"><span class="pre">[&quot;intent_classifier_keyword&quot;]</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Creating your own pipelines is possible by directly passing the names of the components to rasa NLU in the <code class="docutils literal"><span class="pre">pipeline</span></code>
+configuration variable, e.g. <code class="docutils literal"><span class="pre">&quot;pipeline&quot;:</span> <span class="pre">[&quot;nlp_spacy&quot;,</span> <span class="pre">&quot;ner_crf&quot;,</span> <span class="pre">&quot;ner_synonyms&quot;]</span></code>. This creates a pipeline
+that only does entity recognition, but no intent classification. Hence, the output will not contain any useful intents.</p>
+</div>
+<div class="section" id="built-in-components">
+<h2>Built-in Components<a class="headerlink" href="#built-in-components" title="Permalink to this headline">¶</a></h2>
+<p>Short explanation of every components and it&#8217;s attributes. If you are looking for more details, you should have
+a look at the corresponding source code for the component. <code class="docutils literal"><span class="pre">Output</span></code> describes, what each component adds to the final
+output result of processing a message. If no output is present, the component is most likely a preprocessor for another
+component.</p>
+<div class="section" id="nlp-mitie">
+<h3>nlp_mitie<a class="headerlink" href="#nlp-mitie" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body">MITIE initializer</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body">nothing</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">Initializes mitie structures. Every mitie component relies on this, hence this should be put at the beginning
+of every pipeline that uses any mitie components.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="nlp-spacy">
+<h3>nlp_spacy<a class="headerlink" href="#nlp-spacy" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body">spacy language initializer</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body">nothing</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">Initializes spacy structures. Every spacy component relies on this, hence this should be put at the beginning
+of every pipeline that uses any spacy components.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="intent-featurizer-mitie">
+<h3>intent_featurizer_mitie<a class="headerlink" href="#intent-featurizer-mitie" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">MITIE intent featurizer</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first">nothing, used as an input to intent classifiers that need intent features (e.g. <code class="docutils literal"><span class="pre">intent_classifier_sklearn</span></code>)</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Creates feature for intent classification using the MITIE featurizer.</p>
+<div class="last admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">NOT used by the <code class="docutils literal"><span class="pre">intent_classifier_mitie</span></code> component. Currently, only <code class="docutils literal"><span class="pre">intent_classifier_sklearn</span></code> is able
+to use precomputed features.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="intent-featurizer-spacy">
+<h3>intent_featurizer_spacy<a class="headerlink" href="#intent-featurizer-spacy" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body">spacy intent featurizer</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body">nothing, used as an input to intent classifiers that need intent features (e.g. <code class="docutils literal"><span class="pre">intent_classifier_sklearn</span></code>)</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">Creates feature for intent classification using the spacy featurizer.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="intent-featurizer-ngrams">
+<h3>intent_featurizer_ngrams<a class="headerlink" href="#intent-featurizer-ngrams" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Appends char-ngram features to feature vector</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first">nothing, appends its features to an existing feature vector generated by another intent featurizer</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">This featurizer appends character ngram features to a feature vector. During training the component looks for the
+most common character sequences (e.g. <code class="docutils literal"><span class="pre">app</span></code> or <code class="docutils literal"><span class="pre">ing</span></code>). The added features represent a boolean flag if the
+character sequence is present in the word sequence or not.</p>
+<div class="last admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">There needs to be another intent featurizer previous to this one in the pipeline!</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="intent-classifier-keyword">
+<h3>intent_classifier_keyword<a class="headerlink" href="#intent-classifier-keyword" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Simple keyword matching intent classifier.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first"><code class="docutils literal"><span class="pre">intent</span></code></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Output-Example:</th><td class="field-body"><div class="first highlight-json"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;intent&quot;</span><span class="p">:</span> <span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;greet&quot;</span><span class="p">,</span> <span class="nt">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">0.98343</span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Description:</th><td class="field-body"><p class="first last">This classifier is mostly used as a placeholder. It is able to recognize <cite>hello</cite> and
+<cite>goodbye</cite> intents by searching for these keywords in the passed messages.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="intent-classifier-mitie">
+<h3>intent_classifier_mitie<a class="headerlink" href="#intent-classifier-mitie" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">MITIE intent classifier (using a <a class="reference external" href="https://github.com/mit-nlp/MITIE/blob/master/examples/python/text_categorizer_pure_model.py">text categorizer</a>)</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first"><code class="docutils literal"><span class="pre">intent</span></code></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Output-Example:</th><td class="field-body"><div class="first highlight-json"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;intent&quot;</span><span class="p">:</span> <span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;greet&quot;</span><span class="p">,</span> <span class="nt">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">0.98343</span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Description:</th><td class="field-body"><p class="first last">This classifier uses MITIE to perform intent classification. The underlying classifier
+is using a multi class linear SVM with a sparse linear kernel (see <a class="reference external" href="https://github.com/mit-nlp/MITIE/blob/master/mitielib/src/text_categorizer_trainer.cpp#L222">mitie trainer code</a>).</p>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="intent-classifier-sklearn">
+<h3>intent_classifier_sklearn<a class="headerlink" href="#intent-classifier-sklearn" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">sklearn intent classifier</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first"><code class="docutils literal"><span class="pre">intent</span></code> and <code class="docutils literal"><span class="pre">intent_ranking</span></code></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Output-Example:</th><td class="field-body"><div class="first highlight-json"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;intent&quot;</span><span class="p">:</span> <span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;greet&quot;</span><span class="p">,</span> <span class="nt">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">0.78343</span><span class="p">},</span>
+    <span class="nt">&quot;intent_ranking&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="nt">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">0.1485910906220309</span><span class="p">,</span>
+            <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;goodbye&quot;</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+            <span class="nt">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">0.08161531595656784</span><span class="p">,</span>
+            <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;restaurant_search&quot;</span>
+        <span class="p">}</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Description:</th><td class="field-body"><p class="first last">The sklearn intent classifier trains a linear SVM which gets optimized using a grid search. In addition
+to other classifiers it also provides rankings of the labels that did not &#8220;win&#8221;. The spacy intent classifier
+needs to be preceded by a featurizer in the pipeline. This featurizer creates the features used for the classification.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="intent-entity-featurizer-regex">
+<h3>intent_entity_featurizer_regex<a class="headerlink" href="#intent-entity-featurizer-regex" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body">regex feature creation to support intent and entity classification</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><code class="docutils literal"><span class="pre">text_features</span></code> and <code class="docutils literal"><span class="pre">tokens.pattern</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">During training, the regex intent featurizer creates a list of <cite>regular expressions</cite> defined in the training data format.
+If an expression is found in the input, a feature will be set, that will later be fed into intent classifier / entity
+extractor to simplify classification (assuming the classifier has learned during the training phase, that this set
+feature indicates a certain intent). Regex features for entity extraction are currently only supported by the
+<code class="docutils literal"><span class="pre">ner_crf</span></code> component!</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="tokenizer-whitespace">
+<h3>tokenizer_whitespace<a class="headerlink" href="#tokenizer-whitespace" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body">Tokenizer using whitespaces as a separator</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body">nothing</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">Creates a token for every whitespace separated character sequence. Can be used to define tokesn for the MITIE entity
+extractor.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="tokenizer-mitie">
+<h3>tokenizer_mitie<a class="headerlink" href="#tokenizer-mitie" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body">Tokenizer using MITIE</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body">nothing</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">Creates tokens using the MITIE tokenizer. Can be used to define tokens for the MITIE entity extractor.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="tokenizer-spacy">
+<h3>tokenizer_spacy<a class="headerlink" href="#tokenizer-spacy" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body">Tokenizer using spacy</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body">nothing</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">Creates tokens using the spacy tokenizer. Can be used to define tokens for the MITIE entity extractor.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="ner-mitie">
+<h3>ner_mitie<a class="headerlink" href="#ner-mitie" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">MITIE entity extraction (using a <a class="reference external" href="https://github.com/mit-nlp/MITIE/blob/master/mitielib/src/ner_trainer.cpp">mitie ner trainer</a>)</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first">appends <code class="docutils literal"><span class="pre">entities</span></code></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Output-Example:</th><td class="field-body"><div class="first highlight-json"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;entities&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;New York City&quot;</span><span class="p">,</span>
+                  <span class="nt">&quot;start&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+                  <span class="nt">&quot;end&quot;</span><span class="p">:</span> <span class="mi">33</span><span class="p">,</span>
+                  <span class="nt">&quot;entity&quot;</span><span class="p">:</span> <span class="s2">&quot;city&quot;</span><span class="p">,</span>
+                  <span class="nt">&quot;extractor&quot;</span><span class="p">:</span> <span class="s2">&quot;ner_mitie&quot;</span><span class="p">}]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Description:</th><td class="field-body"><p class="first last">This uses the MITIE entitiy extraction to find entities in a message. The underlying classifier
+is using a multi class linear SVM with a sparse linear kernel and custom features.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="ner-spacy">
+<h3>ner_spacy<a class="headerlink" href="#ner-spacy" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">spacy entity extraction</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first">appends <code class="docutils literal"><span class="pre">entities</span></code></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Output-Example:</th><td class="field-body"><div class="first highlight-json"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;entities&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;New York City&quot;</span><span class="p">,</span>
+                  <span class="nt">&quot;start&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+                  <span class="nt">&quot;end&quot;</span><span class="p">:</span> <span class="mi">33</span><span class="p">,</span>
+                  <span class="nt">&quot;entity&quot;</span><span class="p">:</span> <span class="s2">&quot;city&quot;</span><span class="p">,</span>
+                  <span class="nt">&quot;extractor&quot;</span><span class="p">:</span> <span class="s2">&quot;ner_spacy&quot;</span><span class="p">}]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Description:</th><td class="field-body"><p class="first last">Using spacy this component predicts the entities of a message. spacy uses a statistical BILUO transition model.
+As of now, this component can only use the spacy builtin entity extraction models and can not be retrained.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="ner-synonyms">
+<h3>ner_synonyms<a class="headerlink" href="#ner-synonyms" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Maps synonymous entity values to the same value.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first">modifies existing entities that previous entity extraction components found</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">If the training data contains defined synonyms (by using the <code class="docutils literal"><span class="pre">value</span></code> attribute on the entity examples).
+this component will make sure that detected entity values will be mapped to the same value. For example,
+if your training data contains the following examples:</p>
+<div class="highlight-json"><div class="highlight"><pre><span></span><span class="p">[{</span>
+  <span class="nt">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;I moved to New York City&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;intent&quot;</span><span class="p">:</span> <span class="s2">&quot;inform_relocation&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;entities&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;nyc&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;start&quot;</span><span class="p">:</span> <span class="mi">11</span><span class="p">,</span>
+                <span class="nt">&quot;end&quot;</span><span class="p">:</span> <span class="mi">24</span><span class="p">,</span>
+                <span class="nt">&quot;entity&quot;</span><span class="p">:</span> <span class="s2">&quot;city&quot;</span><span class="p">,</span>
+               <span class="p">}]</span>
+<span class="p">},</span>
+<span class="p">{</span>
+  <span class="nt">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;I got a new flat in NYC.&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;intent&quot;</span><span class="p">:</span> <span class="s2">&quot;inform_relocation&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;entities&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;nyc&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;start&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+                <span class="nt">&quot;end&quot;</span><span class="p">:</span> <span class="mi">23</span><span class="p">,</span>
+                <span class="nt">&quot;entity&quot;</span><span class="p">:</span> <span class="s2">&quot;city&quot;</span><span class="p">,</span>
+               <span class="p">}]</span>
+<span class="p">}]</span>
+</pre></div>
+</div>
+<p class="last">this component will allow you to map the entities <code class="docutils literal"><span class="pre">New</span> <span class="pre">York</span> <span class="pre">City</span></code> and <code class="docutils literal"><span class="pre">NYC</span></code> to <code class="docutils literal"><span class="pre">nyc</span></code>. The entitiy
+extraction will return <code class="docutils literal"><span class="pre">nyc</span></code> even though the message contains <code class="docutils literal"><span class="pre">NYC</span></code>. When this component changes an
+exisiting entity, it appends itself to the processor list of this entity.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="ner-crf">
+<h3>ner_crf<a class="headerlink" href="#ner-crf" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">conditional random field entity extraction</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first">appends <code class="docutils literal"><span class="pre">entities</span></code></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Output-Example:</th><td class="field-body"><div class="first highlight-json"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;entities&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="s2">&quot;New York City&quot;</span><span class="p">,</span>
+                  <span class="nt">&quot;start&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+                  <span class="nt">&quot;end&quot;</span><span class="p">:</span> <span class="mi">33</span><span class="p">,</span>
+                  <span class="nt">&quot;entity&quot;</span><span class="p">:</span> <span class="s2">&quot;city&quot;</span><span class="p">,</span>
+                  <span class="nt">&quot;extractor&quot;</span><span class="p">:</span> <span class="s2">&quot;ner_crf&quot;</span><span class="p">}]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Description:</th><td class="field-body"><p class="first last">This component implements conditional random fields to do named entity recognition.
+CRFs can be thought of as an undirected Markov chain where the time steps are words
+and the states are entity classes. Features of the words (capitalisation, POS tagging,
+etc.) give probabilities to certain entity classes, as are transitions between
+neighbouring entity tags: the most likely set of tags is then calculated and returned.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="ner-duckling">
+<span id="section-pipeline-duckling"></span><h3>ner_duckling<a class="headerlink" href="#ner-duckling" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Adds duckling support to the pipeline to unify entity types (e.g. to retrieve common date / number formats)</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first">appends <code class="docutils literal"><span class="pre">entities</span></code></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Output-Example:</th><td class="field-body"><div class="first highlight-json"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;entities&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="nt">&quot;end&quot;</span><span class="p">:</span> <span class="mi">53</span><span class="p">,</span>
+                  <span class="nt">&quot;entity&quot;</span><span class="p">:</span> <span class="s2">&quot;time&quot;</span><span class="p">,</span>
+                  <span class="nt">&quot;start&quot;</span><span class="p">:</span> <span class="mi">48</span><span class="p">,</span>
+                  <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;2017-04-10T00:00:00.000+02:00&quot;</span><span class="p">,</span>
+                  <span class="nt">&quot;extractor&quot;</span><span class="p">:</span> <span class="s2">&quot;ner_duckling&quot;</span><span class="p">}]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Description:</th><td class="field-body"><p class="first last">Duckling allows to recognize dates, numbers, distances and other structured entities
+and normalizes them (for a reference of all available entities
+see <a class="reference external" href="https://duckling.wit.ai/#getting-started">the duckling documentation</a>).
+The component recognizes the entity types defined by the <a class="reference internal" href="config.html#section-configuration-duckling-dimensions"><span class="std std-ref">duckling dimensions configuration variable</span></a>.
+Please be aware that duckling tries to extract as many entity types as possible without
+providing a ranking. For example, if you specify both <code class="docutils literal"><span class="pre">number</span></code> and <code class="docutils literal"><span class="pre">time</span></code> as dimensions
+for the duckling component, the component will extract two entities: <code class="docutils literal"><span class="pre">10</span></code> as a number and
+<code class="docutils literal"><span class="pre">in</span> <span class="pre">10</span> <span class="pre">minutes</span></code> as a time from the text <code class="docutils literal"><span class="pre">I</span> <span class="pre">will</span> <span class="pre">be</span> <span class="pre">there</span> <span class="pre">in</span> <span class="pre">10</span> <span class="pre">minutes</span></code>. In such a
+situation, your application would have to decide which entity type is be the correct one.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="creating-new-components">
+<h2>Creating new Components<a class="headerlink" href="#creating-new-components" title="Permalink to this headline">¶</a></h2>
+<p>Currently you need to rely on the components that are shipped with rasa NLU, but we plan to add the possibility to
+create your own components in your code. Nevertheless, we are looking forward to your contribution of a new component
+(e.g. a component to do sentiment analysis). A glimpse into the code of <code class="docutils literal"><span class="pre">rasa_nlu.components.Component</span></code> will reveal
+which functions need to be implemented to create a new component.</p>
+</div>
+<div class="section" id="component-lifecycle">
+<h2>Component Lifecycle<a class="headerlink" href="#component-lifecycle" title="Permalink to this headline">¶</a></h2>
+<p>Every component can implement several methods from the <code class="docutils literal"><span class="pre">Component</span></code> base class; in a pipeline these different methods
+will be called in a specific order. Lets assume, we added the following pipeline to our config:
+<code class="docutils literal"><span class="pre">&quot;pipeline&quot;:</span> <span class="pre">[&quot;Component</span> <span class="pre">A&quot;,</span> <span class="pre">&quot;Component</span> <span class="pre">B&quot;,</span> <span class="pre">&quot;Last</span> <span class="pre">Component&quot;]</span></code>.
+The image shows the call order during the training of this pipeline :</p>
+<img alt="_images/component_lifecycle.png" src="_images/component_lifecycle.png" />
+<p>Before the first component is created using the <code class="docutils literal"><span class="pre">create</span></code> function, a so called <code class="docutils literal"><span class="pre">context</span></code> is created (which is
+nothing more than a python dict). This context is used to pass information between the components. For example,
+one component can calculate feature vectors for the training data, store that within the context and another
+component can retrieve these feature vectors from the context and do intent classification.</p>
+<p>Initially the context is filled with all configuration values, the arrows in the image show the call order
+and visualize the path of the passed context. After all components are trained and persisted, the
+final context dictionary is used to persist the model&#8217;s metadata.</p>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="evaluation.html" class="btn btn-neutral float-right" title="Evaluation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="languages.html" class="btn btn-neutral" title="Language Support" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Rasa Technologies GmbH.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+        <span class="fa fa-book"> Other Versions</span>
+        v: 0.11.4
+        <span class="fa fa-caret-down"></span>
+    </span>
+    <div class="rst-other-versions">
+        <dl>
+            <dt>Tags</dt>
+            <dd><a href="pipeline.html">0.11.4</a></dd>
+            <dd><a href="../0.11.3/pipeline.html">0.11.3</a></dd>
+            <dd><a href="../0.11.2/pipeline.html">0.11.2</a></dd>
+            <dd><a href="../0.11.1/pipeline.html">0.11.1</a></dd>
+            <dd><a href="../0.11.0/pipeline.html">0.11.0</a></dd>
+            <dd><a href="../0.10.6/pipeline.html">0.10.6</a></dd>
+            <dd><a href="../0.9.2/pipeline.html">0.9.2</a></dd>
+            <dd><a href="../0.8.12/pipeline.html">0.8.12</a></dd>
+            <dd><a href="../0.7.4/index.html">0.7.4</a></dd>
+        </dl>
+        <dl>
+            <dt>Branches</dt>
+            <dd><a href="../master/pipeline.html">master</a></dd>
+        </dl>
+    </div>
+</div>
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.11.4',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+  
+ 
+<!-- Global Site Tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-87333416-1"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments)};
+gtag('js', new Date());
+
+gtag('config', 'UA-87333416-1');
+</script>
+
+
+</body>
+</html>

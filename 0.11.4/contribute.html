@@ -1,0 +1,359 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Contributing &mdash; rasa NLU 0.11.4 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="_static/banner.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="rasa NLU 0.11.4 documentation" href="index.html"/>
+        <link rel="next" title="Change Log" href="changelog.html"/>
+        <link rel="prev" title="License" href="license.html"/>
+<link href="_static/css/rasa_theme.css" rel="stylesheet" type="text/css">
+
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> rasa NLU
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.11
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial: A simple restaurant search bot</a></li>
+</ul>
+<p class="caption"><span class="caption-text">User Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migrating.html">Migrating an existing app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Training Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http.html">Using rasa NLU as a HTTP server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python.html">Using rasa NLU from python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="entities.html">Entity Extraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="closeloop.html">Improving your models from feedback</a></li>
+<li class="toctree-l1"><a class="reference internal" href="persist.html">Model Persistence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="languages.html">Language Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline.html">Processing Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="evaluation.html">Evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migrations.html">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Developer Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference external" href="https://github.com/RasaHQ/rasa_nlu/projects/2">Roadmap</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Contributing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#python-conventions">Python Conventions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#python-2-and-3-cross-compatibility">Python 2 and 3 Cross Compatibility</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#code-of-conduct">Code of conduct</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#documentation">Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Change Log</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">rasa NLU</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Contributing</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/contribute.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+
+
+
+
+
+<div class="section" id="contributing">
+<h1>Contributing<a class="headerlink" href="#contributing" title="Permalink to this headline">¶</a></h1>
+<p>Contributions are very much encouraged! Please create an issue before doing any work to avoid disappointment.</p>
+<p>We created a tag that should get you started quickly if you are searching for
+<a class="reference external" href="https://github.com/RasaHQ/rasa_nlu/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22">interesting topics to get started</a>.</p>
+<div class="section" id="python-conventions">
+<h2>Python Conventions<a class="headerlink" href="#python-conventions" title="Permalink to this headline">¶</a></h2>
+<p>Python code should follow the pep-8 spec.</p>
+</div>
+<div class="section" id="python-2-and-3-cross-compatibility">
+<h2>Python 2 and 3 Cross Compatibility<a class="headerlink" href="#python-2-and-3-cross-compatibility" title="Permalink to this headline">¶</a></h2>
+<p>To ensure cross compatibility between Python 2 and 3 we prioritize Python 3 conventions.
+Keep in mind that:</p>
+<ul class="simple">
+<li>all string literals are unicode strings</li>
+<li>division generates floating point numbers. Use <code class="docutils literal"><span class="pre">//</span></code> for truncated division</li>
+<li>some built-ins, e.g. <code class="docutils literal"><span class="pre">map</span></code> and <code class="docutils literal"><span class="pre">filter</span></code> return iterators in Python 3. If you want to make use of them import the Python 3 version of them from <code class="docutils literal"><span class="pre">builtins</span></code>. Otherwise use list comprehensions, which work uniformly across versions</li>
+<li>use <code class="docutils literal"><span class="pre">io.open</span></code> instead of the builtin <code class="docutils literal"><span class="pre">open</span></code> when working with files</li>
+<li>The following imports from <code class="docutils literal"><span class="pre">__future__</span></code> are mandatory in every python file: <code class="docutils literal"><span class="pre">unicode_literals</span></code>, <code class="docutils literal"><span class="pre">print_function</span></code>, <code class="docutils literal"><span class="pre">division</span></code>, and <code class="docutils literal"><span class="pre">absolute_import</span></code></li>
+</ul>
+<p>Please refer to this <a class="reference external" href="http://python-future.org/compatible_idioms.html#">cheat sheet</a> to learn how to write different constructs compatible with Python 2 and 3.</p>
+</div>
+<div class="section" id="code-of-conduct">
+<h2>Code of conduct<a class="headerlink" href="#code-of-conduct" title="Permalink to this headline">¶</a></h2>
+<p>rasa NLU adheres to the <a class="reference external" href="http://contributor-covenant.org/version/1/4/">Contributor Covenant Code of Conduct</a>.
+By participating, you are expected to uphold this code.</p>
+</div>
+<div class="section" id="documentation">
+<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
+<p>Everything should be properly documented. To locally test the documentation you need to install</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>brew install sphinx
+pip install sphinx_rtd_theme
+</pre></div>
+</div>
+<p>After that, you can compile and view the documentation using:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span><span class="nb">cd</span> docs
+make html
+<span class="nb">cd</span> _build/html
+python -m SimpleHTTPServer <span class="m">8000</span> .
+<span class="c1"># python 3: python -m http.server</span>
+</pre></div>
+</div>
+<p>The documentation will be running on <a class="reference external" href="http://localhost:8000/">http://localhost:8000/</a>.</p>
+<p>Code snippets that are part of the documentation can be tested using</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>make doctest
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="changelog.html" class="btn btn-neutral float-right" title="Change Log" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="license.html" class="btn btn-neutral" title="License" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Rasa Technologies GmbH.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+        <span class="fa fa-book"> Other Versions</span>
+        v: 0.11.4
+        <span class="fa fa-caret-down"></span>
+    </span>
+    <div class="rst-other-versions">
+        <dl>
+            <dt>Tags</dt>
+            <dd><a href="contribute.html">0.11.4</a></dd>
+            <dd><a href="../0.11.3/contribute.html">0.11.3</a></dd>
+            <dd><a href="../0.11.2/contribute.html">0.11.2</a></dd>
+            <dd><a href="../0.11.1/contribute.html">0.11.1</a></dd>
+            <dd><a href="../0.11.0/contribute.html">0.11.0</a></dd>
+            <dd><a href="../0.10.6/contribute.html">0.10.6</a></dd>
+            <dd><a href="../0.9.2/contribute.html">0.9.2</a></dd>
+            <dd><a href="../0.8.12/contribute.html">0.8.12</a></dd>
+            <dd><a href="../0.7.4/contribute.html">0.7.4</a></dd>
+        </dl>
+        <dl>
+            <dt>Branches</dt>
+            <dd><a href="../master/contribute.html">master</a></dd>
+        </dl>
+    </div>
+</div>
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.11.4',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+  
+ 
+<!-- Global Site Tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-87333416-1"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments)};
+gtag('js', new Date());
+
+gtag('config', 'UA-87333416-1');
+</script>
+
+
+</body>
+</html>

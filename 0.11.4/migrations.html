@@ -1,0 +1,402 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Migration Guide &mdash; rasa NLU 0.11.4 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="_static/banner.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="rasa NLU 0.11.4 documentation" href="index.html"/>
+        <link rel="next" title="License" href="license.html"/>
+        <link rel="prev" title="Frequently Asked Questions" href="faq.html"/>
+<link href="_static/css/rasa_theme.css" rel="stylesheet" type="text/css">
+
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> rasa NLU
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.11
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial: A simple restaurant search bot</a></li>
+</ul>
+<p class="caption"><span class="caption-text">User Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migrating.html">Migrating an existing app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Training Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http.html">Using rasa NLU as a HTTP server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python.html">Using rasa NLU from python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="entities.html">Entity Extraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="closeloop.html">Improving your models from feedback</a></li>
+<li class="toctree-l1"><a class="reference internal" href="persist.html">Model Persistence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="languages.html">Language Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline.html">Processing Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="evaluation.html">Evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Migration Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#x-to-0-10-0">0.9.x to 0.10.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#x-to-0-9-x">0.8.x to 0.9.x</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#x-to-0-8-x">0.7.x to 0.8.x</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#x-to-0-7-x">0.6.x to 0.7.x</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/RasaHQ/rasa_nlu/projects/2">Roadmap</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Change Log</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">rasa NLU</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Migration Guide</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/migrations.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+
+
+
+
+
+<div class="section" id="migration-guide">
+<h1>Migration Guide<a class="headerlink" href="#migration-guide" title="Permalink to this headline">¶</a></h1>
+<p>This page contains information about changes between major versions and
+how you can migrate from one version to another.</p>
+<div class="section" id="x-to-0-10-0">
+<h2>0.9.x to 0.10.0<a class="headerlink" href="#x-to-0-10-0" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>We introduced a new concept called a <code class="docutils literal"><span class="pre">project</span></code>. You can have multiple versions
+of a model trained for a project. E.g. you can train an initial model and
+add more training data and retrain that project. This will result in a new
+model version for the same project. This allows you to, allways request
+the latest model version from the http server and makes the model handling
+more structured.</li>
+<li>If you want to reuse trained models you need to move them in a directory named
+after the project. E.g. if you already got a trained model in directory <code class="docutils literal"><span class="pre">my_root/model_20170628-002704</span></code>
+you need to move that to <code class="docutils literal"><span class="pre">my_root/my_project/model_20170628-002704</span></code>. Your
+new projects name will be <code class="docutils literal"><span class="pre">my_project</span></code> and you can query the model using the
+http server using <code class="docutils literal"><span class="pre">curl</span> <span class="pre">http://localhost:5000/parse?q=hello%20there&amp;project=my_project</span></code></li>
+<li>Docs moved to <a class="reference external" href="https://rasahq.github.io/rasa_nlu/">https://rasahq.github.io/rasa_nlu/</a></li>
+<li>Renamed <code class="docutils literal"><span class="pre">name</span></code> parameter to <code class="docutils literal"><span class="pre">project</span></code>. This means for training requests you now need to pass the <code class="docutils literal"><span class="pre">project</span> <span class="pre">parameter</span>
+<span class="pre">instead</span> <span class="pre">of</span> <span class="pre">``name</span></code>, e.g. <code class="docutils literal"><span class="pre">POST</span> <span class="pre">/train?project=my_project_name</span></code> with the body of the
+request containing the training data</li>
+<li>Adapted remote cloud storages to support projects. This is a backwards incompatible change,
+and unfortunately you need to retrain uploaded models and reupload them.</li>
+</ul>
+</div>
+<div class="section" id="x-to-0-9-x">
+<h2>0.8.x to 0.9.x<a class="headerlink" href="#x-to-0-9-x" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>add <code class="docutils literal"><span class="pre">tokenizer_spacy</span></code> to trained spacy_sklearn models metadata (right after the <code class="docutils literal"><span class="pre">nlp_spacy</span></code>). alternative is to retrain the model</li>
+</ul>
+</div>
+<div class="section" id="x-to-0-8-x">
+<h2>0.7.x to 0.8.x<a class="headerlink" href="#x-to-0-8-x" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p class="first">The training and loading capability for the spacy entity extraction was dropped in favor of the new CRF extractor. That means models need to be retrained using the crf extractor.</p>
+</li>
+<li><p class="first">The parameter and configuration value name of <code class="docutils literal"><span class="pre">backend</span></code> changed to <code class="docutils literal"><span class="pre">pipeline</span></code>.</p>
+</li>
+<li><p class="first">There have been changes to the model metadata format. You can either retrain your models or change the stored
+metadata.json:</p>
+<blockquote>
+<div><ul class="simple">
+<li>rename <code class="docutils literal"><span class="pre">language_name</span></code> to <code class="docutils literal"><span class="pre">language</span></code></li>
+<li>rename <code class="docutils literal"><span class="pre">backend</span></code> to <code class="docutils literal"><span class="pre">pipeline</span></code></li>
+<li>for mitie models you need to replace <code class="docutils literal"><span class="pre">feature_extractor</span></code> with <code class="docutils literal"><span class="pre">mitie_feature_extractor_fingerprint</span></code>.
+That fingerprint depends on the language you are using, for <code class="docutils literal"><span class="pre">en</span></code> it
+is <code class="docutils literal"><span class="pre">&quot;mitie_feature_extractor_fingerprint&quot;:</span> <span class="pre">10023965992282753551</span></code>.</li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</div>
+<div class="section" id="x-to-0-7-x">
+<h2>0.6.x to 0.7.x<a class="headerlink" href="#x-to-0-7-x" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p class="first">The parameter and configuration value name of <code class="docutils literal"><span class="pre">server_model_dir</span></code> changed to <code class="docutils literal"><span class="pre">server_model_dirs</span></code>.</p>
+</li>
+<li><p class="first">The parameter and configuration value name of <code class="docutils literal"><span class="pre">write</span></code> changed to <code class="docutils literal"><span class="pre">response_log</span></code>. It now configures the
+<em>directory</em> where the logs should be written to (not a file!)</p>
+</li>
+<li><p class="first">The model metadata format has changed. All paths are now relative with respect to the <code class="docutils literal"><span class="pre">path</span></code> specified in the
+configuration during training and loading. If you want to run models that are trained with a
+version prev to 0.7 you need to adapt the paths manually in <code class="docutils literal"><span class="pre">metadata.json</span></code> from</p>
+<div class="highlight-json"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;trained_at&quot;</span><span class="p">:</span> <span class="s2">&quot;20170304-191111&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;intent_classifier&quot;</span><span class="p">:</span> <span class="s2">&quot;model_XXXX_YYYY_ZZZZ/intent_classifier.pkl&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;training_data&quot;</span><span class="p">:</span> <span class="s2">&quot;model_XXXX_YYYY_ZZZZ/training_data.json&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;language_name&quot;</span><span class="p">:</span> <span class="s2">&quot;en&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;entity_extractor&quot;</span><span class="p">:</span> <span class="s2">&quot;model_XXXX_YYYY_ZZZZ/ner&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;feature_extractor&quot;</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+    <span class="nt">&quot;backend&quot;</span><span class="p">:</span> <span class="s2">&quot;spacy_sklearn&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>to something along the lines of this (making all paths relative to the models base dir, which is <code class="docutils literal"><span class="pre">model_XXXX_YYYY_ZZZZ/</span></code>):</p>
+<div class="highlight-json"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;trained_at&quot;</span><span class="p">:</span> <span class="s2">&quot;20170304-191111&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;intent_classifier&quot;</span><span class="p">:</span> <span class="s2">&quot;intent_classifier.pkl&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;training_data&quot;</span><span class="p">:</span> <span class="s2">&quot;training_data.json&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;language_name&quot;</span><span class="p">:</span> <span class="s2">&quot;en&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;entity_synonyms&quot;</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+    <span class="nt">&quot;entity_extractor&quot;</span><span class="p">:</span> <span class="s2">&quot;ner&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;feature_extractor&quot;</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+    <span class="nt">&quot;backend&quot;</span><span class="p">:</span> <span class="s2">&quot;spacy_sklearn&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="license.html" class="btn btn-neutral float-right" title="License" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="faq.html" class="btn btn-neutral" title="Frequently Asked Questions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Rasa Technologies GmbH.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+        <span class="fa fa-book"> Other Versions</span>
+        v: 0.11.4
+        <span class="fa fa-caret-down"></span>
+    </span>
+    <div class="rst-other-versions">
+        <dl>
+            <dt>Tags</dt>
+            <dd><a href="migrations.html">0.11.4</a></dd>
+            <dd><a href="../0.11.3/migrations.html">0.11.3</a></dd>
+            <dd><a href="../0.11.2/migrations.html">0.11.2</a></dd>
+            <dd><a href="../0.11.1/migrations.html">0.11.1</a></dd>
+            <dd><a href="../0.11.0/migrations.html">0.11.0</a></dd>
+            <dd><a href="../0.10.6/migrations.html">0.10.6</a></dd>
+            <dd><a href="../0.9.2/migrations.html">0.9.2</a></dd>
+            <dd><a href="../0.8.12/migrations.html">0.8.12</a></dd>
+            <dd><a href="../0.7.4/migrations.html">0.7.4</a></dd>
+        </dl>
+        <dl>
+            <dt>Branches</dt>
+            <dd><a href="../master/migrations.html">master</a></dd>
+        </dl>
+    </div>
+</div>
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.11.4',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+  
+ 
+<!-- Global Site Tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-87333416-1"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments)};
+gtag('js', new Date());
+
+gtag('config', 'UA-87333416-1');
+</script>
+
+
+</body>
+</html>

@@ -1,0 +1,417 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Migrating an existing app &mdash; rasa NLU 0.11.4 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="_static/banner.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="rasa NLU 0.11.4 documentation" href="index.html"/>
+        <link rel="next" title="Training Data Format" href="dataformat.html"/>
+        <link rel="prev" title="Configuration" href="config.html"/>
+<link href="_static/css/rasa_theme.css" rel="stylesheet" type="text/css">
+
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> rasa NLU
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.11
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial: A simple restaurant search bot</a></li>
+</ul>
+<p class="caption"><span class="caption-text">User Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Migrating an existing app</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#banana-peels">Banana Peels</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#wit-ai">wit.ai</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#luis-ai">LUIS.ai</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#dialogflow">Dialogflow</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#emulation">Emulation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Training Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http.html">Using rasa NLU as a HTTP server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python.html">Using rasa NLU from python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="entities.html">Entity Extraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="closeloop.html">Improving your models from feedback</a></li>
+<li class="toctree-l1"><a class="reference internal" href="persist.html">Model Persistence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="languages.html">Language Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline.html">Processing Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="evaluation.html">Evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migrations.html">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/RasaHQ/rasa_nlu/projects/2">Roadmap</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Change Log</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">rasa NLU</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Migrating an existing app</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/migrating.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+
+
+
+
+
+<div class="section" id="migrating-an-existing-app">
+<span id="section-migration"></span><h1>Migrating an existing app<a class="headerlink" href="#migrating-an-existing-app" title="Permalink to this headline">¶</a></h1>
+<p>Rasa NLU is designed to make migrating from wit/LUIS/Dialogflow as simple as possible.
+The TLDR instructions for migrating are:</p>
+<ul class="simple">
+<li>download an export of your app data from wit/LUIS/Dialogflow</li>
+<li>follow the <a class="reference internal" href="tutorial.html#tutorial"><span class="std std-ref">Tutorial: A simple restaurant search bot</span></a>, using your downloaded data instead of <code class="docutils literal"><span class="pre">demo-rasa.json</span></code></li>
+</ul>
+<div class="section" id="banana-peels">
+<h2>Banana Peels<a class="headerlink" href="#banana-peels" title="Permalink to this headline">¶</a></h2>
+<p>Just some specific things to watch out for for each of the services you might want to migrate from</p>
+<div class="section" id="wit-ai">
+<h3>wit.ai<a class="headerlink" href="#wit-ai" title="Permalink to this headline">¶</a></h3>
+<p>Wit used to handle <code class="docutils literal"><span class="pre">intents</span></code> natively.
+Now they are somewhat obfuscated.
+To create an <code class="docutils literal"><span class="pre">intent</span></code> in wit you have to create and <code class="docutils literal"><span class="pre">entity</span></code> which spans the entire text.
+The file you want from your download is called <code class="docutils literal"><span class="pre">expressions.json</span></code></p>
+</div>
+<div class="section" id="luis-ai">
+<h3>LUIS.ai<a class="headerlink" href="#luis-ai" title="Permalink to this headline">¶</a></h3>
+<p>Nothing special here. Downloading the data and importing it into Rasa NLU should work without issues</p>
+</div>
+<div class="section" id="dialogflow">
+<h3>Dialogflow<a class="headerlink" href="#dialogflow" title="Permalink to this headline">¶</a></h3>
+<p>Dialogflow exports generate multiple files rather than just one.
+Put them all in a directory (see <code class="docutils literal"><span class="pre">data/examples/dialogflow</span></code> in the repo)
+and pass that path to the trainer.</p>
+</div>
+</div>
+<div class="section" id="emulation">
+<h2>Emulation<a class="headerlink" href="#emulation" title="Permalink to this headline">¶</a></h2>
+<p>To make Rasa NLU easy to try out with existing projects, the server can <cite>emulate</cite> wit, LUIS, or Dialogflow.
+In native mode, a request / response looks like this :</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> curl -XPOST localhost:5000/parse -d <span class="s1">&#39;{&quot;q&quot;:&quot;I am looking for Chinese food&quot;}&#39;</span> <span class="p">|</span> python -mjson.tool
+<span class="go">{</span>
+<span class="go">  &quot;text&quot;: &quot;I am looking for Chinese food&quot;,</span>
+<span class="go">  &quot;intent&quot;: &quot;restaurant_search&quot;,</span>
+<span class="go">  &quot;confidence&quot;: 0.4794813722432127,</span>
+<span class="go">  &quot;entities&quot;: [</span>
+<span class="go">    {</span>
+<span class="go">      &quot;start&quot;: 17,</span>
+<span class="go">      &quot;end&quot;: 24,</span>
+<span class="go">      &quot;value&quot;: &quot;chinese&quot;,</span>
+<span class="go">      &quot;entity&quot;: &quot;cuisine&quot;</span>
+<span class="go">    }</span>
+<span class="go">  ]</span>
+<span class="go">}</span>
+</pre></div>
+</div>
+<p>if we run in <code class="docutils literal"><span class="pre">wit</span></code> mode (e.g. <code class="docutils literal"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">rasa_nlu.server</span> <span class="pre">-e</span> <span class="pre">wit</span></code>)</p>
+<p>then instead have to make a GET request</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> curl <span class="s1">&#39;localhost:5000/parse?q=hello&#39;</span> <span class="p">|</span> python -mjson.tool
+<span class="go">[</span>
+<span class="go">    {</span>
+<span class="go">        &quot;_text&quot;: &quot;hello&quot;,</span>
+<span class="go">        &quot;confidence&quot;: 0.4794813722432127,</span>
+<span class="go">        &quot;entities&quot;: {},</span>
+<span class="go">        &quot;intent&quot;: &quot;greet&quot;</span>
+<span class="go">    }</span>
+<span class="go">]</span>
+</pre></div>
+</div>
+<p>similarly for LUIS, but with a slightly different response format</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> curl <span class="s1">&#39;localhost:5000/parse?q=hello&#39;</span> <span class="p">|</span> python -mjson.tool
+<span class="go">{</span>
+<span class="go">    &quot;entities&quot;: [],</span>
+<span class="go">    &quot;query&quot;: &quot;hello&quot;,</span>
+<span class="go">    &quot;topScoringIntent&quot;: {</span>
+<span class="go">        &quot;intent&quot;: &quot;inform&quot;,</span>
+<span class="go">        &quot;score&quot;: 0.4794813722432127</span>
+<span class="go">    }</span>
+<span class="go">}</span>
+</pre></div>
+</div>
+<p>and finally for Dialogflow</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> curl <span class="s1">&#39;localhost:5000/parse?q=hello&#39;</span> <span class="p">|</span> python -mjson.tool
+<span class="go">{</span>
+<span class="go">    &quot;id&quot;: &quot;ffd7ede3-b62f-11e6-b292-98fe944ee8c2&quot;,</span>
+<span class="go">    &quot;result&quot;: {</span>
+<span class="go">        &quot;action&quot;: null,</span>
+<span class="go">        &quot;actionIncomplete&quot;: null,</span>
+<span class="go">        &quot;contexts&quot;: [],</span>
+<span class="go">        &quot;fulfillment&quot;: {},</span>
+<span class="go">        &quot;metadata&quot;: {</span>
+<span class="go">            &quot;intentId&quot;: &quot;ffdbd6f3-b62f-11e6-8504-98fe944ee8c2&quot;,</span>
+<span class="go">            &quot;intentName&quot;: &quot;greet&quot;,</span>
+<span class="go">            &quot;webhookUsed&quot;: &quot;false&quot;</span>
+<span class="go">        },</span>
+<span class="go">        &quot;parameters&quot;: {},</span>
+<span class="go">        &quot;resolvedQuery&quot;: &quot;hello&quot;,</span>
+<span class="go">        &quot;score&quot;: null,</span>
+<span class="go">        &quot;source&quot;: &quot;agent&quot;</span>
+<span class="go">    },</span>
+<span class="go">    &quot;sessionId&quot;: &quot;ffdbd814-b62f-11e6-93b2-98fe944ee8c2&quot;,</span>
+<span class="go">    &quot;status&quot;: {</span>
+<span class="go">        &quot;code&quot;: 200,</span>
+<span class="go">        &quot;errorType&quot;: &quot;success&quot;</span>
+<span class="go">    },</span>
+<span class="go">    &quot;timestamp&quot;: &quot;2016-11-29T12:33:15.369411&quot;</span>
+<span class="go">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="dataformat.html" class="btn btn-neutral float-right" title="Training Data Format" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="config.html" class="btn btn-neutral" title="Configuration" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Rasa Technologies GmbH.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+        <span class="fa fa-book"> Other Versions</span>
+        v: 0.11.4
+        <span class="fa fa-caret-down"></span>
+    </span>
+    <div class="rst-other-versions">
+        <dl>
+            <dt>Tags</dt>
+            <dd><a href="migrating.html">0.11.4</a></dd>
+            <dd><a href="../0.11.3/migrating.html">0.11.3</a></dd>
+            <dd><a href="../0.11.2/migrating.html">0.11.2</a></dd>
+            <dd><a href="../0.11.1/migrating.html">0.11.1</a></dd>
+            <dd><a href="../0.11.0/migrating.html">0.11.0</a></dd>
+            <dd><a href="../0.10.6/migrating.html">0.10.6</a></dd>
+            <dd><a href="../0.9.2/migrating.html">0.9.2</a></dd>
+            <dd><a href="../0.8.12/migrating.html">0.8.12</a></dd>
+            <dd><a href="../0.7.4/migrating.html">0.7.4</a></dd>
+        </dl>
+        <dl>
+            <dt>Branches</dt>
+            <dd><a href="../master/migrating.html">master</a></dd>
+        </dl>
+    </div>
+</div>
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.11.4',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+  
+ 
+<!-- Global Site Tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-87333416-1"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments)};
+gtag('js', new Date());
+
+gtag('config', 'UA-87333416-1');
+</script>
+
+
+</body>
+</html>

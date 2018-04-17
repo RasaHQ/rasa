@@ -1,0 +1,973 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Change Log &mdash; rasa NLU 0.11.4 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="_static/banner.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="rasa NLU 0.11.4 documentation" href="index.html"/>
+        <link rel="prev" title="Contributing" href="contribute.html"/>
+<link href="_static/css/rasa_theme.css" rel="stylesheet" type="text/css">
+
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> rasa NLU
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.11
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial: A simple restaurant search bot</a></li>
+</ul>
+<p class="caption"><span class="caption-text">User Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migrating.html">Migrating an existing app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Training Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http.html">Using rasa NLU as a HTTP server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python.html">Using rasa NLU from python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="entities.html">Entity Extraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="closeloop.html">Improving your models from feedback</a></li>
+<li class="toctree-l1"><a class="reference internal" href="persist.html">Model Persistence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="languages.html">Language Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline.html">Processing Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="evaluation.html">Evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migrations.html">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Developer Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference external" href="https://github.com/RasaHQ/rasa_nlu/projects/2">Roadmap</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">Contributing</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Change Log</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#unreleased-0-12-0-ax-master">[Unreleased 0.12.0.aX] - master</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#added">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#changed">Changed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#fixed">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id1">[0.11.4] - 2018-03-19</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id2">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id3">[0.11.3] - 2018-02-13</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id4">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id5">[0.11.2] - 2018-02-06</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id6">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id7">[0.11.1] - 2018-02-02</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id8">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id9">[0.11.0] - 2018-01-30</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id10">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id11">Changed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id12">[0.10.6] - 2018-01-02</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id13">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id14">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id15">[0.10.5] - 2017-12-01</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id16">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id17">[0.10.4] - 2017-10-27</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id18">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id19">[0.10.3] - 2017-10-26</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id20">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id21">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id22">[0.10.1] - 2017-10-06</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id23">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id24">[0.10.0] - 2017-09-27</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id25">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id26">Changed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id27">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id28">[0.9.2] - 2017-08-16</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id29">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id30">[0.9.1] - 2017-07-11</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id31">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id32">[0.9.0] - 2017-07-07</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id33">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id34">Changed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#removed">Removed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id35">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id36">[0.8.12] - 2017-06-29</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id37">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id38">[0.8.11] - 2017-06-07</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id39">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id40">[0.8.10] - 2017-05-31</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id41">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id42">[0.8.9] - 2017-05-26</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id43">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id44">[0.8.8] - 2017-05-26</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id45">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id46">[0.8.7] - 2017-05-24</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id47">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id48">[0.8.6] - 2017-05-15</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id49">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id50">[0.8.5] - 2017-05-10</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id51">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id52">[0.8.4] - 2017-05-10</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id53">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id54">[0.8.3] - 2017-05-10</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id55">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id56">[0.8.2] - 2017-05-08</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id57">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id58">[0.8.1] - 2017-05-08</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id59">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id60">[0.8.0] - 2017-05-08</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id61">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id63">Changed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id64">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id69">[0.7.4] - 2017-03-27</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id70">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id71">[0.7.3] - 2017-03-15</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id72">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id73">[0.7.2] - 2017-03-13</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id74">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id75">[0.7.1] - 2017-03-10</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id76">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id78">[0.7.0] - 2017-03-10</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id79">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id80">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#beta-2017-01-31">[0.6-beta] - 2017-01-31</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">rasa NLU</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Change Log</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/changelog.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+
+
+
+
+
+<div class="section" id="change-log">
+<h1>Change Log<a class="headerlink" href="#change-log" title="Permalink to this headline">¶</a></h1>
+<p>All notable changes to this project will be documented in this file.
+This project adheres to <a class="reference external" href="http://semver.org/">Semantic Versioning</a> starting with version 0.7.0.</p>
+<div class="section" id="unreleased-0-12-0-ax-master">
+<h2>[Unreleased 0.12.0.aX] - <a class="reference external" href="https://github.com/RasaHQ/rasa_nlu/">master</a><a class="headerlink" href="#unreleased-0-12-0-ax-master" title="Permalink to this headline">¶</a></h2>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This version is not yet released and is under active development.</p>
+</div>
+<div class="section" id="added">
+<h3>Added<a class="headerlink" href="#added" title="Permalink to this headline">¶</a></h3>
+</div>
+<div class="section" id="changed">
+<h3>Changed<a class="headerlink" href="#changed" title="Permalink to this headline">¶</a></h3>
+</div>
+<div class="section" id="fixed">
+<h3>Fixed<a class="headerlink" href="#fixed" title="Permalink to this headline">¶</a></h3>
+</div>
+</div>
+<div class="section" id="id1">
+<h2>[0.11.4] - 2018-03-19<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id2">
+<h3>Fixed<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>google analytics docs survey code</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id3">
+<h2>[0.11.3] - 2018-02-13<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id4">
+<h3>Fixed<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>capitalization issues during spacy named entity recognition</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id5">
+<h2>[0.11.2] - 2018-02-06<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id6">
+<h3>Fixed<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Formatting of tokens without assigned entities in evaluation</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id7">
+<h2>[0.11.1] - 2018-02-02<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id8">
+<h3>Fixed<a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Changelog doc formatting</li>
+<li>fixed project loading for newly added projects to a running server</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id9">
+<h2>[0.11.0] - 2018-01-30<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id10">
+<h3>Added<a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>non ascii character support for anything that gets json dumped (e.g.
+training data received over HTTP endpoint)</li>
+<li>evaluation of entity extraction performance in <code class="docutils literal"><span class="pre">evaluation.py</span></code></li>
+<li>support for spacy 2.0</li>
+<li>evaluation of intent classification with crossvalidation in <code class="docutils literal"><span class="pre">evaluation.py</span></code></li>
+<li>support for splitting training data into multiple files
+(markdown and JSON only)</li>
+</ul>
+</div>
+<div class="section" id="id11">
+<h3>Changed<a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>removed <code class="docutils literal"><span class="pre">-e</span> <span class="pre">.</span></code> from requirements files - if you want to install
+the app use <code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-e</span> <span class="pre">.</span></code></li>
+<li>fixed http duckling parsing for non <code class="docutils literal"><span class="pre">en</span></code> languages</li>
+<li>fixed parsing of entities from markdown training data files</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id12">
+<h2>[0.10.6] - 2018-01-02<a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id13">
+<h3>Added<a class="headerlink" href="#id13" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>support asterisk style annotation of examples in markdown format</li>
+</ul>
+</div>
+<div class="section" id="id14">
+<h3>Fixed<a class="headerlink" href="#id14" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Preventing capitalized entities from becoming synonyms of the form
+lower-cased -&gt; capitalized</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id15">
+<h2>[0.10.5] - 2017-12-01<a class="headerlink" href="#id15" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id16">
+<h3>Fixed<a class="headerlink" href="#id16" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>read token in server from config instead of data router</li>
+<li>fixed reading of models with none date name prefix in server</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id17">
+<h2>[0.10.4] - 2017-10-27<a class="headerlink" href="#id17" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id18">
+<h3>Fixed<a class="headerlink" href="#id18" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>docker image build</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id19">
+<h2>[0.10.3] - 2017-10-26<a class="headerlink" href="#id19" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id20">
+<h3>Added<a class="headerlink" href="#id20" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>support for new dialogflow data format (previously api.ai)</li>
+<li>improved support for custom components (components are
+stored by class name in stored metadata to allow for components
+that are not mentioned in the Rasa NLU registry)</li>
+<li>language option to convert script</li>
+</ul>
+</div>
+<div class="section" id="id21">
+<h3>Fixed<a class="headerlink" href="#id21" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Fixed loading of default model from S3. Fixes #633</li>
+<li>fixed permanent training status when training fails #652</li>
+<li>quick fix for None &#8220;_formatter_parser&#8221; bug</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id22">
+<h2>[0.10.1] - 2017-10-06<a class="headerlink" href="#id22" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id23">
+<h3>Fixed<a class="headerlink" href="#id23" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>readme issues</li>
+<li>improved setup py welcome message</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id24">
+<h2>[0.10.0] - 2017-09-27<a class="headerlink" href="#id24" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id25">
+<h3>Added<a class="headerlink" href="#id25" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Support for training data in Markdown format</li>
+<li>Cors support. You can now specify allowed cors origins
+within your configuration file.</li>
+<li>The HTTP server is now backed by Klein (Twisted) instead of Flask.
+The server is now asynchronous but is no more WSGI compatible</li>
+<li>Improved Docker automated builds</li>
+<li>Rasa NLU now works with projects instead of models. A project can
+be the basis for a restaurant search bot in German or a customer
+service bot in English. A model can be seen as a snapshot of a project.</li>
+</ul>
+</div>
+<div class="section" id="id26">
+<h3>Changed<a class="headerlink" href="#id26" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Root project directories have been slightly rearranged to
+clean up new docker support</li>
+<li>use <code class="docutils literal"><span class="pre">Interpreter.create(metadata,</span> <span class="pre">...)</span></code> to create interpreter
+from dict and <code class="docutils literal"><span class="pre">Interpreter.load(file_name,</span> <span class="pre">...)</span></code> to create
+interpreter with metadata from a file</li>
+<li>Renamed <code class="docutils literal"><span class="pre">name</span></code> parameter to <code class="docutils literal"><span class="pre">project</span></code></li>
+<li>Docs hosted on GitHub pages now:
+<a class="reference external" href="https://rasahq.github.io/rasa_nlu">Documentation</a></li>
+<li>Adapted remote cloud storages to support projects
+(backwards incompatible!)</li>
+</ul>
+</div>
+<div class="section" id="id27">
+<h3>Fixed<a class="headerlink" href="#id27" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Fixed training data persistence. Fixes #510</li>
+<li>Fixed UTF-8 character handling when training through HTTP interface</li>
+<li>Invalid handling of numbers extracted from duckling
+during synonym handling. Fixes #517</li>
+<li>Only log a warning (instead of throwing an exception) on
+misaligned entities during mitie NER</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id28">
+<h2>[0.9.2] - 2017-08-16<a class="headerlink" href="#id28" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id29">
+<h3>Fixed<a class="headerlink" href="#id29" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>removed unnecessary <cite>ClassVar</cite> import</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id30">
+<h2>[0.9.1] - 2017-07-11<a class="headerlink" href="#id30" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id31">
+<h3>Fixed<a class="headerlink" href="#id31" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>removed obsolete <code class="docutils literal"><span class="pre">--output</span></code> parameter of <code class="docutils literal"><span class="pre">train.py</span></code>.
+use <code class="docutils literal"><span class="pre">--path</span></code> instead. fixes #473</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id32">
+<h2>[0.9.0] - 2017-07-07<a class="headerlink" href="#id32" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id33">
+<h3>Added<a class="headerlink" href="#id33" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>increased test coverage to avoid regressions (ongoing)</li>
+<li>added regex featurization to support intent classification
+and entity extraction (<code class="docutils literal"><span class="pre">intent_entity_featurizer_regex</span></code>)</li>
+</ul>
+</div>
+<div class="section" id="id34">
+<h3>Changed<a class="headerlink" href="#id34" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>replaced existing CRF library (python-crfsuite) with
+sklearn-crfsuite (due to better windows support)</li>
+<li>updated to spacy 1.8.2</li>
+<li>logging format of logged request now includes model name and timestamp</li>
+<li>use module specific loggers instead of default python root logger</li>
+<li>output format of the duckling extractor changed. the <code class="docutils literal"><span class="pre">value</span></code>
+field now includes the complete value from duckling instead of
+just text (so this is an property is an object now instead of just text).
+includes granularity information now.</li>
+<li>deprecated <code class="docutils literal"><span class="pre">intent_examples</span></code> and <code class="docutils literal"><span class="pre">entity_examples</span></code> sections in
+training data. all examples should go into the <code class="docutils literal"><span class="pre">common_examples</span></code> section</li>
+<li>weight training samples based on class distribution during ner_crf
+cross validation and sklearn intent classification training</li>
+<li>large refactoring of the internal training data structure and
+pipeline architecture</li>
+<li>numpy is now a required dependency</li>
+</ul>
+</div>
+<div class="section" id="removed">
+<h3>Removed<a class="headerlink" href="#removed" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>luis data tokenizer configuration value (not used anymore,
+luis exports char offsets now)</li>
+</ul>
+</div>
+<div class="section" id="id35">
+<h3>Fixed<a class="headerlink" href="#id35" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>properly update coveralls coverage report from travis</li>
+<li>persistence of duckling dimensions</li>
+<li>changed default response of untrained <code class="docutils literal"><span class="pre">intent_classifier_sklearn</span></code>
+from <code class="docutils literal"><span class="pre">&quot;intent&quot;:</span> <span class="pre">None</span></code> to <code class="docutils literal"><span class="pre">&quot;intent&quot;:</span> <span class="pre">{&quot;name&quot;:</span> <span class="pre">None,</span> <span class="pre">&quot;confidence&quot;:</span> <span class="pre">0.0}</span></code></li>
+<li><code class="docutils literal"><span class="pre">/status</span></code> endpoint showing all available models instead of only
+those whose name starts with <em>model</em></li>
+<li>properly return training process ids #391</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id36">
+<h2>[0.8.12] - 2017-06-29<a class="headerlink" href="#id36" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id37">
+<h3>Fixed<a class="headerlink" href="#id37" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>fixed missing argument attribute error</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id38">
+<h2>[0.8.11] - 2017-06-07<a class="headerlink" href="#id38" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id39">
+<h3>Fixed<a class="headerlink" href="#id39" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>updated mitie installation documentation</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id40">
+<h2>[0.8.10] - 2017-05-31<a class="headerlink" href="#id40" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id41">
+<h3>Fixed<a class="headerlink" href="#id41" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>fixed documentation about training data format</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id42">
+<h2>[0.8.9] - 2017-05-26<a class="headerlink" href="#id42" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id43">
+<h3>Fixed<a class="headerlink" href="#id43" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>properly handle response_log configuration variable being set to <code class="docutils literal"><span class="pre">null</span></code></li>
+</ul>
+</div>
+</div>
+<div class="section" id="id44">
+<h2>[0.8.8] - 2017-05-26<a class="headerlink" href="#id44" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id45">
+<h3>Fixed<a class="headerlink" href="#id45" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">/status</span></code> endpoint showing all available models instead of only
+those whose name starts with <em>model</em></li>
+</ul>
+</div>
+</div>
+<div class="section" id="id46">
+<h2>[0.8.7] - 2017-05-24<a class="headerlink" href="#id46" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id47">
+<h3>Fixed<a class="headerlink" href="#id47" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Fixed range calculation for crf #355</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id48">
+<h2>[0.8.6] - 2017-05-15<a class="headerlink" href="#id48" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id49">
+<h3>Fixed<a class="headerlink" href="#id49" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Fixed duckling dimension persistence. fixes #358</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id50">
+<h2>[0.8.5] - 2017-05-10<a class="headerlink" href="#id50" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id51">
+<h3>Fixed<a class="headerlink" href="#id51" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Fixed pypi installation dependencies (e.g. flask). fixes #354</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id52">
+<h2>[0.8.4] - 2017-05-10<a class="headerlink" href="#id52" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id53">
+<h3>Fixed<a class="headerlink" href="#id53" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Fixed CRF model training without entities. fixes #345</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id54">
+<h2>[0.8.3] - 2017-05-10<a class="headerlink" href="#id54" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id55">
+<h3>Fixed<a class="headerlink" href="#id55" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Fixed Luis emulation and added test to catch regression. Fixes #353</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id56">
+<h2>[0.8.2] - 2017-05-08<a class="headerlink" href="#id56" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id57">
+<h3>Fixed<a class="headerlink" href="#id57" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>deepcopy of context #343</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id58">
+<h2>[0.8.1] - 2017-05-08<a class="headerlink" href="#id58" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id59">
+<h3>Fixed<a class="headerlink" href="#id59" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>NER training reuses context inbetween requests</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id60">
+<h2>[0.8.0] - 2017-05-08<a class="headerlink" href="#id60" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id61">
+<h3>Added<a class="headerlink" href="#id61" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>ngram character featurizer (allows better handling of out-of-vocab words)</li>
+<li>replaced pre-wired backends with more flexible pipeline definitions</li>
+<li>return top 10 intents with sklearn classifier
+<a class="reference external" href="https://github.com/RasaHQ/rasa_nlu/pull/199">#199</a></li>
+<li>python type annotations for nearly all public functions</li>
+<li>added alternative method of defining entity synonyms</li>
+<li>support for arbitrary spacy language model names</li>
+<li>duckling components to provide normalized output for structured entities</li>
+<li>Conditional random field entity extraction (Markov model for entity
+tagging, better named entity recognition with low and medium data and
+similarly well at big data level)</li>
+<li>allow naming of trained models instead of generated model names</li>
+<li>dynamic check of requirements for the different components &amp; error
+messages on missing dependencies</li>
+<li>support for using multiple entity extractors and combining results downstream</li>
+</ul>
+</div>
+<div class="section" id="id63">
+<h3>Changed<a class="headerlink" href="#id63" title="Permalink to this headline">¶</a></h3>
+<ul>
+<li><p class="first">unified tokenizers, classifiers and feature extractors to implement
+common component interface</p>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">src</span></code> directory renamed to <code class="docutils literal"><span class="pre">rasa_nlu</span></code></p>
+</li>
+<li><p class="first">when loading data in a foreign format (api.ai, luis, wit) the data
+gets properly split into intent &amp; entity examples</p>
+</li>
+<li><dl class="first docutils">
+<dt>Configuration:</dt>
+<dd><ul class="first last simple">
+<li>added <code class="docutils literal"><span class="pre">max_number_of_ngrams</span></code></li>
+<li>removed <code class="docutils literal"><span class="pre">backend</span></code> and added <code class="docutils literal"><span class="pre">pipeline</span></code> as a replacement</li>
+<li>added <code class="docutils literal"><span class="pre">luis_data_tokenizer</span></code></li>
+<li>added <code class="docutils literal"><span class="pre">duckling_dimensions</span></code></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>parser output format changed</dt>
+<dd><p class="first">from <code class="docutils literal"><span class="pre">{&quot;intent&quot;:</span> <span class="pre">&quot;greeting&quot;,</span> <span class="pre">&quot;confidence&quot;:</span> <span class="pre">0.9,</span> <span class="pre">&quot;entities&quot;:</span> <span class="pre">[]}</span></code></p>
+<p class="last">to <code class="docutils literal"><span class="pre">{&quot;intent&quot;:</span> <span class="pre">{&quot;name&quot;:</span> <span class="pre">&quot;greeting&quot;,</span> <span class="pre">&quot;confidence&quot;:</span> <span class="pre">0.9},</span> <span class="pre">&quot;entities&quot;:</span> <span class="pre">[]}</span></code></p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>entities output format changed</dt>
+<dd><p class="first">from <code class="docutils literal"><span class="pre">{&quot;start&quot;:</span> <span class="pre">15,</span> <span class="pre">&quot;end&quot;:</span> <span class="pre">28,</span> <span class="pre">&quot;value&quot;:</span> <span class="pre">&quot;New</span> <span class="pre">York</span> <span class="pre">City&quot;,</span> <span class="pre">&quot;entity&quot;:</span> <span class="pre">&quot;GPE&quot;}</span></code></p>
+<p>to <code class="docutils literal"><span class="pre">{&quot;extractor&quot;:</span> <span class="pre">&quot;ner_mitie&quot;,</span> <span class="pre">&quot;processors&quot;:</span> <span class="pre">[&quot;ner_synonyms&quot;],</span> <span class="pre">&quot;start&quot;:</span> <span class="pre">15,</span> <span class="pre">&quot;end&quot;:</span> <span class="pre">28,</span> <span class="pre">&quot;value&quot;:</span> <span class="pre">&quot;New</span> <span class="pre">York</span> <span class="pre">City&quot;,</span> <span class="pre">&quot;entity&quot;:</span> <span class="pre">&quot;GPE&quot;}</span></code></p>
+<p class="last">where <code class="docutils literal"><span class="pre">extractor</span></code> denotes the entity extractor that originally found an entity, and <code class="docutils literal"><span class="pre">processor</span></code> denotes components that alter entities, such as the synonym component.</p>
+</dd>
+</dl>
+</li>
+<li><p class="first">camel cased MITIE classes (e.g. <code class="docutils literal"><span class="pre">MITIETokenizer</span></code> → <code class="docutils literal"><span class="pre">MitieTokenizer</span></code>)</p>
+</li>
+<li><p class="first">model metadata changed, see migration guide</p>
+</li>
+<li><p class="first">updated to spacy 1.7 and dropped training and loading capabilities for
+the spacy component (breaks existing spacy models!)</p>
+</li>
+<li><p class="first">introduced compatibility with both Python 2 and 3</p>
+</li>
+</ul>
+</div>
+<div class="section" id="id64">
+<h3>Fixed<a class="headerlink" href="#id64" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>properly parse <code class="docutils literal"><span class="pre">str</span></code> additionally to <code class="docutils literal"><span class="pre">unicode</span></code>
+<a class="reference external" href="https://github.com/RasaHQ/rasa_nlu/issues/210">#210</a></li>
+<li>support entity only training
+<a class="reference external" href="https://github.com/RasaHQ/rasa_nlu/issues/181">#181</a></li>
+<li>resolved conflicts between metadata and configuration values
+<a class="reference external" href="https://github.com/RasaHQ/rasa_nlu/issues/219">#219</a></li>
+<li>removed tokenization when reading Luis.ai data (they changed their format)
+<a class="reference external" href="https://github.com/RasaHQ/rasa_nlu/issues/241">#241</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="id69">
+<h2>[0.7.4] - 2017-03-27<a class="headerlink" href="#id69" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id70">
+<h3>Fixed<a class="headerlink" href="#id70" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>fixed failed loading of example data after renaming attributes,
+i.e. &#8220;KeyError: &#8216;entities&#8217;&#8221;</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id71">
+<h2>[0.7.3] - 2017-03-15<a class="headerlink" href="#id71" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id72">
+<h3>Fixed<a class="headerlink" href="#id72" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>fixed regression in mitie entity extraction on special characters</li>
+<li>fixed spacy fine tuning and entity recognition on passed language instance</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id73">
+<h2>[0.7.2] - 2017-03-13<a class="headerlink" href="#id73" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id74">
+<h3>Fixed<a class="headerlink" href="#id74" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>python documentation about calling rasa NLU from python</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id75">
+<h2>[0.7.1] - 2017-03-10<a class="headerlink" href="#id75" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id76">
+<h3>Fixed<a class="headerlink" href="#id76" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>mitie tokenization value generation
+<a class="reference external" href="https://github.com/RasaHQ/rasa_nlu/pull/207">#207</a>, thanks &#64;cristinacaputo</li>
+<li>changed log file extension from <code class="docutils literal"><span class="pre">.json</span></code> to <code class="docutils literal"><span class="pre">.log</span></code>,
+since the contained text is not proper json</li>
+</ul>
+</div>
+</div>
+<div class="section" id="id78">
+<h2>[0.7.0] - 2017-03-10<a class="headerlink" href="#id78" title="Permalink to this headline">¶</a></h2>
+<p>This is a major version update. Please also have a look at the
+<a class="reference external" href="https://rasahq.github.io/rasa_nlu/migrations.html">Migration Guide</a>.</p>
+<div class="section" id="id79">
+<h3>Added<a class="headerlink" href="#id79" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>Changelog ;)</li>
+<li>option to use multi-threading during classifier training</li>
+<li>entity synonym support</li>
+<li>proper temporary file creation during tests</li>
+<li>mitie_sklearn backend using mitie tokenization and sklearn classification</li>
+<li>option to fine-tune spacy NER models</li>
+<li>multithreading support of build in REST server (e.g. using gunicorn)</li>
+<li>multitenancy implementation to allow loading multiple models which
+share the same backend</li>
+</ul>
+</div>
+<div class="section" id="id80">
+<h3>Fixed<a class="headerlink" href="#id80" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>error propagation on failed vector model loading (spacy)</li>
+<li>escaping of special characters during mitie tokenization</li>
+</ul>
+</div>
+</div>
+<div class="section" id="beta-2017-01-31">
+<h2>[0.6-beta] - 2017-01-31<a class="headerlink" href="#beta-2017-01-31" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="contribute.html" class="btn btn-neutral" title="Contributing" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Rasa Technologies GmbH.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+        <span class="fa fa-book"> Other Versions</span>
+        v: 0.11.4
+        <span class="fa fa-caret-down"></span>
+    </span>
+    <div class="rst-other-versions">
+        <dl>
+            <dt>Tags</dt>
+            <dd><a href="changelog.html">0.11.4</a></dd>
+            <dd><a href="../0.11.3/changelog.html">0.11.3</a></dd>
+            <dd><a href="../0.11.2/changelog.html">0.11.2</a></dd>
+            <dd><a href="../0.11.1/changelog.html">0.11.1</a></dd>
+            <dd><a href="../0.11.0/changelog.html">0.11.0</a></dd>
+            <dd><a href="../0.10.6/changelog.html">0.10.6</a></dd>
+            <dd><a href="../0.9.2/changelog.html">0.9.2</a></dd>
+            <dd><a href="../0.8.12/changelog.html">0.8.12</a></dd>
+            <dd><a href="../0.7.4/changelog.html">0.7.4</a></dd>
+        </dl>
+        <dl>
+            <dt>Branches</dt>
+            <dd><a href="../master/changelog.html">master</a></dd>
+        </dl>
+    </div>
+</div>
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.11.4',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+  
+ 
+<!-- Global Site Tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-87333416-1"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments)};
+gtag('js', new Date());
+
+gtag('config', 'UA-87333416-1');
+</script>
+
+
+</body>
+</html>

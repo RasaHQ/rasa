@@ -1,0 +1,894 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Configuration &mdash; rasa NLU 0.11.4 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="_static/banner.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="rasa NLU 0.11.4 documentation" href="index.html"/>
+        <link rel="next" title="Migrating an existing app" href="migrating.html"/>
+        <link rel="prev" title="Tutorial: A simple restaurant search bot" href="tutorial.html"/>
+<link href="_static/css/rasa_theme.css" rel="stylesheet" type="text/css">
+
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> rasa NLU
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.11
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial: A simple restaurant search bot</a></li>
+</ul>
+<p class="caption"><span class="caption-text">User Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#default">Default</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#options">Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#project">project</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline">pipeline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#language">language</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#num-threads">num_threads</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#fixed-model-name">fixed_model_name</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#max-training-processes">max_training_processes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#path">path</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#response-log">response_log</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#config">config</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#log-level">log_level</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#port">port</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#data">data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#cors-origins">cors_origins</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#emulate">emulate</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mitie-file">mitie_file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spacy-model-name">spacy_model_name</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#token">token</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#max-number-of-ngrams">max_number_of_ngrams</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#duckling-dimensions">duckling_dimensions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#storage">storage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bucket-name">bucket_name</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#aws-region">aws_region</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#aws-endpoint-url">aws_endpoint_url</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ner-crf">ner_crf</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#features">features</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#bilou-flag">BILOU_flag</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#max-iterations">max_iterations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#l1-c">L1_C</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#l2-c">L2_C</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#intent-classifier-sklearn">intent_classifier_sklearn</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#c">C</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kernel">kernel</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="migrating.html">Migrating an existing app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Training Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http.html">Using rasa NLU as a HTTP server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python.html">Using rasa NLU from python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="entities.html">Entity Extraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="closeloop.html">Improving your models from feedback</a></li>
+<li class="toctree-l1"><a class="reference internal" href="persist.html">Model Persistence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="languages.html">Language Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline.html">Processing Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="evaluation.html">Evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migrations.html">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/RasaHQ/rasa_nlu/projects/2">Roadmap</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Change Log</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">rasa NLU</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Configuration</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/config.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+
+
+
+
+
+<div class="section" id="configuration">
+<span id="section-configuration"></span><h1>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h1>
+<p>You can provide options to rasa NLU through:</p>
+<ul class="simple">
+<li>a json-formatted config file</li>
+<li>environment variables</li>
+<li>command line arguments</li>
+</ul>
+<p>Environment variables override options in your config file,
+and command line args will override any options specified elsewhere.
+Environment variables are capitalised and prefixed with <code class="docutils literal"><span class="pre">RASA_</span></code>,
+so the option <code class="docutils literal"><span class="pre">pipeline</span></code> is specified with the <code class="docutils literal"><span class="pre">RASA_PIPELINE</span></code> env var.</p>
+<div class="section" id="default">
+<h2>Default<a class="headerlink" href="#default" title="Permalink to this headline">¶</a></h2>
+<p>Here is the default configuration including all available parameters:</p>
+<div class="highlight-json"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;project&quot;</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+  <span class="nt">&quot;fixed_model_name&quot;</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+  <span class="nt">&quot;pipeline&quot;</span><span class="p">:</span> <span class="p">[],</span>
+  <span class="nt">&quot;language&quot;</span><span class="p">:</span> <span class="s2">&quot;en&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;num_threads&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+  <span class="nt">&quot;max_training_processes&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+  <span class="nt">&quot;path&quot;</span><span class="p">:</span> <span class="s2">&quot;projects&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;response_log&quot;</span><span class="p">:</span> <span class="s2">&quot;logs&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;storage&quot;</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+  <span class="nt">&quot;config&quot;</span><span class="p">:</span> <span class="s2">&quot;config.json&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;log_level&quot;</span><span class="p">:</span> <span class="s2">&quot;INFO&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;port&quot;</span><span class="p">:</span> <span class="mi">5000</span><span class="p">,</span>
+  <span class="nt">&quot;data&quot;</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+  <span class="nt">&quot;emulate&quot;</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+  <span class="nt">&quot;log_file&quot;</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+  <span class="nt">&quot;mitie_file&quot;</span><span class="p">:</span> <span class="s2">&quot;data/total_word_feature_extractor.dat&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;spacy_model_name&quot;</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+  <span class="nt">&quot;token&quot;</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+  <span class="nt">&quot;cors_origins&quot;</span><span class="p">:</span> <span class="p">[],</span>
+  <span class="nt">&quot;aws_endpoint_url&quot;</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+  <span class="nt">&quot;max_number_of_ngrams&quot;</span><span class="p">:</span> <span class="mi">7</span><span class="p">,</span>
+  <span class="nt">&quot;duckling_dimensions&quot;</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+  <span class="nt">&quot;duckling_http_url&quot;</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+
+  <span class="nt">&quot;ner_crf&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;BILOU_flag&quot;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+    <span class="nt">&quot;features&quot;</span><span class="p">:</span> <span class="p">[</span>
+      <span class="p">[</span><span class="s2">&quot;low&quot;</span><span class="p">,</span> <span class="s2">&quot;title&quot;</span><span class="p">,</span> <span class="s2">&quot;upper&quot;</span><span class="p">,</span> <span class="s2">&quot;pos&quot;</span><span class="p">,</span> <span class="s2">&quot;pos2&quot;</span><span class="p">],</span>
+      <span class="p">[</span><span class="s2">&quot;bias&quot;</span><span class="p">,</span> <span class="s2">&quot;low&quot;</span><span class="p">,</span> <span class="s2">&quot;word3&quot;</span><span class="p">,</span> <span class="s2">&quot;word2&quot;</span><span class="p">,</span> <span class="s2">&quot;upper&quot;</span><span class="p">,</span> <span class="s2">&quot;title&quot;</span><span class="p">,</span> <span class="s2">&quot;digit&quot;</span><span class="p">,</span> <span class="s2">&quot;pos&quot;</span><span class="p">,</span> <span class="s2">&quot;pos2&quot;</span><span class="p">,</span> <span class="s2">&quot;pattern&quot;</span><span class="p">],</span>
+      <span class="p">[</span><span class="s2">&quot;low&quot;</span><span class="p">,</span> <span class="s2">&quot;title&quot;</span><span class="p">,</span> <span class="s2">&quot;upper&quot;</span><span class="p">,</span> <span class="s2">&quot;pos&quot;</span><span class="p">,</span> <span class="s2">&quot;pos2&quot;</span><span class="p">]],</span>
+    <span class="nt">&quot;max_iterations&quot;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>
+    <span class="nt">&quot;L1_c&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="nt">&quot;L2_c&quot;</span><span class="p">:</span> <span class="mf">1e-3</span>
+  <span class="p">},</span>
+
+  <span class="nt">&quot;intent_classifier_sklearn&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;C&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">100</span><span class="p">],</span>
+    <span class="nt">&quot;kernel&quot;</span><span class="p">:</span> <span class="s2">&quot;linear&quot;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="options">
+<h2>Options<a class="headerlink" href="#options" title="Permalink to this headline">¶</a></h2>
+<p>A short explanation and examples for each configuration value.</p>
+<div class="section" id="project">
+<h3>project<a class="headerlink" href="#project" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="docutils literal"><span class="pre">str</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Examples:</th><td class="field-body"><code class="docutils literal"><span class="pre">&quot;my_project_name&quot;</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">Defines a project name to train new models for and to refer to when using the http server.
+The default value is <code class="docutils literal"><span class="pre">null</span></code> which will lead to using the default project <code class="docutils literal"><span class="pre">&quot;default&quot;</span></code>.
+All projects are stored under the <code class="docutils literal"><span class="pre">path</span></code> directory.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="pipeline">
+<h3>pipeline<a class="headerlink" href="#pipeline" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="docutils literal"><span class="pre">str</span></code> or <code class="docutils literal"><span class="pre">[str]</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Examples:</th><td class="field-body"><code class="docutils literal"><span class="pre">&quot;mitie&quot;</span></code> or
+<code class="docutils literal"><span class="pre">[&quot;nlp_spacy&quot;,</span> <span class="pre">&quot;ner_spacy&quot;,</span> <span class="pre">&quot;ner_synonyms&quot;]</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">The pipeline used for training. Can either be a template (passing a string) or a list of components (array). For all
+available templates, see <a class="reference internal" href="pipeline.html#section-pipeline"><span class="std std-ref">Processing Pipeline</span></a>.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="language">
+<h3>language<a class="headerlink" href="#language" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="docutils literal"><span class="pre">str</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Examples:</th><td class="field-body"><code class="docutils literal"><span class="pre">&quot;en&quot;</span></code> or <code class="docutils literal"><span class="pre">&quot;de&quot;</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">Language the model is trained in. Underlying word vectors will be loaded by using this language</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="num-threads">
+<h3>num_threads<a class="headerlink" href="#num-threads" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="docutils literal"><span class="pre">int</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Examples:</th><td class="field-body"><code class="docutils literal"><span class="pre">4</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">Number of threads used during training (not supported by all components, though.
+Some of them might still be single threaded!).</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="fixed-model-name">
+<h3>fixed_model_name<a class="headerlink" href="#fixed-model-name" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="docutils literal"><span class="pre">str</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Examples:</th><td class="field-body"><code class="docutils literal"><span class="pre">&quot;my_model_name&quot;</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">Instead of generating model names (e.g. <code class="docutils literal"><span class="pre">model_20170922-234435</span></code>) a fixed
+model name will be used. The model will always be saved in the path
+<code class="docutils literal"><span class="pre">{project_path}/{project_name}/{model_name}</span></code>. If the model is assigned
+a fixed name, it will possibly override previously trained models.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="max-training-processes">
+<h3>max_training_processes<a class="headerlink" href="#max-training-processes" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="docutils literal"><span class="pre">int</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Examples:</th><td class="field-body"><code class="docutils literal"><span class="pre">1</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">Number of processes used to handle training requests. Increasing this value will have a great impact on memory usage.
+It is recommended to keep the default value.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="path">
+<h3>path<a class="headerlink" href="#path" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="docutils literal"><span class="pre">str</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Examples:</th><td class="field-body"><code class="docutils literal"><span class="pre">&quot;projects/&quot;</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">Projects directory where trained models will be saved to (training) and
+loaded from (http server).</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="response-log">
+<h3>response_log<a class="headerlink" href="#response-log" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="docutils literal"><span class="pre">str</span></code> or <code class="docutils literal"><span class="pre">null</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Examples:</th><td class="field-body"><code class="docutils literal"><span class="pre">&quot;logs/&quot;</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">Directory where logs will be saved (containing queries and responses).
+If set to <code class="docutils literal"><span class="pre">null</span></code> logging will be disabled.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="config">
+<h3>config<a class="headerlink" href="#config" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="docutils literal"><span class="pre">str</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Examples:</th><td class="field-body"><code class="docutils literal"><span class="pre">&quot;sample_configs/config_spacy.json&quot;</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">Location of the configuration file (can only be set as env var or command line option).</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="log-level">
+<h3>log_level<a class="headerlink" href="#log-level" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="docutils literal"><span class="pre">str</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Examples:</th><td class="field-body"><code class="docutils literal"><span class="pre">&quot;DEBUG&quot;</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">Log level used to output messages from the framework internals.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="port">
+<h3>port<a class="headerlink" href="#port" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="docutils literal"><span class="pre">int</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Examples:</th><td class="field-body"><code class="docutils literal"><span class="pre">5000</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">Port on which to run the http server.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="data">
+<h3>data<a class="headerlink" href="#data" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="docutils literal"><span class="pre">str</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Examples:</th><td class="field-body"><code class="docutils literal"><span class="pre">&quot;data/example.json&quot;</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">Location of the training data. For JSON and markdown data, this can either be a single file or a directory containing multiple training data files.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="cors-origins">
+<h3>cors_origins<a class="headerlink" href="#cors-origins" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="docutils literal"><span class="pre">list</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Examples:</th><td class="field-body"><code class="docutils literal"><span class="pre">[&quot;*&quot;]</span></code>, <code class="docutils literal"><span class="pre">[&quot;*.mydomain.com&quot;,</span> <span class="pre">&quot;api.domain2.net&quot;]</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">List of domain patterns from where CORS (cross-origin resource sharing) calls are allowed.
+The default value is <code class="docutils literal"><span class="pre">[]</span></code> which forbids all CORS requests.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="emulate">
+<h3>emulate<a class="headerlink" href="#emulate" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="docutils literal"><span class="pre">str</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Examples:</th><td class="field-body"><code class="docutils literal"><span class="pre">&quot;wit&quot;</span></code>, <code class="docutils literal"><span class="pre">&quot;luis&quot;</span></code> or <code class="docutils literal"><span class="pre">&quot;api&quot;</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">Format to be returned by the http server. If <code class="docutils literal"><span class="pre">null</span></code> (default) the rasa NLU internal format will be used.
+Otherwise, the output will be formatted according to the API specified.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="mitie-file">
+<h3>mitie_file<a class="headerlink" href="#mitie-file" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="docutils literal"><span class="pre">str</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Examples:</th><td class="field-body"><code class="docutils literal"><span class="pre">&quot;data/total_word_feature_extractor.dat&quot;</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">File containing <code class="docutils literal"><span class="pre">total_word_feature_extractor.dat</span></code> (see <a class="reference internal" href="installation.html#section-backends"><span class="std std-ref">Installation</span></a>)</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="spacy-model-name">
+<h3>spacy_model_name<a class="headerlink" href="#spacy-model-name" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="docutils literal"><span class="pre">str</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Examples:</th><td class="field-body"><code class="docutils literal"><span class="pre">&quot;en_core_web_md&quot;</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">If the spacy model to be used has a name that is different from the language tag (<code class="docutils literal"><span class="pre">&quot;en&quot;</span></code>, <code class="docutils literal"><span class="pre">&quot;de&quot;</span></code>, etc.),
+the model name can be specified using this configuration variable. The name will be passed to <code class="docutils literal"><span class="pre">spacy.load(name)</span></code>.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="token">
+<h3>token<a class="headerlink" href="#token" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="docutils literal"><span class="pre">str</span></code> or <code class="docutils literal"><span class="pre">null</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Examples:</th><td class="field-body"><code class="docutils literal"><span class="pre">&quot;asd2aw3r&quot;</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">if set, all requests to server must have a <code class="docutils literal"><span class="pre">?token=&lt;token&gt;</span></code> query param. see <a class="reference internal" href="http.html#section-auth"><span class="std std-ref">Authorization</span></a></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="max-number-of-ngrams">
+<h3>max_number_of_ngrams<a class="headerlink" href="#max-number-of-ngrams" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="docutils literal"><span class="pre">int</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Examples:</th><td class="field-body"><code class="docutils literal"><span class="pre">10</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">Maximum number of ngrams to use when augmenting feature vectors with character ngrams
+(<code class="docutils literal"><span class="pre">intent_featurizer_ngrams</span></code> component only)</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="duckling-dimensions">
+<span id="section-configuration-duckling-dimensions"></span><h3>duckling_dimensions<a class="headerlink" href="#duckling-dimensions" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="docutils literal"><span class="pre">list</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Examples:</th><td class="field-body"><code class="docutils literal"><span class="pre">[&quot;time&quot;,</span> <span class="pre">&quot;number&quot;,</span> <span class="pre">&quot;amount-of-money&quot;,</span> <span class="pre">&quot;distance&quot;]</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">Defines which dimensions, i.e. entity types, the <a class="reference internal" href="pipeline.html#section-pipeline-duckling"><span class="std std-ref">duckling component</span></a> will extract.
+A full list of available dimensions can be found in the <a class="reference external" href="https://duckling.wit.ai/">duckling documentation</a>.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="storage">
+<h3>storage<a class="headerlink" href="#storage" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="docutils literal"><span class="pre">str</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Examples:</th><td class="field-body"><code class="docutils literal"><span class="pre">&quot;aws&quot;</span></code> or <code class="docutils literal"><span class="pre">&quot;gcs&quot;</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">Storage type for persistor. See <a class="reference internal" href="persist.html#section-persistence"><span class="std std-ref">Model Persistence</span></a> for more details.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="bucket-name">
+<h3>bucket_name<a class="headerlink" href="#bucket-name" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="docutils literal"><span class="pre">str</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Examples:</th><td class="field-body"><code class="docutils literal"><span class="pre">&quot;my_models&quot;</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">Name of the bucket in the cloud to store the models. If the specified bucket name does not exist, rasa will create it.
+See <a class="reference internal" href="persist.html#section-persistence"><span class="std std-ref">Model Persistence</span></a> for more details.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="aws-region">
+<h3>aws_region<a class="headerlink" href="#aws-region" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="docutils literal"><span class="pre">str</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Examples:</th><td class="field-body"><code class="docutils literal"><span class="pre">&quot;us-east-1&quot;</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">Name of the aws region to use. This is used only when <code class="docutils literal"><span class="pre">&quot;storage&quot;</span></code> is selected as <code class="docutils literal"><span class="pre">&quot;aws&quot;</span></code>.
+See <a class="reference internal" href="persist.html#section-persistence"><span class="std std-ref">Model Persistence</span></a> for more details.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="aws-endpoint-url">
+<h3>aws_endpoint_url<a class="headerlink" href="#aws-endpoint-url" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="docutils literal"><span class="pre">str</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Examples:</th><td class="field-body"><code class="docutils literal"><span class="pre">&quot;http://10.0.0.1:9000&quot;</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">Optional endpoint of the custom S3 compatible storage provider. This is used only when <code class="docutils literal"><span class="pre">&quot;storage&quot;</span></code> is selected as <code class="docutils literal"><span class="pre">&quot;aws&quot;</span></code>.
+See <a class="reference internal" href="persist.html#section-persistence"><span class="std std-ref">Model Persistence</span></a> for more details.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="ner-crf">
+<h3>ner_crf<a class="headerlink" href="#ner-crf" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="features">
+<h4>features<a class="headerlink" href="#features" title="Permalink to this headline">¶</a></h4>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="docutils literal"><span class="pre">[[str]]</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Examples:</th><td class="field-body"><code class="docutils literal"><span class="pre">[[&quot;low&quot;,</span> <span class="pre">&quot;title&quot;],</span> <span class="pre">[&quot;bias&quot;,</span> <span class="pre">&quot;word3&quot;],</span> <span class="pre">[&quot;upper&quot;,</span> <span class="pre">&quot;pos&quot;,</span> <span class="pre">&quot;pos2&quot;]]</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">The features are a <code class="docutils literal"><span class="pre">[before,</span> <span class="pre">word,</span> <span class="pre">after]</span></code> array with before, word, after holding keys about which
+features to use for each word, for example, <code class="docutils literal"><span class="pre">&quot;title&quot;</span></code> in array before will have the feature
+&#8220;is the preceding word in title case?&#8221;.
+Available features are:
+<code class="docutils literal"><span class="pre">low</span></code>, <code class="docutils literal"><span class="pre">title</span></code>, <code class="docutils literal"><span class="pre">word3</span></code>, <code class="docutils literal"><span class="pre">word2</span></code>, <code class="docutils literal"><span class="pre">pos</span></code>, <code class="docutils literal"><span class="pre">pos2</span></code>, <code class="docutils literal"><span class="pre">bias</span></code>, <code class="docutils literal"><span class="pre">upper</span></code> and <code class="docutils literal"><span class="pre">digit</span></code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="bilou-flag">
+<h4>BILOU_flag<a class="headerlink" href="#bilou-flag" title="Permalink to this headline">¶</a></h4>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="docutils literal"><span class="pre">bool</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Examples:</th><td class="field-body"><code class="docutils literal"><span class="pre">true</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">The flag determines whether to use BILOU tagging or not. BILOU tagging is more rigorous however
+requires more examples per entity. Rule of thumb: use only if more than 100 examples per entity.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="max-iterations">
+<h4>max_iterations<a class="headerlink" href="#max-iterations" title="Permalink to this headline">¶</a></h4>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="docutils literal"><span class="pre">int</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Examples:</th><td class="field-body"><code class="docutils literal"><span class="pre">50</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">This is the value given to sklearn_crfcuite.CRF tagger before training.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="l1-c">
+<h4>L1_C<a class="headerlink" href="#l1-c" title="Permalink to this headline">¶</a></h4>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="docutils literal"><span class="pre">float</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Examples:</th><td class="field-body"><code class="docutils literal"><span class="pre">1.0</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">This is the value given to sklearn_crfcuite.CRF tagger before training.
+Specifies the L1 regularization coefficient.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="l2-c">
+<h4>L2_C<a class="headerlink" href="#l2-c" title="Permalink to this headline">¶</a></h4>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="docutils literal"><span class="pre">float</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Examples:</th><td class="field-body"><code class="docutils literal"><span class="pre">1e-3</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">This is the value given to sklearn_crfcuite.CRF tagger before training.
+Specifies the L2 regularization coefficient.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="intent-classifier-sklearn">
+<h3>intent_classifier_sklearn<a class="headerlink" href="#intent-classifier-sklearn" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="c">
+<h4>C<a class="headerlink" href="#c" title="Permalink to this headline">¶</a></h4>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="docutils literal"><span class="pre">[float]</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Examples:</th><td class="field-body"><code class="docutils literal"><span class="pre">[1,</span> <span class="pre">2,</span> <span class="pre">5,</span> <span class="pre">10,</span> <span class="pre">20,</span> <span class="pre">100]</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">Specifies the list of regularization values to cross-validate over for C-SVM.
+This is used with the <code class="docutils literal"><span class="pre">kernel</span></code> hyperparameter in GridSearchCV.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="kernel">
+<h4>kernel<a class="headerlink" href="#kernel" title="Permalink to this headline">¶</a></h4>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><code class="docutils literal"><span class="pre">string</span></code></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Examples:</th><td class="field-body"><code class="docutils literal"><span class="pre">&quot;linear&quot;</span></code></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">Specifies the kernel to use with C-SVM.
+This is used with the <code class="docutils literal"><span class="pre">C</span></code> hyperparameter in GridSearchCV.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="migrating.html" class="btn btn-neutral float-right" title="Migrating an existing app" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="tutorial.html" class="btn btn-neutral" title="Tutorial: A simple restaurant search bot" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Rasa Technologies GmbH.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+        <span class="fa fa-book"> Other Versions</span>
+        v: 0.11.4
+        <span class="fa fa-caret-down"></span>
+    </span>
+    <div class="rst-other-versions">
+        <dl>
+            <dt>Tags</dt>
+            <dd><a href="config.html">0.11.4</a></dd>
+            <dd><a href="../0.11.3/config.html">0.11.3</a></dd>
+            <dd><a href="../0.11.2/config.html">0.11.2</a></dd>
+            <dd><a href="../0.11.1/config.html">0.11.1</a></dd>
+            <dd><a href="../0.11.0/config.html">0.11.0</a></dd>
+            <dd><a href="../0.10.6/config.html">0.10.6</a></dd>
+            <dd><a href="../0.9.2/config.html">0.9.2</a></dd>
+            <dd><a href="../0.8.12/config.html">0.8.12</a></dd>
+            <dd><a href="../0.7.4/config.html">0.7.4</a></dd>
+        </dl>
+        <dl>
+            <dt>Branches</dt>
+            <dd><a href="../master/config.html">master</a></dd>
+        </dl>
+    </div>
+</div>
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.11.4',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+  
+ 
+<!-- Global Site Tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-87333416-1"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments)};
+gtag('js', new Date());
+
+gtag('config', 'UA-87333416-1');
+</script>
+
+
+</body>
+</html>

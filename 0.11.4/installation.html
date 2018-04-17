@@ -1,0 +1,417 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Installation &mdash; rasa NLU 0.11.4 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="_static/banner.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="rasa NLU 0.11.4 documentation" href="index.html"/>
+        <link rel="next" title="Tutorial: A simple restaurant search bot" href="tutorial.html"/>
+        <link rel="prev" title="Language Understanding with rasa NLU" href="index.html"/>
+<link href="_static/css/rasa_theme.css" rel="stylesheet" type="text/css">
+
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> rasa NLU
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.11
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#setting-up-rasa-nlu">Setting up rasa NLU</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#setting-up-a-backend">Setting up a backend</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#best-for-most-spacy-sklearn">Best for most: spaCy + sklearn</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#first-alternative-mitie">First Alternative: MITIE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#another-alternative-sklearn-mitie">Another Alternative: sklearn + MITIE</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial: A simple restaurant search bot</a></li>
+</ul>
+<p class="caption"><span class="caption-text">User Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migrating.html">Migrating an existing app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Training Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http.html">Using rasa NLU as a HTTP server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python.html">Using rasa NLU from python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="entities.html">Entity Extraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="closeloop.html">Improving your models from feedback</a></li>
+<li class="toctree-l1"><a class="reference internal" href="persist.html">Model Persistence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="languages.html">Language Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline.html">Processing Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="evaluation.html">Evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migrations.html">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/RasaHQ/rasa_nlu/projects/2">Roadmap</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Change Log</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">rasa NLU</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Installation</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/installation.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+
+
+
+
+
+<div class="section" id="installation">
+<span id="section-backends"></span><h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<p>Rasa NLU itself doesn&#8217;t have any external requirements,
+but to do something useful with it you need to
+install &amp; configure a backend. Which backend you want to use is up to you.</p>
+<div class="section" id="setting-up-rasa-nlu">
+<h2>Setting up rasa NLU<a class="headerlink" href="#setting-up-rasa-nlu" title="Permalink to this headline">¶</a></h2>
+<p>The recommended way to install rasa NLU is using pip:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>pip install rasa_nlu
+</pre></div>
+</div>
+<p>If you want to use the bleeding edge version use github + setup.py:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>git clone https://github.com/RasaHQ/rasa_nlu.git
+<span class="nb">cd</span> rasa_nlu
+pip install -r requirements.txt
+pip install -e .
+</pre></div>
+</div>
+<p>rasa NLU allows you to use components to process your messages.
+E.g. there is a component for intent classification and
+there are several different components for entity recognition.
+The different components have their own requirements. To get
+you started quickly, this installation guide only installs
+the basic requirements, you may need to install other
+dependencies if you want to use certain components. When running
+rasa NLU it will check if all needed dependencies are
+installed and tell you which are missing, if any.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>If you want to make sure you got all the dependencies
+installed any component might ever need, and you
+don&#8217;t mind the additional dependencies lying around, you can use</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>pip install -r alt_requirements/requirements_full.txt
+</pre></div>
+</div>
+<p class="last">instead of <code class="docutils literal"><span class="pre">requirements.txt</span></code> to install all requirements.</p>
+</div>
+</div>
+<div class="section" id="setting-up-a-backend">
+<h2>Setting up a backend<a class="headerlink" href="#setting-up-a-backend" title="Permalink to this headline">¶</a></h2>
+<p>Most of the processing pipeline you can use with rasa NLU
+either require MITIE, spaCy or sklearn to be installed.</p>
+<div class="section" id="best-for-most-spacy-sklearn">
+<h3>Best for most: spaCy + sklearn<a class="headerlink" href="#best-for-most-spacy-sklearn" title="Permalink to this headline">¶</a></h3>
+<p>You can also run using these two in combination.</p>
+<p>installing spacy just requires (for more information
+visit the <a class="reference external" href="https://spacy.io/docs/usage/">spacy docu</a>):</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>pip install rasa_nlu<span class="o">[</span>spacy<span class="o">]</span>
+python -m spacy download en_core_web_md
+python -m spacy link en_core_web_md en
+</pre></div>
+</div>
+<p>We highly recommend using at least the &#8220;medium&#8221; sized models (<code class="docutils literal"><span class="pre">_md</span></code>)instead of
+the spacy&#8217;s default small <code class="docutils literal"><span class="pre">en_core_web_sm</span></code> model. Small models will
+work as well, the downside is that
+they have worse performance during intent classification.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Using spaCy as the backend for Rasa is the <strong>preferred option</strong>.
+For most domains the performance is better or equally
+good as results achieved with MITIE. Additionally,
+it is easier to setup and faster to train.</p>
+</div>
+</div>
+<div class="section" id="first-alternative-mitie">
+<h3>First Alternative: MITIE<a class="headerlink" href="#first-alternative-mitie" title="Permalink to this headline">¶</a></h3>
+<p>The <a class="reference external" href="https://github.com/mit-nlp/MITIE">MITIE</a> backend is all-inclusive,
+in the sense that it provides both the NLP and the ML parts.</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>pip install git+https://github.com/mit-nlp/MITIE.git
+pip install rasa_nlu<span class="o">[</span>mitie<span class="o">]</span>
+</pre></div>
+</div>
+<p>and then download the <a class="reference external" href="https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2">MITIE models</a>.
+The file you need is <code class="docutils literal"><span class="pre">total_word_feature_extractor.dat</span></code>. Save this
+somewhere and in your <code class="docutils literal"><span class="pre">config.json</span></code> add
+<code class="docutils literal"><span class="pre">'mitie_file'</span> <span class="pre">:</span> <span class="pre">'/path/to/total_word_feature_extractor.dat'</span></code>.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p>Training MITIE can be quite slow on datasets
+with more than a few intents. You can try</p>
+<blockquote class="last">
+<div><ul class="simple">
+<li>to use the sklearn + MITIE backend instead
+(which uses sklearn for the training) or</li>
+<li>you can install <a class="reference external" href="https://github.com/tmbo/mitie">our mitie fork</a>
+which should reduce the training time as well.</li>
+</ul>
+</div></blockquote>
+</div>
+</div>
+<div class="section" id="another-alternative-sklearn-mitie">
+<h3>Another Alternative: sklearn + MITIE<a class="headerlink" href="#another-alternative-sklearn-mitie" title="Permalink to this headline">¶</a></h3>
+<p>There is a third backend that combines the advantages of the two previous ones:</p>
+<ol class="arabic simple">
+<li>the fast and good intent classification from sklearn and</li>
+<li>the good entitiy recognition and feature vector creation from MITIE</li>
+</ol>
+<p>Especially, if you have a larger number of intents (more than 10),
+training intent classifiers with MITIE can take very long.</p>
+<p>To use this backend you need to follow the instructions for
+installing both, sklearn and MITIE.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="tutorial.html" class="btn btn-neutral float-right" title="Tutorial: A simple restaurant search bot" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral" title="Language Understanding with rasa NLU" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Rasa Technologies GmbH.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+        <span class="fa fa-book"> Other Versions</span>
+        v: 0.11.4
+        <span class="fa fa-caret-down"></span>
+    </span>
+    <div class="rst-other-versions">
+        <dl>
+            <dt>Tags</dt>
+            <dd><a href="installation.html">0.11.4</a></dd>
+            <dd><a href="../0.11.3/installation.html">0.11.3</a></dd>
+            <dd><a href="../0.11.2/installation.html">0.11.2</a></dd>
+            <dd><a href="../0.11.1/installation.html">0.11.1</a></dd>
+            <dd><a href="../0.11.0/installation.html">0.11.0</a></dd>
+            <dd><a href="../0.10.6/installation.html">0.10.6</a></dd>
+            <dd><a href="../0.9.2/installation.html">0.9.2</a></dd>
+            <dd><a href="../0.8.12/installation.html">0.8.12</a></dd>
+            <dd><a href="../0.7.4/index.html">0.7.4</a></dd>
+        </dl>
+        <dl>
+            <dt>Branches</dt>
+            <dd><a href="../master/installation.html">master</a></dd>
+        </dl>
+    </div>
+</div>
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.11.4',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+  
+ 
+<!-- Global Site Tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-87333416-1"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments)};
+gtag('js', new Date());
+
+gtag('config', 'UA-87333416-1');
+</script>
+
+
+</body>
+</html>

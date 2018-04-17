@@ -1,0 +1,482 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Using rasa NLU as a HTTP server &mdash; rasa NLU 0.11.4 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="_static/banner.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="rasa NLU 0.11.4 documentation" href="index.html"/>
+        <link rel="next" title="Using rasa NLU from python" href="python.html"/>
+        <link rel="prev" title="Training Data Format" href="dataformat.html"/>
+<link href="_static/css/rasa_theme.css" rel="stylesheet" type="text/css">
+
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> rasa NLU
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.11
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial: A simple restaurant search bot</a></li>
+</ul>
+<p class="caption"><span class="caption-text">User Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migrating.html">Migrating an existing app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Training Data Format</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Using rasa NLU as a HTTP server</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#running-the-server">Running the server</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#emulation">Emulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#endpoints">Endpoints</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#post-parse-no-emulation"><code class="docutils literal"><span class="pre">POST</span> <span class="pre">/parse</span></code> (no emulation)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#post-train"><code class="docutils literal"><span class="pre">POST</span> <span class="pre">/train</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#get-status"><code class="docutils literal"><span class="pre">GET</span> <span class="pre">/status</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#get-version"><code class="docutils literal"><span class="pre">GET</span> <span class="pre">/version</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#get-config"><code class="docutils literal"><span class="pre">GET</span> <span class="pre">/config</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#authorization">Authorization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#serving-multiple-apps">Serving Multiple Apps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="python.html">Using rasa NLU from python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="entities.html">Entity Extraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="closeloop.html">Improving your models from feedback</a></li>
+<li class="toctree-l1"><a class="reference internal" href="persist.html">Model Persistence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="languages.html">Language Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline.html">Processing Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="evaluation.html">Evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migrations.html">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/RasaHQ/rasa_nlu/projects/2">Roadmap</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Change Log</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">rasa NLU</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Using rasa NLU as a HTTP server</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/http.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+
+
+
+
+
+<div class="section" id="using-rasa-nlu-as-a-http-server">
+<span id="section-http"></span><h1>Using rasa NLU as a HTTP server<a class="headerlink" href="#using-rasa-nlu-as-a-http-server" title="Permalink to this headline">¶</a></h1>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Before you can use the server, you need to train a model! See <a class="reference internal" href="tutorial.html#training-your-model"><span class="std std-ref">Training a New Model for your Project</span></a></p>
+</div>
+<p>The HTTP api exists to make it easy for non-python projects to use rasa NLU, and to make it trivial for projects currently using wit/LUIS/Dialogflow to try it out.</p>
+<div class="section" id="running-the-server">
+<h2>Running the server<a class="headerlink" href="#running-the-server" title="Permalink to this headline">¶</a></h2>
+<p>You can run a simple http server that handles requests using your projects with :</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ python -m rasa_nlu.server -c sample_configs/config_spacy.json
+</pre></div>
+</div>
+<p>The server will look for existing projects under the folder defined by the <code class="docutils literal"><span class="pre">path</span></code> parameter in the configuration.
+By default a project will load the latest trained model.</p>
+</div>
+<div class="section" id="emulation">
+<h2>Emulation<a class="headerlink" href="#emulation" title="Permalink to this headline">¶</a></h2>
+<p>rasa NLU can &#8216;emulate&#8217; any of these three services by making the <code class="docutils literal"><span class="pre">/parse</span></code> endpoint compatible with your existing code.
+To activate this, either add <code class="docutils literal"><span class="pre">'emulate'</span> <span class="pre">:</span> <span class="pre">'luis'</span></code> to your config file or run the server with <code class="docutils literal"><span class="pre">-e</span> <span class="pre">luis</span></code>.
+For example, if you would normally send your text to be parsed to LUIS, you would make a <code class="docutils literal"><span class="pre">GET</span></code> request to</p>
+<p><code class="docutils literal"><span class="pre">https://api.projectoxford.ai/luis/v2.0/apps/&lt;app-id&gt;?q=hello%20there</span></code></p>
+<p>in luis emulation mode you can call rasa by just sending this request to</p>
+<p><code class="docutils literal"><span class="pre">http://localhost:5000/parse?q=hello%20there</span></code></p>
+<p>any extra query params are ignored by rasa, so you can safely send them along.</p>
+</div>
+<div class="section" id="endpoints">
+<h2>Endpoints<a class="headerlink" href="#endpoints" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="post-parse-no-emulation">
+<h3><code class="docutils literal"><span class="pre">POST</span> <span class="pre">/parse</span></code> (no emulation)<a class="headerlink" href="#post-parse-no-emulation" title="Permalink to this headline">¶</a></h3>
+<p>You must POST data in this format <code class="docutils literal"><span class="pre">'{&quot;q&quot;:&quot;&lt;your</span> <span class="pre">text</span> <span class="pre">to</span> <span class="pre">parse&gt;&quot;}'</span></code>, you can do this with</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ curl -XPOST localhost:5000/parse -d <span class="s1">&#39;{&quot;q&quot;:&quot;hello there&quot;}&#39;</span>
+</pre></div>
+</div>
+<p>By default, when the project is not specified in the query, the <code class="docutils literal"><span class="pre">&quot;default&quot;</span></code> one will be used.
+You can (should) specify the project you want to use in your query :</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ curl -XPOST localhost:5000/parse -d &#39;{&quot;q&quot;:&quot;hello there&quot;, &quot;project&quot;: &quot;my_restaurant_search_bot&quot;}
+</pre></div>
+</div>
+<p>By default the latest trained model for the project will be loaded. You can also query against a specific model for a project :</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ curl -XPOST localhost:5000/parse -d &#39;{&quot;q&quot;:&quot;hello there&quot;, &quot;project&quot;: &quot;my_restaurant_search_bot&quot;, &quot;model&quot;: &lt;model_XXXXXX&gt;}
+</pre></div>
+</div>
+</div>
+<div class="section" id="post-train">
+<h3><code class="docutils literal"><span class="pre">POST</span> <span class="pre">/train</span></code><a class="headerlink" href="#post-train" title="Permalink to this headline">¶</a></h3>
+<p>You can post your training data to this endpoint to train a new model for a project.
+This request will wait for the server answer: either the model was trained successfully or the training errored.
+Using the HTTP server, you must specify the project you want to train a new model for to be able to use it during parse requests later on :
+<code class="docutils literal"><span class="pre">/train?project=my_project</span></code>. Any parameter passed with the query string will be treated as a
+configuration parameter of the model, hence you can change all the configuration values listed in the
+configuration section by passing in their name and the adjusted value.</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ curl -XPOST localhost:5000/train?project<span class="o">=</span>my_project -d @data/examples/rasa/demo-rasa.json
+</pre></div>
+</div>
+<p>You cannot send a training request for a project already training a new model (see below).</p>
+</div>
+<div class="section" id="get-status">
+<h3><code class="docutils literal"><span class="pre">GET</span> <span class="pre">/status</span></code><a class="headerlink" href="#get-status" title="Permalink to this headline">¶</a></h3>
+<p>This returns all the currently available projects, their status (<code class="docutils literal"><span class="pre">training</span></code> or <code class="docutils literal"><span class="pre">ready</span></code>) and their models loaded in memory.
+also returns a list of available projects the server can use to fulfill <code class="docutils literal"><span class="pre">/parse</span></code> requests.</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ curl localhost:5000/status <span class="p">|</span> python -mjson.tool
+
+<span class="o">{</span>
+  <span class="s2">&quot;available_projects&quot;</span>: <span class="o">{</span>
+    <span class="s2">&quot;my_restaurant_search_bot&quot;</span> : <span class="o">{</span>
+      <span class="s2">&quot;status&quot;</span> : <span class="s2">&quot;ready&quot;</span>,
+      <span class="s2">&quot;available_models&quot;</span> : <span class="o">[</span>
+        &lt;model_XXXXXX&gt;,
+        &lt;model_XXXXXX&gt;
+      <span class="o">]</span>
+    <span class="o">}</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="get-version">
+<h3><code class="docutils literal"><span class="pre">GET</span> <span class="pre">/version</span></code><a class="headerlink" href="#get-version" title="Permalink to this headline">¶</a></h3>
+<p>This will return the current version of the Rasa NLU instance.</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ curl localhost:5000/version <span class="p">|</span> python -mjson.tool
+<span class="o">{</span>
+  <span class="s2">&quot;version&quot;</span> : <span class="s2">&quot;0.8.2&quot;</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="get-config">
+<h3><code class="docutils literal"><span class="pre">GET</span> <span class="pre">/config</span></code><a class="headerlink" href="#get-config" title="Permalink to this headline">¶</a></h3>
+<p>This will return the currently running configuration of the Rasa NLU instance.</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ curl localhost:5000/config <span class="p">|</span> python -mjson.tool
+<span class="o">{</span>
+    <span class="s2">&quot;config&quot;</span>: <span class="s2">&quot;/app/rasa_shared/config_mitie.json&quot;</span>,
+    <span class="s2">&quot;data&quot;</span>: <span class="s2">&quot;/app/rasa_nlu/data/examples/rasa/demo-rasa.json&quot;</span>,
+    <span class="s2">&quot;duckling_dimensions&quot;</span>: null,
+    <span class="s2">&quot;emulate&quot;</span>: null,
+    ...
+  <span class="o">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="authorization">
+<span id="section-auth"></span><h2>Authorization<a class="headerlink" href="#authorization" title="Permalink to this headline">¶</a></h2>
+<p>To protect your server, you can specify a token in your rasa NLU configuration, e.g. by adding <code class="docutils literal"><span class="pre">&quot;token&quot;</span> <span class="pre">:</span> <span class="pre">&quot;12345&quot;</span></code> to your config file, or by setting the <code class="docutils literal"><span class="pre">RASA_TOKEN</span></code> environment variable.
+If set, this token must be passed as a query parameter in all requests, e.g. :</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ curl localhost:5000/status?token<span class="o">=</span><span class="m">12345</span>
+</pre></div>
+</div>
+<p>On default CORS (cross-origin resource sharing) calls are not allowed. If you want to call your rasa NLU server from another domain (for example from a training web UI) then you can whitelist that domain by adding it to the config value <code class="docutils literal"><span class="pre">cors_origin</span></code>.</p>
+</div>
+<div class="section" id="serving-multiple-apps">
+<span id="section-http-config"></span><h2>Serving Multiple Apps<a class="headerlink" href="#serving-multiple-apps" title="Permalink to this headline">¶</a></h2>
+<p>Depending on your choice of backend, rasa NLU can use quite a lot of memory.
+So if you are serving multiple models in production, you want to serve these
+from the same process &amp; avoid duplicating the memory load.</p>
+<dl class="docutils">
+<dt>Although this saves the backend from loading the same backend twice, it still needs to load one set of</dt>
+<dd>word vectors (which make up most of the memory consumption) per language and backend.</dd>
+</dl>
+<p>As stated previously, Rasa NLU naturally handles serving multiple apps : by default the server will load all projects found
+under the <code class="docutils literal"><span class="pre">path</span></code> directory defined in the configuration. The file structure under <code class="docutils literal"><span class="pre">path</span> <span class="pre">directory</span></code> is as follows :</p>
+<ul class="simple">
+<li>&lt;path&gt;</li>
+</ul>
+<blockquote>
+<div><ul class="simple">
+<li>&lt;project_A&gt;</li>
+</ul>
+<blockquote>
+<div><ul class="simple">
+<li>&lt;model_XXXXXX&gt;</li>
+<li>&lt;model_XXXXXX&gt;</li>
+</ul>
+<blockquote>
+<div>...</div></blockquote>
+</div></blockquote>
+<ul class="simple">
+<li>&lt;project_B&gt;</li>
+</ul>
+<blockquote>
+<div><ul class="simple">
+<li>&lt;model_XXXXXX&gt;</li>
+</ul>
+<blockquote>
+<div>...</div></blockquote>
+<p>...</p>
+</div></blockquote>
+</div></blockquote>
+<p>So you can specify which one to use in your <code class="docutils literal"><span class="pre">/parse</span></code> requests:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> curl <span class="s1">&#39;localhost:5000/parse?q=hello&amp;project=my_restaurant_search_bot&#39;</span>
+</pre></div>
+</div>
+<p>or</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> curl -XPOST localhost:5000/parse -d <span class="s1">&#39;{&quot;q&quot;:&quot;I am looking for Chinese food&quot;, &quot;project&quot;:&quot;my_restaurant_search_bot&quot;}&#39;</span>
+</pre></div>
+</div>
+<p>You can also specify the model you want to use for a given project, the default used being the latest trained :</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> curl -XPOST localhost:5000/parse -d <span class="s1">&#39;{&quot;q&quot;:&quot;I am looking for Chinese food&quot;, &quot;project&quot;:&quot;my_restaurant_search_bot&quot;, &quot;model&quot;:&lt;model_XXXXXX&gt;}&#39;</span>
+</pre></div>
+</div>
+<p>If no project is to be found by the server under the <code class="docutils literal"><span class="pre">path</span></code> directory, a <code class="docutils literal"><span class="pre">&quot;default&quot;</span></code> one will be used, using a simple fallback model.</p>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="python.html" class="btn btn-neutral float-right" title="Using rasa NLU from python" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="dataformat.html" class="btn btn-neutral" title="Training Data Format" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Rasa Technologies GmbH.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+        <span class="fa fa-book"> Other Versions</span>
+        v: 0.11.4
+        <span class="fa fa-caret-down"></span>
+    </span>
+    <div class="rst-other-versions">
+        <dl>
+            <dt>Tags</dt>
+            <dd><a href="http.html">0.11.4</a></dd>
+            <dd><a href="../0.11.3/http.html">0.11.3</a></dd>
+            <dd><a href="../0.11.2/http.html">0.11.2</a></dd>
+            <dd><a href="../0.11.1/http.html">0.11.1</a></dd>
+            <dd><a href="../0.11.0/http.html">0.11.0</a></dd>
+            <dd><a href="../0.10.6/http.html">0.10.6</a></dd>
+            <dd><a href="../0.9.2/http.html">0.9.2</a></dd>
+            <dd><a href="../0.8.12/http.html">0.8.12</a></dd>
+            <dd><a href="../0.7.4/http.html">0.7.4</a></dd>
+        </dl>
+        <dl>
+            <dt>Branches</dt>
+            <dd><a href="../master/http.html">master</a></dd>
+        </dl>
+    </div>
+</div>
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.11.4',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+  
+ 
+<!-- Global Site Tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-87333416-1"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments)};
+gtag('js', new Date());
+
+gtag('config', 'UA-87333416-1');
+</script>
+
+
+</body>
+</html>

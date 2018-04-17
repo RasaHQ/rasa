@@ -1,0 +1,391 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Evaluation &mdash; rasa NLU 0.11.4 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="_static/banner.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="rasa NLU 0.11.4 documentation" href="index.html"/>
+        <link rel="next" title="Frequently Asked Questions" href="faq.html"/>
+        <link rel="prev" title="Processing Pipeline" href="pipeline.html"/>
+<link href="_static/css/rasa_theme.css" rel="stylesheet" type="text/css">
+
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> rasa NLU
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.11
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial: A simple restaurant search bot</a></li>
+</ul>
+<p class="caption"><span class="caption-text">User Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migrating.html">Migrating an existing app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Training Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http.html">Using rasa NLU as a HTTP server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python.html">Using rasa NLU from python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="entities.html">Entity Extraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="closeloop.html">Improving your models from feedback</a></li>
+<li class="toctree-l1"><a class="reference internal" href="persist.html">Model Persistence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="languages.html">Language Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline.html">Processing Pipeline</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Evaluation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#intent-classification">Intent Classification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#entity-extraction">Entity Extraction</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#entity-scoring">Entity Scoring</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migrations.html">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/RasaHQ/rasa_nlu/projects/2">Roadmap</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Change Log</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">rasa NLU</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Evaluation</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/evaluation.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+
+
+
+
+
+<div class="section" id="evaluation">
+<span id="section-evaluation"></span><h1>Evaluation<a class="headerlink" href="#evaluation" title="Permalink to this headline">¶</a></h1>
+<p>The evaluation script <cite>evaluate.py</cite> allows you to test your models performance for intent classification and entity recognition. You invoke this script supplying test data, model, and config file arguments:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>python -m rasa_nlu.evaluate -d data/my_test.json -m models/my_model -c my_nlu_config.json
+</pre></div>
+</div>
+<p>If you would like to evaluate your pipeline using crossvalidation, you can run the evaluation script with the mode crossvalidation flag. This gives you an estimate of how accurately a predictive model will perform in practice. Note that you cannot specify a model in this mode, as a new model will be trained on part of the data for every crossvalidation loop. An example invocation of your script would be:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>python -m rasa_nlu.evaluate -d data/examples/rasa/demo-rasa.json -c sample_configs/config_spacy.json --mode crossvalidation
+</pre></div>
+</div>
+<div class="section" id="intent-classification">
+<h2>Intent Classification<a class="headerlink" href="#intent-classification" title="Permalink to this headline">¶</a></h2>
+<p>The evaluation script will log precision, recall, and f1 measure for each intent and once summarized for all.
+Furthermore, it creates a confusion matrix for you to see which intents are mistaken for which others.</p>
+</div>
+<div class="section" id="entity-extraction">
+<h2>Entity Extraction<a class="headerlink" href="#entity-extraction" title="Permalink to this headline">¶</a></h2>
+<p>For each entity extractor, the evaluation script logs its performance per entity type in your training data.
+So if you use <code class="docutils literal"><span class="pre">ner_crf</span></code> and <code class="docutils literal"><span class="pre">ner_duckling</span></code> in your pipeline, it will log two evaluation tables
+containing recall, precision, and f1 measure for each entity type.</p>
+<p>In the case <code class="docutils literal"><span class="pre">ner_duckling</span></code> we actually run the evaluation for each defined
+duckling dimension. If you use the <code class="docutils literal"><span class="pre">time</span></code> and <code class="docutils literal"><span class="pre">ordinal</span></code> dimensions, you would
+get two evaluation tables: one for <code class="docutils literal"><span class="pre">ner_duckling</span> <span class="pre">(Time)</span></code> and one for
+<code class="docutils literal"><span class="pre">ner_duckling</span> <span class="pre">(Ordinal)</span></code>.</p>
+<p><code class="docutils literal"><span class="pre">ner_synonyms</span></code> does not create an evaluation table, because it only changes the value of the found
+entities and does not find entity boundaries itself.</p>
+<p>Finally, keep in mind that entity types in your testing data have to match the output
+of the extraction components. This is particularly important for <code class="docutils literal"><span class="pre">ner_duckling</span></code>, because it is not
+fitted to your training data.</p>
+<div class="section" id="entity-scoring">
+<h3>Entity Scoring<a class="headerlink" href="#entity-scoring" title="Permalink to this headline">¶</a></h3>
+<p>To evaluate entity extraction we apply a simple tag-based approach. We don&#8217;t consider BILOU tags, but only the
+entity type tags on a per token basis. For location entity like &#8220;near Alexanderplatz&#8221; we
+expect the labels &#8220;LOC&#8221; &#8220;LOC&#8221; instead of the BILOU-based &#8220;B-LOC&#8221; &#8220;L-LOC&#8221;. Our approach is more lenient
+when it comes to evaluation, as it rewards partial extraction and does not punish the splitting of entities.
+For example, the given the aforementioned entity &#8220;near Alexanderplatz&#8221; and a system that extracts
+&#8220;Alexanderplatz&#8221;, this reward the extraction of &#8220;Alexanderplatz&#8221; and punish the missed out word &#8220;near&#8221;.
+The BILOU-based approach, however, would label this as a complete failure since it expects Alexanderplatz
+to be labeled as a last token in an entity (L-LOC) instead of a single token entity (U-LOC). Also note,
+a splitted extraction of &#8220;near&#8221; and &#8220;Alexanderplatz&#8221; would get full scores on our approach and zero on the
+BILOU-based one.</p>
+<p>Here&#8217;s a comparison between both different scoring mechanisms for the phrase &#8220;near Alexanderplatz tonight&#8221;:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="50%" />
+<col width="24%" />
+<col width="27%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">extracted</th>
+<th class="head">Simple tags (score)</th>
+<th class="head">BILOU tags (score)</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>[near Alexanderplatz](loc) [tonight](time)</td>
+<td>loc loc time (3)</td>
+<td>B-loc L-loc U-time (3)</td>
+</tr>
+<tr class="row-odd"><td>[near](loc) [Alexanderplatz](loc) [tonight](time)</td>
+<td>loc loc time (3)</td>
+<td>U-loc U-loc U-time (1)</td>
+</tr>
+<tr class="row-even"><td>near [Alexanderplatz](loc) [tonight](time)</td>
+<td>O   loc time (2)</td>
+<td>O     U-loc U-time (1)</td>
+</tr>
+<tr class="row-odd"><td>[near](loc) Alexanderplatz [tonight](time)</td>
+<td>loc O   time (2)</td>
+<td>U-loc O     U-time (1)</td>
+</tr>
+<tr class="row-even"><td>[near Alexanderplatz tonight](loc)</td>
+<td>loc loc loc  (2)</td>
+<td>B-loc I-loc L-loc  (1)</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="faq.html" class="btn btn-neutral float-right" title="Frequently Asked Questions" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="pipeline.html" class="btn btn-neutral" title="Processing Pipeline" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Rasa Technologies GmbH.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+        <span class="fa fa-book"> Other Versions</span>
+        v: 0.11.4
+        <span class="fa fa-caret-down"></span>
+    </span>
+    <div class="rst-other-versions">
+        <dl>
+            <dt>Tags</dt>
+            <dd><a href="evaluation.html">0.11.4</a></dd>
+            <dd><a href="../0.11.3/evaluation.html">0.11.3</a></dd>
+            <dd><a href="../0.11.2/evaluation.html">0.11.2</a></dd>
+            <dd><a href="../0.11.1/evaluation.html">0.11.1</a></dd>
+            <dd><a href="../0.11.0/evaluation.html">0.11.0</a></dd>
+            <dd><a href="../0.10.6/index.html">0.10.6</a></dd>
+            <dd><a href="../0.9.2/index.html">0.9.2</a></dd>
+            <dd><a href="../0.8.12/index.html">0.8.12</a></dd>
+            <dd><a href="../0.7.4/index.html">0.7.4</a></dd>
+        </dl>
+        <dl>
+            <dt>Branches</dt>
+            <dd><a href="../master/evaluation.html">master</a></dd>
+        </dl>
+    </div>
+</div>
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.11.4',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+  
+ 
+<!-- Global Site Tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-87333416-1"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments)};
+gtag('js', new Date());
+
+gtag('config', 'UA-87333416-1');
+</script>
+
+
+</body>
+</html>

@@ -1,0 +1,495 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Tutorial: A simple restaurant search bot &mdash; rasa NLU 0.11.4 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="_static/banner.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="rasa NLU 0.11.4 documentation" href="index.html"/>
+        <link rel="next" title="Configuration" href="config.html"/>
+        <link rel="prev" title="Installation" href="installation.html"/>
+<link href="_static/css/rasa_theme.css" rel="stylesheet" type="text/css">
+
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> rasa NLU
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.11
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Tutorial: A simple restaurant search bot</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#preparing-the-training-data">Preparing the Training Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#visualizing-the-training-data">Visualizing the Training Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#training-a-new-model-for-your-project">Training a New Model for your Project</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#using-your-model">Using Your Model</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption"><span class="caption-text">User Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migrating.html">Migrating an existing app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Training Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http.html">Using rasa NLU as a HTTP server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python.html">Using rasa NLU from python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="entities.html">Entity Extraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="closeloop.html">Improving your models from feedback</a></li>
+<li class="toctree-l1"><a class="reference internal" href="persist.html">Model Persistence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="languages.html">Language Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline.html">Processing Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="evaluation.html">Evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migrations.html">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/RasaHQ/rasa_nlu/projects/2">Roadmap</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Change Log</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">rasa NLU</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Tutorial: A simple restaurant search bot</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/tutorial.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+
+
+
+
+
+<div class="section" id="tutorial-a-simple-restaurant-search-bot">
+<span id="tutorial"></span><span id="section-tutorial"></span><h1>Tutorial: A simple restaurant search bot<a class="headerlink" href="#tutorial-a-simple-restaurant-search-bot" title="Permalink to this headline">¶</a></h1>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">See <a class="reference internal" href="migrating.html#section-migration"><span class="std std-ref">Migrating an existing app</span></a> for how to clone your existing wit/LUIS/Dialogflow app.</p>
+</div>
+<p>As an example we&#8217;ll start a new project covering the domain of searching for restaurants.
+We&#8217;ll start with an extremely simple model of those conversations. You can build up from there.</p>
+<p>Let&#8217;s assume that <cite>anything</cite> our bot&#8217;s users say can be categorized into one of the following <strong>intents</strong>:</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">greet</span></code></li>
+<li><code class="docutils literal"><span class="pre">restaurant_search</span></code></li>
+<li><code class="docutils literal"><span class="pre">thankyou</span></code></li>
+</ul>
+<p>Of course there are many ways our users might <code class="docutils literal"><span class="pre">greet</span></code> our bot:</p>
+<ul class="simple">
+<li><cite>Hi!</cite></li>
+<li><cite>Hey there!</cite></li>
+<li><cite>Hello again :)</cite></li>
+</ul>
+<p>And even more ways to say that you want to look for restaurants:</p>
+<ul class="simple">
+<li><cite>Do you know any good pizza places?</cite></li>
+<li><cite>I&#8217;m in the North of town and I want chinese food</cite></li>
+<li><cite>I&#8217;m hungry</cite></li>
+</ul>
+<p>The first job of rasa NLU is to assign any given sentence to one of the <strong>intent</strong> categories: <code class="docutils literal"><span class="pre">greet</span></code>, <code class="docutils literal"><span class="pre">restaurant_search</span></code>, or <code class="docutils literal"><span class="pre">thankyou</span></code>.</p>
+<p>The second job is to label words like &#8220;Mexican&#8221; and &#8220;center&#8221; as <code class="docutils literal"><span class="pre">cuisine</span></code> and <code class="docutils literal"><span class="pre">location</span></code> <strong>entities</strong>, respectively.
+In this tutorial we&#8217;ll build a model which does exactly that.</p>
+<div class="section" id="preparing-the-training-data">
+<h2>Preparing the Training Data<a class="headerlink" href="#preparing-the-training-data" title="Permalink to this headline">¶</a></h2>
+<p>The training data is essential to develop chatbots. It should include texts to be interpreted and the structured data (intent/entities) we expect chatbots to convert the texts into. The best way to get training texts is from <em>real users</em>, and the best way to get the structured data is to <a class="reference external" href="https://medium.com/rasa-blog/put-on-your-robot-costume-and-be-the-minimum-viable-bot-yourself-3e48a5a59308">pretend to be the bot yourself</a>. But to help get you started, we have some <a class="reference external" href="https://github.com/RasaHQ/rasa_nlu/blob/master/data/examples/rasa/demo-rasa.json">data saved</a>.</p>
+<p>Download the file (json format) and open it, and you&#8217;ll see a list of training examples, each composed of <code class="docutils literal"><span class="pre">&quot;text&quot;</span></code>, <code class="docutils literal"><span class="pre">&quot;intent&quot;</span></code> and <code class="docutils literal"><span class="pre">&quot;entities&quot;</span></code>, as shown below. In your working directory, create a <code class="docutils literal"><span class="pre">data</span></code> folder, and copy this <code class="docutils literal"><span class="pre">demo-rasa.json</span></code> file there.</p>
+<div class="highlight-json"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;hey&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;intent&quot;</span><span class="p">:</span> <span class="s2">&quot;greet&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;entities&quot;</span><span class="p">:</span> <span class="p">[]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<div class="highlight-json"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;show me chinese restaurants&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;intent&quot;</span><span class="p">:</span> <span class="s2">&quot;restaurant_search&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;entities&quot;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="nt">&quot;start&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">,</span>
+      <span class="nt">&quot;end&quot;</span><span class="p">:</span> <span class="mi">15</span><span class="p">,</span>
+      <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;chinese&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;entity&quot;</span><span class="p">:</span> <span class="s2">&quot;cuisine&quot;</span>
+    <span class="p">}</span>
+  <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Hopefully the format is intuitive if you&#8217;ve read this far into the tutorial, for details see <a class="reference internal" href="dataformat.html#section-dataformat"><span class="std std-ref">Training Data Format</span></a>. Otherwise, the next section &#8216;visualizing the training data&#8217; can help you better read, verify and/or modify the training data.</p>
+</div>
+<div class="section" id="visualizing-the-training-data">
+<span id="id1"></span><h2>Visualizing the Training Data<a class="headerlink" href="#visualizing-the-training-data" title="Permalink to this headline">¶</a></h2>
+<p>It&#8217;s always a good idea to <cite>look</cite> at your data before, during, and after training a model.
+Luckily, there&#8217;s a <a class="reference external" href="https://github.com/RasaHQ/rasa-nlu-trainer">great tool</a> for creating training data in rasa&#8217;s format.
+- created by <a class="reference external" href="https://github.com/azazdeaz">&#64;azazdeaz</a> - and it&#8217;s also extremely helpful for inspecting and modifying existing data.</p>
+<p>For the demo data the output should look like this:</p>
+<img alt="_images/rasa_nlu_intent_gui.png" src="_images/rasa_nlu_intent_gui.png" />
+<p>It is <strong>strongly</strong> recommended that you view your training data in the GUI before training.</p>
+</div>
+<div class="section" id="training-a-new-model-for-your-project">
+<span id="training-your-model"></span><h2>Training a New Model for your Project<a class="headerlink" href="#training-a-new-model-for-your-project" title="Permalink to this headline">¶</a></h2>
+<p>Now we&#8217;re going to create a configuration file. Make sure first that you&#8217;ve set up a backend, see <a class="reference internal" href="installation.html#section-backends"><span class="std std-ref">Installation</span></a> .
+Create a file called <code class="docutils literal"><span class="pre">config_spacy.json</span></code> or <code class="docutils literal"><span class="pre">config_mitie.json</span></code>, depending on the pipeline selected, in your working directory which looks like this</p>
+<div class="highlight-json"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;pipeline&quot;</span><span class="p">:</span> <span class="s2">&quot;spacy_sklearn&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;path&quot;</span> <span class="p">:</span> <span class="s2">&quot;./projects&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;data&quot;</span> <span class="p">:</span> <span class="s2">&quot;./data/examples/rasa/demo-rasa.json&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>or if you&#8217;ve installed the MITIE backend instead:</p>
+<div class="highlight-json"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;pipeline&quot;</span><span class="p">:</span> <span class="s2">&quot;mitie&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;mitie_file&quot;</span><span class="p">:</span> <span class="s2">&quot;./data/total_word_feature_extractor.dat&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;path&quot;</span> <span class="p">:</span> <span class="s2">&quot;./projects&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;data&quot;</span> <span class="p">:</span> <span class="s2">&quot;./data/examples/rasa/demo-rasa.json&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Now we can train a spacy model by running:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> python -m rasa_nlu.train -c sample_configs/config_spacy.json
+</pre></div>
+</div>
+<p>If you want to know more about the parameters, there is an overview of the <a class="reference internal" href="config.html#section-configuration"><span class="std std-ref">Configuration</span></a>. After a few minutes,
+rasa NLU will finish training, and you&#8217;ll see a new folder named as
+<code class="docutils literal"><span class="pre">projects/default/model_YYYYMMDD-HHMMSS</span></code> with the timestamp when training finished.</p>
+</div>
+<div class="section" id="using-your-model">
+<span id="tutorial-using-your-model"></span><h2>Using Your Model<a class="headerlink" href="#using-your-model" title="Permalink to this headline">¶</a></h2>
+<p>By default, the server will look for all projects folders under the <code class="docutils literal"><span class="pre">path</span></code> directory specified in the configuration.
+When no project is specified, as in this example, a &#8220;default&#8221; one will be used, itself using the latest trained model.</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> python -m rasa_nlu.server -c sample_configs/config_spacy.json
+</pre></div>
+</div>
+<p>More information about starting the server can be found in <a class="reference internal" href="http.html#section-http"><span class="std std-ref">Using rasa NLU as a HTTP server</span></a>.</p>
+<p>You can then test your new model by sending a request. Open a new tab/window on your terminal and run</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last"><strong>For windows users</strong> the windows command line interface doesn&#8217;t like single quotes. Use doublequotes and escape where necessary. <code class="docutils literal"><span class="pre">curl</span> <span class="pre">-X</span> <span class="pre">POST</span> <span class="pre">&quot;localhost:5000/parse&quot;</span> <span class="pre">-d</span> <span class="pre">&quot;{/&quot;q/&quot;:/&quot;I</span> <span class="pre">am</span> <span class="pre">looking</span> <span class="pre">for</span> <span class="pre">Mexican</span> <span class="pre">food/&quot;}&quot;</span> <span class="pre">|</span> <span class="pre">python</span> <span class="pre">-m</span> <span class="pre">json.tool</span></code></p>
+</div>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> curl -X POST localhost:5000/parse -d <span class="s1">&#39;{&quot;q&quot;:&quot;I am looking for Mexican food&quot;}&#39;</span> <span class="p">|</span> python -m json.tool
+</pre></div>
+</div>
+<p>which should return</p>
+<div class="highlight-json"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;intent&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;restaurant_search&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">0.8231117999072759</span>
+    <span class="p">},</span>
+    <span class="nt">&quot;entities&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="nt">&quot;start&quot;</span><span class="p">:</span> <span class="mi">17</span><span class="p">,</span>
+            <span class="nt">&quot;end&quot;</span><span class="p">:</span> <span class="mi">24</span><span class="p">,</span>
+            <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;mexican&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;entity&quot;</span><span class="p">:</span> <span class="s2">&quot;cuisine&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;extractor&quot;</span><span class="p">:</span> <span class="s2">&quot;ner_crf&quot;</span>
+        <span class="p">}</span>
+    <span class="p">],</span>
+    <span class="nt">&quot;intent_ranking&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;restaurant_search&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">0.8231117999072759</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+            <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;affirm&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">0.07618757211779097</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+            <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;goodbye&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">0.06298664363805719</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+            <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;greet&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">0.03771398433687609</span>
+        <span class="p">}</span>
+    <span class="p">],</span>
+    <span class="nt">&quot;text&quot;</span><span class="p">:</span> <span class="s2">&quot;I am looking for Mexican food&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>If you are using the <code class="docutils literal"><span class="pre">spacy_sklearn</span></code> backend and the entities aren&#8217;t found, don&#8217;t panic!
+This tutorial is just a toy example, with far too little training data to expect good performance.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Intent classification is independent of entity extraction, e.g. in &#8220;I am looking for Chinese food&#8221; the entities are not extracted, though intent classification is correct.</p>
+</div>
+<p>Rasa NLU will also print a <code class="docutils literal"><span class="pre">confidence</span></code> value for the intent classification. For models using spacy
+intent classification this will be a probability. For MITIE models this is just a score, which <strong>might be
+greater than 1</strong>.</p>
+<p>You can use this to do some error handling in your chatbot (ex: asking the user again if the confidence is low)
+and it&#8217;s also helpful for prioritising which intents need more training data.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The output may contain other or less attributes, depending on the pipeline you are using. For example, the <code class="docutils literal"><span class="pre">mitie</span></code> pipeline doesn&#8217;t include the <code class="docutils literal"><span class="pre">&quot;intent_ranking&quot;</span></code> (see example below) whereas the <code class="docutils literal"><span class="pre">spacy_sklearn</span></code> pipeline does (see example above).</p>
+</div>
+<p>With very little data, rasa NLU can in certain cases already generalise concepts, for example:</p>
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> curl -X POST localhost:5000/parse -d <span class="s1">&#39;{&quot;q&quot;:&quot;I want some italian food&quot;}&#39;</span> <span class="p">|</span> python -m json.tool
+<span class="go">{</span>
+<span class="go">    &quot;intent&quot;: {</span>
+<span class="go">        &quot;name&quot;: &quot;restaurant_search&quot;,</span>
+<span class="go">        &quot;confidence&quot;: 0.5792111723774511</span>
+<span class="go">    },</span>
+<span class="go">    &quot;entities&quot;: [</span>
+<span class="go">        {</span>
+<span class="go">            &quot;entity&quot;: &quot;cuisine&quot;,</span>
+<span class="go">            &quot;value&quot;: &quot;italian&quot;,</span>
+<span class="go">            &quot;start&quot;: 12,</span>
+<span class="go">            &quot;end&quot;: 19,</span>
+<span class="go">            &quot;extractor&quot;: &quot;ner_mitie&quot;</span>
+<span class="go">        }</span>
+<span class="go">    ],</span>
+<span class="go">    &quot;text&quot;: &quot;I want some italian food&quot;</span>
+<span class="go">}</span>
+</pre></div>
+</div>
+<p>even though there&#8217;s nothing quite like this sentence in the examples used to train the model.
+To build a more robust app you will obviously want to use a lot more training data, so go and collect it!</p>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="config.html" class="btn btn-neutral float-right" title="Configuration" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="installation.html" class="btn btn-neutral" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Rasa Technologies GmbH.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+        <span class="fa fa-book"> Other Versions</span>
+        v: 0.11.4
+        <span class="fa fa-caret-down"></span>
+    </span>
+    <div class="rst-other-versions">
+        <dl>
+            <dt>Tags</dt>
+            <dd><a href="tutorial.html">0.11.4</a></dd>
+            <dd><a href="../0.11.3/tutorial.html">0.11.3</a></dd>
+            <dd><a href="../0.11.2/tutorial.html">0.11.2</a></dd>
+            <dd><a href="../0.11.1/tutorial.html">0.11.1</a></dd>
+            <dd><a href="../0.11.0/tutorial.html">0.11.0</a></dd>
+            <dd><a href="../0.10.6/tutorial.html">0.10.6</a></dd>
+            <dd><a href="../0.9.2/tutorial.html">0.9.2</a></dd>
+            <dd><a href="../0.8.12/tutorial.html">0.8.12</a></dd>
+            <dd><a href="../0.7.4/tutorial.html">0.7.4</a></dd>
+        </dl>
+        <dl>
+            <dt>Branches</dt>
+            <dd><a href="../master/tutorial.html">master</a></dd>
+        </dl>
+    </div>
+</div>
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.11.4',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+  
+ 
+<!-- Global Site Tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-87333416-1"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments)};
+gtag('js', new Date());
+
+gtag('config', 'UA-87333416-1');
+</script>
+
+
+</body>
+</html>

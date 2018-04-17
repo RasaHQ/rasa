@@ -1,0 +1,363 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Language Support &mdash; rasa NLU 0.11.4 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="_static/banner.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="rasa NLU 0.11.4 documentation" href="index.html"/>
+        <link rel="next" title="Processing Pipeline" href="pipeline.html"/>
+        <link rel="prev" title="Model Persistence" href="persist.html"/>
+<link href="_static/css/rasa_theme.css" rel="stylesheet" type="text/css">
+
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> rasa NLU
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.11
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial: A simple restaurant search bot</a></li>
+</ul>
+<p class="caption"><span class="caption-text">User Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migrating.html">Migrating an existing app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Training Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http.html">Using rasa NLU as a HTTP server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python.html">Using rasa NLU from python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="entities.html">Entity Extraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="closeloop.html">Improving your models from feedback</a></li>
+<li class="toctree-l1"><a class="reference internal" href="persist.html">Model Persistence</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Language Support</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#adding-a-new-language">Adding a new language</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#spacy-sklearn">spacy-sklearn</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mitie">MITIE</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline.html">Processing Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="evaluation.html">Evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migrations.html">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/RasaHQ/rasa_nlu/projects/2">Roadmap</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Change Log</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">rasa NLU</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Language Support</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/languages.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+
+
+
+
+
+<div class="section" id="language-support">
+<span id="section-languages"></span><h1>Language Support<a class="headerlink" href="#language-support" title="Permalink to this headline">¶</a></h1>
+<p>Currently rasa NLU is tested and readily available for the following languages:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="30%" />
+<col width="70%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">backend</th>
+<th class="head">supported languages</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>spacy-sklearn</td>
+<td>english (<code class="docutils literal"><span class="pre">en</span></code>),
+german (<code class="docutils literal"><span class="pre">de</span></code>),
+spanish (<code class="docutils literal"><span class="pre">es</span></code>),
+portuguese (<code class="docutils literal"><span class="pre">pt</span></code>),
+italian (<code class="docutils literal"><span class="pre">it</span></code>),
+dutch (<code class="docutils literal"><span class="pre">nl</span></code>),
+french (<code class="docutils literal"><span class="pre">fr</span></code>)</td>
+</tr>
+<tr class="row-odd"><td>MITIE</td>
+<td>english (<code class="docutils literal"><span class="pre">en</span></code>)</td>
+</tr>
+</tbody>
+</table>
+<p>These languages can be set as part of the <a class="reference internal" href="config.html#section-configuration"><span class="std std-ref">Configuration</span></a>.</p>
+<div class="section" id="adding-a-new-language">
+<h2>Adding a new language<a class="headerlink" href="#adding-a-new-language" title="Permalink to this headline">¶</a></h2>
+<p>We want to make the process of adding new languages as simple as possible to increase the number of
+supported languages. Nevertheless, to use a language you either need a trained word representation or
+you need to train that presentation on your own using a large corpus of text data in that language.</p>
+<p>These are the steps necessary to add a new language:</p>
+<div class="section" id="spacy-sklearn">
+<h3>spacy-sklearn<a class="headerlink" href="#spacy-sklearn" title="Permalink to this headline">¶</a></h3>
+<p>spaCy already provides a really good documentation page about <a class="reference external" href="https://spacy.io/docs/usage/adding-languages">Adding languages</a>.
+This will help you train a tokenizer and vocabulary for a new language in spaCy.</p>
+<p>As described in the documentation, you need to register your language using <code class="docutils literal"><span class="pre">set_lang_class()</span></code> which will
+allow rasa NLU to load and use your new language by passing in your language identifier as the <code class="docutils literal"><span class="pre">language</span></code> <a class="reference internal" href="config.html#section-configuration"><span class="std std-ref">Configuration</span></a> option.</p>
+</div>
+<div class="section" id="mitie">
+<h3>MITIE<a class="headerlink" href="#mitie" title="Permalink to this headline">¶</a></h3>
+<ol class="arabic simple">
+<li>Get a ~clean language corpus (a Wikipedia dump works) as a set of text files</li>
+<li>Build and run <a class="reference external" href="https://github.com/mit-nlp/MITIE">MITIE wordrep tool</a> on your corpus. This can take several hours/days depending on your dataset and your workstation. You&#8217;ll need something like 128GB of RAM for wordrep to run - yes that&#8217;s alot: try to extend your swap.</li>
+<li>Set the path of your new <code class="docutils literal"><span class="pre">total_word_feature_extractor.dat</span></code> as value of the <em>mitie_file</em> parameter in <code class="docutils literal"><span class="pre">config_mitie.json</span></code></li>
+</ol>
+</div>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="pipeline.html" class="btn btn-neutral float-right" title="Processing Pipeline" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="persist.html" class="btn btn-neutral" title="Model Persistence" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Rasa Technologies GmbH.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+        <span class="fa fa-book"> Other Versions</span>
+        v: 0.11.4
+        <span class="fa fa-caret-down"></span>
+    </span>
+    <div class="rst-other-versions">
+        <dl>
+            <dt>Tags</dt>
+            <dd><a href="languages.html">0.11.4</a></dd>
+            <dd><a href="../0.11.3/languages.html">0.11.3</a></dd>
+            <dd><a href="../0.11.2/languages.html">0.11.2</a></dd>
+            <dd><a href="../0.11.1/languages.html">0.11.1</a></dd>
+            <dd><a href="../0.11.0/languages.html">0.11.0</a></dd>
+            <dd><a href="../0.10.6/languages.html">0.10.6</a></dd>
+            <dd><a href="../0.9.2/languages.html">0.9.2</a></dd>
+            <dd><a href="../0.8.12/languages.html">0.8.12</a></dd>
+            <dd><a href="../0.7.4/languages.html">0.7.4</a></dd>
+        </dl>
+        <dl>
+            <dt>Branches</dt>
+            <dd><a href="../master/languages.html">master</a></dd>
+        </dl>
+    </div>
+</div>
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.11.4',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+  
+ 
+<!-- Global Site Tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-87333416-1"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments)};
+gtag('js', new Date());
+
+gtag('config', 'UA-87333416-1');
+</script>
+
+
+</body>
+</html>

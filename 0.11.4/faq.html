@@ -1,0 +1,360 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Frequently Asked Questions &mdash; rasa NLU 0.11.4 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="_static/banner.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="rasa NLU 0.11.4 documentation" href="index.html"/>
+        <link rel="next" title="Migration Guide" href="migrations.html"/>
+        <link rel="prev" title="Evaluation" href="evaluation.html"/>
+<link href="_static/css/rasa_theme.css" rel="stylesheet" type="text/css">
+
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> rasa NLU
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.11
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial: A simple restaurant search bot</a></li>
+</ul>
+<p class="caption"><span class="caption-text">User Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migrating.html">Migrating an existing app</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Training Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http.html">Using rasa NLU as a HTTP server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python.html">Using rasa NLU from python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="entities.html">Entity Extraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="closeloop.html">Improving your models from feedback</a></li>
+<li class="toctree-l1"><a class="reference internal" href="persist.html">Model Persistence</a></li>
+<li class="toctree-l1"><a class="reference internal" href="languages.html">Language Support</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline.html">Processing Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="evaluation.html">Evaluation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Frequently Asked Questions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#how-many-training-examples-do-i-need">How many training examples do I need?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#does-it-run-with-python-3">Does it run with python 3?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#which-languages-are-supported">Which languages are supported?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#which-version-of-rasa-nlu-am-i-running">Which version of rasa NLU am I running?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#why-am-i-getting-an-undefinedmetricwarning">Why am I getting an <code class="docutils literal"><span class="pre">UndefinedMetricWarning</span></code>?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#i-have-an-issue-can-you-help-me">I have an issue, can you help me?</a><ul class="simple">
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="migrations.html">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Developer Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/RasaHQ/rasa_nlu/projects/2">Roadmap</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Change Log</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">rasa NLU</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Frequently Asked Questions</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/faq.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+
+
+
+
+
+<div class="section" id="frequently-asked-questions">
+<span id="section-faq"></span><h1>Frequently Asked Questions<a class="headerlink" href="#frequently-asked-questions" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="how-many-training-examples-do-i-need">
+<h2>How many training examples do I need?<a class="headerlink" href="#how-many-training-examples-do-i-need" title="Permalink to this headline">¶</a></h2>
+<p>Unfortunately, there is no cookie-cutter answer to this question. It depends on your intents and your entities.</p>
+<p>If you have intents that are easily confusable, you will need more training data. Accordingly, as you add more
+intents, you also want to add more training examples for each intent. If you quickly write 20-30 unique expressions for
+each intent, you should be good for the beginning.</p>
+<p>The same holds true for entities. the number of training examples you will need depends on how closely related your different entity types are and how clearly
+entities are distinguishable from non-entities in your use case.</p>
+<p>To assess your model&#8217;s performance, <a class="reference internal" href="tutorial.html#tutorial-using-your-model"><span class="std std-ref">run the server and manually test some messages</span></a>
+, or use the <a class="reference internal" href="evaluation.html#section-evaluation"><span class="std std-ref">evaluation script</span></a>.</p>
+</div>
+<div class="section" id="does-it-run-with-python-3">
+<h2>Does it run with python 3?<a class="headerlink" href="#does-it-run-with-python-3" title="Permalink to this headline">¶</a></h2>
+<p>Yes it does, rasa NLU supports python 2.7 as well as python 3.5 and 3.6. If there are any issues with a specific python version, feel free to create an issue or directly provide a fix.</p>
+</div>
+<div class="section" id="which-languages-are-supported">
+<h2>Which languages are supported?<a class="headerlink" href="#which-languages-are-supported" title="Permalink to this headline">¶</a></h2>
+<p>There is a list containing all officialy supported languages <a class="reference internal" href="languages.html#section-languages"><span class="std std-ref">here</span></a>. Nevertheless, there are
+others working on adding more languages, feel free to have a look at the <a class="reference external" href="https://github.com/RasaHQ/rasa_nlu/issues">github issues</a>
+section or the <a class="reference external" href="https://gitter.im/RasaHQ/rasa_nlu">gitter chat</a>.</p>
+</div>
+<div class="section" id="which-version-of-rasa-nlu-am-i-running">
+<span id="section-faq-version"></span><h2>Which version of rasa NLU am I running?<a class="headerlink" href="#which-version-of-rasa-nlu-am-i-running" title="Permalink to this headline">¶</a></h2>
+<p>To find out which rasa version you are running, you can execute</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>python -c <span class="s2">&quot;import rasa_nlu; print(rasa_nlu.__version__);&quot;</span>
+</pre></div>
+</div>
+<p>If you are using a virtual environment to run your python code, make sure you are using the correct python to execute the above code.</p>
+</div>
+<div class="section" id="why-am-i-getting-an-undefinedmetricwarning">
+<h2>Why am I getting an <code class="docutils literal"><span class="pre">UndefinedMetricWarning</span></code>?<a class="headerlink" href="#why-am-i-getting-an-undefinedmetricwarning" title="Permalink to this headline">¶</a></h2>
+<p>The complete warning is: <code class="docutils literal"><span class="pre">UndefinedMetricWarning:</span> <span class="pre">F-score</span> <span class="pre">is</span> <span class="pre">ill-defined</span> <span class="pre">and</span> <span class="pre">being</span> <span class="pre">set</span> <span class="pre">to</span> <span class="pre">0.0</span> <span class="pre">in</span> <span class="pre">labels</span> <span class="pre">with</span> <span class="pre">no</span> <span class="pre">predicted</span> <span class="pre">samples.</span></code>
+The warning is a result of a lack of training data. During the training the dataset will be splitted multiple times, if there are to few training samples for any of the intents, the splitting might result in splits that do not contain any examples for this intent.</p>
+<p>Hence, the solution is to add more training samples. As this is only a warning, training will still succeed, but the resulting models predictions might be weak on the intents where you are lacking training data.</p>
+</div>
+<div class="section" id="i-have-an-issue-can-you-help-me">
+<h2>I have an issue, can you help me?<a class="headerlink" href="#i-have-an-issue-can-you-help-me" title="Permalink to this headline">¶</a></h2>
+<p>We&#8217;d love to help you. If you are unsure if your issue is related to your setup, you should state your problem in the <a class="reference external" href="https://gitter.im/RasaHQ/rasa_nlu">gitter chat</a>.
+If you found an issue with the framework, please file a report on <a class="reference external" href="https://github.com/RasaHQ/rasa_nlu/issues">github issues</a>
+including all the information needed to reproduce the problem.</p>
+<div class="toctree-wrapper compound">
+</div>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="migrations.html" class="btn btn-neutral float-right" title="Migration Guide" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="evaluation.html" class="btn btn-neutral" title="Evaluation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017, Rasa Technologies GmbH.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+<div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+        <span class="fa fa-book"> Other Versions</span>
+        v: 0.11.4
+        <span class="fa fa-caret-down"></span>
+    </span>
+    <div class="rst-other-versions">
+        <dl>
+            <dt>Tags</dt>
+            <dd><a href="faq.html">0.11.4</a></dd>
+            <dd><a href="../0.11.3/faq.html">0.11.3</a></dd>
+            <dd><a href="../0.11.2/faq.html">0.11.2</a></dd>
+            <dd><a href="../0.11.1/faq.html">0.11.1</a></dd>
+            <dd><a href="../0.11.0/faq.html">0.11.0</a></dd>
+            <dd><a href="../0.10.6/faq.html">0.10.6</a></dd>
+            <dd><a href="../0.9.2/faq.html">0.9.2</a></dd>
+            <dd><a href="../0.8.12/faq.html">0.8.12</a></dd>
+            <dd><a href="../0.7.4/faq.html">0.7.4</a></dd>
+        </dl>
+        <dl>
+            <dt>Branches</dt>
+            <dd><a href="../master/faq.html">master</a></dd>
+        </dl>
+    </div>
+</div>
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.11.4',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+  
+ 
+<!-- Global Site Tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-87333416-1"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments)};
+gtag('js', new Date());
+
+gtag('config', 'UA-87333416-1');
+</script>
+
+
+</body>
+</html>
