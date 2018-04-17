@@ -43,9 +43,14 @@ def test_jieba():
     from rasa_nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
     tk = JiebaTokenizer()
     
-    assert [t.text for t in tk.tokenize("我想去吃兰州拉面")] == ['我', '想', '去', '吃', '兰州', '拉面']
-    assert [t.offset for t in tk.tokenize("我想去吃兰州拉面")] == [0, 1, 2, 3, 4, 6]
+    assert [t.text for t in tk.tokenize("我想去吃兰州拉面")] == \
+           ['我', '想', '去', '吃', '兰州', '拉面']
 
-        
-    assert [t.text for t in tk.tokenize("Micheal你好吗？")] == ['Micheal', '你好', '吗', '？']
-    assert [t.offset for t in tk.tokenize("Micheal你好吗？")] == [0, 7, 9, 10]
+    assert [t.offset for t in tk.tokenize("我想去吃兰州拉面")] == \
+           [0, 1, 2, 3, 4, 6]
+
+    assert [t.text for t in tk.tokenize("Micheal你好吗？")] == \
+           ['Micheal', '你好', '吗', '？']
+
+    assert [t.offset for t in tk.tokenize("Micheal你好吗？")] == \
+           [0, 7, 9, 10]

@@ -505,8 +505,16 @@ tokenizer_jieba
 :Short: Tokenizer using Jieba for Chinese language
 :Outputs: nothing
 :Description:
-    Creates tokens using the Jieba tokenizer specifically for Chinese language. For language other than Chinese, Jieba will work as tokenizer_whitespace. Can be used to define tokens for the MITIE entity
-    extractor.
+    Creates tokens using the Jieba tokenizer specifically for Chinese
+    language. For language other than Chinese, Jieba will work as
+    ``tokenizer_whitespace``. Can be used to define tokens for the
+    MITIE entity extractor. Make sure to install Jieba, ``pip install jieba``.
+:Configuration:
+
+    .. code-block:: yaml
+
+        pipeline:
+        - name: "tokenizer_jieba"
 
 tokenizer_mitie
 ~~~~~~~~~~~~~~~
@@ -514,7 +522,8 @@ tokenizer_mitie
 :Short: Tokenizer using MITIE
 :Outputs: nothing
 :Description:
-        Creates tokens using the MITIE tokenizer. Can be used to define tokens for the MITIE entity extractor.
+    Creates tokens using the MITIE tokenizer. Can be used to define
+    tokens for the MITIE entity extractor.
 :Configuration:
 
     .. code-block:: yaml
@@ -528,7 +537,8 @@ tokenizer_spacy
 :Short: Tokenizer using spacy
 :Outputs: nothing
 :Description:
-        Creates tokens using the spacy tokenizer. Can be used to define tokens for the MITIE entity extractor.
+    Creates tokens using the spacy tokenizer. Can be used to define
+    tokens for the MITIE entity extractor.
 
 
 ner_mitie
