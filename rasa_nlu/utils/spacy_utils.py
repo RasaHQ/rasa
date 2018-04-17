@@ -35,11 +35,12 @@ class SpacyNLP(Component):
         # after the language of the model, e.g. `en`
         "model": None,
 
-        # when retrieving word vectors, this will ignore the casing
-        # of the word. E.g. `hello` and `Hello` will retrieve the
-        # same vector. For some application and models it makes
-        # sense to differentiate between these two words.
-        "ignore_casing": True,
+        # when retrieving word vectors, this will decide if the casing
+        # of the word is relevant. E.g. `hello` and `Hello` will
+        # retrieve the same vector, if set to `False`. For some
+        # application and models it makes sense to differentiate
+        # between these two words, setting this to `true`.
+        "case_sensitive": False,
     }
 
     def __init__(self, component_config=None, nlp=None):
@@ -91,10 +92,10 @@ class SpacyNLP(Component):
         return {"spacy_nlp": self.nlp}
 
     def doc_for_text(self, text):
-        if self.component_config.get("ignore_casing"):
-            return self.nlp(text.lower())
-        else:
+        if self.component_config.get("case_sensitive"):
             return self.nlp(text)
+        else:
+            return self.nlp(text.lower())
 
     def train(self, training_data, config, **kwargs):
         # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
