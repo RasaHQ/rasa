@@ -25,6 +25,7 @@ Added
 - added basic tests for count vector featurizer
 - added docs blurb on handling contextual dialogue
 - distribute package as wheel file in addition to source distribution (faster install)
+- allow a component to specify which languages it supports
 
 Changed
 -------
@@ -47,7 +48,7 @@ Changed
 - changed jsonObserver to generate logs without a record seperator
 - Improve jsonschema validation: text attribute of training data samples can not be empty
 - made the NLU server's ``/evaluate`` endpoint asynchronous
-  
+
 Removed
 -------
 - MITIE support - backend is no longer supported.
