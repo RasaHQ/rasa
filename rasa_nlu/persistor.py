@@ -28,16 +28,15 @@ def get_persistor(name):
     if name == 'aws':
         return AWSPersistor(os.environ.get("BUCKET_NAME"),
                             os.environ.get("AWS_ENDPOINT_URL"))
-    elif name == 'gcs':
+    if name == 'gcs':
         return GCSPersistor(os.environ.get("BUCKET_NAME"))
 
-    elif name == 'azure':
+    if name == 'azure':
         return AzurePersistor(os.environ.get("AZURE_CONTAINER"),
                               os.environ.get("AZURE_ACCOUNT_NAME"),
                               os.environ.get("AZURE_ACCOUNT_KEY"))
 
-    else:
-        return None
+    return None
 
 
 class Persistor(object):
