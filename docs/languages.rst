@@ -25,6 +25,7 @@ spacy-sklearn  english (``en``),
                dutch (``nl``),
                french (``fr``)
 MITIE          english (``en``)
+Jieba-MITIE    chinese (``zh``)
 =============  ==============================
 
 These languages can be set as part of the :ref:`section_configuration`.

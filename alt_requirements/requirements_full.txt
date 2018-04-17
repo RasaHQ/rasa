@@ -12,3 +12,4 @@
 
 duckling==1.7.3
 Jpype1==0.6.2
+jieba==0.39

@@ -1,0 +1,279 @@
+{
+  "rasa_nlu_data": {
+    "common_examples": [
+      {
+        "text": "你好",
+        "intent": "greet",
+        "entities": []
+      },
+      {
+        "text": "你好啊",
+        "intent": "greet",
+        "entities": []
+      },
+      {
+        "text": "你好吗",
+        "intent": "greet",
+        "entities": []
+      },
+      {
+        "text": "hello",
+        "intent": "greet",
+        "entities": []
+      },
+      {
+        "text": "hi",
+        "intent": "greet",
+        "entities": []
+      },
+      {
+        "text": "早上好",
+        "intent": "greet",
+        "entities": []
+      },
+      {
+        "text": "晚上好",
+        "intent": "greet",
+        "entities": []
+      },
+      {
+        "text": "嗨",
+        "intent": "greet",
+        "entities": []
+      },
+      {
+        "text": "是的",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
+        "text": "是",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
+        "text": "对的",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
+        "text": "确实",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
+        "text": "好",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
+        "text": "ok",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
+        "text": "好的",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
+        "text": "好的，谢谢你",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
+        "text": "对的",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
+        "text": "好滴",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
+        "text": "好啊",
+        "intent": "affirm",
+        "entities": []
+      },
+      {
+        "text": "我想找地方吃饭",
+        "intent": "restaurant_search",
+        "entities": []
+      },
+      {
+        "text": "我想吃火锅啊",
+        "intent": "restaurant_search",
+        "entities": [
+          {
+            "start": 2,
+            "end": 5,
+            "value": "吃火锅",
+            "entity": "food"
+          }
+        ]
+      },
+      {
+        "text": "找个吃拉面的店",
+        "intent": "restaurant_search",
+        "entities": [
+          {
+            "start": 3,
+            "end": 5,
+            "value": "拉面",
+            "entity": "food"
+          }
+        ]
+      },
+      {
+        "text": "这附近哪里有吃麻辣烫的地方",
+        "intent": "restaurant_search",
+        "entities": [
+          {
+            "start": 7,
+            "end": 10,
+            "value": "麻辣烫",
+            "entity": "food"
+          }
+        ]
+      },
+      {
+        "text": "附近有什么好吃的地方吗",
+        "intent": "restaurant_search",
+        "entities": []
+      },
+      {
+        "text": "肚子饿了，推荐一家吃放的地儿呗",
+        "intent": "restaurant_search",
+        "entities": []
+      },
+      {
+        "text": "带老婆孩子去哪里吃饭比较好",
+        "intent": "restaurant_search",
+        "entities": []
+      },
+      {
+        "text": "想去一家有情调的餐厅",
+        "intent": "restaurant_search",
+        "entities": []
+      },
+      {
+        "text": "bye",
+        "intent": "goodbye",
+        "entities": []
+      },
+      {
+        "text": "再见",
+        "intent": "goodbye",
+        "entities": []
+      },
+      {
+        "text": "886",
+        "intent": "goodbye",
+        "entities": []
+      },
+      {
+        "text": "拜拜",
+        "intent": "goodbye",
+        "entities": []
+      },
+      {
+        "text": "下次见",
+        "intent": "goodbye",
+        "entities": []
+      },
+      {
+        "text": "感冒了怎么办",
+        "intent": "medical",
+        "entities": [
+          {
+            "start": 0,
+            "end": 2,
+            "value": "感冒",
+            "entity": "disease"
+          }
+        ]
+      },
+      {
+        "text": "我便秘了，该吃什么药",
+        "intent": "medical",
+        "entities": [
+          {
+            "start": 1,
+            "end": 3,
+            "value": "便秘",
+            "entity": "disease"
+          }
+        ]
+      },
+      {
+        "text": "我胃痛，该吃什么药？",
+        "intent": "medical",
+        "entities": [
+          {
+            "start": 1,
+            "end": 3,
+            "value": "胃痛",
+            "entity": "disease"
+          }
+        ]
+      },
+      {
+        "text": "一直打喷嚏怎么办",
+        "intent": "medical",
+        "entities": [
+          {
+            "start": 2,
+            "end": 5,
+            "value": "打喷嚏",
+            "entity": "disease"
+          }
+        ]
+      },
+      {
+        "text": "父母都有高血压，我会遗传吗",
+        "intent": "medical",
+        "entities": [
+          {
+            "start": 4,
+            "end": 7,
+            "value": "高血压",
+            "entity": "disease"
+          }
+        ]
+      },
+      {
+        "text": "我生病了",
+        "intent": "medical",
+        "entities": []
+      },
+      {
+        "text": "头上烫烫的，感觉发烧了",
+        "intent": "medical",
+        "entities": [
+          {
+            "start": 8,
+            "end": 10,
+            "value": "发烧",
+            "entity": "disease"
+          }
+        ]
+      },
+      {
+        "text": "头很疼该怎么办",
+        "intent": "medical",
+        "entities": []
+      },
+      {
+        "text": "减肥有什么好方法吗？",
+        "intent": "medical",
+        "entities": []
+      },
+      {
+        "text": "怎样良好的生活习惯才能预防生病呢",
+        "intent": "medical",
+        "entities": []
+      }
+    ]
+  }
+}

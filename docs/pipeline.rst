@@ -496,7 +496,16 @@ tokenizer_whitespace
 :Short: Tokenizer using whitespaces as a separator
 :Outputs: nothing
 :Description:
-    Creates a token for every whitespace separated character sequence. Can be used to define tokesn for the MITIE entity
+    Creates a token for every whitespace separated character sequence. Can be used to define tokens for the MITIE entity
+    extractor.
+                                                                   
+tokenizer_jieba
+~~~~~~~~~~~~~~~~~~~~
+
+:Short: Tokenizer using Jieba for Chinese language
+:Outputs: nothing
+:Description:
+    Creates tokens using the Jieba tokenizer specifically for Chinese language. For language other than Chinese, Jieba will work as tokenizer_whitespace. Can be used to define tokens for the MITIE entity
     extractor.
 
 tokenizer_mitie
