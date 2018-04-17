@@ -7,6 +7,7 @@ import logging
 import typing
 import os
 import io
+import re
 from future.utils import PY3
 from typing import Any, Dict, List, Optional, Text
 
@@ -28,7 +29,9 @@ class CountVectorsFeaturizer(Featurizer):
     """Bag of words featurizer
 
     Creates bag-of-words representation of intent features
-    using sklearn's `CountVectorizer`"""
+    using sklearn's `CountVectorizer`.
+    All tokens which consist only of digits (e.g. 123 and 99
+    but not ab12d) will be represented by a single feature."""
 
     name = "intent_featurizer_count_vectors"
 
@@ -98,6 +101,9 @@ class CountVectorsFeaturizer(Featurizer):
         # declare class instance for CountVect
         self.vect = None
 
+        # preprocessor
+        self.preprocessor = lambda s: re.sub(r'\b[0-9]+\b', 'NUMBER', s)
+
     @classmethod
     def required_packages(cls):
         # type: () -> List[Text]
@@ -117,7 +123,8 @@ class CountVectorsFeaturizer(Featurizer):
                                                  self.max_ngram),
                                     max_df=self.max_df,
                                     min_df=self.min_df,
-                                    max_features=self.max_features)
+                                    max_features=self.max_features,
+                                    preprocessor=self.preprocessor)
 
         lem_exs = [self._lemmatize(example)
                    for example in training_data.intent_examples]

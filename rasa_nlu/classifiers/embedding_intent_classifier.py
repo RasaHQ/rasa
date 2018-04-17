@@ -15,7 +15,7 @@ import numpy as np
 
 try:
     import cPickle as pickle
-except:
+except ImportError:
     import pickle
 
 logger = logging.getLogger(__name__)
@@ -30,11 +30,7 @@ if typing.TYPE_CHECKING:
 try:
     import tensorflow as tf
 except ImportError:
-    logger.debug('Unable to import tensorflow. '
-                 'If you are not using the tensorflow pipeline, '
-                 'you can safely ignore this message. '
-                 'If you are using pipeline: "tensorflow_embedding", '
-                 'this will create an error.')
+    tf = None
 
 
 class EmbeddingIntentClassifier(Component):
@@ -113,7 +109,7 @@ class EmbeddingIntentClassifier(Component):
         self.intent_tokenization_flag = self.component_config[
                                             'intent_tokenization_flag']
         self.intent_split_symbol = self.component_config[
-                                            'intent_split_symbol']
+                                        'intent_split_symbol']
         if self.intent_tokenization_flag and not self.intent_split_symbol:
             logger.warning("intent_split_symbol was not specified, "
                            "so intent tokenization will be ignored")
@@ -150,6 +146,14 @@ class EmbeddingIntentClassifier(Component):
 
         return num_layers, layer_size
 
+    @staticmethod
+    def _check_tensorflow():
+        if tf is None:
+            raise ImportError(
+                'Failed to import `tensorflow`. '
+                'Please install `tensorflow`. '
+                'For example with `pip install tensorflow`.')
+
     def __init__(self,
                  component_config=None,  # type: Optional[Dict[Text, Any]]
                  intent_dict=None,  # type: Optional[Dict[Text, int]]
@@ -162,7 +166,7 @@ class EmbeddingIntentClassifier(Component):
                  ):
         # type: (...) -> None
         """Declare instant variables with default values"""
-
+        self._check_tensorflow()
         super(EmbeddingIntentClassifier, self).__init__(component_config)
 
         # nn architecture parameters
@@ -194,7 +198,7 @@ class EmbeddingIntentClassifier(Component):
 
         # tf related instances
         self.session = session
-        self.graph = graph if graph is not None else tf.Graph()
+        self.graph = graph
         self.intent_placeholder = intent_placeholder
         self.embedding_placeholder = embedding_placeholder
         self.similarity_op = similarity_op
@@ -208,23 +212,22 @@ class EmbeddingIntentClassifier(Component):
     @staticmethod
     def _create_intent_dict(training_data):
         """Create intent dictionary"""
-        intent_dict = {}
-        for example in training_data.intent_examples:
-            intent = example.get("intent")
-            if intent not in intent_dict:
-                intent_dict[intent] = len(intent_dict)
-        return intent_dict
+
+        distinct_intents = set([example.get("intent")
+                               for example in training_data.intent_examples])
+        return {intent: idx
+                for idx, intent in enumerate(sorted(distinct_intents))}
 
     @staticmethod
     def _create_intent_token_dict(training_data, intent_split_symbol='_'):
         """Create intent token dictionary"""
-        intent_token_dict = {}
-        for example in training_data.intent_examples:
-            intent = example.get("intent")
-            for t in intent.split(intent_split_symbol):
-                if t not in intent_token_dict:
-                    intent_token_dict[t] = len(intent_token_dict)
-        return intent_token_dict
+
+        distinct_tokens = set([token
+                               for example in training_data.intent_examples
+                               for token in example.get("intent").split(
+                                        intent_split_symbol)])
+        return {token: idx
+                for idx, token in enumerate(sorted(distinct_tokens))}
 
     # data helpers:
     def _create_Y(self, training_data, num_examples):
@@ -235,8 +238,7 @@ class EmbeddingIntentClassifier(Component):
 
         if self.intent_tokenization_flag and self.intent_split_symbol:
             self.intent_token_dict = self._create_intent_token_dict(
-                training_data,
-                self.intent_split_symbol)
+                training_data, self.intent_split_symbol)
 
             Y = np.zeros([num_examples, len(self.intent_token_dict)])
             for i, example in enumerate(training_data.intent_examples):
@@ -420,9 +422,9 @@ class EmbeddingIntentClassifier(Component):
                                              is_training: False})
 
         train_acc = np.mean(np.argmax(train_sim, -1) == intents_for_X)
-        logger.debug("epoch {} / {}: loss {}, train accuracy : {:.3f}"
-                     "".format((ep + 1), self.epochs,
-                               sess_out.get('loss'), train_acc))
+        logger.info("epoch {} / {}: loss {}, train accuracy : {:.3f}"
+                    "".format((ep + 1), self.epochs,
+                              sess_out.get('loss'), train_acc))
 
     def _train_tf(self, X, Y, helper_data,
                   sess, a_in, b_in, sim,
@@ -452,7 +454,7 @@ class EmbeddingIntentClassifier(Component):
                                                b_in: batch_b,
                                                is_training: True})
 
-            if logger.isEnabledFor(logging.DEBUG) and (ep + 1) % 10 == 0:
+            if logger.isEnabledFor(logging.INFO) and (ep + 1) % 10 == 0:
                 self._output_training_stat(X, intents_for_X, all_Y,
                                            sess, a_in, b_in,
                                            sim, is_training,
@@ -473,7 +475,7 @@ class EmbeddingIntentClassifier(Component):
         # check if number of negatives is less than number of intents
         logger.debug("Check if num_neg {} is smaller than "
                      "number of intents {}, "
-                     "else set num_neg to the number of intents"
+                     "else set num_neg to the number of intents - 1"
                      "".format(self.num_neg, len(self.intent_dict)))
         self.num_neg = min(self.num_neg, len(self.intent_dict) - 1)
 

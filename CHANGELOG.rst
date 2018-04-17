@@ -23,6 +23,8 @@ Added
 - added embedding intent classifier implemented in tensorflow
 - added tensorflow requirements
 - added basic tests for count vector featurizer
+- added docs blurb on handling contextual dialogue
+- distribute package as wheel file in addition to source distribution (faster install)
 
 Changed
 -------

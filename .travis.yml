@@ -46,6 +46,7 @@ jobs:
     - pip install sphinx==1.5.2 sphinx-autobuild==0.7.1 sphinxcontrib-versioning==2.2.1 sphinxcontrib-programoutput==0.11
       nbsphinx==0.2.18
     - pip install -e git://github.com/RasaHQ/sphinx_rtd_theme.git#egg=sphinx_rtd_theme
+    - pip install -e .
     script:
     - eval "$(ssh-agent -s)"; touch docs/key; chmod 0600 docs/key
     - openssl aes-256-cbc -K $encrypted_4a8a3f4b9c17_key -iv $encrypted_4a8a3f4b9c17_iv -in docs/key.enc -out docs/key -d && ssh-add docs/key
@@ -53,14 +54,15 @@ jobs:
     - git config --global user.name "Travis CI"
     - git remote set-url --push origin "git@github.com:$TRAVIS_REPO_SLUG"
     - export ${!TRAVIS*}
-    - sphinx-versioning push docs gh-pages .
+    - sphinx-versioning push docs docs .
   - stage: deploy
-    install:
-    - pip install pypandoc==1.4
+    install: skip
     script: skip
     deploy:
       provider: pypi
       user: amn41
+      # server: https://test.pypi.org/legacy/
+      distributions: "sdist bdist_wheel"
       on:
         branch: master
         tags: true

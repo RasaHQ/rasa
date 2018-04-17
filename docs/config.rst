@@ -3,7 +3,7 @@
 Configuration
 =============
 
-You can provide options to rasa NLU through:
+You can provide options to Rasa NLU through:
 
 - a yaml-formatted config file
 - environment variables
@@ -48,7 +48,7 @@ pipeline
 
     .. code-block:: yaml
 
-        pipeline: "spacy_sklearn"
+        pipeline:
         - name: "nlp_spacy"
           model: "en"               # parameter of the spacy component
         - name: "ner_synonyms"

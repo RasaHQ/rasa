@@ -87,3 +87,43 @@ def test_list_projects_method_raise_exeception_in_GCSPersistor():
         result = persistor.GCSPersistor("").list_projects()
 
     assert result == []
+
+def test_list_projects_method_in_AzurePersistor():
+    def mocked_init(self, *args, **kwargs):
+        self._project_and_model_from_filename = lambda x: {'blob_name': ('project', )}[x]
+        self.blob_client = Object()
+        self.container_name = 'test'
+
+        def mocked_list_blobs(
+            container_name,
+            prefix=None
+        ):
+            filter_result = Object()
+            filter_result.name = 'blob_name'
+            return filter_result,
+
+        self.blob_client.list_blobs = mocked_list_blobs
+
+    with mock.patch.object(persistor.AzurePersistor, "__init__", mocked_init):
+        result = persistor.AzurePersistor("").list_projects()
+
+    assert result == ['project']
+
+
+def test_list_projects_method_raise_exeception_in_AzurePersistor():
+    def mocked_init(self, *args, **kwargs):
+        self._project_and_model_from_filename = lambda x: {'blob_name': ('project', )}[x]
+        self.blob_client = Object()
+
+        def mocked_list_blobs(
+            container_name,
+            prefix=None
+        ):
+            raise ValueError
+
+        self.blob_client.list_blobs = mocked_list_blobs
+
+    with mock.patch.object(persistor.AzurePersistor, "__init__", mocked_init):
+        result = persistor.AzurePersistor("").list_projects()
+
+    assert result == []

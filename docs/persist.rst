@@ -11,7 +11,7 @@ Rasa NLU supports using `S3 <https://aws.amazon.com/s3/>`_ and
     S3 is supported using the ``boto3`` module which you can
     install with ``pip install boto3``.
 
-    Start the rasa NLU server with ``storage`` option set to
+    Start the Rasa NLU server with ``storage`` option set to
     ``aws``. Get your S3 credentials and set the following
     environment variables:
 
@@ -27,7 +27,7 @@ Rasa NLU supports using `S3 <https://aws.amazon.com/s3/>`_ and
     GCS is supported using the ``google-cloud-storage`` package
     which you can install with ``pip install google-cloud-storage``
 
-    Start the rasa NLU server with ``storage`` option set to ``gcs``.
+    Start the Rasa NLU server with ``storage`` option set to ``gcs``.
 
     When running on google app engine and compute engine, the auth
     credentials are already set up. For running locally or elsewhere,

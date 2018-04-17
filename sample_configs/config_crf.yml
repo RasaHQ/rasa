@@ -1,12 +1,12 @@
 language: "en"
 
 pipeline:
-- name: "spacy_nlp"
+- name: "nlp_spacy"
   model: "en"
-- name: "spacy_ner"
+- name: "ner_spacy"
 - name: "ner_ngrams"
   max_number_of_ngrams: 7
-- name: "duckling_ner_http"
+- name: "ner_duckling_http"
   url: "http://my_url"
   dimensions:
   - "NUMBER"
