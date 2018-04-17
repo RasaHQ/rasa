@@ -24,7 +24,6 @@ if typing.TYPE_CHECKING:
     from rasa_core.trackers import DialogueStateTracker
 
 
-
 class KerasPolicy(Policy):
     SUPPORTS_ONLINE_TRAINING = True
 
