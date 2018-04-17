@@ -92,7 +92,7 @@ def _rasa_nlu_data_schema():
     training_example_schema = {
         "type": "object",
         "properties": {
-            "text": {"type": "string"},
+            "text": {"type": "string", "minLength": 1},
             "intent": {"type": "string"},
             "entities": {
                 "type": "array",

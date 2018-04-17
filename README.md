@@ -120,7 +120,7 @@ The intended audience is mainly __people developing bots__, starting from scratc
 * You don't have to make a `https` call to parse every message.
 * You can tune models to work well on your particular use case.
 
-These points are laid out in more detail in a [blog post](https://medium.com/lastmile-conversations/do-it-yourself-nlp-for-bot-developers-2e2da2817f3d). Rasa is a set of tools for building more advanced bots, developed by the company [Rasa](https://rasa.com). Rasa NLU is the natural language understanding module, and the first component to be open sourced. 
+These points are laid out in more detail in a [blog post](https://blog.rasa.com/put-on-your-robot-costume-and-be-the-minimum-viable-bot-yourself/). Rasa is a set of tools for building more advanced bots, developed by the company [Rasa](https://rasa.com). Rasa NLU is the natural language understanding module, and the first component to be open-sourced. 
 
 ### What languages does it support?
 Short answer: English, German, and Spanish currently. 
@@ -174,11 +174,26 @@ Warning! setting up Docker Cloud is quite involved - this method isn't recommend
 
 [![Deploy to Docker Cloud](https://files.cloud.docker.com/images/deploy-to-dockercloud.svg)](https://cloud.docker.com/stack/deploy/?repo=https://github.com/RasaHQ/rasa_nlu/tree/master/docker)
 
-### Install Pretrained Models for Spacy
-In order to use the spaCy backend make sure you have one of their pretrained models installed.
+### Install Pretrained Models for Spacy & Mitie
+In order to use the Spacy or Mitie backends make sure you have one of their pretrained models installed.
 ```
 python -m spacy download en
 ```
+
+To download the Mitie model run and place it in a location that you can 
+reference in your configuration during model training:
+```
+wget https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2
+tar jxf MITIE-models-v0.2.tar.bz2
+```
+
+If you want to run the tests, you need to copy the model into the Rasa folder:
+
+```
+cp MITIE-models/english/total_word_feature_extractor.dat RASA_NLU_ROOT/data/
+``` 
+
+Where `RASA_NLU_ROOT` points to your Rasa installation directory.
 
 # Development Internals
 
@@ -227,6 +242,7 @@ Licenses of optional dependencies (only required for certain components of Rasa 
 
 | optional package     | License                    |
 |----------------------|----------------------------|
+| MITIE                | Boost Software License 1.0 |
 | spacy                | MIT                        |
 | scikit-learn         | BSD 3-clause               |
 | scipy                | BSD 3-clause               |

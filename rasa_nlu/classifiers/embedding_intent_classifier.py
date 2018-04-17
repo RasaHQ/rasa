@@ -16,7 +16,7 @@ import numpy as np
 
 try:
     import cPickle as pickle
-except:
+except ImportError:
     import pickle
 
 logger = logging.getLogger(__name__)

@@ -23,6 +23,9 @@ Added
 - added embedding intent classifier implemented in tensorflow
 - added tensorflow requirements
 - added basic tests for count vector featurizer
+- added docs blurb on handling contextual dialogue
+- distribute package as wheel file in addition to source distribution (faster install)
+- allow a component to specify which languages it supports
 
 Changed
 -------
@@ -42,10 +45,17 @@ Changed
 - updated documentation, added info about tensorflow_embedding pipeline
 - updated registry, added tensorflow_embedding pipeline
 - changed key name for a file in ngram featurizer
+- changed jsonObserver to generate logs without a record seperator
+- Improve jsonschema validation: text attribute of training data samples can not be empty
+- made the NLU server's ``/evaluate`` endpoint asynchronous
 
 Removed
 -------
 - MITIE support - backend is no longer supported.
+
+Fixed
+-----
+- fixed certain command line arguments not getting passed into the data_router
 
 
 [0.11.1] - 2018-02-02
@@ -55,6 +65,7 @@ Fixed
 -----
 - Changelog doc formatting
 - fixed project loading for newly added projects to a running server
+- fixed certain command line arguments not getting passed into the data_router
 
 
 [0.11.0] - 2018-01-30

@@ -33,7 +33,7 @@ And even more ways to say that you want to look for restaurants:
 - `I'm in the North of town and I want chinese food`
 - `I'm hungry`
 
-The first job of rasa NLU is to assign any given sentence to one of
+The first job of Rasa NLU is to assign any given sentence to one of
 the **intent** categories: ``greet``, ``restaurant_search``, or ``thankyou``.
 
 The second job is to label words like "Mexican" and "center" as
@@ -114,9 +114,15 @@ Training a New Model for your Project
 Now we're going to create a configuration file. Make sure first that
 you've set up a backend, see :ref:`section_backends`. Create a file
 called ``config_spacy.yml`` in your working directory which looks like this
-
  
 .. literalinclude:: ../sample_configs/config_spacy.yml
+    :language: yaml
+
+or if you've installed the MITIE backend, you can use the following as your
+base configuration:
+
+
+.. literalinclude:: ../sample_configs/config_mitie.yml
     :language: yaml
 
 Now we can train a spacy model by running:
@@ -135,7 +141,7 @@ What do these parameters mean?
 - **path**: output path where the model is persisted to
 
 If you want to know more about the parameters, there is an overview of the
-:ref:`section_configuration`. After a few minutes, rasa NLU will finish
+:ref:`section_configuration`. After a few minutes, Rasa NLU will finish
 training, and you'll see a new folder named as
 ``projects/default/model_YYYYMMDD-HHMMSS`` with the timestamp
 when training finished.
@@ -226,6 +232,12 @@ intent classification this will be a probability.
 You can use this to do some error handling in your chatbot (ex:
 asking the user again if the confidence is low) and it's also
 helpful for prioritising which intents need more training data.
+
+.. note::
+    The output may contain other or less attributes, depending on the
+    pipeline you are using. For example, the ``mitie`` pipeline doesn't
+    include the ``"intent_ranking"`` (see example below) whereas the
+    ``spacy_sklearn`` pipeline does (see example above).
 
 
 With very little data, rasa NLU can in certain cases
