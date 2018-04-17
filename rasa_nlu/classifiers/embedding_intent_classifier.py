@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import io
 import logging
 import os
 
@@ -262,11 +263,11 @@ class EmbeddingIntentClassifier(Component):
         X = np.stack([e.get("text_features")
                       for e in training_data.intent_examples])
 
-        Y = np.stack([self.encoded_all_intents[intent_dict[e.get("intent")]]
-                      for e in training_data.intent_examples])
-
         intents_for_X = np.array([intent_dict[e.get("intent")]
                                   for e in training_data.intent_examples])
+
+        Y = np.stack([self.encoded_all_intents[intent_idx]
+                      for intent_idx in intents_for_X])
 
         all_Y = self._create_all_Y(X.shape[0])
 
@@ -563,10 +564,14 @@ class EmbeddingIntentClassifier(Component):
                 similarity_op = tf.get_collection(
                     'similarity_op')[0]
 
-            inv_intent_dict = pickle.load(open(os.path.join(
-                model_dir, cls.name + "_inv_intent_dict.pkl"), 'rb'))
-            encoded_all_intents = pickle.load(open(os.path.join(
-                model_dir, cls.name + "_encoded_all_intents.pkl"), 'rb'))
+            with io.open(os.path.join(
+                    model_dir,
+                    cls.name + "_inv_intent_dict.pkl"), 'rb') as f:
+                inv_intent_dict = pickle.load(f)
+            with io.open(os.path.join(
+                    model_dir,
+                    cls.name + "_encoded_all_intents.pkl"), 'rb') as f:
+                encoded_all_intents = pickle.load(f)
 
             return EmbeddingIntentClassifier(
                     component_config=meta,
@@ -617,9 +622,13 @@ class EmbeddingIntentClassifier(Component):
             saver = tf.train.Saver()
             saver.save(self.session, checkpoint)
 
-            pickle.dump(self.inv_intent_dict, open(os.path.join(
-                model_dir, self.name + "_inv_intent_dict.pkl"), 'wb'))
-            pickle.dump(self.encoded_all_intents, open(os.path.join(
-                model_dir, self.name + "_encoded_all_intents.pkl"), 'wb'))
+            with io.open(os.path.join(
+                    model_dir,
+                    self.name + "_inv_intent_dict.pkl"), 'wb') as f:
+                pickle.dump(self.inv_intent_dict, f)
+            with io.open(os.path.join(
+                    model_dir,
+                    self.name + "_encoded_all_intents.pkl"), 'wb') as f:
+                pickle.dump(self.encoded_all_intents, f)
 
         return {"classifier_file": self.name + ".ckpt"}
