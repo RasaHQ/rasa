@@ -622,13 +622,13 @@ class EmbeddingIntentClassifier(Component):
             saver = tf.train.Saver()
             saver.save(self.session, checkpoint)
 
-            with io.open(os.path.join(
-                    model_dir,
-                    self.name + "_inv_intent_dict.pkl"), 'wb') as f:
-                pickle.dump(self.inv_intent_dict, f)
-            with io.open(os.path.join(
-                    model_dir,
-                    self.name + "_encoded_all_intents.pkl"), 'wb') as f:
-                pickle.dump(self.encoded_all_intents, f)
+        with io.open(os.path.join(
+                model_dir,
+                self.name + "_inv_intent_dict.pkl"), 'wb') as f:
+            pickle.dump(self.inv_intent_dict, f)
+        with io.open(os.path.join(
+                model_dir,
+                self.name + "_encoded_all_intents.pkl"), 'wb') as f:
+            pickle.dump(self.encoded_all_intents, f)
 
         return {"classifier_file": self.name + ".ckpt"}
