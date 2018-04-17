@@ -48,7 +48,7 @@ pipeline
 
     .. code-block:: yaml
 
-        pipeline: "spacy_sklearn"
+        pipeline:
         - name: "nlp_spacy"
           model: "en"               # parameter of the spacy component
         - name: "ner_synonyms"

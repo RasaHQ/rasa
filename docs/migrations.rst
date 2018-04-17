@@ -11,7 +11,19 @@ model configuration
 We have split the configuration in a model configuration and parameters used
 to configure the server, train, and evaluate scripts. The configuration
 file now only contains the ``pipeline`` as well as the ``language``
-parameters. All other parameters have either been moved to the scripts
+parameters. Example:
+
+  .. code-block:: yaml
+
+      langauge: "en"
+
+      pipeline:
+      - name: "nlp_spacy"
+        model: "en"               # parameter of the spacy component
+      - name: "ner_synonyms"
+
+
+All other parameters have either been moved to the scripts
 for training / serving models :ref:`scripts`, or put into the pipeline
 configuration (:ref:`pipeline`).
 
