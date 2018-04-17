@@ -88,6 +88,7 @@ def test_list_projects_method_raise_exeception_in_GCSPersistor():
 
     assert result == []
 
+
 def test_list_projects_method_in_AzurePersistor():
     def mocked_init(self, *args, **kwargs):
         self._project_and_model_from_filename = lambda x: {'blob_name': ('project', )}[x]
