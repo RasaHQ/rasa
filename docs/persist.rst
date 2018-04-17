@@ -21,7 +21,7 @@ Rasa NLU supports using `S3 <https://aws.amazon.com/s3/>`_ and
     - ``BUCKET_NAME``
     - ``AWS_ENDPOINT_URL``
 
-    If there is no bucket with the name ``BUCKET_NAME`` rasa will create it.
+    If there is no bucket with the name ``BUCKET_NAME`` Rasa will create it.
 
 * Google Cloud Storage
     GCS is supported using the ``google-cloud-storage`` package
@@ -42,7 +42,7 @@ Rasa NLU supports using `S3 <https://aws.amazon.com/s3/>`_ and
     Azure is supported using the ``azure.storage`` package 
     which you can install with ``pip install azure-storage``
 
-    Start the rasa NLU server with ``storage`` option set to ``azure``.
+    Start the Rasa NLU server with ``storage`` option set to ``azure``.
 
     The following environment variables must be set:
 
@@ -50,6 +50,6 @@ Rasa NLU supports using `S3 <https://aws.amazon.com/s3/>`_ and
     - ``AZURE_ACCOUNT``
     - ``AZURE_KEY``
 
-    If there is no container with the name ``AZURE_CONTAINER`` rasa will create it.
+    If there is no container with the name ``AZURE_CONTAINER`` Rasa will create it.
 
 Models are gzipped before saving to cloud.
