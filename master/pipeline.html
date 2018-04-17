@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Processing Pipeline &mdash; Rasa NLU 0.12.0a5 documentation</title>
+  <title>Processing Pipeline &mdash; Rasa NLU 0.12.0 documentation</title>
   
 
   
@@ -37,7 +37,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="Rasa NLU 0.12.0a5 documentation" href="index.html"/>
+    <link rel="top" title="Rasa NLU 0.12.0 documentation" href="index.html"/>
         <link rel="next" title="Evaluation" href="evaluation.html"/>
         <link rel="prev" title="Language Support" href="languages.html"/>
 <link href="_static/css/rasa_theme.css" rel="stylesheet" type="text/css">
@@ -439,6 +439,13 @@ the model name can be specified using this configuration variable. The name will
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;nlp_spacy&quot;</span>
   <span class="c1"># language model to load</span>
   <span class="l l-Scalar l-Scalar-Plain">model</span><span class="p p-Indicator">:</span> <span class="s">&quot;en_core_web_md&quot;</span>
+
+  <span class="c1"># when retrieving word vectors, this will decide if the casing</span>
+  <span class="c1"># of the word is relevant. E.g. `hello` and `Hello` will</span>
+  <span class="c1"># retrieve the same vector, if set to `false`. For some</span>
+  <span class="c1"># applications and models it makes sense to differentiate</span>
+  <span class="c1"># between these two words, therefore setting this to `true`.</span>
+  <span class="l l-Scalar l-Scalar-Plain">case_sensitive</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
 </pre></div>
 </div>
 </td>
@@ -1200,7 +1207,7 @@ final context dictionary is used to persist the model&#8217;s metadata.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.12.0a5',
+            VERSION:'0.12.0',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
