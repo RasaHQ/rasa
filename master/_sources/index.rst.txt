@@ -108,6 +108,5 @@ that steer the flow of the conversation - more on this in :ref:`section_context`
    :maxdepth: 1
    :caption: Developer Documentation
 
-   Roadmap<https://github.com/RasaHQ/rasa_nlu/projects/2>
    contribute
    changelog
