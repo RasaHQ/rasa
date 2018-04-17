@@ -24,8 +24,9 @@ parameters. Example:
 
 
 All other parameters have either been moved to the scripts
-for training / serving models :ref:`scripts`, or put into the pipeline
-configuration (:ref:`pipeline`).
+for training (:ref:`train_parameters`), serving models
+(:ref:`server_parameters`), or put into the pipeline
+configuration (:ref:`section_pipeline`).
 
 persistors:
 ~~~~~~~~~~~

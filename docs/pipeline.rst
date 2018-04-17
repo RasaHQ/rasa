@@ -133,7 +133,7 @@ to use the components and configure them separately:
 
 
 tensorflow_embedding
-~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 
 to use it as a template:
 
@@ -158,7 +158,7 @@ To use the components and configure them separately:
     - name: "intent_classifier_tensorflow_embedding"
 
 Custom pipelines
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 Creating your own pipelines is possible by directly passing the names of the ~
 components to Rasa NLU in the ``pipeline`` configuration variable, e.g.
@@ -717,7 +717,6 @@ ner_duckling
     Duckling allows to recognize dates, numbers, distances and other structured entities
     and normalizes them (for a reference of all available entities
     see `the duckling documentation <https://duckling.wit.ai/#getting-started>`_).
-    The component recognizes the entity types defined by the :ref:`duckling dimensions configuration variable <section_configuration_duckling_dimensions>`.
     Please be aware that duckling tries to extract as many entity types as possible without
     providing a ranking. For example, if you specify both ``number`` and ``time`` as dimensions
     for the duckling component, the component will extract two entities: ``10`` as a number and

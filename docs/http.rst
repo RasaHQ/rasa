@@ -64,16 +64,16 @@ By default, when the project is not specified in the query, the
 ``"default"`` one will be used.
 You can (should) specify the project you want to use in your query :
 
-.. code-block:: bash
+.. code-block:: console
 
-    $ curl -XPOST localhost:5000/parse -d '{"q":"hello there", "project": "my_restaurant_search_bot"}
+    $ curl -XPOST localhost:5000/parse -d '{"q":"hello there", "project": "my_restaurant_search_bot"}'
 
 By default the latest trained model for the project will be loaded.
 You can also query against a specific model for a project :
 
-.. code-block:: bash
+.. code-block:: console
 
-    $ curl -XPOST localhost:5000/parse -d '{"q":"hello there", "project": "my_restaurant_search_bot", "model": <model_XXXXXX>}
+    $ curl -XPOST localhost:5000/parse -d '{"q":"hello there", "project": "my_restaurant_search_bot", "model": "<model_XXXXXX>"}'
 
 
 ``POST /train``
@@ -198,7 +198,7 @@ This will return the default model configuration of the Rasa NLU instance.
       }
 
 ``DELETE /models``
-^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
 
 This will unload a model from the server memory
 
@@ -230,22 +230,24 @@ So if you are serving multiple models in production, you want to serve these
 from the same process & avoid duplicating the memory load.
 
 .. note::
-Although this saves the backend from loading the same backend twice, it still needs to load one set of
+
+    Although this saves the backend from loading the same backend twice, it still needs to load one set of
     word vectors (which make up most of the memory consumption) per language and backend.
 
 As stated previously, Rasa NLU naturally handles serving multiple apps : by default the server will load all projects found
 under the ``path`` directory defined in the configuration. The file structure under ``path directory`` is as follows :
 
-- <path>
- - <project_A>
-  - <model_XXXXXX>
-  - <model_XXXXXX>
-   ...
- - <project_B>
-  - <model_XXXXXX>
-   ...
-  ...
+.. code-block:: text
 
+    - <path>
+     - <project_A>
+      - <model_XXXXXX>
+      - <model_XXXXXX>
+       ...
+     - <project_B>
+      - <model_XXXXXX>
+       ...
+      ...
 
 So you can specify which one to use in your ``/parse`` requests:
 
@@ -267,13 +269,14 @@ You can also specify the model you want to use for a given project, the default 
 
 If no project is to be found by the server under the ``path`` directory, a ``"default"`` one will be used, using a simple fallback model.
 
+.. _server_parameters:
 
 Server Parameters
 -----------------
 
 There are a number of parameters you can pass when running the server.
 
-.. code-block:: bash
+.. code-block:: console
 
     $ python -m rasa_nlu.server
 
