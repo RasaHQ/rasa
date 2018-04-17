@@ -29,6 +29,13 @@ class JiebaTokenizer(Tokenizer, Component):
 
     @staticmethod
     def load_custom_dictionary(path):
+        # type: (Text) -> None
+        """Load all the custom dictionaries stored in the path.
+
+        More information about the dictionaries file format can
+        be found in the documentation of jieba.
+        https://github.com/fxsjy/jieba#load-dictionary
+        """
         import jieba
 
         jieba_userdicts = glob.glob("{}/*".format(path))
