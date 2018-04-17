@@ -47,8 +47,8 @@ Rasa NLU supports using `S3 <https://aws.amazon.com/s3/>`_ and
     The following environment variables must be set:
 
     - ``AZURE_CONTAINER``
-    - ``AZURE_ACCOUNT``
-    - ``AZURE_KEY``
+    - ``AZURE_ACCOUNT_NAME``
+    - ``AZURE_ACCOUNT_KEY``
 
     If there is no container with the name ``AZURE_CONTAINER`` Rasa will create it.
 
