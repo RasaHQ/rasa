@@ -210,13 +210,14 @@ install with <code class="docutils literal"><span class="pre">pip</span> <span c
 <p>Start the Rasa NLU server with <code class="docutils literal"><span class="pre">storage</span></code> option set to
 <code class="docutils literal"><span class="pre">aws</span></code>. Get your S3 credentials and set the following
 environment variables:</p>
-<ul class="last simple">
+<ul class="simple">
 <li><code class="docutils literal"><span class="pre">AWS_SECRET_ACCESS_KEY</span></code></li>
 <li><code class="docutils literal"><span class="pre">AWS_ACCESS_KEY_ID</span></code></li>
 <li><code class="docutils literal"><span class="pre">AWS_DEFAULT_REGION</span></code></li>
 <li><code class="docutils literal"><span class="pre">BUCKET_NAME</span></code></li>
 <li><code class="docutils literal"><span class="pre">AWS_ENDPOINT_URL</span></code></li>
 </ul>
+<p class="last">If there is no bucket with the name <code class="docutils literal"><span class="pre">BUCKET_NAME</span></code> Rasa will create it.</p>
 </dd>
 </dl>
 </li>
@@ -236,9 +237,23 @@ variable to the path of that key file.</p>
 </dd>
 </dl>
 </li>
+<li><dl class="first docutils">
+<dt>Azure Storage</dt>
+<dd><p class="first">Azure is supported using the <code class="docutils literal"><span class="pre">azure-storage-blob</span></code> package
+which you can install with <code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">azure-storage-blob</span></code></p>
+<p>Start the Rasa NLU server with <code class="docutils literal"><span class="pre">storage</span></code> option set to <code class="docutils literal"><span class="pre">azure</span></code>.</p>
+<p>The following environment variables must be set:</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">AZURE_CONTAINER</span></code></li>
+<li><code class="docutils literal"><span class="pre">AZURE_ACCOUNT_NAME</span></code></li>
+<li><code class="docutils literal"><span class="pre">AZURE_ACCOUNT_KEY</span></code></li>
 </ul>
-<p>If there is no bucket with the name <code class="docutils literal"><span class="pre">BUCKET_NAME</span></code> Rasa will create it.
-Models are gzipped before saving to cloud.</p>
+<p class="last">If there is no container with the name <code class="docutils literal"><span class="pre">AZURE_CONTAINER</span></code> Rasa will create it.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Models are gzipped before saving to cloud.</p>
 </div>
 
 

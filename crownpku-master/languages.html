@@ -113,6 +113,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#adding-a-new-language">Adding a new language</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#spacy-sklearn">spacy-sklearn</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#mitie">MITIE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#jieba-mitie">Jieba-MITIE</a></li>
 </ul>
 </li>
 </ul>
@@ -217,8 +218,8 @@ for <a class="reference external" href="https://github.com/facebookresearch/fast
 are tested and available:</p>
 <table border="1" class="docutils">
 <colgroup>
-<col width="30%" />
-<col width="70%" />
+<col width="28%" />
+<col width="72%" />
 </colgroup>
 <thead valign="bottom">
 <tr class="row-odd"><th class="head">backend</th>
@@ -239,7 +240,7 @@ french (<code class="docutils literal"><span class="pre">fr</span></code>)</td>
 <td>english (<code class="docutils literal"><span class="pre">en</span></code>)</td>
 </tr>
 <tr class="row-even"><td>Jieba-MITIE</td>
-<td>chinese (<code class="docutils literal"><span class="pre">zh</span></code>)</td>
+<td>chinese (<code class="docutils literal"><span class="pre">zh</span></code>) <a class="reference internal" href="#jieba"><span class="std std-ref">*</span></a></td>
 </tr>
 </tbody>
 </table>
@@ -264,6 +265,22 @@ allow Rasa NLU to load and use your new language by passing in your language ide
 <li>Build and run <a class="reference external" href="https://github.com/mit-nlp/MITIE">MITIE wordrep tool</a> on your corpus. This can take several hours/days depending on your dataset and your workstation. You&#8217;ll need something like 128GB of RAM for wordrep to run - yes that&#8217;s alot: try to extend your swap.</li>
 <li>Set the path of your new <code class="docutils literal"><span class="pre">total_word_feature_extractor.dat</span></code> as value of the <em>mitie_file</em> parameter in <code class="docutils literal"><span class="pre">config_mitie.json</span></code></li>
 </ol>
+</div>
+<div class="section" id="jieba-mitie">
+<span id="jieba"></span><h3>Jieba-MITIE<a class="headerlink" href="#jieba-mitie" title="Permalink to this headline">¶</a></h3>
+<p>Some notes about using the Jieba tokenizer together with MITIE on chinese
+language data: To use it, you need a proper MITIE feature extractor, e.g.
+<code class="docutils literal"><span class="pre">data/total_word_feature_extractor_zh.dat</span></code>. It should be trained
+from a Chinese corpus using the MITIE wordrep tools
+(takes 2-3 days for training).</p>
+<p>For training, please build the
+<a class="reference external" href="https://github.com/mit-nlp/MITIE/tree/master/tools/wordrep">MITIE Wordrep Tool</a>.
+Note that Chinese corpus should be tokenized first before feeding
+into the tool for training. Close-domain corpus that best matches
+user case works best.</p>
+<p>A detailed instruction on how to train the model yourself can be found in
+A trained model from Chinese Wikipedia Dump and Baidu Baike can be <a class="reference external" href="https://github.com/crownpku">crownpku</a>  &#8216;s
+<a class="reference external" href="http://www.crownpku.com/2017/07/27/%E7%94%A8Rasa_NLU%E6%9E%84%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84%E4%B8%AD%E6%96%87NLU%E7%B3%BB%E7%BB%9F.html">blogpost</a>.</p>
 </div>
 </div>
 </div>
