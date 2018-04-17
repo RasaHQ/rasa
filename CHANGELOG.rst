@@ -27,6 +27,8 @@ Added
 - distribute package as wheel file in addition to source distribution (faster install)
 - allow a component to specify which languages it supports
 - support for persisting models to Azure Storage
+- added tokenizer for CHINESE (``zh``) as well as instructions on how to load
+  MITIE model
 
 Changed
 -------

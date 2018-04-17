@@ -121,7 +121,7 @@ def test_crf_json_from_non_BILOU(spacy_nlp):
 
 
 def test_duckling_entity_extractor(component_builder):
-    _config = utilities.base_test_conf("all_components")
+    _config = RasaNLUModelConfig({"pipeline": [{"name": "ner_duckling"}]})
     _config.set_component_attr("ner_duckling", dimensions=["time"])
     duckling = component_builder.create_component("ner_duckling", _config)
     message = Message("Today is the 5th of May. Let us meet tomorrow.")
@@ -141,7 +141,7 @@ def test_duckling_entity_extractor(component_builder):
 
 
 def test_duckling_entity_extractor_and_synonyms(component_builder):
-    _config = utilities.base_test_conf("all_components")
+    _config = RasaNLUModelConfig({"pipeline": [{"name": "ner_duckling"}]})
     _config.set_component_attr("ner_duckling", dimensions=["number"])
     duckling = component_builder.create_component("ner_duckling", _config)
     synonyms = component_builder.create_component("ner_synonyms", _config)
@@ -153,7 +153,7 @@ def test_duckling_entity_extractor_and_synonyms(component_builder):
 
 
 def test_unintentional_synonyms_capitalized(component_builder):
-    _config = utilities.base_test_conf("all_components")
+    _config = utilities.base_test_conf("spacy_sklearn")
     ner_syn = component_builder.create_component("ner_synonyms", _config)
     examples = [
         Message("Any Mexican restaurant will do", {
