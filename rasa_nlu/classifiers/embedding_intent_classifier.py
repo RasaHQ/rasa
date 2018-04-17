@@ -157,7 +157,7 @@ class EmbeddingIntentClassifier(Component):
 
     def __init__(self,
                  component_config=None,  # type: Optional[Dict[Text, Any]]
-                 inv_intent_dict=None,
+                 inv_intent_dict=None,  # type: Optional[Dict[int, Text]]
                  encoded_all_intents=None,  # type: Optional[np.ndarray]
                  session=None,  # type: Optional[tf.Session]
                  graph=None,  # type: Optional[tf.Graph]
