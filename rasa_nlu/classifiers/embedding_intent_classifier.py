@@ -80,7 +80,7 @@ class EmbeddingIntentClassifier(Component):
         "droprate": 0.2,
 
         # flag if tokenize intents
-        "intent_tokenization_flag": False,
+        "intent_tokenization_flag": True,
         "intent_split_symbol": '_'
     }
 
@@ -191,7 +191,7 @@ class EmbeddingIntentClassifier(Component):
                                         self.hidden_layer_size_b,
                                         name='b')
 
-        # transform intents to numbers
+        # transform numbers to intents
         self.inv_intent_dict = inv_intent_dict
         # encode all intents with numbers
         self.encoded_all_intents = encoded_all_intents
@@ -219,71 +219,35 @@ class EmbeddingIntentClassifier(Component):
                 for idx, intent in enumerate(sorted(distinct_intents))}
 
     @staticmethod
-    def _create_intent_token_dict(training_data, intent_split_symbol):
+    def _create_intent_token_dict(intents, intent_split_symbol):
         """Create intent token dictionary"""
 
         distinct_tokens = set([token
-                               for example in training_data.intent_examples
-                               for token in example.get("intent").split(
+                               for intent in intents
+                               for token in intent.split(
                                         intent_split_symbol)])
         return {token: idx
                 for idx, token in enumerate(sorted(distinct_tokens))}
 
-    @staticmethod
-    def _create_encoded_intents(intent_dict, intent_token_dict,
-                                intent_split_symbol):
+    def _create_encoded_intents(self, intent_dict):
         """Create matrix with intents encoded in rows as bag of words,
         if intent_tokenization_flag = False this is identity matrix"""
 
-        if intent_token_dict:
+        if self.intent_tokenization_flag:
+            intent_token_dict = self._create_intent_token_dict(
+                list(intent_dict.keys()), self.intent_split_symbol)
+
             encoded_all_intents = np.zeros((len(intent_dict),
                                             len(intent_token_dict)))
-            for key, value in intent_dict.items():
-                for t in key.split(intent_split_symbol):
-                    encoded_all_intents[value, intent_token_dict[t]] = 1
+            for key, idx in intent_dict.items():
+                for t in key.split(self.intent_split_symbol):
+                    encoded_all_intents[idx, intent_token_dict[t]] = 1
 
             return encoded_all_intents
         else:
             return np.eye(len(intent_dict))
 
     # data helpers:
-    def _create_dicts(self, training_data):
-        """Create Y and intents_for_X
-
-        Y is an array that holds bag of words for tokenized intents.
-        If intent_tokenization_flag = False this is one-hot vector"""
-
-        intent_dict = self._create_intent_dict(training_data)
-
-        intent_token_dict = None
-        if self.intent_tokenization_flag:
-            intent_token_dict = self._create_intent_token_dict(
-                                    training_data, self.intent_split_symbol)
-
-        return intent_dict, intent_token_dict
-
-    def _create_Y_data(self, training_data, num_examples,
-                       intent_dict, intent_token_dict):
-        intents_for_X = np.zeros(num_examples, dtype=int)
-
-        if self.intent_tokenization_flag:
-            Y_size = len(intent_token_dict)
-        else:
-            Y_size = len(intent_dict)
-        Y = np.zeros([num_examples, Y_size])
-
-        for i, example in enumerate(training_data.intent_examples):
-            intents_for_X[i] = intent_dict[example.get("intent")]
-
-            if self.intent_tokenization_flag:
-                for t in example.get("intent").split(
-                                self.intent_split_symbol):
-                    Y[i, intent_token_dict[t]] = 1
-            else:
-                Y[i, intent_dict[example.get("intent")]] = 1
-
-        return Y, intents_for_X
-
     def _create_all_Y(self, size):
         # stack encoded_all_intents on top of each other
         # to create candidates for training examples
@@ -292,16 +256,18 @@ class EmbeddingIntentClassifier(Component):
 
         return all_Y
 
-    def _prepare_data_for_training(self, training_data,
-                                   intent_dict, intent_token_dict):
+    def _prepare_data_for_training(self, training_data, intent_dict):
         """Prepare data for training"""
 
-        X = np.stack([example.get("text_features")
-                      for example in training_data.intent_examples])
+        X = np.stack([e.get("text_features")
+                      for e in training_data.intent_examples])
 
-        Y, intents_for_X = self._create_Y_data(training_data, X.shape[0],
-                                               intent_dict,
-                                               intent_token_dict)
+        Y = np.stack([self.encoded_all_intents[intent_dict[e.get("intent")]]
+                      for e in training_data.intent_examples])
+
+        intents_for_X = np.array([intent_dict[e.get("intent")]
+                                  for e in training_data.intent_examples])
+
         all_Y = self._create_all_Y(X.shape[0])
 
         helper_data = intents_for_X, all_Y
@@ -464,7 +430,7 @@ class EmbeddingIntentClassifier(Component):
         # type: (TrainingData, Optional[RasaNLUModelConfig], **Any) -> None
         """Train the embedding intent classifier on a data set."""
 
-        intent_dict, intent_token_dict = self._create_dicts(training_data)
+        intent_dict = self._create_intent_dict(training_data)
         if len(intent_dict) < 2:
             logger.error("Can not train an intent classifier. "
                          "Need at least 2 different classes. "
@@ -473,12 +439,10 @@ class EmbeddingIntentClassifier(Component):
 
         self.inv_intent_dict = {v: k for k, v in intent_dict.items()}
         self.encoded_all_intents = self._create_encoded_intents(
-                                        intent_dict, intent_token_dict,
-                                        self.intent_split_symbol)
+                                        intent_dict)
 
         X, Y, helper_data = self._prepare_data_for_training(
-                                training_data,
-                                intent_dict, intent_token_dict)
+                                training_data, intent_dict)
 
         # check if number of negatives is less than number of intents
         logger.debug("Check if num_neg {} is smaller than "
