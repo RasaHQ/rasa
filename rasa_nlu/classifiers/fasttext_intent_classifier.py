@@ -100,23 +100,23 @@ class FastTextIntentClassifier(Component):
         import nltk
         from nltk.corpus import stopwords
 
-        raw_text = re.sub(r'br / ', '', raw_text)
+        raw_text = re.sub(r'br / ', '', raw_text)  # Remove remaining unwanted strings (from history_v2 formatting)
 
         if language=="en_EN":
-            word_list = nltk.word_tokenize(raw_text.decode('utf-8'), 'english')
+            word_list = nltk.word_tokenize(raw_text.decode('utf-8'), 'english')  # Tokenize with nltk english
         elif language=="fr_FR":
-            word_list = nltk.word_tokenize(raw_text.decode('utf-8'), 'french')
+            word_list = nltk.word_tokenize(raw_text.decode('utf-8'), 'french')  # Tokenize with nltk french
         else:
             raise ValueError('nltk.word_tokenize: language in model_metadata not covered.')
 
         if language=="en_EN":
-            stopword_set = set(stopwords.words("english"))
+            stopword_set = set(stopwords.words("english"))  # List of stopwords in english
         elif language=="fr_FR":
-            stopword_set = set(stopwords.words("french"))
+            stopword_set = set(stopwords.words("french"))  # List of stopwords in french
         else:
             raise ValueError('stopwords: language in model_metadata not covered.')
 
-        meaningful_words = [w.lower() for w in word_list if w not in stopword_set]
+        meaningful_words = [w.lower() for w in word_list if w not in stopword_set]  # lowercase + filter stopwords
         cleaned_word_list = " ".join(meaningful_words)
         return cleaned_word_list
 
