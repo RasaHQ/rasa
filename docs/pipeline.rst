@@ -37,7 +37,7 @@ Here is a list of the **existing templates**:
 spacy_sklearn
 ~~~~~~~~~~~~~
 
-to use it as a template:
+To use spacy as a template:
 
 .. code-block:: yaml
 
@@ -45,7 +45,8 @@ to use it as a template:
 
     pipeline: "spacy_sklearn
 
-to use the components and configure them separately:
+See :ref:`section_languages` for possible values for ``language``. To use
+the components and configure them separately:
 
 .. code-block:: yaml
 
@@ -142,7 +143,11 @@ to use it as a template:
 
     pipeline: "tensorflow_embedding"
 
-to use the components and configure them separately:
+The tensorflow pipeline supports any language, that can be tokenized. The
+current tokenizer implementation relies on words being separated by spaces,
+so any languages that adheres to that can be trained with this pipeline.
+
+To use the components and configure them separately:
 
 .. code-block:: yaml
 
