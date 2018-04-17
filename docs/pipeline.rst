@@ -226,6 +226,13 @@ nlp_spacy
           # language model to load
           model: "en_core_web_md"
 
+          # when retrieving word vectors, this will ignore the casing
+          # of the word. E.g. `hello` and `Hello` will retrieve the
+          # same vector. For some application and models it makes
+          # sense to differentiate between these two words, setting
+          # this to `false`.
+          ignore_casing: true
+
 
 intent_featurizer_mitie
 ~~~~~~~~~~~~~~~~~~~~~~~
