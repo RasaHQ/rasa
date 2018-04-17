@@ -228,10 +228,10 @@ nlp_spacy
 
           # when retrieving word vectors, this will decide if the casing
           # of the word is relevant. E.g. `hello` and `Hello` will
-          # retrieve the same vector, if set to `False`. For some
-          # application and models it makes sense to differentiate
-          # between these two words, setting this to `true`.
-          ignore_casing: true
+          # retrieve the same vector, if set to `false`. For some
+          # applications and models it makes sense to differentiate
+          # between these two words, therefore setting this to `true`.
+          case_sensitive: false
 
 
 intent_featurizer_mitie

@@ -38,8 +38,8 @@ class SpacyNLP(Component):
         # when retrieving word vectors, this will decide if the casing
         # of the word is relevant. E.g. `hello` and `Hello` will
         # retrieve the same vector, if set to `False`. For some
-        # application and models it makes sense to differentiate
-        # between these two words, setting this to `true`.
+        # applications and models it makes sense to differentiate
+        # between these two words, therefore setting this to `True`.
         "case_sensitive": False,
     }
 
