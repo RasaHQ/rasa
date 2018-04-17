@@ -72,4 +72,5 @@ language
 
 :Description:
     Language the model is trained in. Underlying word vectors
-    will be loaded by using this language
+    will be loaded by using this language. There is more info
+    about available languages in :ref:`section_languages`.

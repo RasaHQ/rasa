@@ -182,6 +182,8 @@ a look at the corresponding source code for the component. ``Output`` describes,
 output result of processing a message. If no output is present, the component is most likely a preprocessor for another
 component.
 
+.. _nlp_mitie:
+
 nlp_mitie
 ~~~~~~~~~
 
