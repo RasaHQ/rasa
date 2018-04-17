@@ -133,6 +133,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#intent-classifier-tensorflow-embedding">intent_classifier_tensorflow_embedding</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#intent-entity-featurizer-regex">intent_entity_featurizer_regex</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#tokenizer-whitespace">tokenizer_whitespace</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#tokenizer-jieba">tokenizer_jieba</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#tokenizer-mitie">tokenizer_mitie</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#tokenizer-spacy">tokenizer_spacy</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ner-mitie">ner_mitie</a></li>
@@ -385,7 +386,7 @@ a look at the corresponding source code for the component. <code class="docutils
 output result of processing a message. If no output is present, the component is most likely a preprocessor for another
 component.</p>
 <div class="section" id="nlp-mitie">
-<h3>nlp_mitie<a class="headerlink" href="#nlp-mitie" title="Permalink to this headline">¶</a></h3>
+<span id="id1"></span><h3>nlp_mitie<a class="headerlink" href="#nlp-mitie" title="Permalink to this headline">¶</a></h3>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -795,8 +796,35 @@ feature indicates a certain intent). Regex features for entity extraction are cu
 </tr>
 <tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body">nothing</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">Creates a token for every whitespace separated character sequence. Can be used to define tokesn for the MITIE entity
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">Creates a token for every whitespace separated character sequence. Can be used to define tokens for the MITIE entity
 extractor.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="tokenizer-jieba">
+<h3>tokenizer_jieba<a class="headerlink" href="#tokenizer-jieba" title="Permalink to this headline">¶</a></h3>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Short:</th><td class="field-body"><p class="first">Tokenizer using Jieba for Chinese language</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first">nothing</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Creates tokens using the Jieba tokenizer specifically for Chinese
+language. For language other than Chinese, Jieba will work as
+<code class="docutils literal"><span class="pre">tokenizer_whitespace</span></code>. Can be used to define tokens for the
+MITIE entity extractor. Make sure to install Jieba, <code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">jieba</span></code>.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><div class="first last highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;tokenizer_jieba&quot;</span>
+</pre></div>
+</div>
+</td>
 </tr>
 </tbody>
 </table>
@@ -813,7 +841,8 @@ extractor.</td>
 <tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><p class="first">nothing</p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Creates tokens using the MITIE tokenizer. Can be used to define tokens for the MITIE entity extractor.</p>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Creates tokens using the MITIE tokenizer. Can be used to define
+tokens for the MITIE entity extractor.</p>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><div class="first last highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
@@ -835,7 +864,8 @@ extractor.</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body">nothing</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">Creates tokens using the spacy tokenizer. Can be used to define tokens for the MITIE entity extractor.</td>
+<tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">Creates tokens using the spacy tokenizer. Can be used to define
+tokens for the MITIE entity extractor.</td>
 </tr>
 </tbody>
 </table>
@@ -1159,7 +1189,6 @@ final context dictionary is used to persist the model&#8217;s metadata.</p>
         </dl>
         <dl>
             <dt>Branches</dt>
-            <dd><a href="../crownpku-master/pipeline.html">crownpku-master</a></dd>
             <dd><a href="pipeline.html">master</a></dd>
         </dl>
     </div>

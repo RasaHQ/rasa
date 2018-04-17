@@ -1,6 +1,0 @@
-
-License
-=======
-
-
-.. literalinclude:: ../LICENSE.txt
