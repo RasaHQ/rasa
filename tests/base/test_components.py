@@ -33,17 +33,6 @@ def test_all_components_in_model_templates_exist(pipeline_template):
             "Model template contains unknown component."
 
 
-def test_all_components_are_in_all_components_template():
-    """There is a template that includes all components to
-    test the train-persist-load-use cycle. Ensures that
-    really all Components are in there."""
-
-    all_components = registry.registered_pipeline_templates["all_components"]
-    for cls in registry.component_classes:
-        assert cls.name in all_components, \
-            "`all_components` template is missing component."
-
-
 @pytest.mark.parametrize("component_class", registry.component_classes)
 def test_all_arguments_can_be_satisfied(component_class):
     """Check that `train` method parameters can be filled

@@ -71,14 +71,6 @@ Note that Chinese corpus should be tokenized first before feeding
 into the tool for training. Close-domain corpus that best matches
 user case works best.
 
-.. note::
-
-   `crownpku <https://github.com/crownpku>`_ was so kind to pretrained model
-   on that data, that you can download and specify as the
-   :ref:`MITIE model <nlp_mitie>`.
-
-   `Download zh model <https://storage.googleapis.com/open-source-resources/total_word_feature_extractor_zh.dat>`_
-
-   A detailed instruction on how to train the model yourself can be found in
-   A trained model from Chinese Wikipedia Dump and Baidu Baike can be `crownpku <https://github.com/crownpku>`_  's
-   `blogpost <http://www.crownpku.com/2017/07/27/%E7%94%A8Rasa_NLU%E6%9E%84%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84%E4%B8%AD%E6%96%87NLU%E7%B3%BB%E7%BB%9F.html>`_.
+A detailed instruction on how to train the model yourself can be found in
+A trained model from Chinese Wikipedia Dump and Baidu Baike can be `crownpku <https://github.com/crownpku>`_  's
+`blogpost <http://www.crownpku.com/2017/07/27/%E7%94%A8Rasa_NLU%E6%9E%84%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84%E4%B8%AD%E6%96%87NLU%E7%B3%BB%E7%BB%9F.html>`_.

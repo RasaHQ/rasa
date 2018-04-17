@@ -11,8 +11,6 @@ from __future__ import absolute_import
 import typing
 from rasa_nlu import utils
 from typing import Any
-from typing import Dict
-from typing import List
 from typing import Optional
 from typing import Text
 from typing import Type
@@ -24,7 +22,6 @@ from rasa_nlu.classifiers.sklearn_intent_classifier import \
     SklearnIntentClassifier
 from rasa_nlu.classifiers.embedding_intent_classifier import \
     EmbeddingIntentClassifier
-from rasa_nlu.extractors.crf_entity_extractor import CRFEntityExtractor
 from rasa_nlu.extractors.duckling_extractor import DucklingExtractor
 from rasa_nlu.extractors.duckling_http_extractor import DucklingHTTPExtractor
 from rasa_nlu.extractors.entity_synonyms import EntitySynonymMapper
@@ -81,33 +78,6 @@ registered_pipeline_templates = {
     ],
     "keyword": [
         "intent_classifier_keyword",
-    ],
-    # this template really is just for testing
-    # every component should be in here so train-persist-load-use cycle can be
-    # tested they still need to be in a useful order - hence we can not simply
-    # generate this automatically.
-    "all_components": [
-        "nlp_spacy",
-        "nlp_mitie",
-        "tokenizer_whitespace",
-        "tokenizer_jieba",
-        "tokenizer_mitie",
-        "tokenizer_spacy",
-        "intent_featurizer_mitie",
-        "intent_featurizer_spacy",
-        "intent_featurizer_ngrams",
-        "intent_entity_featurizer_regex",
-        "intent_featurizer_count_vectors",
-        "ner_mitie",
-        "ner_crf",
-        "ner_spacy",
-        "ner_duckling",
-        "ner_duckling_http",
-        "ner_synonyms",
-        "intent_classifier_keyword",
-        "intent_classifier_sklearn",
-        "intent_classifier_mitie",
-        "intent_classifier_tensorflow_embedding"
     ],
     "tensorflow_embedding": [
         "intent_featurizer_count_vectors",
