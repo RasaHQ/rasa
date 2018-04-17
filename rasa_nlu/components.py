@@ -109,7 +109,7 @@ class UnsupportedLanguageError(Exception):
 
     Attributes:
         component -- component name
-        language -- language that component not support
+        language -- language that component doesn't support
     """
 
     def __init__(self, component, language):
@@ -174,8 +174,7 @@ class Component(object):
     # Defines what language(s) this component can handle.
     # This attribute is designed for instance method: `can_handle_language`.
     # Default value is None which means it can handle all languages.
-    # This is important feature that can backward-compatible with
-    # old style components.
+    # This is an important feature for backwards compatibility of components.
     language_list = None
 
     def __init__(self, component_config=None):
@@ -331,10 +330,10 @@ class Component(object):
     @classmethod
     def can_handle_language(cls, language):
         # type: (Hashable) -> bool
-        """Check if component support specific language.
+        """Check if component supports a specific language.
 
-        this method can overwrite when needed.
-        (e.g. dynamic determine which language is supported.)"""
+        This method can be overwritten when needed. (e.g. dynamically
+        determine which language is supported.)"""
 
         # if language_list is set to `None` it means: support all languages
         if language is None or cls.language_list is None:

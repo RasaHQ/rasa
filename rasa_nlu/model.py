@@ -134,7 +134,7 @@ class Trainer(object):
         self.config = cfg
         self.skip_validation = skip_validation
         self.training_data = None  # type: Optional[TrainingData]
-        self.pipeline = []  # type: List[Component]
+
         if component_builder is None:
             # If no builder is passed, every interpreter creation will result in
             # a new builder. hence, no components are reused.
