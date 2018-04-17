@@ -4,7 +4,7 @@ This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
 0.11.x to 0.12.0
----------------
+----------------
 
 model configuration
 ~~~~~~~~~~~~~~~~~~~
