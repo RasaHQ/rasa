@@ -97,18 +97,26 @@ class FastTextIntentClassifier(Component):
         :return: processed message
         """
         import re
+        import nltk
         from nltk.corpus import stopwords
-        letters_only_text = re.sub("[^a-zA-Z0-9]", " ", raw_text)
-        words = letters_only_text.split()
 
-        if language=="en":
+        raw_text = re.sub(r'br / ', '', raw_text)
+
+        if language=="en_EN":
+            word_list = nltk.word_tokenize(raw_text.decode('utf-8'), 'english')
+        elif language=="fr_FR":
+            word_list = nltk.word_tokenize(raw_text.decode('utf-8'), 'french')
+        else:
+            raise ValueError('nltk.word_tokenize: language in model_metadata not covered.')
+
+        if language=="en_EN":
             stopword_set = set(stopwords.words("english"))
-        elif language=="fr":
+        elif language=="fr_FR":
             stopword_set = set(stopwords.words("french"))
         else:
-            raise ValueError('Language in model_metadata not covered.')
+            raise ValueError('stopwords: language in model_metadata not covered.')
 
-        meaningful_words = [w for w in words if w not in stopword_set]
+        meaningful_words = [w.lower() for w in word_list if w not in stopword_set]
         cleaned_word_list = " ".join(meaningful_words)
         return cleaned_word_list
 
