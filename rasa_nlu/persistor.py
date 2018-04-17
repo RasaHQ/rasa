@@ -302,7 +302,7 @@ class AzurePersistor(Persistor):
                     for b in blob_iterator]
         except Exception as e:
             logger.warning("Failed to list models for project {} in "
-                        "azure blob storage. {}".format(project, e))
+                           "azure blob storage. {}".format(project, e))
             return []
 
     def list_projects(self):
