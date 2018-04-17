@@ -34,7 +34,7 @@ def get_persistor(name):
     elif name == 'azure':
         return AzurePersistor(os.environ.get("AZURE_CONTAINER"),
                               os.environ.get("AZURE_ACCOUNT_NAME"),
-                              os.environ.get("AZURE_ACCOUNT_KEY")) 
+                              os.environ.get("AZURE_ACCOUNT_KEY"))
 
     else:
         return None
@@ -262,13 +262,14 @@ class GCSPersistor(Persistor):
         blob = self.bucket.blob(target_filename)
         blob.download_to_filename(target_filename)
 
+
 class AzurePersistor(Persistor):
     """Store models on Azure"""
 
     def __init__(self,
-                  azure_container,
-                  azure_account_name,
-                  azure_account_key):
+                 azure_container,
+                 azure_account_name,
+                 azure_account_key):
         from azure.storage import blob as azureblob
         from azure.storage.common import models as storageModel
 
@@ -287,22 +288,22 @@ class AzurePersistor(Persistor):
 
         exists = self.blob_client.exists(container_name)
         if not exists:
-           self.blob_client.create_container(container_name)
+            self.blob_client.create_container(container_name)
 
     def list_models(self, project):
         # type: (Text) -> List[Text]
 
         try:
-             blob_iterator = self.blob_client.list_blobs(
+            blob_iterator = self.blob_client.list_blobs(
                  self.container_name,
                  prefix=self._project_prefix(project)
-             )
-             return [self._project_and_model_from_filename(b.name)[1]
-                     for b in blob_iterator]
+            )
+            return [self._project_and_model_from_filename(b.name)[1]
+                    for b in blob_iterator]
         except Exception as e:
-             logger.warning("Failed to list models for project {} in "
+            logger.warning("Failed to list models for project {} in "
                         "azure blob storage. {}".format(project, e))
-             return []
+            return []
 
     def list_projects(self):
         # type: () -> List[Text]
