@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Migrating an existing app &mdash; rasa NLU 0.11.4 documentation</title>
+  <title>Migrating an existing app &mdash; Rasa NLU 0.12.0 documentation</title>
   
 
   
@@ -37,8 +37,8 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="rasa NLU 0.11.4 documentation" href="index.html"/>
-        <link rel="next" title="Training Data Format" href="dataformat.html"/>
+    <link rel="top" title="Rasa NLU 0.12.0 documentation" href="index.html"/>
+        <link rel="next" title="Training and Data Format" href="dataformat.html"/>
         <link rel="prev" title="Configuration" href="config.html"/>
 <link href="_static/css/rasa_theme.css" rel="stylesheet" type="text/css">
 
@@ -60,7 +60,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home"> rasa NLU
+            <a href="index.html" class="icon icon-home"> Rasa NLU
           
 
           
@@ -70,7 +70,7 @@
             
             
               <div class="version">
-                0.11
+                0.12
               </div>
             
           
@@ -112,18 +112,23 @@
 <li class="toctree-l2"><a class="reference internal" href="#emulation">Emulation</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Training Data Format</a></li>
-<li class="toctree-l1"><a class="reference internal" href="http.html">Using rasa NLU as a HTTP server</a></li>
-<li class="toctree-l1"><a class="reference internal" href="python.html">Using rasa NLU from python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Training and Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http.html">Using Rasa NLU as a HTTP server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python.html">Using Rasa NLU from python</a></li>
 <li class="toctree-l1"><a class="reference internal" href="entities.html">Entity Extraction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="closeloop.html">Improving your models from feedback</a></li>
 <li class="toctree-l1"><a class="reference internal" href="persist.html">Model Persistence</a></li>
 <li class="toctree-l1"><a class="reference internal" href="languages.html">Language Support</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pipeline.html">Processing Pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="evaluation.html">Evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="context.html">Context-aware Dialogue</a></li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="migrations.html">Migration Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="community.html">Community Contributions</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Developer Documentation</span></p>
 <ul>
@@ -144,7 +149,7 @@
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">rasa NLU</a>
+          <a href="index.html">Rasa NLU</a>
         
       </nav>
 
@@ -230,7 +235,8 @@ and pass that path to the trainer.</p>
 </div>
 <div class="section" id="emulation">
 <h2>Emulation<a class="headerlink" href="#emulation" title="Permalink to this headline">¶</a></h2>
-<p>To make Rasa NLU easy to try out with existing projects, the server can <cite>emulate</cite> wit, LUIS, or Dialogflow.
+<p>To make Rasa NLU easy to try out with existing projects,
+the server can <cite>emulate</cite> wit, LUIS, or Dialogflow.
 In native mode, a request / response looks like this :</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> curl -XPOST localhost:5000/parse -d <span class="s1">&#39;{&quot;q&quot;:&quot;I am looking for Chinese food&quot;}&#39;</span> <span class="p">|</span> python -mjson.tool
 <span class="go">{</span>
@@ -248,7 +254,8 @@ In native mode, a request / response looks like this :</p>
 <span class="go">}</span>
 </pre></div>
 </div>
-<p>if we run in <code class="docutils literal"><span class="pre">wit</span></code> mode (e.g. <code class="docutils literal"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">rasa_nlu.server</span> <span class="pre">-e</span> <span class="pre">wit</span></code>)</p>
+<p>if we run in <code class="docutils literal"><span class="pre">wit</span></code> mode
+(e.g. <code class="docutils literal"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">rasa_nlu.server</span> <span class="pre">--emulate</span> <span class="pre">wit</span> <span class="pre">--path</span> <span class="pre">projects</span></code>).</p>
 <p>then instead have to make a GET request</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> curl <span class="s1">&#39;localhost:5000/parse?q=hello&#39;</span> <span class="p">|</span> python -mjson.tool
 <span class="go">[</span>
@@ -314,7 +321,7 @@ In native mode, a request / response looks like this :</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="dataformat.html" class="btn btn-neutral float-right" title="Training Data Format" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="dataformat.html" class="btn btn-neutral float-right" title="Training and Data Format" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="config.html" class="btn btn-neutral" title="Configuration" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
@@ -344,12 +351,13 @@ In native mode, a request / response looks like this :</p>
 <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
     <span class="rst-current-version" data-toggle="rst-current-version">
         <span class="fa fa-book"> Other Versions</span>
-        v: 0.11.4
+        v: 0.12.0
         <span class="fa fa-caret-down"></span>
     </span>
     <div class="rst-other-versions">
         <dl>
             <dt>Tags</dt>
+            <dd><a href="0.12.0/migrating.html">0.12.0</a></dd>
             <dd><a href="0.11.4/migrating.html">0.11.4</a></dd>
             <dd><a href="0.11.3/migrating.html">0.11.3</a></dd>
             <dd><a href="0.11.2/migrating.html">0.11.2</a></dd>
@@ -373,7 +381,7 @@ In native mode, a request / response looks like this :</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.11.4',
+            VERSION:'0.12.0',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
@@ -411,6 +419,7 @@ gtag('js', new Date());
 
 gtag('config', 'UA-87333416-1');
 </script>
+<script type="text/javascript" src="//script.crazyegg.com/pages/scripts/0074/3851.js" async="async"></script>
 
 
 </body>

@@ -214,7 +214,7 @@
 
 
 
-    <p class="scv-banner scv-sphinx_rtd_theme"><a href="../0.11.4/http.html"><b>Warning:</b> This document is for the development version of Rasa NLU. The latest version is 0.11.4.</a></p>
+    <p class="scv-banner scv-sphinx_rtd_theme"><a href="../0.12.0/http.html"><b>Warning:</b> This document is for the development version of Rasa NLU. The latest version is 0.12.0.</a></p>
 <div class="section" id="using-rasa-nlu-as-a-http-server">
 <span id="section-http"></span><h1>Using Rasa NLU as a HTTP server<a class="headerlink" href="#using-rasa-nlu-as-a-http-server" title="Permalink to this headline">¶</a></h1>
 <div class="admonition note">
@@ -263,12 +263,12 @@ you can do this with</p>
 <p>By default, when the project is not specified in the query, the
 <code class="docutils literal"><span class="pre">&quot;default&quot;</span></code> one will be used.
 You can (should) specify the project you want to use in your query :</p>
-<div class="highlight-bash"><div class="highlight"><pre><span></span>$ curl -XPOST localhost:5000/parse -d &#39;{&quot;q&quot;:&quot;hello there&quot;, &quot;project&quot;: &quot;my_restaurant_search_bot&quot;}
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> curl -XPOST localhost:5000/parse -d <span class="s1">&#39;{&quot;q&quot;:&quot;hello there&quot;, &quot;project&quot;: &quot;my_restaurant_search_bot&quot;}&#39;</span>
 </pre></div>
 </div>
 <p>By default the latest trained model for the project will be loaded.
 You can also query against a specific model for a project :</p>
-<div class="highlight-bash"><div class="highlight"><pre><span></span>$ curl -XPOST localhost:5000/parse -d &#39;{&quot;q&quot;:&quot;hello there&quot;, &quot;project&quot;: &quot;my_restaurant_search_bot&quot;, &quot;model&quot;: &lt;model_XXXXXX&gt;}
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> curl -XPOST localhost:5000/parse -d <span class="s1">&#39;{&quot;q&quot;:&quot;hello there&quot;, &quot;project&quot;: &quot;my_restaurant_search_bot&quot;, &quot;model&quot;: &quot;&lt;model_XXXXXX&gt;&quot;}&#39;</span>
 </pre></div>
 </div>
 </div>
@@ -423,39 +423,24 @@ If set, this token must be passed as a query parameter in all requests, e.g. :</
 <p>Depending on your choice of backend, Rasa NLU can use quite a lot of memory.
 So if you are serving multiple models in production, you want to serve these
 from the same process &amp; avoid duplicating the memory load.</p>
-<dl class="docutils">
-<dt>Although this saves the backend from loading the same backend twice, it still needs to load one set of</dt>
-<dd>word vectors (which make up most of the memory consumption) per language and backend.</dd>
-</dl>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Although this saves the backend from loading the same backend twice, it still needs to load one set of
+word vectors (which make up most of the memory consumption) per language and backend.</p>
+</div>
 <p>As stated previously, Rasa NLU naturally handles serving multiple apps : by default the server will load all projects found
 under the <code class="docutils literal"><span class="pre">path</span></code> directory defined in the configuration. The file structure under <code class="docutils literal"><span class="pre">path</span> <span class="pre">directory</span></code> is as follows :</p>
-<ul class="simple">
-<li>&lt;path&gt;</li>
-</ul>
-<blockquote>
-<div><ul class="simple">
-<li>&lt;project_A&gt;</li>
-</ul>
-<blockquote>
-<div><ul class="simple">
-<li>&lt;model_XXXXXX&gt;</li>
-<li>&lt;model_XXXXXX&gt;</li>
-</ul>
-<blockquote>
-<div>...</div></blockquote>
-</div></blockquote>
-<ul class="simple">
-<li>&lt;project_B&gt;</li>
-</ul>
-<blockquote>
-<div><ul class="simple">
-<li>&lt;model_XXXXXX&gt;</li>
-</ul>
-<blockquote>
-<div>...</div></blockquote>
-<p>...</p>
-</div></blockquote>
-</div></blockquote>
+<div class="highlight-text"><div class="highlight"><pre><span></span>- &lt;path&gt;
+ - &lt;project_A&gt;
+  - &lt;model_XXXXXX&gt;
+  - &lt;model_XXXXXX&gt;
+   ...
+ - &lt;project_B&gt;
+  - &lt;model_XXXXXX&gt;
+   ...
+  ...
+</pre></div>
+</div>
 <p>So you can specify which one to use in your <code class="docutils literal"><span class="pre">/parse</span></code> requests:</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> curl <span class="s1">&#39;localhost:5000/parse?q=hello&amp;project=my_restaurant_search_bot&#39;</span>
 </pre></div>
@@ -471,9 +456,9 @@ under the <code class="docutils literal"><span class="pre">path</span></code> di
 <p>If no project is to be found by the server under the <code class="docutils literal"><span class="pre">path</span></code> directory, a <code class="docutils literal"><span class="pre">&quot;default&quot;</span></code> one will be used, using a simple fallback model.</p>
 </div>
 <div class="section" id="server-parameters">
-<h2>Server Parameters<a class="headerlink" href="#server-parameters" title="Permalink to this headline">¶</a></h2>
+<span id="id1"></span><h2>Server Parameters<a class="headerlink" href="#server-parameters" title="Permalink to this headline">¶</a></h2>
 <p>There are a number of parameters you can pass when running the server.</p>
-<div class="highlight-bash"><div class="highlight"><pre><span></span>$ python -m rasa_nlu.server
+<div class="highlight-console"><div class="highlight"><pre><span></span><span class="gp">$</span> python -m rasa_nlu.server
 </pre></div>
 </div>
 <p>Here is a quick overview:</p>
@@ -574,6 +559,7 @@ optional arguments:
     <div class="rst-other-versions">
         <dl>
             <dt>Tags</dt>
+            <dd><a href="../0.12.0/http.html">0.12.0</a></dd>
             <dd><a href="../0.11.4/http.html">0.11.4</a></dd>
             <dd><a href="../0.11.3/http.html">0.11.3</a></dd>
             <dd><a href="../0.11.2/http.html">0.11.2</a></dd>

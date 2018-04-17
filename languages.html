@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Language Support &mdash; rasa NLU 0.11.4 documentation</title>
+  <title>Language Support &mdash; Rasa NLU 0.12.0 documentation</title>
   
 
   
@@ -37,7 +37,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="rasa NLU 0.11.4 documentation" href="index.html"/>
+    <link rel="top" title="Rasa NLU 0.12.0 documentation" href="index.html"/>
         <link rel="next" title="Processing Pipeline" href="pipeline.html"/>
         <link rel="prev" title="Model Persistence" href="persist.html"/>
 <link href="_static/css/rasa_theme.css" rel="stylesheet" type="text/css">
@@ -60,7 +60,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home"> rasa NLU
+            <a href="index.html" class="icon icon-home"> Rasa NLU
           
 
           
@@ -70,7 +70,7 @@
             
             
               <div class="version">
-                0.11
+                0.12
               </div>
             
           
@@ -103,9 +103,9 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="migrating.html">Migrating an existing app</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Training Data Format</a></li>
-<li class="toctree-l1"><a class="reference internal" href="http.html">Using rasa NLU as a HTTP server</a></li>
-<li class="toctree-l1"><a class="reference internal" href="python.html">Using rasa NLU from python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Training and Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http.html">Using Rasa NLU as a HTTP server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python.html">Using Rasa NLU from python</a></li>
 <li class="toctree-l1"><a class="reference internal" href="entities.html">Entity Extraction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="closeloop.html">Improving your models from feedback</a></li>
 <li class="toctree-l1"><a class="reference internal" href="persist.html">Model Persistence</a></li>
@@ -113,15 +113,21 @@
 <li class="toctree-l2"><a class="reference internal" href="#adding-a-new-language">Adding a new language</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#spacy-sklearn">spacy-sklearn</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#mitie">MITIE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#jieba-mitie">Jieba-MITIE</a></li>
 </ul>
 </li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="pipeline.html">Processing Pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="evaluation.html">Evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="context.html">Context-aware Dialogue</a></li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="migrations.html">Migration Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="community.html">Community Contributions</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Developer Documentation</span></p>
 <ul>
@@ -142,7 +148,7 @@
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">rasa NLU</a>
+          <a href="index.html">Rasa NLU</a>
         
       </nav>
 
@@ -199,11 +205,18 @@
 
 <div class="section" id="language-support">
 <span id="section-languages"></span><h1>Language Support<a class="headerlink" href="#language-support" title="Permalink to this headline">¶</a></h1>
-<p>Currently rasa NLU is tested and readily available for the following languages:</p>
+<p>Rasa NLU supports a number of different languages. Exactly which ones depends on
+the backend you are using, and the features you require.</p>
+<p>Firstly, the <code class="docutils literal"><span class="pre">tensorflow_embedding</span></code> pipeline in principle supports any language,
+but only performs intent classification.
+In addition, with the spaCy backend you can now load fastText vectors, which are available
+for <a class="reference external" href="https://github.com/facebookresearch/fastText/blob/master/pretrained-vectors.md">hundreds of languages</a>.</p>
+<p>For both intent and entity recognition, the following languages and backend combinations
+are tested and available:</p>
 <table border="1" class="docutils">
 <colgroup>
-<col width="30%" />
-<col width="70%" />
+<col width="28%" />
+<col width="72%" />
 </colgroup>
 <thead valign="bottom">
 <tr class="row-odd"><th class="head">backend</th>
@@ -223,6 +236,9 @@ french (<code class="docutils literal"><span class="pre">fr</span></code>)</td>
 <tr class="row-odd"><td>MITIE</td>
 <td>english (<code class="docutils literal"><span class="pre">en</span></code>)</td>
 </tr>
+<tr class="row-even"><td>Jieba-MITIE</td>
+<td>chinese (<code class="docutils literal"><span class="pre">zh</span></code>) <a class="reference internal" href="#jieba"><span class="std std-ref">*</span></a></td>
+</tr>
 </tbody>
 </table>
 <p>These languages can be set as part of the <a class="reference internal" href="config.html#section-configuration"><span class="std std-ref">Configuration</span></a>.</p>
@@ -237,15 +253,31 @@ you need to train that presentation on your own using a large corpus of text dat
 <p>spaCy already provides a really good documentation page about <a class="reference external" href="https://spacy.io/docs/usage/adding-languages">Adding languages</a>.
 This will help you train a tokenizer and vocabulary for a new language in spaCy.</p>
 <p>As described in the documentation, you need to register your language using <code class="docutils literal"><span class="pre">set_lang_class()</span></code> which will
-allow rasa NLU to load and use your new language by passing in your language identifier as the <code class="docutils literal"><span class="pre">language</span></code> <a class="reference internal" href="config.html#section-configuration"><span class="std std-ref">Configuration</span></a> option.</p>
+allow Rasa NLU to load and use your new language by passing in your language identifier as the <code class="docutils literal"><span class="pre">language</span></code> <a class="reference internal" href="config.html#section-configuration"><span class="std std-ref">Configuration</span></a> option.</p>
 </div>
 <div class="section" id="mitie">
 <h3>MITIE<a class="headerlink" href="#mitie" title="Permalink to this headline">¶</a></h3>
 <ol class="arabic simple">
 <li>Get a ~clean language corpus (a Wikipedia dump works) as a set of text files</li>
-<li>Build and run <a class="reference external" href="https://github.com/mit-nlp/MITIE">MITIE wordrep tool</a> on your corpus. This can take several hours/days depending on your dataset and your workstation. You&#8217;ll need something like 128GB of RAM for wordrep to run - yes that&#8217;s alot: try to extend your swap.</li>
+<li>Build and run <a class="reference external" href="https://github.com/mit-nlp/MITIE/tree/master/tools/wordrep">MITIE Wordrep Tool</a> on your corpus. This can take several hours/days depending on your dataset and your workstation. You&#8217;ll need something like 128GB of RAM for wordrep to run - yes that&#8217;s alot: try to extend your swap.</li>
 <li>Set the path of your new <code class="docutils literal"><span class="pre">total_word_feature_extractor.dat</span></code> as value of the <em>mitie_file</em> parameter in <code class="docutils literal"><span class="pre">config_mitie.json</span></code></li>
 </ol>
+</div>
+<div class="section" id="jieba-mitie">
+<span id="jieba"></span><h3>Jieba-MITIE<a class="headerlink" href="#jieba-mitie" title="Permalink to this headline">¶</a></h3>
+<p>Some notes about using the Jieba tokenizer together with MITIE on chinese
+language data: To use it, you need a proper MITIE feature extractor, e.g.
+<code class="docutils literal"><span class="pre">data/total_word_feature_extractor_zh.dat</span></code>. It should be trained
+from a Chinese corpus using the MITIE wordrep tools
+(takes 2-3 days for training).</p>
+<p>For training, please build the
+<a class="reference external" href="https://github.com/mit-nlp/MITIE/tree/master/tools/wordrep">MITIE Wordrep Tool</a>.
+Note that Chinese corpus should be tokenized first before feeding
+into the tool for training. Close-domain corpus that best matches
+user case works best.</p>
+<p>A detailed instruction on how to train the model yourself can be found in
+A trained model from Chinese Wikipedia Dump and Baidu Baike can be <a class="reference external" href="https://github.com/crownpku">crownpku</a>  &#8216;s
+<a class="reference external" href="http://www.crownpku.com/2017/07/27/%E7%94%A8Rasa_NLU%E6%9E%84%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84%E4%B8%AD%E6%96%87NLU%E7%B3%BB%E7%BB%9F.html">blogpost</a>.</p>
 </div>
 </div>
 </div>
@@ -290,12 +322,13 @@ allow rasa NLU to load and use your new language by passing in your language ide
 <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
     <span class="rst-current-version" data-toggle="rst-current-version">
         <span class="fa fa-book"> Other Versions</span>
-        v: 0.11.4
+        v: 0.12.0
         <span class="fa fa-caret-down"></span>
     </span>
     <div class="rst-other-versions">
         <dl>
             <dt>Tags</dt>
+            <dd><a href="0.12.0/languages.html">0.12.0</a></dd>
             <dd><a href="0.11.4/languages.html">0.11.4</a></dd>
             <dd><a href="0.11.3/languages.html">0.11.3</a></dd>
             <dd><a href="0.11.2/languages.html">0.11.2</a></dd>
@@ -319,7 +352,7 @@ allow rasa NLU to load and use your new language by passing in your language ide
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.11.4',
+            VERSION:'0.12.0',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
@@ -357,6 +390,7 @@ gtag('js', new Date());
 
 gtag('config', 'UA-87333416-1');
 </script>
+<script type="text/javascript" src="//script.crazyegg.com/pages/scripts/0074/3851.js" async="async"></script>
 
 
 </body>

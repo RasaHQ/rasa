@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Frequently Asked Questions &mdash; rasa NLU 0.11.4 documentation</title>
+  <title>Frequently Asked Questions &mdash; Rasa NLU 0.12.0 documentation</title>
   
 
   
@@ -37,9 +37,9 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="rasa NLU 0.11.4 documentation" href="index.html"/>
+    <link rel="top" title="Rasa NLU 0.12.0 documentation" href="index.html"/>
         <link rel="next" title="Migration Guide" href="migrations.html"/>
-        <link rel="prev" title="Evaluation" href="evaluation.html"/>
+        <link rel="prev" title="Context-aware Dialogue" href="context.html"/>
 <link href="_static/css/rasa_theme.css" rel="stylesheet" type="text/css">
 
 
@@ -60,7 +60,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home"> rasa NLU
+            <a href="index.html" class="icon icon-home"> Rasa NLU
           
 
           
@@ -70,7 +70,7 @@
             
             
               <div class="version">
-                0.11
+                0.12
               </div>
             
           
@@ -103,20 +103,21 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="migrating.html">Migrating an existing app</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Training Data Format</a></li>
-<li class="toctree-l1"><a class="reference internal" href="http.html">Using rasa NLU as a HTTP server</a></li>
-<li class="toctree-l1"><a class="reference internal" href="python.html">Using rasa NLU from python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Training and Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http.html">Using Rasa NLU as a HTTP server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python.html">Using Rasa NLU from python</a></li>
 <li class="toctree-l1"><a class="reference internal" href="entities.html">Entity Extraction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="closeloop.html">Improving your models from feedback</a></li>
 <li class="toctree-l1"><a class="reference internal" href="persist.html">Model Persistence</a></li>
 <li class="toctree-l1"><a class="reference internal" href="languages.html">Language Support</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pipeline.html">Processing Pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="evaluation.html">Evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="context.html">Context-aware Dialogue</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Frequently Asked Questions</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#how-many-training-examples-do-i-need">How many training examples do I need?</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#does-it-run-with-python-3">Does it run with python 3?</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#which-languages-are-supported">Which languages are supported?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#which-version-of-rasa-nlu-am-i-running">Which version of rasa NLU am I running?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#which-version-of-rasa-nlu-am-i-running">Which version of Rasa NLU am I running?</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#why-am-i-getting-an-undefinedmetricwarning">Why am I getting an <code class="docutils literal"><span class="pre">UndefinedMetricWarning</span></code>?</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#i-have-an-issue-can-you-help-me">I have an issue, can you help me?</a><ul class="simple">
 </ul>
@@ -125,6 +126,10 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="migrations.html">Migration Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="community.html">Community Contributions</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Developer Documentation</span></p>
 <ul>
@@ -145,7 +150,7 @@
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">rasa NLU</a>
+          <a href="index.html">Rasa NLU</a>
         
       </nav>
 
@@ -215,7 +220,7 @@ entities are distinguishable from non-entities in your use case.</p>
 </div>
 <div class="section" id="does-it-run-with-python-3">
 <h2>Does it run with python 3?<a class="headerlink" href="#does-it-run-with-python-3" title="Permalink to this headline">¶</a></h2>
-<p>Yes it does, rasa NLU supports python 2.7 as well as python 3.5 and 3.6. If there are any issues with a specific python version, feel free to create an issue or directly provide a fix.</p>
+<p>Yes it does, Rasa NLU supports python 2.7 as well as python 3.5 and 3.6. If there are any issues with a specific python version, feel free to create an issue or directly provide a fix.</p>
 </div>
 <div class="section" id="which-languages-are-supported">
 <h2>Which languages are supported?<a class="headerlink" href="#which-languages-are-supported" title="Permalink to this headline">¶</a></h2>
@@ -224,8 +229,8 @@ others working on adding more languages, feel free to have a look at the <a clas
 section or the <a class="reference external" href="https://gitter.im/RasaHQ/rasa_nlu">gitter chat</a>.</p>
 </div>
 <div class="section" id="which-version-of-rasa-nlu-am-i-running">
-<span id="section-faq-version"></span><h2>Which version of rasa NLU am I running?<a class="headerlink" href="#which-version-of-rasa-nlu-am-i-running" title="Permalink to this headline">¶</a></h2>
-<p>To find out which rasa version you are running, you can execute</p>
+<span id="section-faq-version"></span><h2>Which version of Rasa NLU am I running?<a class="headerlink" href="#which-version-of-rasa-nlu-am-i-running" title="Permalink to this headline">¶</a></h2>
+<p>To find out which Rasa version you are running, you can execute</p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span>python -c <span class="s2">&quot;import rasa_nlu; print(rasa_nlu.__version__);&quot;</span>
 </pre></div>
 </div>
@@ -260,7 +265,7 @@ including all the information needed to reproduce the problem.</p>
         <a href="migrations.html" class="btn btn-neutral float-right" title="Migration Guide" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="evaluation.html" class="btn btn-neutral" title="Evaluation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="context.html" class="btn btn-neutral" title="Context-aware Dialogue" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -287,12 +292,13 @@ including all the information needed to reproduce the problem.</p>
 <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
     <span class="rst-current-version" data-toggle="rst-current-version">
         <span class="fa fa-book"> Other Versions</span>
-        v: 0.11.4
+        v: 0.12.0
         <span class="fa fa-caret-down"></span>
     </span>
     <div class="rst-other-versions">
         <dl>
             <dt>Tags</dt>
+            <dd><a href="0.12.0/faq.html">0.12.0</a></dd>
             <dd><a href="0.11.4/faq.html">0.11.4</a></dd>
             <dd><a href="0.11.3/faq.html">0.11.3</a></dd>
             <dd><a href="0.11.2/faq.html">0.11.2</a></dd>
@@ -316,7 +322,7 @@ including all the information needed to reproduce the problem.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.11.4',
+            VERSION:'0.12.0',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
@@ -354,6 +360,7 @@ gtag('js', new Date());
 
 gtag('config', 'UA-87333416-1');
 </script>
+<script type="text/javascript" src="//script.crazyegg.com/pages/scripts/0074/3851.js" async="async"></script>
 
 
 </body>

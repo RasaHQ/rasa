@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Evaluation &mdash; rasa NLU 0.11.4 documentation</title>
+  <title>Evaluation &mdash; Rasa NLU 0.12.0 documentation</title>
   
 
   
@@ -37,8 +37,8 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="rasa NLU 0.11.4 documentation" href="index.html"/>
-        <link rel="next" title="Frequently Asked Questions" href="faq.html"/>
+    <link rel="top" title="Rasa NLU 0.12.0 documentation" href="index.html"/>
+        <link rel="next" title="Context-aware Dialogue" href="context.html"/>
         <link rel="prev" title="Processing Pipeline" href="pipeline.html"/>
 <link href="_static/css/rasa_theme.css" rel="stylesheet" type="text/css">
 
@@ -60,7 +60,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home"> rasa NLU
+            <a href="index.html" class="icon icon-home"> Rasa NLU
           
 
           
@@ -70,7 +70,7 @@
             
             
               <div class="version">
-                0.11
+                0.12
               </div>
             
           
@@ -103,9 +103,9 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="migrating.html">Migrating an existing app</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Training Data Format</a></li>
-<li class="toctree-l1"><a class="reference internal" href="http.html">Using rasa NLU as a HTTP server</a></li>
-<li class="toctree-l1"><a class="reference internal" href="python.html">Using rasa NLU from python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Training and Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http.html">Using Rasa NLU as a HTTP server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python.html">Using Rasa NLU from python</a></li>
 <li class="toctree-l1"><a class="reference internal" href="entities.html">Entity Extraction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="closeloop.html">Improving your models from feedback</a></li>
 <li class="toctree-l1"><a class="reference internal" href="persist.html">Model Persistence</a></li>
@@ -117,11 +117,17 @@
 <li class="toctree-l3"><a class="reference internal" href="#entity-scoring">Entity Scoring</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#evaluation-parameters">Evaluation Parameters</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="context.html">Context-aware Dialogue</a></li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="migrations.html">Migration Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="community.html">Community Contributions</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Developer Documentation</span></p>
 <ul>
@@ -142,7 +148,7 @@
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">rasa NLU</a>
+          <a href="index.html">Rasa NLU</a>
         
       </nav>
 
@@ -200,17 +206,31 @@
 <div class="section" id="evaluation">
 <span id="section-evaluation"></span><h1>Evaluation<a class="headerlink" href="#evaluation" title="Permalink to this headline">¶</a></h1>
 <p>The evaluation script <cite>evaluate.py</cite> allows you to test your models performance for intent classification and entity recognition. You invoke this script supplying test data, model, and config file arguments:</p>
-<div class="highlight-bash"><div class="highlight"><pre><span></span>python -m rasa_nlu.evaluate -d data/my_test.json -m models/my_model -c my_nlu_config.json
+<div class="highlight-bash"><div class="highlight"><pre><span></span>python -m rasa_nlu.evaluate <span class="se">\</span>
+    --data data/examples/rasa/demo-rasa.json <span class="se">\</span>
+    --model projects/default/model_20180323-145833
 </pre></div>
 </div>
-<p>If you would like to evaluate your pipeline using crossvalidation, you can run the evaluation script with the mode crossvalidation flag. This gives you an estimate of how accurately a predictive model will perform in practice. Note that you cannot specify a model in this mode, as a new model will be trained on part of the data for every crossvalidation loop. An example invocation of your script would be:</p>
-<div class="highlight-bash"><div class="highlight"><pre><span></span>python -m rasa_nlu.evaluate -d data/examples/rasa/demo-rasa.json -c sample_configs/config_spacy.json --mode crossvalidation
+<p>Where <strong>model</strong> specifies the model to evaluate on the test data specified
+wioth <strong>data</strong>.</p>
+<p>If you would like to evaluate your pipeline using
+<em>cross-validation</em>, you can run the evaluation script with the mode
+crossvalidation flag. This gives you an estimate of how accurately a
+predictive model will perform in practice. Note that you cannot specify
+a model in this mode, as a new model will be trained on part of the data
+for every crossvalidation loop. An example invocation of your script would be:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>python -m rasa_nlu.evaluate <span class="se">\</span>
+    --data data/examples/rasa/demo-rasa.json <span class="se">\</span>
+    --config sample_configs/config_spacy.yml <span class="se">\</span>
+    --mode crossvalidation
 </pre></div>
 </div>
 <div class="section" id="intent-classification">
 <h2>Intent Classification<a class="headerlink" href="#intent-classification" title="Permalink to this headline">¶</a></h2>
-<p>The evaluation script will log precision, recall, and f1 measure for each intent and once summarized for all.
-Furthermore, it creates a confusion matrix for you to see which intents are mistaken for which others.</p>
+<p>The evaluation script will log precision, recall, and f1 measure for
+each intent and once summarized for all.
+Furthermore, it creates a confusion matrix for you to see which
+intents are mistaken for which others.</p>
 </div>
 <div class="section" id="entity-extraction">
 <h2>Entity Extraction<a class="headerlink" href="#entity-extraction" title="Permalink to this headline">¶</a></h2>
@@ -276,6 +296,35 @@ BILOU-based one.</p>
 </table>
 </div>
 </div>
+<div class="section" id="evaluation-parameters">
+<h2>Evaluation Parameters<a class="headerlink" href="#evaluation-parameters" title="Permalink to this headline">¶</a></h2>
+<p>There are a number of parameters you can pass to the evaluation script</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ python -m rasa_nlu.evaluate --help
+</pre></div>
+</div>
+<p>Here is a quick overview:</p>
+<div class="highlight-text"><div class="highlight"><pre><span></span>usage: evaluate.py [-h] -d DATA [--mode MODE] [-c CONFIG] [-m MODEL]
+                   [-f FOLDS] [--debug] [-v]
+
+evaluate a Rasa NLU pipeline with cross validation or on external data
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -d DATA, --data DATA  file containing training/evaluation data
+  --mode MODE           evaluation|crossvalidation (evaluate pretrained model
+                        or train model by crossvalidation)
+  -c CONFIG, --config CONFIG
+                        model configurion file (crossvalidation only)
+  -m MODEL, --model MODEL
+                        path to model (evaluation only)
+  -f FOLDS, --folds FOLDS
+                        number of CV folds (crossvalidation only)
+  --debug               Print lots of debugging statements. Sets logging level
+                        to DEBUG
+  -v, --verbose         Be verbose. Sets logging level to INFO
+</pre></div>
+</div>
+</div>
 </div>
 
 
@@ -288,7 +337,7 @@ BILOU-based one.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="faq.html" class="btn btn-neutral float-right" title="Frequently Asked Questions" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="context.html" class="btn btn-neutral float-right" title="Context-aware Dialogue" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="pipeline.html" class="btn btn-neutral" title="Processing Pipeline" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
@@ -318,12 +367,13 @@ BILOU-based one.</p>
 <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
     <span class="rst-current-version" data-toggle="rst-current-version">
         <span class="fa fa-book"> Other Versions</span>
-        v: 0.11.4
+        v: 0.12.0
         <span class="fa fa-caret-down"></span>
     </span>
     <div class="rst-other-versions">
         <dl>
             <dt>Tags</dt>
+            <dd><a href="0.12.0/evaluation.html">0.12.0</a></dd>
             <dd><a href="0.11.4/evaluation.html">0.11.4</a></dd>
             <dd><a href="0.11.3/evaluation.html">0.11.3</a></dd>
             <dd><a href="0.11.2/evaluation.html">0.11.2</a></dd>
@@ -347,7 +397,7 @@ BILOU-based one.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.11.4',
+            VERSION:'0.12.0',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
@@ -385,6 +435,7 @@ gtag('js', new Date());
 
 gtag('config', 'UA-87333416-1');
 </script>
+<script type="text/javascript" src="//script.crazyegg.com/pages/scripts/0074/3851.js" async="async"></script>
 
 
 </body>

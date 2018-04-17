@@ -1,0 +1,84 @@
+.rating-container {
+  background-color: rgba(0, 0, 16, 0.8);
+  padding: 1rem;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.rating-text p {
+  color: white;
+  font-size: 1.3rem;
+  padding: 0.3rem;
+}
+
+.submit {
+  text-align: center;
+}
+
+svg {
+  fill: rgb(242, 242, 242);
+  height: 3.6rem;
+  width: 3.6rem;
+  margin: 0.2rem;
+}
+
+label {
+  color: white;
+  text-align: center;
+  display: inline-block;
+  margin: 0 1rem 0 1rem;
+}
+
+#radios label {
+  position: relative;
+}
+
+input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+}
+
+input[type="radio"] + svg {
+  -webkit-transition: all 0.2s;
+  transition: all 0.2s;
+}
+
+input + svg {
+  cursor: pointer;
+}
+
+input[class="great"]:hover + svg,
+input[class="great"]:checked + svg,
+input[class="great"]:focus + svg {
+  fill: rgb(0, 204, 79);
+}
+
+input[class="didnt-work"]:hover + svg,
+input[class="didnt-work"]:checked + svg,
+input[class="didnt-work"]:focus + svg {
+  fill: rgb(255, 0, 0);
+}
+
+input[class="didnt-finish"]:hover + svg,
+input[class="didnt-finish"]:checked + svg,
+input[class="didnt-finish"]:focus + svg {
+  fill: rgb(255, 255, 0);
+}
+
+/*
+   fixes wrong line height in code snippets. (line height between code lines
+   and shown line numbers is different so that the line numbers and the code
+   lines don't align without that fix)
+ */
+.rst-content .highlight > pre {
+  line-height: 18px;
+}
+
+/*
+   fixes overlapping "Choose Version" bar in the navigation hiding content items
+   adds enough padding so the version chooser doesn't overlap with any
+   navigation items
+*/
+.wy-nav-side {
+  padding-bottom: 3.2em;
+}

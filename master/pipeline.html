@@ -233,7 +233,7 @@
 
 
 
-    <p class="scv-banner scv-sphinx_rtd_theme"><a href="../0.11.4/pipeline.html"><b>Warning:</b> This document is for the development version of Rasa NLU. The latest version is 0.11.4.</a></p>
+    <p class="scv-banner scv-sphinx_rtd_theme"><a href="../0.12.0/pipeline.html"><b>Warning:</b> This document is for the development version of Rasa NLU. The latest version is 0.12.0.</a></p>
 <div class="section" id="processing-pipeline">
 <span id="section-pipeline"></span><h1>Processing Pipeline<a class="headerlink" href="#processing-pipeline" title="Permalink to this headline">¶</a></h1>
 <p>The process of incoming messages is split into different components. These components are executed one after another
@@ -1083,7 +1083,6 @@ neighbouring entity tags: the most likely set of tags is then calculated and ret
 <tr class="field-even field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Duckling allows to recognize dates, numbers, distances and other structured entities
 and normalizes them (for a reference of all available entities
 see <a class="reference external" href="https://duckling.wit.ai/#getting-started">the duckling documentation</a>).
-The component recognizes the entity types defined by the <span class="xref std std-ref">duckling dimensions configuration variable</span>.
 Please be aware that duckling tries to extract as many entity types as possible without
 providing a ranking. For example, if you specify both <code class="docutils literal"><span class="pre">number</span></code> and <code class="docutils literal"><span class="pre">time</span></code> as dimensions
 for the duckling component, the component will extract two entities: <code class="docutils literal"><span class="pre">10</span></code> as a number and
@@ -1184,6 +1183,7 @@ final context dictionary is used to persist the model&#8217;s metadata.</p>
     <div class="rst-other-versions">
         <dl>
             <dt>Tags</dt>
+            <dd><a href="../0.12.0/pipeline.html">0.12.0</a></dd>
             <dd><a href="../0.11.4/pipeline.html">0.11.4</a></dd>
             <dd><a href="../0.11.3/pipeline.html">0.11.3</a></dd>
             <dd><a href="../0.11.2/pipeline.html">0.11.2</a></dd>

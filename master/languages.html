@@ -205,7 +205,7 @@
 
 
 
-    <p class="scv-banner scv-sphinx_rtd_theme"><a href="../0.11.4/languages.html"><b>Warning:</b> This document is for the development version of Rasa NLU. The latest version is 0.11.4.</a></p>
+    <p class="scv-banner scv-sphinx_rtd_theme"><a href="../0.12.0/languages.html"><b>Warning:</b> This document is for the development version of Rasa NLU. The latest version is 0.12.0.</a></p>
 <div class="section" id="language-support">
 <span id="section-languages"></span><h1>Language Support<a class="headerlink" href="#language-support" title="Permalink to this headline">¶</a></h1>
 <p>Rasa NLU supports a number of different languages. Exactly which ones depends on
@@ -262,7 +262,7 @@ allow Rasa NLU to load and use your new language by passing in your language ide
 <h3>MITIE<a class="headerlink" href="#mitie" title="Permalink to this headline">¶</a></h3>
 <ol class="arabic simple">
 <li>Get a ~clean language corpus (a Wikipedia dump works) as a set of text files</li>
-<li>Build and run <a class="reference external" href="https://github.com/mit-nlp/MITIE">MITIE wordrep tool</a> on your corpus. This can take several hours/days depending on your dataset and your workstation. You&#8217;ll need something like 128GB of RAM for wordrep to run - yes that&#8217;s alot: try to extend your swap.</li>
+<li>Build and run <a class="reference external" href="https://github.com/mit-nlp/MITIE/tree/master/tools/wordrep">MITIE Wordrep Tool</a> on your corpus. This can take several hours/days depending on your dataset and your workstation. You&#8217;ll need something like 128GB of RAM for wordrep to run - yes that&#8217;s alot: try to extend your swap.</li>
 <li>Set the path of your new <code class="docutils literal"><span class="pre">total_word_feature_extractor.dat</span></code> as value of the <em>mitie_file</em> parameter in <code class="docutils literal"><span class="pre">config_mitie.json</span></code></li>
 </ol>
 </div>
@@ -331,6 +331,7 @@ A trained model from Chinese Wikipedia Dump and Baidu Baike can be <a class="ref
     <div class="rst-other-versions">
         <dl>
             <dt>Tags</dt>
+            <dd><a href="../0.12.0/languages.html">0.12.0</a></dd>
             <dd><a href="../0.11.4/languages.html">0.11.4</a></dd>
             <dd><a href="../0.11.3/languages.html">0.11.3</a></dd>
             <dd><a href="../0.11.2/languages.html">0.11.2</a></dd>

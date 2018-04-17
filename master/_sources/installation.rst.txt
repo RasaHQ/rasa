@@ -105,6 +105,7 @@ The complete pipeline for mitie can be found here
 
     Training MITIE can be quite slow on datasets
     with more than a few intents. You can try
+
         - to use the sklearn + MITIE backend instead
           (which uses sklearn for the training) or
         - you can install `our mitie fork <https://github.com/tmbo/mitie>`_

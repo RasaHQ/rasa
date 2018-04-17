@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Model Persistence &mdash; rasa NLU 0.11.4 documentation</title>
+  <title>Model Persistence &mdash; Rasa NLU 0.12.0 documentation</title>
   
 
   
@@ -37,7 +37,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="rasa NLU 0.11.4 documentation" href="index.html"/>
+    <link rel="top" title="Rasa NLU 0.12.0 documentation" href="index.html"/>
         <link rel="next" title="Language Support" href="languages.html"/>
         <link rel="prev" title="Improving your models from feedback" href="closeloop.html"/>
 <link href="_static/css/rasa_theme.css" rel="stylesheet" type="text/css">
@@ -60,7 +60,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home"> rasa NLU
+            <a href="index.html" class="icon icon-home"> Rasa NLU
           
 
           
@@ -70,7 +70,7 @@
             
             
               <div class="version">
-                0.11
+                0.12
               </div>
             
           
@@ -103,18 +103,23 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="migrating.html">Migrating an existing app</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Training Data Format</a></li>
-<li class="toctree-l1"><a class="reference internal" href="http.html">Using rasa NLU as a HTTP server</a></li>
-<li class="toctree-l1"><a class="reference internal" href="python.html">Using rasa NLU from python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Training and Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http.html">Using Rasa NLU as a HTTP server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python.html">Using Rasa NLU from python</a></li>
 <li class="toctree-l1"><a class="reference internal" href="entities.html">Entity Extraction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="closeloop.html">Improving your models from feedback</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Model Persistence</a></li>
 <li class="toctree-l1"><a class="reference internal" href="languages.html">Language Support</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pipeline.html">Processing Pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="evaluation.html">Evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="context.html">Context-aware Dialogue</a></li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="migrations.html">Migration Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="community.html">Community Contributions</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Developer Documentation</span></p>
 <ul>
@@ -135,7 +140,7 @@
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">rasa NLU</a>
+          <a href="index.html">Rasa NLU</a>
         
       </nav>
 
@@ -192,35 +197,60 @@
 
 <div class="section" id="model-persistence">
 <span id="section-persistence"></span><h1>Model Persistence<a class="headerlink" href="#model-persistence" title="Permalink to this headline">¶</a></h1>
-<p>rasa NLU supports using <a class="reference external" href="https://aws.amazon.com/s3/">S3</a> and <a class="reference external" href="https://cloud.google.com/storage/">GCS</a> to save your models.</p>
+<p>Rasa NLU supports using <a class="reference external" href="https://aws.amazon.com/s3/">S3</a> and
+<a class="reference external" href="https://cloud.google.com/storage/">GCS</a> to save your models.</p>
 <ul>
 <li><dl class="first docutils">
 <dt>Amazon S3 Storage</dt>
-<dd><p class="first">S3 is supported using the <code class="docutils literal"><span class="pre">boto3</span></code> module which you can install with <code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">boto3</span></code>.</p>
-<p>Start the rasa NLU server with <code class="docutils literal"><span class="pre">storage</span></code> option set to <code class="docutils literal"><span class="pre">aws</span></code>. Get your S3
-credentials and set the following environment variables:</p>
-<ul class="last simple">
+<dd><p class="first">S3 is supported using the <code class="docutils literal"><span class="pre">boto3</span></code> module which you can
+install with <code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">boto3</span></code>.</p>
+<p>Start the Rasa NLU server with <code class="docutils literal"><span class="pre">storage</span></code> option set to
+<code class="docutils literal"><span class="pre">aws</span></code>. Get your S3 credentials and set the following
+environment variables:</p>
+<ul class="simple">
 <li><code class="docutils literal"><span class="pre">AWS_SECRET_ACCESS_KEY</span></code></li>
 <li><code class="docutils literal"><span class="pre">AWS_ACCESS_KEY_ID</span></code></li>
-<li><code class="docutils literal"><span class="pre">AWS_REGION</span></code></li>
+<li><code class="docutils literal"><span class="pre">AWS_DEFAULT_REGION</span></code></li>
 <li><code class="docutils literal"><span class="pre">BUCKET_NAME</span></code></li>
+<li><code class="docutils literal"><span class="pre">AWS_ENDPOINT_URL</span></code></li>
 </ul>
+<p class="last">If there is no bucket with the name <code class="docutils literal"><span class="pre">BUCKET_NAME</span></code> Rasa will create it.</p>
 </dd>
 </dl>
 </li>
 <li><dl class="first docutils">
 <dt>Google Cloud Storage</dt>
-<dd><p class="first">GCS is supported using the <code class="docutils literal"><span class="pre">google-cloud-storage</span></code> package which you can install with <code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">google-cloud-storage</span></code></p>
-<p>Start the rasa NLU server with <code class="docutils literal"><span class="pre">storage</span></code> option set to <code class="docutils literal"><span class="pre">gcs</span></code>.</p>
-<p class="last">When running on google app engine and compute engine, the auth credentials are
-already set up. For running locally or elsewhere, checkout their <a class="reference external" href="https://github.com/GoogleCloudPlatform/python-docs-samples/tree/master/storage/cloud-client#authentication">client repo</a> for details on
-setting up authentication. It involves creating a service account key file from google cloud console, and setting the <code class="docutils literal"><span class="pre">GOOGLE_APPLICATION_CREDENTIALS</span></code> environment variable to the path of that key file.</p>
+<dd><p class="first">GCS is supported using the <code class="docutils literal"><span class="pre">google-cloud-storage</span></code> package
+which you can install with <code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">google-cloud-storage</span></code></p>
+<p>Start the Rasa NLU server with <code class="docutils literal"><span class="pre">storage</span></code> option set to <code class="docutils literal"><span class="pre">gcs</span></code>.</p>
+<p class="last">When running on google app engine and compute engine, the auth
+credentials are already set up. For running locally or elsewhere,
+checkout their
+<a class="reference external" href="https://github.com/GoogleCloudPlatform/python-docs-samples/tree/master/storage/cloud-client#authentication">client repo</a>
+for details on setting up authentication. It involves creating
+a service account key file from google cloud console,
+and setting the <code class="docutils literal"><span class="pre">GOOGLE_APPLICATION_CREDENTIALS</span></code> environment
+variable to the path of that key file.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Azure Storage</dt>
+<dd><p class="first">Azure is supported using the <code class="docutils literal"><span class="pre">azure-storage-blob</span></code> package
+which you can install with <code class="docutils literal"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">azure-storage-blob</span></code></p>
+<p>Start the Rasa NLU server with <code class="docutils literal"><span class="pre">storage</span></code> option set to <code class="docutils literal"><span class="pre">azure</span></code>.</p>
+<p>The following environment variables must be set:</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">AZURE_CONTAINER</span></code></li>
+<li><code class="docutils literal"><span class="pre">AZURE_ACCOUNT_NAME</span></code></li>
+<li><code class="docutils literal"><span class="pre">AZURE_ACCOUNT_KEY</span></code></li>
+</ul>
+<p class="last">If there is no container with the name <code class="docutils literal"><span class="pre">AZURE_CONTAINER</span></code> Rasa will create it.</p>
 </dd>
 </dl>
 </li>
 </ul>
-<p>If there is no bucket with the name <code class="docutils literal"><span class="pre">$BUCKET_NAME</span></code> rasa will create it.
-Models are gzipped before saving to cloud.</p>
+<p>Models are gzipped before saving to cloud.</p>
 </div>
 
 
@@ -263,12 +293,13 @@ Models are gzipped before saving to cloud.</p>
 <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
     <span class="rst-current-version" data-toggle="rst-current-version">
         <span class="fa fa-book"> Other Versions</span>
-        v: 0.11.4
+        v: 0.12.0
         <span class="fa fa-caret-down"></span>
     </span>
     <div class="rst-other-versions">
         <dl>
             <dt>Tags</dt>
+            <dd><a href="0.12.0/persist.html">0.12.0</a></dd>
             <dd><a href="0.11.4/persist.html">0.11.4</a></dd>
             <dd><a href="0.11.3/persist.html">0.11.3</a></dd>
             <dd><a href="0.11.2/persist.html">0.11.2</a></dd>
@@ -292,7 +323,7 @@ Models are gzipped before saving to cloud.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.11.4',
+            VERSION:'0.12.0',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
@@ -330,6 +361,7 @@ gtag('js', new Date());
 
 gtag('config', 'UA-87333416-1');
 </script>
+<script type="text/javascript" src="//script.crazyegg.com/pages/scripts/0074/3851.js" async="async"></script>
 
 
 </body>

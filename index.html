@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Language Understanding with rasa NLU &mdash; rasa NLU 0.11.4 documentation</title>
+  <title>Language Understanding with Rasa NLU &mdash; Rasa NLU 0.12.0 documentation</title>
   
 
   
@@ -37,7 +37,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="rasa NLU 0.11.4 documentation" href="#"/>
+    <link rel="top" title="Rasa NLU 0.12.0 documentation" href="#"/>
         <link rel="next" title="Installation" href="installation.html"/>
 <link href="_static/css/rasa_theme.css" rel="stylesheet" type="text/css">
 
@@ -59,7 +59,7 @@
           
 
           
-            <a href="#" class="icon icon-home"> rasa NLU
+            <a href="#" class="icon icon-home"> Rasa NLU
           
 
           
@@ -69,7 +69,7 @@
             
             
               <div class="version">
-                0.11
+                0.12
               </div>
             
           
@@ -102,18 +102,23 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="migrating.html">Migrating an existing app</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Training Data Format</a></li>
-<li class="toctree-l1"><a class="reference internal" href="http.html">Using rasa NLU as a HTTP server</a></li>
-<li class="toctree-l1"><a class="reference internal" href="python.html">Using rasa NLU from python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Training and Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http.html">Using Rasa NLU as a HTTP server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python.html">Using Rasa NLU from python</a></li>
 <li class="toctree-l1"><a class="reference internal" href="entities.html">Entity Extraction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="closeloop.html">Improving your models from feedback</a></li>
 <li class="toctree-l1"><a class="reference internal" href="persist.html">Model Persistence</a></li>
 <li class="toctree-l1"><a class="reference internal" href="languages.html">Language Support</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pipeline.html">Processing Pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="evaluation.html">Evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="context.html">Context-aware Dialogue</a></li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="migrations.html">Migration Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="community.html">Community Contributions</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Developer Documentation</span></p>
 <ul>
@@ -134,7 +139,7 @@
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="#">rasa NLU</a>
+          <a href="#">Rasa NLU</a>
         
       </nav>
 
@@ -164,7 +169,7 @@
     
       <li><a href="#">Docs</a> &raquo;</li>
         
-      <li>Language Understanding with rasa NLU</li>
+      <li>Language Understanding with Rasa NLU</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -190,13 +195,13 @@
 
 
 <div class="section" id="language-understanding-with-rasa-nlu">
-<h1>Language Understanding with rasa NLU<a class="headerlink" href="#language-understanding-with-rasa-nlu" title="Permalink to this headline">¶</a></h1>
+<h1>Language Understanding with Rasa NLU<a class="headerlink" href="#language-understanding-with-rasa-nlu" title="Permalink to this headline">¶</a></h1>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">This is the documentation for version 0.11.4 of rasa NLU. Make sure you select
+<p class="last">This is the documentation for version 0.12.0 of Rasa NLU. Make sure you select
 the appropriate version of the documentation for your local installation!</p>
 </div>
-<p>rasa NLU is an open source tool for intent classification and entity extraction. For example, taking a sentence like</p>
+<p>Rasa NLU is an open-source tool for intent classification and entity extraction. For example, taking a sentence like</p>
 <div class="highlight-console"><div class="highlight"><pre><span></span><span class="go">&quot;I am looking for a Mexican restaurant in the center of town&quot;</span>
 </pre></div>
 </div>
@@ -211,8 +216,8 @@ the appropriate version of the documentation for your local installation!</p>
 </pre></div>
 </div>
 <p>The intended audience is mainly people developing bots.
-You can use rasa as a drop-in replacement for <a class="reference external" href="https://wit.ai">wit</a> , <a class="reference external" href="https://www.luis.ai">LUIS</a> , or <a class="reference external" href="https://dialogflow.com">Dialogflow</a>, the only change in your code is to send requests to <code class="docutils literal"><span class="pre">localhost</span></code> instead (see <a class="reference internal" href="migrating.html#section-migration"><span class="std std-ref">Migrating an existing app</span></a> for details).</p>
-<p>Why might you use rasa instead of one of those services?</p>
+You can use Rasa as a drop-in replacement for <a class="reference external" href="https://wit.ai">wit</a> , <a class="reference external" href="https://www.luis.ai">LUIS</a> , or <a class="reference external" href="https://dialogflow.com">Dialogflow</a>, the only change in your code is to send requests to <code class="docutils literal"><span class="pre">localhost</span></code> instead (see <a class="reference internal" href="migrating.html#section-migration"><span class="std std-ref">Migrating an existing app</span></a> for details).</p>
+<p>Why might you use Rasa instead of one of those services?</p>
 <ul class="simple">
 <li>you don&#8217;t have to hand over your data to FB/MSFT/GOOG</li>
 <li>you don&#8217;t have to make a <code class="docutils literal"><span class="pre">https</span></code> call every time.</li>
@@ -230,20 +235,22 @@ You can use rasa as a drop-in replacement for <a class="reference external" href
 <p>There you go! you just parsed some text. Next step, do the <a class="reference internal" href="tutorial.html#section-tutorial"><span class="std std-ref">Tutorial: A simple restaurant search bot</span></a>.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">This demo uses a very limited ML model. To apply rasa NLU to your use case, you need to train your own model! Follow the tutorial to get to know how to apply rasa_nlu to your data.</p>
+<p class="last">This demo uses a very limited ML model. To apply Rasa NLU to your use case, you need to train your own model! Follow the tutorial to get to know how to apply rasa_nlu to your data.</p>
 </div>
 </div>
 <div class="section" id="about">
 <h2>About<a class="headerlink" href="#about" title="Permalink to this headline">¶</a></h2>
-<p>You can think of rasa NLU as a set of high level APIs for building your own language parser using existing NLP and ML libraries.
+<p>You can think of Rasa NLU as a set of high level APIs for building your own language parser using existing NLP and ML libraries.
 The setup process is designed to be as simple as possible. If you&#8217;re currently using wit, LUIS, or Dialogflow, you just:</p>
 <ol class="arabic simple">
-<li>download your app data from wit or LUIS and feed it into rasa NLU</li>
-<li>run rasa NLU on your machine and switch the URL of your wit/LUIS/Dialogflow api calls to <code class="docutils literal"><span class="pre">localhost:5000/parse</span></code>.</li>
+<li>download your app data from wit or LUIS and feed it into Rasa NLU</li>
+<li>run Rasa NLU on your machine and switch the URL of your wit/LUIS/Dialogflow api calls to <code class="docutils literal"><span class="pre">localhost:5000/parse</span></code>.</li>
 </ol>
-<p>rasa NLU is written in Python, but it you can use it from any language through <a class="reference internal" href="http.html#section-http"><span class="std std-ref">Using rasa NLU as a HTTP server</span></a>.
+<p>Rasa NLU is written in Python, but it you can use it from any language through <a class="reference internal" href="http.html#section-http"><span class="std std-ref">Using Rasa NLU as a HTTP server</span></a>.
 If your project <em>is</em> written in Python you can simply import the relevant classes.</p>
-<p>rasa is a set of tools for building more advanced bots, developed by <a class="reference external" href="https://rasa.com">Rasa</a> . This is the natural language understanding module, and the first component to be open sourced.</p>
+<p>Rasa is a set of tools for building more advanced bots, developed by <a class="reference external" href="https://rasa.com">Rasa</a>. This is the natural language understanding module. To
+build conversational chatbots, you can interface Rasa NLU with libraries
+that steer the flow of the conversation - more on this in <a class="reference internal" href="context.html#section-context"><span class="std std-ref">Context-aware Dialogue</span></a>.</p>
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Getting Started</span></p>
 <ul>
@@ -256,18 +263,25 @@ If your project <em>is</em> written in Python you can simply import the relevant
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="migrating.html">Migrating an existing app</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Training Data Format</a></li>
-<li class="toctree-l1"><a class="reference internal" href="http.html">Using rasa NLU as a HTTP server</a></li>
-<li class="toctree-l1"><a class="reference internal" href="python.html">Using rasa NLU from python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Training and Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http.html">Using Rasa NLU as a HTTP server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python.html">Using Rasa NLU from python</a></li>
 <li class="toctree-l1"><a class="reference internal" href="entities.html">Entity Extraction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="closeloop.html">Improving your models from feedback</a></li>
 <li class="toctree-l1"><a class="reference internal" href="persist.html">Model Persistence</a></li>
 <li class="toctree-l1"><a class="reference internal" href="languages.html">Language Support</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pipeline.html">Processing Pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="evaluation.html">Evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="context.html">Context-aware Dialogue</a></li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="migrations.html">Migration Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="community.html">Community Contributions</a></li>
 </ul>
 </div>
 <div class="toctree-wrapper compound">
@@ -319,12 +333,13 @@ If your project <em>is</em> written in Python you can simply import the relevant
 <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
     <span class="rst-current-version" data-toggle="rst-current-version">
         <span class="fa fa-book"> Other Versions</span>
-        v: 0.11.4
+        v: 0.12.0
         <span class="fa fa-caret-down"></span>
     </span>
     <div class="rst-other-versions">
         <dl>
             <dt>Tags</dt>
+            <dd><a href="0.12.0/index.html">0.12.0</a></dd>
             <dd><a href="0.11.4/index.html">0.11.4</a></dd>
             <dd><a href="0.11.3/index.html">0.11.3</a></dd>
             <dd><a href="0.11.2/index.html">0.11.2</a></dd>
@@ -348,7 +363,7 @@ If your project <em>is</em> written in Python you can simply import the relevant
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.11.4',
+            VERSION:'0.12.0',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
@@ -386,6 +401,7 @@ gtag('js', new Date());
 
 gtag('config', 'UA-87333416-1');
 </script>
+<script type="text/javascript" src="//script.crazyegg.com/pages/scripts/0074/3851.js" async="async"></script>
 
 
 </body>

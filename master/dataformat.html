@@ -208,7 +208,7 @@
 
 
 
-    <p class="scv-banner scv-sphinx_rtd_theme"><a href="../0.11.4/dataformat.html"><b>Warning:</b> This document is for the development version of Rasa NLU. The latest version is 0.11.4.</a></p>
+    <p class="scv-banner scv-sphinx_rtd_theme"><a href="../0.12.0/dataformat.html"><b>Warning:</b> This document is for the development version of Rasa NLU. The latest version is 0.12.0.</a></p>
 <div class="section" id="training-and-data-format">
 <span id="section-dataformat"></span><h1>Training and Data Format<a class="headerlink" href="#training-and-data-format" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="data-format">
@@ -355,21 +355,21 @@ training data!</p>
 <h3>Markdown Format<a class="headerlink" href="#markdown-format" title="Permalink to this headline">¶</a></h3>
 <p>Alternatively training data can be used in the following markdown format. Examples are listed using the unordered
 list syntax, e.g. minus <code class="docutils literal"><span class="pre">-</span></code>, asterisk <code class="docutils literal"><span class="pre">*</span></code>, or plus <code class="docutils literal"><span class="pre">+</span></code>:</p>
-<div class="highlight-markdown"><div class="highlight"><pre><span></span>## intent:check_balance
-- what is my balance &lt;!-- no entity --&gt;
-- how much do I have on my [savings](source_account) &lt;!-- entity &quot;source_account&quot; has value &quot;savings&quot; --&gt;
-- how much do I have on my [my savings account](source_account:savings) &lt;!-- synonyms, method 1--&gt;
+<div class="highlight-md"><div class="highlight"><pre><span></span><span class="gu">##</span> intent:check_balance
+<span class="k">-</span> what is my balance &lt;!-- no entity --&gt;
+<span class="k">-</span> how much do I have on my [<span class="nt">savings</span>](<span class="na">source_account</span>) &lt;!-- entity &quot;source_account&quot; has value &quot;savings&quot; --&gt;
+<span class="k">-</span> how much do I have on my [<span class="nt">my savings account</span>](<span class="na">source_account:savings</span>) &lt;!-- synonyms, method 1--&gt;
 
-## intent:greet
-- hey
-- hello
+<span class="gu">##</span> intent:greet
+<span class="k">-</span> hey
+<span class="k">-</span> hello
 
-## synonym:savings   &lt;!-- synonyms, method 2 --&gt;
-- pink pig
+<span class="gu">##</span> synonym:savings   &lt;!-- synonyms, method 2 --&gt;
+<span class="k">-</span> pink pig
 
 
-## regex:zipcode
-- [0-9]{5}
+<span class="gu">##</span> regex:zipcode
+<span class="k">-</span> [0-9]{5}
 </pre></div>
 </div>
 </div>
@@ -386,7 +386,7 @@ For other file formats you have to use the single-file approach.</p>
 </div>
 </div>
 <div class="section" id="train-a-model">
-<h2>Train a Model<a class="headerlink" href="#train-a-model" title="Permalink to this headline">¶</a></h2>
+<span id="train-parameters"></span><h2>Train a Model<a class="headerlink" href="#train-a-model" title="Permalink to this headline">¶</a></h2>
 <p>There is a helper script that allows you to train a model.</p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span>$ python -m rasa_nlu.train
 </pre></div>
@@ -425,7 +425,7 @@ optional arguments:
 <p>The other ways to train a model are</p>
 <ul class="simple">
 <li>training it using your own python code</li>
-<li>training it using the HTTP api (<span class="xref std std-ref">http</span>)</li>
+<li>training it using the HTTP api (<a class="reference internal" href="http.html#section-http"><span class="std std-ref">Using Rasa NLU as a HTTP server</span></a>)</li>
 </ul>
 </div>
 </div>
@@ -476,6 +476,7 @@ optional arguments:
     <div class="rst-other-versions">
         <dl>
             <dt>Tags</dt>
+            <dd><a href="../0.12.0/dataformat.html">0.12.0</a></dd>
             <dd><a href="../0.11.4/dataformat.html">0.11.4</a></dd>
             <dd><a href="../0.11.3/dataformat.html">0.11.3</a></dd>
             <dd><a href="../0.11.2/dataformat.html">0.11.2</a></dd>

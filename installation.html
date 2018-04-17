@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Installation &mdash; rasa NLU 0.11.4 documentation</title>
+  <title>Installation &mdash; Rasa NLU 0.12.0 documentation</title>
   
 
   
@@ -37,9 +37,9 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="rasa NLU 0.11.4 documentation" href="index.html"/>
+    <link rel="top" title="Rasa NLU 0.12.0 documentation" href="index.html"/>
         <link rel="next" title="Tutorial: A simple restaurant search bot" href="tutorial.html"/>
-        <link rel="prev" title="Language Understanding with rasa NLU" href="index.html"/>
+        <link rel="prev" title="Language Understanding with Rasa NLU" href="index.html"/>
 <link href="_static/css/rasa_theme.css" rel="stylesheet" type="text/css">
 
 
@@ -60,7 +60,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home"> rasa NLU
+            <a href="index.html" class="icon icon-home"> Rasa NLU
           
 
           
@@ -70,7 +70,7 @@
             
             
               <div class="version">
-                0.11
+                0.12
               </div>
             
           
@@ -97,7 +97,7 @@
               <p class="caption"><span class="caption-text">Getting Started</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#setting-up-rasa-nlu">Setting up rasa NLU</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#setting-up-rasa-nlu">Setting up Rasa NLU</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#setting-up-a-backend">Setting up a backend</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#best-for-most-spacy-sklearn">Best for most: spaCy + sklearn</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#first-alternative-mitie">First Alternative: MITIE</a></li>
@@ -112,18 +112,23 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="migrating.html">Migrating an existing app</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Training Data Format</a></li>
-<li class="toctree-l1"><a class="reference internal" href="http.html">Using rasa NLU as a HTTP server</a></li>
-<li class="toctree-l1"><a class="reference internal" href="python.html">Using rasa NLU from python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Training and Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http.html">Using Rasa NLU as a HTTP server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python.html">Using Rasa NLU from python</a></li>
 <li class="toctree-l1"><a class="reference internal" href="entities.html">Entity Extraction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="closeloop.html">Improving your models from feedback</a></li>
 <li class="toctree-l1"><a class="reference internal" href="persist.html">Model Persistence</a></li>
 <li class="toctree-l1"><a class="reference internal" href="languages.html">Language Support</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pipeline.html">Processing Pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="evaluation.html">Evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="context.html">Context-aware Dialogue</a></li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="migrations.html">Migration Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="community.html">Community Contributions</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Developer Documentation</span></p>
 <ul>
@@ -144,7 +149,7 @@
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">rasa NLU</a>
+          <a href="index.html">Rasa NLU</a>
         
       </nav>
 
@@ -205,8 +210,8 @@
 but to do something useful with it you need to
 install &amp; configure a backend. Which backend you want to use is up to you.</p>
 <div class="section" id="setting-up-rasa-nlu">
-<h2>Setting up rasa NLU<a class="headerlink" href="#setting-up-rasa-nlu" title="Permalink to this headline">¶</a></h2>
-<p>The recommended way to install rasa NLU is using pip:</p>
+<h2>Setting up Rasa NLU<a class="headerlink" href="#setting-up-rasa-nlu" title="Permalink to this headline">¶</a></h2>
+<p>The recommended way to install Rasa NLU is using pip:</p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span>pip install rasa_nlu
 </pre></div>
 </div>
@@ -217,50 +222,53 @@ pip install -r requirements.txt
 pip install -e .
 </pre></div>
 </div>
-<p>rasa NLU allows you to use components to process your messages.
+<p>Rasa NLU allows you to use components to process your messages.
 E.g. there is a component for intent classification and
 there are several different components for entity recognition.
 The different components have their own requirements. To get
 you started quickly, this installation guide only installs
 the basic requirements, you may need to install other
 dependencies if you want to use certain components. When running
-rasa NLU it will check if all needed dependencies are
-installed and tell you which are missing, if any.</p>
+Rasa NLU it will check if all required dependencies are
+installed and tell you if any are missing.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p>If you want to make sure you got all the dependencies
-installed any component might ever need, and you
+<p>If you want to make sure you have the dependencies
+installed for any component you might ever need, and you
 don&#8217;t mind the additional dependencies lying around, you can use</p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span>pip install -r alt_requirements/requirements_full.txt
 </pre></div>
 </div>
-<p class="last">instead of <code class="docutils literal"><span class="pre">requirements.txt</span></code> to install all requirements.</p>
+<p class="last">to install everything.</p>
 </div>
 </div>
 <div class="section" id="setting-up-a-backend">
 <h2>Setting up a backend<a class="headerlink" href="#setting-up-a-backend" title="Permalink to this headline">¶</a></h2>
 <p>Most of the processing pipeline you can use with rasa NLU
-either require MITIE, spaCy or sklearn to be installed.</p>
+either require spaCy, sklearn or MITIE to be installed.</p>
 <div class="section" id="best-for-most-spacy-sklearn">
 <h3>Best for most: spaCy + sklearn<a class="headerlink" href="#best-for-most-spacy-sklearn" title="Permalink to this headline">¶</a></h3>
-<p>You can also run using these two in combination.</p>
-<p>installing spacy just requires (for more information
+<p>Rasa NLU can run with a choice of backends, but for most users
+a combination of spaCy and scikit-learn is the best option.</p>
+<p>Installing spacy just requires (for more information
 visit the <a class="reference external" href="https://spacy.io/docs/usage/">spacy docu</a>):</p>
 <div class="highlight-bash"><div class="highlight"><pre><span></span>pip install rasa_nlu<span class="o">[</span>spacy<span class="o">]</span>
 python -m spacy download en_core_web_md
 python -m spacy link en_core_web_md en
 </pre></div>
 </div>
-<p>We highly recommend using at least the &#8220;medium&#8221; sized models (<code class="docutils literal"><span class="pre">_md</span></code>)instead of
-the spacy&#8217;s default small <code class="docutils literal"><span class="pre">en_core_web_sm</span></code> model. Small models will
-work as well, the downside is that
-they have worse performance during intent classification.</p>
+<p>This will install Rasa NLU as well as spacy and its language model
+for the english language. We recommend using at least the
+&#8220;medium&#8221; sized models (<code class="docutils literal"><span class="pre">_md</span></code>) instead of the spacy&#8217;s
+default small <code class="docutils literal"><span class="pre">en_core_web_sm</span></code> model. Small models require less
+memory to run, but will somewhat reduce intent classification performance.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">Using spaCy as the backend for Rasa is the <strong>preferred option</strong>.
+<p class="last">Using spaCy as the backend for Rasa NLU is the <strong>preferred option</strong>.
 For most domains the performance is better or equally
 good as results achieved with MITIE. Additionally,
-it is easier to setup and faster to train.</p>
+it is easier to setup and faster to train.
+MITIE support has been deprecated as of version 0.12.</p>
 </div>
 </div>
 <div class="section" id="first-alternative-mitie">
@@ -273,8 +281,21 @@ pip install rasa_nlu<span class="o">[</span>mitie<span class="o">]</span>
 </div>
 <p>and then download the <a class="reference external" href="https://github.com/mit-nlp/MITIE/releases/download/v0.4/MITIE-models-v0.2.tar.bz2">MITIE models</a>.
 The file you need is <code class="docutils literal"><span class="pre">total_word_feature_extractor.dat</span></code>. Save this
-somewhere and in your <code class="docutils literal"><span class="pre">config.json</span></code> add
-<code class="docutils literal"><span class="pre">'mitie_file'</span> <span class="pre">:</span> <span class="pre">'/path/to/total_word_feature_extractor.dat'</span></code>.</p>
+somewhere, if you want to use mitie, you need to tell it where to
+find this file.</p>
+<p>The complete pipeline for mitie can be found here</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+
+<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;nlp_mitie&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">model</span><span class="p p-Indicator">:</span> <span class="s">&quot;data/total_word_feature_extractor.dat&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;tokenizer_mitie&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;ner_mitie&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;ner_synonyms&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;intent_entity_featurizer_regex&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;intent_classifier_mitie&quot;</span>
+</pre></div>
+</div>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
 <p>Training MITIE can be quite slow on datasets
@@ -300,6 +321,21 @@ which should reduce the training time as well.</li>
 training intent classifiers with MITIE can take very long.</p>
 <p>To use this backend you need to follow the instructions for
 installing both, sklearn and MITIE.</p>
+<p>Example pipeline configuration for the use of MITIE together with
+sklearn:</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+
+<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;nlp_mitie&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">model</span><span class="p p-Indicator">:</span> <span class="s">&quot;data/total_word_feature_extractor.dat&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;tokenizer_mitie&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;ner_mitie&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;ner_synonyms&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;intent_entity_featurizer_regex&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;intent_featurizer_mitie&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;intent_classifier_sklearn&quot;</span>
+</pre></div>
+</div>
 </div>
 </div>
 </div>
@@ -317,7 +353,7 @@ installing both, sklearn and MITIE.</p>
         <a href="tutorial.html" class="btn btn-neutral float-right" title="Tutorial: A simple restaurant search bot" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="index.html" class="btn btn-neutral" title="Language Understanding with rasa NLU" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="index.html" class="btn btn-neutral" title="Language Understanding with Rasa NLU" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -344,12 +380,13 @@ installing both, sklearn and MITIE.</p>
 <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
     <span class="rst-current-version" data-toggle="rst-current-version">
         <span class="fa fa-book"> Other Versions</span>
-        v: 0.11.4
+        v: 0.12.0
         <span class="fa fa-caret-down"></span>
     </span>
     <div class="rst-other-versions">
         <dl>
             <dt>Tags</dt>
+            <dd><a href="0.12.0/installation.html">0.12.0</a></dd>
             <dd><a href="0.11.4/installation.html">0.11.4</a></dd>
             <dd><a href="0.11.3/installation.html">0.11.3</a></dd>
             <dd><a href="0.11.2/installation.html">0.11.2</a></dd>
@@ -373,7 +410,7 @@ installing both, sklearn and MITIE.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.11.4',
+            VERSION:'0.12.0',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
@@ -411,6 +448,7 @@ gtag('js', new Date());
 
 gtag('config', 'UA-87333416-1');
 </script>
+<script type="text/javascript" src="//script.crazyegg.com/pages/scripts/0074/3851.js" async="async"></script>
 
 
 </body>

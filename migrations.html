@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Migration Guide &mdash; rasa NLU 0.11.4 documentation</title>
+  <title>Migration Guide &mdash; Rasa NLU 0.12.0 documentation</title>
   
 
   
@@ -37,7 +37,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="rasa NLU 0.11.4 documentation" href="index.html"/>
+    <link rel="top" title="Rasa NLU 0.12.0 documentation" href="index.html"/>
         <link rel="next" title="License" href="license.html"/>
         <link rel="prev" title="Frequently Asked Questions" href="faq.html"/>
 <link href="_static/css/rasa_theme.css" rel="stylesheet" type="text/css">
@@ -60,7 +60,7 @@
           
 
           
-            <a href="index.html" class="icon icon-home"> rasa NLU
+            <a href="index.html" class="icon icon-home"> Rasa NLU
           
 
           
@@ -70,7 +70,7 @@
             
             
               <div class="version">
-                0.11
+                0.12
               </div>
             
           
@@ -103,17 +103,23 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="config.html">Configuration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="migrating.html">Migrating an existing app</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Training Data Format</a></li>
-<li class="toctree-l1"><a class="reference internal" href="http.html">Using rasa NLU as a HTTP server</a></li>
-<li class="toctree-l1"><a class="reference internal" href="python.html">Using rasa NLU from python</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dataformat.html">Training and Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="http.html">Using Rasa NLU as a HTTP server</a></li>
+<li class="toctree-l1"><a class="reference internal" href="python.html">Using Rasa NLU from python</a></li>
 <li class="toctree-l1"><a class="reference internal" href="entities.html">Entity Extraction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="closeloop.html">Improving your models from feedback</a></li>
 <li class="toctree-l1"><a class="reference internal" href="persist.html">Model Persistence</a></li>
 <li class="toctree-l1"><a class="reference internal" href="languages.html">Language Support</a></li>
 <li class="toctree-l1"><a class="reference internal" href="pipeline.html">Processing Pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="evaluation.html">Evaluation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="context.html">Context-aware Dialogue</a></li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Migration Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#x-to-0-12-0">0.11.x to 0.12.0</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#model-configuration">model configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#persistors">persistors:</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#x-to-0-10-0">0.9.x to 0.10.0</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#x-to-0-9-x">0.8.x to 0.9.x</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#x-to-0-8-x">0.7.x to 0.8.x</a></li>
@@ -121,6 +127,10 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="community.html">Community Contributions</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Developer Documentation</span></p>
 <ul>
@@ -141,7 +151,7 @@
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">rasa NLU</a>
+          <a href="index.html">Rasa NLU</a>
         
       </nav>
 
@@ -200,6 +210,38 @@
 <h1>Migration Guide<a class="headerlink" href="#migration-guide" title="Permalink to this headline">¶</a></h1>
 <p>This page contains information about changes between major versions and
 how you can migrate from one version to another.</p>
+<div class="section" id="x-to-0-12-0">
+<h2>0.11.x to 0.12.0<a class="headerlink" href="#x-to-0-12-0" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="model-configuration">
+<h3>model configuration<a class="headerlink" href="#model-configuration" title="Permalink to this headline">¶</a></h3>
+<p>We have split the configuration in a model configuration and parameters used
+to configure the server, train, and evaluate scripts. The configuration
+file now only contains the <code class="docutils literal"><span class="pre">pipeline</span></code> as well as the <code class="docutils literal"><span class="pre">language</span></code>
+parameters. Example:</p>
+<blockquote>
+<div><div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">langauge</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
+
+<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;nlp_spacy&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">model</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>               <span class="c1"># parameter of the spacy component</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;ner_synonyms&quot;</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>All other parameters have either been moved to the scripts
+for training (<a class="reference internal" href="dataformat.html#train-parameters"><span class="std std-ref">Train a Model</span></a>), serving models
+(<a class="reference internal" href="http.html#server-parameters"><span class="std std-ref">Server Parameters</span></a>), or put into the pipeline
+configuration (<a class="reference internal" href="pipeline.html#section-pipeline"><span class="std std-ref">Processing Pipeline</span></a>).</p>
+</div>
+<div class="section" id="persistors">
+<h3>persistors:<a class="headerlink" href="#persistors" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>renamed <code class="docutils literal"><span class="pre">AWS_REGION</span></code> to <code class="docutils literal"><span class="pre">AWS_DEFAULT_REGION</span></code></li>
+<li>always make sure to specify the bucket using env <code class="docutils literal"><span class="pre">BUCKET_NAME</span></code></li>
+<li>are now configured solely over environment variables</li>
+</ul>
+</div>
+</div>
 <div class="section" id="x-to-0-10-0">
 <h2>0.9.x to 0.10.0<a class="headerlink" href="#x-to-0-10-0" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
@@ -329,12 +371,13 @@ version prev to 0.7 you need to adapt the paths manually in <code class="docutil
 <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
     <span class="rst-current-version" data-toggle="rst-current-version">
         <span class="fa fa-book"> Other Versions</span>
-        v: 0.11.4
+        v: 0.12.0
         <span class="fa fa-caret-down"></span>
     </span>
     <div class="rst-other-versions">
         <dl>
             <dt>Tags</dt>
+            <dd><a href="0.12.0/migrations.html">0.12.0</a></dd>
             <dd><a href="0.11.4/migrations.html">0.11.4</a></dd>
             <dd><a href="0.11.3/migrations.html">0.11.3</a></dd>
             <dd><a href="0.11.2/migrations.html">0.11.2</a></dd>
@@ -358,7 +401,7 @@ version prev to 0.7 you need to adapt the paths manually in <code class="docutil
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.11.4',
+            VERSION:'0.12.0',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
@@ -396,6 +439,7 @@ gtag('js', new Date());
 
 gtag('config', 'UA-87333416-1');
 </script>
+<script type="text/javascript" src="//script.crazyegg.com/pages/scripts/0074/3851.js" async="async"></script>
 
 
 </body>
