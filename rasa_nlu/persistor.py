@@ -279,8 +279,15 @@ class AzurePersistor(Persistor):
              account_key=azure_account_key,
              endpoint_suffix="core.windows.net")
 
-        # self._ensure_container_exists(azure_container)
+        self._ensure_container_exists(azure_container)
         self.container_name = azure_container
+
+    def _ensure_container_exists(self, container_name):
+        # type: (Text) -> None
+
+        exists = self.blob_client.exists(container_name)
+        if not exists:
+           self.blob_client.create_container(container_name)
 
     def list_models(self, project):
         # type: (Text) -> List[Text]
