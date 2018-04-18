@@ -119,7 +119,9 @@ class FormAction(Action):
                 events.append(SlotSet("requested_slot", field.slot_name))
                 return events
 
-        return self.submit(dispatcher, tracker, domain, events)
+        events_from_submit = self.submit(dispatcher, tracker, domain) or []
 
-    def submit(self, dispatcher, tracker, domain, events):
-        return events
+        return events + events_from_submit
+
+    def submit(self, dispatcher, tracker, domain):
+        raise NotImplementedError("a form action must implement a submit method")

@@ -17,7 +17,8 @@ slots:
     type: bool
   requested_slot:
     type: unfeaturized
-
+  search_results
+    type: unfeaturized
 
 templates:
   utter_ask_people:

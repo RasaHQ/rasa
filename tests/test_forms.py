@@ -41,12 +41,12 @@ class ActionSearchRestaurants(FormAction):
     def name(self):
         return 'action_search_restaurants'
 
-    def submit(self, dispatcher, tracker, domain, events):
+    def submit(self, dispatcher, tracker, domain):
         results = RestaurantAPI.search(
             tracker.get_slot("cuisine"),
             tracker.get_slot("people"),
             tracker.get_slot("vegetarian"))
-        return events
+        return [SlotSet("search_results": results)]
 
 
 class ActionSearchPeople(FormAction):
@@ -60,8 +60,8 @@ class ActionSearchPeople(FormAction):
     def name(self):
         return 'action_search_people'
 
-    def submit(self, dispatcher, tracker, domain, events):
-        return events
+    def submit(self, dispatcher, tracker, domain):
+        return []
 
 
 def test_restaurant_form():
