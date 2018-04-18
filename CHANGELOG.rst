@@ -21,6 +21,15 @@ Removed
 Fixed
 -----
 
+[0.12.1] - 2018-03-18
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- improvements and fixes to the configuration and pipeline
+  documentation
+
+
 [0.12.0] - 2018-03-17
 ^^^^^^^^^^^^^^^^^^^^^
 
