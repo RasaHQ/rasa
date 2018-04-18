@@ -235,6 +235,8 @@ class DataRouter(object):
         response, used_model = self.project_store[project].parse(data['text'],
                                                                  time,
                                                                  model)
+        response['project'] = project
+        response['model'] = used_model
 
         if self.responses:
             self.responses.info('', user_input=response, project=project,
