@@ -44,7 +44,7 @@ final structure should look like this:
    │   ├── stories.md            # dialogue training data
    │   └── nlu.md                # nlu training data
    ├── domain.yml                # dialogue configuration
-   └── nlu_model_config.json     # nlu configuration
+   └── nlu_model_config.yml      # nlu configuration
 
 Let's go through each of them!
 
@@ -115,10 +115,10 @@ Let's create some intent examples in ``data/nlu.md``:
     :language: md
 
 
-Furthermore, we need a configuration file, ``nlu_model_config.json``, for the
+Furthermore, we need a configuration file, ``nlu_model_config.yml``, for the
 NLU model:
 
-.. literalinclude:: ../examples/moodbot/nlu_model_config.json
+.. literalinclude:: ../examples/moodbot/nlu_model_config.yml
     :linenos:
 
 We can now train an NLU model using our examples (make sure to
@@ -130,7 +130,8 @@ Let's run
 
 .. code-block:: bash
 
-   python -m rasa_nlu.train -c nlu_model_config.json --fixed_model_name current
+   python -m rasa_nlu.train -c nlu_model_config.yml --fixed_model_name current \
+          --data ./data/nlu.md --path models/nlu
 
 to train our NLU model. A new directory ``models/nlu/default/current`` should have been
 created containing the NLU model. Note that ``default`` stands for project name, since we did not
