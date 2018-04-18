@@ -6,6 +6,14 @@ how you can migrate from one version to another.
 0.11.x to 0.12.0
 ----------------
 
+.. warning::
+
+  This is a release **breaking backwards compatibility**.
+  Unfortunately, it is not possible to load
+  previously trained models (as the stored file formats have changed as
+  well as the configuration and metadata). Please make sure to retrain
+  a model before trying to use it with this improved version.
+
 model configuration
 ~~~~~~~~~~~~~~~~~~~
 We have split the configuration in a model configuration and parameters used
