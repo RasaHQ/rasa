@@ -424,7 +424,7 @@ intent_classifier_tensorflow_embedding
             - ``mu_pos`` controls how similar the algorithm should try to make embedding vectors for correct intent labels;
             - ``mu_neg`` controls maximum negative similarity for incorrect intents;
             - ``similarity_type`` sets the type of the similarity, it should be either ``cosine`` or ``inner``;
-            - ``num_neg`` sets number of incorrect intent labels, the algorithm will minimize their similarity to user input during training;
+            - ``num_neg`` sets the number of incorrect intent labels, the algorithm will minimize their similarity to the user input during training;
             - ``use_max_sim_neg`` if ``true`` the algorithm only minimizes maximum similarity over incorrect intent labels;
         - regularization:
             - ``C2`` sets the scale of L2 regularization
