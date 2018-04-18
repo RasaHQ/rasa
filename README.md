@@ -123,8 +123,8 @@ The intended audience is mainly __people developing bots__, starting from scratc
 These points are laid out in more detail in a [blog post](https://blog.rasa.com/put-on-your-robot-costume-and-be-the-minimum-viable-bot-yourself/). Rasa is a set of tools for building more advanced bots, developed by the company [Rasa](https://rasa.com). Rasa NLU is the natural language understanding module, and the first component to be open-sourced. 
 
 ### What languages does it support?
-Short answer: English, German, and Spanish currently. 
-Longer answer: If you want to add a new language, the key things you need are a tokenizer and a set of word vectors. More information can be found in the [language documentation](https://nlu.rasa.com/languages.html).
+It depends. Some things, like intent classification with the `tensorflow_embedding` pipeline, work in any language. 
+Other features are more restricted. See details [here](https://nlu.rasa.com/languages.html)
 
 ### How to contribute
 We are very happy to receive and merge your contributions. There is some more information about the style of the code and docs in the [documentation](https://nlu.rasa.com/contribute.html).
