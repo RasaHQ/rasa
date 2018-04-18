@@ -108,11 +108,17 @@ to use it as a template:
 
     pipeline: "tensorflow_embedding"
 
-The tensorflow pipeline supports any language, that can be tokenized. The
+The tensorflow pipeline supports any language that can be tokenized. The
 current tokenizer implementation relies on words being separated by spaces,
 so any languages that adheres to that can be trained with this pipeline.
 
-To use the components and configure them separately:
+If you want to split intents into multiple labels, e.g. for predicting multiple intents or for modeling hierarchical intent structure, use these flags:
+
+    - ``intent_tokenization_flag`` if ``true`` the algorithm will split the intent labels into tokens and use bag-of-words representations for them;
+    - ``intent_split_symbol`` sets the delimiter string to split the intent labels. Default ``_``
+
+
+Here's an example configuration:
 
 .. code-block:: yaml
 
@@ -121,6 +127,10 @@ To use the components and configure them separately:
     pipeline:
     - name: "intent_featurizer_count_vectors"
     - name: "intent_classifier_tensorflow_embedding"
+      intent_tokenization_flag: true
+      intent_split_symbol: "_"
+
+
 
 Custom pipelines
 ~~~~~~~~~~~~~~~~
@@ -412,19 +422,36 @@ intent_classifier_tensorflow_embedding
     by ``nlp_spacy`` and ``tokenizer_spacy``.
 
 :Configuration:
-    There are several hyperparameters such as the neural network's number of hidden layers, embedding dimension,
-    droprate, regularization, etc.
-    In the config, you can specify these parameters.
+    If you want to split intents into multiple labels, e.g. for predicting multiple intents or for
+    modeling hierarchical intent structure, use these flags:
 
-    .. note:: There is a parameter that controls similarity ``similarity_type``.
-              It should be either ``cosine`` or ``inner``. For ``cosine`` similarity ``mu_pos`` and ``mu_neg``
-              should be between ``-1`` and ``1``. Parameter ``mu_pos`` controls how similar the algorithm
-              should try to make embedding vectors for correct intent labels,
-              while ``mu_neg`` controls maximum negative similarity for incorrect intents.
-              It is set to a negative value to mimic the original
-              starspace algorithm in the case ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``.
-              See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
-              If ``use_max_sim_neg = True`` the algorithm only minimizes maximum similarity over incorrect intents.
+    - tokenization of intent labels:
+        - ``intent_tokenization_flag`` if ``true`` the algorithm will split the intent labels into tokens and use bag-of-words representations for them;
+        - ``intent_split_symbol`` sets the delimiter string to split the intent labels. Default ``_``
+
+
+    The algorithm also has hyperparameters to control:
+        - neural network's architecture:
+            - ``num_hidden_layers_a`` and ``hidden_layer_size_a`` set the number of hidden layers and their sizes before embedding layer for user inputs;
+            - ``num_hidden_layers_b`` and ``hidden_layer_size_b`` set the number of hidden layers and their sizes before embedding layer for intent labels;
+        - training:
+            - ``batch_size`` sets the number of training examples in one forward/backward pass, the higher the batch size, the more memory space you'll need;
+            - ``epochs`` sets the number of times the algorithm will see training data, where ``one epoch`` = one forward pass and one backward pass of all the training examples;
+        - embedding:
+            - ``embed_dim`` sets the dimension of embedding space;
+            - ``mu_pos`` controls how similar the algorithm should try to make embedding vectors for correct intent labels;
+            - ``mu_neg`` controls maximum negative similarity for incorrect intents;
+            - ``similarity_type`` sets the type of the similarity, it should be either ``cosine`` or ``inner``;
+            - ``num_neg`` sets the number of incorrect intent labels, the algorithm will minimize their similarity to the user input during training;
+            - ``use_max_sim_neg`` if ``true`` the algorithm only minimizes maximum similarity over incorrect intent labels;
+        - regularization:
+            - ``C2`` sets the scale of L2 regularization
+            - ``C_emb`` sets the scale of how important is to minimize the maximum similarity between embeddings of different intent labels;
+            - ``droprate`` sets the dropout rate, it should be between ``0`` and ``1``, e.g. ``droprate=0.1`` would drop out ``10%`` of input units;
+
+    .. note:: For ``cosine`` similarity ``mu_pos`` and ``mu_neg`` should be between ``-1`` and ``1``.
+
+    In the config, you can specify these parameters:
 
     .. code-block:: yaml
 
@@ -451,6 +478,10 @@ intent_classifier_tensorflow_embedding
           # flag if to tokenize intents
           "intent_tokenization_flag": false
           "intent_split_symbol": "_"
+
+    .. note:: Parameter ``mu_neg`` is set to a negative value to mimic the original
+              starspace algorithm in the case ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``.
+              See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
 
 intent_entity_featurizer_regex
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

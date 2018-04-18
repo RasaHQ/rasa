@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Processing Pipeline &mdash; Rasa NLU 0.12.0 documentation</title>
+  <title>Processing Pipeline &mdash; Rasa NLU 0.12.1 documentation</title>
   
 
   
@@ -32,16 +32,16 @@
   
     <link rel="stylesheet" href="_static/banner.css" type="text/css" />
   
+    <link rel="stylesheet" href="_static/css/custom.css" type="text/css" />
+  
 
   
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="Rasa NLU 0.12.0 documentation" href="index.html"/>
+    <link rel="top" title="Rasa NLU 0.12.1 documentation" href="index.html"/>
         <link rel="next" title="Evaluation" href="evaluation.html"/>
-        <link rel="prev" title="Language Support" href="languages.html"/>
-<link href="_static/css/rasa_theme.css" rel="stylesheet" type="text/css">
-
+        <link rel="prev" title="Language Support" href="languages.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -159,7 +159,6 @@
 </ul>
 <p class="caption"><span class="caption-text">Developer Documentation</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference external" href="https://github.com/RasaHQ/rasa_nlu/projects/2">Roadmap</a></li>
 <li class="toctree-l1"><a class="reference internal" href="contribute.html">Contributing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="changelog.html">Change Log</a></li>
 </ul>
@@ -265,7 +264,7 @@ Here is a list of the <strong>existing templates</strong>:</p>
 <p>To use spacy as a template:</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
 
-<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span> <span class="s">&quot;spacy_sklearn</span>
+<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span> <span class="s">&quot;spacy_sklearn&quot;</span>
 </pre></div>
 </div>
 <p>See <a class="reference internal" href="languages.html#section-languages"><span class="std std-ref">Language Support</span></a> for possible values for <code class="docutils literal"><span class="pre">language</span></code>. To use
@@ -285,18 +284,15 @@ the components and configure them separately:</p>
 </div>
 <div class="section" id="mitie">
 <h3>mitie<a class="headerlink" href="#mitie" title="Permalink to this headline">¶</a></h3>
-<p>to use it as a template:</p>
-<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
-
-<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span> <span class="s">&quot;mitie&quot;</span>
-</pre></div>
-</div>
-<p>to use the components and configure them separately:</p>
+<p>There is no pipeline template, as you need to configure the location
+of mities featurizer. To use the components and configure them separately:</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
 
 <span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;nlp_mitie&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">model</span><span class="p p-Indicator">:</span> <span class="s">&quot;data/total_word_feature_extractor.dat&quot;</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;tokenizer_mitie&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;ner_mitie&quot;</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;ner_synonyms&quot;</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;intent_entity_featurizer_regex&quot;</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;intent_classifier_mitie&quot;</span>
@@ -305,17 +301,13 @@ the components and configure them separately:</p>
 </div>
 <div class="section" id="mitie-sklearn">
 <h3>mitie_sklearn<a class="headerlink" href="#mitie-sklearn" title="Permalink to this headline">¶</a></h3>
-<p>to use it as a template:</p>
-<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
-
-<span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span> <span class="s">&quot;mitie_sklearn&quot;</span>
-</pre></div>
-</div>
-<p>to use the components and configure them separately:</p>
+<p>There is no pipeline template, as you need to configure the location
+of mities featurizer. To use the components and configure them separately:</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
 
 <span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;nlp_mitie&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">model</span><span class="p p-Indicator">:</span> <span class="s">&quot;data/total_word_feature_extractor.dat&quot;</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;tokenizer_mitie&quot;</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;ner_mitie&quot;</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;ner_synonyms&quot;</span>
@@ -349,15 +341,24 @@ the components and configure them separately:</p>
 <span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span> <span class="s">&quot;tensorflow_embedding&quot;</span>
 </pre></div>
 </div>
-<p>The tensorflow pipeline supports any language, that can be tokenized. The
+<p>The tensorflow pipeline supports any language that can be tokenized. The
 current tokenizer implementation relies on words being separated by spaces,
 so any languages that adheres to that can be trained with this pipeline.</p>
-<p>To use the components and configure them separately:</p>
+<p>If you want to split intents into multiple labels, e.g. for predicting multiple intents or for modeling hierarchical intent structure, use these flags:</p>
+<blockquote>
+<div><ul class="simple">
+<li><code class="docutils literal"><span class="pre">intent_tokenization_flag</span></code> if <code class="docutils literal"><span class="pre">true</span></code> the algorithm will split the intent labels into tokens and use bag-of-words representations for them;</li>
+<li><code class="docutils literal"><span class="pre">intent_split_symbol</span></code> sets the delimiter string to split the intent labels. Default <code class="docutils literal"><span class="pre">_</span></code></li>
+</ul>
+</div></blockquote>
+<p>Here&#8217;s an example configuration:</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
 
 <span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;intent_featurizer_count_vectors&quot;</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;intent_classifier_tensorflow_embedding&quot;</span>
+  <span class="l l-Scalar l-Scalar-Plain">intent_tokenization_flag</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+  <span class="l l-Scalar l-Scalar-Plain">intent_split_symbol</span><span class="p p-Indicator">:</span> <span class="s">&quot;_&quot;</span>
 </pre></div>
 </div>
 </div>
@@ -726,22 +727,72 @@ It is recommended to use <code class="docutils literal"><span class="pre">intent
 by <code class="docutils literal"><span class="pre">nlp_spacy</span></code> and <code class="docutils literal"><span class="pre">tokenizer_spacy</span></code>.</p>
 </td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Configuration:</th><td class="field-body"><p class="first">There are several hyperparameters such as the neural network&#8217;s number of hidden layers, embedding dimension,
-droprate, regularization, etc.
-In the config, you can specify these parameters.</p>
+<tr class="field-odd field"><th class="field-name">Configuration:</th><td class="field-body"><p class="first">If you want to split intents into multiple labels, e.g. for predicting multiple intents or for
+modeling hierarchical intent structure, use these flags:</p>
+<ul class="simple">
+<li><dl class="first docutils">
+<dt>tokenization of intent labels:</dt>
+<dd><ul class="first last">
+<li><code class="docutils literal"><span class="pre">intent_tokenization_flag</span></code> if <code class="docutils literal"><span class="pre">true</span></code> the algorithm will split the intent labels into tokens and use bag-of-words representations for them;</li>
+<li><code class="docutils literal"><span class="pre">intent_split_symbol</span></code> sets the delimiter string to split the intent labels. Default <code class="docutils literal"><span class="pre">_</span></code></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<dl class="docutils">
+<dt>The algorithm also has hyperparameters to control:</dt>
+<dd><ul class="first last simple">
+<li><dl class="first docutils">
+<dt>neural network&#8217;s architecture:</dt>
+<dd><ul class="first last">
+<li><code class="docutils literal"><span class="pre">num_hidden_layers_a</span></code> and <code class="docutils literal"><span class="pre">hidden_layer_size_a</span></code> set the number of hidden layers and their sizes before embedding layer for user inputs;</li>
+<li><code class="docutils literal"><span class="pre">num_hidden_layers_b</span></code> and <code class="docutils literal"><span class="pre">hidden_layer_size_b</span></code> set the number of hidden layers and their sizes before embedding layer for intent labels;</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>training:</dt>
+<dd><ul class="first last">
+<li><code class="docutils literal"><span class="pre">batch_size</span></code> sets the number of training examples in one forward/backward pass, the higher the batch size, the more memory space you&#8217;ll need;</li>
+<li><code class="docutils literal"><span class="pre">epochs</span></code> sets the number of times the algorithm will see training data, where <code class="docutils literal"><span class="pre">one</span> <span class="pre">epoch</span></code> = one forward pass and one backward pass of all the training examples;</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>embedding:</dt>
+<dd><ul class="first last">
+<li><code class="docutils literal"><span class="pre">embed_dim</span></code> sets the dimension of embedding space;</li>
+<li><code class="docutils literal"><span class="pre">mu_pos</span></code> controls how similar the algorithm should try to make embedding vectors for correct intent labels;</li>
+<li><code class="docutils literal"><span class="pre">mu_neg</span></code> controls maximum negative similarity for incorrect intents;</li>
+<li><code class="docutils literal"><span class="pre">similarity_type</span></code> sets the type of the similarity, it should be either <code class="docutils literal"><span class="pre">cosine</span></code> or <code class="docutils literal"><span class="pre">inner</span></code>;</li>
+<li><code class="docutils literal"><span class="pre">num_neg</span></code> sets the number of incorrect intent labels, the algorithm will minimize their similarity to the user input during training;</li>
+<li><code class="docutils literal"><span class="pre">use_max_sim_neg</span></code> if <code class="docutils literal"><span class="pre">true</span></code> the algorithm only minimizes maximum similarity over incorrect intent labels;</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>regularization:</dt>
+<dd><ul class="first last">
+<li><code class="docutils literal"><span class="pre">C2</span></code> sets the scale of L2 regularization</li>
+<li><code class="docutils literal"><span class="pre">C_emb</span></code> sets the scale of how important is to minimize the maximum similarity between embeddings of different intent labels;</li>
+<li><code class="docutils literal"><span class="pre">droprate</span></code> sets the dropout rate, it should be between <code class="docutils literal"><span class="pre">0</span></code> and <code class="docutils literal"><span class="pre">1</span></code>, e.g. <code class="docutils literal"><span class="pre">droprate=0.1</span></code> would drop out <code class="docutils literal"><span class="pre">10%</span></code> of input units;</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">There is a parameter that controls similarity <code class="docutils literal"><span class="pre">similarity_type</span></code>.
-It should be either <code class="docutils literal"><span class="pre">cosine</span></code> or <code class="docutils literal"><span class="pre">inner</span></code>. For <code class="docutils literal"><span class="pre">cosine</span></code> similarity <code class="docutils literal"><span class="pre">mu_pos</span></code> and <code class="docutils literal"><span class="pre">mu_neg</span></code>
-should be between <code class="docutils literal"><span class="pre">-1</span></code> and <code class="docutils literal"><span class="pre">1</span></code>. Parameter <code class="docutils literal"><span class="pre">mu_pos</span></code> controls how similar the algorithm
-should try to make embedding vectors for correct intent labels,
-while <code class="docutils literal"><span class="pre">mu_neg</span></code> controls maximum negative similarity for incorrect intents.
-It is set to a negative value to mimic the original
-starspace algorithm in the case <code class="docutils literal"><span class="pre">mu_neg</span> <span class="pre">=</span> <span class="pre">mu_pos</span></code> and <code class="docutils literal"><span class="pre">use_max_sim_neg</span> <span class="pre">=</span> <span class="pre">False</span></code>.
-See <a class="reference external" href="https://arxiv.org/abs/1709.03856">starspace paper</a> for details.
-If <code class="docutils literal"><span class="pre">use_max_sim_neg</span> <span class="pre">=</span> <span class="pre">True</span></code> the algorithm only minimizes maximum similarity over incorrect intents.</p>
+<p class="last">For <code class="docutils literal"><span class="pre">cosine</span></code> similarity <code class="docutils literal"><span class="pre">mu_pos</span></code> and <code class="docutils literal"><span class="pre">mu_neg</span></code> should be between <code class="docutils literal"><span class="pre">-1</span></code> and <code class="docutils literal"><span class="pre">1</span></code>.</p>
 </div>
-<div class="last highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<p>In the config, you can specify these parameters:</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;intent_classifier_tensorflow_embedding&quot;</span>
   <span class="c1"># nn architecture</span>
   <span class="s">&quot;num_hidden_layers_a&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
@@ -765,6 +816,12 @@ If <code class="docutils literal"><span class="pre">use_max_sim_neg</span> <span
   <span class="s">&quot;intent_tokenization_flag&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
   <span class="s">&quot;intent_split_symbol&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;_&quot;</span>
 </pre></div>
+</div>
+<div class="last admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Parameter <code class="docutils literal"><span class="pre">mu_neg</span></code> is set to a negative value to mimic the original
+starspace algorithm in the case <code class="docutils literal"><span class="pre">mu_neg</span> <span class="pre">=</span> <span class="pre">mu_pos</span></code> and <code class="docutils literal"><span class="pre">use_max_sim_neg</span> <span class="pre">=</span> <span class="pre">False</span></code>.
+See <a class="reference external" href="https://arxiv.org/abs/1709.03856">starspace paper</a> for details.</p>
 </div>
 </td>
 </tr>
@@ -1174,12 +1231,13 @@ final context dictionary is used to persist the model&#8217;s metadata.</p>
 <div class="rst-versions" data-toggle="rst-versions" role="note" aria-label="versions">
     <span class="rst-current-version" data-toggle="rst-current-version">
         <span class="fa fa-book"> Other Versions</span>
-        v: 0.12.0
+        v: 0.12.1
         <span class="fa fa-caret-down"></span>
     </span>
     <div class="rst-other-versions">
         <dl>
             <dt>Tags</dt>
+            <dd><a href="0.12.1/pipeline.html">0.12.1</a></dd>
             <dd><a href="0.12.0/pipeline.html">0.12.0</a></dd>
             <dd><a href="0.11.4/pipeline.html">0.11.4</a></dd>
             <dd><a href="0.11.3/pipeline.html">0.11.3</a></dd>
@@ -1204,7 +1262,7 @@ final context dictionary is used to persist the model&#8217;s metadata.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.12.0',
+            VERSION:'0.12.1',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
