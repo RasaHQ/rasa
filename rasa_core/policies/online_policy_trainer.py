@@ -43,7 +43,7 @@ class OnlinePolicyTrainer(PolicyTrainer):
               interpreter=None,  # type: NaturalLanguageInterpreter
               input_channel=None,  # type: Optional[InputChannel]
               max_history=3,  # type: int
-              augmentation_factor=20,  # type: int
+              augmentation_factor=0,  # type: int
               max_training_samples=None,  # type: Optional[int]
               max_number_of_trackers=2000,  # type: int
               **kwargs  # type: **Any

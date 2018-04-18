@@ -151,7 +151,7 @@ class Agent(object):
                      resource_name=None,  # type: Optional[Text]
                      input_channel=None,  # type: Optional[InputChannel]
                      model_path=None,  # type: Optional[Text]
-                     max_history=2,  # type: int
+                     max_history=3,  # type: int
                      **kwargs  # type: **Any
                      ):
         # type: (...) -> None
