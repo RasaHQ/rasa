@@ -424,12 +424,12 @@ intent_classifier_tensorflow_embedding
             - ``mu_pos`` controls how similar the algorithm should try to make embedding vectors for correct intent labels;
             - ``mu_neg`` controls maximum negative similarity for incorrect intents;
             - ``similarity_type`` sets the type of the similarity, it should be either ``cosine`` or ``inner``;
-            - ``num_neg`` sets number of incorrect intent labels to pass to the algorithm to minimize their similarity to user input during training;
-            - ``use_max_sim_neg`` if ``true`` the algorithm only minimizes maximum similarity over incorrect intents;
+            - ``num_neg`` sets number of incorrect intent labels, the algorithm will minimize their similarity to user input during training;
+            - ``use_max_sim_neg`` if ``true`` the algorithm only minimizes maximum similarity over incorrect intent labels;
         - regularization:
             - ``C2`` sets the scale of L2 regularization
             - ``C_emb`` sets the scale of how important is to minimize the maximum similarity between embeddings of different intent labels;
-            - ``droprate`` sets the dropout rate, should be between ``0`` and ``1``, e.g. "droprate=0.1" would drop out 10% of input units;
+            - ``droprate`` sets the dropout rate, it should be between ``0`` and ``1``, e.g. ``droprate=0.1`` would drop out ``10%`` of input units;
         - tokenization of intent labels:
             - ``intent_tokenization_flag`` if ``true`` the algorithm will split the intent labels into tokens and use bag-of-words representations for them;
             - ``intent_split_symbol`` sets the delimiter string to split the intent labels.
