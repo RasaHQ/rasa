@@ -108,11 +108,17 @@ to use it as a template:
 
     pipeline: "tensorflow_embedding"
 
-The tensorflow pipeline supports any language, that can be tokenized. The
+The tensorflow pipeline supports any language that can be tokenized. The
 current tokenizer implementation relies on words being separated by spaces,
 so any languages that adheres to that can be trained with this pipeline.
 
-To use the components and configure them separately:
+If you want to split intents into multiple labels, e.g. for predicting multiple intents or for modeling hierarchical intent structure, use these flags:
+
+    - ``intent_tokenization_flag`` if ``true`` the algorithm will split the intent labels into tokens and use bag-of-words representations for them;
+    - ``intent_split_symbol`` sets the delimiter string to split the intent labels. Default ``_``
+
+
+Here's an example configuration:
 
 .. code-block:: yaml
 
@@ -121,6 +127,10 @@ To use the components and configure them separately:
     pipeline:
     - name: "intent_featurizer_count_vectors"
     - name: "intent_classifier_tensorflow_embedding"
+    intent_tokenization_flag: true
+    intent_split_symbol: "_"
+
+
 
 Custom pipelines
 ~~~~~~~~~~~~~~~~
@@ -412,7 +422,15 @@ intent_classifier_tensorflow_embedding
     by ``nlp_spacy`` and ``tokenizer_spacy``.
 
 :Configuration:
-    This algorithm has several hyperparameters that control:
+    If you want to split intents into multiple labels, e.g. for predicting multiple intents or for
+    modeling hierarchical intent structure, use these flags:
+
+    - tokenization of intent labels:
+        - ``intent_tokenization_flag`` if ``true`` the algorithm will split the intent labels into tokens and use bag-of-words representations for them;
+        - ``intent_split_symbol`` sets the delimiter string to split the intent labels. Default ``_``
+
+
+    The algorithm also has hyperparameters to control:
         - neural network's architecture:
             - ``num_hidden_layers_a`` and ``hidden_layer_size_a`` set the number of hidden layers and their sizes before embedding layer for user inputs;
             - ``num_hidden_layers_b`` and ``hidden_layer_size_b`` set the number of hidden layers and their sizes before embedding layer for intent labels;
@@ -430,9 +448,6 @@ intent_classifier_tensorflow_embedding
             - ``C2`` sets the scale of L2 regularization
             - ``C_emb`` sets the scale of how important is to minimize the maximum similarity between embeddings of different intent labels;
             - ``droprate`` sets the dropout rate, it should be between ``0`` and ``1``, e.g. ``droprate=0.1`` would drop out ``10%`` of input units;
-        - tokenization of intent labels:
-            - ``intent_tokenization_flag`` if ``true`` the algorithm will split the intent labels into tokens and use bag-of-words representations for them;
-            - ``intent_split_symbol`` sets the delimiter string to split the intent labels.
 
     .. note:: For ``cosine`` similarity ``mu_pos`` and ``mu_neg`` should be between ``-1`` and ``1``.
 
