@@ -44,7 +44,8 @@ class FallbackPolicy(Policy):
         # type: (DialogueStateTracker, Domain) -> List[float]
         result = [0.0] * domain.num_actions
         idx = domain.index_for_action(self.fallback_action_name)
-        nlu_confidence = tracker.latest_message.parse_data["intent"]["confidence"]
+        nlu_data = tracker.latest_message.parse_data
+        nlu_confidence = nlu_data["intent"].get("confidence", 1.0)
 
         if nlu_confidence < self.nlu_threshold:
             score = 1.0
