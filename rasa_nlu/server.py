@@ -31,12 +31,17 @@ def create_argument_parser():
 
     parser.add_argument('-e', '--emulate',
                         choices=['wit', 'luis', 'dialogflow'],
-                        help='which service to emulate (default: None i.e. use '
-                             'simple built in format)')
+                        help='which service to emulate (default: None i.e. use'
+                             ' simple built in format)')
     parser.add_argument('-P', '--port',
                         type=int,
                         default=5000,
                         help='port on which to run server')
+    parser.add_argument('-a', '--auto_load',
+                        type=bool,
+                        default=False,
+                        choices=[True, False],
+                        help='Load all models automatically')
     parser.add_argument('-t', '--token',
                         help="auth token. If set, reject requests which don't "
                              "provide this token as a query parameter")
@@ -365,7 +370,8 @@ if __name__ == '__main__':
                         cmdline_args.max_training_processes,
                         cmdline_args.response_log,
                         cmdline_args.emulate,
-                        cmdline_args.storage)
+                        cmdline_args.storage,
+                        load_all=cmdline_args.auto_load)
     rasa = RasaNLU(
             router,
             cmdline_args.loglevel,

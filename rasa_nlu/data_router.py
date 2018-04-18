@@ -92,8 +92,9 @@ class DataRouter(object):
                  response_log=None,
                  emulation_mode=None,
                  remote_storage=None,
-                 component_builder=None):
-
+                 component_builder=None,
+                 load_all=False):
+        logger.debug('here2')
         self._training_processes = max(max_training_processes, 1)
         self.responses = self._create_query_logger(response_log)
         self.project_dir = config.make_path_absolute(project_dir)
@@ -107,6 +108,10 @@ class DataRouter(object):
 
         self.project_store = self._create_project_store(project_dir)
         self.pool = ProcessPool(self._training_processes)
+        logger.debug('loading all2')
+        if (load_all):
+            logger.debug('loading all')
+            self._load_all()
 
     def __del__(self):
         """Terminates workers pool processes"""
@@ -169,6 +174,16 @@ class DataRouter(object):
                     project_dir=self.project_dir,
                     remote_storage=self.remote_storage)
         return project_store
+
+    def _load_all(self):
+        for project in self.project_store:
+            logger.debug('Loading %s.....', project)
+            out = self.project_store[project].load_model()
+            if out:
+                logger.debug('Loaded successfully')
+            else:
+                logger.debug('Loading failed')
+        return None
 
     def _list_projects_in_cloud(self):
         try:
