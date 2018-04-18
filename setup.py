@@ -48,7 +48,7 @@ install_requires = [
     'ruamel.yaml',
     'flask',
     'scikit-learn',
-    'rasa_nlu>=0.12.0a2',
+    'rasa_nlu>=0.12.0',
     'slackclient',
     'python-telegram-bot',
     'twilio',
