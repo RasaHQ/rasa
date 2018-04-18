@@ -70,6 +70,29 @@ Fixed
 - fixed certain command line arguments not getting passed into
   the ``data_router``
 
+[0.11.4] - 2018-03-19
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- google analytics docs survey code
+
+
+[0.11.3] - 2018-02-13
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- capitalization issues during spacy named entity recognition
+
+
+[0.11.2] - 2018-02-06
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Formatting of tokens without assigned entities in evaluation
+
 
 [0.11.1] - 2018-02-02
 ^^^^^^^^^^^^^^^^^^^^^
