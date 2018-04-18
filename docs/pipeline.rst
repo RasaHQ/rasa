@@ -39,11 +39,8 @@ spacy_sklearn
 
 To use spacy as a template:
 
-.. code-block:: yaml
-
-    language: "en"
-
-    pipeline: "spacy_sklearn
+.. literalinclude:: ../sample_configs/config_spacy.yml
+    :language: yaml
 
 See :ref:`section_languages` for possible values for ``language``. To use
 the components and configure them separately:
@@ -64,52 +61,20 @@ the components and configure them separately:
 mitie
 ~~~~~
 
-to use it as a template:
+There is no pipeline template, as you need to configure the location
+of mities featurizer. To use the components and configure them separately:
 
-.. code-block:: yaml
-
-    language: "en"
-
-    pipeline: "mitie"
-
-to use the components and configure them separately:
-
-.. code-block:: yaml
-
-    language: "en"
-
-    pipeline:
-    - name: "nlp_mitie"
-    - name: "tokenizer_mitie"
-    - name: "ner_synonyms"
-    - name: "intent_entity_featurizer_regex"
-    - name: "intent_classifier_mitie"
+.. literalinclude:: ../sample_configs/config_mitie.yml
+    :language: yaml
 
 mitie_sklearn
 ~~~~~~~~~~~~~
 
-to use it as a template:
+There is no pipeline template, as you need to configure the location
+of mities featurizer. To use the components and configure them separately:
 
-.. code-block:: yaml
-
-    language: "en"
-
-    pipeline: "mitie_sklearn"
-
-to use the components and configure them separately:
-
-.. code-block:: yaml
-
-    language: "en"
-
-    pipeline:
-    - name: "nlp_mitie"
-    - name: "tokenizer_mitie"
-    - name: "ner_mitie"
-    - name: "ner_synonyms"
-    - name: "intent_entity_featurizer_regex"
-    - name: "intent_featurizer_mitie"
-    - name: "intent_classifier_sklearn"
+.. literalinclude:: ../sample_configs/config_mitie_sklearn.yml
+    :language: yaml
 
 keyword
 ~~~~~~~
