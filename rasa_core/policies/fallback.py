@@ -31,7 +31,7 @@ class FallbackPolicy(Policy):
                  max_history=None,
                  nlu_threshold=0.3,
                  core_threshold=0.3,
-                 fallback_action_name="action_fallback"):
+                 fallback_action_name="action_listen"):
         # type: (Optional[Featurizer]) -> None
 
         self.featurizer = featurizer
