@@ -214,6 +214,14 @@
 how you can migrate from one version to another.</p>
 <div class="section" id="x-to-0-12-0">
 <h2>0.11.x to 0.12.0<a class="headerlink" href="#x-to-0-12-0" title="Permalink to this headline">¶</a></h2>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">This is a release <strong>breaking backwards compatibility</strong>.
+Unfortunately, it is not possible to load
+previously trained models (as the stored file formats have changed as
+well as the configuration and metadata). Please make sure to retrain
+a model before trying to use it with this improved version.</p>
+</div>
 <div class="section" id="model-configuration">
 <h3>model configuration<a class="headerlink" href="#model-configuration" title="Permalink to this headline">¶</a></h3>
 <p>We have split the configuration in a model configuration and parameters used
