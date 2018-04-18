@@ -136,13 +136,13 @@ class MemoizationPolicy(Policy):
         logger.info("Memorized {} unique augmented examples."
                     "".format(len(self.lookup)))
 
-    def continue_training(self, trackers, domain, **kwargs):
+    def continue_training(self, training_trackers, domain, **kwargs):
         # type: (List[DialogueStateTracker], Domain, **Any) -> None
 
         # add only the last tracker, because it is the only new one
         (trackers_as_states,
          trackers_as_actions) = self.featurizer.training_states_and_actions(
-                                    trackers[-1:], domain)
+                                        training_trackers[-1:], domain)
         # fit to one extra example
         self._add(trackers_as_states, trackers_as_actions,
                   domain, online=True)

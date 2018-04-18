@@ -96,7 +96,7 @@ class Policy(object):
         raise NotImplementedError("Policy must have the capacity "
                                   "to train.")
 
-    def continue_training(self, trackers, domain, **kwargs):
+    def continue_training(self, training_trackers, domain, **kwargs):
         # type: (List[DialogueStateTracker], Domain, **Any) -> None
         """Continues training an already trained policy.
 

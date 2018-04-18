@@ -166,7 +166,7 @@ class KerasPolicy(Policy):
     def predict_action_probabilities(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> List[float]
 
-        X, lengths = self.featurizer.create_X([tracker], domain)
+        X = self.featurizer.create_X([tracker], domain)
 
         if KerasPolicy.is_using_tensorflow() and self.graph is not None:
             with self.graph.as_default():
@@ -177,8 +177,7 @@ class KerasPolicy(Policy):
         if len(y_pred.shape) == 2:
             return y_pred[-1].tolist()
         elif len(y_pred.shape) == 3:
-            current_idx = lengths[0] - 1
-            return y_pred[0, current_idx, :].tolist()
+            return y_pred[0, -1].tolist()
 
     def _persist_configuration(self, config_file):
         model_config = {

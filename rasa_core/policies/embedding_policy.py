@@ -36,7 +36,7 @@ except ImportError:
 
 
 class EmbeddingPolicy(Policy):
-    SUPPORTS_ONLINE_TRAINING = False
+    SUPPORTS_ONLINE_TRAINING = True
 
     @classmethod
     def _standard_featurizer(cls):
@@ -48,6 +48,7 @@ class EmbeddingPolicy(Policy):
         "hidden_layer_size_a": [],
         "num_hidden_layers_b": 0,
         "hidden_layer_size_b": [],
+        "rnn_size": 32,
         "batch_size": 16,
         "epochs": 1000,
 
@@ -75,6 +76,8 @@ class EmbeddingPolicy(Policy):
         self.hidden_layer_size_a = self.config['hidden_layer_size_a']
         self.num_hidden_layers_b = self.config['num_hidden_layers_b']
         self.hidden_layer_size_b = self.config['hidden_layer_size_b']
+        self.rnn_size = self.config['rnn_size']
+
         self.batch_size = self.config['batch_size']
         self.epochs = self.config['epochs']
 
@@ -97,6 +100,14 @@ class EmbeddingPolicy(Policy):
         self.droprate['rnn'] = self.config['droprate_rnn']
         self.droprate['out'] = self.config['droprate_out']
 
+    def _load_params(self):
+        # nn architecture parameters
+        self._load_nn_architecture_params()
+        # embedding parameters
+        self._load_embedding_params()
+        # regularization
+        self._load_regularization_params()
+
     @staticmethod
     def _check_tensorflow():
         if tf is None:
@@ -115,46 +126,80 @@ class EmbeddingPolicy(Policy):
             intent_placeholder=None,  # type: Optional[tf.Tensor]
             action_placeholder=None,  # type: Optional[tf.Tensor]
             extras_placeholder=None,  # type: Optional[tf.Tensor]
-            similarity_op=None,  # type: Optional[tf.Tensor]
+            similarity_op=None  # type: Optional[tf.Tensor]
     ):
         # type: (...) -> None
         self._check_tensorflow()
         super(EmbeddingPolicy, self).__init__(featurizer)
-
-        # nn architecture parameters
-        self._load_nn_architecture_params()
-        # embedding parameters
-        self._load_embedding_params()
-        # regularization
-        self._load_regularization_params()
+        # TODO we reload params again in train do we need it here?
+        self._load_params()
 
         # chrono initialization for forget bias
         self.mean_time = None
         self.fbias = fbias
+
+        # encode all actions with numbers
         self.encoded_all_actions = encoded_all_actions
 
         # tf related instances
         self.session = session
         self.graph = graph
-        self.intent_placeholder = intent_placeholder
-        self.action_placeholder = action_placeholder
-        self.extras_placeholder = extras_placeholder
-        self.similarity_op = similarity_op
+        self.a_in = intent_placeholder
+        self.b_in = action_placeholder
+        self.c_in = extras_placeholder
+        self.sim_op = similarity_op
+        # for continue training
+        self.train_op = None
+        self.is_training = None
 
     def _create_encoded_actions(self, domain):
         action_token_dict = self.featurizer.state_featurizer.bot_vocab
         split_symbol = self.featurizer.state_featurizer.split_symbol
 
         encoded_all_actions = np.zeros((domain.num_actions,
-                                        len(action_token_dict)), dtype=int)
+                                        len(action_token_dict)),
+                                       dtype=int)
         for idx, name in enumerate(domain.action_names):
             for t in name.split(split_symbol):
                 encoded_all_actions[idx, action_token_dict[t]] = 1
         return encoded_all_actions
 
+    # data helpers:
+    def _create_all_Y_d(self, dialogue_len):
+        # stack encoded_all_intents on top of each other
+        # to create candidates for training examples
+        # to calculate training accuracy
+        all_Y_d = np.stack([self.encoded_all_actions
+                            for _ in range(dialogue_len)])
+        return all_Y_d
+
+    def _create_X_extras(self, data_X):
+        prev_start = len(
+            self.featurizer.state_featurizer.user_vocab)
+        prev_end = prev_start + len(
+            self.featurizer.state_featurizer.bot_vocab)
+
+        # do not include prev actions
+        X = data_X[:, :, :prev_start]
+        extras = data_X[:, :, prev_end:]
+
+        return X, extras
+
+    def _prepare_data_for_training(self, training_data):
+        """Prepare data for training"""
+
+        X, extras = self._create_X_extras(training_data.X)
+
+        actions_for_X = training_data.y.argmax(axis=-1)
+
+        Y = np.stack([np.stack([self.encoded_all_actions[action_idx]
+                                for action_idx in action_ids])
+                      for action_ids in actions_for_X])
+
+        return X, Y, extras, actions_for_X
+
     # tf helpers:
-    def _create_tf_nn(self, x_in, is_training,
-                            num_layers, layer_size, name):
+    def _create_tf_nn(self, x_in, num_layers, layer_size, name):
         """Create embed nn for layer with name"""
 
         reg = tf.contrib.layers.l2_regularizer(self.C2)
@@ -166,7 +211,7 @@ class EmbeddingPolicy(Policy):
                                 kernel_regularizer=reg,
                                 name='hidden_layer_{}_{}'.format(name, i))
             x = tf.layers.dropout(x, rate=self.droprate[name],
-                                  training=is_training)
+                                  training=self.is_training)
         return x
 
     def _create_embed(self, x, name):
@@ -177,39 +222,41 @@ class EmbeddingPolicy(Policy):
                                 name='embed_layer_{}'.format(name))
         return emb_x
 
-    def _create_rnn(self, emb_utter, emb_extras, is_training, real_length):
+    def _create_rnn(self, emb_utter, emb_extras, real_length):
+
         cell_input = tf.concat([emb_utter, emb_extras], -1)
 
         # chrono initialization for forget bias
-        self.fbias = np.log(
+        # assuming that characteristic time is mean dialogue length
+        fbias = np.log(
             (self.mean_time - 2) *
-            np.random.random(cell_input.shape[-1]) + 1)
+            np.random.random(self.rnn_size) + 1)
 
         keep_prob = 1.0 - (self.droprate['rnn'] *
-                           tf.cast(is_training, tf.float32))
+                           tf.cast(self.is_training, tf.float32))
         cell_decoder = tf.contrib.rnn.LayerNormBasicLSTMCell(
-                int(cell_input.shape[-1]),
+                num_units=self.rnn_size,
                 layer_norm=False,
                 dropout_keep_prob=keep_prob,
-                forget_bias=self.fbias
+                forget_bias=fbias
         )
 
         def probability_fn(score):
             p = tf.sigmoid(score)
             return p
 
-        num_units = int(emb_utter.shape[-1])
+        num_mem_units = int(emb_utter.shape[-1])
         attn_mech_utter = tf.contrib.seq2seq.BahdanauAttention(
-                num_units=num_units, memory=emb_utter,
+                num_units=num_mem_units, memory=emb_utter,
                 memory_sequence_length=real_length,
                 normalize=True,
                 probability_fn=probability_fn
         )
 
         def cell_input_fn(inputs, attention, inv_norm):
-            res = tf.concat([inv_norm * inputs[:, :num_units] +
-                             attention[:, :num_units],
-                             inputs[:, num_units:]], -1)
+            res = tf.concat([inv_norm * inputs[:, :num_mem_units] +
+                             attention[:, :num_mem_units],
+                             inputs[:, num_mem_units:]], -1)
             return res
 
         attn_cell = TimeAttentionWrapper(
@@ -280,24 +327,24 @@ class EmbeddingPolicy(Policy):
         loss = tf.reduce_mean(loss) + tf.losses.get_regularization_loss()
         return loss
 
-    def _create_tf_graph(self, a_in, b_in, c_in, is_training):
+    def _create_tf_graph(self, a_in, b_in, c_in):
         """Create tf graph for training"""
 
-        a = self._create_tf_nn(a_in, is_training,
+        a = self._create_tf_nn(a_in,
                                self.num_hidden_layers_a,
                                self.hidden_layer_size_a,
                                name='a')
         a = tf.layers.dropout(a, rate=self.droprate['a'],
-                              training=is_training)
+                              training=self.is_training)
         emb_utter = self._create_embed(a, name='a')
 
-        b = self._create_tf_nn(b_in, is_training,
+        b = self._create_tf_nn(b_in,
                                self.num_hidden_layers_b,
                                self.hidden_layer_size_b,
                                name='b')
         shape_b = tf.shape(b)
         b = tf.layers.dropout(b, rate=self.droprate['b'],
-                              training=is_training,
+                              training=self.is_training,
                               noise_shape=[shape_b[0],
                                            shape_b[1],
                                            1, shape_b[-1]])
@@ -306,7 +353,7 @@ class EmbeddingPolicy(Policy):
         c = c_in
         # TODO do we need hidden layers for slots?
         c = tf.layers.dropout(c, rate=self.droprate['c'],
-                              training=is_training)
+                              training=self.is_training)
         emb_extras = self._create_embed(c, name='c')
 
         # if there is at least one `-1` it should be masked
@@ -314,11 +361,11 @@ class EmbeddingPolicy(Policy):
         real_length = tf.cast(tf.reduce_sum(mask, 1), tf.int32)
 
         cell_output, final_context_state = self._create_rnn(
-                emb_utter, emb_extras, is_training, real_length)
+                emb_utter, emb_extras, real_length)
 
         cell_output = tf.layers.dropout(cell_output,
                                         rate=self.droprate['out'],
-                                        training=is_training)
+                                        training=self.is_training)
         emb_dial = self._create_embed(cell_output, name='out')
 
         sim, sim_act = self._tf_sim(emb_dial, emb_act, mask)
@@ -352,61 +399,62 @@ class EmbeddingPolicy(Policy):
 
         return np.concatenate([batch_pos_b, batch_neg_b], -2)
 
-    def _train_tf(self, X, extras, Y, helper_data,
-                  sess, a_in, b_in, c_in,
-                  sim, loss, mask, is_training, train_op):
+    def _train_tf(self, X, Y, extras, helper_data, loss, mask):
         """Train tf graph"""
-        sess.run(tf.global_variables_initializer())
+        self.session.run(tf.global_variables_initializer())
 
         actions_for_X, all_Y_d = helper_data
 
         batches_per_epoch = (len(X) // self.batch_size +
                              int(len(X) % self.batch_size > 0))
         for ep in range(self.epochs):
-            indices = np.random.permutation(len(X))
+            ids = np.random.permutation(len(X))
             sess_out = {}
             for i in range(batches_per_epoch):
                 start_idx = i * self.batch_size
                 end_idx = (i + 1) * self.batch_size
 
-                batch_a = X[indices[start_idx:end_idx]]
-                batch_pos_b = Y[indices[start_idx:end_idx]]
-                actions_for_b = actions_for_X[indices[start_idx:end_idx]]
+                batch_a = X[ids[start_idx:end_idx]]
 
+                batch_pos_b = Y[ids[start_idx:end_idx]]
+                actions_for_b = actions_for_X[ids[start_idx:end_idx]]
                 # add negatives
                 batch_b = self._create_batch_b(batch_pos_b, actions_for_b)
 
-                batch_c = extras[indices[start_idx:end_idx]]
+                batch_c = extras[ids[start_idx:end_idx]]
 
-                sess_out = sess.run({'loss': loss, 'train_op': train_op},
-                                    feed_dict={a_in: batch_a,
-                                               b_in: batch_b,
-                                               c_in: batch_c,
-                                               is_training: True})
+                sess_out = self.session.run(
+                    {'loss': loss, 'train_op': self.train_op},
+                    feed_dict={self.a_in: batch_a,
+                               self.b_in: batch_b,
+                               self.c_in: batch_c,
+                               self.is_training: True}
+                )
 
-            if logger.isEnabledFor(logging.INFO) and (ep + 1) % 50 == 0:
-                self._output_training_stat(X, extras, actions_for_X, all_Y_d,
-                                           sess, a_in, b_in, c_in,
-                                           sim, mask, is_training,
-                                           ep, sess_out)
+            if logger.isEnabledFor(logging.INFO) and (
+                    (ep + 1) % 50 == 0 or (ep + 1) == self.epochs):
+                self._output_training_stat(X, extras,
+                                           actions_for_X, all_Y_d,
+                                           mask, ep, sess_out)
 
     def _output_training_stat(self,
                               X, extras, actions_for_X, all_Y_d,
-                              sess, a_in, b_in, c_in,
-                              sim, mask, is_training,
-                              ep, sess_out):
+                              mask, ep, sess_out):
         """Output training statistics"""
         n = 100  # choose n examples to calculate train accuracy
-        all_Y_d_n = np.stack([all_Y_d for _ in range(n)])
+        ids = np.random.permutation(len(X))[:n]
+        all_Y_d_x = np.stack([all_Y_d for _ in range(X[ids].shape[0])])
 
-        _sim, _mask = sess.run([sim, mask],
-                               feed_dict={a_in: X[:n],
-                                          b_in: all_Y_d_n[:len(X[:n])],
-                                          c_in: extras[:n],
-                                          is_training: False})
+        _sim, _mask = self.session.run(
+            [self.sim_op, mask],
+            feed_dict={self.a_in: X[ids],
+                       self.b_in: all_Y_d_x,
+                       self.c_in: extras[ids],
+                       self.is_training: False}
+        )
 
         train_acc = np.sum((np.argmax(_sim, -1) ==
-                            actions_for_X[:n]) * _mask)
+                            actions_for_X[ids]) * _mask)
         train_acc /= np.sum(_mask)
         logger.info("epoch {} / {}: loss {}, train accuracy : {:.3f}"
                     "".format((ep + 1), self.epochs,
@@ -426,6 +474,11 @@ class EmbeddingPolicy(Policy):
         training_data = self.featurize_for_training(training_trackers,
                                                     domain,
                                                     **kwargs)
+        if kwargs:
+            self.config.update(kwargs)
+            logger.debug("Config is updated with {}".format(kwargs))
+            self._load_params()
+
         self.mean_time = np.mean(training_data.true_length)
 
         self.encoded_all_actions = self._create_encoded_actions(domain)
@@ -437,69 +490,69 @@ class EmbeddingPolicy(Policy):
                      "".format(self.num_neg, domain.num_actions))
         self.num_neg = min(self.num_neg, domain.num_actions - 1)
 
-        # get training data
-        prev_start = len(
-            self.featurizer.state_featurizer.user_vocab)
-        prev_end = prev_start + len(
-            self.featurizer.state_featurizer.bot_vocab)
-
-        # do not include prev actions
-        X = training_data.X[:, :, :prev_start]
-        extras = training_data.X[:, :, prev_end:]
-
-        actions_for_X = training_data.y.argmax(axis=-1)
-
-        Y = np.stack([np.stack([self.encoded_all_actions[action_idx]
-                                for action_idx in action_ids])
-                      for action_ids in actions_for_X])
-
-        dialogue_len = X.shape[1]
-
-        # labels for inference
-        all_Y_d = np.stack([self.encoded_all_actions
-                            for _ in range(dialogue_len)])
-
+        X, Y, extras, actions_for_X = self._prepare_data_for_training(
+                                        training_data)
+        all_Y_d = self._create_all_Y_d(X.shape[1])
         helper_data = actions_for_X, all_Y_d
 
         self.graph = tf.Graph()
         with self.graph.as_default():
             dialogue_len = None  # use dynamic time for rnn
-            a_in = tf.placeholder(tf.float32,
-                                  (None, dialogue_len, X.shape[-1]),
-                                  name='a')
-            b_in = tf.placeholder(tf.float32,
-                                  (None, dialogue_len, None, Y.shape[-1]),
-                                  name='b')
-            c_in = tf.placeholder(tf.float32,
-                                  (None, dialogue_len, extras.shape[-1]),
-                                  name='c')
+            self.a_in = tf.placeholder(tf.float32,
+                                       (None, dialogue_len,
+                                        X.shape[-1]),
+                                       name='a')
+            self.b_in = tf.placeholder(tf.float32,
+                                       (None, dialogue_len,
+                                        None, Y.shape[-1]),
+                                       name='b')
+            self.c_in = tf.placeholder(tf.float32,
+                                       (None, dialogue_len,
+                                        extras.shape[-1]),
+                                       name='c')
+            self.is_training = tf.placeholder_with_default(False, shape=())
 
-            self.intent_placeholder = a_in
-            self.action_placeholder = b_in
-            self.extras_placeholder = c_in
+            self.sim_op, loss, mask = self._create_tf_graph(self.a_in,
+                                                            self.b_in,
+                                                            self.c_in)
 
-            is_training = tf.placeholder_with_default(False, shape=())
-
-            sim, loss, mask = self._create_tf_graph(a_in, b_in, c_in,
-                                                    is_training)
-            self.similarity_op = sim
-
-            train_op = tf.train.AdamOptimizer().minimize(loss)
+            self.train_op = tf.train.AdamOptimizer().minimize(loss)
 
             # train tensorflow graph
-            sess = tf.Session()
-            self.session = sess
+            self.session = tf.Session()
 
-            self._train_tf(X, extras, Y, helper_data,
-                           sess, a_in, b_in, c_in,
-                           sim, loss, mask,
-                           is_training, train_op)
+            self._train_tf(X, Y, extras, helper_data,
+                           loss, mask)
 
-    def continue_training(self, trackers, domain, **kwargs):
+    def continue_training(self, training_trackers, domain, **kwargs):
         # type: (List[DialogueStateTracker], Domain, **Any) -> None
         """Continues training an already trained policy."""
 
-        pass
+        batch_size = kwargs.get('batch_size', 5)
+        epochs = kwargs.get('epochs', 50)
+
+        num_samples = batch_size - 1
+        num_prev_examples = len(training_trackers) - 1
+        for _ in range(epochs):
+            sampled_idx = np.random.choice(range(num_prev_examples),
+                                           replace=False,
+                                           size=min(num_samples,
+                                                    num_prev_examples))
+            trackers = [training_trackers[i]
+                        for i in sampled_idx] + training_trackers[-1:]
+            training_data = self.featurize_for_training(trackers,
+                                                        domain)
+            (batch_a, batch_pos_b, batch_c, actions_for_b
+             ) = self._prepare_data_for_training(training_data)
+
+            batch_b = self._create_batch_b(batch_pos_b, actions_for_b)
+
+            # fit to one extra example using updated trackers
+            self.session.run(self.train_op,
+                             feed_dict={self.a_in: batch_a,
+                                        self.b_in: batch_b,
+                                        self.c_in: batch_c,
+                                        self.is_training: True})
 
     def predict_action_probabilities(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> List[float]
@@ -507,24 +560,24 @@ class EmbeddingPolicy(Policy):
         after seeing the tracker.
 
         Returns the list of probabilities for the next actions"""
+        if self.session is None:
+            logger.error("There is no trained tf.session: "
+                         "component is either not trained or "
+                         "didn't receive enough training data")
+            return []
 
-        data, _ = self.featurizer.create_X([tracker], domain)
+        data_X = self.featurizer.create_X([tracker], domain)
 
-        action_token_dict = self.featurizer.state_featurizer.bot_vocab
-        split_symbol = self.featurizer.state_featurizer.split_symbol
+        X, extras = self._create_X_extras(data_X)
+        all_Y_d = self._create_all_Y_d(X.shape[1])
+        all_Y_d_x = np.stack([all_Y_d for _ in range(X.shape[0])])
 
-        prev_start = len(self.featurizer.state_featurizer.user_vocab)
-        prev_end = prev_start + len(self.featurizer.state_featurizer.bot_vocab)
-
-        X = data[:, :, :prev_start]
-        extras = data[:, :, prev_end:]
-
-        dialogue_len = X.shape[1]
-
-
-
-
-
+        _sim = self.session.run(
+            self.sim_op, feed_dict={self.a_in: X,
+                                    self.b_in: all_Y_d_x,
+                                    self.c_in: extras}
+        )
+        return _sim[0, -1, :].tolist()
 
     def persist(self, path):
         # type: (Text) -> None
@@ -548,26 +601,24 @@ class EmbeddingPolicy(Policy):
                 raise
         with self.graph.as_default():
             self.graph.clear_collection('intent_placeholder')
-            self.graph.add_to_collection('intent_placeholder',
-                                         self.intent_placeholder)
+            self.graph.add_to_collection('intent_placeholder', self.a_in)
 
             self.graph.clear_collection('action_placeholder')
-            self.graph.add_to_collection('action_placeholder',
-                                         self.action_placeholder)
+            self.graph.add_to_collection('action_placeholder', self.b_in)
 
             self.graph.clear_collection('extras_placeholder')
-            self.graph.add_to_collection('extras_placeholder',
-                                         self.extras_placeholder)
+            self.graph.add_to_collection('extras_placeholder', self.c_in)
 
             self.graph.clear_collection('similarity_op')
-            self.graph.add_to_collection('similarity_op',
-                                         self.similarity_op)
+            self.graph.add_to_collection('similarity_op', self.sim_op)
 
             saver = tf.train.Saver()
             saver.save(self.session, checkpoint)
 
-            pickle.dump(self.fbias, open(os.path.join(
-                path, file_name + "_fbias.pkl"), 'wb'))
+        with io.open(os.path.join(
+                path,
+                file_name + ".encoded_all_actions.pkl"), 'wb') as f:
+            pickle.dump(self.encoded_all_actions, f)
 
     @classmethod
     def load(cls, path):
@@ -589,26 +640,24 @@ class EmbeddingPolicy(Policy):
 
                 saver.restore(sess, checkpoint)
 
-                intent_placeholder = tf.get_collection(
-                    'intent_placeholder')[0]
-                action_placeholder = tf.get_collection(
-                    'action_placeholder')[0]
-                extras_placeholder = tf.get_collection(
-                    'extras_placeholder')[0]
-                similarity_op = tf.get_collection(
-                    'similarity_op')[0]
+                a_in = tf.get_collection('intent_placeholder')[0]
+                b_in = tf.get_collection('action_placeholder')[0]
+                c_in = tf.get_collection('extras_placeholder')[0]
+                sim_op = tf.get_collection('similarity_op')[0]
 
-            fbias = pickle.load(open(os.path.join(
-                path, file_name + "_fbias.pkl"), 'rb'))
+            with io.open(os.path.join(
+                    path,
+                    file_name + ".encoded_all_actions.pkl"), 'rb') as f:
+                encoded_all_actions = pickle.load(f)
 
             return cls(featurizer,
-                       fbias=fbias,
+                       encoded_all_actions=encoded_all_actions,
                        session=sess,
                        graph=graph,
-                       intent_placeholder=intent_placeholder,
-                       action_placeholder=action_placeholder,
-                       extras_placeholder=extras_placeholder,
-                       similarity_op=similarity_op)
+                       intent_placeholder=a_in,
+                       action_placeholder=b_in,
+                       extras_placeholder=c_in,
+                       similarity_op=sim_op)
 
         else:
             raise Exception("Failed to load dialogue model. Path {} "
@@ -622,10 +671,15 @@ def _compute_time_attention(attention_mechanism, cell_output, attention_state, t
     alignments, next_attention_state = attention_mechanism(
       cell_output, state=attention_state)
 
-    time_oh = tf.zeros_like(alignments)
-    # TODO
-    time_oh = tf.one_hot(time, alignments.shape[-1])
-    until_time = tf.cumprod(1 - time_oh, exclusive=True)
+    # time_oh = tf.one_hot(time, alignments.shape[-1])
+    # until_time = tf.cumprod(1 - time_oh, exclusive=True)
+    # print(until_time.shape)
+
+    ones = tf.ones_like(alignments[0])
+    zeros = tf.zeros_like(alignments[0])
+    t = time + 1
+    until_time = tf.concat([ones[:t], zeros[t:]], 0)
+
     alignments *= until_time
     norm = tf.reduce_sum(alignments, -1, keepdims=True) + 1
     alignments /= norm

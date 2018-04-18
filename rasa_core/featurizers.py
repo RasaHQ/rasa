@@ -374,8 +374,8 @@ class TrackerFeaturizer(object):
         """Create X for prediction"""
 
         trackers_as_states = self.prediction_states(trackers, domain)
-        X, true_lengths = self._featurize_states(trackers_as_states)
-        return X, true_lengths
+        X, _ = self._featurize_states(trackers_as_states)
+        return X
 
     def persist(self, path):
         featurizer_file = os.path.join(path, "featurizer.json")
@@ -391,8 +391,8 @@ class TrackerFeaturizer(object):
                 _json = f.read()
             return jsonpickle.decode(_json)
         else:
-            logger.info("Couldn't load featurizer for policy. "
-                        "File '{}' doesn't exist.".format(featurizer_file))
+            logger.error("Couldn't load featurizer for policy. "
+                         "File '{}' doesn't exist.".format(featurizer_file))
             return None
 
 
@@ -459,8 +459,8 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
             trackers_as_actions.append(actions)
 
         self.max_len = self._calculate_max_len(trackers_as_actions)
-        logger.info("The longest dialogue has {} actions."
-                    "".format(self.max_len))
+        logger.debug("The longest dialogue has {} actions."
+                     "".format(self.max_len))
 
         return trackers_as_states, trackers_as_actions
 
