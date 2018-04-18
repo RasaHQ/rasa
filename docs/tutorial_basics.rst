@@ -135,7 +135,7 @@ Let's run
 
 to train our NLU model. A new directory ``models/nlu/default/current`` should have been
 created containing the NLU model. Note that ``default`` stands for project name, since we did not
-specify it explicitly in ``nlu_model_config.json``.
+specify it explicitly in ``nlu_model_config.yml``.
 
 .. note::
 
