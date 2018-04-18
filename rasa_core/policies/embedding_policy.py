@@ -24,11 +24,15 @@ if typing.TYPE_CHECKING:
 
 try:
     import cPickle as pickle
-except:
+except ImportError:
     import pickle
 
 logger = logging.getLogger(__name__)
 
+try:
+    from tqdm import tqdm
+except ImportError:
+    tqdm = None
 try:
     import tensorflow as tf
 except ImportError:
@@ -407,7 +411,11 @@ class EmbeddingPolicy(Policy):
 
         batches_per_epoch = (len(X) // self.batch_size +
                              int(len(X) % self.batch_size > 0))
-        for ep in range(self.epochs):
+        if tqdm:
+            pbar = tqdm(range(self.epochs), desc="Epochs")
+        else:
+            pbar = range(self.epochs)
+        for ep in pbar:
             ids = np.random.permutation(len(X))
             sess_out = {}
             for i in range(batches_per_epoch):
@@ -430,6 +438,8 @@ class EmbeddingPolicy(Policy):
                                self.c_in: batch_c,
                                self.is_training: True}
                 )
+            if tqdm:
+                pbar.set_postfix({"loss": sess_out.get('loss')})
 
             if logger.isEnabledFor(logging.INFO) and (
                     (ep + 1) % 50 == 0 or (ep + 1) == self.epochs):
@@ -456,7 +466,7 @@ class EmbeddingPolicy(Policy):
         train_acc = np.sum((np.argmax(_sim, -1) ==
                             actions_for_X[ids]) * _mask)
         train_acc /= np.sum(_mask)
-        logger.info("epoch {} / {}: loss {}, train accuracy : {:.3f}"
+        logger.info("epoch {} / {}: loss={:.3f}, accuracy={:.3f}"
                     "".format((ep + 1), self.epochs,
                               sess_out.get('loss'), train_acc))
 

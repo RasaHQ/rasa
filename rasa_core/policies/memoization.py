@@ -10,7 +10,6 @@ import logging
 import os
 import zlib
 import typing
-from tqdm import tqdm
 
 from builtins import bytes
 from typing import Optional, Any, Dict, List, Text
@@ -28,6 +27,10 @@ if typing.TYPE_CHECKING:
 
 ENABLE_FEATURE_STRING_COMPRESSION = True
 
+try:
+    from tqdm import tqdm
+except ImportError:
+    tqdm = None
 
 class MemoizationPolicy(Policy):
     SUPPORTS_ONLINE_TRAINING = True
@@ -77,8 +80,13 @@ class MemoizationPolicy(Policy):
              "instead of {}".format(len(trackers_as_actions[0])))
 
         ambiguous_feature_keys = set()
-        pbar = tqdm(zip(trackers_as_states, trackers_as_actions),
-                    desc="Processed actions", disable=online)
+
+        if tqdm:
+            pbar = tqdm(zip(trackers_as_states, trackers_as_actions),
+                        desc="Processed actions", disable=online)
+        else:
+            pbar = zip(trackers_as_states, trackers_as_actions)
+
         for states, actions in pbar:
             action = actions[0]
             for i, states_augmented in enumerate(
@@ -106,9 +114,8 @@ class MemoizationPolicy(Policy):
                                 del self.lookup[feature_key]
                     else:
                         self.lookup[feature_key] = feature_item
-
-                pbar.set_postfix({
-                    "# examples": len(self.lookup)})
+                if tqdm:
+                    pbar.set_postfix({"# examples": len(self.lookup)})
 
     @staticmethod
     def _create_feature_key(states):
