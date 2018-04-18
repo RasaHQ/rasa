@@ -127,8 +127,8 @@ Here's an example configuration:
     pipeline:
     - name: "intent_featurizer_count_vectors"
     - name: "intent_classifier_tensorflow_embedding"
-    intent_tokenization_flag: true
-    intent_split_symbol: "_"
+      intent_tokenization_flag: true
+      intent_split_symbol: "_"
 
 
 
