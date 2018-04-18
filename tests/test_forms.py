@@ -46,7 +46,7 @@ class ActionSearchRestaurants(FormAction):
             tracker.get_slot("cuisine"),
             tracker.get_slot("people"),
             tracker.get_slot("vegetarian"))
-        return [SlotSet("search_results": results)]
+        return [SlotSet("search_results", results)]
 
 
 class ActionSearchPeople(FormAction):
