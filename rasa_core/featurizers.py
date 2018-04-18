@@ -264,7 +264,8 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
                         used_features[self.user_vocab[t]] += 1
 
             elif state_name[len(PREV_PREFIX):] in self.bot_labels:
-                for t in state_name[len(PREV_PREFIX):].split(self.split_symbol):
+                for t in state_name[len(PREV_PREFIX):].split(
+                        self.split_symbol):
                     used_features[len(self.user_vocab) +
                                   self.bot_vocab[t]] += 1
 
@@ -350,7 +351,8 @@ class TrackerFeaturizer(object):
         self.state_featurizer.prepare_from_domain(domain)
 
         (trackers_as_states,
-         trackers_as_actions) = self.training_states_and_actions(trackers, domain)
+         trackers_as_actions) = self.training_states_and_actions(trackers,
+                                                                 domain)
 
         X, true_lengths = self._featurize_states(trackers_as_states)
         y = self._featurize_labels(trackers_as_actions, domain)
@@ -441,10 +443,12 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
             for event in tracker._applied_events():
                 if isinstance(event, ActionExecuted):
                     if not event.unpredictable:
-                        # only actions which can be predicted at a stories start
+                        # only actions which can be
+                        # predicted at a stories start
                         actions.append(event.action_name)
                     else:
-                        # unpredictable actions can be only the first in the story
+                        # unpredictable actions can be
+                        # only the first in the story
                         if delete_first_state:
                             raise Exception("Found two unpredictable "
                                             "actions in one story."
@@ -526,7 +530,8 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
             for event in tracker._applied_events():
                 if isinstance(event, ActionExecuted):
                     if not event.unpredictable:
-                        # only actions which can be predicted at a stories start
+                        # only actions which can be
+                        # predicted at a stories start
                         # TODO unite with padding
                         sliced_states = self.slice_state_history(
                             states[:idx + 1], self.max_history)

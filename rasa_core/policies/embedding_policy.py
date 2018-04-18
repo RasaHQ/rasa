@@ -42,7 +42,8 @@ class EmbeddingPolicy(Policy):
 
     @classmethod
     def _standard_featurizer(cls):
-        return FullDialogueTrackerFeaturizer(LabelTokenizerSingleStateFeaturizer())
+        return FullDialogueTrackerFeaturizer(
+                    LabelTokenizerSingleStateFeaturizer())
 
     config = {
         # nn architecture
@@ -291,11 +292,13 @@ class EmbeddingPolicy(Policy):
             emb_act = tf.nn.l2_normalize(emb_act, -1)
             emb_dial = tf.nn.l2_normalize(emb_dial, -1)
 
-        if self.similarity_type == 'cosine' or self.similarity_type == 'inner':
+        if (self.similarity_type == 'cosine'
+                or self.similarity_type == 'inner'):
             sim = tf.reduce_sum(tf.expand_dims(emb_dial, -2) * emb_act, -1)
             sim *= tf.expand_dims(mask, 2)
 
-            sim_act = tf.reduce_sum(emb_act[:, :, 0:1, :] * emb_act[:, :, 1:, :], -1)
+            sim_act = tf.reduce_sum(emb_act[:, :, 0:1, :] *
+                                    emb_act[:, :, 1:, :], -1)
             sim_act *= tf.expand_dims(mask, 2)
 
             return sim, sim_act
@@ -679,9 +682,10 @@ class EmbeddingPolicy(Policy):
 
 
 # modified tensorflow attention wrapper
-def _compute_time_attention(attention_mechanism, cell_output, attention_state, time,
-                       attention_layer):
-    """Computes the attention and alignments for a given attention_mechanism."""
+def _compute_time_attention(attention_mechanism, cell_output,
+                            attention_state, time, attention_layer):
+    """Computes the attention and alignments
+    for a given attention_mechanism."""
     alignments, next_attention_state = attention_mechanism(
       cell_output, state=attention_state)
 

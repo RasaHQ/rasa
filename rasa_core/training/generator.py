@@ -80,11 +80,13 @@ class TrainingsDataGenerator(object):
         used_checkpoints = set()  # type: Set[Text]
         active_trackers = defaultdict(list)  # type: TrackerLookupDict
 
-        init_tracker = DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
-                                            self.domain.slots,
-                                            self.domain.topics,
-                                            self.domain.default_topic,
-                                            max_event_history=self.config.tracker_limit)
+        init_tracker = DialogueStateTracker(
+                UserMessage.DEFAULT_SENDER_ID,
+                self.domain.slots,
+                self.domain.topics,
+                self.domain.default_topic,
+                max_event_history=self.config.tracker_limit
+        )
         active_trackers[STORY_START].append(init_tracker)
 
         finished_trackers = []
@@ -142,12 +144,13 @@ class TrainingsDataGenerator(object):
             completed = [t for t in active_trackers[STORY_END]]
             finished_trackers.extend(completed)
             active_trackers = self._create_start_trackers(active_trackers)
-            logger.debug("Finished phase. ({} training samples found)".format(
-                    len(finished_trackers)))
+            logger.debug("Finished phase. ({} training samples found)"
+                         "".format(len(finished_trackers)))
 
         unused_checkpoints -= used_checkpoints
         self._issue_unused_checkpoint_notification(unused_checkpoints)
-        logger.debug("Found {} training examples.".format(len(finished_trackers)))
+        logger.debug("Found {} training examples."
+                     "".format(len(finished_trackers)))
 
         return finished_trackers, self.events_metadata
 
