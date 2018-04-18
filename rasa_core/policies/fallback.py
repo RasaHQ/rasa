@@ -49,7 +49,7 @@ class FallbackPolicy(Policy):
         if nlu_confidence < self.nlu_threshold:
             score = 1.0
         else:
-            score = core_threshold
+            score = self.core_threshold
         result[idx] = score
 
         return result
