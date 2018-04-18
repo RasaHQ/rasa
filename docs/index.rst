@@ -19,6 +19,8 @@ Welcome to the Rasa Documentation!
     - implement the actions your bot can take in python code (recommended),
     - or use Rasa Core as a webservice (experimental, see :ref:`section_http`).
 
+    Go `here <https://colab.research.google.com/drive/11RXiVVURaxrTdf7wYjbe3qDq5XtntqMO>`_ to try it out right away.
+
 *What's cool about it?*
 
     Rather than a bunch of ``if/else`` statements, the logic of your bot is
@@ -31,7 +33,9 @@ Welcome to the Rasa Documentation!
 
 *Can I see it in action?*
 
-    We thought you'd never ask! Make sure to follow the :ref:`installation`
+    We thought you'd never ask!
+    You can build a full example without installing anything on `colab <https://colab.research.google.com/drive/11RXiVVURaxrTdf7wYjbe3qDq5XtntqMO>`_.
+    If you want to run stuff on your machine, follow the :ref:`installation`
     and check out :ref:`tutorial_basics` afterwards!
 
 
