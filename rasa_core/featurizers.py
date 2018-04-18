@@ -521,6 +521,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
         for tracker in trackers:
             states = domain.states_for_tracker_history(tracker)
+
             idx = 0
             for event in tracker._applied_events():
                 if isinstance(event, ActionExecuted):

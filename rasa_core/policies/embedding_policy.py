@@ -8,6 +8,7 @@ import os
 import logging
 import warnings
 import typing
+from tqdm import tqdm
 
 from typing import \
     Any, List, Optional, Text
@@ -29,10 +30,7 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-try:
-    from tqdm import tqdm
-except ImportError:
-    tqdm = None
+
 try:
     import tensorflow as tf
 except ImportError:
@@ -134,6 +132,12 @@ class EmbeddingPolicy(Policy):
     ):
         # type: (...) -> None
         self._check_tensorflow()
+        # TODO do we want to make it work with max_history_featurizer?
+        if featurizer:
+            assert isinstance(featurizer, FullDialogueTrackerFeaturizer), \
+                ("Passed featurizer of type {}, should be "
+                 "FullDialogueTrackerFeaturizer."
+                 "".format(type(featurizer).__name__))
         super(EmbeddingPolicy, self).__init__(featurizer)
         # TODO we reload params again in train do we need it here?
         self._load_params()
@@ -411,13 +415,12 @@ class EmbeddingPolicy(Policy):
 
         batches_per_epoch = (len(X) // self.batch_size +
                              int(len(X) % self.batch_size > 0))
-        if tqdm:
-            pbar = tqdm(range(self.epochs), desc="Epochs")
-        else:
-            pbar = range(self.epochs)
+
+        pbar = tqdm(range(self.epochs), desc="Epochs")
         for ep in pbar:
             ids = np.random.permutation(len(X))
-            sess_out = {}
+
+            ep_loss = 0
             for i in range(batches_per_epoch):
                 start_idx = i * self.batch_size
                 end_idx = (i + 1) * self.batch_size
@@ -438,18 +441,19 @@ class EmbeddingPolicy(Policy):
                                self.c_in: batch_c,
                                self.is_training: True}
                 )
-            if tqdm:
-                pbar.set_postfix({"loss": sess_out.get('loss')})
+                ep_loss += sess_out.get('loss') / batches_per_epoch
+
+            pbar.set_postfix({"loss": ep_loss})
 
             if logger.isEnabledFor(logging.INFO) and (
                     (ep + 1) % 50 == 0 or (ep + 1) == self.epochs):
                 self._output_training_stat(X, extras,
                                            actions_for_X, all_Y_d,
-                                           mask, ep, sess_out)
+                                           mask, ep, ep_loss)
 
     def _output_training_stat(self,
                               X, extras, actions_for_X, all_Y_d,
-                              mask, ep, sess_out):
+                              mask, ep, ep_loss):
         """Output training statistics"""
         n = 100  # choose n examples to calculate train accuracy
         ids = np.random.permutation(len(X))[:n]
@@ -468,7 +472,7 @@ class EmbeddingPolicy(Policy):
         train_acc /= np.sum(_mask)
         logger.info("epoch {} / {}: loss={:.3f}, accuracy={:.3f}"
                     "".format((ep + 1), self.epochs,
-                              sess_out.get('loss'), train_acc))
+                              ep_loss, train_acc))
 
     def train(self,
               training_trackers,  # type: List[DialogueStateTracker]

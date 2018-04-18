@@ -191,7 +191,7 @@ class DialogueStateTracker(object):
 
     def generate_all_prior_trackers(self):
         # type: () -> Generator[DialogueStateTracker, None, None]
-        """Returns an array of all the previous trackers for this tracker.
+        """Returns a generator of the previous trackers of this tracker.
 
         The resulting array is representing
         the trackers before each action."""

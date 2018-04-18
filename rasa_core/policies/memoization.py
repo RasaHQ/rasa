@@ -10,6 +10,7 @@ import logging
 import os
 import zlib
 import typing
+from tqdm import tqdm
 
 from builtins import bytes
 from typing import Optional, Any, Dict, List, Text
@@ -25,12 +26,8 @@ if typing.TYPE_CHECKING:
     from rasa_core.trackers import DialogueStateTracker
     from rasa_core.domain import Domain
 
-ENABLE_FEATURE_STRING_COMPRESSION = True
+ENABLE_FEATURE_STRING_COMPRESSION = False
 
-try:
-    from tqdm import tqdm
-except ImportError:
-    tqdm = None
 
 class MemoizationPolicy(Policy):
     SUPPORTS_ONLINE_TRAINING = True
@@ -81,12 +78,8 @@ class MemoizationPolicy(Policy):
 
         ambiguous_feature_keys = set()
 
-        if tqdm:
-            pbar = tqdm(zip(trackers_as_states, trackers_as_actions),
-                        desc="Processed actions", disable=online)
-        else:
-            pbar = zip(trackers_as_states, trackers_as_actions)
-
+        pbar = tqdm(zip(trackers_as_states, trackers_as_actions),
+                    desc="Processed actions", disable=online)
         for states, actions in pbar:
             action = actions[0]
             for i, states_augmented in enumerate(
@@ -114,8 +107,7 @@ class MemoizationPolicy(Policy):
                                 del self.lookup[feature_key]
                     else:
                         self.lookup[feature_key] = feature_item
-                if tqdm:
-                    pbar.set_postfix({"# examples": len(self.lookup)})
+                pbar.set_postfix({"# examples": len(self.lookup)})
 
     @staticmethod
     def _create_feature_key(states):
@@ -155,7 +147,12 @@ class MemoizationPolicy(Policy):
                   domain, online=True)
 
     def _recall(self, states):
-        return self.lookup.get(self._create_feature_key(states))
+        for states_aug in self._create_partial_histories(states):
+            memorised = self.lookup.get(
+                self._create_feature_key(states_aug))
+            if memorised:
+                return memorised
+        return None
 
     def predict_action_probabilities(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> List[float]

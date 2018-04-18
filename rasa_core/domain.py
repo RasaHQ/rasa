@@ -290,8 +290,6 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
     def states_for_tracker_history(self, tracker):
         # type: (DialogueStateTracker) -> List[Dict[Text, float]]
         """Array of states for each state of the trackers history."""
-        # TODO doing too much work here: generate all prior trackers
-        # TODO then create states only for latest massage
         return [self.get_active_states(tr) for tr in
                 tracker.generate_all_prior_trackers()]
 

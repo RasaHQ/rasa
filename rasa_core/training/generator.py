@@ -4,7 +4,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import copy
+from copy import deepcopy
 import logging
 import random
 from collections import defaultdict, namedtuple
@@ -17,10 +17,12 @@ from rasa_core.events import Event
 
 from rasa_core import utils
 from rasa_core.channels import UserMessage
-from rasa_core.events import ActionExecuted, UserUttered, ActionReverted
+from rasa_core.events import ActionExecuted, UserUttered, \
+    ActionReverted, UserUtteranceReverted
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.structures import (
-    StoryGraph, STORY_END, STORY_START, StoryStep, GENERATED_CHECKPOINT_PREFIX)
+    StoryGraph, STORY_END, STORY_START, StoryStep,
+    GENERATED_CHECKPOINT_PREFIX)
 
 logger = logging.getLogger(__name__)
 
@@ -228,16 +230,21 @@ class TrainingsDataGenerator(object):
         # need to copy the tracker as multiple story steps
         # might start with the same checkpoint and all of them
         # will use the same set of incoming trackers
-        trackers = [copy.deepcopy(tracker) for tracker in
+        trackers = [deepcopy(tracker) for tracker in
                     incoming_trackers] if events else []  # small optimization
-
+        new_trackers = []
         for event in events:
             for tracker in trackers:
+                if (isinstance(event, ActionReverted) or
+                        isinstance(event, UserUtteranceReverted)):
+                    new_trackers.append(deepcopy(tracker))
+
                 tracker.update(event)
                 if not isinstance(event, ActionExecuted):
                     action_name = tracker.latest_action_name
                     self.events_metadata[action_name].add(event)
 
+        trackers.extend(new_trackers)
         if self.config.remove_duplicates:
             trackers = self._remove_duplicate_trackers(trackers)
 

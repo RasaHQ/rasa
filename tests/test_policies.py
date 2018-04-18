@@ -14,7 +14,6 @@ from rasa_core.channels import UserMessage
 from rasa_core.domain import TemplateDomain
 from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.memoization import MemoizationPolicy
-from rasa_core.policies.scoring_policy import ScoringPolicy
 from rasa_core.policies.sklearn_policy import SklearnPolicy
 from rasa_core.trackers import DialogueStateTracker
 from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
@@ -96,16 +95,6 @@ class TestKerasPolicy(PolicyTestCollection):
     @pytest.fixture(scope="module")
     def create_policy(self, featurizer):
         p = KerasPolicy(featurizer)
-        return p
-
-
-class TestScoringPolicy(PolicyTestCollection):
-    @pytest.fixture(scope="module")
-    def create_policy(self, featurizer):
-        max_history = None
-        if isinstance(featurizer, MaxHistoryTrackerFeaturizer):
-            max_history = featurizer.max_history
-        p = ScoringPolicy(max_history)
         return p
 
 
@@ -205,21 +194,6 @@ class TestSklearnPolicy(PolicyTestCollection):
         assert mock_search.call_args_list[0][1]['cv'] == 3
         assert mock_search.call_args_list[0][1]['param_grid'] == param_grid
         assert policy.model == 'mockmodel'
-
-    def test_continue_training_with_unsuitable_model_raises(
-            self, default_domain, trackers):
-        policy = self.create_policy(
-            featurizer=train_featurizer(self.max_history),
-            cv=None,
-        )
-        policy.train(trackers, domain=default_domain)
-
-        with pytest.raises(TypeError) as exc:
-            policy.continue_training(trackers, domain=default_domain)
-
-        assert exc.value.args[0] == (
-            "Continuing training is only possible with "
-            "sklearn models that support 'partial_fit'.")
 
     def test_missing_classes_filled_correctly(
             self, default_domain, trackers, tracker):
