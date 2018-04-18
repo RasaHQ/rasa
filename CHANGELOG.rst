@@ -26,6 +26,7 @@ Fixed
 
 Fixed
 -----
+- properly set duckling http url through environment setting
 - improvements and fixes to the configuration and pipeline
   documentation
 
