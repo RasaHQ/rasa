@@ -38,7 +38,8 @@ def create_argument_parser():
                         help="Location of the training data. For JSON and "
                              "markdown data, this can either be a single file "
                              "or a directory containing multiple training "
-                             "data files.")
+                             "data files. This can also be the URL of a "
+                             "server from which to fetch training data.")
 
     parser.add_argument('-c', '--config',
                         required=True,

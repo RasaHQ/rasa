@@ -6,6 +6,9 @@ from __future__ import unicode_literals
 import json
 import logging
 
+import os
+
+import requests
 from typing import Text, Optional
 
 from rasa_nlu import utils
@@ -47,17 +50,24 @@ _json_format_heuristics = {
 
 def load_data(resource_name, language='en'):
     # type: (Text, Optional[Text]) -> TrainingData
-    """Load training data from disk. Merges them if multiple files are found."""
+    """Load training data from disk or a URL.
 
-    files = utils.list_files(resource_name)
-    data_sets = [_load(f, language) for f in files]
-    data_sets = [ds for ds in data_sets if ds]
-    if len(data_sets) == 0:
-        return TrainingData()
-    elif len(data_sets) == 1:
-        return data_sets[0]
+    Merges them if loaded from disk and multiple files are found."""
+
+    if utils.is_url(resource_name):
+        response = requests.get(resource_name)
+        temp_data_file = utils.create_temporary_file(response.content)
+        return _load(temp_data_file)
     else:
-        return data_sets[0].merge(*data_sets[1:])
+        files = utils.list_files(resource_name)
+        data_sets = [_load(f, language) for f in files]
+        data_sets = [ds for ds in data_sets if ds]
+        if len(data_sets) == 0:
+            return TrainingData()
+        elif len(data_sets) == 1:
+            return data_sets[0]
+        else:
+            return data_sets[0].merge(*data_sets[1:])
 
 
 def _reader_factory(fformat):
