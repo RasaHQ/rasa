@@ -64,7 +64,7 @@ def test_create_train_data_with_history(default_domain):
     hashed = []
     for states in decoded:
         hashed.append(json.dumps(states, sort_keys=True))
-    hashed = sorted(hashed, reverse=True)
+    hashed = sorted(hashed)
 
     assert hashed == [
         '[null, null, null, {}]',
