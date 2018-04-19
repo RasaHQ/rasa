@@ -16,29 +16,11 @@ from typing import Text
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.extractors.duckling_extractor import (
-    filter_irrelevant_matches, extract_value)
+    filter_irrelevant_matches, convert_duckling_format_to_rasa)
 from rasa_nlu.model import Metadata
 from rasa_nlu.training_data import Message
 
 logger = logging.getLogger(__name__)
-
-
-def convert_duckling_format_to_rasa(matches):
-    extracted = []
-
-    for match in matches:
-        value = extract_value(match)
-        entity = {"start": match["start"],
-                  "end": match["end"],
-                  "text": match["body"],
-                  "value": value,
-                  "confidence": 1.0,
-                  "additional_info": match["value"],
-                  "entity": match["dim"]}
-
-        extracted.append(entity)
-
-    return extracted
 
 
 class DucklingHTTPExtractor(EntityExtractor):
