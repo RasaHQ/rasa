@@ -69,7 +69,7 @@ class EmbeddingPolicy(Policy):
 
         "droprate_a": 0.1,
         "droprate_b": 0.1,
-        "droprate_c": 0.2,
+        "droprate_c": 0.4,
         "droprate_rnn": 0.1,
         "droprate_out": 0.1,
     }
@@ -251,6 +251,7 @@ class EmbeddingPolicy(Policy):
         )
 
         def probability_fn(score):
+            # p = tf.sigmoid(score)
             p = tf.nn.relu(tf.tanh(score))
             return p
 
