@@ -22,7 +22,7 @@ import re
 
 nitpicky = True
 linkcheck_anchors_ignore = [".*"]
-linkcheck_ignore = [r'http://localhost:\d+/']
+linkcheck_ignore = [r'http://localhost:\d+/', r'https://github.com/mit-nlp/MITIE/releases/download/']
 linkcheck_retries = 2
 linkcheck_timeout = 5
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -52,7 +52,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'rasa NLU'
+project = u'Rasa NLU'
 copyright = u'2017, Rasa Technologies GmbH'
 author = u'Alan Nichol'
 

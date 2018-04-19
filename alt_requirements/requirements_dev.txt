@@ -12,6 +12,7 @@ moto==1.2.0
 mock==2.0.0
 # other
 google-cloud-storage==1.7.0
+azure-storage-blob==1.0.0
 
 # docs
 sphinx==1.5.2

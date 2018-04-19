@@ -12,9 +12,9 @@ from jsonschema import ValidationError
 from rasa_nlu import training_data
 from rasa_nlu import utils
 from rasa_nlu.convert import convert_training_data
+from rasa_nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa_nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
 from rasa_nlu.training_data.formats.rasa import validate_rasa_nlu_data
-from rasa_nlu.extractors import EntityExtractor
 
 
 def test_example_training_data_is_valid():
@@ -68,16 +68,13 @@ def test_dialogflow_data():
     assert len(td.training_examples) == 24
     assert td.intents == {"affirm", "goodbye", "hi", "inform"}
     assert td.entities == {"cuisine", "location"}
-    non_trivial_synonyms = {k: v
-                            for k, v in td.entity_synonyms.items()
-                            if k != v}
+    non_trivial_synonyms = {k: v for k, v in td.entity_synonyms.items() if k != v}
     assert non_trivial_synonyms == {"mexico": "mexican",
                                     "china": "chinese",
                                     "india": "indian"}
 
 
-@pytest.mark.parametrize("filename", ["data/examples/rasa/demo-rasa.json",
-                                      'data/examples/rasa/demo-rasa.md'])
+@pytest.mark.parametrize("filename", ["data/examples/rasa/demo-rasa.json", 'data/examples/rasa/demo-rasa.md'])
 def test_demo_data(filename):
     td = training_data.load_data(filename)
     assert td.intents == {"affirm", "greet", "restaurant_search", "goodbye"}
@@ -96,9 +93,8 @@ def test_demo_data(filename):
                                  {"name": "zipcode", "pattern": "[0-9]{5}"}]
 
 
-@pytest.mark.parametrize("files", [
-    ('data/examples/rasa/demo-rasa.json', 'data/test/multiple_files_json'),
-    ('data/examples/rasa/demo-rasa.md', 'data/test/multiple_files_markdown')])
+@pytest.mark.parametrize("files", [('data/examples/rasa/demo-rasa.json', 'data/test/multiple_files_json'),
+                                   ('data/examples/rasa/demo-rasa.md', 'data/test/multiple_files_markdown')])
 def test_data_merging(files):
     td_reference = training_data.load_data(files[0])
     td = training_data.load_data(files[1])
@@ -112,13 +108,10 @@ def test_data_merging(files):
 
 
 def test_markdown_single_sections():
-    td_regex_only = training_data.load_data(
-        'data/test/markdown_single_sections/regex_only.md')
-    assert td_regex_only.regex_features == [
-        {"name": "greet", "pattern": "hey[^\s]*"}]
+    td_regex_only = training_data.load_data('data/test/markdown_single_sections/regex_only.md')
+    assert td_regex_only.regex_features == [{"name": "greet", "pattern": "hey[^\s]*"}]
 
-    td_syn_only = training_data.load_data(
-        'data/test/markdown_single_sections/synonyms_only.md')
+    td_syn_only = training_data.load_data('data/test/markdown_single_sections/synonyms_only.md')
     assert td_syn_only.entity_synonyms == {'Chines': 'chinese',
                                            'Chinese': 'chinese'}
 
@@ -152,9 +145,9 @@ def test_repeated_entities():
         entities = example.get("entities")
         assert len(entities) == 1
         tokens = WhitespaceTokenizer().tokenize(example.text)
-        start, end = EntityExtractor.find_entity(entities[0],
-                                                 example.text,
-                                                 tokens)
+        start, end = MitieEntityExtractor.find_entity(entities[0],
+                                                      example.text,
+                                                      tokens)
         assert start == 9
         assert end == 10
 
@@ -188,9 +181,9 @@ def test_multiword_entities():
         entities = example.get("entities")
         assert len(entities) == 1
         tokens = WhitespaceTokenizer().tokenize(example.text)
-        start, end = EntityExtractor.find_entity(entities[0],
-                                                 example.text,
-                                                 tokens)
+        start, end = MitieEntityExtractor.find_entity(entities[0],
+                                                      example.text,
+                                                      tokens)
         assert start == 4
         assert end == 7
 

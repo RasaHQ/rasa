@@ -309,9 +309,10 @@ class RasaNLU(object):
             request.setResponseCode(500)
             returnValue(json_to_string({"error": "{}".format(e)}))
 
-    @app.route("/evaluate", methods=['POST'])
+    @app.route("/evaluate", methods=['POST', 'OPTIONS'])
     @requires_auth
     @check_cors
+    @inlineCallbacks
     def evaluate(self, request):
         data_string = request.content.read().decode('utf-8', 'strict')
         params = {
@@ -320,17 +321,18 @@ class RasaNLU(object):
         }
 
         request.setHeader('Content-Type', 'application/json')
+
         try:
             request.setResponseCode(200)
-            response = self.data_router.evaluate(data_string,
-                                                 params.get('project'),
-                                                 params.get('model'))
-            return simplejson.dumps(response)
+            response = yield self.data_router.evaluate(data_string,
+                                                       params.get('project'),
+                                                       params.get('model'))
+            returnValue(json_to_string(response))
         except Exception as e:
             request.setResponseCode(500)
-            return simplejson.dumps({"error": "{}".format(e)})
+            returnValue(json_to_string({"error": "{}".format(e)}))
 
-    @app.route("/models", methods=['DELETE'])
+    @app.route("/models", methods=['DELETE', 'OPTIONS'])
     @requires_auth
     @check_cors
     def unload_model(self, request):
@@ -361,7 +363,9 @@ if __name__ == '__main__':
 
     router = DataRouter(cmdline_args.path,
                         cmdline_args.max_training_processes,
-                        cmdline_args.response_log)
+                        cmdline_args.response_log,
+                        cmdline_args.emulate,
+                        cmdline_args.storage)
     rasa = RasaNLU(
             router,
             cmdline_args.loglevel,

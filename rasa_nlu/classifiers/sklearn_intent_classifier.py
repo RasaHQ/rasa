@@ -33,6 +33,18 @@ if typing.TYPE_CHECKING:
 SKLEARN_MODEL_FILE_NAME = "intent_classifier_sklearn.pkl"
 
 
+def _sklearn_numpy_warning_fix():
+    """Fixes unecessary warnings emitted by sklearns use of numpy.
+
+    Sklearn will fix the warnings in their next release in ~ August 2018.
+
+    based on https://stackoverflow.com/questions/49545947/sklearn-deprecationwarning-truth-value-of-an-array"""
+    import warnings
+
+    warnings.filterwarnings(module='sklearn*', action='ignore',
+                            category=DeprecationWarning)
+
+
 class SklearnIntentClassifier(Component):
     """Intent classifier using the sklearn framework"""
 
@@ -71,6 +83,8 @@ class SklearnIntentClassifier(Component):
         else:
             self.le = LabelEncoder()
         self.clf = clf
+
+        _sklearn_numpy_warning_fix()
 
     @classmethod
     def required_packages(cls):

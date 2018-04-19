@@ -149,7 +149,10 @@ class CRFEntityExtractor(EntityExtractor):
             return []
 
     def most_likely_entity(self, idx, entities):
-        entity_probs = entities[idx]
+        if len(entities) > idx:
+            entity_probs = entities[idx]
+        else:
+            entity_probs = None
         if entity_probs:
             label = max(entity_probs,
                         key=lambda key: entity_probs[key])
@@ -200,17 +203,17 @@ class CRFEntityExtractor(EntityExtractor):
 
             confidence = min(confidence, label_confidence)
 
-            if len(entities) > ent_word_idx and label[2:] != entity_label:
+            if label[2:] != entity_label:
                 # words are not tagged the same entity class
                 logger.debug("Inconsistent BILOU tagging found, B- tag, L- "
                              "tag pair encloses multiple entity classes.i.e. "
                              "[B-a, I-b, L-a] instead of [B-a, I-a, L-a].\n"
                              "Assuming B- class is correct.")
 
-            if len(entities) > ent_word_idx and label.startswith('L-'):
+            if label.startswith('L-'):
                 # end of the entity
                 finished = True
-            elif len(entities) > ent_word_idx and label.startswith('I-'):
+            elif label.startswith('I-'):
                 # middle part of the entity
                 ent_word_idx += 1
             else:
