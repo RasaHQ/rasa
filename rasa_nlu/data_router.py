@@ -172,15 +172,13 @@ class DataRouter(object):
     def _pre_load(self, projects):
         logger.debug("loading %s", projects)
         for project in self.project_store:
-            if project not in projects and 'all' not in projects:
-                continue
-            logger.debug('Loading %s.....', project)
-            out = self.project_store[project].load_model()
-            if out:
-                logger.debug('Loaded successfully')
-            else:
-                logger.debug('Loading failed')
-        return None
+            if project in projects or 'all' in projects:
+                logger.debug('Loading %s.....', project)
+                out = self.project_store[project].load_model()
+                if out:
+                    logger.debug('Loaded successfully')
+                else:
+                    logger.debug('Loading failed')
 
     def _list_projects_in_cloud(self):
         try:
