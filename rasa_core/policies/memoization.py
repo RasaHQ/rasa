@@ -19,7 +19,6 @@ from rasa_core.policies.policy import Policy
 from rasa_core import utils
 from rasa_core.featurizers import \
     TrackerFeaturizer, MaxHistoryTrackerFeaturizer
-from rasa_core.events import ActionExecuted
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +26,7 @@ if typing.TYPE_CHECKING:
     from rasa_core.trackers import DialogueStateTracker
     from rasa_core.domain import Domain
 
-ENABLE_FEATURE_STRING_COMPRESSION = True
+ENABLE_FEATURE_STRING_COMPRESSION = False
 
 
 class MemoizationPolicy(Policy):
@@ -56,7 +55,7 @@ class MemoizationPolicy(Policy):
 
     def _preprocess_states(self, states):
         # to be used in augmented Memoization
-        return states
+        return [states]
 
     def _add(self, trackers_as_states, trackers_as_actions,
              domain, online=False):
