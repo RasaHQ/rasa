@@ -252,10 +252,10 @@ class EmbeddingPolicy(Policy):
 
         def probability_fn(score):
             p = tf.sigmoid(score)
-            zeros = tf.zeros_like(p)
-            p = tf.where(p < 0.1, zeros, p)
-            ones = tf.ones_like(p)
-            p = tf.where(p > 0.9, 0.9 * ones, p)
+            # zeros = tf.zeros_like(p)
+            # p = tf.where(p < 0.1, zeros, p)
+            # ones = tf.ones_like(p)
+            # p = tf.where(p > 0.9, 0.9 * ones, p)
             return p
 
         num_mem_units = int(emb_utter.shape[-1])
@@ -267,7 +267,8 @@ class EmbeddingPolicy(Policy):
         )
 
         def cell_input_fn(inputs, attention, inv_norm):
-            res = tf.concat([inv_norm * inputs[:, :num_mem_units] +
+            # res = tf.concat([inv_norm * inputs[:, :num_mem_units] +
+            res = tf.concat([inputs[:, :num_mem_units] +
                              attention[:, :num_mem_units],
                              inputs[:, num_mem_units:]], -1)
             return res
@@ -701,7 +702,7 @@ def _compute_time_attention(attention_mechanism, cell_output,
     alignments *= until_time
 
     norm = tf.reduce_sum(alignments, -1, keepdims=True) + 1.0
-    alignments /= norm
+    #alignments /= norm
 
     # Reshape from [batch_size, memory_time] to [batch_size, 1, memory_time]
     expanded_alignments = tf.expand_dims(alignments, 1)
