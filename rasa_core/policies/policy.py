@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 class Policy(object):
     SUPPORTS_ONLINE_TRAINING = False
-    MAX_HISTORY_DEFAULT = 3
+    MAX_HISTORY_DEFAULT = 5
 
     @classmethod
     def _standard_featurizer(cls):
