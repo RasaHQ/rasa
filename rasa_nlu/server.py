@@ -368,14 +368,17 @@ if __name__ == '__main__':
     cmdline_args = create_argument_parser().parse_args()
 
     utils.configure_colored_logging(cmdline_args.loglevel)
-    logger.debug(cmdline_args)
+    pre_load = cmdline_args.pre_load
 
     router = DataRouter(cmdline_args.path,
                         cmdline_args.max_training_processes,
                         cmdline_args.response_log,
                         cmdline_args.emulate,
-                        cmdline_args.storage,
-                        pre_load=cmdline_args.pre_load)
+                        cmdline_args.storage)
+    if pre_load:
+        logger.debug('Preloading....')
+        router._pre_load(pre_load)
+
     rasa = RasaNLU(
             router,
             cmdline_args.loglevel,
