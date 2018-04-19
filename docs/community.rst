@@ -1,7 +1,7 @@
 .. _section_community:
 
 Community Contributions
-============
+=======================
 
 .. note::
     This is an (incomplete) list of external resources created by the Rasa community. 
@@ -11,7 +11,7 @@ Community Contributions
 
 
 Community Written Documentation
-^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 - A three part tutorial on using Rasa NLU in combination with Node-RED to create a basic chat bot and integrate it with Slack and Twilio.

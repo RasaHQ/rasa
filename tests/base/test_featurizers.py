@@ -8,7 +8,9 @@ import os
 import numpy as np
 import pytest
 
-from rasa_nlu import training_data
+from rasa_nlu import training_data, config
+from rasa_nlu.config import RasaNLUModelConfig
+from rasa_nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa_nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
@@ -24,6 +26,17 @@ def test_spacy_featurizer(sentence, expected, spacy_nlp):
     vecs = spacy_featurizer.features_for_doc(doc)
     assert np.allclose(doc.vector[:5], expected, atol=1e-5)
     assert np.allclose(vecs, doc.vector, atol=1e-5)
+
+
+def test_mitie_featurizer(mitie_feature_extractor, default_config):
+    from rasa_nlu.featurizers.mitie_featurizer import MitieFeaturizer
+
+    ftr = MitieFeaturizer.create(config.load("sample_configs/config_mitie.yml"))
+    sentence = "Hey how are you today"
+    tokens = MitieTokenizer().tokenize(sentence)
+    vecs = ftr.features_for_tokens(tokens, mitie_feature_extractor)
+    expected = np.array([0., -4.4551446, 0.26073121, -1.46632245, -1.84205751])
+    assert np.allclose(vecs[:5], expected, atol=1e-5)
 
 
 def test_ngram_featurizer(spacy_nlp):
@@ -113,6 +126,7 @@ def test_spacy_featurizer_casing(spacy_nlp):
     ("hello hello hello hello hello ", [5]),
     ("hello goodbye hello", [1, 2]),
     ("a b c d e f", [1, 1, 1, 1, 1, 1]),
+    ("a 1 2", [2, 1])
 ])
 def test_count_vector_featurizer(sentence, expected):
     from rasa_nlu.featurizers.count_vectors_featurizer import \

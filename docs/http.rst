@@ -1,6 +1,6 @@
 .. _section_http:
 
-Using rasa NLU as a HTTP server
+Using Rasa NLU as a HTTP server
 ===============================
 
 .. note::
@@ -8,7 +8,7 @@ Using rasa NLU as a HTTP server
     Before you can use the server, you should train a model!
     See :ref:`training_your_model`
 
-The HTTP api exists to make it easy for non-python projects to use rasa NLU,
+The HTTP api exists to make it easy for non-python projects to use Rasa NLU,
 and to make it trivial for projects currently using wit/LUIS/Dialogflow
 to try it out.
 
@@ -27,7 +27,7 @@ trained model.
 
 Emulation
 ---------
-rasa NLU can 'emulate' any of these three services by making the ``/parse``
+Rasa NLU can 'emulate' any of these three services by making the ``/parse``
 endpoint compatible with your existing code. To activate this, either add
 ``'emulate' : 'luis'`` to your config file or run the server with ``-e luis``.
 For example, if you would normally send your text to be parsed to LUIS,
@@ -35,7 +35,7 @@ you would make a ``GET`` request to
 
 ``https://api.projectoxford.ai/luis/v2.0/apps/<app-id>?q=hello%20there``
 
-in luis emulation mode you can call rasa by just sending this request to 
+in luis emulation mode you can call Rasa by just sending this request to
 
 ``http://localhost:5000/parse?q=hello%20there``
 
@@ -64,16 +64,16 @@ By default, when the project is not specified in the query, the
 ``"default"`` one will be used.
 You can (should) specify the project you want to use in your query :
 
-.. code-block:: bash
+.. code-block:: console
 
-    $ curl -XPOST localhost:5000/parse -d '{"q":"hello there", "project": "my_restaurant_search_bot"}
+    $ curl -XPOST localhost:5000/parse -d '{"q":"hello there", "project": "my_restaurant_search_bot"}'
 
 By default the latest trained model for the project will be loaded.
 You can also query against a specific model for a project :
 
-.. code-block:: bash
+.. code-block:: console
 
-    $ curl -XPOST localhost:5000/parse -d '{"q":"hello there", "project": "my_restaurant_search_bot", "model": <model_XXXXXX>}
+    $ curl -XPOST localhost:5000/parse -d '{"q":"hello there", "project": "my_restaurant_search_bot", "model": "<model_XXXXXX>"}'
 
 
 ``POST /train``
@@ -190,7 +190,7 @@ This will return the default model configuration of the Rasa NLU instance.
 
     $ curl localhost:5000/config | python -mjson.tool
     {
-        "config": "/app/rasa_shared/config_spacy_sklearn.json",
+        "config": "/app/rasa_shared/config_mitie.json",
         "data": "/app/rasa_nlu/data/examples/rasa/demo-rasa.json",
         "duckling_dimensions": null,
         "emulate": null,
@@ -198,7 +198,7 @@ This will return the default model configuration of the Rasa NLU instance.
       }
 
 ``DELETE /models``
-^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
 
 This will unload a model from the server memory
 
@@ -210,14 +210,14 @@ This will unload a model from the server memory
 
 Authorization
 -------------
-To protect your server, you can specify a token in your rasa NLU configuration, e.g. by adding ``"token" : "12345"`` to your config file, or by setting the ``RASA_TOKEN`` environment variable.
+To protect your server, you can specify a token in your Rasa NLU configuration, e.g. by adding ``"token" : "12345"`` to your config file, or by setting the ``RASA_TOKEN`` environment variable.
 If set, this token must be passed as a query parameter in all requests, e.g. :
 
 .. code-block:: bash
 
     $ curl localhost:5000/status?token=12345
 
-On default CORS (cross-origin resource sharing) calls are not allowed. If you want to call your rasa NLU server from another domain (for example from a training web UI) then you can whitelist that domain by adding it to the config value ``cors_origin``.
+On default CORS (cross-origin resource sharing) calls are not allowed. If you want to call your Rasa NLU server from another domain (for example from a training web UI) then you can whitelist that domain by adding it to the config value ``cors_origin``.
 
 
 .. _section_http_config:
@@ -225,27 +225,29 @@ On default CORS (cross-origin resource sharing) calls are not allowed. If you wa
 Serving Multiple Apps
 ---------------------
 
-Depending on your choice of backend, rasa NLU can use quite a lot of memory.
+Depending on your choice of backend, Rasa NLU can use quite a lot of memory.
 So if you are serving multiple models in production, you want to serve these
 from the same process & avoid duplicating the memory load.
 
 .. note::
-Although this saves the backend from loading the same backend twice, it still needs to load one set of
+
+    Although this saves the backend from loading the same backend twice, it still needs to load one set of
     word vectors (which make up most of the memory consumption) per language and backend.
 
 As stated previously, Rasa NLU naturally handles serving multiple apps : by default the server will load all projects found
 under the ``path`` directory defined in the configuration. The file structure under ``path directory`` is as follows :
 
-- <path>
- - <project_A>
-  - <model_XXXXXX>
-  - <model_XXXXXX>
-   ...
- - <project_B>
-  - <model_XXXXXX>
-   ...
-  ...
+.. code-block:: text
 
+    - <path>
+     - <project_A>
+      - <model_XXXXXX>
+      - <model_XXXXXX>
+       ...
+     - <project_B>
+      - <model_XXXXXX>
+       ...
+      ...
 
 So you can specify which one to use in your ``/parse`` requests:
 
@@ -267,13 +269,14 @@ You can also specify the model you want to use for a given project, the default 
 
 If no project is to be found by the server under the ``path`` directory, a ``"default"`` one will be used, using a simple fallback model.
 
+.. _server_parameters:
 
 Server Parameters
 -----------------
 
 There are a number of parameters you can pass when running the server.
 
-.. code-block:: bash
+.. code-block:: console
 
     $ python -m rasa_nlu.server
 

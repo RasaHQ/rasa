@@ -44,6 +44,14 @@ def app(component_builder):
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
+            "http://dummy-uri/parse?q=food&project=test_project_mitie",
+            {"entities": [], "intent": "affirm", "text": "food"}
+    ),
+    ResponseTest(
+            "http://dummy-uri/parse?q=food&project=test_project_mitie_sklearn",
+            {"entities": [], "intent": "restaurant_search", "text": "food"}
+    ),
+    ResponseTest(
             "http://dummy-uri/parse?q=food&project=test_project_spacy_sklearn",
             {"entities": [], "intent": "restaurant_search", "text": "food"}
     ),
@@ -78,6 +86,16 @@ def test_get_parse_invalid_model(app, response_test):
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
             "http://dummy-uri/parse",
+            {"entities": [], "intent": "affirm", "text": "food"},
+            payload={"q": "food", "project": "test_project_mitie"}
+    ),
+    ResponseTest(
+            "http://dummy-uri/parse",
+            {"entities": [], "intent": "restaurant_search", "text": "food"},
+            payload={"q": "food", "project": "test_project_mitie_sklearn"}
+    ),
+    ResponseTest(
+            "http://dummy-uri/parse",
             {"entities": [], "intent": "restaurant_search", "text": "food"},
             payload={"q": "food", "project": "test_project_spacy_sklearn"}
     ),
@@ -96,13 +114,20 @@ def test_post_parse_specific_model(app):
     sjs = yield status.json()
     project = sjs["available_projects"]["test_project_spacy_sklearn"]
     model = project["available_models"][0]
+
     query = ResponseTest("http://dummy-uri/parse",
                          {"entities": [], "intent": "affirm", "text": "food"},
                          payload={"q": "food",
                                   "project": "test_project_spacy_sklearn",
                                   "model": model})
+
     response = yield app.post(query.endpoint, json=query.payload)
     assert response.code == 200
+
+    # check that that model now is loaded in the server
+    status = yield app.get("http://dummy-uri/status")
+    sjs = yield status.json()
+    project = sjs["available_projects"]["test_project_spacy_sklearn"]
     assert model in project["loaded_models"]
 
 
@@ -140,3 +165,5 @@ def train_models(component_builder, data):
         trainer.persist("test_projects", project_name=project_name)
 
     train("sample_configs/config_spacy.yml", "test_project_spacy_sklearn")
+    train("sample_configs/config_mitie.yml", "test_project_mitie")
+    train("sample_configs/config_mitie_sklearn.yml", "test_project_mitie_sklearn")

@@ -102,7 +102,7 @@ class DucklingHTTPExtractor(EntityExtractor):
     def process(self, message, **kwargs):
         # type: (Message, **Any) -> None
 
-        if self.component_config["url"] is not None:
+        if self._url() is not None:
             matches = self._duckling_parse(message.text)
             dimensions = self.component_config["dimensions"]
             relevant_matches = filter_irrelevant_matches(matches, dimensions)
@@ -110,8 +110,9 @@ class DucklingHTTPExtractor(EntityExtractor):
         else:
             extracted = []
             logger.warn("Duckling HTTP component in pipeline, but no "
-                        "`duckling_http_url` configuration in the config "
-                        "file.")
+                        "`url` configuration in the config "
+                        "file nor is `RASA_DUCKLING_HTTP_URL` "
+                        "set as an environment variable.")
 
         extracted = self.add_extractor_name(extracted)
         message.set("entities",

@@ -1,8 +1,8 @@
 .. _section_python:
 
-Using rasa NLU from python
+Using Rasa NLU from python
 ==========================
-Apart from running rasa NLU as a HTTP server you can use it directly in your python program.
+Apart from running Rasa NLU as a HTTP server you can use it directly in your python program.
 Rasa NLU supports both Python 2 and 3.
 
 Training Time
@@ -25,7 +25,7 @@ Or, you can train directly in python with a script like the following (using spa
 Prediction Time
 ---------------
 
-You can call rasa NLU directly from your python script. To do so, you need to load the metadata of
+You can call Rasa NLU directly from your python script. To do so, you need to load the metadata of
 your model and instantiate an interpreter. The ``metadata.json`` in your model dir contains the
 necessary info to recover your model:
 
