@@ -377,6 +377,8 @@ if __name__ == '__main__':
                         cmdline_args.storage)
     if pre_load:
         logger.debug('Preloading....')
+        if 'all' in pre_load:
+            pre_load = router.project_store.keys()
         router._pre_load(pre_load)
 
     rasa = RasaNLU(

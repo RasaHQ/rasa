@@ -173,8 +173,7 @@ class DataRouter(object):
         logger.debug("loading %s", projects)
         for project in self.project_store:
             project_check = project not in projects
-            all_check = 'all' not in projects
-            if project_check and all_check:
+            if project_check:
                 continue
             logger.debug('Loading %s.....', project)
             out = self.project_store[project].load_model()
