@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import io
 import os
 
+import json
 import numpy as np
 
 from rasa_core.training import extract_story_graph
@@ -125,6 +126,7 @@ def test_generate_training_data_with_cycles(tmpdir, default_domain):
         default_domain,
         augmentation_factor=0
     )
+    # TODO for some reason sometimes it creates 1 or 2 trackers
     assert len(training_trackers) == 2
 
     training_data = featurizer.featurize_trackers(training_trackers,
@@ -158,27 +160,44 @@ def test_visualize_training_data_graph(tmpdir, default_domain):
 def test_load_multi_file_training_data(default_domain):
     # the stories file in `data/test_multifile_stories` is the same as in
     # `data/test_stories/stories.md`, but split across multiple files
-    featurizer = MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
-                                             max_history=2)
+    featurizer = MaxHistoryTrackerFeaturizer(
+        BinarySingleStateFeaturizer(), max_history=2)
     trackers, _ = PolicyTrainer.extract_trackers(
         "data/test_stories/stories.md",
-        default_domain
+        default_domain,
+        augmentation_factor=0
     )
+    (tr_as_sts, tr_as_acts) = featurizer.training_states_and_actions(
+                                        trackers, default_domain)
+    hashed = []
+    for sts, acts in zip(tr_as_sts, tr_as_acts):
+        hashed.append(json.dumps(sts + acts, sort_keys=True))
+    hashed = sorted(hashed, reverse=True)
+
     data = featurizer.featurize_trackers(trackers,
                                          default_domain)
 
-    featurizer_mul = MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
-                                                 max_history=2)
+    featurizer_mul = MaxHistoryTrackerFeaturizer(
+        BinarySingleStateFeaturizer(), max_history=2)
     trackers_mul, _ = PolicyTrainer.extract_trackers(
         "data/test_multifile_stories",
-        default_domain
+        default_domain,
+        augmentation_factor=0
     )
+    (tr_as_sts_mul, tr_as_acts_mul) = featurizer.training_states_and_actions(
+                                        trackers_mul, default_domain)
+    hashed_mul = []
+    for sts_mul, acts_mul in zip(tr_as_sts_mul, tr_as_acts_mul):
+        hashed_mul.append(json.dumps(sts_mul + acts_mul, sort_keys=True))
+    hashed_mul = sorted(hashed_mul, reverse=True)
+
     data_mul = featurizer_mul.featurize_trackers(trackers_mul,
                                                  default_domain)
 
-    # TODO do we want to assert if trackers are the same?
-    assert np.all(data.X == data_mul.X)
-    assert np.all(data.y == data_mul.y)
+    assert hashed == hashed_mul
+
+    assert np.all(data.X.sort(axis=0) == data_mul.X.sort(axis=0))
+    assert np.all(data.y.sort(axis=0) == data_mul.y.sort(axis=0))
 
 
 def test_load_training_data_handles_hidden_files(tmpdir, default_domain):

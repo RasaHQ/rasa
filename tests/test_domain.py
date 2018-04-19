@@ -3,7 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import numpy as np
+import json
 import pytest
 
 from rasa_core.domain import TemplateDomain
@@ -24,22 +24,29 @@ def test_create_train_data_no_history(default_domain):
     (decoded, _) = featurizer.training_states_and_actions(
             training_trackers, default_domain)
 
-    assert decoded == [
-        [None],
-        [[('intent_goodbye', 1), ('prev_utter_goodbye', 1)]],
-        [[('intent_goodbye', 1), ('prev_action_listen', 1)]],
-        [[('intent_default', 1), ('prev_utter_default', 1)]],
-        [[('intent_default', 1), ('prev_action_listen', 1)]],
-        [[('intent_default', 1), ('slot_name_0', 1),
-          ('prev_utter_default', 1)]],
-        [[('intent_default', 1), ('slot_name_0', 1),
-          ('prev_action_listen', 1)]],
-        [[('intent_greet', 1), ('prev_utter_greet', 1)]],
-        [[('intent_greet', 1), ('prev_action_listen', 1)]],
-        [[('intent_greet', 1), ('entity_name', 1), ('slot_name_0', 1),
-          ('prev_utter_greet', 1)]],
-        [[('intent_greet', 1), ('entity_name', 1), ('slot_name_0', 1),
-          ('prev_action_listen', 1)]]]
+    # decoded needs to be sorted
+    hashed = []
+    for states in decoded:
+        hashed.append(json.dumps(states, sort_keys=True))
+    hashed = sorted(hashed, reverse=True)
+
+    assert hashed == [
+        '[{}]',
+        '[{"intent_greet": 1.0, "prev_utter_greet": 1}]',
+        '[{"intent_greet": 1.0, "prev_action_listen": 1}]',
+        '[{"intent_goodbye": 1.0, "prev_utter_goodbye": 1}]',
+        '[{"intent_goodbye": 1.0, "prev_action_listen": 1}]',
+        '[{"intent_default": 1.0, "prev_utter_default": 1}]',
+        '[{"intent_default": 1.0, "prev_utter_default": 1, '
+        '"slot_name_0": 1.0}]',
+        '[{"intent_default": 1.0, "prev_action_listen": 1}]',
+        '[{"intent_default": 1.0, "prev_action_listen": 1, '
+        '"slot_name_0": 1.0}]',
+        '[{"entity_name": 1.0, "intent_greet": 1.0, '
+        '"prev_utter_greet": 1, "slot_name_0": 1.0}]',
+        '[{"entity_name": 1.0, "intent_greet": 1.0, '
+        '"prev_action_listen": 1, "slot_name_0": 1.0}]'
+    ]
 
 
 def test_create_train_data_with_history(default_domain):
@@ -52,68 +59,58 @@ def test_create_train_data_with_history(default_domain):
     assert len(training_trackers) == 3
     (decoded, _) = featurizer.training_states_and_actions(
         training_trackers, default_domain)
-    (decoded, _) = featurizer.training_states_and_actions(
-        training_trackers, default_domain)
 
-    assert decoded == [
-        [
-            None,
-            [(u'intent_greet', 1), (u'prev_action_listen', 1)],
-            [(u'intent_greet', 1), (u'prev_utter_greet', 1)],
-            [(u'intent_default', 1), (u'prev_action_listen', 1)]],
-        [
-            None,
-            [(u'intent_greet', 1), (u'entity_name', 1), (u'slot_name_0', 1),
-             (u'prev_action_listen', 1)],
-            [(u'intent_greet', 1), (u'entity_name', 1), (u'slot_name_0', 1),
-             (u'prev_utter_greet', 1)],
-            [(u'intent_default', 1), (u'slot_name_0', 1),
-             (u'prev_action_listen', 1)]],
-        [
-            [(u'intent_default', 1), (u'prev_action_listen', 1)],
-            [(u'intent_default', 1), (u'prev_utter_default', 1)],
-            [(u'intent_goodbye', 1), (u'prev_action_listen', 1)],
-            [(u'intent_goodbye', 1), (u'prev_utter_goodbye', 1)]],
-        [
-            [(u'intent_greet', 1), (u'prev_utter_greet', 1)],
-            [(u'intent_default', 1), (u'prev_action_listen', 1)],
-            [(u'intent_default', 1), (u'prev_utter_default', 1)],
-            [(u'intent_goodbye', 1), (u'prev_action_listen', 1)]],
-        [
-            [(u'intent_greet', 1), (u'prev_action_listen', 1)],
-            [(u'intent_greet', 1), (u'prev_utter_greet', 1)],
-            [(u'intent_default', 1), (u'prev_action_listen', 1)],
-            [(u'intent_default', 1), (u'prev_utter_default', 1)]],
-        [
-            [(u'intent_greet', 1), (u'entity_name', 1), (u'slot_name_0', 1),
-             (u'prev_action_listen', 1)],
-            [(u'intent_greet', 1), (u'entity_name', 1), (u'slot_name_0', 1),
-             (u'prev_utter_greet', 1)],
-            [(u'intent_default', 1), (u'slot_name_0', 1),
-             (u'prev_action_listen', 1)],
-            [(u'intent_default', 1), (u'slot_name_0', 1),
-             (u'prev_utter_default', 1)]],
-        [
-            None,
-            None,
-            [(u'intent_greet', 1), (u'prev_action_listen', 1)],
-            [(u'intent_greet', 1), (u'prev_utter_greet', 1)]],
-        [
-            None,
-            None,
-            [(u'intent_greet', 1), (u'entity_name', 1), (u'slot_name_0', 1),
-             (u'prev_action_listen', 1)],
-            [(u'intent_greet', 1), (u'entity_name', 1), (u'slot_name_0', 1),
-             (u'prev_utter_greet', 1)]],
-        [
-            None, None, None, None],
-        [
-            None, None, None,
-            [(u'intent_greet', 1), (u'prev_action_listen', 1)]],
-        [
-            None, None, None,
-            [(u'intent_greet', 1), (u'entity_name', 1), (u'slot_name_0', 1),
-             (u'prev_action_listen', 1)]]]
+    # decoded needs to be sorted
+    hashed = []
+    for states in decoded:
+        hashed.append(json.dumps(states, sort_keys=True))
+    hashed = sorted(hashed, reverse=True)
+
+    assert hashed == [
+        '[null, null, null, {}]',
+        '[null, null, {}, '
+        '{"entity_name": 1.0, "intent_greet": 1.0, '
+        '"prev_action_listen": 1, "slot_name_0": 1.0}]',
+        '[null, null, {}, '
+        '{"intent_greet": 1.0, "prev_action_listen": 1}]',
+        '[null, {}, '
+        '{"entity_name": 1.0, "intent_greet": 1.0, '
+        '"prev_action_listen": 1, "slot_name_0": 1.0}, '
+        '{"entity_name": 1.0, "intent_greet": 1.0, '
+        '"prev_utter_greet": 1, "slot_name_0": 1.0}]',
+        '[null, {}, '
+        '{"intent_greet": 1.0, "prev_action_listen": 1}, '
+        '{"intent_greet": 1.0, "prev_utter_greet": 1}]',
+        '[{"entity_name": 1.0, "intent_greet": 1.0, '
+        '"prev_action_listen": 1, "slot_name_0": 1.0}, '
+        '{"entity_name": 1.0, "intent_greet": 1.0, '
+        '"prev_utter_greet": 1, "slot_name_0": 1.0}, '
+        '{"intent_default": 1.0, '
+        '"prev_action_listen": 1, "slot_name_0": 1.0}, '
+        '{"intent_default": 1.0, '
+        '"prev_utter_default": 1, "slot_name_0": 1.0}]',
+        '[{"intent_default": 1.0, "prev_action_listen": 1}, '
+        '{"intent_default": 1.0, "prev_utter_default": 1}, '
+        '{"intent_goodbye": 1.0, "prev_action_listen": 1}, '
+        '{"intent_goodbye": 1.0, "prev_utter_goodbye": 1}]',
+        '[{"intent_greet": 1.0, "prev_action_listen": 1}, '
+        '{"intent_greet": 1.0, "prev_utter_greet": 1}, '
+        '{"intent_default": 1.0, "prev_action_listen": 1}, '
+        '{"intent_default": 1.0, "prev_utter_default": 1}]',
+        '[{"intent_greet": 1.0, "prev_utter_greet": 1}, '
+        '{"intent_default": 1.0, "prev_action_listen": 1}, '
+        '{"intent_default": 1.0, "prev_utter_default": 1}, '
+        '{"intent_goodbye": 1.0, "prev_action_listen": 1}]',
+        '[{}, {"entity_name": 1.0, "intent_greet": 1.0, '
+        '"prev_action_listen": 1, "slot_name_0": 1.0}, '
+        '{"entity_name": 1.0, "intent_greet": 1.0, '
+        '"prev_utter_greet": 1, "slot_name_0": 1.0}, '
+        '{"intent_default": 1.0, '
+        '"prev_action_listen": 1, "slot_name_0": 1.0}]',
+        '[{}, {"intent_greet": 1.0, "prev_action_listen": 1}, '
+        '{"intent_greet": 1.0, "prev_utter_greet": 1}, '
+        '{"intent_default": 1.0, "prev_action_listen": 1}]'
+    ]
 
 
 def test_domain_from_template():

@@ -30,11 +30,8 @@
 ## show_it_all
 > check_greet
 > check_hello                   <!-- allows multiple entry points -->
-
 * next_intent
     - utter_greet              <!-- actions taken by the bot -->
-
 > check_intermediate            <!-- allows intermediate checkpoints -->
-
 * change_bank_details
     - utter_default            <!-- allows to end without checkpoints -->

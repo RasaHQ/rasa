@@ -24,6 +24,7 @@ def test_story_visualization(default_domain):
                                         output_file=None,
                                         max_history=3,
                                         should_merge_nodes=False)
+    # TODO I output the graph, and it looks correct
     assert len(generated_graph.nodes()) == 33
 
     assert len(generated_graph.edges()) == 36
