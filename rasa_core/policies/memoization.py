@@ -26,7 +26,7 @@ if typing.TYPE_CHECKING:
     from rasa_core.trackers import DialogueStateTracker
     from rasa_core.domain import Domain
 
-ENABLE_FEATURE_STRING_COMPRESSION = False
+ENABLE_FEATURE_STRING_COMPRESSION = True
 
 
 class MemoizationPolicy(Policy):
