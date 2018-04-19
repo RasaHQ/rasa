@@ -50,7 +50,7 @@ def convert_duckling_format_to_rasa(matches):
         value = extract_value(match)
         entity = {"start": match["start"],
                   "end": match["end"],
-                  "text": match["body"],
+                  "text": match["text"],
                   "value": value,
                   "confidence": 1.0,
                   "additional_info": match["value"],
