@@ -14,6 +14,8 @@ from rasa_core.channels import UserMessage
 from rasa_core.domain import TemplateDomain
 from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.memoization import MemoizationPolicy
+from rasa_core.policies.augmented_memoization import \
+    AugmentedMemoizationPolicy
 from rasa_core.policies.sklearn_policy import SklearnPolicy
 from rasa_core.trackers import DialogueStateTracker
 from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
@@ -95,6 +97,16 @@ class TestKerasPolicy(PolicyTestCollection):
     @pytest.fixture(scope="module")
     def create_policy(self, featurizer):
         p = KerasPolicy(featurizer)
+        return p
+
+
+class TestScoringPolicy(PolicyTestCollection):
+    @pytest.fixture(scope="module")
+    def create_policy(self, featurizer):
+        max_history = None
+        if isinstance(featurizer, MaxHistoryTrackerFeaturizer):
+            max_history = featurizer.max_history
+        p = AugmentedMemoizationPolicy(max_history)
         return p
 
 

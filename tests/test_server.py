@@ -14,9 +14,11 @@ from treq.testing import StubTreq
 
 import rasa_core
 from rasa_core.agent import Agent
-from rasa_core.events import UserUttered, BotUttered, SlotSet, TopicSet, Event
+from rasa_core.events import \
+    UserUttered, BotUttered, SlotSet, TopicSet, Event
 from rasa_core.interpreter import RegexInterpreter
-from rasa_core.policies.memoization import MemoizationPolicy
+from rasa_core.policies.augmented_memoization import \
+    AugmentedMemoizationPolicy
 from rasa_core.server import RasaCoreServer
 from tests.conftest import DEFAULT_STORIES_FILE
 
@@ -50,7 +52,7 @@ def core_server(tmpdir_factory):
     model_path = tmpdir_factory.mktemp("model").strpath
 
     agent = Agent("data/test_domains/default_with_topic.yml",
-                  policies=[MemoizationPolicy()])
+                  policies=[AugmentedMemoizationPolicy()])
 
     agent.train(DEFAULT_STORIES_FILE, max_history=3)
     agent.persist(model_path)

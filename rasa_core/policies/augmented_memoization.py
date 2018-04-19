@@ -3,23 +3,12 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import base64
-import io
-import json
 import logging
-import os
-import zlib
 import typing
-from tqdm import tqdm
 
-from builtins import bytes
 from typing import Optional, Any, Dict, List, Text
 
-from rasa_core.policies.policy import Policy
-from rasa_core import utils
 from rasa_core.policies.memoization import MemoizationPolicy
-from rasa_core.featurizers import \
-    TrackerFeaturizer, MaxHistoryTrackerFeaturizer
 from rasa_core.events import ActionExecuted
 
 logger = logging.getLogger(__name__)

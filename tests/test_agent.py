@@ -5,14 +5,15 @@ from __future__ import unicode_literals
 
 from rasa_core.agent import Agent
 from rasa_core.interpreter import RegexInterpreter, INTENT_MESSAGE_PREFIX
-from rasa_core.policies.memoization import MemoizationPolicy
+from rasa_core.policies.augmented_memoization import \
+    AugmentedMemoizationPolicy
 from rasa_core.tracker_store import InMemoryTrackerStore
 
 
 def test_agent_train(tmpdir, default_domain):
     training_data_file = 'examples/moodbot/data/stories.md'
     agent = Agent("examples/moodbot/domain.yml",
-                  policies=[MemoizationPolicy()])
+                  policies=[AugmentedMemoizationPolicy()])
 
     agent.train(training_data_file)
     agent.persist(tmpdir.strpath)
