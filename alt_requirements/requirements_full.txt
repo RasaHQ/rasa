@@ -8,4 +8,4 @@
 -r requirements_tensorflow_sklearn.txt
 
 Jpype1==0.6.2
-duckling==1.7.3
+duckling==1.8.0
