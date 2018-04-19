@@ -251,7 +251,7 @@ class EmbeddingPolicy(Policy):
         )
 
         def probability_fn(score):
-            p = tf.sigmoid(score)
+            p = tf.nn.relu(tf.tanh(score))
             return p
 
         num_mem_units = int(emb_utter.shape[-1])
@@ -292,8 +292,8 @@ class EmbeddingPolicy(Policy):
             emb_act = tf.nn.l2_normalize(emb_act, -1)
             emb_dial = tf.nn.l2_normalize(emb_dial, -1)
 
-        if (self.similarity_type == 'cosine'
-                or self.similarity_type == 'inner'):
+        if (self.similarity_type == 'cosine' or
+                self.similarity_type == 'inner'):
             sim = tf.reduce_sum(tf.expand_dims(emb_dial, -2) * emb_act, -1)
             sim *= tf.expand_dims(mask, 2)
 
@@ -371,6 +371,7 @@ class EmbeddingPolicy(Policy):
         mask = tf.sign(tf.reduce_max(a_in, -1) + 1)
         real_length = tf.cast(tf.reduce_sum(mask, 1), tf.int32)
 
+        # create rnn
         cell_output, final_context_state = self._create_rnn(
                 emb_utter, emb_extras, real_length)
 
@@ -689,17 +690,13 @@ def _compute_time_attention(attention_mechanism, cell_output,
     alignments, next_attention_state = attention_mechanism(
       cell_output, state=attention_state)
 
-    # time_oh = tf.one_hot(time, alignments.shape[-1])
-    # until_time = tf.cumprod(1 - time_oh, exclusive=True)
-    # print(until_time.shape)
-
+    t = time + 1
     ones = tf.ones_like(alignments[0])
     zeros = tf.zeros_like(alignments[0])
-    t = time + 1
     until_time = tf.concat([ones[:t], zeros[t:]], 0)
-
     alignments *= until_time
-    norm = tf.reduce_sum(alignments, -1, keepdims=True) + 1
+
+    norm = tf.reduce_sum(alignments, -1, keepdims=True) + 1.0
     alignments /= norm
 
     # Reshape from [batch_size, memory_time] to [batch_size, 1, memory_time]
@@ -722,7 +719,7 @@ def _compute_time_attention(attention_mechanism, cell_output,
     else:
         attention = context
 
-    alignments = tf.concat([alignments[:, :-1], 1/norm], 1)
+    alignments = tf.concat([alignments[:, :-1], 1.0 / norm], 1)
     return attention, alignments, next_attention_state
 
 
@@ -766,7 +763,8 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         # previous attention value.
 
         ones = tf.ones_like(state.alignments[:, -1:])
-        inv_norm = tf.where(state.alignments[:, -1:] > 0, state.alignments[:, -1:], ones)
+        inv_norm = tf.where(state.alignments[:, -1:] > 0,
+                            state.alignments[:, -1:], ones)
 
         cell_inputs = self._cell_input_fn(inputs, state.attention, inv_norm)
         cell_state = state.cell_state
@@ -799,7 +797,8 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         maybe_all_histories = []
         for i, attention_mechanism in enumerate(self._attention_mechanisms):
             attention, alignments, next_attention_state = _compute_time_attention(
-                attention_mechanism, cell_output, previous_attention_state[i], state.time,
+                attention_mechanism, cell_output, previous_attention_state[i],
+                state.time,  # time is added to calculate time attention
                 self._attention_layers[i] if self._attention_layers else None)
 
             alignment_history = previous_alignment_history[i].write(

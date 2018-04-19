@@ -62,14 +62,14 @@ class SklearnPolicy(Policy):
     SUPPORTS_ONLINE_TRAINING = False
 
     def __init__(
-            self,
-            featurizer=None,  # type: Optional[MaxHistoryTrackerFeaturizer]
-            model=LogisticRegression(),  # type: sklearn.base.ClassifierMixin
-            param_grid=None,  # type: Optional[Dict[Text, List] or List[Dict]]
-            cv=None,  # type: Optional[int]
-            scoring='accuracy',  # type: Optional[Text or List or Dict or Callable]
-            label_encoder=LabelEncoder(),  # type: sklearn.base.TransformerMixin
-            shuffle=True,  # type: bool
+        self,
+        featurizer=None,  # type: Optional[MaxHistoryTrackerFeaturizer]
+        model=LogisticRegression(),  # type: sklearn.base.ClassifierMixin
+        param_grid=None,  # type: Optional[Dict[Text, List] or List[Dict]]
+        cv=None,  # type: Optional[int]
+        scoring='accuracy',  # type: Optional[Text or List or Dict or Callable]
+        label_encoder=LabelEncoder(),  # type: sklearn.base.TransformerMixin
+        shuffle=True,  # type: bool
     ):
         if featurizer:
             assert isinstance(featurizer, MaxHistoryTrackerFeaturizer), \

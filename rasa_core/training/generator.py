@@ -221,8 +221,12 @@ class TrainingsDataGenerator(object):
                 next_active_trackers[start].append(t)
         return next_active_trackers
 
-    def _process_step(self, step, incoming_trackers):
-        # type: (StoryStep, List[DialogueStateTracker]) -> List[DialogueStateTracker]
+    def _process_step(
+            self,
+            step,  # type: StoryStep
+            incoming_trackers  # type: List[DialogueStateTracker]
+    ):
+        # type: (...) -> List[DialogueStateTracker]
         """Processes a steps events with all trackers.
 
         The trackers that reached the steps starting checkpoint will

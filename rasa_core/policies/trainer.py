@@ -95,4 +95,3 @@ class PolicyTrainer(object):
             return g.generate()
         else:
             return [], None
-

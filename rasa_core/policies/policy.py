@@ -35,7 +35,8 @@ class Policy(object):
 
     @classmethod
     def _create_featurizer(cls, featurizer=None):
-        return deepcopy(featurizer) if featurizer else cls._standard_featurizer()
+        return deepcopy(featurizer) \
+               if featurizer else cls._standard_featurizer()
 
     def __init__(self, featurizer=None):
         # type: (Optional[TrackerFeaturizer]) -> None

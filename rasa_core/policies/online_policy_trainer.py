@@ -61,9 +61,11 @@ class OnlinePolicyTrainer(PolicyTrainer):
         )
 
         self.ensemble.train(training_trackers, events_metadata, self.domain,
-                            max_training_samples=max_training_samples, **kwargs)
+                            max_training_samples=max_training_samples,
+                            **kwargs)
 
-        ensemble = OnlinePolicyEnsemble(self.ensemble, training_trackers, max_history)
+        ensemble = OnlinePolicyEnsemble(self.ensemble,
+                                        training_trackers, max_history)
         self.run_online_training(ensemble, interpreter,
                                  input_channel)
 
