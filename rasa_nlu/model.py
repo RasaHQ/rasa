@@ -17,8 +17,7 @@ from typing import Text
 
 import rasa_nlu
 from rasa_nlu import components, utils, config
-from rasa_nlu.components import Component
-from rasa_nlu.components import ComponentBuilder
+from rasa_nlu.components import Component, ComponentBuilder
 from rasa_nlu.config import RasaNLUModelConfig, override_defaults
 from rasa_nlu.persistor import Persistor
 from rasa_nlu.training_data import TrainingData, Message
@@ -126,16 +125,16 @@ class Trainer(object):
     SUPPORTED_LANGUAGES = ["de", "en"]
 
     def __init__(self,
-                 config,  # type: RasaNLUModelConfig
+                 cfg,  # type: RasaNLUModelConfig
                  component_builder=None,  # type: Optional[ComponentBuilder]
                  skip_validation=False  # type: bool
                  ):
         # type: (...) -> None
 
-        self.config = config
+        self.config = cfg
         self.skip_validation = skip_validation
         self.training_data = None  # type: Optional[TrainingData]
-        self.pipeline = []  # type: List[Component]
+
         if component_builder is None:
             # If no builder is passed, every interpreter creation will result in
             # a new builder. hence, no components are reused.
@@ -144,13 +143,24 @@ class Trainer(object):
         # Before instantiating the component classes, lets check if all
         # required packages are available
         if not self.skip_validation:
-            components.validate_requirements(config.component_names)
+            components.validate_requirements(cfg.component_names)
+
+        # build pipeline
+        self.pipeline = self._build_pipeline(cfg, component_builder)
+
+    @staticmethod
+    def _build_pipeline(cfg, component_builder):
+        # type: (RasaNLUModelConfig, ComponentBuilder) -> List
+        """Transform the passed names of the pipeline components into classes"""
+        pipeline = []
 
         # Transform the passed names of the pipeline components into classes
-        for component_name in config.component_names:
+        for component_name in cfg.component_names:
             component = component_builder.create_component(
-                    component_name, config)
-            self.pipeline.append(component)
+                    component_name, cfg)
+            pipeline.append(component)
+
+        return pipeline
 
     def train(self, data, **kwargs):
         # type: (TrainingData) -> Interpreter

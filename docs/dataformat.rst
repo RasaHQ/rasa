@@ -163,7 +163,7 @@ Markdown Format
 Alternatively training data can be used in the following markdown format. Examples are listed using the unordered
 list syntax, e.g. minus ``-``, asterisk ``*``, or plus ``+``:
 
-.. code-block:: markdown
+.. code-block:: md
 
     ## intent:check_balance
     - what is my balance <!-- no entity -->
@@ -193,6 +193,7 @@ Storing files with different file formats, i.e. mixing markdown and JSON, is cur
     Splitting the training data into multiple files currently only works for markdown and JSON data.
     For other file formats you have to use the single-file approach.
 
+.. _train_parameters:
 
 Train a Model
 ~~~~~~~~~~~~~
@@ -210,4 +211,4 @@ Here is a quick overview over the parameters you can pass to that script:
 The other ways to train a model are
 
 - training it using your own python code
-- training it using the HTTP api (:ref:`http`)
+- training it using the HTTP api (:ref:`section_http`)

@@ -48,7 +48,7 @@ pipeline
 
     .. code-block:: yaml
 
-        pipeline: "spacy_sklearn"
+        pipeline:
         - name: "nlp_spacy"
           model: "en"               # parameter of the spacy component
         - name: "ner_synonyms"
@@ -72,4 +72,5 @@ language
 
 :Description:
     Language the model is trained in. Underlying word vectors
-    will be loaded by using this language
+    will be loaded by using this language. There is more info
+    about available languages in :ref:`section_languages`.

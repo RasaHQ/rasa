@@ -123,8 +123,8 @@ The intended audience is mainly __people developing bots__, starting from scratc
 These points are laid out in more detail in a [blog post](https://blog.rasa.com/put-on-your-robot-costume-and-be-the-minimum-viable-bot-yourself/). Rasa is a set of tools for building more advanced bots, developed by the company [Rasa](https://rasa.com). Rasa NLU is the natural language understanding module, and the first component to be open-sourced. 
 
 ### What languages does it support?
-Short answer: English, German, and Spanish currently. 
-Longer answer: If you want to add a new language, the key things you need are a tokenizer and a set of word vectors. More information can be found in the [language documentation](https://nlu.rasa.com/languages.html).
+It depends. Some things, like intent classification with the `tensorflow_embedding` pipeline, work in any language. 
+Other features are more restricted. See details [here](https://nlu.rasa.com/languages.html)
 
 ### How to contribute
 We are very happy to receive and merge your contributions. There is some more information about the style of the code and docs in the [documentation](https://nlu.rasa.com/contribute.html).
@@ -223,31 +223,6 @@ make test
 ## License
 Licensed under the Apache License, Version 2.0. Copyright 2018 Rasa Technologies GmbH. [Copy of the license](LICENSE.txt).
 
-As a reference, the following contains a listing of the licenses of the different dependencies as of this writing. 
-Licenses of minimal dependencies:
-
-| required package | License              |
-|------------------|----------------------|
-| gevent           | MIT                  |
-| klein            | MIT                  |
-| boto3            | Apache License 2.0   |
-| typing           | PSF                  |
-| future           | MIT                  |
-| six              | MIT                  |
-| jsonschema       | MIT                  |
-| matplotlib       | PSF                  |
-| requests         | Apache Licence 2.0   |
-
-Licenses of optional dependencies (only required for certain components of Rasa NLU. Hence, they are optional): 
-
-| optional package     | License                    |
-|----------------------|----------------------------|
-| MITIE                | Boost Software License 1.0 |
-| spacy                | MIT                        |
-| scikit-learn         | BSD 3-clause               |
-| scipy                | BSD 3-clause               |
-| numpy                | BSD 3-clause               |
-| duckling             | Apache License 2.0         |
-| sklearn-crfsuite     | MIT                        |
-| cloudpickle          | BSD 3-clause               |
-| google-cloud-storage | Apache License 2.0         |
+A list of the Licenses of the dependencies of the project can be found at
+the bottom of the
+[Libraries Summary](https://libraries.io/github/RasaHQ/rasa_nlu).

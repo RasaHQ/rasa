@@ -4,10 +4,38 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
-[Unreleased 0.12.0.aX] - `master`_
+[Unreleased 0.13.0.aX] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. note:: This version is not yet released and is under active development.
+
+Added
+-----
+
+Changed
+-------
+
+Removed
+-------
+
+Fixed
+-----
+
+[0.12.1] - 2018-03-18
+^^^^^^^^^^^^^^^^^^^^^
+Added
+-----
+- support for retrieving training data from a URL
+
+Fixed
+-----
+- properly set duckling http url through environment setting
+- improvements and fixes to the configuration and pipeline
+  documentation
+
+
+[0.12.0] - 2018-03-17
+^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
@@ -17,14 +45,18 @@ Added
 - support for markdown files containing regex-features or synonyms only
 - added ability to list projects in cloud storage services for model loading
 - server evaluation endpoint at ``POST /evaluate``
-- CRF entity recognizer now returns a confidence score when extracting entities
 - server endpoint at ``DELETE /models`` to unload models from server memory
+- CRF entity recognizer now returns a confidence score when extracting entities
 - added count vector featurizer to create bag of words representation
 - added embedding intent classifier implemented in tensorflow
 - added tensorflow requirements
-- added basic tests for count vector featurizer
 - added docs blurb on handling contextual dialogue
-- added support for retrieving training data from a URL
+- distribute package as wheel file in addition to source
+  distribution (faster install)
+- allow a component to specify which languages it supports
+- support for persisting models to Azure Storage
+- added tokenizer for CHINESE (``zh``) as well as instructions on how to load
+  MITIE model
 
 Changed
 -------
@@ -40,21 +72,39 @@ Changed
   ``"extractor": "ner_crf"`` or no extractor at all
 - Ignore hidden files when listing projects or models
 - Docker Images now run on python 3.6 for better non-latin character set support
-- updated requirements_full.txt to include tensorflow requirements
-- updated documentation, added info about tensorflow_embedding pipeline
-- updated registry, added tensorflow_embedding pipeline
 - changed key name for a file in ngram featurizer
-- changed jsonObserver to generate logs without a record seperator
-- Improve jsonschema validation: text attribute of training data samples can not be empty
+- changed ``jsonObserver`` to generate logs without a record seperator
+- Improve jsonschema validation: text attribute of training data samples
+  can not be empty
 - made the NLU server's ``/evaluate`` endpoint asynchronous
-  
-Removed
--------
-- MITIE support - backend is no longer supported.
 
 Fixed
 -----
-- fixed certain command line arguments not getting passed into the data_router
+- fixed certain command line arguments not getting passed into
+  the ``data_router``
+
+[0.11.4] - 2018-03-19
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- google analytics docs survey code
+
+
+[0.11.3] - 2018-02-13
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- capitalization issues during spacy named entity recognition
+
+
+[0.11.2] - 2018-02-06
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Formatting of tokens without assigned entities in evaluation
 
 
 [0.11.1] - 2018-02-02
