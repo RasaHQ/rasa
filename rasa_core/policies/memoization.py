@@ -54,13 +54,9 @@ class MemoizationPolicy(Policy):
         # type: (bool) -> None
         self.is_enabled = activate
 
-    def _create_partial_histories(self, states):
-        augmented = [list(states)]
-        augmented_states = list(states)
-        for i in range(self.max_history - 1):
-            augmented_states[i] = None
-            augmented.append(list(augmented_states))
-        return augmented
+    def _preprocess_states(self, states):
+        # to be used in augmented Memoization
+        return states
 
     def _add(self, trackers_as_states, trackers_as_actions,
              domain, online=False):
@@ -82,9 +78,8 @@ class MemoizationPolicy(Policy):
                     desc="Processed actions", disable=online)
         for states, actions in pbar:
             action = actions[0]
-            for i, states_augmented in enumerate(
-                    self._create_partial_histories(states)):
-                feature_key = self._create_feature_key(states_augmented)
+            for i, states_aug in enumerate(self._preprocess_states(states)):
+                feature_key = self._create_feature_key(states_aug)
                 feature_item = domain.index_for_action(action)
 
                 if feature_key not in ambiguous_feature_keys:
@@ -97,8 +92,7 @@ class MemoizationPolicy(Policy):
                                             "now. Delete contradicting "
                                             "examples after exporting "
                                             "the new stories."
-                                            "".format(states_augmented,
-                                                      action))
+                                            "".format(states_aug, action))
                                 self.lookup[feature_key] = feature_item
                             else:
                                 # delete contradicting example created by
@@ -145,47 +139,12 @@ class MemoizationPolicy(Policy):
                   domain, online=True)
 
     def _recall(self, states):
-        for states_aug in self._create_partial_histories(states):
+        for states_aug in self._preprocess_states(states):
             memorised = self.lookup.get(
                 self._create_feature_key(states_aug))
             if memorised is not None:
                 return memorised
         return None
-
-    def _back_to_the_future(self, tracker):
-        mcfly_trackers = []
-        if self.max_history > 1:
-            historic_events = [[]]
-            i = 0
-            e_i_last = len(tracker._applied_events()) - 1
-            for e_i, event in enumerate(
-                    reversed(tracker._applied_events())):
-                historic_events[i].append(event)
-
-                if isinstance(event, ActionExecuted):
-                    historic_events[i].reverse()
-                    i += 1
-                    if i == self.max_history - 1:
-                        # we need i to be one less than max_history
-                        # not to recall again with the same features
-                        break
-                    if e_i == e_i_last:
-                        # if we arrived at the end of the tracker,
-                        # the last historic_events repeat the tracker
-                        # so we delete them
-                        del historic_events[-1]
-                        break
-                    historic_events.append(historic_events[i - 1][::-1])
-
-            historic_events.reverse()
-
-            for events in historic_events:
-                mcfly_tracker = tracker._init_copy()
-                for e in events:
-                    mcfly_tracker.update(e)
-                mcfly_trackers.append(mcfly_tracker)
-
-        return mcfly_trackers
 
     def predict_action_probabilities(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> List[float]
@@ -208,21 +167,6 @@ class MemoizationPolicy(Policy):
                              "".format(memorised))
                 result[memorised] = 1.0
                 return result
-
-            # correctly forgetting slots
-            logger.debug("Launch DeLorean...")
-            mcfly_trackers = self._back_to_the_future(tracker)
-
-            tracker_as_states = self.featurizer.prediction_states(
-                                    mcfly_trackers, domain)
-            for states in tracker_as_states:
-                logger.debug("Current tracker state {}".format(states))
-                memorised = self._recall(states)
-                if memorised is not None:
-                    logger.debug("Used memorised next action '{}'"
-                                 "".format(memorised))
-                    result[memorised] = 1.0
-                    return result
 
         return result
 

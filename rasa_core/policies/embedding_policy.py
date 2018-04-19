@@ -234,7 +234,7 @@ class EmbeddingPolicy(Policy):
     def _create_rnn(self, emb_utter, emb_extras, real_length):
 
         cell_input = tf.concat([emb_utter, emb_extras], -1)
-
+        #cell_input = emb_utter
         # chrono initialization for forget bias
         # assuming that characteristic time is mean dialogue length
         fbias = np.log(
