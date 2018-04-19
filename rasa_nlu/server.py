@@ -37,11 +37,10 @@ def create_argument_parser():
                         type=int,
                         default=5000,
                         help='port on which to run server')
-    parser.add_argument('-a', '--auto_load',
-                        type=bool,
-                        default=False,
-                        choices=[True, False],
-                        help='Load all models automatically')
+    parser.add_argument('-p', '--pre_load',
+                        nargs='*',
+                        default=[],
+                        help='Load all models before starting the server')
     parser.add_argument('-t', '--token',
                         help="auth token. If set, reject requests which don't "
                              "provide this token as a query parameter")
@@ -365,13 +364,14 @@ if __name__ == '__main__':
     cmdline_args = create_argument_parser().parse_args()
 
     utils.configure_colored_logging(cmdline_args.loglevel)
+    logger.debug(cmdline_args)
 
     router = DataRouter(cmdline_args.path,
                         cmdline_args.max_training_processes,
                         cmdline_args.response_log,
                         cmdline_args.emulate,
                         cmdline_args.storage,
-                        load_all=cmdline_args.auto_load)
+                        pre_load=cmdline_args.pre_load)
     rasa = RasaNLU(
             router,
             cmdline_args.loglevel,
