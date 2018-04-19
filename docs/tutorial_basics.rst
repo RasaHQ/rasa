@@ -186,7 +186,7 @@ To train the dialogue model, run:
 
    make train-core
 
-This will train the dialogue model for ``300`` epochs and store it
+This will train the dialogue model for ``200`` epochs and store it
 into ``models/current/dialogue``. Where ``1`` epoch corresponds to one pass of
 the algorithm through all the training examples, which in this case are the stories.
 
