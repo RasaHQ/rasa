@@ -251,8 +251,11 @@ class EmbeddingPolicy(Policy):
         )
 
         def probability_fn(score):
-            # p = tf.sigmoid(score)
-            p = tf.nn.relu(tf.tanh(score))
+            p = tf.sigmoid(score)
+            zeros = tf.zeros_like(p)
+            p = tf.where(p < 0.1, zeros, p)
+            ones = tf.ones_like(p)
+            p = tf.where(p > 0.9, 0.9 * ones, p)
             return p
 
         num_mem_units = int(emb_utter.shape[-1])
