@@ -132,11 +132,11 @@ def do_train_in_worker(config,  # type: RasaNLUModelConfig
 
 
 def do_train(cfg,  # type: RasaNLUModelConfig
-             data=None,  # type: Text
-             path=None,  # type: Text
+             data,  # type: Text
+             path=None,  # type: Optional[Text]
              project=None,  # type: Optional[Text]
              fixed_model_name=None,  # type: Optional[Text]
-             storage=None,  # type: Text
+             storage=None,  # type: Optional[Text]
              component_builder=None,  # type: Optional[ComponentBuilder]
              token=None,  # type: Optional[Text]
              **kwargs  # type: Any
