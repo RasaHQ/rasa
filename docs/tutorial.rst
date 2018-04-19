@@ -137,7 +137,9 @@ Now we can train a spacy model by running:
 What do these parameters mean?
 
 - **config**: configuration of the machine learning model
-- **data**: file / folder that contains the training data
+- **data**: file, folder or URL that contains the training data. If you
+specify a URL, you might also want to add a token with the ``--token``
+option for authentication.
 - **path**: output path where the model is persisted to
 
 If you want to know more about the parameters, there is an overview of the

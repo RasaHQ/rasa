@@ -32,14 +32,26 @@ def create_argument_parser():
                         default=None,
                         help="Path where model files will be saved")
 
-    parser.add_argument('-d', '--data',
+    group = parser.add_mutually_exclusive_group(required=True)
+
+    group.add_argument('-d', '--data',
+                       default=None,
+                       help="Location of the training data. For JSON and "
+                            "markdown data, this can either be a single file "
+                            "or a directory containing multiple training "
+                            "data files.")
+
+    group.add_argument('-u', '--url',
+                       default=None,
+                       help="URL of the server from which to receive the "
+                            "training data")
+
+    parser.add_argument('--token',
                         default=None,
-                        required=True,
-                        help="Location of the training data. For JSON and "
-                             "markdown data, this can either be a single file "
-                             "or a directory containing multiple training "
-                             "data files. This can also be the URL of a "
-                             "server from which to fetch training data.")
+                        help="Optional authentication string that might be "
+                             "needed to retrieve training data from a URL. "
+                             "The token gets appended to the query string "
+                             "with `?token=<TOKEN>`.")
 
     parser.add_argument('-c', '--config',
                         required=True,
@@ -120,13 +132,14 @@ def do_train_in_worker(config,  # type: RasaNLUModelConfig
 
 
 def do_train(cfg,  # type: RasaNLUModelConfig
-             data,  # type: Text
+             data=None,  # type: Text
              path=None,  # type: Text
              project=None,  # type: Optional[Text]
              fixed_model_name=None,  # type: Optional[Text]
              storage=None,  # type: Text
              component_builder=None,  # type: Optional[ComponentBuilder]
-             **kwargs   # type: Any
+             token=None,  # type: Optional[Text]
+             **kwargs  # type: Any
              ):
     # type: (...) -> Tuple[Trainer, Interpreter, Text]
     """Loads the trainer and the data and runs the training of the model."""
@@ -136,7 +149,7 @@ def do_train(cfg,  # type: RasaNLUModelConfig
     # trained in another subprocess
     trainer = Trainer(cfg, component_builder)
     persistor = create_persistor(storage)
-    training_data = load_data(data, cfg.language)
+    training_data = load_data(data, cfg.language, token)
     interpreter = trainer.train(training_data, **kwargs)
 
     if path:
@@ -156,10 +169,11 @@ if __name__ == '__main__':
     utils.configure_colored_logging(cmdline_args.loglevel)
 
     do_train(config.load(cmdline_args.config),
-             cmdline_args.data,
+             cmdline_args.data or cmdline_args.url,
              cmdline_args.path,
              cmdline_args.project,
              cmdline_args.fixed_model_name,
              cmdline_args.storage,
-             num_threads=cmdline_args.num_threads)
+             num_threads=cmdline_args.num_threads,
+             token=cmdline_args.token)
     logger.info("Finished training")

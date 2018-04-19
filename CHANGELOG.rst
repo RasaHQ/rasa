@@ -24,6 +24,7 @@ Added
 - added tensorflow requirements
 - added basic tests for count vector featurizer
 - added docs blurb on handling contextual dialogue
+- added support for retrieving training data from a URL
 
 Changed
 -------

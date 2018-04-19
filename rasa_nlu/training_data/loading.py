@@ -48,13 +48,15 @@ _json_format_heuristics = {
 }
 
 
-def load_data(resource_name, language='en'):
+def load_data(resource_name, language='en', token=None):
     # type: (Text, Optional[Text]) -> TrainingData
     """Load training data from disk or a URL.
 
     Merges them if loaded from disk and multiple files are found."""
 
     if utils.is_url(resource_name):
+        if token:
+            resource_name += '?token={}'.format(token)
         response = requests.get(resource_name)
         temp_data_file = utils.create_temporary_file(response.content)
         return _load(temp_data_file)
