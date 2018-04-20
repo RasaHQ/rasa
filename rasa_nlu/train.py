@@ -46,13 +46,6 @@ def create_argument_parser():
                        help="URL of the server from which to receive the "
                             "training data")
 
-    parser.add_argument('--token',
-                        default=None,
-                        help="Optional authentication string that might be "
-                             "needed to retrieve training data from a URL. "
-                             "The token gets appended to the query string "
-                             "with `?token=<TOKEN>`.")
-
     parser.add_argument('-c', '--config',
                         required=True,
                         help="Rasa NLU configuration file")
@@ -138,7 +131,6 @@ def do_train(cfg,  # type: RasaNLUModelConfig
              fixed_model_name=None,  # type: Optional[Text]
              storage=None,  # type: Optional[Text]
              component_builder=None,  # type: Optional[ComponentBuilder]
-             token=None,  # type: Optional[Text]
              **kwargs  # type: Any
              ):
     # type: (...) -> Tuple[Trainer, Interpreter, Text]
@@ -149,7 +141,7 @@ def do_train(cfg,  # type: RasaNLUModelConfig
     # trained in another subprocess
     trainer = Trainer(cfg, component_builder)
     persistor = create_persistor(storage)
-    training_data = load_data(data, cfg.language, token)
+    training_data = load_data(data, cfg.language)
     interpreter = trainer.train(training_data, **kwargs)
 
     if path:
@@ -174,6 +166,5 @@ if __name__ == '__main__':
              cmdline_args.project,
              cmdline_args.fixed_model_name,
              cmdline_args.storage,
-             num_threads=cmdline_args.num_threads,
-             token=cmdline_args.token)
+             num_threads=cmdline_args.num_threads)
     logger.info("Finished training")

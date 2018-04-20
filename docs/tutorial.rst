@@ -139,8 +139,6 @@ What do these parameters mean?
 - **config**: configuration of the machine learning model
 - **data**: file or folder that contains the training data. You may instead
 specify a URL from which to fetch training data with the ``--url`` option.
-If you also need an authentication token, use the ``--token`` option in
-addition.
 - **path**: output path where the model is persisted to
 
 If you want to know more about the parameters, there is an overview of the
