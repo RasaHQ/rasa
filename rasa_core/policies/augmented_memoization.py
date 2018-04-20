@@ -36,15 +36,14 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
             return []
 
         historic_events = []
-        i = 0
         collected_events = []
 
         idx_of_last_evt = len(tracker._applied_events()) - 1
+
         for e_i, event in enumerate(reversed(tracker._applied_events())):
             collected_events.append(event)
 
             if isinstance(event, ActionExecuted):
-                i += 1
                 if e_i == idx_of_last_evt:
                     # if we arrived at the end of the tracker,
                     # the last historic_events repeat the tracker
@@ -53,7 +52,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
                 historic_events.append(collected_events[:])
 
-                if i == self.max_history - 1:
+                if len(historic_events) == self.max_history - 1:
                     # we need i to be one less than max_history
                     # not to recall again with the same features
                     break
