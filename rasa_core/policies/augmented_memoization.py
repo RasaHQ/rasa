@@ -76,31 +76,40 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         else returns 0.0 for all actions."""
         result = [0.0] * domain.num_actions
 
-        if self.is_enabled:
-            tracker_as_states = self.featurizer.prediction_states(
-                                    [tracker], domain)
-            states = tracker_as_states[0]
+        if not self.is_enabled:
+            return result
+
+        tracker_as_states = self.featurizer.prediction_states(
+                                [tracker], domain)
+        states = tracker_as_states[0]
+        logger.debug("Current tracker state {}".format(states))
+
+        recalled = self._recall(states)
+        if recalled is None:
+            # let's try a different method to recall that state
+            recalled = self._recall_using_delorean(tracker, domain)
+
+        if recalled is not None:
+            logger.debug("Used memorised next action '{}'"
+                         "".format(recalled))
+            result[recalled] = 1.0
+
+        return result
+
+    def _recall_using_delorean(self, tracker, domain):
+        # correctly forgetting slots
+
+        logger.debug("Launch DeLorean...")
+        mcfly_trackers = self._back_to_the_future(tracker)
+
+        tracker_as_states = self.featurizer.prediction_states(
+                                mcfly_trackers, domain)
+
+        for states in tracker_as_states:
             logger.debug("Current tracker state {}".format(states))
             memorised = self._recall(states)
             if memorised is not None:
-                logger.debug("Used memorised next action '{}'"
-                             "".format(memorised))
-                result[memorised] = 1.0
-                return result
+                return memorised
 
-            # correctly forgetting slots
-            logger.debug("Launch DeLorean...")
-            mcfly_trackers = self._back_to_the_future(tracker)
-
-            tracker_as_states = self.featurizer.prediction_states(
-                                    mcfly_trackers, domain)
-            for states in tracker_as_states:
-                logger.debug("Current tracker state {}".format(states))
-                memorised = self._recall(states)
-                if memorised is not None:
-                    logger.debug("Used memorised next action '{}'"
-                                 "".format(memorised))
-                    result[memorised] = 1.0
-                    return result
-
-        return result
+        # No match found
+        return None

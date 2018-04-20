@@ -155,17 +155,18 @@ class MemoizationPolicy(Policy):
         else returns 0.0 for all actions."""
         result = [0.0] * domain.num_actions
 
-        if self.is_enabled:
-            tracker_as_states = self.featurizer.prediction_states(
-                                    [tracker], domain)
-            states = tracker_as_states[0]
-            logger.debug("Current tracker state {}".format(states))
-            memorised = self._recall(states)
-            if memorised is not None:
-                logger.debug("Used memorised next action '{}'"
-                             "".format(memorised))
-                result[memorised] = 1.0
-                return result
+        if not self.is_enabled:
+            return result
+
+        tracker_as_states = self.featurizer.prediction_states(
+                                [tracker], domain)
+        states = tracker_as_states[0]
+        logger.debug("Current tracker state {}".format(states))
+        memorised = self._recall(states)
+        if memorised is not None:
+            logger.debug("Used memorised next action '{}'"
+                         "".format(memorised))
+            result[memorised] = 1.0
 
         return result
 
