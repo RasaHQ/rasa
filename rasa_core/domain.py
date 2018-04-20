@@ -315,6 +315,11 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
 
         domain_spec_path = os.path.join(model_path, 'domain.json')
         utils.create_dir_for_file(domain_spec_path)
+        # TODO backwards incompatible change. needs to be added to migrations and changelog
+        # TODO (previously persisted models can not be read with this version anymore).
+
+        # TODO During loading this should be checked
+        # TODO (comparing the persisted version with the current version)
         metadata = {
             "states": self.input_states
         }

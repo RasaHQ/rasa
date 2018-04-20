@@ -258,22 +258,24 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
                 if PREV_PREFIX + ACTION_LISTEN_NAME not in states:
                     # we predict next action from bot action
                     # TODO do we need state_name = 'intent_listen' ?
+
                     used_features[:len(self.user_vocab)] = 0
                 else:
                     for t in state_name.split(self.split_symbol):
                         used_features[self.user_vocab[t]] += 1
 
             elif state_name[len(PREV_PREFIX):] in self.bot_labels:
-                for t in state_name[len(PREV_PREFIX):].split(
-                        self.split_symbol):
-                    used_features[len(self.user_vocab) +
-                                  self.bot_vocab[t]] += 1
+                action_name = state_name[len(PREV_PREFIX):]
+                for t in action_name.split(self.split_symbol):
+                    offset = len(self.user_vocab)
+                    idx = self.bot_vocab[t]
+                    used_features[offset + idx] += 1
 
             elif state_name in self.other_labels:
-                idx = (len(self.user_vocab) +
-                       len(self.bot_vocab) +
-                       self.other_labels.index(state_name))
-                used_features[idx] += 1
+                offset = len(self.user_vocab) + len(self.bot_vocab)
+                idx = self.other_labels.index(state_name)
+                used_features[offset + idx] += 1
+
             else:
                 logger.warning(
                     "Feature '{}' could not be found in "
@@ -299,6 +301,11 @@ class TrackerFeaturizer(object):
 
         for tracker_states in trackers_as_states:
             dialogue_len = len(tracker_states)
+
+            # len(trackers_as_states) = 1 means
+            # it is called during prediction or we have
+            # only one story, so no padding is needed
+
             if len(trackers_as_states) > 1:
                 tracker_states = self._pad_states(tracker_states)
 

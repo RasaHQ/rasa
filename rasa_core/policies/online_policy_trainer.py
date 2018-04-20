@@ -42,7 +42,7 @@ class OnlinePolicyTrainer(PolicyTrainer):
               resource_name=None,  # type: Optional[Text]
               interpreter=None,  # type: NaturalLanguageInterpreter
               input_channel=None,  # type: Optional[InputChannel]
-              max_history=3,  # type: int
+              max_visual_history=3,  # type: int
               augmentation_factor=0,  # type: int
               max_training_samples=None,  # type: Optional[int]
               max_number_of_trackers=2000,  # type: int
@@ -65,7 +65,7 @@ class OnlinePolicyTrainer(PolicyTrainer):
                             **kwargs)
 
         ensemble = OnlinePolicyEnsemble(self.ensemble,
-                                        training_trackers, max_history)
+                                        training_trackers, max_visual_history)
         self.run_online_training(ensemble, interpreter,
                                  input_channel)
 
@@ -95,14 +95,14 @@ class OnlinePolicyEnsemble(PolicyEnsemble):
     def __init__(self,
                  base_ensemble,  # type: PolicyEnsemble
                  training_trackers,  # type: List[DialogueStateTracker]
-                 max_history=2,  # type: int
+                 max_visual_history=3,  # type: int
                  use_visualization=False  # type: bool
                  ):
         super(OnlinePolicyEnsemble, self).__init__(base_ensemble.policies)
 
         self.base_ensemble = base_ensemble
         self.training_trackers = training_trackers
-        self.max_history = max_history
+        self.max_visual_history = max_visual_history
         self.use_visualization = use_visualization
 
         self.current_id = 0
@@ -255,7 +255,7 @@ class OnlinePolicyEnsemble(PolicyEnsemble):
 
         print("------")
         print("Chat history:\n")
-        tr_json = tr_json[-self.max_history:]
+        tr_json = tr_json[-self.max_visual_history:]
         n_history = len(tr_json)
         for idx, hist_tracker in enumerate(tr_json):
 

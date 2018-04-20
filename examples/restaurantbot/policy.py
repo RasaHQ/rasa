@@ -24,11 +24,25 @@ class RestaurantPolicy(KerasPolicy):
         # Build Model
         model = Sequential()
 
+        # the shape of the y vector of the labels,
+        # determines which output from rnn will be used
+        # to calculate the loss
         if len(output_shape) == 1:
+            # y is (num examples, num features) so
+            # only the last output from the rnn is used to
+            # calculate the loss
             model.add(Masking(mask_value=-1, input_shape=input_shape))
             model.add(LSTM(n_hidden))
             model.add(Dense(input_dim=n_hidden, units=output_shape[-1]))
         elif len(output_shape) == 2:
+            # y is (num examples, max_dialogue_len, num features) so
+            # all the outputs from the rnn are used to
+            # calculate the loss, therefore a sequence is returned and
+            # time distributed layer is used
+
+            # the first value in input_shape is max dialogue_len,
+            # it is set to None, to allow dynamic_rnn creation
+            # during prediction
             model.add(Masking(mask_value=-1,
                               input_shape=(None, input_shape[1])))
             model.add(LSTM(n_hidden, return_sequences=True))

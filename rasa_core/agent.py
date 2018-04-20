@@ -151,7 +151,7 @@ class Agent(object):
                      resource_name=None,  # type: Optional[Text]
                      input_channel=None,  # type: Optional[InputChannel]
                      model_path=None,  # type: Optional[Text]
-                     max_history=3,  # type: int
+                     max_visual_history=3,  # type: int
                      **kwargs  # type: **Any
                      ):
         # type: (...) -> None
@@ -168,7 +168,7 @@ class Agent(object):
                     "an interpreter for the agent to use.")
         trainer = OnlinePolicyTrainer(self.policy_ensemble, self.domain)
         trainer.train(resource_name, self.interpreter, input_channel,
-                      max_history, **kwargs)
+                      max_visual_history, **kwargs)
 
         if model_path:
             self.persist(model_path)

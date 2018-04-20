@@ -66,7 +66,7 @@ class PolicyEnsemble(object):
 
     def _max_histories(self):
         # type: () -> List[Optional[int]]
-        """Return max history, only works if the ensemble is already trained."""
+        """Return max history."""
 
         max_histories = []
         for p in self.policies:
@@ -82,17 +82,17 @@ class PolicyEnsemble(object):
 
         This allows us to emit warnings when the model is used
         if an action does things it hasn't done during training."""
-        if training_events:
-            action_fingerprints = {}
-            for k, vs in training_events.items():
-                slots = list({v.key for v in vs if isinstance(v, SlotSet)})
-                action_fingerprints[k] = {"slots": slots}
-            return action_fingerprints
-        else:
+        if not training_events:
             return None
 
-    def _persist_metadata(self, path, max_histories):
-        # type: (Text, List[Optional[int]]) -> None
+        action_fingerprints = {}
+        for k, vs in training_events.items():
+            slots = list({v.key for v in vs if isinstance(v, SlotSet)})
+            action_fingerprints[k] = {"slots": slots}
+        return action_fingerprints
+
+    def _persist_metadata(self, path):
+        # type: (Text) -> None
         """Persists the domain specification to storage."""
 
         # make sure the directory we persist to exists
@@ -106,7 +106,7 @@ class PolicyEnsemble(object):
         metadata = {
             "action_fingerprints": action_fingerprints,
             "rasa_core": rasa_core.__version__,
-            "max_histories": max_histories,
+            "max_histories": self._max_histories(),
             "ensemble_name": self.__module__ + "." + self.__class__.__name__,
             "policy_names": policy_names
         }
@@ -117,7 +117,7 @@ class PolicyEnsemble(object):
         # type: (Text) -> None
         """Persists the policy to storage."""
 
-        self._persist_metadata(path, self._max_histories())
+        self._persist_metadata(path)
 
         for i, policy in enumerate(self.policies):
             # TODO better way then many folders?
@@ -151,10 +151,6 @@ class PolicyEnsemble(object):
 
 
 class SimplePolicyEnsemble(PolicyEnsemble):
-    def __init__(self, policies, known_slot_events=None):
-        # TODO is known_slot_events is the same as action_fingerprints?
-        # TODO if so remove this init, else here is an error
-        super(SimplePolicyEnsemble, self).__init__(policies, known_slot_events)
 
     def probabilities_using_best_policy(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> List[float]

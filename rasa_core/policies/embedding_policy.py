@@ -69,7 +69,7 @@ class EmbeddingPolicy(Policy):
 
         "droprate_a": 0.1,
         "droprate_b": 0.1,
-        "droprate_c": 0.4,
+        "droprate_c": 0.3,
         "droprate_rnn": 0.1,
         "droprate_out": 0.1,
     }
@@ -192,6 +192,13 @@ class EmbeddingPolicy(Policy):
         X = data_X[:, :, :prev_start]
         extras = data_X[:, :, prev_end:]
 
+        #extras[extras < 0] = 1
+        # print(extras[0])
+        ex1 = np.roll(1 - extras, 1, axis=1)
+        ex1[:, 0, :] = 1
+        extras *= ex1
+        # print(extras[0])
+        # exit()
         return X, extras
 
     def _prepare_data_for_training(self, training_data):
@@ -250,31 +257,35 @@ class EmbeddingPolicy(Policy):
                 forget_bias=fbias
         )
 
-        def probability_fn(score):
-            p = tf.sigmoid(score)
-            # zeros = tf.zeros_like(p)
-            # p = tf.where(p < 0.1, zeros, p)
-            # ones = tf.ones_like(p)
-            # p = tf.where(p > 0.9, 0.9 * ones, p)
-            return p
-
-        num_mem_units = int(emb_utter.shape[-1])
+        num_utter_units = int(emb_utter.shape[-1])
         attn_mech_utter = tf.contrib.seq2seq.BahdanauAttention(
-                num_units=num_mem_units, memory=emb_utter,
+                num_units=num_utter_units, memory=emb_utter,
                 memory_sequence_length=real_length,
                 normalize=True,
-                probability_fn=probability_fn
+                probability_fn=tf.sigmoid
+        )
+        num_extras_units = int(emb_extras.shape[-1])
+        attn_mech_extras = tf.contrib.seq2seq.LuongAttention(
+            num_units=self.rnn_size, memory=emb_extras,
+            memory_sequence_length=real_length,
+            #normalize=True,
+            scale=True,
+            probability_fn=tf.sigmoid
         )
 
-        def cell_input_fn(inputs, attention, inv_norm):
-            # res = tf.concat([inv_norm * inputs[:, :num_mem_units] +
-            res = tf.concat([inputs[:, :num_mem_units] +
-                             attention[:, :num_mem_units],
-                             inputs[:, num_mem_units:]], -1)
+        def cell_input_fn(inputs, attention):
+
+            # res = tf.concat([
+            #                  inputs[:, :num_utter_units] +
+            #                  attention[:, :num_utter_units],
+            #                  inputs[:, num_utter_units:] +
+            #                  attention[:, num_utter_units:]
+            #                  ], -1)
+            res = inputs + attention
             return res
 
         attn_cell = TimeAttentionWrapper(
-                cell_decoder, attn_mech_utter,
+                cell_decoder, [attn_mech_utter, attn_mech_extras],
                 # attention_layer_size=num_units,
                 cell_input_fn=cell_input_fn,
                 output_attention=False,
@@ -701,9 +712,6 @@ def _compute_time_attention(attention_mechanism, cell_output,
     until_time = tf.concat([ones[:t], zeros[t:]], 0)
     alignments *= until_time
 
-    norm = tf.reduce_sum(alignments, -1, keepdims=True) + 1.0
-    #alignments /= norm
-
     # Reshape from [batch_size, memory_time] to [batch_size, 1, memory_time]
     expanded_alignments = tf.expand_dims(alignments, 1)
 
@@ -724,7 +732,6 @@ def _compute_time_attention(attention_mechanism, cell_output,
     else:
         attention = context
 
-    alignments = tf.concat([alignments[:, :-1], 1.0 / norm], 1)
     return attention, alignments, next_attention_state
 
 
@@ -767,13 +774,11 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         # Step 1: Calculate the true inputs to the cell based on the
         # previous attention value.
 
-        ones = tf.ones_like(state.alignments[:, -1:])
-        inv_norm = tf.where(state.alignments[:, -1:] > 0,
-                            state.alignments[:, -1:], ones)
-
-        cell_inputs = self._cell_input_fn(inputs, state.attention, inv_norm)
+        cell_inputs = self._cell_input_fn(inputs, state.attention)
         cell_state = state.cell_state
         cell_output, next_cell_state = self._cell(cell_inputs, cell_state)
+        # (_, m_prev) = state.cell_state
+        # cell_output = tf.concat([m_prev, inputs], 1)
 
         cell_batch_size = (
                 cell_output.shape[0].value or tf.shape(cell_output)[0])
@@ -815,6 +820,10 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             maybe_all_histories.append(alignment_history)
 
         attention = tf.concat(all_attentions, 1)
+
+        # cell_inputs = self._cell_input_fn(inputs, attention)
+        # cell_state = state.cell_state
+        # cell_output, next_cell_state = self._cell(cell_inputs, cell_state)
 
         next_state = tf.contrib.seq2seq.AttentionWrapperState(
             time=state.time + 1,
