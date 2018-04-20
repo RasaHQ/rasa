@@ -388,10 +388,9 @@ For other file formats you have to use the single-file approach.</p>
 </pre></div>
 </div>
 <p>Here is a quick overview over the parameters you can pass to that script:</p>
-<div class="highlight-text"><div class="highlight"><pre><span></span>usage: train.py [-h] [-o PATH] (-d DATA | -u URL) [--token TOKEN] -c CONFIG
-                [-t NUM_THREADS] [--project PROJECT]
-                [--fixed_model_name FIXED_MODEL_NAME] [--storage STORAGE]
-                [--debug] [-v]
+<div class="highlight-text"><div class="highlight"><pre><span></span>usage: train.py [-h] [-o PATH] -d DATA -c CONFIG [-t NUM_THREADS]
+                [--project PROJECT] [--fixed_model_name FIXED_MODEL_NAME]
+                [--storage STORAGE] [--debug] [-v]
 
 train a custom language parser
 
@@ -401,11 +400,6 @@ optional arguments:
   -d DATA, --data DATA  Location of the training data. For JSON and markdown
                         data, this can either be a single file or a directory
                         containing multiple training data files.
-  -u URL, --url URL     URL of the server from which to receive the training
-                        data
-  --token TOKEN         Optional authentication string that might be needed to
-                        retrieve training data from a URL. The token gets
-                        appended to the query string with `?token=&lt;TOKEN&gt;`.
   -c CONFIG, --config CONFIG
                         Rasa NLU configuration file
   -t NUM_THREADS, --num_threads NUM_THREADS
