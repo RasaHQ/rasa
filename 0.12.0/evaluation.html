@@ -306,7 +306,25 @@ BILOU-based one.</p>
 </pre></div>
 </div>
 <p>Here is a quick overview:</p>
-<div class="highlight-text"><div class="highlight"><pre><span></span>/home/travis/virtualenv/python2.7.14/bin/python: No module named rasa_nlu
+<div class="highlight-text"><div class="highlight"><pre><span></span>usage: evaluate.py [-h] -d DATA [--mode MODE] [-c CONFIG] [-m MODEL]
+                   [-f FOLDS] [--debug] [-v]
+
+evaluate a Rasa NLU pipeline with cross validation or on external data
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -d DATA, --data DATA  file containing training/evaluation data
+  --mode MODE           evaluation|crossvalidation (evaluate pretrained model
+                        or train model by crossvalidation)
+  -c CONFIG, --config CONFIG
+                        model configurion file (crossvalidation only)
+  -m MODEL, --model MODEL
+                        path to model (evaluation only)
+  -f FOLDS, --folds FOLDS
+                        number of CV folds (crossvalidation only)
+  --debug               Print lots of debugging statements. Sets logging level
+                        to DEBUG
+  -v, --verbose         Be verbose. Sets logging level to INFO
 </pre></div>
 </div>
 </div>
@@ -362,10 +380,6 @@ BILOU-based one.</p>
             <dd><a href="../0.12.1/evaluation.html">0.12.1</a></dd>
             <dd><a href="evaluation.html">0.12.0</a></dd>
             <dd><a href="../0.11.4/evaluation.html">0.11.4</a></dd>
-            <dd><a href="../0.11.3/evaluation.html">0.11.3</a></dd>
-            <dd><a href="../0.11.2/evaluation.html">0.11.2</a></dd>
-            <dd><a href="../0.11.1/evaluation.html">0.11.1</a></dd>
-            <dd><a href="../0.11.0/evaluation.html">0.11.0</a></dd>
             <dd><a href="../0.10.6/index.html">0.10.6</a></dd>
             <dd><a href="../0.9.2/index.html">0.9.2</a></dd>
             <dd><a href="../0.8.12/index.html">0.8.12</a></dd>

@@ -461,7 +461,52 @@ under the <code class="docutils literal"><span class="pre">path</span></code> di
 </pre></div>
 </div>
 <p>Here is a quick overview:</p>
-<div class="highlight-text"><div class="highlight"><pre><span></span>/home/travis/virtualenv/python2.7.14/bin/python: No module named rasa_nlu
+<div class="highlight-text"><div class="highlight"><pre><span></span>usage: server.py [-h] [-e {wit,luis,dialogflow}] [-P PORT] [-t TOKEN]
+                 [-w WRITE] --path PATH [--cors [CORS [CORS ...]]]
+                 [--max_training_processes MAX_TRAINING_PROCESSES]
+                 [--num_threads NUM_THREADS] [--response_log RESPONSE_LOG]
+                 [--storage STORAGE] [-c CONFIG] [--debug] [-v]
+
+parse incoming text
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -e {wit,luis,dialogflow}, --emulate {wit,luis,dialogflow}
+                        which service to emulate (default: None i.e. use
+                        simple built in format)
+  -P PORT, --port PORT  port on which to run server
+  -t TOKEN, --token TOKEN
+                        auth token. If set, reject requests which don&#39;t
+                        provide this token as a query parameter
+  -w WRITE, --write WRITE
+                        file where logs will be saved
+  --path PATH           working directory of the server. Models areloaded from
+                        this directory and trained models will be saved here.
+  --cors [CORS [CORS ...]]
+                        List of domain patterns from where CORS (cross-origin
+                        resource sharing) calls are allowed. The default value
+                        is `[]` which forbids all CORS requests.
+  --max_training_processes MAX_TRAINING_PROCESSES
+                        Number of processes used to handle training requests.
+                        Increasing this value will have a great impact on
+                        memory usage. It is recommended to keep the default
+                        value.
+  --num_threads NUM_THREADS
+                        Number of parallel threads to use for handling parse
+                        requests.
+  --response_log RESPONSE_LOG
+                        Directory where logs will be saved (containing queries
+                        and responses).If set to ``null`` logging will be
+                        disabled.
+  --storage STORAGE     Set the remote location where models are stored. E.g.
+                        on AWS. If nothing is configured, the server will only
+                        serve the models that are on disk in the configured
+                        `path`.
+  -c CONFIG, --config CONFIG
+                        Default model configuration file used for training.
+  --debug               Print lots of debugging statements. Sets logging level
+                        to DEBUG
+  -v, --verbose         Be verbose. Sets logging level to INFO
 </pre></div>
 </div>
 </div>
@@ -517,10 +562,6 @@ under the <code class="docutils literal"><span class="pre">path</span></code> di
             <dd><a href="http.html">0.12.1</a></dd>
             <dd><a href="../0.12.0/http.html">0.12.0</a></dd>
             <dd><a href="../0.11.4/http.html">0.11.4</a></dd>
-            <dd><a href="../0.11.3/http.html">0.11.3</a></dd>
-            <dd><a href="../0.11.2/http.html">0.11.2</a></dd>
-            <dd><a href="../0.11.1/http.html">0.11.1</a></dd>
-            <dd><a href="../0.11.0/http.html">0.11.0</a></dd>
             <dd><a href="../0.10.6/http.html">0.10.6</a></dd>
             <dd><a href="../0.9.2/http.html">0.9.2</a></dd>
             <dd><a href="../0.8.12/http.html">0.8.12</a></dd>
