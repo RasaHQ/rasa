@@ -36,4 +36,5 @@ VOLUME ["/app/model"]
 EXPOSE 5005
 
 ENTRYPOINT ["./entrypoint.sh"]
+
 CMD ["start", "--core", "./model/dialogue", "--nlu", "./model/nlu"]
