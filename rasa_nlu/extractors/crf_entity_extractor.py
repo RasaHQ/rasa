@@ -97,7 +97,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         if training_data.entity_examples:
             # convert the dataset into features
-            dataset = self._create_dataset(training_data.entity_examples)
+            dataset = self._create_dataset(training_data.training_examples)
             # train the model
             self._train_model(dataset)
 
@@ -113,7 +113,7 @@ class CRFEntityExtractor(EntityExtractor):
         # type: (TrainingData, Language) -> None
 
         if testing_data.num_entity_examples > 0:
-            dataset = self._create_dataset(testing_data.entity_examples)
+            dataset = self._create_dataset(testing_data.training_examples)
             self._test_model(dataset)
 
     def process(self, message, **kwargs):
