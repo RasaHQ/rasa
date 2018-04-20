@@ -194,9 +194,9 @@ class EmbeddingPolicy(Policy):
 
         #extras[extras < 0] = 1
         # print(extras[0])
-        ex1 = np.roll(1 - extras, 1, axis=1)
-        ex1[:, 0, :] = 1
-        extras *= ex1
+        # ex1 = np.roll(1 - extras, 1, axis=1)
+        # ex1[:, 0, :] = 1
+        # extras *= ex1
         # print(extras[0])
         # exit()
         return X, extras
@@ -264,27 +264,27 @@ class EmbeddingPolicy(Policy):
                 normalize=True,
                 probability_fn=tf.sigmoid
         )
-        num_extras_units = int(emb_extras.shape[-1])
-        attn_mech_extras = tf.contrib.seq2seq.BahdanauAttention(
-            num_units=num_extras_units, memory=emb_extras,
-            memory_sequence_length=real_length,
-            normalize=True,
-            probability_fn=tf.sigmoid
-        )
+        # num_extras_units = int(emb_extras.shape[-1])
+        # attn_mech_extras = tf.contrib.seq2seq.BahdanauAttention(
+        #     num_units=num_extras_units, memory=emb_extras,
+        #     memory_sequence_length=real_length,
+        #     normalize=True,
+        #     probability_fn=tf.sigmoid
+        # )
 
         def cell_input_fn(inputs, attention):
 
-            # res = tf.concat([
-            #                  inputs[:, :num_utter_units] +
-            #                  attention[:, :num_utter_units],
-            #                  inputs[:, num_utter_units:] +
-            #                  attention[:, num_utter_units:]
-            #                  ], -1)
-            res = inputs + attention
+            res = tf.concat([
+                             inputs[:, :num_utter_units] +
+                             attention[:, :num_utter_units],
+                             inputs[:, num_utter_units:]# +
+                             #attention[:, num_utter_units:]
+                             ], -1)
+            # res = inputs + attention
             return res
 
         attn_cell = TimeAttentionWrapper(
-                cell_decoder, [attn_mech_utter, attn_mech_extras],
+                cell_decoder, attn_mech_utter,# attn_mech_extras],
                 # attention_layer_size=num_units,
                 cell_input_fn=cell_input_fn,
                 output_attention=False,
@@ -430,14 +430,14 @@ class EmbeddingPolicy(Policy):
         """Train tf graph"""
         self.session.run(tf.global_variables_initializer())
 
-        actions_for_X, all_Y_d = helper_data
+        actions_for_X, all_Y_d, true_length = helper_data
 
         batches_per_epoch = (len(X) // self.batch_size +
                              int(len(X) % self.batch_size > 0))
 
         pbar = tqdm(range(self.epochs), desc="Epochs")
         for ep in pbar:
-            ids = np.random.permutation(len(X))
+            ids = np.random.permutation(X.shape[0])
 
             ep_loss = 0
             for i in range(batches_per_epoch):
@@ -452,6 +452,16 @@ class EmbeddingPolicy(Policy):
                 batch_b = self._create_batch_b(batch_pos_b, actions_for_b)
 
                 batch_c = extras[ids[start_idx:end_idx]]
+
+                if (ep + 1) % 3 == 0:
+                    batch_c[:] = 0
+
+                # if (ep + 1) % 10 == 0:
+                #     for batch_idx, story_idx in enumerate(ids[start_idx:end_idx]):
+                #         aug_ids = np.random.permutation(true_length[story_idx])
+                #         batch_a[batch_idx, :true_length[story_idx], :] = batch_a[batch_idx, aug_ids, :]
+                #         batch_b[batch_idx, :true_length[story_idx], :] = batch_b[batch_idx, aug_ids, :]
+                #         batch_c[batch_idx, :true_length[story_idx], :] = batch_c[batch_idx, aug_ids, :]
 
                 sess_out = self.session.run(
                     {'loss': loss, 'train_op': self.train_op},
@@ -526,7 +536,7 @@ class EmbeddingPolicy(Policy):
         X, Y, extras, actions_for_X = self._prepare_data_for_training(
                                         training_data)
         all_Y_d = self._create_all_Y_d(X.shape[1])
-        helper_data = actions_for_X, all_Y_d
+        helper_data = actions_for_X, all_Y_d, training_data.true_length
 
         self.graph = tf.Graph()
         with self.graph.as_default():
