@@ -21,6 +21,14 @@ Removed
 Fixed
 -----
 
+[0.12.2] - 2018-03-20
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed duckling text extraction for ner_duckling_http 
+
+
 [0.12.1] - 2018-03-18
 ^^^^^^^^^^^^^^^^^^^^^
 
