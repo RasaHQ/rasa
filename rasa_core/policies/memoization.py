@@ -162,11 +162,11 @@ class MemoizationPolicy(Policy):
                                 [tracker], domain)
         states = tracker_as_states[0]
         logger.debug("Current tracker state {}".format(states))
-        memorised = self._recall(states)
-        if memorised is not None:
+        recalled = self._recall(states)
+        if recalled is not None:
             logger.debug("Used memorised next action '{}'"
-                         "".format(memorised))
-            result[memorised] = 1.0
+                         "".format(recalled))
+            result[recalled] = 1.0
 
         return result
 
