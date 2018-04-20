@@ -57,9 +57,14 @@ def load_data(resource_name, language='en', token=None):
     if utils.is_url(resource_name):
         if token is not None:
             resource_name += '?token={}'.format(token)
-        response = requests.get(resource_name)
-        temp_data_file = utils.create_temporary_file(response.content)
-        return _load(temp_data_file)
+        try:
+            response = requests.get(resource_name)
+            response.raise_for_status()
+            temp_data_file = utils.create_temporary_file(response.content)
+            return _load(temp_data_file)
+        except Exception as e:
+            logger.warning("Could not retrieve training data "
+                           "from URL:\n{}".format(e))
     else:
         files = utils.list_files(resource_name)
         data_sets = [_load(f, language) for f in files]
