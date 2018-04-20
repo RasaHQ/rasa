@@ -35,8 +35,7 @@ jobs:
   - stage: docs
     if: fork = false
     install:
-    - pip install sphinx==1.5.2 sphinx-autobuild==0.7.1 sphinxcontrib-versioning==2.2.1
-      nbsphinx==0.2.18
+    - pip install sphinx==1.5.2 sphinx-autobuild==0.7.1 sphinxcontrib-versioning==2.2.1 sphinxcontrib-programoutput==0.11 nbsphinx==0.2.18
     - pip install -e git://github.com/RasaHQ/sphinx_rtd_theme.git#egg=sphinx_rtd_theme
     script:
     - eval "$(ssh-agent -s)"; touch docs/key; chmod 0600 docs/key
@@ -45,7 +44,7 @@ jobs:
     - git config --global user.name "Travis CI"
     - git remote set-url --push origin "git@github.com:$TRAVIS_REPO_SLUG"
     - export ${!TRAVIS*}
-    - sphinx-versioning push docs gh-pages .
+    - sphinx-versioning push docs docs .
   - stage: deploy
     install: skip
     script: skip
