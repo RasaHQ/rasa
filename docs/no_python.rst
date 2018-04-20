@@ -42,6 +42,11 @@ something like this:
            data = requests.get(url).json
            return [SlotSet("api_result", data)]
 
+Rasa Core with Docker
+^^^^^^^^^^^^^^^^^^^^^
+
+We provided a Dockerfile which allows you to build an image of Rasa Core
+with a simple command: ``docker build -t rasa_core .``
 
 
 Rasa Core with ZERO Python

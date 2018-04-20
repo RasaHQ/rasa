@@ -35,4 +35,5 @@ VOLUME ["/app/model"]
 
 EXPOSE 5005
 
-CMD ["python", "-m", "rasa_core.server", "--core", "./model/dialogue", "--nlu", "./model/nlu"]
+ENTRYPOINT ["./entrypoint.sh"]
+CMD ["start", "--core", "./model/dialogue", "--nlu", "./model/nlu"]

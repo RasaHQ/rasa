@@ -18,6 +18,7 @@ Added
 - ``/conversations`` endpoint for listing sender ids of running conversations
 - added a Mattermost channel that allows Rasa Core to communicate via a Mattermost app
 - added a Twilio channel that allows Rasa Core to communicate via SMS
+- Dockerfile which starts ``rasa_core.server`` with a dialogue and Rasa NLU model
 
 Changed
 -------
