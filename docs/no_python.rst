@@ -45,9 +45,33 @@ something like this:
 Rasa Core with Docker
 ^^^^^^^^^^^^^^^^^^^^^
 
-We provided a Dockerfile which allows you to build an image of Rasa Core
+We provide a Dockerfile which allows you to build an image of Rasa Core
 with a simple command: ``docker build -t rasa_core .``
 
+The default command of the resulting container starts the Rasa Core server
+with the ``--core`` and ``--nlu`` options. At this stage the container does not
+yet contain any models, so you have to mount them from a local folder into
+the container's ``/app/model/dialogue`` and ``app/model/nlu`` directories.
+The full run command looks like this:
+
+.. code-block:: bash
+
+   docker run \
+      --mount type=bind,source=<PATH_TO_DIALOGUE_MODEL>,target=/app/model/dialogue \
+      --mount type=bind,source=<PATH_TO_NLU_MODEL>,target=/app/model/nlu \
+      rasa_core
+
+You also have the option to use the container to train a model with
+
+.. code-block:: bash
+
+   docker run rasa_core train [OPTIONS]
+
+Here you need the usual command-line options needed for the ``rasa_core.train``
+module.
+
+You may in addition run an arbitrary command inside the container with
+``docker run rasa_core run [COMMAND]``.
 
 Rasa Core with ZERO Python
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
