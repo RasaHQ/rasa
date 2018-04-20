@@ -55,7 +55,7 @@ def load_data(resource_name, language='en', token=None):
     Merges them if loaded from disk and multiple files are found."""
 
     if utils.is_url(resource_name):
-        if token:
+        if token is not None:
             resource_name += '?token={}'.format(token)
         response = requests.get(resource_name)
         temp_data_file = utils.create_temporary_file(response.content)
