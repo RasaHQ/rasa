@@ -265,11 +265,10 @@ class EmbeddingPolicy(Policy):
                 probability_fn=tf.sigmoid
         )
         num_extras_units = int(emb_extras.shape[-1])
-        attn_mech_extras = tf.contrib.seq2seq.LuongAttention(
-            num_units=self.rnn_size, memory=emb_extras,
+        attn_mech_extras = tf.contrib.seq2seq.BahdanauAttention(
+            num_units=num_extras_units, memory=emb_extras,
             memory_sequence_length=real_length,
-            #normalize=True,
-            scale=True,
+            normalize=True,
             probability_fn=tf.sigmoid
         )
 
