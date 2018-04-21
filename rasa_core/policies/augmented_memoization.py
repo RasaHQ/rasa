@@ -32,37 +32,37 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         return augmented
 
     def _back_to_the_future(self, tracker):
+        if self.max_history <= 1:
+            return []
+
+        historic_events = []
+        collected_events = []
+
+        idx_of_last_evt = len(tracker._applied_events()) - 1
+
+        for e_i, event in enumerate(reversed(tracker._applied_events())):
+            collected_events.append(event)
+
+            if isinstance(event, ActionExecuted):
+                if e_i == idx_of_last_evt:
+                    # if we arrived at the end of the tracker,
+                    # the last historic_events repeat the tracker
+                    # so we delete them
+                    break
+
+                historic_events.append(collected_events[:])
+
+                if len(historic_events) == self.max_history - 1:
+                    # we need i to be one less than max_history
+                    # not to recall again with the same features
+                    break
+
         mcfly_trackers = []
-        if self.max_history > 1:
-            historic_events = [[]]
-            i = 0
-            e_i_last = len(tracker._applied_events()) - 1
-            for e_i, event in enumerate(
-                    reversed(tracker._applied_events())):
-                historic_events[i].append(event)
-
-                if isinstance(event, ActionExecuted):
-                    historic_events[i].reverse()
-                    i += 1
-                    if i == self.max_history - 1:
-                        # we need i to be one less than max_history
-                        # not to recall again with the same features
-                        break
-                    if e_i == e_i_last:
-                        # if we arrived at the end of the tracker,
-                        # the last historic_events repeat the tracker
-                        # so we delete them
-                        del historic_events[-1]
-                        break
-                    historic_events.append(historic_events[i - 1][::-1])
-
-            historic_events.reverse()
-
-            for events in historic_events:
-                mcfly_tracker = tracker._init_copy()
-                for e in events:
-                    mcfly_tracker.update(e)
-                mcfly_trackers.append(mcfly_tracker)
+        for events in reversed(historic_events):
+            mcfly_tracker = tracker._init_copy()
+            for e in reversed(events):
+                mcfly_tracker.update(e)
+            mcfly_trackers.append(mcfly_tracker)
 
         return mcfly_trackers
 
@@ -76,31 +76,40 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         else returns 0.0 for all actions."""
         result = [0.0] * domain.num_actions
 
-        if self.is_enabled:
-            tracker_as_states = self.featurizer.prediction_states(
-                                    [tracker], domain)
-            states = tracker_as_states[0]
+        if not self.is_enabled:
+            return result
+
+        tracker_as_states = self.featurizer.prediction_states(
+                                [tracker], domain)
+        states = tracker_as_states[0]
+        logger.debug("Current tracker state {}".format(states))
+
+        recalled = self._recall(states)
+        if recalled is None:
+            # let's try a different method to recall that state
+            recalled = self._recall_using_delorean(tracker, domain)
+
+        if recalled is not None:
+            logger.debug("Used memorised next action '{}'"
+                         "".format(recalled))
+            result[recalled] = 1.0
+
+        return result
+
+    def _recall_using_delorean(self, tracker, domain):
+        # correctly forgetting slots
+
+        logger.debug("Launch DeLorean...")
+        mcfly_trackers = self._back_to_the_future(tracker)
+
+        tracker_as_states = self.featurizer.prediction_states(
+                                mcfly_trackers, domain)
+
+        for states in tracker_as_states:
             logger.debug("Current tracker state {}".format(states))
             memorised = self._recall(states)
             if memorised is not None:
-                logger.debug("Used memorised next action '{}'"
-                             "".format(memorised))
-                result[memorised] = 1.0
-                return result
+                return memorised
 
-            # correctly forgetting slots
-            logger.debug("Launch DeLorean...")
-            mcfly_trackers = self._back_to_the_future(tracker)
-
-            tracker_as_states = self.featurizer.prediction_states(
-                                    mcfly_trackers, domain)
-            for states in tracker_as_states:
-                logger.debug("Current tracker state {}".format(states))
-                memorised = self._recall(states)
-                if memorised is not None:
-                    logger.debug("Used memorised next action '{}'"
-                                 "".format(memorised))
-                    result[memorised] = 1.0
-                    return result
-
-        return result
+        # No match found
+        return None
