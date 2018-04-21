@@ -5,8 +5,7 @@ from __future__ import unicode_literals
 
 import json
 import logging
-
-import os
+from urlparse import urlparse
 
 import requests
 from typing import Text, Optional
@@ -16,12 +15,10 @@ from rasa_nlu.training_data import TrainingData
 from rasa_nlu.training_data.formats import (
     MarkdownReader, WitReader, LuisReader,
     RasaReader, DialogflowReader)
+from rasa_nlu.training_data.formats import markdown
 from rasa_nlu.training_data.formats.dialogflow import (
     DIALOGFLOW_AGENT, DIALOGFLOW_PACKAGE, DIALOGFLOW_INTENT,
     DIALOGFLOW_ENTITIES, DIALOGFLOW_ENTITY_ENTRIES, DIALOGFLOW_INTENT_EXAMPLES)
-
-from rasa_nlu.training_data.formats import markdown
-
 
 logger = logging.getLogger(__name__)
 
@@ -50,29 +47,56 @@ _json_format_heuristics = {
 
 def load_data(resource_name, language='en'):
     # type: (Text, Optional[Text]) -> TrainingData
-    """Load training data from disk or a URL.
+    """Load training data from disk.
 
     Merges them if loaded from disk and multiple files are found."""
 
-    if utils.is_url(resource_name):
-        try:
-            response = requests.get(resource_name)
-            response.raise_for_status()
-            temp_data_file = utils.create_temporary_file(response.content)
-            return _load(temp_data_file)
-        except Exception as e:
-            logger.warning("Could not retrieve training data "
-                           "from URL:\n{}".format(e))
+    files = utils.list_files(resource_name)
+    data_sets = [_load(f, language) for f in files]
+    data_sets = [ds for ds in data_sets if ds]
+    if len(data_sets) == 0:
+        return TrainingData()
+    elif len(data_sets) == 1:
+        return data_sets[0]
     else:
-        files = utils.list_files(resource_name)
-        data_sets = [_load(f, language) for f in files]
-        data_sets = [ds for ds in data_sets if ds]
-        if len(data_sets) == 0:
-            return TrainingData()
-        elif len(data_sets) == 1:
-            return data_sets[0]
-        else:
-            return data_sets[0].merge(*data_sets[1:])
+        return data_sets[0].merge(*data_sets[1:])
+
+
+def load_data_from_platform(platform_url,
+                            project=None,
+                            username=None,
+                            password=None,
+                            language='en'
+                            ):
+    # type: (Text, Optional[Text]) -> TrainingData
+    """Load training data from a Rasa Platform URL."""
+
+    if not utils.is_url(platform_url):
+        raise requests.exceptions.InvalidURL(platform_url)
+    try:
+        parsed = urlparse(platform_url)
+        login_url = parsed._replace(netloc='{}:5002'.format(parsed.hostname),
+                                    path='login').geturl()
+        user = dict(username=username,
+                    password=password)
+        login = requests.post(login_url, json=user)
+        login.raise_for_status()
+
+        data_path = '{}/data'.format(project or 'default')
+        token_query = 'token={}'.format(login.json().get('token', ''))
+        data_url = parsed._replace(netloc='{}:5002'.format(parsed.hostname),
+                                   path=data_path,
+                                   query=token_query)
+
+        data_url = data_url.geturl()
+        response = requests.get(data_url)
+        response.raise_for_status()
+
+        temp_data_file = utils.create_temporary_file(response.content)
+        return _load(temp_data_file, language)
+    except Exception as e:
+        logger.warning("Could not retrieve training data "
+                       "from URL:\n{}".format(e))
 
 
 def _reader_factory(fformat):
