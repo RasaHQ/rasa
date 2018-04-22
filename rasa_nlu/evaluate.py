@@ -37,19 +37,16 @@ def create_argument_parser():
             description='evaluate a Rasa NLU pipeline with cross '
                         'validation or on external data')
 
-    parser.add_argument('-d', '--data',
-                        required=True,
+    parser.add_argument('-d', '--data', required=True,
                         help="file containing training/evaluation data")
 
-    parser.add_argument('--mode',
-                        default="evaluation",
+    parser.add_argument('--mode', default="evaluation",
                         help="evaluation|crossvalidation (evaluate "
                              "pretrained model or train model "
                              "by crossvalidation)")
 
     # todo: make the two different modes two subparsers
     parser.add_argument('-c', '--config',
-
                         help="model configurion file (crossvalidation only)")
 
     parser.add_argument('-m', '--model', required=False,
@@ -58,18 +55,13 @@ def create_argument_parser():
     parser.add_argument('-f', '--folds', required=False, default=10,
                         help="number of CV folds (crossvalidation only)")
 
-    parser.add_argument('-e', '--errors', required=False,
-                        default="nlu_errors.json",
-                        help="output path for the json file showing samples"
-                            "with wrong predictions")
+    parser.add_argument('-e', '--errors', required=False, default="errors.json",
+                        help="output path for the json with wrong predictions")
 
-    parser.add_argument('--histogram', required=False,
-                        default="confidence_distribution.png",
-                        help="output path for the confidence distribution "
-                        "histogram plot")
+    parser.add_argument('--histogram', required=False, default="hist.png",
+                        help="output path for the confidence histogram")
 
-    parser.add_argument('-o', '--output', required=False,
-                        default="confusion_matrix.png",
+    parser.add_argument('-o', '--output', required=False, default="confmat.png",
                         help="output path for the confusion matrix plot")
 
     utils.add_logging_option_arguments(parser, default=logging.INFO)
@@ -115,13 +107,14 @@ def plot_confusion_matrix(cm, classes,
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
 
+
 def plot_histogram(hist_data):  # pragma: no cover
     """Plots a histogram of the confidence distribution of the predictions
         and saves it to file"""
     import matplotlib.pyplot as plt
 
     plt.xlim([0, 1])
-    plt.hist(hist_data, bins=[0.05*i for i in range(1,21)])
+    plt.hist(hist_data, bins=[0.05*i for i in range(1, 21)])
     plt.title('Intent Prediction Confidence Distribution')
     plt.xlabel('Confidence')
     plt.ylabel('Number of Samples')
@@ -189,17 +182,21 @@ def drop_intents_below_freq(td, cutoff=5):
     return TrainingData(keep_examples, td.entity_synonyms, td.regex_features)
 
 
-def show_nlu_errors(targets, predictions, messages, confidences):  # pragma: no cover
-    """Logs messages which result in wrong predictions and saves them to file"""
-    
+def show_nlu_errors(targets, preds, messages, conf):  # pragma: no cover
+    """Log messages which result in wrong predictions and save them to file"""
+
     errors = {}
-    errors['nlu'] = [{"text": messages[i],
-                "true_label": targets[i],
-                "prediction": predictions[i],
-                "confidence": confidences[i]} for i in range(len(messages)) if not (targets[i] == predictions[i])]
+    errors['nlu'] = [
+        {"text": messages[i],
+        "true_label": targets[i],
+        "prediction": preds[i],
+        "confidence": conf[i]} \
+        for i in range(len(messages)) if not (targets[i] == preds[i])]
+
     if errors['nlu']:
         errors = json.dumps(errors, indent=4)
-        logger.info("\n\nThese intent examples could not be classified correctly \n{}".format(errors))
+        logger.info("\n\nThese intent examples could not be classified "
+                    "correctly \n{}".format(errors))
         with open(cmdline_args.errors, 'w') as error_file:
             error_file.write(errors)
         logger.info("Errors were saved to file {}.".format(cmdline_args.errors))
@@ -207,12 +204,10 @@ def show_nlu_errors(targets, predictions, messages, confidences):  # pragma: no 
         logger.info("No prediction errors were found. You are AWESOME!")
 
 
-def evaluate_intents(targets, predictions, messages, confidences):  # pragma: no cover
+def evaluate_intents(targets, preds, messages, conf):  # pragma: no cover
     """Creates a confusion matrix and summary statistics for intent predictions.
-    Logs samples which could not be classified correctly and saves them to file
-    (nlu_errors.json as default).
-    Creates a confidence histogram which is saved to file
-    (confidence_distribution.png as default).
+    Logs samples which could not be classified correctly and saves them to file.
+    Creates a confidence histogram which is saved to file.
     Only considers those examples with a set intent.
     Others are filtered out."""
     from sklearn.metrics import confusion_matrix
@@ -221,23 +216,28 @@ def evaluate_intents(targets, predictions, messages, confidences):  # pragma: no
 
     # remove empty intent targets
     num_examples = len(targets)
-    targets, predictions, messages, confidences = remove_empty_intent_examples(targets, predictions, messages, confidences)
+    targets, preds, messages, conf = remove_empty_intent_examples(
+                                                targets, preds, messages, conf)
+
     logger.info("Intent Evaluation: Only considering those "
                 "{} examples that have a defined intent out "
                 "of {} examples".format(targets.size, num_examples))
-    log_evaluation_table(targets, predictions)
+
+    log_evaluation_table(targets, preds)
 
     # log and save misclassified samples to file for debugging
-    show_nlu_errors(targets, predictions, messages, confidences)
+    show_nlu_errors(targets, preds, messages, conf)
 
     # create histogram of confidence distribution, save to file and display
-    hist = [confidences[i] for i in range(len(messages)) if (targets[i] == predictions[i])]
+    hist = [conf[i] for i in range(len(messages)) \
+                            if (targets[i] == preds[i])]
+
     plot_histogram(hist)
     plt.show()
     plt.gcf().clear()
 
-    cnf_matrix = confusion_matrix(targets, predictions)
-    labels = unique_labels(targets, predictions)
+    cnf_matrix = confusion_matrix(targets, preds)
+    labels = unique_labels(targets, preds)
     plot_confusion_matrix(cnf_matrix,
                           classes=labels,
                           title='Intent Confusion matrix')
@@ -247,6 +247,7 @@ def evaluate_intents(targets, predictions, messages, confidences):  # pragma: no
     fig.savefig(cmdline_args.output, bbox_inches='tight')
 
     plt.show()
+
 
 def merge_labels(aligned_predictions, extractor=None):
     """Concatenates all labels of the aligned predictions.
@@ -592,9 +593,11 @@ def run_evaluation(data_path, model_path,
 
     if is_intent_classifier_present(interpreter):
         intent_targets = get_intent_targets(test_data)
-        intent_predictions, messages, confidences = get_intent_predictions(interpreter, test_data)
+        intent_predictions, messages, confidences = get_intent_predictions(
+                                                        interpreter, test_data)
         logger.info("Intent evaluation results:")
-        evaluate_intents(intent_targets, intent_predictions, messages, confidences)
+        evaluate_intents(intent_targets, intent_predictions, messages,
+                        confidences)
 
     if extractors:
         entity_targets = get_entity_targets(test_data)
@@ -688,9 +691,11 @@ def compute_intent_metrics(interpreter, corpus):
     if not is_intent_classifier_present(interpreter):
         return {}
     intent_targets = get_intent_targets(corpus)
-    intent_predictions, messages, confidences = get_intent_predictions(interpreter, corpus)
-    intent_targets, intent_predictions, messages, confidences = remove_empty_intent_examples(
-            intent_targets, intent_predictions, messages, confidences)
+    intent_predictions, messages, confidences = get_intent_predictions(
+                                                            interpreter, corpus)
+    intent_targets, intent_predictions, messages, confidences = \
+        remove_empty_intent_examples(intent_targets, intent_predictions,
+                                    messages, confidences)
 
     # compute fold metrics
     _, precision, f1, accuracy = get_evaluation_metrics(intent_targets,
