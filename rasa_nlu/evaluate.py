@@ -37,12 +37,10 @@ def create_argument_parser():
             description='evaluate a Rasa NLU pipeline with cross '
                         'validation or on external data')
 
-    parser.add_argument('-d', '--data',
-                        required=True,
+    parser.add_argument('-d', '--data', required=True,
                         help="file containing training/evaluation data")
 
-    parser.add_argument('--mode',
-                        default="evaluation",
+    parser.add_argument('--mode', default="evaluation",
                         help="evaluation|crossvalidation (evaluate "
                              "pretrained model or train model "
                              "by crossvalidation)")
@@ -194,7 +192,7 @@ def show_nlu_errors(targets, preds, messages, conf):  # pragma: no cover
             "true_label": targets[i],
             "prediction": preds[i],
             "confidence": conf[i]}
-            for i in range(len(messages)) if not (targets[i] == preds[i])]
+        for i in range(len(messages)) if not (targets[i] == preds[i])]
 
     if errors['nlu']:
         errors = json.dumps(errors, indent=4)
@@ -598,7 +596,7 @@ def run_evaluation(data_path, model_path,
                                                         interpreter, test_data)
         logger.info("Intent evaluation results:")
         evaluate_intents(intent_targets, intent_predictions, messages,
-                            confidences)
+                         confidences)
 
     if extractors:
         entity_targets = get_entity_targets(test_data)
@@ -696,7 +694,7 @@ def compute_intent_metrics(interpreter, corpus):
                                                             interpreter, corpus)
     intent_targets, intent_predictions, messages, confidences = \
         remove_empty_intent_examples(intent_targets, intent_predictions,
-                                        messages, confidences)
+                                     messages, confidences)
 
     # compute fold metrics
     _, precision, f1, accuracy = get_evaluation_metrics(intent_targets,
