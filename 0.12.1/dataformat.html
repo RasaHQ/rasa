@@ -391,7 +391,41 @@ For other file formats you have to use the single-file approach.</p>
 </pre></div>
 </div>
 <p>Here is a quick overview over the parameters you can pass to that script:</p>
-<div class="highlight-text"><div class="highlight"><pre><span></span>/home/travis/virtualenv/python2.7.14/bin/python: No module named rasa_nlu
+<div class="highlight-text"><div class="highlight"><pre><span></span>usage: train.py [-h] [-o PATH] (-d DATA | -u URL) -c CONFIG [-t NUM_THREADS]
+                [--project PROJECT] [--fixed_model_name FIXED_MODEL_NAME]
+                [--storage STORAGE] [--username USERNAME]
+                [--password PASSWORD] [--debug] [-v]
+
+train a custom language parser
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -o PATH, --path PATH  Path where model files will be saved
+  -d DATA, --data DATA  Location of the training data. For JSON and markdown
+                        data, this can either be a single file or a directory
+                        containing multiple training data files.
+  -u URL, --url URL     Rasa Platform URL from which to retrieve training
+                        data.
+  -c CONFIG, --config CONFIG
+                        Rasa NLU configuration file
+  -t NUM_THREADS, --num_threads NUM_THREADS
+                        Number of threads to use during model training
+  --project PROJECT     Project this model belongs to.
+  --fixed_model_name FIXED_MODEL_NAME
+                        If present, a model will always be persisted in the
+                        specified directory instead of creating a folder like
+                        &#39;model_20171020-160213&#39;
+  --storage STORAGE     Set the remote location where models are stored. E.g.
+                        on AWS. If nothing is configured, the server will only
+                        serve the models that are on disk in the configured
+                        `path`.
+  --username USERNAME   Rasa Platform username. To be used when retrieving
+                        training data from a Platform URL with the `--url`
+                        option.
+  --password PASSWORD   Rasa Platform password.
+  --debug               Print lots of debugging statements. Sets logging level
+                        to DEBUG
+  -v, --verbose         Be verbose. Sets logging level to INFO
 </pre></div>
 </div>
 <p>The other ways to train a model are</p>
@@ -451,12 +485,7 @@ For other file formats you have to use the single-file approach.</p>
             <dd><a href="../0.12.2/dataformat.html">0.12.2</a></dd>
             <dd><a href="dataformat.html">0.12.1</a></dd>
             <dd><a href="../0.12.0/dataformat.html">0.12.0</a></dd>
-            <dd><a href="../0.11.5/dataformat.html">0.11.5</a></dd>
             <dd><a href="../0.11.4/dataformat.html">0.11.4</a></dd>
-            <dd><a href="../0.11.3/dataformat.html">0.11.3</a></dd>
-            <dd><a href="../0.11.2/dataformat.html">0.11.2</a></dd>
-            <dd><a href="../0.11.1/dataformat.html">0.11.1</a></dd>
-            <dd><a href="../0.11.0/dataformat.html">0.11.0</a></dd>
             <dd><a href="../0.10.6/dataformat.html">0.10.6</a></dd>
             <dd><a href="../0.9.2/dataformat.html">0.9.2</a></dd>
             <dd><a href="../0.8.12/dataformat.html">0.8.12</a></dd>
