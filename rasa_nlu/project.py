@@ -121,10 +121,12 @@ class Project(object):
             self._loader_lock.release()
 
         response = self._models[model_name].parse(text, time)
+        response['project'] = self._project
+        response['model'] = model_name
 
         self._end_read()
 
-        return response, model_name
+        return response
 
     def update(self, model_name):
         self._writer_lock.acquire()

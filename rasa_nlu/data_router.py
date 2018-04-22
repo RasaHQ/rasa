@@ -232,15 +232,12 @@ class DataRouter(object):
                             project, e))
 
         time = data.get('time')
-        response, used_model = self.project_store[project].parse(data['text'],
-                                                                 time,
-                                                                 model)
-        response['project'] = project
-        response['model'] = used_model
+        response = self.project_store[project].parse(data['text'], time,
+                                                     model)
 
         if self.responses:
             self.responses.info('', user_input=response, project=project,
-                                model=used_model)
+                                model=response.get('model'))
 
         return self.format_response(response)
 
