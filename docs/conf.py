@@ -313,7 +313,8 @@ scv_sort = ('semver',)
 scv_whitelist_branches = ('master', 'latest')
 scv_grm_exclude = ('README.md', '.gitignore', '.nojekyll', 'CNAME')
 scv_whitelist_tags = (re.compile(r'^[123456789]+\.[0-9]+\.\d+$'),
-                      re.compile(r'^0\.[123456789][123456789]+\.\d+$'),
+                      re.compile(r'^0\.[123456789][23456789]+\.\d+$'),
+                      '0.11.4',
                       '0.10.6',
                       '0.9.2',
                       '0.8.12',
