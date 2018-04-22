@@ -5,10 +5,10 @@ from __future__ import unicode_literals
 
 import json
 import logging
-from urlparse import urlparse
 
 import requests
 from typing import Text, Optional
+from future.utils import PY3
 
 from rasa_nlu import utils
 from rasa_nlu.training_data import TrainingData
@@ -70,6 +70,11 @@ def load_data_from_platform(platform_url,
                             ):
     # type: (Text, Optional[Text]) -> TrainingData
     """Load training data from a Rasa Platform URL."""
+
+    if PY3:
+        from urllib.parse import urlparse
+    else:
+        from urlparse import urlparse
 
     if not utils.is_url(platform_url):
         raise requests.exceptions.InvalidURL(platform_url)
