@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import io
 import itertools
 import logging
 import shutil
@@ -198,7 +199,7 @@ def show_nlu_errors(targets, preds, messages, conf):  # pragma: no cover
         errors = json.dumps(errors, indent=4)
         logger.info("\n\nThese intent examples could not be classified "
                     "correctly \n{}".format(errors))
-        with open(cmdline_args.errors, 'w') as error_file:
+        with io.open(cmdline_args.errors, 'w') as error_file:
             error_file.write(errors)
         logger.info("Errors were saved to file {}.".format(cmdline_args.errors))
     else:
