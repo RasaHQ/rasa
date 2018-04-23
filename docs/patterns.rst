@@ -258,6 +258,10 @@ or if none of the dialogue policies predict an action with confidence higher tha
 
 .. code-block:: python
 
+   from rasa_core.policies.fallback import FallbackPolicy
+   from rasa_core.policies.keras_policy import KerasPolicy
+   from rasa_core.agent import Agent
+
    fallback = FallbackPolicy(fallback_action_name="utter_default",
                              core_threshold=0.3
                              nlu_threshold=0.3)
