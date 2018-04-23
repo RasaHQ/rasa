@@ -33,6 +33,18 @@ class FallbackPolicy(Policy):
                  core_threshold=0.3,
                  fallback_action_name="action_listen"):
         # type: (Optional[Featurizer]) -> None
+        """Policy which executes a fallback action if NLU confidence is low
+        or no other policy has a high-confidence prediction.
+
+        :param nlu_threshold: minimum threshold for NLU confidence.
+                              If intent prediction confidence is lower than this,
+                              predict fallback action with confidence 1.0
+        :param core_threshold: if NLU confidence threshold is met,
+                               predict fallback action with confidence core_threshold.
+                               If this is the highest confidence in the ensemble,
+                               the fallback action will be executed.
+        :fallback_action_name: name of the action to execute as a fallback.
+        """
 
         self.featurizer = featurizer
         self.max_history = max_history
