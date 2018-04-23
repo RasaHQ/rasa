@@ -78,6 +78,10 @@ class FallbackPolicy(Policy):
                                    self.fallback_action_name))
             score = 1.0
         else:
+            # NLU confidence threshold is met, so
+            # predict fallback action with confidence `core_threshold`
+            # if this is the highest confidence in the ensemble,
+            # the fallback action will be executed.
             score = self.core_threshold
         result[idx] = score
 
