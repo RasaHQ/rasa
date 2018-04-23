@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 import logging
 import typing
 
-from typing import Optional, Any, Dict, List, Text
+from typing import Dict, List, Text
 
 from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.events import ActionExecuted
@@ -17,19 +17,30 @@ if typing.TYPE_CHECKING:
     from rasa_core.trackers import DialogueStateTracker
     from rasa_core.domain import Domain
 
-ENABLE_FEATURE_STRING_COMPRESSION = True
-
 
 class AugmentedMemoizationPolicy(MemoizationPolicy):
-    SUPPORTS_ONLINE_TRAINING = True
+    """The policy that remembers examples from training stories
+        for up to `max_history` turns.
+
+        If it is needed to recall turns from training dialogues
+        where some slots might not be set during prediction time,
+        add relevant stories without such slots to training data.
+        E.g. reminder stories.
+
+        Since `slots` that are set some time in the past are
+        preserved in all future feature vectors until they are set
+        to None, this policy has a capability to recall the turns
+        up to `max_history` from training stories during prediction
+        even if additional slots were filled in the past
+        for current dialogue."""
 
     def _preprocess_states(self, states):
         # type: (List[Dict[Text, float]]) -> List[List[Dict[Text, float]]]
         """Overrides the helper method to preprocess tracker's states.
 
-        Creates a list of states with deleted history
-        to add the ability of augmented memoization
-        to recall partial history"""
+            Creates a list of states with deleted history
+            to add the ability of augmented memoization
+            to recall partial history"""
 
         augmented = [list(states)]
         augmented_states = list(states)
@@ -95,11 +106,11 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
     def predict_action_probabilities(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> List[float]
         """Predicts the next action the bot should take
-        after seeing the tracker.
+            after seeing the tracker.
 
-        Returns the list of probabilities for the next actions.
-        If memorized action was found returns 1.0 for its index,
-        else returns 0.0 for all actions."""
+            Returns the list of probabilities for the next actions.
+            If memorized action was found returns 1.0 for its index,
+            else returns 0.0 for all actions."""
         result = [0.0] * domain.num_actions
 
         if not self.is_enabled:

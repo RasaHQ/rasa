@@ -30,6 +30,19 @@ ENABLE_FEATURE_STRING_COMPRESSION = True
 
 
 class MemoizationPolicy(Policy):
+    """The policy that remembers exact examples of
+        `max_history` turns from training stories.
+
+        Since `slots` that are set some time in the past are
+        preserved in all future feature vectors until they are set
+        to None, this policy implicitly remembers and most importantly
+        recalls examples in the context of the current dialogue
+        longer than `max_history`.
+
+        If it is needed to recall turns from training dialogues where
+        some slots might not be set during prediction time, and there are
+        training stories for this, use AugmentedMemoizationPolicy."""
+
     SUPPORTS_ONLINE_TRAINING = True
 
     @classmethod
@@ -40,7 +53,7 @@ class MemoizationPolicy(Policy):
         return MaxHistoryTrackerFeaturizer(None, max_history)
 
     def __init__(self, max_history=None, lookup=None):
-        # type: (int, Optional[Dict]) -> None
+        # type: (Optional[int], Optional[Dict]) -> None
 
         featurizer = self._standard_featurizer(max_history)
         super(MemoizationPolicy, self).__init__(featurizer)
@@ -56,8 +69,8 @@ class MemoizationPolicy(Policy):
     def _preprocess_states(self, states):
         # type: (List[Dict[Text, float]]) -> List[List[Dict[Text, float]]]
         """Helper method to preprocess tracker's states.
-        E.g., to a create list of states with deleted history
-        for augmented Memoization"""
+            E.g., to a create list of states with deleted history
+            for augmented Memoization"""
         return [states]
 
     def _add(self, trackers_as_states, trackers_as_actions,
@@ -151,11 +164,11 @@ class MemoizationPolicy(Policy):
     def predict_action_probabilities(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> List[float]
         """Predicts the next action the bot should take
-        after seeing the tracker.
+            after seeing the tracker.
 
-        Returns the list of probabilities for the next actions.
-        If memorized action was found returns 1.0 for its index,
-        else returns 0.0 for all actions."""
+            Returns the list of probabilities for the next actions.
+            If memorized action was found returns 1.0 for its index,
+            else returns 0.0 for all actions."""
         result = [0.0] * domain.num_actions
 
         if not self.is_enabled:
