@@ -18,16 +18,25 @@ from rasa_core.events import (
     UserUttered, TopicSet, ActionExecuted, Restarted, ActionReverted,
     UserUtteranceReverted)
 from rasa_core.featurizers import BinaryFeaturizer
-from rasa_core.tracker_store import InMemoryTrackerStore, RedisTrackerStore
+from rasa_core.tracker_store import (
+    InMemoryTrackerStore, RedisTrackerStore,
+    TrackerStore)
 from rasa_core.trackers import DialogueStateTracker
 from tests.conftest import DEFAULT_STORIES_FILE
 from tests.utilities import tracker_from_dialogue_file, read_dialogue_file
+import fakeredis
 
 domain = TemplateDomain.load("data/test_domains/default_with_topic.yml")
 
 
+class MockRedisTrackerStore(RedisTrackerStore):
+    def __init__(self, domain):
+        self.red = fakeredis.FakeStrictRedis()
+        TrackerStore.__init__(self, domain)
+
+
 def stores_to_be_tested():
-    return [RedisTrackerStore(domain, mock=True),
+    return [MockRedisTrackerStore(domain),
             InMemoryTrackerStore(domain)]
 
 

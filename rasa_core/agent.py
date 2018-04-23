@@ -3,9 +3,10 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import logging
 import os
 
-import logging
+import typing
 from six import string_types
 from typing import Text, List, Optional, Callable, Any, Dict, Union
 
@@ -24,6 +25,9 @@ from rasa_core.tracker_store import InMemoryTrackerStore, TrackerStore
 
 logger = logging.getLogger(__name__)
 
+if typing.TYPE_CHECKING:
+    from rasa_core.interpreter import NaturalLanguageInterpreter as NLUIntp
+
 
 class Agent(object):
     """Public interface for common things to do.
@@ -34,9 +38,9 @@ class Agent(object):
     def __init__(
             self,
             domain,  # type: Union[Text, Domain]
-            policies=None,  # type: Optional[Union[PolicyEnsemble, List[Policy]]
+            policies=None,  # type: Union[PolicyEnsemble, List[Policy], None]
             featurizer=None,  # type: Optional[Featurizer]
-            interpreter=None,  # type: Optional[NaturalLanguageInterpreter]
+            interpreter=None,  # type: Optional[NLUIntp]
             tracker_store=None  # type: Optional[TrackerStore]
     ):
         self.domain = self._create_domain(domain)
@@ -47,9 +51,14 @@ class Agent(object):
                 tracker_store, self.domain)
 
     @classmethod
-    def load(cls, path, interpreter=None, tracker_store=None,
-             action_factory=None):
-        # type: (Text, Any, Optional[TrackerStore]) -> Agent
+    def load(
+            cls,
+            path,  # type: Text
+            interpreter=None,  # type: Union[NLUIntp, Text, None]
+            tracker_store=None,  # type: Optional[TrackerStore]
+            action_factory=None  # type: Optional[Text]
+    ):
+        # type: (...) -> Agent
 
         if path is None:
             raise ValueError("No domain path specified.")
@@ -96,33 +105,46 @@ class Agent(object):
         return processor.handle_message(
                 UserMessage(text_message, output_channel, sender_id))
 
-    def start_message_handling(self,
-                               text_message,
-                               sender_id=UserMessage.DEFAULT_SENDER_ID):
-        # type: (Text, Optional[Text]) -> Dict[Text, Any]
+    def start_message_handling(
+            self,
+            text_message,  # type: Text
+            sender_id=UserMessage.DEFAULT_SENDER_ID  # type: Optional[Text]
+    ):
+        # type: (...) -> Dict[Text, Any]
 
         processor = self._create_processor()
         return processor.start_message_handling(
                 UserMessage(text_message, None, sender_id))
 
-    def continue_message_handling(self, sender_id, executed_action, events):
-        # type: (Text, Text, List[Event]) -> Dict[Text, Any]
+    def continue_message_handling(
+            self,
+            sender_id,  # type: Text
+            executed_action,   # type: Text
+            events   # type: List[Event]
+    ):
+        # type: (...) -> Dict[Text, Any]
 
         processor = self._create_processor()
         return processor.continue_message_handling(sender_id,
                                                    executed_action,
                                                    events)
 
-    def handle_channel(self, input_channel,
-                       message_preprocessor=None):
-        # type: (InputChannel, Optional[Callable[[Text], Text]]) -> None
+    def handle_channel(
+            self,
+            input_channel,  # type: InputChannel
+            message_preprocessor=None   # type: Optional[Callable[[Text], Text]]
+    ):
+        # type: (...) -> None
         """Handle messages coming from the channel."""
 
         processor = self._create_processor(message_preprocessor)
         processor.handle_channel(input_channel)
 
-    def toggle_memoization(self, activate):
-        # type: (bool) -> None
+    def toggle_memoization(
+            self,
+            activate   # type: bool
+    ):
+        # type: (...) -> None
         """Toggles the memoization on and off.
 
         If a memoization policy is present in the ensemble, this will toggle
@@ -138,9 +160,13 @@ class Agent(object):
             if type(p) == MemoizationPolicy:
                 p.toggle(activate)
 
-    def train(self, resource_name=None, model_path=None, remove_duplicates=True,
-              **kwargs):
-        # type: (Optional[Text], Optional[Text], **Any) -> None
+    def train(self,
+              resource_name=None, # type: Optional[Text]
+              model_path=None,    # type: Optional[Text]
+              remove_duplicates=True,   # type: bool
+              **kwargs   # type: **Any
+              ):
+        # type: (...) -> None
         """Train the policies / policy ensemble using dialogue data from file"""
 
         trainer = PolicyTrainer(self.policy_ensemble, self.domain,

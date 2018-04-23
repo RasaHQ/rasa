@@ -334,3 +334,14 @@ def read_file(filename, encoding="utf-8"):
 def is_training_data_empty(X):
     """Check if the training matrix does contain training samples."""
     return X.shape[0] == 0
+
+
+def zip_folder(folder):
+    import tempfile
+    import shutil
+
+    zipped_path = tempfile.NamedTemporaryFile(delete=False)
+    zipped_path.close()
+
+    # WARN: not thread save!
+    return shutil.make_archive(zipped_path.name, str("zip"), folder)

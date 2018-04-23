@@ -675,3 +675,63 @@ class ActionExecuted(Event):
         # type: (DialogueStateTracker) -> None
 
         tracker.latest_action_name = self.action_name
+
+
+class AgentUttered(Event):
+    """The agent has said something to the user.
+
+    This class is not used in the story training as it is contained in the
+    ``ActionExecuted`` class. An entry is made in the ``Tracker``."""
+
+    type_name = "agent"
+
+    def __init__(self, text=None, data=None, timestamp=None):
+        self.text = text
+        self.data = data
+        super(AgentUttered, self).__init__(timestamp)
+
+    def __hash__(self):
+        return hash((self.text, jsonpickle.encode(self.data)))
+
+    def __eq__(self, other):
+        if not isinstance(other, AgentUttered):
+            return False
+        else:
+            return (self.text, jsonpickle.encode(self.data)) == \
+                   (other.text, jsonpickle.encode(other.data))
+
+    def __str__(self):
+        return "AgentUttered(text: {}, data: {})".format(
+                self.text, json.dumps(self.data, indent=2))
+
+    def apply_to(self, tracker):
+        # type: (DialogueStateTracker) -> None
+
+        pass
+
+    def as_story_string(self):
+        return None
+
+    def as_dict(self):
+        d = super(AgentUttered, self).as_dict()
+        d.update({
+            "text": self.text,
+            "data": self.data,
+        })
+        return d
+
+    @staticmethod
+    def empty():
+        return AgentUttered()
+
+    @classmethod
+    def _from_parameters(cls, parameters):
+        try:
+            return AgentUttered(parameters.get("text"),
+                                parameters.get("data"),
+                                parameters.get("timestamp"))
+        except KeyError as e:
+            raise ValueError("Failed to parse agent uttered event. "
+                             "{}".format(e))
+
+

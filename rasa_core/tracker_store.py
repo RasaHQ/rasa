@@ -88,22 +88,22 @@ class InMemoryTrackerStore(TrackerStore):
     def keys(self):
         return self.store.keys()
 
+
 class RedisTrackerStore(TrackerStore):
 
-    def __init__(self, domain, mock=False, host='localhost',
+    def keys(self):
+        pass
+
+    def __init__(self, domain, host='localhost',
                  port=6379, db=0, password=None):
 
-        if mock:
-            import fakeredis
-            self.red = fakeredis.FakeStrictRedis()
-        else:  # pragma: no cover
-            import redis
-            self.red = redis.StrictRedis(host=host, port=port, db=db,
-                                         password=password)
+        import redis
+        self.red = redis.StrictRedis(host=host, port=port, db=db,
+                                     password=password)
         super(RedisTrackerStore, self).__init__(domain)
 
     def save(self, tracker, timeout=None):
-        serialised_tracker = RedisTrackerStore.serialise_tracker(tracker)
+        serialised_tracker = self.serialise_tracker(tracker)
         self.red.set(tracker.sender_id, serialised_tracker, ex=timeout)
 
     def retrieve(self, sender_id):
