@@ -189,7 +189,7 @@ class Agent(object):
             domain_spec_path = os.path.join(model_path,
                                             'policy_metadata.json')
             # check if there were a model before
-            if domain_spec_path:
+            if os.path.exists(domain_spec_path):
                 shutil.rmtree(model_path)
 
         self.policy_ensemble.persist(model_path)
