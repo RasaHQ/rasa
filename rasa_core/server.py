@@ -117,7 +117,6 @@ def default_arg(request, name, default=None):
     else:
        return values[0]
 
-
 def request_parameters(request):
     if request.method.decode('utf-8', 'strict') == 'GET':
         return {
@@ -147,8 +146,12 @@ def check_cors(f):
         if origin:
             if '*' in self.config['cors_origins']:
                 request.setHeader('Access-Control-Allow-Origin', '*')
+                request.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+                request.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS, PUT, DELETE')
             elif origin in self.config['cors_origins']:
                 request.setHeader('Access-Control-Allow-Origin', origin)
+                request.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+                request.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS, PUT, DELETE')
             else:
                 request.setResponseCode(403)
                 return 'forbidden'
@@ -281,6 +284,13 @@ class RasaCoreServer(object):
             tracker.update(e)
         self.agent.tracker_store.save(tracker)
         return json.dumps(tracker.current_state())
+
+    @app.route("/conversations",
+               methods=['GET', 'OPTIONS'])
+    @check_cors
+    @ensure_loaded_agent
+    def list_trackers(self, request):
+        return json.dumps(list(self.agent.tracker_store.keys()))
 
     @app.route("/conversations/<sender_id>/tracker",
                methods=['GET', 'OPTIONS'])

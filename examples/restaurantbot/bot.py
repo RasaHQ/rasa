@@ -67,14 +67,15 @@ def train_dialogue(domain_file="restaurant_domain.yml",
 
 
 def train_nlu():
-    from rasa_nlu.converters import load_data
-    from rasa_nlu.config import RasaNLUConfig
+    from rasa_nlu.training_data import load_data
+    from rasa_nlu import config
     from rasa_nlu.model import Trainer
 
     training_data = load_data('data/franken_data.json')
-    trainer = Trainer(RasaNLUConfig("nlu_model_config.json"))
+    trainer = Trainer(config.load("nlu_model_config.yml"))
     trainer.train(training_data)
-    model_directory = trainer.persist('models/nlu/', fixed_model_name="current")
+    model_directory = trainer.persist('models/nlu/',
+                                      fixed_model_name="current")
 
     return model_directory
 
