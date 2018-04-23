@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import os
+import shutil
 
 import logging
 from six import string_types
@@ -183,6 +184,13 @@ class Agent(object):
     def persist(self, model_path):
         # type: (Text) -> None
         """Persists this agent into a directory for later loading and usage."""
+
+        if os.path.exists(model_path):
+            domain_spec_path = os.path.join(model_path,
+                                            'policy_metadata.json')
+            # check if there were a model before
+            if domain_spec_path:
+                shutil.rmtree(model_path)
 
         self.policy_ensemble.persist(model_path)
         self.domain.persist(os.path.join(model_path, "domain.yml"))

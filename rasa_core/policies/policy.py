@@ -10,6 +10,7 @@ from builtins import object
 from typing import \
     Any, List, Optional, Text, Dict, Callable
 
+import inspect
 from copy import deepcopy
 from rasa_core.featurizers import \
     MaxHistoryTrackerFeaturizer, BinarySingleStateFeaturizer
@@ -49,7 +50,6 @@ class Policy(object):
     def _get_valid_params(func, **kwargs):
         # type: (Callable, **Any) -> Dict
         # filter out kwargs that cannot be passed to func
-        import inspect
         try:
             # python 3.x is used
             valid_keys = inspect.signature(func).parameters.keys()
@@ -81,7 +81,9 @@ class Policy(object):
                                                            domain)
 
         max_training_samples = kwargs.get('max_training_samples')
-        if max_training_samples:
+        if max_training_samples is not None:
+            logger.debug("Limit training data to {} training samples."
+                         "".format(max_training_samples))
             training_data.limit_training_data_to(max_training_samples)
 
         return training_data

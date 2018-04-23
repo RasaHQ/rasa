@@ -21,7 +21,6 @@ logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from rasa_core.domain import Domain
-    from rasa_core.featurizers import Featurizer
     from rasa_core.policies.policy import Policy
     from rasa_core.trackers import DialogueStateTracker
 
@@ -120,9 +119,8 @@ class PolicyEnsemble(object):
         self._persist_metadata(path)
 
         for i, policy in enumerate(self.policies):
-            # TODO better way then many folders?
-            # TODO delete old files from these folders
-            policy_path = os.path.join(path, 'policy_{}'.format(i))
+            folder_name = 'policy_{}_{}'.format(i, type(policy).__name__)
+            policy_path = os.path.join(path, folder_name)
             policy.persist(policy_path)
 
     @classmethod
