@@ -115,7 +115,7 @@ def plot_histogram(hist_data):  # pragma: no cover
     import matplotlib.pyplot as plt
 
     plt.xlim([0, 1])
-    plt.hist(hist_data, bins=[0.05*i for i in range(1, 21)])
+    plt.hist(hist_data, bins=[0.05 * i for i in range(1, 21)])
     plt.title('Intent Prediction Confidence Distribution')
     plt.xlabel('Confidence')
     plt.ylabel('Number of Samples')
