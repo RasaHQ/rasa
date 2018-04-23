@@ -41,7 +41,8 @@ class MemoizationPolicy(Policy):
 
         If it is needed to recall turns from training dialogues where
         some slots might not be set during prediction time, and there are
-        training stories for this, use AugmentedMemoizationPolicy."""
+        training stories for this, use AugmentedMemoizationPolicy.
+    """
 
     SUPPORTS_ONLINE_TRAINING = True
 

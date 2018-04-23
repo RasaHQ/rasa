@@ -113,7 +113,7 @@ class TestScoringPolicy(PolicyTestCollection):
 
 class TestFallbackPolicy(PolicyTestCollection):
     @pytest.fixture(scope="module")
-    def create_policy(self):
+    def create_policy(self, featurizer):
         p = FallbackPolicy()
         return p
 

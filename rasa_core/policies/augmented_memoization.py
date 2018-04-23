@@ -32,7 +32,8 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         to None, this policy has a capability to recall the turns
         up to `max_history` from training stories during prediction
         even if additional slots were filled in the past
-        for current dialogue."""
+        for current dialogue.
+    """
 
     def _preprocess_states(self, states):
         # type: (List[Dict[Text, float]]) -> List[List[Dict[Text, float]]]

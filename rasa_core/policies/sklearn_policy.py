@@ -33,33 +33,31 @@ if typing.TYPE_CHECKING:
 class SklearnPolicy(Policy):
     """Use an sklearn classifier to train a policy.
 
-    Supports cross validation and grid search.
+        Supports cross validation and grid search.
 
-    :param sklearn.base.ClassifierMixin model:
-      The sklearn model or model pipeline.
+        :param sklearn.base.ClassifierMixin model:
+          The sklearn model or model pipeline.
 
-    :param cv:
-      If *cv* is not None, perform a cross validation on the training
-      data. *cv* should then conform to the sklearn standard
-      (e.g. *cv=5* for a 5-fold cross-validation).
+        :param cv:
+          If *cv* is not None, perform a cross validation on the training
+          data. *cv* should then conform to the sklearn standard
+          (e.g. *cv=5* for a 5-fold cross-validation).
 
-    :param dict param_grid:
-      If *param_grid* is not None and *cv* is given, a grid search on
-      the given *param_grid* is performed
-      (e.g. *param_grid={'n_estimators': [50, 100]}*).
+        :param dict param_grid:
+          If *param_grid* is not None and *cv* is given, a grid search on
+          the given *param_grid* is performed
+          (e.g. *param_grid={'n_estimators': [50, 100]}*).
 
-    :param scoring:
-      Scoring strategy, using the sklearn standard.
+        :param scoring:
+          Scoring strategy, using the sklearn standard.
 
-    :param sklearn.base.TransformerMixin label_encoder:
-      Encoder for the labels. Must implement an *inverse_transform*
-      method.
+        :param sklearn.base.TransformerMixin label_encoder:
+          Encoder for the labels. Must implement an *inverse_transform*
+          method.
 
-    :param bool shuffle:
-      Whether to shuffle training data.
-
+        :param bool shuffle:
+          Whether to shuffle training data.
     """
-    SUPPORTS_ONLINE_TRAINING = False
 
     def __init__(
         self,
