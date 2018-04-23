@@ -189,8 +189,11 @@ def test_restaurant_form_skipahead():
     tracker = tracker_store.get_or_create_tracker(sender_id)
 
     # first user utterance
-    entities = [{"entity": "cuisine", "value": "chinese"}, {"entity": "number", "value": 8}]
-    tracker.update(UserUttered("", intent={"name": "inform"}, entities=entities))
+    entities = [{"entity": "cuisine", "value": "chinese"},
+                {"entity": "number", "value": 8}]
+    tracker.update(UserUttered("",
+                               intent={"name": "inform"},
+                               entities=entities))
 
     events = ActionSearchRestaurants().run(dispatcher, tracker, domain)
     s = events[0].as_story_string()
