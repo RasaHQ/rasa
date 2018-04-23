@@ -47,7 +47,8 @@ class SingleStateFeaturizer(object):
                                   "the capacity to "
                                   "encode states to a feature vector")
 
-    def encode_action(self, action, domain):
+    @staticmethod
+    def action_as_one_hot(action, domain):
         # type: (Optional[Text, float], Domain) -> np.ndarray
         if action is None:
             return np.ones(domain.num_actions, dtype=int) * -1
@@ -283,6 +284,18 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
 
         return used_features
 
+    def create_encoded_all_actions(self, domain):
+        # type: (Domain) -> np.ndarray
+        """Create matrix with all actions from domain
+            encoded in rows as bag of words."""
+        encoded_all_actions = np.zeros((domain.num_actions,
+                                        len(self.bot_vocab)),
+                                       dtype=int)
+        for idx, name in enumerate(domain.action_names):
+            for t in name.split(self.split_symbol):
+                encoded_all_actions[idx, self.bot_vocab[t]] = 1
+        return encoded_all_actions
+
 
 class TrackerFeaturizer(object):
     """Base class for actual tracker featurizers"""
@@ -328,8 +341,8 @@ class TrackerFeaturizer(object):
             if len(trackers_as_actions) > 1:
                 tracker_actions = self._pad_states(tracker_actions)
 
-            story_labels = [self.state_featurizer.encode_action(action,
-                                                                domain)
+            story_labels = [self.state_featurizer.action_as_one_hot(action,
+                                                                    domain)
                             for action in tracker_actions]
 
             labels.append(story_labels)

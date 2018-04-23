@@ -70,10 +70,10 @@ class SklearnPolicy(Policy):
         shuffle=True,  # type: bool
     ):
         if featurizer:
-            assert isinstance(featurizer, MaxHistoryTrackerFeaturizer), \
-                ("Passed featurizer of type {}, should be "
-                 "MaxHistoryTrackerFeaturizer."
-                 "".format(type(featurizer).__name__))
+            if not isinstance(featurizer, MaxHistoryTrackerFeaturizer):
+                raise TypeError("Passed featurizer of type {}, should be "
+                                "MaxHistoryTrackerFeaturizer."
+                                "".format(type(featurizer).__name__))
         super(SklearnPolicy, self).__init__(featurizer)
 
         self.model = model
@@ -177,15 +177,15 @@ class SklearnPolicy(Policy):
     def persist(self, path):
         # type: (Text) -> None
 
-        super(SklearnPolicy, self).persist(path)
+        if self.model:
+            self.featurizer.persist(path)
 
-        if not self.model:
-            warnings.warn("Persist called without a trained model present. "
-                          "Nothing to persist then!")
-        else:
             filename = os.path.join(path, 'sklearn_model.pkl')
             with open(filename, 'wb') as f:
                 pickle.dump(self._state, f)
+        else:
+            warnings.warn("Persist called without a trained model present. "
+                          "Nothing to persist then!")
 
     @classmethod
     def load(cls, path):

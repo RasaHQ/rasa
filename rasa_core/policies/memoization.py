@@ -26,8 +26,6 @@ if typing.TYPE_CHECKING:
     from rasa_core.trackers import DialogueStateTracker
     from rasa_core.domain import Domain
 
-ENABLE_FEATURE_STRING_COMPRESSION = True
-
 
 class MemoizationPolicy(Policy):
     """The policy that remembers exact examples of
@@ -43,7 +41,7 @@ class MemoizationPolicy(Policy):
         some slots might not be set during prediction time, and there are
         training stories for this, use AugmentedMemoizationPolicy.
     """
-
+    ENABLE_FEATURE_STRING_COMPRESSION = True
     SUPPORTS_ONLINE_TRAINING = True
 
     @classmethod
@@ -119,10 +117,9 @@ class MemoizationPolicy(Policy):
                         self.lookup[feature_key] = feature_item
                 pbar.set_postfix({"# examples": len(self.lookup)})
 
-    @staticmethod
-    def _create_feature_key(states):
+    def _create_feature_key(self, states):
         feature_str = json.dumps(states, sort_keys=True).replace("\"", "")
-        if ENABLE_FEATURE_STRING_COMPRESSION:
+        if self.ENABLE_FEATURE_STRING_COMPRESSION:
             compressed = zlib.compress(bytes(feature_str, "utf-8"))
             return base64.b64encode(compressed).decode("utf-8")
         else:
@@ -190,10 +187,9 @@ class MemoizationPolicy(Policy):
     def persist(self, path):
         # type: (Text) -> None
 
-        super(MemoizationPolicy, self).persist(path)
-
         memorized_file = os.path.join(path, 'memorized_turns.json')
         data = {
+            "max_history": self.max_history,
             "lookup": self.lookup
         }
         utils.create_dir_for_file(memorized_file)
@@ -203,17 +199,11 @@ class MemoizationPolicy(Policy):
     def load(cls, path):
         # type: (Text) -> MemoizationPolicy
 
-        featurizer = TrackerFeaturizer.load(path)
-        assert isinstance(featurizer, MaxHistoryTrackerFeaturizer), \
-            ("Loaded featurizer of type {}, should be "
-             "MaxHistoryTrackerFeaturizer."
-             "".format(type(featurizer).__name__))
-
         memorized_file = os.path.join(path, 'memorized_turns.json')
         if os.path.isfile(memorized_file):
             with io.open(memorized_file) as f:
                 data = json.loads(f.read())
-            return cls(featurizer.max_history, data["lookup"])
+            return cls(data["max_history"], data["lookup"])
         else:
             logger.info("Couldn't load memoization for policy. "
                         "File '{}' doesn't exist. Falling back to empty "

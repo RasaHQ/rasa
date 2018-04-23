@@ -120,15 +120,13 @@ class Policy(object):
     def persist(self, path):
         # type: (Text) -> None
         """Persists the policy to a storage."""
-        if self.featurizer:
-            self.featurizer.persist(path)
+        raise NotImplementedError("Policy must have the capacity "
+                                  "to persist itself.")
 
     @classmethod
     def load(cls, path):
         # type: (Text) -> Policy
         """Loads a policy from the storage.
-
-        Needs to load its featurizer"""
-
+            Needs to load its featurizer"""
         raise NotImplementedError("Policy must have the capacity "
                                   "to load itself.")

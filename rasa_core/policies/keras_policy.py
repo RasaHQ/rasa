@@ -204,9 +204,9 @@ class KerasPolicy(Policy):
     def persist(self, path):
         # type: (Text) -> None
 
-        super(KerasPolicy, self).persist(path)
-
         if self.model:
+            self.featurizer.persist(path)
+
             arch_file = os.path.join(path, 'keras_arch.json')
             weights_file = os.path.join(path, 'keras_weights.h5')
             config_file = os.path.join(path, 'keras_policy.json')

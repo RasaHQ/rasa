@@ -39,6 +39,7 @@ class FallbackPolicy(Policy):
         :param Text fallback_action_name:
           name of the action to execute as a fallback.
     """
+    MAX_HISTORY_DEFAULT = None
 
     def __init__(self,
                  nlu_threshold=0.3,  # type: float
@@ -46,6 +47,7 @@ class FallbackPolicy(Policy):
                  fallback_action_name="action_listen"  # type: Text
                  ):
         # type: (...) -> None
+        super(FallbackPolicy, self).__init__()
 
         self.nlu_threshold = nlu_threshold
         self.core_threshold = core_threshold
@@ -101,6 +103,7 @@ class FallbackPolicy(Policy):
             "core_threshold": self.core_threshold,
             "fallback_action_name": self.fallback_action_name
         }
+        utils.create_dir_for_file(config_file)
         utils.dump_obj_as_json_to_file(config_file, meta)
 
     @classmethod
