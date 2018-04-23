@@ -447,7 +447,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
 
             delete_first_state = False
             actions = []
-            for event in tracker._applied_events():
+            for event in tracker.applied_events():
                 if isinstance(event, ActionExecuted):
                     if not event.unpredictable:
                         # only actions which can be
@@ -534,7 +534,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
             states = domain.states_for_tracker_history(tracker)
 
             idx = 0
-            for event in tracker._applied_events():
+            for event in tracker.applied_events():
                 if isinstance(event, ActionExecuted):
                     if not event.unpredictable:
                         # only actions which can be

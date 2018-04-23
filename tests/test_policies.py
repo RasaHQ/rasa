@@ -224,7 +224,7 @@ class TestSklearnPolicy(PolicyTestCollection):
                                                default_domain.slots,
                                                default_domain.topics,
                                                default_domain.default_topic)
-            for e in tr._applied_events():
+            for e in tr.applied_events():
                 if isinstance(e, ActionExecuted):
                     new_action = default_domain.action_for_index(
                         np.random.choice(classes)).name()

@@ -24,6 +24,13 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
     SUPPORTS_ONLINE_TRAINING = True
 
     def _preprocess_states(self, states):
+        # type: (List[Dict[Text, float]]) -> List[List[Dict[Text, float]]]
+        """Overrides the helper method to preprocess tracker's states.
+
+        Creates a list of states with deleted history
+        to add the ability of augmented memoization
+        to recall partial history"""
+
         augmented = [list(states)]
         augmented_states = list(states)
         for i in range(self.max_history - 1):
@@ -38,33 +45,52 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         historic_events = []
         collected_events = []
 
-        idx_of_last_evt = len(tracker._applied_events()) - 1
+        idx_of_last_evt = len(tracker.applied_events()) - 1
 
-        for e_i, event in enumerate(reversed(tracker._applied_events())):
+        for e_i, event in enumerate(reversed(tracker.applied_events())):
             collected_events.append(event)
 
             if isinstance(event, ActionExecuted):
                 if e_i == idx_of_last_evt:
-                    # if we arrived at the end of the tracker,
+                    # if arrived at the end of the tracker,
                     # the last historic_events repeat the tracker
-                    # so we delete them
+                    # so `break` is called before appending them
                     break
 
                 historic_events.append(collected_events[:])
 
                 if len(historic_events) == self.max_history - 1:
-                    # we need i to be one less than max_history
-                    # not to recall again with the same features
+                    # the length of `historic_events` should be
+                    # one less than max_history, in order
+                    # to not recall again with the same features
                     break
 
         mcfly_trackers = []
         for events in reversed(historic_events):
-            mcfly_tracker = tracker._init_copy()
+            mcfly_tracker = tracker.init_copy()
             for e in reversed(events):
                 mcfly_tracker.update(e)
             mcfly_trackers.append(mcfly_tracker)
 
         return mcfly_trackers
+
+    def _recall_using_delorean(self, tracker, domain):
+        # correctly forgetting slots
+
+        logger.debug("Launch DeLorean...")
+        mcfly_trackers = self._back_to_the_future(tracker)
+
+        tracker_as_states = self.featurizer.prediction_states(
+                                mcfly_trackers, domain)
+
+        for states in tracker_as_states:
+            logger.debug("Current tracker state {}".format(states))
+            memorised = self._recall(states)
+            if memorised is not None:
+                return memorised
+
+        # No match found
+        return None
 
     def predict_action_probabilities(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> List[float]
@@ -86,7 +112,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
         recalled = self._recall(states)
         if recalled is None:
-            # let's try a different method to recall that state
+            # let's try a different method to recall that tracker
             recalled = self._recall_using_delorean(tracker, domain)
 
         if recalled is not None:
@@ -95,21 +121,3 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
             result[recalled] = 1.0
 
         return result
-
-    def _recall_using_delorean(self, tracker, domain):
-        # correctly forgetting slots
-
-        logger.debug("Launch DeLorean...")
-        mcfly_trackers = self._back_to_the_future(tracker)
-
-        tracker_as_states = self.featurizer.prediction_states(
-                                mcfly_trackers, domain)
-
-        for states in tracker_as_states:
-            logger.debug("Current tracker state {}".format(states))
-            memorised = self._recall(states)
-            if memorised is not None:
-                return memorised
-
-        # No match found
-        return None

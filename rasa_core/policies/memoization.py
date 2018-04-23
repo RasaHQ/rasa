@@ -54,7 +54,10 @@ class MemoizationPolicy(Policy):
         self.is_enabled = activate
 
     def _preprocess_states(self, states):
-        # to be used in augmented Memoization
+        # type: (List[Dict[Text, float]]) -> List[List[Dict[Text, float]]]
+        """Helper method to preprocess tracker's states.
+        E.g., to a create list of states with deleted history
+        for augmented Memoization"""
         return [states]
 
     def _add(self, trackers_as_states, trackers_as_actions,

@@ -179,7 +179,7 @@ class DialogueStateTracker(object):
 
         return self._topic_stack.top
 
-    def _init_copy(self):
+    def init_copy(self):
         # type: () -> DialogueStateTracker
         """Creates a new state tracker with the same initial values."""
         from rasa_core.channels import UserMessage
@@ -196,16 +196,16 @@ class DialogueStateTracker(object):
         The resulting array is representing
         the trackers before each action."""
 
-        tracker = self._init_copy()
+        tracker = self.init_copy()
 
-        for event in self._applied_events():
+        for event in self.applied_events():
             if isinstance(event, ActionExecuted):
                 yield tracker
             tracker.update(event)
 
         yield tracker  # yields the final state
 
-    def _applied_events(self):
+    def applied_events(self):
         # type: () -> List[Event]
         """Returns all actions that should be applied - w/o reverted events."""
         def undo_till_previous(event_type, done_events):
@@ -237,7 +237,7 @@ class DialogueStateTracker(object):
         # type: () -> None
         """Update the tracker based on a list of events."""
 
-        applied_events = self._applied_events()
+        applied_events = self.applied_events()
         for event in applied_events:
             event.apply_to(self)
 
@@ -265,7 +265,7 @@ class DialogueStateTracker(object):
         passed time stamp will be replayed. Events that occur exactly
         at the target time will be included."""
 
-        tracker = self._init_copy()
+        tracker = self.init_copy()
 
         for event in self.events:
             if event.timestamp <= target_time:
@@ -302,7 +302,7 @@ class DialogueStateTracker(object):
         Returns the dumped tracker as a string."""
         from rasa_core.training.structures import Story
 
-        story = Story.from_events(self._applied_events())
+        story = Story.from_events(self.applied_events())
         return story.as_story_string(flat=True)
 
     def export_stories_to_file(self, export_path="debug.md"):
