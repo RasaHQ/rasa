@@ -9,12 +9,10 @@ import json
 import io
 import typing
 
-from typing import Any, List, Optional, Text
+from typing import Any, List, Text
 
 from rasa_core import utils
 from rasa_core.policies.policy import Policy
-from rasa_core.featurizers import TrackerFeaturizer
-from rasa_core.training.data import DialogueTrainingData
 
 logger = logging.getLogger(__name__)
 
@@ -53,14 +51,21 @@ class FallbackPolicy(Policy):
         self.core_threshold = core_threshold
         self.fallback_action_name = fallback_action_name
 
-    def train(self, training_data, domain, **kwargs):
-        # type: (DialogueTrainingData, Domain, **Any) -> None
+    def train(self,
+              training_trackers,  # type: List[DialogueStateTracker]
+              domain,  # type: Domain
+              **kwargs  # type: **Any
+              ):
+        # type: (...) -> None
         """Does nothing. This policy is deterministic."""
 
         pass
 
     def predict_action_probabilities(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> List[float]
+        """Predicts a fallback action if NLU confidence is low
+            or no other policy has a high-confidence prediction"""
+
         result = [0.0] * domain.num_actions
         idx = domain.index_for_action(self.fallback_action_name)
         nlu_data = tracker.latest_message.parse_data
