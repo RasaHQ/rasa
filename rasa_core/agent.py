@@ -131,7 +131,7 @@ class Agent(object):
         training data."""
 
         for p in self.policy_ensemble.policies:
-            # explicitly ignore inheritance (e.g. scoring policy)
+            # explicitly ignore inheritance (e.g. augmented memoization policy)
             if type(p) == MemoizationPolicy:
                 p.toggle(activate)
 
@@ -139,6 +139,13 @@ class Agent(object):
               **kwargs):
         # type: (Optional[Text], Optional[Text], bool, **Any) -> None
         """Train the policies / policy ensemble using dialogue data from file"""
+
+        # deprecation tests
+        if kwargs.get('featurizer') or kwargs.get('max_history'):
+            logger.warning("Passing `featurizer` and `max_history` "
+                           "through agent is deprecated. "
+                           "Pass appropriate featurizer "
+                           "directly to the policy instead.")
 
         trainer = PolicyTrainer(self.policy_ensemble, self.domain)
         trainer.train(resource_name, remove_duplicates=remove_duplicates,

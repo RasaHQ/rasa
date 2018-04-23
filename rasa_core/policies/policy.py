@@ -6,7 +6,6 @@ from __future__ import unicode_literals
 import logging
 import typing
 
-from inspect import signature
 from builtins import object
 from typing import \
     Any, List, Optional, Text, Dict, Callable
@@ -50,7 +49,14 @@ class Policy(object):
     def _get_valid_params(func, **kwargs):
         # type: (Callable, **Any) -> Dict
         # filter out kwargs that cannot be passed to func
-        valid_keys = signature(func).parameters.keys()
+        import inspect
+        try:
+            # python 3.x is used
+            valid_keys = inspect.signature(func).parameters.keys()
+        except AttributeError:
+            # python 2.x is used
+            valid_keys = inspect.getargspec(func).args
+
         params = {key: kwargs.get(key)
                   for key in valid_keys if kwargs.get(key)}
         ignored_params = {key: kwargs.get(key)
@@ -70,12 +76,6 @@ class Policy(object):
         """Transform training trackers into a vector representation.
         The trackers, consisting of multiple turns, will be transformed
         into a float vector which can be used by a ML model."""
-
-        max_history = kwargs.get('max_history')
-        if max_history:
-            logger.warning("Passing `max_history` through agent is "
-                           "deprecated. Pass appropriate featurizer "
-                           "to the policy instead.")
 
         training_data = self.featurizer.featurize_trackers(trackers,
                                                            domain)
