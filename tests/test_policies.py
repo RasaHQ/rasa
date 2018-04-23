@@ -17,6 +17,7 @@ from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.policies.augmented_memoization import \
     AugmentedMemoizationPolicy
 from rasa_core.policies.sklearn_policy import SklearnPolicy
+from rasa_core.policies.fallback import FallbackPolicy
 from rasa_core.trackers import DialogueStateTracker
 from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 from rasa_core.policies import PolicyTrainer
@@ -107,6 +108,13 @@ class TestScoringPolicy(PolicyTestCollection):
         if isinstance(featurizer, MaxHistoryTrackerFeaturizer):
             max_history = featurizer.max_history
         p = AugmentedMemoizationPolicy(max_history)
+        return p
+
+
+class TestFallbackPolicy(PolicyTestCollection):
+    @pytest.fixture(scope="module")
+    def create_policy(self):
+        p = FallbackPolicy()
         return p
 
 
