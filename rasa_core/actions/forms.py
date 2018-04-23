@@ -88,6 +88,13 @@ class FormAction(Action):
         pending = [e.key for e in events if e.key == slot_name]
         return existing_val is None and slot_name not in pending
 
+    def get_other_slots(self, tracker):
+        requested_slot = tracker.get_slot("requested_slot")
+        slot_events = [f.extract(tracker) for f in self.required_fields()
+                       if isinstance(f, EntityFormField) and
+                       not f.slot_name == requested_slot]
+        return [e for events in slot_events for e in events]
+
     def get_requested_slot(self, tracker):
         requested_slot = tracker.get_slot("requested_slot")
 
@@ -109,7 +116,7 @@ class FormAction(Action):
 
     def run(self, dispatcher, tracker, domain):
 
-        events = self.get_requested_slot(tracker)
+        events = self.get_requested_slot(tracker) + self.get_other_slots(tracker)
 
         for field in self.required_fields():
             if self.should_request_slot(tracker, field.slot_name, events):

@@ -140,10 +140,10 @@ def test_restaurant_form_unhappy_2():
     dispatcher = Dispatcher(sender_id, out, domain)
     tracker = tracker_store.get_or_create_tracker(sender_id)
 
-    # second user utterance
+    # first user utterance
     entities = [
         {"entity": "cuisine", "value": "chinese"},
-        {"entity": "people", "value": 8}]
+        {"entity": "number", "value": 8}]
 
     tracker.update(
         UserUttered("",
@@ -151,9 +151,10 @@ def test_restaurant_form_unhappy_2():
                     entities=entities))
 
     # store all entities as slots
-    for e in domain.slots_for_entities(entities):
-        tracker.update(e)
     events = ActionSearchRestaurants().run(dispatcher, tracker, domain)
+
+    for e in events:
+        tracker.update(e)
 
     cuisine = tracker.get_slot("cuisine")
     people = tracker.get_slot("people")
@@ -161,11 +162,11 @@ def test_restaurant_form_unhappy_2():
     assert people == 8
 
     events = ActionSearchRestaurants().run(dispatcher, tracker, domain)
-    assert len(events) == 1
+    assert len(events) == 3
     assert isinstance(events[0], SlotSet)
-    assert events[0].key == "requested_slot"
-    assert events[0].value == "vegetarian"
-    tracker.update(events[0])
+    assert events[2].key == "requested_slot"
+    assert events[2].value == "vegetarian"
+    tracker.update(events[2])
 
     # second user utterance does not provide what's asked
     tracker.update(
@@ -177,6 +178,27 @@ def test_restaurant_form_unhappy_2():
     assert len(events) == 1
     assert events[0].key == "requested_slot"
     assert events[0].value == "vegetarian"
+
+
+def test_restaurant_form_skipahead():
+    domain = TemplateDomain.load("data/test_domains/restaurant_form.yml")
+    tracker_store = InMemoryTrackerStore(domain)
+    out = CollectingOutputChannel()
+    sender_id = "test-restaurant"
+    dispatcher = Dispatcher(sender_id, out, domain)
+    tracker = tracker_store.get_or_create_tracker(sender_id)
+
+    # first user utterance
+    entities = [{"entity": "cuisine", "value": "chinese"}, {"entity": "number", "value": 8}]
+    tracker.update(UserUttered("", intent={"name": "inform"}, entities=entities))
+
+    events = ActionSearchRestaurants().run(dispatcher, tracker, domain)
+    s = events[0].as_story_string()
+    print(events[0].as_story_string())
+    print(events[1].as_story_string())
+    assert len(events) == 3
+    assert events[2].key == "requested_slot"
+    assert events[2].value == "vegetarian"
 
 
 def test_people_form():
