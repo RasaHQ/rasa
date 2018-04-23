@@ -87,7 +87,7 @@ def dump_obj_as_str_to_file(filename, text):
 
 
 def subsample_array(arr, max_values, can_modify_incoming_array=True, rand=None):
-    # type: (List[Any], bool, Optional[Random]) -> List[Any]
+    # type: (List[Any], int, Optional[bool], Optional[Random]) -> List[Any]
     """Shuffles the array and returns `max_values` number of elements."""
     import random
 
