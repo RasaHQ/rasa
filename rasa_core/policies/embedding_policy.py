@@ -192,7 +192,7 @@ class EmbeddingPolicy(Policy):
         X = data_X[:, :, :prev_start]
         extras = data_X[:, :, prev_end:]
 
-        #extras[extras < 0] = 1
+        # extras[extras < 0] = 1
         # print(extras[0])
         # ex1 = np.roll(1 - extras, 1, axis=1)
         # ex1[:, 0, :] = 1
