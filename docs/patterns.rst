@@ -184,6 +184,7 @@ This second story details the flow when the restaurant is available. We will tel
 the restaurant and ask if any further help is required.
     
 .. code-block:: md
+
     # restaurant available
     * _make_booking{"people":"5", "date":"2018-08-22T19:30:00+00:00", "restaurant_id":"145"}
     - slot{"restaurant_availability": "available"}
