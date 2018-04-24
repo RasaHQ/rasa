@@ -324,12 +324,12 @@ def test_traveling_back_in_time(default_domain):
     assert len(list(tracker.generate_all_prior_trackers())) == 2
 
 
-def test_dump_and_restore_as_json(default_agent, tmpdir):
+def test_dump_and_restore_as_json(default_agent, tmpdir_factory):
     trackers = default_agent.load_data(DEFAULT_STORIES_FILE)
 
-    out_path = tmpdir.join("dumped_tracker.json")
-
     for tracker in trackers:
+        out_path = tmpdir_factory.mktemp("tracker").join("dumped_tracker.json")
+
         dumped = tracker.current_state(should_include_events=True)
         utils.dump_obj_as_json_to_file(out_path.strpath, dumped)
 

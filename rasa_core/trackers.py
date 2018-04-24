@@ -361,9 +361,7 @@ class DialogueStateTracker(object):
 
     def __eq__(self, other):
         if isinstance(other, type(self)):
-            other_encoded = jsonpickle.encode(other.as_dialogue())
-            encoded = jsonpickle.encode(self.as_dialogue())
-            return (other_encoded == encoded and
+            return (other.events == self.events and
                     self.sender_id == other.sender_id)
         else:
             return False
