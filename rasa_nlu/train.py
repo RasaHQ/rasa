@@ -52,7 +52,7 @@ def create_argument_parser():
                         help="Rasa NLU configuration file")
 
     parser.add_argument('-t', '--num_threads',
-                        default=None,
+                        default=1,
                         type=int,
                         help="Number of threads to use during model training")
 
