@@ -83,10 +83,9 @@ class FormAction(Action):
     def required_fields():
         return []
 
-    def should_request_slot(self, tracker, slot_name, events):
+    def should_request_slot(self, tracker, slot_name):
         existing_val = tracker.get_slot(slot_name)
-        pending = [e.key for e in events if e.key == slot_name]
-        return existing_val is None and slot_name not in pending
+        return existing_val is None
 
     def get_other_slots(self, tracker):
         requested_slot = tracker.get_slot("requested_slot")
@@ -118,19 +117,19 @@ class FormAction(Action):
 
         events = self.get_requested_slot(tracker) + self.get_other_slots(tracker)
 
+        temp_tracker = tracker.copy()
+        for e in events:
+            temp_tracker.update(e)
+
         for field in self.required_fields():
-            if self.should_request_slot(tracker, field.slot_name, events):
+            if self.should_request_slot(temp_tracker, field.slot_name):
                 dispatcher.utter_template(
                     "utter_ask_{}".format(field.slot_name))
 
                 events.append(SlotSet("requested_slot", field.slot_name))
                 return events
 
-        submit_tracker = tracker.copy()
-        for e in events:
-            submit_tracker.update(e)
-
-        events_from_submit = self.submit(dispatcher, submit_tracker, domain) or []
+        events_from_submit = self.submit(dispatcher, temp_tracker, domain) or []
 
         return events + events_from_submit
 
