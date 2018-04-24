@@ -106,9 +106,9 @@ class DataRouter(object):
         else:
             self.component_builder = ComponentBuilder(use_cache=True)
 
-        self.project_loader = ProjectLoader(project_dir,
-                                            remote_storage,
-                                            component_builder)
+        self.project_loader = ProjectLoader.create(project_dir,
+                                                   remote_storage,
+                                                   component_builder)
         self.pool = ProcessPool(self._training_processes)
 
     def __del__(self):

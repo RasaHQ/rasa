@@ -19,7 +19,6 @@ logger = logging.getLogger(__name__)
 
 
 class ProjectLoader(object):
-    # TODO: Should this class be a singleton class?
     def __init__(self, project_dir, remote_storage, component_builder=None):
         # type: (str, str, ComponentBuilder) -> None
         self.project_dir = project_dir
@@ -30,7 +29,18 @@ class ProjectLoader(object):
         else:
             self.component_builder = ComponentBuilder(use_cache=True)
 
-        self.project_store = self._create_project_store(project_dir)
+        self.project_store = None
+
+    def _load_projects(self):
+        self.project_store = self._create_project_store(self.project_dir)
+
+    @classmethod
+    def create(cls, project_dir, remote_storage, component_builder=None):
+        # TODO: Should this class be a singleton class?
+        instance = cls(project_dir, remote_storage, component_builder)
+        instance._load_projects()
+
+        return instance
 
     def _collect_projects(self, project_dir):
         if project_dir and os.path.isdir(project_dir):
