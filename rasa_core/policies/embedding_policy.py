@@ -73,6 +73,8 @@ class EmbeddingPolicy(Policy):
         "droprate_c": 0.3,
         "droprate_rnn": 0.1,
         "droprate_out": 0.1,
+
+        "nuke_slots_every_epoch": 3  # set to None or 0 to disable
     }
 
     @staticmethod
@@ -157,6 +159,8 @@ class EmbeddingPolicy(Policy):
         self.droprate['c'] = config['droprate_c']
         self.droprate['rnn'] = config['droprate_rnn']
         self.droprate['out'] = config['droprate_out']
+
+        self.nuke_slots_every_epoch = config['nuke_slots_every_epoch']
 
     def _load_params(self, **kwargs):
         config = copy.deepcopy(self.defaults)
@@ -511,8 +515,9 @@ class EmbeddingPolicy(Policy):
 
                 batch_c = slots[ids[start_idx:end_idx]]
 
-                if (ep + 1) % 3 == 0:
-                    batch_c[:] = 0
+                if self.nuke_slots_every_epoch:
+                    if (ep + 1) % self.nuke_slots_every_epoch == 0:
+                        batch_c[:] = 0
 
                 sess_out = self.session.run(
                     {'loss': loss, 'train_op': self.train_op},
