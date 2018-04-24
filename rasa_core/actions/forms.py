@@ -126,7 +126,11 @@ class FormAction(Action):
                 events.append(SlotSet("requested_slot", field.slot_name))
                 return events
 
-        events_from_submit = self.submit(dispatcher, tracker, domain) or []
+        submit_tracker = tracker.copy()
+        for e in events:
+            submit_tracker.update(e)
+
+        events_from_submit = self.submit(dispatcher, submit_tracker, domain) or []
 
         return events + events_from_submit
 
