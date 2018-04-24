@@ -54,7 +54,7 @@ class EmbeddingPolicy(Policy):
         "hidden_layer_size_b": [],
         "rnn_size": 32,
         "batch_size": 16,
-        "epochs": 3000,
+        "epochs": 1000,
 
         # embedding parameters
         "embed_dim": 10,
@@ -75,11 +75,54 @@ class EmbeddingPolicy(Policy):
         "droprate_out": 0.1,
     }
 
+    @staticmethod
+    def _check_hidden_layer_sizes(num_layers, layer_size, name=''):
+        num_layers = int(num_layers)
+
+        if num_layers < 0:
+            logger.error("num_hidden_layers_{} = {} < 0."
+                         "Set it to 0".format(name, num_layers))
+            num_layers = 0
+
+        if isinstance(layer_size, list) and len(layer_size) != num_layers:
+            if len(layer_size) == 0:
+                raise ValueError("hidden_layer_size_{} = {} "
+                                 "is an empty list, "
+                                 "while num_hidden_layers_{} = {} > 0"
+                                 "".format(name, layer_size,
+                                           name, num_layers))
+
+            logger.error("The length of hidden_layer_size_{} = {} "
+                         "does not correspond to num_hidden_layers_{} "
+                         "= {}. Set hidden_layer_size_{} to "
+                         "the first element = {} for all layers"
+                         "".format(name, len(layer_size),
+                                   name, num_layers,
+                                   name, layer_size[0]))
+
+            layer_size = layer_size[0]
+
+        if not isinstance(layer_size, list):
+            layer_size = [layer_size for _ in range(num_layers)]
+
+        return num_layers, layer_size
+
     def _load_nn_architecture_params(self, config):
         self.num_hidden_layers_a = config['num_hidden_layers_a']
         self.hidden_layer_size_a = config['hidden_layer_size_a']
+        (self.num_hidden_layers_a,
+         self.hidden_layer_size_a) = self._check_hidden_layer_sizes(
+                                            self.num_hidden_layers_a,
+                                            self.hidden_layer_size_a,
+                                            name='a')
+
         self.num_hidden_layers_b = config['num_hidden_layers_b']
         self.hidden_layer_size_b = config['hidden_layer_size_b']
+        (self.num_hidden_layers_b,
+         self.hidden_layer_size_b) = self._check_hidden_layer_sizes(
+                                            self.num_hidden_layers_b,
+                                            self.hidden_layer_size_b,
+                                            name='b')
         self.rnn_size = config['rnn_size']
 
         self.batch_size = config['batch_size']
@@ -152,6 +195,17 @@ class EmbeddingPolicy(Policy):
         except AttributeError:
             self.share_embedding = False
 
+        if self.share_embedding:
+            if self.num_hidden_layers_a != self.num_hidden_layers_b or \
+                    self.hidden_layer_size_a != self.hidden_layer_size_b:
+                logger.debug("Due to sharing vocabulary in featurizer, "
+                             "embedding weights are shared as well. "
+                             "So num_hidden_layers_b and "
+                             "hidden_layer_size_b are set to the ones "
+                             "for `a`.")
+                self.num_hidden_layers_b = self.num_hidden_layers_a
+                self.hidden_layer_size_b = self.hidden_layer_size_a
+
         # chrono initialization for forget bias
         self.mean_time = None
         self.fbias = fbias
@@ -211,7 +265,7 @@ class EmbeddingPolicy(Policy):
         return Y, actions_for_X
 
     # tf helpers:
-    def _create_tf_nn(self, x_in, num_layers, layer_size, name):
+    def _create_tf_nn(self, x_in, num_layers, layer_size, droprate, name):
         """Create embed nn for layer with name"""
 
         reg = tf.contrib.layers.l2_regularizer(self.C2)
@@ -223,7 +277,7 @@ class EmbeddingPolicy(Policy):
                                 kernel_regularizer=reg,
                                 name='hidden_layer_{}_{}'.format(name, i),
                                 reuse=tf.AUTO_REUSE)
-            x = tf.layers.dropout(x, rate=self.droprate[name],
+            x = tf.layers.dropout(x, rate=droprate,
                                   training=self.is_training)
         return x
 
@@ -332,6 +386,7 @@ class EmbeddingPolicy(Policy):
         a = self._create_tf_nn(a_in,
                                self.num_hidden_layers_a,
                                self.hidden_layer_size_a,
+                               self.droprate['a'],
                                name=name_a)
         a = tf.layers.dropout(a, rate=self.droprate['a'],
                               training=self.is_training)
@@ -340,6 +395,7 @@ class EmbeddingPolicy(Policy):
         b = self._create_tf_nn(b_in,
                                self.num_hidden_layers_b,
                                self.hidden_layer_size_b,
+                               self.droprate['b'],
                                name=name_b)
         shape_b = tf.shape(b)
         b = tf.layers.dropout(b, rate=self.droprate['b'],

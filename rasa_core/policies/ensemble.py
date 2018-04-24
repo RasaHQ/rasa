@@ -100,7 +100,8 @@ class PolicyEnsemble(object):
 
         policy_names = [utils.module_path_from_instance(p)
                         for p in self.policies]
-        action_fingerprints = self._create_action_fingerprints(self.training_events)
+        action_fingerprints = self._create_action_fingerprints(
+                                    self.training_events)
 
         metadata = {
             "action_fingerprints": action_fingerprints,
@@ -143,7 +144,8 @@ class PolicyEnsemble(object):
             policy_path = os.path.join(path, dir_name)
             policy = policy_cls.load(policy_path)
             policies.append(policy)
-        ensemble_cls = utils.class_from_module_path(metadata["ensemble_name"])
+        ensemble_cls = utils.class_from_module_path(
+                                metadata["ensemble_name"])
         fingerprints = metadata.get("action_fingerprints", {})
         ensemble = ensemble_cls(policies, fingerprints)
         return ensemble
