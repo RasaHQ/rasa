@@ -8,7 +8,7 @@ import json
 
 import pytest
 
-from rasa_core.policies import PolicyTrainer
+from rasa_core import training
 from rasa_core import utils
 from rasa_core.actions.action import ActionListen, ACTION_LISTEN_NAME
 from rasa_core.channels import UserMessage
@@ -98,7 +98,7 @@ def test_tracker_write_to_story(tmpdir, default_domain):
             "data/test_dialogues/enter_name.json", default_domain)
     p = tmpdir.join("export.md")
     tracker.export_stories_to_file(p.strpath)
-    trackers, _ = PolicyTrainer.extract_trackers(
+    trackers = training.load_data(
             p.strpath,
             default_domain,
             use_story_concatenation=False,
@@ -325,7 +325,7 @@ def test_traveling_back_in_time(default_domain):
 
 
 def test_dump_and_restore_as_json(default_agent, tmpdir):
-    trackers, _ = PolicyTrainer.extract_trackers(
+    trackers = training.load_data(
             DEFAULT_STORIES_FILE,
             default_agent.domain)
 

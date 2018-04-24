@@ -54,8 +54,9 @@ def train_dialogue(domain_file="restaurant_domain.yml",
     agent = Agent(domain_file,
                   policies=[MemoizationPolicy(), RestaurantPolicy()])
 
+    training_data = agent.load_data(training_data_file)
     agent.train(
-            training_data_file,
+            training_data,
             max_history=3,
             epochs=400,
             batch_size=100,

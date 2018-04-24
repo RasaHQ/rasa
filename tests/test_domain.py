@@ -6,16 +6,16 @@ from __future__ import unicode_literals
 import json
 import pytest
 
+from rasa_core import training
 from rasa_core.domain import TemplateDomain
 from rasa_core.featurizers import MaxHistoryTrackerFeaturizer
-from rasa_core.policies.trainer import PolicyTrainer
 from tests import utilities
 from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 
 
 def test_create_train_data_no_history(default_domain):
     featurizer = MaxHistoryTrackerFeaturizer(None, max_history=1)
-    training_trackers, _ = PolicyTrainer.extract_trackers(
+    training_trackers = training.load_data(
             DEFAULT_STORIES_FILE,
             default_domain,
             augmentation_factor=0
@@ -51,7 +51,7 @@ def test_create_train_data_no_history(default_domain):
 
 def test_create_train_data_with_history(default_domain):
     featurizer = MaxHistoryTrackerFeaturizer(None, max_history=4)
-    training_trackers, _ = PolicyTrainer.extract_trackers(
+    training_trackers = training.load_data(
         DEFAULT_STORIES_FILE,
         default_domain,
         augmentation_factor=0

@@ -14,7 +14,6 @@ from rasa_core.channels.direct import CollectingOutputChannel
 from rasa_core.dispatcher import Dispatcher
 from rasa_core.domain import TemplateDomain
 from rasa_core.interpreter import RegexInterpreter
-from rasa_core.policies import PolicyTrainer
 from rasa_core.policies.ensemble import SimplePolicyEnsemble
 from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.policies.augmented_memoization import \
@@ -48,7 +47,8 @@ def default_agent(default_domain):
                   policies=[MemoizationPolicy()],
                   interpreter=RegexInterpreter(),
                   tracker_store=InMemoryTrackerStore(default_domain))
-    agent.train(DEFAULT_STORIES_FILE)
+    training_data = agent.load_data(DEFAULT_STORIES_FILE)
+    agent.train(training_data)
     return agent
 
 
@@ -66,12 +66,14 @@ def default_dispatcher_collecting(default_domain):
 
 @pytest.fixture
 def default_processor(default_domain):
-    ensemble = SimplePolicyEnsemble([AugmentedMemoizationPolicy()])
-    interpreter = RegexInterpreter()
-    PolicyTrainer(ensemble, default_domain).train(
-        DEFAULT_STORIES_FILE)
+    agent = Agent(default_domain,
+                  SimplePolicyEnsemble([AugmentedMemoizationPolicy()]),
+                  interpreter=RegexInterpreter())
+
+    training_data = agent.load_data(DEFAULT_STORIES_FILE)
+    agent.train(training_data)
     tracker_store = InMemoryTrackerStore(default_domain)
-    return MessageProcessor(interpreter,
-                            ensemble,
+    return MessageProcessor(agent.interpreter,
+                            agent.policy_ensemble,
                             default_domain,
                             tracker_store)

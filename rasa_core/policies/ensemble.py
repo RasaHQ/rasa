@@ -7,6 +7,7 @@ import io
 import json
 import logging
 import os
+from collections import defaultdict
 
 import numpy as np
 import typing
@@ -14,7 +15,7 @@ from typing import Text, Optional, Any, List, Dict
 
 import rasa_core
 from rasa_core import utils
-from rasa_core.events import SlotSet
+from rasa_core.events import SlotSet, ActionExecuted
 from rasa_core.featurizers import MaxHistoryTrackerFeaturizer
 
 logger = logging.getLogger(__name__)
@@ -36,12 +37,27 @@ class PolicyEnsemble(object):
         else:
             self.action_fingerprints = {}
 
-    def train(self, training_trackers, training_events, domain, **kwargs):
-        # type: (List[DialogueStateTracker], Dict, Domain, **Any) -> None
+    @staticmethod
+    def _training_events_from_trackers(training_trackers):
+        events_metadata = defaultdict(set)
+
+        for t in training_trackers:
+            tracker = t.init_copy()
+            for event in t.events:
+                tracker.update(event)
+                if not isinstance(event, ActionExecuted):
+                    action_name = tracker.latest_action_name
+                    events_metadata[action_name].add(event)
+
+        return events_metadata
+
+    def train(self, training_trackers, domain, **kwargs):
+        # type: (List[DialogueStateTracker], Domain, **Any) -> None
         if training_trackers:
             for policy in self.policies:
                 policy.train(training_trackers, domain, **kwargs)
-            self.training_events = training_events
+            self.training_events = self._training_events_from_trackers(
+                    training_trackers)
         else:
             logger.info("Skipped training, because there are no "
                         "training samples.")

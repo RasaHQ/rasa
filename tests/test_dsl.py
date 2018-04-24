@@ -9,8 +9,8 @@ import os
 import json
 import numpy as np
 
+from rasa_core import training
 from rasa_core.training import extract_story_graph
-from rasa_core.policies import PolicyTrainer
 from rasa_core.events import ActionExecuted, UserUttered
 from rasa_core.training.structures import Story
 from rasa_core.featurizers import MaxHistoryTrackerFeaturizer, \
@@ -19,7 +19,7 @@ from rasa_core.featurizers import MaxHistoryTrackerFeaturizer, \
 
 def test_can_read_test_story(default_domain):
     # TODO max_history was controlling augmentation
-    trackers, _ = PolicyTrainer.extract_trackers(
+    trackers = training.load_data(
             "data/test_stories/stories.md",
             default_domain,
             use_story_concatenation=False,
@@ -52,14 +52,14 @@ def test_persist_and_read_test_story_graph(tmpdir, default_domain):
     with io.open(out_path.strpath, "w") as f:
         f.write(graph.as_story_string())
 
-    recovered_trackers, _ = PolicyTrainer.extract_trackers(
+    recovered_trackers = training.load_data(
             out_path.strpath,
             default_domain,
             use_story_concatenation=False,
             tracker_limit=1000,
             remove_duplicates=False
     )
-    existing_trackers, _ = PolicyTrainer.extract_trackers(
+    existing_trackers = training.load_data(
             "data/test_stories/stories.md",
             default_domain,
             use_story_concatenation=False,
@@ -80,14 +80,14 @@ def test_persist_and_read_test_story(tmpdir, default_domain):
     out_path = tmpdir.join("persisted_story.md")
     Story(graph.story_steps).dump_to_file(out_path.strpath)
 
-    recovered_trackers, _ = PolicyTrainer.extract_trackers(
+    recovered_trackers = training.load_data(
             out_path.strpath,
             default_domain,
             use_story_concatenation=False,
             tracker_limit=1000,
             remove_duplicates=False
     )
-    existing_trackers, _ = PolicyTrainer.extract_trackers(
+    existing_trackers = training.load_data(
             "data/test_stories/stories.md",
             default_domain,
             use_story_concatenation=False,
@@ -121,7 +121,7 @@ def test_read_story_file_with_cycles(tmpdir, default_domain):
 def test_generate_training_data_with_cycles(tmpdir, default_domain):
     featurizer = MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
                                              max_history=4)
-    training_trackers, _ = PolicyTrainer.extract_trackers(
+    training_trackers = training.load_data(
         "data/test_stories/stories_with_cycle.md",
         default_domain,
         augmentation_factor=0
@@ -162,7 +162,7 @@ def test_load_multi_file_training_data(default_domain):
     # `data/test_stories/stories.md`, but split across multiple files
     featurizer = MaxHistoryTrackerFeaturizer(
         BinarySingleStateFeaturizer(), max_history=2)
-    trackers, _ = PolicyTrainer.extract_trackers(
+    trackers = training.load_data(
         "data/test_stories/stories.md",
         default_domain,
         augmentation_factor=0
@@ -179,7 +179,7 @@ def test_load_multi_file_training_data(default_domain):
 
     featurizer_mul = MaxHistoryTrackerFeaturizer(
         BinarySingleStateFeaturizer(), max_history=2)
-    trackers_mul, _ = PolicyTrainer.extract_trackers(
+    trackers_mul = training.load_data(
         "data/test_multifile_stories",
         default_domain,
         augmentation_factor=0
@@ -210,7 +210,7 @@ def test_load_training_data_handles_hidden_files(tmpdir, default_domain):
 
     featurizer = MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
                                              max_history=2)
-    trackers, _ = PolicyTrainer.extract_trackers(
+    trackers = training.load_data(
         tmpdir.strpath,
         default_domain
     )

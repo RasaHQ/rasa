@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import rasa_core
 from rasa_core.agent import Agent
 from rasa_core.interpreter import RegexInterpreter, INTENT_MESSAGE_PREFIX
 from rasa_core.policies.augmented_memoization import \
@@ -15,7 +16,8 @@ def test_agent_train(tmpdir, default_domain):
     agent = Agent("examples/moodbot/domain.yml",
                   policies=[AugmentedMemoizationPolicy()])
 
-    agent.train(training_data_file)
+    training_data = agent.load_data(training_data_file)
+    agent.train(training_data)
     agent.persist(tmpdir.strpath)
 
     loaded = Agent.load(tmpdir.strpath)

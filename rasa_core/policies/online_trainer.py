@@ -6,22 +6,19 @@ from __future__ import unicode_literals
 import copy
 import logging
 import os
-import typing
-
-from typing import Text, Optional, Any, List
 
 import numpy as np
+import typing
 from builtins import range
+from typing import Optional, Any, List
 
 from rasa_core import utils
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.channels.console import ConsoleInputChannel
-from rasa_core.domain import check_domain_sanity
+from rasa_core.events import ActionExecuted
 from rasa_core.events import UserUtteranceReverted, StoryExported
 from rasa_core.interpreter import RegexInterpreter
-from rasa_core.policies import PolicyTrainer
 from rasa_core.policies.ensemble import PolicyEnsemble
-from rasa_core.events import ActionExecuted
 
 logger = logging.getLogger(__name__)
 
@@ -35,60 +32,6 @@ if typing.TYPE_CHECKING:
 class TrainingFinishedException(Exception):
     """Signal a finished online learning. Needed to break out of loops."""
     pass
-
-
-class OnlinePolicyTrainer(PolicyTrainer):
-    def train(self,
-              resource_name=None,  # type: Optional[Text]
-              interpreter=None,  # type: NaturalLanguageInterpreter
-              input_channel=None,  # type: Optional[InputChannel]
-              max_visual_history=3,  # type: int
-              augmentation_factor=0,  # type: int
-              max_training_samples=None,  # type: Optional[int]
-              max_number_of_trackers=2000,  # type: int
-              **kwargs  # type: **Any
-              ):
-        # type: (...) -> None
-
-        logger.debug("Policy trainer got kwargs: {}".format(kwargs))
-        check_domain_sanity(self.domain)
-
-        training_trackers, events_metadata = self.extract_trackers(
-                resource_name,
-                self.domain,
-                augmentation_factor=augmentation_factor,
-                max_number_of_trackers=max_number_of_trackers
-        )
-
-        self.ensemble.train(training_trackers, events_metadata, self.domain,
-                            max_training_samples=max_training_samples,
-                            **kwargs)
-
-        ensemble = OnlinePolicyEnsemble(self.ensemble,
-                                        training_trackers, max_visual_history)
-        self.run_online_training(ensemble, interpreter,
-                                 input_channel)
-
-    def run_online_training(
-            self,
-            ensemble,  # type: OnlinePolicyEnsemble
-            interpreter,  # type: NaturalLanguageInterpreter
-            input_channel=None  # type: Optional[InputChannel]
-    ):
-        # type: (...) -> None
-        from rasa_core.agent import Agent
-        if interpreter is None:
-            interpreter = RegexInterpreter()
-
-        bot = Agent(self.domain, ensemble,
-                    interpreter=interpreter)
-        bot.toggle_memoization(False)
-
-        try:
-            bot.handle_channel(
-                    input_channel if input_channel else ConsoleInputChannel())
-        except TrainingFinishedException:
-            pass    # training has finished
 
 
 class OnlinePolicyEnsemble(PolicyEnsemble):
@@ -111,6 +54,26 @@ class OnlinePolicyEnsemble(PolicyEnsemble):
 
         self.batch_size = 5
         self.epochs = 50
+
+    def run_online_training(self,
+                            domain,  # type: Domain
+                            interpreter,  # type: NaturalLanguageInterpreter
+                            input_channel=None  # type: Optional[InputChannel]
+                            ):
+        # type: (...) -> None
+        from rasa_core.agent import Agent
+        if interpreter is None:
+            interpreter = RegexInterpreter()
+
+        bot = Agent(domain, self,
+                    interpreter=interpreter)
+        bot.toggle_memoization(False)
+
+        try:
+            bot.handle_channel(
+                    input_channel if input_channel else ConsoleInputChannel())
+        except TrainingFinishedException:
+            pass  # training has finished
 
     def probabilities_using_best_policy(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> List[float]
@@ -187,7 +150,8 @@ class OnlinePolicyEnsemble(PolicyEnsemble):
             raise Exception(
                     "Incorrect user input received '{}'".format(user_input))
 
-    def _export_stories(self, tracker):
+    @staticmethod
+    def _export_stories(tracker):
         # export current stories and quit
         export_file_path = utils.request_input(
                 prompt="File to export to (if file exists, this "

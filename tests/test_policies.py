@@ -3,6 +3,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from rasa_core import training
+
 try:  # py3
     from unittest.mock import patch
 except ImportError:  # py2
@@ -20,7 +22,6 @@ from rasa_core.policies.sklearn_policy import SklearnPolicy
 from rasa_core.policies.fallback import FallbackPolicy
 from rasa_core.trackers import DialogueStateTracker
 from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
-from rasa_core.policies import PolicyTrainer
 from rasa_core.featurizers import MaxHistoryTrackerFeaturizer, \
     BinarySingleStateFeaturizer
 from rasa_core.events import ActionExecuted
@@ -33,7 +34,7 @@ def train_featurizer(max_history):
 
 
 def train_trackers(domain):
-    trackers, _ = PolicyTrainer.extract_trackers(
+    trackers = training.load_data(
         DEFAULT_STORIES_FILE,
         domain
     )

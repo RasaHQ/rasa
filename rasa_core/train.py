@@ -84,6 +84,7 @@ def train_dialogue_model(domain_file, stories_file, output_path,
         kwargs = {}
 
     agent = Agent(domain_file, policies=[MemoizationPolicy(), KerasPolicy()])
+    training_data = agent.load_data(stories_file)
 
     if use_online_learning:
         if nlu_model_path:
@@ -91,15 +92,12 @@ def train_dialogue_model(domain_file, stories_file, output_path,
         else:
             agent.interpreter = RegexInterpreter()
         agent.train_online(
-                stories_file,
+                training_data,
                 input_channel=ConsoleInputChannel(),
                 model_path=output_path,
                 **kwargs)
     else:
-        agent.train(
-                stories_file,
-                **kwargs
-        )
+        agent.train(training_data, **kwargs)
 
     agent.persist(output_path)
 

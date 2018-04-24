@@ -3,24 +3,25 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import logging
 import os
 import shutil
 
-import logging
 from six import string_types
 from typing import Text, List, Optional, Callable, Any, Dict, Union
 
+from rasa_core import training
 from rasa_core.channels import UserMessage, InputChannel, OutputChannel
-from rasa_core.domain import TemplateDomain, Domain
+from rasa_core.domain import TemplateDomain, Domain, check_domain_sanity
 from rasa_core.events import Event
 from rasa_core.interpreter import NaturalLanguageInterpreter
-from rasa_core.policies import PolicyTrainer, Policy
+from rasa_core.policies import Policy
+from rasa_core.policies import online_trainer
 from rasa_core.policies.ensemble import SimplePolicyEnsemble, PolicyEnsemble
 from rasa_core.policies.memoization import MemoizationPolicy
-from rasa_core.policies.online_policy_trainer import (
-    OnlinePolicyTrainer)
 from rasa_core.processor import MessageProcessor
 from rasa_core.tracker_store import InMemoryTrackerStore, TrackerStore
+from rasa_core.trackers import DialogueStateTracker
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ class Agent(object):
     def __init__(
             self,
             domain,  # type: Union[Text, Domain]
-            policies=None,  # type: Optional[Union[PolicyEnsemble, List[Policy]]
+            policies=None,  # type: Union[PolicyEnsemble, List[Policy], None]
             interpreter=None,  # type: Optional[NaturalLanguageInterpreter]
             tracker_store=None  # type: Optional[TrackerStore]
     ):
@@ -136,10 +137,36 @@ class Agent(object):
             if type(p) == MemoizationPolicy:
                 p.toggle(activate)
 
-    def train(self, resource_name=None, model_path=None, remove_duplicates=True,
-              **kwargs):
-        # type: (Optional[Text], Optional[Text], bool, **Any) -> None
-        """Train the policies / policy ensemble using dialogue data from file"""
+    def load_data(self,
+                  resource_name,  # type: Text
+                  remove_duplicates=True,  # type: bool
+                  augmentation_factor=20,  # type: int
+                  max_number_of_trackers=2000,  # type: int
+                  tracker_limit=None,  # type: Optional[int]
+                  use_story_concatenation=True  # type: bool
+                  ):
+        # type: (...) -> List[DialogueStateTracker]
+
+        return training.load_data(resource_name, self.domain, remove_duplicates,
+                                  augmentation_factor, max_number_of_trackers,
+                                  tracker_limit, use_story_concatenation)
+
+    def train(self,
+              training_trackers,  # type: List[DialogueStateTracker]
+              max_training_samples=None,  # type: Optional[int]
+              **kwargs  # type: **Any
+              ):
+        # type: (...) -> None
+        """Train the policies / policy ensemble using dialogue data from file.
+
+            :param training_trackers: trackers to train on
+            :param model_path: Path where to store the trained model
+            :param max_training_samples: specifies how many training samples to
+                                         train on - `None` to use all examples
+            :param kwargs: additional arguments passed to the underlying ML
+                           trainer (e.g. keras parameters)
+            :return: trained policy
+        """
 
         # deprecation tests
         if kwargs.get('featurizer') or kwargs.get('max_history'):
@@ -148,38 +175,38 @@ class Agent(object):
                            "Pass appropriate featurizer "
                            "directly to the policy instead.")
 
-        trainer = PolicyTrainer(self.policy_ensemble, self.domain)
-        trainer.train(resource_name, remove_duplicates=remove_duplicates,
-                      **kwargs)
+        logger.debug("Agent trainer got kwargs: {}".format(kwargs))
+        check_domain_sanity(self.domain)
 
-        if model_path:
-            self.persist(model_path)
+        self.policy_ensemble.train(training_trackers, self.domain,
+                                   max_training_samples=max_training_samples,
+                                   **kwargs)
 
     def train_online(self,
-                     resource_name=None,  # type: Optional[Text]
+                     training_trackers,  # type: List[DialogueStateTracker]
                      input_channel=None,  # type: Optional[InputChannel]
-                     model_path=None,  # type: Optional[Text]
                      max_visual_history=3,  # type: int
                      **kwargs  # type: **Any
                      ):
         # type: (...) -> None
-        """Runs an online training session on the set policies / ensemble.
-
-        The policies will be pretrained using the data from `filename`.
-        After that the model will get trained on dialogues from the input
-        channel. During the dialogue the annotations and state of the agent
-        can be changed to correct wrong behaviour."""
+        from rasa_core.policies.online_trainer import OnlinePolicyEnsemble
 
         if not self.interpreter:
             raise ValueError(
                     "When using online learning, you need to specify "
                     "an interpreter for the agent to use.")
-        trainer = OnlinePolicyTrainer(self.policy_ensemble, self.domain)
-        trainer.train(resource_name, self.interpreter, input_channel,
-                      max_visual_history, **kwargs)
 
-        if model_path:
-            self.persist(model_path)
+        logger.debug("Agent online trainer got kwargs: {}".format(kwargs))
+        check_domain_sanity(self.domain)
+
+        self.policy_ensemble.train(training_trackers, self.domain, **kwargs)
+
+        ensemble = OnlinePolicyEnsemble(self.policy_ensemble,
+                                        training_trackers,
+                                        max_visual_history)
+
+        ensemble.run_online_training(self.domain, self.interpreter,
+                                     input_channel)
 
     def persist(self, model_path):
         # type: (Text) -> None
@@ -217,7 +244,7 @@ class Agent(object):
                   fontsize=12
                   ):
         from rasa_core.training.visualization import visualize_stories
-        from rasa_core.training import StoryFileReader
+        from rasa_core.training.dsl import StoryFileReader
 
         story_steps = StoryFileReader.read_from_folder(resource_name,
                                                        self.domain)
@@ -270,7 +297,7 @@ class Agent(object):
 
     @staticmethod
     def _create_interpreter(
-            interp  # Optional[Union[Text, NaturalLanguageInterpreter]]
+            interp  # type: Union[Text, NaturalLanguageInterpreter, None]
     ):
         # type: (...) -> NaturalLanguageInterpreter
         return NaturalLanguageInterpreter.create(interp)
@@ -278,7 +305,7 @@ class Agent(object):
     @staticmethod
     def _create_ensemble(policies):
         if policies is None:
-            return SimplePolicyEnsemble([MemoizationPolicy])
+            return SimplePolicyEnsemble([])
         if isinstance(policies, list):
             return SimplePolicyEnsemble(policies)
         elif isinstance(policies, PolicyEnsemble):

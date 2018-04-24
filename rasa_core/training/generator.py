@@ -5,20 +5,19 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import copy
+import json
 import logging
-import random
 from collections import defaultdict, namedtuple
 
-import json
 import typing
 from tqdm import tqdm
-from typing import Optional, List, Text, Set, Dict, Tuple
-from rasa_core.events import Event
+from typing import Optional, List, Text, Set, Dict
 
 from rasa_core import utils
 from rasa_core.channels import UserMessage
-from rasa_core.events import ActionExecuted, UserUttered, \
-    ActionReverted, UserUtteranceReverted
+from rasa_core.events import (
+    ActionExecuted, UserUttered,
+    ActionReverted, UserUtteranceReverted)
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.structures import (
     StoryGraph, STORY_END, STORY_START, StoryStep,
@@ -38,7 +37,6 @@ ExtractorConfig = namedtuple("ExtractorConfig", "remove_duplicates "
 
 # define types
 TrackerLookupDict = Dict[Optional[Text], List[DialogueStateTracker]]
-GeneratorOut = List[DialogueStateTracker], Dict[Text, Set[Event]]
 
 
 class TrainingsDataGenerator(object):
@@ -59,7 +57,6 @@ class TrainingsDataGenerator(object):
         connect complete stories. Afterwards, duplicate stories will be
         removed and the data is augmented (if augmentation is enabled)."""
 
-        self.events_metadata = defaultdict(set)
         self.hashed_featurizations = set()
         self.story_graph = story_graph.with_cycles_removed()
         self.domain = domain
@@ -72,7 +69,7 @@ class TrainingsDataGenerator(object):
                 rand=None)  # random.Random(42))
 
     def generate(self):
-        # type: () -> GeneratorOut
+        # type: () -> List[DialogueStateTracker]
 
         self._mark_first_action_in_story_steps_as_unpredictable()
 
@@ -152,7 +149,7 @@ class TrainingsDataGenerator(object):
         logger.debug("Found {} training examples."
                      "".format(len(finished_trackers)))
 
-        return finished_trackers, self.events_metadata
+        return finished_trackers
 
     @staticmethod
     def _phase_names(num_aug_rounds=0):
@@ -242,14 +239,10 @@ class TrainingsDataGenerator(object):
         new_trackers = []
         for event in events:
             for tracker in trackers:
-                if (isinstance(event, ActionReverted) or
-                        isinstance(event, UserUtteranceReverted)):
+                if isinstance(event, (ActionReverted, UserUtteranceReverted)):
                     new_trackers.append(copy.deepcopy(tracker))
 
                 tracker.update(event)
-                if not isinstance(event, ActionExecuted):
-                    action_name = tracker.latest_action_name
-                    self.events_metadata[action_name].add(event)
 
         trackers.extend(new_trackers)
         if self.config.remove_duplicates:
