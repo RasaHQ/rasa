@@ -77,6 +77,7 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
     def __init__(self):
         """Declares instant variables."""
         super(BinarySingleStateFeaturizer, self).__init__()
+
         self.num_features = None
         self.input_state_map = None
 
@@ -87,7 +88,6 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
 
         self.user_feature_len = len(domain.intent_states)
         self.slot_feature_len = len(domain.slot_states)
-
 
     def encode(self, states):
         # type: (Optional[Text, float]) -> np.ndarray
@@ -577,7 +577,6 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                     if not event.unpredictable:
                         # only actions which can be
                         # predicted at a stories start
-                        # TODO unite with padding
                         sliced_states = self.slice_state_history(
                             states[:idx + 1], self.max_history)
                         trackers_as_states.append(sliced_states)
