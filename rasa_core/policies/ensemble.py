@@ -139,7 +139,8 @@ class PolicyEnsemble(object):
         policies = []
         for i, policy_name in enumerate(metadata["policy_names"]):
             policy_cls = utils.class_from_module_path(policy_name)
-            policy_path = os.path.join(path, 'policy_{}'.format(i))
+            dir_name = 'policy_{}_{}'.format(i, policy_cls.__name__)
+            policy_path = os.path.join(path, dir_name)
             policy = policy_cls.load(policy_path)
             policies.append(policy)
         ensemble_cls = utils.class_from_module_path(metadata["ensemble_name"])

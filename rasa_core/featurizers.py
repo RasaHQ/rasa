@@ -36,6 +36,11 @@ class SingleStateFeaturizer(object):
     the conversation state to a format which a classifier can read:
     feature vector."""
 
+    def __init__(self):
+        """Declares instant variables."""
+        self.user_feature_len = None
+        self.slot_feature_len = None
+
     def prepare_from_domain(self, domain):
         # type: (Domain) -> None
         """Helper method to init based on domain"""
@@ -57,6 +62,12 @@ class SingleStateFeaturizer(object):
         y[domain.index_for_action(action)] = 1
         return y
 
+    def create_encoded_all_actions(self, domain):
+        # type: (Domain) -> np.ndarray
+        """Create matrix with all actions from domain
+            encoded in rows."""
+        pass
+
 
 class BinarySingleStateFeaturizer(SingleStateFeaturizer):
     """Assumes all features are binary.
@@ -65,6 +76,7 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
 
     def __init__(self):
         """Declares instant variables."""
+        super(BinarySingleStateFeaturizer, self).__init__()
         self.num_features = None
         self.input_state_map = None
 
@@ -72,6 +84,10 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
         # type: (Domain) -> None
         self.num_features = domain.num_states
         self.input_state_map = domain.input_state_map
+
+        self.user_feature_len = len(domain.intent_states)
+        self.slot_feature_len = len(domain.slot_states)
+
 
     def encode(self, states):
         # type: (Optional[Text, float]) -> np.ndarray
@@ -138,6 +154,12 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
             else:
                 return used_features
 
+    def create_encoded_all_actions(self, domain):
+        # type: (Domain) -> np.ndarray
+        """Create matrix with all actions from domain
+            encoded in rows as bag of words."""
+        return np.eye(domain.num_actions)
+
 
 class ProbabilisticSingleStateFeaturizer(BinarySingleStateFeaturizer):
     """Uses intent probabilities of the NLU and feeds them into the model."""
@@ -193,17 +215,18 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
       The flag that specifies if to create the same vocabulary for
       user intents and bot actions."""
 
-    def __init__(self, split_symbol='_', share_vocab=False):
-        # type: (Text, bool) -> None
+    def __init__(self, share_vocab=False, split_symbol='_'):
+        # type: (bool, Text) -> None
         """inits vocabulary for label bag of words representation"""
+        super(LabelTokenizerSingleStateFeaturizer, self).__init__()
 
         self.share_vocab = share_vocab
         self.split_symbol = split_symbol
 
         self.num_features = None
         self.user_labels = []
+        self.slot_labels = []
         self.bot_labels = []
-        self.other_labels = []
 
         self.bot_vocab = None
         self.user_vocab = None
@@ -225,8 +248,8 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
         """Creates internal vocabularies for user intents
         and bot actions to use for featurization"""
         self.user_labels = domain.intent_states + domain.entity_states
+        self.slot_labels = domain.slot_states
         self.bot_labels = domain.action_names
-        self.other_labels = domain.slot_states
 
         if self.share_vocab:
             self.bot_vocab = self._create_label_token_dict(self.bot_labels +
@@ -240,8 +263,11 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
                                                             self.split_symbol)
 
         self.num_features = (len(self.user_vocab) +
-                             len(self.bot_vocab) +
-                             len(self.other_labels))
+                             len(self.slot_labels) +
+                             len(self.bot_vocab))
+
+        self.user_feature_len = len(self.user_vocab)
+        self.slot_feature_len = len(self.slot_labels)
 
     def encode(self, states):
         # type: (Optional[Text, float]) -> np.ndarray
@@ -259,23 +285,22 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
                 if PREV_PREFIX + ACTION_LISTEN_NAME not in states:
                     # we predict next action from bot action
                     # TODO do we need state_name = 'intent_listen' ?
-
                     used_features[:len(self.user_vocab)] = 0
                 else:
                     for t in state_name.split(self.split_symbol):
                         used_features[self.user_vocab[t]] += 1
 
+            elif state_name in self.slot_labels:
+                offset = len(self.user_vocab)
+                idx = self.slot_labels.index(state_name)
+                used_features[offset + idx] += 1
+
             elif state_name[len(PREV_PREFIX):] in self.bot_labels:
                 action_name = state_name[len(PREV_PREFIX):]
                 for t in action_name.split(self.split_symbol):
-                    offset = len(self.user_vocab)
+                    offset = len(self.user_vocab) + len(self.slot_labels)
                     idx = self.bot_vocab[t]
                     used_features[offset + idx] += 1
-
-            elif state_name in self.other_labels:
-                offset = len(self.user_vocab) + len(self.bot_vocab)
-                idx = self.other_labels.index(state_name)
-                used_features[offset + idx] += 1
 
             else:
                 logger.warning(

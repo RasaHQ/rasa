@@ -141,15 +141,16 @@ class EmbeddingPolicy(Policy):
                 raise TypeError("Passed tracker featurizer of type {}, "
                                 "should be FullDialogueTrackerFeaturizer."
                                 "".format(type(featurizer).__name__))
-            if not isinstance(featurizer.state_featurizer,
-                              LabelTokenizerSingleStateFeaturizer):
-                raise TypeError("Passed tracker featurizer's state featurizer "
-                                "of type {}, should be "
-                                "LabelTokenizerSingleStateFeaturizer."
-                                "".format(type(featurizer).__name__))
         super(EmbeddingPolicy, self).__init__(featurizer)
 
         self._load_params()
+
+        # flag if to use the same embeddings for user and bot
+        try:
+            self.share_embedding = \
+                self.featurizer.state_featurizer.share_vocab
+        except AttributeError:
+            self.share_embedding = False
 
         # chrono initialization for forget bias
         self.mean_time = None
@@ -179,14 +180,15 @@ class EmbeddingPolicy(Policy):
         return all_Y_d
 
     def _create_X_slots(self, data_X):
-        prev_start = len(
-            self.featurizer.state_featurizer.user_vocab)
-        prev_end = prev_start + len(
-            self.featurizer.state_featurizer.bot_vocab)
+
+        slot_start = \
+            self.featurizer.state_featurizer.user_feature_len
+        prev_start = slot_start + \
+            self.featurizer.state_featurizer.slot_feature_len
 
         # do not include prev actions
-        X = data_X[:, :, :prev_start]
-        slots = data_X[:, :, prev_end:]
+        X = data_X[:, :, :slot_start]
+        slots = data_X[:, :, slot_start:prev_start]
 
         # slots[slots < 0] = 1
         # print(slots[0])
@@ -219,7 +221,8 @@ class EmbeddingPolicy(Policy):
                                 units=layer_size[i],
                                 activation=tf.nn.relu,
                                 kernel_regularizer=reg,
-                                name='hidden_layer_{}_{}'.format(name, i))
+                                name='hidden_layer_{}_{}'.format(name, i),
+                                reuse=tf.AUTO_REUSE)
             x = tf.layers.dropout(x, rate=self.droprate[name],
                                   training=self.is_training)
         return x
@@ -229,7 +232,8 @@ class EmbeddingPolicy(Policy):
         emb_x = tf.layers.dense(inputs=x,
                                 units=self.embed_dim,
                                 kernel_regularizer=reg,
-                                name='embed_layer_{}'.format(name))
+                                name='embed_layer_{}'.format(name),
+                                reuse=tf.AUTO_REUSE)
         return emb_x
 
     def _create_rnn(self, emb_utter, emb_slots, real_length):
@@ -318,25 +322,32 @@ class EmbeddingPolicy(Policy):
     def _create_tf_graph(self, a_in, b_in, c_in):
         """Create tf graph for training"""
 
+        if self.share_embedding:
+            name_a = 'a_and_b'
+            name_b = 'a_and_b'
+        else:
+            name_a = 'a'
+            name_b = 'b'
+
         a = self._create_tf_nn(a_in,
                                self.num_hidden_layers_a,
                                self.hidden_layer_size_a,
-                               name='a')
+                               name=name_a)
         a = tf.layers.dropout(a, rate=self.droprate['a'],
                               training=self.is_training)
-        emb_utter = self._create_embed(a, name='a')
+        emb_utter = self._create_embed(a, name=name_a)
 
         b = self._create_tf_nn(b_in,
                                self.num_hidden_layers_b,
                                self.hidden_layer_size_b,
-                               name='b')
+                               name=name_b)
         shape_b = tf.shape(b)
         b = tf.layers.dropout(b, rate=self.droprate['b'],
                               training=self.is_training,
                               noise_shape=[shape_b[0],
                                            shape_b[1],
                                            1, shape_b[-1]])
-        emb_act = self._create_embed(b, name='b')
+        emb_act = self._create_embed(b, name=name_b)
 
         c = c_in
         # TODO do we need hidden layers for slots?
