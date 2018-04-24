@@ -16,18 +16,19 @@ def test_story_visualization_script():
     assert create_argument_parser() is not None
 
 
-def test_story_visualization(default_domain):
+def test_story_visualization(default_domain, tmpdir):
     story_steps = StoryFileReader.read_from_file(
             "data/test_stories/stories.md", default_domain,
             interpreter=RegexInterpreter())
+    out_file = tmpdir.join("graph.png").strpath
     generated_graph = visualize_stories(story_steps, default_domain,
-                                        output_file=None,
+                                        output_file=out_file,
                                         max_history=3,
                                         should_merge_nodes=False)
     # TODO I output the graph, and it looks correct
-    assert len(generated_graph.nodes()) == 33
+    assert len(generated_graph.nodes()) == 51
 
-    assert len(generated_graph.edges()) == 36
+    assert len(generated_graph.edges()) == 56
 
 
 def test_story_visualization_with_merging(default_domain):
