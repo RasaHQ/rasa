@@ -273,7 +273,10 @@ class RasaNLU(object):
     @check_cors
     @inlineCallbacks
     def train(self, request):
+        # if not set will use the default project name, e.g. "default"
         project = parameter_or_default(request, "project", default=None)
+        # if set will not generate a model name but use the passed one
+        model_name = parameter_or_default(request, "model", default=None)
 
         request_content = request.content.read().decode('utf-8', 'strict')
 

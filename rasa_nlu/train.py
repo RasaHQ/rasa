@@ -96,7 +96,7 @@ def create_persistor(persistor):
         return None
 
 
-def do_train_in_worker(config,  # type: RasaNLUModelConfig
+def do_train_in_worker(cfg,  # type: RasaNLUModelConfig
                        data,  # type: Text
                        path,  # type: Text
                        project=None,  # type: Optional[Text]
@@ -109,7 +109,7 @@ def do_train_in_worker(config,  # type: RasaNLUModelConfig
     """Loads the trainer and the data and runs the training in a worker."""
 
     try:
-        _, _, persisted_path = do_train(config, data, path, project,
+        _, _, persisted_path = do_train(cfg, data, path, project,
                                         fixed_model_name, storage,
                                         component_builder)
         return persisted_path
