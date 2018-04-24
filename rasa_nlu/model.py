@@ -255,13 +255,13 @@ class Interpreter(object):
 
         model_version = metadata.get("rasa_nlu_version", "0.0.0")
         if version.parse(model_version) < version.parse("0.12.0a2"):
-            raise UnsupportedModelError("The model version is to old to be "
-                                       "loaded by this Rasa NLU instance. "
-                                       "Either retrain the model, or run with"
-                                       "an older version. "
-                                       "Model version: {} Instance version: {}"
-                                       "".format(model_version,
-                                                 rasa_nlu.__version__))
+            raise UnsupportedModelError(
+                "The model version is to old to be "
+                "loaded by this Rasa NLU instance. "
+                "Either retrain the model, or run with"
+                "an older version. "
+                "Model version: {} Instance version: {}"
+                "".format(model_version, rasa_nlu.__version__))
 
     @staticmethod
     def load(model_dir, component_builder=None, skip_valdation=False):
