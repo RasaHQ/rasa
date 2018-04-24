@@ -325,9 +325,7 @@ def test_traveling_back_in_time(default_domain):
 
 
 def test_dump_and_restore_as_json(default_agent, tmpdir):
-    trackers = training.load_data(
-            DEFAULT_STORIES_FILE,
-            default_agent.domain)
+    trackers = default_agent.load_data(DEFAULT_STORIES_FILE)
 
     out_path = tmpdir.join("dumped_tracker.json")
 
