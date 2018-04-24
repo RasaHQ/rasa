@@ -42,7 +42,7 @@ class ActionSearchRestaurants(FormAction):
         return 'action_search_restaurants'
 
     def submit(self, dispatcher, tracker, domain):
-        results = RestaurantAPI.search(
+        results = RestaurantAPI().search(
             tracker.get_slot("cuisine"),
             tracker.get_slot("people"),
             tracker.get_slot("vegetarian"))
