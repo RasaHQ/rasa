@@ -40,7 +40,7 @@ class InvalidProjectError(Exception):
         return self.message
 
 
-class UnsuportedModelError(Exception):
+class UnsupportedModelError(Exception):
     """Raised when a model is to old to be loaded.
 
     Attributes:
@@ -255,7 +255,7 @@ class Interpreter(object):
 
         model_version = metadata.get("rasa_nlu_version", "0.0.0")
         if version.parse(model_version) < version.parse("0.12.0a2"):
-            raise UnsuportedModelError("The model version is to old to be "
+            raise UnsupportedModelError("The model version is to old to be "
                                        "loaded by this Rasa NLU instance. "
                                        "Either retrain the model, or run with"
                                        "an older version. "
