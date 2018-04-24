@@ -256,6 +256,10 @@ class DialogueStateTracker(object):
         self.events.extend(dialogue.events)
         self.replay_events()
 
+    def copy(self):
+        """Creates a duplicate of this tracker"""
+        return self.travel_back_in_time(float("inf"))
+
     def travel_back_in_time(self, target_time):
         # type: (float) -> DialogueStateTracker
         """Creates a new tracker with a state at a specific timestamp.
