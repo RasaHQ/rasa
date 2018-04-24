@@ -1,7 +1,7 @@
 .. _patterns:
 
-Common Patterns
-===============
+Slot Filling and Common Patterns
+================================
 
 
 .. note:: 
@@ -15,8 +15,74 @@ Slots are for storing information that's relevant over multiple turns. For examp
 our restaurant example, we would want to keep track of things like the cuisine and number of 
 people for the duration of the conversation. 
 
-Collecting Information to Complete a Request
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Collecting Information to Complete a Request (Slot Filling)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Probably the most common pattern of all is to collect a few pieces of information
+from a user in order to do something (book a restaurant, call an API, search a database, etc.).
+This is also called slot filling. 
+
+To make this easier, Rasa has a special action class called ``FormAction``.
+This lets you have a single action for this task, rather than separate actions for each question,
+e.g. ``utter_ask_cuisine``, ``utter_ask_numpeople``, etc. 
+
+You don't *have* to use ``FormAction`` s to do slot filling, but it can be easier. 
+
+A form action has a set of required fields, which you define for the class:
+
+.. literalinclude:: ../tests/test_forms.py
+   :pyobject: ActionSearchRestaurants
+
+
+
+The way this works is that every time you call this action, it will pick one of the 
+``REQUIRED_FIELDS`` that's still missing and ask the user for it. You can also ask a yes/no
+question with a ``BooleanFormField``.
+
+The story will look something like this:
+
+.. code-block:: md
+
+   * request_restaurant
+        - action_restaurant_form
+        - slot{"requested_slot": "people"}
+   * inform{"number": 3}
+        - action_restaurant_form
+        - slot{"people": 3}
+        - slot{"requested_slot": "time"}
+   * inform{"time": "8pm"}
+      - action_restaurant_form
+
+
+Some important things to consider:
+
+- Your domain needs to have a slot called ``requested_slot``. This can be unfeaturized, but if you want
+  to support contextual questions like *"why do you need to know that information?"* it will help if you make this
+  a categorical slot. 
+- You need to define utterances for asking for each slot in your domain, e.g. ``utter_ask_{slot_name}``.
+- We strongly recommend that you create these stories using interactive learning, because if you
+  type these by hand you will probably forget to add all of the slots.
+- Any slots that are already set won't be asked for. E.g. if someone says "I'd like a Chinese restaurant for 8 people" the ``submit`` function should get called right away.
+
+
+Validation and Free-text Input
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For any subclass of  ``FormField``, it's ``validate()`` method will be called before setting it 
+as a slot. By default this just checks that the value isn't ``None``, but if you want to check 
+the value against a DB, or check a pattern is matched, you can do so by defining your own class
+like ``MyCustomFormField`` and overriding the ``validate()`` method.
+
+There is also a ``FreeTextFormField`` class which will just extract the user message as a value.
+However, there is no way to write a 'wildcard' intent in Rasa Core stories as of now. Typically
+your NLU model will assign this free-text input to 2-3 different intents. 
+It's easiest to add stories for each of these. 
+
+
+Collecting Information using Slots
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 For collecting a set of preferences, you can use ``TextSlot`` s like in the restaurant example:
 
@@ -248,6 +314,7 @@ You can set this value in a custom ``Action``:
 
 This is especially useful when you are :ref:`persisting your tracker <persisting_trackers>` in Redis or another data store. You could cache the API or database responses separately, but storing them in the tracker means they will be persisted automatically with the rest of the dialogue state, and will be restored along with the rest of the state should the system require a reboot.
 
+
 Fallback / Default Actions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -268,3 +335,4 @@ or if none of the dialogue policies predict an action with confidence higher tha
 
    agent = Agent("domain.yml",
                   policies=[KerasPolicy(), fallback])
+
