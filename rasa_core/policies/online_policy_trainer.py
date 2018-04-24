@@ -156,9 +156,9 @@ class OnlinePolicyEnsemble(PolicyEnsemble):
 
             # update tracker with new action
             new_action_name = domain.action_for_index(y).name()
+
             # need to copy tracker, because the tracker will be
             # updated with the new event somewhere else
-            # TODO change it?
             training_tracker = copy.deepcopy(tracker)
             training_tracker.update(ActionExecuted(new_action_name))
 

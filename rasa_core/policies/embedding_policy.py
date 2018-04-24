@@ -14,7 +14,7 @@ from typing import \
     Any, List, Optional, Text
 
 import numpy as np
-from copy import deepcopy
+import copy
 from rasa_core.policies import Policy
 from rasa_core.featurizers import \
     TrackerFeaturizer, FullDialogueTrackerFeaturizer, \
@@ -105,7 +105,7 @@ class EmbeddingPolicy(Policy):
         self.droprate['out'] = config['droprate_out']
 
     def _load_params(self, **kwargs):
-        config = deepcopy(self.defaults)
+        config = copy.deepcopy(self.defaults)
         config.update(kwargs)
         # nn architecture parameters
         self._load_nn_architecture_params(config)

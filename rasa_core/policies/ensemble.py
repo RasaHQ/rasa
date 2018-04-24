@@ -119,8 +119,8 @@ class PolicyEnsemble(object):
         self._persist_metadata(path)
 
         for i, policy in enumerate(self.policies):
-            folder_name = 'policy_{}_{}'.format(i, type(policy).__name__)
-            policy_path = os.path.join(path, folder_name)
+            dir_name = 'policy_{}_{}'.format(i, type(policy).__name__)
+            policy_path = os.path.join(path, dir_name)
             policy.persist(policy_path)
 
     @classmethod

@@ -4,7 +4,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from copy import deepcopy
+import copy
 import logging
 import random
 from collections import defaultdict, namedtuple
@@ -237,14 +237,14 @@ class TrainingsDataGenerator(object):
         # need to copy the tracker as multiple story steps
         # might start with the same checkpoint and all of them
         # will use the same set of incoming trackers
-        trackers = [deepcopy(tracker) for tracker in
+        trackers = [copy.deepcopy(tracker) for tracker in
                     incoming_trackers] if events else []  # small optimization
         new_trackers = []
         for event in events:
             for tracker in trackers:
                 if (isinstance(event, ActionReverted) or
                         isinstance(event, UserUtteranceReverted)):
-                    new_trackers.append(deepcopy(tracker))
+                    new_trackers.append(copy.deepcopy(tracker))
 
                 tracker.update(event)
                 if not isinstance(event, ActionExecuted):

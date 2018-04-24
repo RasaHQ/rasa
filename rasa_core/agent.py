@@ -190,7 +190,16 @@ class Agent(object):
                                             'policy_metadata.json')
             # check if there were a model before
             if os.path.exists(domain_spec_path):
+                logger.debug("Model directory {} exists and "
+                             "contains old model files. "
+                             "All files will be overwritten."
+                             "".format(model_path))
                 shutil.rmtree(model_path)
+            else:
+                logger.debug("Model directory {} exists, but does "
+                             "not contain all old model files. "
+                             "Some files might be overwritten."
+                             "".format(model_path))
 
         self.policy_ensemble.persist(model_path)
         self.domain.persist(os.path.join(model_path, "domain.yml"))

@@ -4,7 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from datetime import datetime
-from copy import deepcopy
+import copy
 
 import pytest
 
@@ -56,13 +56,13 @@ def test_event_has_proper_implementation(one_event, another_event):
     # equals tests
     assert one_event != another_event, \
         "Same events with different values need to be different"
-    assert one_event == deepcopy(one_event), \
+    assert one_event == copy.deepcopy(one_event), \
         "Event copies need to be the same"
     assert one_event != 42, \
         "Events aren't equal to 42!"
 
     # hash test
-    assert hash(one_event) == hash(deepcopy(one_event)), \
+    assert hash(one_event) == hash(copy.deepcopy(one_event)), \
         "Same events should have the same hash"
     assert hash(one_event) != hash(another_event), \
         "Different events should have different hashes"

@@ -11,7 +11,7 @@ from typing import \
     Any, List, Optional, Text, Dict, Callable
 
 import inspect
-from copy import deepcopy
+import copy
 from rasa_core.featurizers import \
     MaxHistoryTrackerFeaturizer, BinarySingleStateFeaturizer
 
@@ -35,7 +35,7 @@ class Policy(object):
 
     @classmethod
     def _create_featurizer(cls, featurizer=None):
-        return deepcopy(featurizer) \
+        return copy.deepcopy(featurizer) \
                if featurizer else cls._standard_featurizer()
 
     def __init__(self, featurizer=None):
