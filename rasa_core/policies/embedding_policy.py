@@ -123,6 +123,17 @@ class EmbeddingPolicy(Policy):
                                             self.num_hidden_layers_b,
                                             self.hidden_layer_size_b,
                                             name='b')
+        if self.share_embedding:
+            if self.num_hidden_layers_a != self.num_hidden_layers_b or \
+                    self.hidden_layer_size_a != self.hidden_layer_size_b:
+                logger.debug("Due to sharing vocabulary in featurizer, "
+                             "embedding weights are shared as well. "
+                             "So num_hidden_layers_b and "
+                             "hidden_layer_size_b are set to the ones "
+                             "for `a`.")
+                self.num_hidden_layers_b = self.num_hidden_layers_a
+                self.hidden_layer_size_b = self.hidden_layer_size_a
+
         self.rnn_size = config['rnn_size']
 
         self.batch_size = config['batch_size']
@@ -186,8 +197,6 @@ class EmbeddingPolicy(Policy):
                                 "".format(type(featurizer).__name__))
         super(EmbeddingPolicy, self).__init__(featurizer)
 
-        self._load_params()
-
         # flag if to use the same embeddings for user and bot
         try:
             self.share_embedding = \
@@ -195,16 +204,7 @@ class EmbeddingPolicy(Policy):
         except AttributeError:
             self.share_embedding = False
 
-        if self.share_embedding:
-            if self.num_hidden_layers_a != self.num_hidden_layers_b or \
-                    self.hidden_layer_size_a != self.hidden_layer_size_b:
-                logger.debug("Due to sharing vocabulary in featurizer, "
-                             "embedding weights are shared as well. "
-                             "So num_hidden_layers_b and "
-                             "hidden_layer_size_b are set to the ones "
-                             "for `a`.")
-                self.num_hidden_layers_b = self.num_hidden_layers_a
-                self.hidden_layer_size_b = self.hidden_layer_size_a
+        self._load_params()
 
         # chrono initialization for forget bias
         self.mean_time = None
