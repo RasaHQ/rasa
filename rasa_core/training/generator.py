@@ -234,13 +234,13 @@ class TrainingsDataGenerator(object):
         # need to copy the tracker as multiple story steps
         # might start with the same checkpoint and all of them
         # will use the same set of incoming trackers
-        trackers = [copy.deepcopy(tracker) for tracker in
+        trackers = [tracker.copy() for tracker in
                     incoming_trackers] if events else []  # small optimization
         new_trackers = []
         for event in events:
             for tracker in trackers:
                 if isinstance(event, (ActionReverted, UserUtteranceReverted)):
-                    new_trackers.append(copy.deepcopy(tracker))
+                    new_trackers.append(tracker.copy())
 
                 tracker.update(event)
 
@@ -265,7 +265,7 @@ class TrainingsDataGenerator(object):
 
         for tracker in trackers:
             states = self.domain.states_for_tracker_history(tracker)
-            hashed = json.dumps(states, sort_keys=True)
+            hashed = hash(tuple((frozenset(s) for s in states)))
 
             # only continue with trackers that created a
             # hashed_featurization we haven't observed

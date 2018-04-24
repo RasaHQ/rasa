@@ -612,7 +612,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
     @staticmethod
     def _remove_duplicate_states(
             trackers_as_states,  # type: List[List[Dict[Text, float]]]
-            trackers_as_actions,  # type: List[List[Dict[Text, float]]]
+            trackers_as_actions,  # type: List[List[Text]]
     ):
         # type: (...) -> Tuple[List[List[Dict]], List[List[Dict]]]
         """Removes states that create equal featurizations.
@@ -630,8 +630,10 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
              tracker_actions) in zip(trackers_as_states,
                                      trackers_as_actions):
 
-            states = tracker_states + [tracker_actions]
-            hashed = json.dumps(states, sort_keys=True)
+            frozen_states = tuple((s if s is None else frozenset(s.items())
+                                   for s in tracker_states))
+            frozen_actions = tuple(tracker_actions)
+            hashed = hash((frozen_states, frozen_actions))
 
             # only continue with tracker_states that created a
             # hashed_featurization we haven't observed

@@ -153,19 +153,14 @@ class Agent(object):
 
     def train(self,
               training_trackers,  # type: List[DialogueStateTracker]
-              max_training_samples=None,  # type: Optional[int]
               **kwargs  # type: **Any
               ):
         # type: (...) -> None
         """Train the policies / policy ensemble using dialogue data from file.
 
             :param training_trackers: trackers to train on
-            :param model_path: Path where to store the trained model
-            :param max_training_samples: specifies how many training samples to
-                                         train on - `None` to use all examples
             :param kwargs: additional arguments passed to the underlying ML
                            trainer (e.g. keras parameters)
-            :return: trained policy
         """
 
         # deprecation tests
@@ -175,11 +170,20 @@ class Agent(object):
                            "Pass appropriate featurizer "
                            "directly to the policy instead.")
 
+        # TODO: deprecated - remove in version 0.10
+        if isinstance(training_trackers, string_types):
+            # the user most likely passed in a file name to load training
+            # data from
+            logger.warn("Passing a file name to `agent.train(...)` is "
+                        "deprecated. Rather load the data with "
+                        "`data = agent.load_data(file_name)` and pass it "
+                        "to `agent.train(data)`.")
+            training_trackers = self.load_data(training_trackers)
+
         logger.debug("Agent trainer got kwargs: {}".format(kwargs))
         check_domain_sanity(self.domain)
 
         self.policy_ensemble.train(training_trackers, self.domain,
-                                   max_training_samples=max_training_samples,
                                    **kwargs)
 
     def train_online(self,
@@ -195,6 +199,16 @@ class Agent(object):
             raise ValueError(
                     "When using online learning, you need to specify "
                     "an interpreter for the agent to use.")
+
+        # TODO: deprecated - remove in version 0.10
+        if isinstance(training_trackers, string_types):
+            # the user most likely passed in a file name to load training
+            # data from
+            logger.warn("Passing a file name to `agent.train_online(...)` is "
+                        "deprecated. Rather load the data with "
+                        "`data = agent.load_data(file_name)` and pass it "
+                        "to `agent.train_online(data)`.")
+            training_trackers = self.load_data(training_trackers)
 
         logger.debug("Agent online trainer got kwargs: {}".format(kwargs))
         check_domain_sanity(self.domain)

@@ -72,8 +72,8 @@ We can use the ``MemoizationPolicy`` to do this.
 
 Here is the ``train`` method training the policies class:
 
-.. literalinclude:: ../rasa_core/policies/trainer.py
-   :pyobject: train
+.. literalinclude:: ../rasa_core/agent.py
+   :pyobject: Agent.train
 
 What the ``train()`` method does is the following:
 

@@ -122,7 +122,7 @@ class OnlinePolicyEnsemble(PolicyEnsemble):
 
             # need to copy tracker, because the tracker will be
             # updated with the new event somewhere else
-            training_tracker = copy.deepcopy(tracker)
+            training_tracker = tracker.copy()
             training_tracker.update(ActionExecuted(new_action_name))
 
             self._fit_example(training_tracker, domain)

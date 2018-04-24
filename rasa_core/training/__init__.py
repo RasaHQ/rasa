@@ -45,9 +45,6 @@ def load_data(
     from rasa_core.training.generator import TrainingsDataGenerator
 
     if resource_name:
-        # TODO pass extract_story_graph as a function or
-        # TODO pass graph to agent
-        # TODO to support code creating stories
         graph = extract_story_graph(resource_name, domain)
 
         g = TrainingsDataGenerator(graph, domain,
