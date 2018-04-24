@@ -17,7 +17,7 @@ from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.model import Interpreter
 from rasa_nlu.model import Trainer
 from rasa_nlu.training_data import load_data
-from rasa_nlu.training_data.loading import load_data_from_platform
+from rasa_nlu.training_data.loading import load_data_from_url
 
 logger = logging.getLogger(__name__)
 
@@ -44,8 +44,7 @@ def create_argument_parser():
 
     group.add_argument('-u', '--url',
                        default=None,
-                       help="Rasa Platform URL from which to retrieve "
-                            "training data.")
+                       help="URL from which to retrieve training data.")
 
     parser.add_argument('-c', '--config',
                         required=True,
@@ -70,16 +69,6 @@ def create_argument_parser():
                              'E.g. on AWS. If nothing is configured, the '
                              'server will only serve the models that are '
                              'on disk in the configured `path`.')
-
-    parser.add_argument('--username',
-                        default=None,
-                        help='Rasa Platform username. To be used when '
-                             'retrieving training data from a Platform URL '
-                             'with the `--url` option.')
-
-    parser.add_argument('--password',
-                        default=None,
-                        help='Rasa Platform password.')
 
     utils.add_logging_option_arguments(parser)
     return parser
@@ -142,9 +131,7 @@ def do_train(cfg,  # type: RasaNLUModelConfig
              fixed_model_name=None,  # type: Optional[Text]
              storage=None,  # type: Optional[Text]
              component_builder=None,  # type: Optional[ComponentBuilder]
-             platform_url=None,  # type: Optional[Text]
-             username=None,  # type: Optional[Text]
-             password=None,  # type: Optional[Text]
+             url=None,  # type: Optional[Text]
              **kwargs  # type: Any
              ):
     # type: (...) -> Tuple[Trainer, Interpreter, Text]
@@ -155,10 +142,8 @@ def do_train(cfg,  # type: RasaNLUModelConfig
     # trained in another subprocess
     trainer = Trainer(cfg, component_builder)
     persistor = create_persistor(storage)
-    if platform_url is not None:
-        training_data = load_data_from_platform(platform_url, project,
-                                                username, password,
-                                                cfg.language)
+    if url is not None:
+        training_data = load_data_from_url(url, cfg.language)
     else:
         training_data = load_data(data, cfg.language)
     interpreter = trainer.train(training_data, **kwargs)
@@ -185,8 +170,6 @@ if __name__ == '__main__':
              cmdline_args.project,
              cmdline_args.fixed_model_name,
              cmdline_args.storage,
-             platform_url=cmdline_args.url,
-             username=cmdline_args.username,
-             password=cmdline_args.password,
+             url=cmdline_args.url,
              num_threads=cmdline_args.num_threads)
     logger.info("Finished training")

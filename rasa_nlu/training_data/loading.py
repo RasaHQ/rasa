@@ -8,7 +8,6 @@ import logging
 
 import requests
 from typing import Text, Optional
-from future.utils import PY3
 
 from rasa_nlu import utils
 from rasa_nlu.training_data import TrainingData
@@ -62,41 +61,15 @@ def load_data(resource_name, language='en'):
         return data_sets[0].merge(*data_sets[1:])
 
 
-def load_data_from_platform(platform_url,
-                            project=None,
-                            username=None,
-                            password=None,
-                            language='en'
-                            ):
+def load_data_from_url(url, language='en'):
     # type: (Text, Optional[Text]) -> TrainingData
     """Load training data from a Rasa Platform URL."""
 
-    if PY3:
-        from urllib.parse import urlparse
-    else:
-        from urlparse import urlparse
-
-    if not utils.is_url(platform_url):
-        raise requests.exceptions.InvalidURL(platform_url)
+    if not utils.is_url(url):
+        raise requests.exceptions.InvalidURL(url)
     try:
-        parsed = urlparse(platform_url)
-        login_url = parsed._replace(netloc='{}:5002'.format(parsed.hostname),
-                                    path='login').geturl()
-        user = dict(username=username,
-                    password=password)
-        login = requests.post(login_url, json=user)
-        login.raise_for_status()
-
-        data_path = '{}/data'.format(project or 'default')
-        token_query = 'token={}'.format(login.json().get('token', ''))
-        data_url = parsed._replace(netloc='{}:5002'.format(parsed.hostname),
-                                   path=data_path,
-                                   query=token_query)
-
-        data_url = data_url.geturl()
-        response = requests.get(data_url)
+        response = requests.get(url)
         response.raise_for_status()
-
         temp_data_file = utils.create_temporary_file(response.content)
         return _load(temp_data_file, language)
     except Exception as e:
