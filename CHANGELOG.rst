@@ -20,6 +20,7 @@ Removed
 
 Fixed
 -----
+- readded possibility to set fixed model name from http train endpoint
 
 [0.12.2] - 2018-03-20
 ^^^^^^^^^^^^^^^^^^^^^
