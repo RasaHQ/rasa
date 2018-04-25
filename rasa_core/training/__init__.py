@@ -56,3 +56,11 @@ def load_data(
         return g.generate()
     else:
         return []
+
+
+def persist_data(trackers, path):
+    # type: (List[DialogueStateTracker]) -> None
+    """Dump a list of dialogue trackers in the story format to disk."""
+
+    for t in trackers:
+        t.export_stories_to_file(path)
