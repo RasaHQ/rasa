@@ -93,7 +93,6 @@ class DataRouter(object):
                  emulation_mode=None,
                  remote_storage=None,
                  component_builder=None):
-
         self._training_processes = max(max_training_processes, 1)
         self.responses = self._create_query_logger(response_log)
         self.project_dir = config.make_path_absolute(project_dir)
@@ -169,6 +168,12 @@ class DataRouter(object):
                     project_dir=self.project_dir,
                     remote_storage=self.remote_storage)
         return project_store
+
+    def _pre_load(self, projects):
+        logger.debug("loading %s", projects)
+        for project in self.project_store:
+            if project in projects:
+                self.project_store[project].load_model()
 
     def _list_projects_in_cloud(self):
         try:

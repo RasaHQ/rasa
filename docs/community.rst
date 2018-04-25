@@ -32,7 +32,9 @@ Below is a list of tools and applications written around or for Rasa NLU using a
 
 - A tool for generating training examples from a list of entities
     - `Chatito <https://github.com/rodrigopivi/Chatito>`_
-
+    
+- A custom API and UI on top of Rasa NLU for ease of use
+    - `Articulate <https://github.com/samtecspg/articulate>`_
 
 Video Tutorials
 ^^^^^^^^^^^^^^^
