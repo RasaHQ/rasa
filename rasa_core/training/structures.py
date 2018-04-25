@@ -30,6 +30,8 @@ STORY_END = None
 
 GENERATED_CHECKPOINT_PREFIX = "CYCLE_"
 
+GENERATED_HASH_LENGTH = 5
+
 
 class Checkpoint(object):
     def __init__(self, name, conditions=None):
@@ -246,7 +248,7 @@ class StoryGraph(object):
         # consistent if we only change one compared to changing all of them.
 
         for s, e in cyclic_edge_ids:
-            cid = utils.generate_id()
+            cid = utils.generate_id(max_chars=GENERATED_HASH_LENGTH)
             sink_cid = GENERATED_CHECKPOINT_PREFIX + "SINK_" + cid
             connector_cid = GENERATED_CHECKPOINT_PREFIX + "CONNECT_" + cid
             source_cid = GENERATED_CHECKPOINT_PREFIX + "SOURCE_" + cid
@@ -379,6 +381,7 @@ class StoryGraph(object):
     def visualize(self, output_file=None):
         import networkx as nx
         from rasa_core.training import visualization
+        from colorhash import ColorHash
 
         G = nx.MultiDiGraph()
         next_node_idx = [0]
@@ -388,7 +391,16 @@ class StoryGraph(object):
             if c.name not in nodes:
                 next_node_idx[0] += 1
                 nodes[c.name] = next_node_idx[0]
-                G.add_node(next_node_idx[0], label=c.name[:16])
+
+                if c.name.startswith(GENERATED_CHECKPOINT_PREFIX):
+                    # colors generated checkpoints based on their hash
+                    color = ColorHash(c.name[-GENERATED_HASH_LENGTH:]).hex
+                    G.add_node(next_node_idx[0],
+                               label=utils.cap_length(c.name),
+                               style="filled",
+                               fillcolor=color)
+                else:
+                    G.add_node(next_node_idx[0], label=self._as_label(c.name))
 
         G.add_node(nodes["STORY_START"],
                    label="START", fillcolor="green", style="filled")
@@ -398,8 +410,13 @@ class StoryGraph(object):
         for step in self.story_steps:
             next_node_idx[0] += 1
             step_idx = next_node_idx[0]
-            G.add_node(next_node_idx[0], label=step.block_name, style="filled",
-                       fillcolor="lightblue", shape="box")
+
+            G.add_node(next_node_idx[0],
+                       label=utils.cap_length(step.block_name),
+                       style="filled",
+                       fillcolor="lightblue",
+                       shape="box")
+
             for c in step.start_checkpoints:
                 ensure_checkpoint_is_drawn(c)
                 G.add_edge(nodes[c.name], step_idx)
