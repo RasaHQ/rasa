@@ -462,8 +462,9 @@ under the <code class="docutils literal"><span class="pre">path</span></code> di
 </pre></div>
 </div>
 <p>Here is a quick overview:</p>
-<div class="highlight-text"><div class="highlight"><pre><span></span>usage: server.py [-h] [-e {wit,luis,dialogflow}] [-P PORT] [-t TOKEN]
-                 [-w WRITE] --path PATH [--cors [CORS [CORS ...]]]
+<div class="highlight-text"><div class="highlight"><pre><span></span>usage: server.py [-h] [-e {wit,luis,dialogflow}] [-P PORT]
+                 [--pre_load PRE_LOAD [PRE_LOAD ...]] [-t TOKEN] [-w WRITE]
+                 --path PATH [--cors [CORS [CORS ...]]]
                  [--max_training_processes MAX_TRAINING_PROCESSES]
                  [--num_threads NUM_THREADS] [--response_log RESPONSE_LOG]
                  [--storage STORAGE] [-c CONFIG] [--debug] [-v]
@@ -476,6 +477,12 @@ optional arguments:
                         which service to emulate (default: None i.e. use
                         simple built in format)
   -P PORT, --port PORT  port on which to run server
+  --pre_load PRE_LOAD [PRE_LOAD ...]
+                        Preload models into memory before starting the server.
+                        If given `all` as input all the models will be loaded.
+                        Else you can specify a list of specific project names.
+                        Eg: python -m rasa_nlu.server -p project1 project2
+                        --path projects
   -t TOKEN, --token TOKEN
                         auth token. If set, reject requests which don&#39;t
                         provide this token as a query parameter
