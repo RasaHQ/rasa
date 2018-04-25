@@ -130,7 +130,7 @@ class Project(object):
         self._begin_read()
         status = False
         model_name = self._dynamic_load_model()
-        logger.debug('Loaidng model %s', model_name)
+        logger.debug('Loading model %s', model_name)
 
         self._loader_lock.acquire()
         try:

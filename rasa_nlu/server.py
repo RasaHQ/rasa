@@ -37,7 +37,7 @@ def create_argument_parser():
                         type=int,
                         default=5000,
                         help='port on which to run server')
-    parser.add_argument('-p', '--pre_load',
+    parser.add_argument('--pre_load',
                         nargs='+',
                         default=[],
                         help='Preload models into memory before starting the '
