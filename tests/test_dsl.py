@@ -7,6 +7,8 @@ import io
 import os
 
 import json
+from collections import Counter
+
 import numpy as np
 
 from rasa_core import training
@@ -133,16 +135,11 @@ def test_generate_training_data_with_cycles(tmpdir, default_domain):
 
     # how many there are depends on the graph which is not created in a
     # deterministic way but should always be 3 or
-    if len(training_trackers) == 4:
-        np.testing.assert_array_equal(
-                y,
-                [0, 3, 0, 2, 0, 4, 1, 0, 4, 1, 0, 2, 0, 4, 2])
-    elif len(training_trackers) == 3:
-        np.testing.assert_array_equal(
-                y,
-                [0, 3, 0, 4, 1, 0, 2, 0, 4, 1, 0, 2, 0, 4])
-    else:
-        assert False, "There must be 3 or 4 trackers"
+    assert len(training_trackers) == 3 or len(training_trackers) == 4
+
+    # if we have 4 trackers, there is going to be one example more for label 2
+    num_twos = len(training_trackers) - 1
+    assert Counter(y) == {0: 6, 1: 2, 2: num_twos, 3: 1, 4: 3}
 
 
 def test_visualize_training_data_graph(tmpdir, default_domain):
