@@ -14,21 +14,15 @@ RUN apt-get update -qq \
 
 WORKDIR ${RASA_NLU_HOME}
 
+COPY . ${RASA_NLU_HOME}
+
+
 # use bash always
 RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 
-
-COPY . ${RASA_NLU_HOME}
-
-RUN pip install -r alt_requirements/requirements_full.txt
+RUN pip install -r alt_requirements/requirements_spacy_sklearn.txt
 
 RUN pip install -e .
-
-RUN apt-get update -qq \
-    && apt-get install -y --no-install-recommends wget \
-    && wget -P data/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat \
-    && apt-get remove -y wget \
-    && apt-get autoremove -y
 
 RUN pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.0.0/en_core_web_md-2.0.0.tar.gz --no-cache-dir > /dev/null \
     && python -m spacy link en_core_web_md en \
@@ -37,7 +31,7 @@ RUN pip install https://github.com/explosion/spacy-models/releases/download/en_c
 
 COPY sample_configs/config_spacy_duckling.yml ${RASA_NLU_HOME}/config.yml
 
-#VOLUME ["/app/projects", "/app/logs", "/app/data"]
+VOLUME ["/app/projects", "/app/logs", "/app/data"]
 
 EXPOSE 5000
 
