@@ -190,7 +190,8 @@ class EmbeddingPolicy(Policy):
             intent_placeholder=None,  # type: Optional[tf.Tensor]
             action_placeholder=None,  # type: Optional[tf.Tensor]
             slots_placeholder=None,  # type: Optional[tf.Tensor]
-            similarity_op=None  # type: Optional[tf.Tensor]
+            similarity_op=None,  # type: Optional[tf.Tensor]
+            alignment_history=None
     ):
         # type: (...) -> None
         self._check_tensorflow()
@@ -224,6 +225,7 @@ class EmbeddingPolicy(Policy):
         self.b_in = action_placeholder
         self.c_in = slots_placeholder
         self.sim_op = similarity_op
+        self.alignment_history = alignment_history
         # for continue training
         self.train_op = None
         self.is_training = None
@@ -318,7 +320,8 @@ class EmbeddingPolicy(Policy):
                 num_units=num_utter_units, memory=emb_utter,
                 memory_sequence_length=real_length,
                 normalize=True,
-                probability_fn=tf.sigmoid
+                # probability_fn=tf.sigmoid
+                probability_fn=tf.identity
         )
         # num_slots_units = int(emb_slots.shape[-1])
         # attn_mech_slots = tf.contrib.seq2seq.BahdanauAttention(
@@ -328,10 +331,10 @@ class EmbeddingPolicy(Policy):
         #     probability_fn=tf.sigmoid
         # )
 
-        def cell_input_fn(inputs, attention):
+        def cell_input_fn(inputs, attention, inv_norm):
 
-            res = tf.concat([
-                             inputs[:, :num_utter_units] +
+            res = tf.concat([#inv_norm *
+                             #inputs[:, :num_utter_units] +
                              attention[:, :num_utter_units],
                              inputs[:, num_utter_units:]# +
                              #attention[:, num_utter_units:]
@@ -347,14 +350,19 @@ class EmbeddingPolicy(Policy):
                 alignment_history=True
         )
 
-        cell_output, final_context_state = tf.nn.dynamic_rnn(
+        cell_output, final_state = tf.nn.dynamic_rnn(
                 attn_cell, cell_input,
                 dtype=tf.float32,
                 sequence_length=real_length,
                 scope='rnn_decoder_{}'.format(0)
         )
 
-        return cell_output, final_context_state
+        # extract alignments history
+        alignment_history = final_state.alignment_history.stack()
+        # Reshape to (batch, time, memory_time)
+        alignment_history = tf.transpose(alignment_history, [1, 0, 2])
+
+        return cell_output, alignment_history
 
     def _tf_sim(self, emb_dial, emb_act, mask):
         """Define similarity"""
@@ -376,6 +384,37 @@ class EmbeddingPolicy(Policy):
             raise ValueError("Wrong similarity type {}, "
                              "should be 'cosine' or 'inner'"
                              "".format(self.similarity_type))
+
+    def _tf_loss(self, sim, sim_act, mask):
+        """Define loss"""
+
+        if self.use_max_sim_neg:
+            max_sim_neg = tf.reduce_max(sim[:, :, 1:], -1)
+            loss = (tf.maximum(0., self.mu_pos - sim[:, :, 0]) +
+                    tf.maximum(0., self.mu_neg + max_sim_neg)) * mask
+
+        else:
+            # create an array for mu
+            mu = self.mu_neg * np.ones(self.num_neg + 1)
+            mu[0] = self.mu_pos
+            mu = mu[np.newaxis, np.newaxis, :]
+
+            factors = tf.concat([-1 * tf.ones([1, 1, 1]),
+                                 tf.ones([1, 1, tf.shape(sim)[-1] - 1])],
+                                axis=-1)
+
+            max_margin = tf.maximum(0., mu + factors * sim)
+
+            loss = tf.reduce_sum(max_margin, -1) * mask
+
+        # penalize max similarity between intent embeddings
+        loss_act = tf.maximum(0., tf.reduce_max(sim_act, -1))
+        loss += loss_act * self.C_emb
+
+        loss = tf.reduce_sum(loss, -1) / tf.reduce_sum(mask, 1)
+        # add regularization losses
+        loss = tf.reduce_mean(loss) + tf.losses.get_regularization_loss()
+        return loss
 
     def _create_tf_graph(self, a_in, b_in, c_in):
         """Create tf graph for training"""
@@ -420,7 +459,7 @@ class EmbeddingPolicy(Policy):
         real_length = tf.cast(tf.reduce_sum(mask, 1), tf.int32)
 
         # create rnn
-        cell_output, final_context_state = self._create_rnn(
+        cell_output, alignment_history = self._create_rnn(
                 emb_utter, emb_slots, real_length)
 
         cell_output = tf.layers.dropout(cell_output,
@@ -431,38 +470,7 @@ class EmbeddingPolicy(Policy):
         sim, sim_act = self._tf_sim(emb_dial, emb_act, mask)
         loss = self._tf_loss(sim, sim_act, mask)
 
-        return sim, loss, mask
-
-    def _tf_loss(self, sim, sim_act, mask):
-        """Define loss"""
-
-        if self.use_max_sim_neg:
-            max_sim_neg = tf.reduce_max(sim[:, :, 1:], -1)
-            loss = (tf.maximum(0., self.mu_pos - sim[:, :, 0]) +
-                    tf.maximum(0., self.mu_neg + max_sim_neg)) * mask
-
-        else:
-            # create an array for mu
-            mu = self.mu_neg * np.ones(self.num_neg + 1)
-            mu[0] = self.mu_pos
-            mu = mu[np.newaxis, np.newaxis, :]
-
-            factors = tf.concat([-1 * tf.ones([1, 1, 1]),
-                                 tf.ones([1, 1, tf.shape(sim)[-1] - 1])],
-                                axis=-1)
-
-            max_margin = tf.maximum(0., mu + factors * sim)
-
-            loss = tf.reduce_sum(max_margin, -1) * mask
-
-        # penalize max similarity between intent embeddings
-        loss_act = tf.maximum(0., tf.reduce_max(sim_act, -1))
-        loss += loss_act * self.C_emb
-
-        loss = tf.reduce_sum(loss, -1) / tf.reduce_sum(mask, 1)
-        # add regularization losses
-        loss = tf.reduce_mean(loss) + tf.losses.get_regularization_loss()
-        return loss
+        return sim, loss, mask, alignment_history
 
     def _create_batch_b(self, batch_pos_b, intent_ids):
         """Create batch of actions, where the first is correct action
@@ -544,8 +552,8 @@ class EmbeddingPolicy(Policy):
         ids = np.random.permutation(len(X))[:n]
         all_Y_d_x = np.stack([all_Y_d for _ in range(X[ids].shape[0])])
 
-        _sim, _mask = self.session.run(
-            [self.sim_op, mask],
+        _sim, _mask, _x = self.session.run(
+            [self.sim_op, mask, self.alignment_history],
             feed_dict={self.a_in: X[ids],
                        self.b_in: all_Y_d_x,
                        self.c_in: slots[ids],
@@ -559,6 +567,13 @@ class EmbeddingPolicy(Policy):
                     "".format((ep + 1), self.epochs,
                               ep_loss, train_acc))
 
+        t = 9
+        for i, idx in enumerate(actions_for_X[ids[0], :t+2]):
+            print("{:.3f} -- {}".format(_x[0, t, i], self.domain.actions[idx].name()))
+        print(np.sum(_x[0, t]))
+        # idx = actions_for_X[ids[0], 10]
+        # print("{}\n".format(self.domain.actions[idx].name()))
+
     def train(self,
               training_trackers,  # type: List[DialogueStateTracker]
               domain,  # type: Domain
@@ -566,7 +581,7 @@ class EmbeddingPolicy(Policy):
               ):
         # type: (...) -> None
         """Trains the policy on given training trackers."""
-
+        self.domain = domain
         # dealing with training data
         logger.debug('Started to train embedding policy.')
 
@@ -612,9 +627,11 @@ class EmbeddingPolicy(Policy):
                                        name='c')
             self.is_training = tf.placeholder_with_default(False, shape=())
 
-            self.sim_op, loss, mask = self._create_tf_graph(self.a_in,
-                                                            self.b_in,
-                                                            self.c_in)
+            (self.sim_op,
+             loss, mask,
+             self.alignment_history) = self._create_tf_graph(self.a_in,
+                                                             self.b_in,
+                                                             self.c_in)
 
             self.train_op = tf.train.AdamOptimizer().minimize(loss)
 
@@ -776,10 +793,18 @@ def _compute_time_attention(attention_mechanism, cell_output,
       cell_output, state=attention_state)
 
     t = time + 1
-    ones = tf.ones_like(alignments[0])
-    zeros = tf.zeros_like(alignments[0])
-    until_time = tf.concat([ones[:t], zeros[t:]], 0)
-    alignments *= until_time
+    # ones = tf.ones_like(alignments[0])
+    # zeros = tf.zeros_like(alignments[0])
+    # until_time = tf.concat([ones[:t], zeros[t:]], 0)
+    # alignments *= until_time
+    # norm = tf.reduce_sum(alignments, -1, keepdims=True) + 1
+    # alignments /= norm
+
+    zeros = tf.zeros_like(alignments)
+    bias = tf.log(tf.cast(t, tf.float32))
+    probs = tf.nn.softmax(tf.concat([alignments[:, :time],
+                                     alignments[:, time:t] + bias], 1))
+    alignments = tf.concat([probs, zeros[:, t:]], 1)
 
     # Reshape from [batch_size, memory_time] to [batch_size, 1, memory_time]
     expanded_alignments = tf.expand_dims(alignments, 1)
@@ -801,6 +826,7 @@ def _compute_time_attention(attention_mechanism, cell_output,
     else:
         attention = context
 
+    #alignments = tf.concat([alignments[:, :-1], 1 / norm], 1)
     return attention, alignments, next_attention_state
 
 
@@ -843,11 +869,14 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         # Step 1: Calculate the true inputs to the cell based on the
         # previous attention value.
 
-        cell_inputs = self._cell_input_fn(inputs, state.attention)
-        cell_state = state.cell_state
-        cell_output, next_cell_state = self._cell(cell_inputs, cell_state)
-        # (_, m_prev) = state.cell_state
-        # cell_output = tf.concat([m_prev, inputs], 1)
+        # ones = tf.ones_like(state.alignments[:, -1:])
+        # inv_norm = tf.where(state.alignments[:, -1:] > 0, state.alignments[:, -1:], ones)
+
+        # cell_inputs = self._cell_input_fn(inputs, state.attention, inv_norm)
+        # cell_state = state.cell_state
+        # cell_output, next_cell_state = self._cell(cell_inputs, cell_state)
+        (_, m_prev) = state.cell_state
+        cell_output = tf.concat([m_prev, inputs], 1)
 
         cell_batch_size = (
                 cell_output.shape[0].value or tf.shape(cell_output)[0])
@@ -890,9 +919,9 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
 
         attention = tf.concat(all_attentions, 1)
 
-        # cell_inputs = self._cell_input_fn(inputs, attention)
-        # cell_state = state.cell_state
-        # cell_output, next_cell_state = self._cell(cell_inputs, cell_state)
+        cell_inputs = self._cell_input_fn(inputs, attention, 1)
+        cell_state = state.cell_state
+        cell_output, next_cell_state = self._cell(cell_inputs, cell_state)
 
         next_state = tf.contrib.seq2seq.AttentionWrapperState(
             time=state.time + 1,

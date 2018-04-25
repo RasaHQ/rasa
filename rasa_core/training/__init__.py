@@ -42,17 +42,17 @@ def load_data(
 ):
     # type: (...) -> List[DialogueStateTracker]
     from rasa_core.training import extract_story_graph
-    from rasa_core.training.generator import TrainingsDataGenerator
+    from rasa_core.training.generator import TrainingDataGenerator
 
     if resource_name:
         graph = extract_story_graph(resource_name, domain)
 
-        g = TrainingsDataGenerator(graph, domain,
-                                   remove_duplicates,
-                                   augmentation_factor,
-                                   max_number_of_trackers,
-                                   tracker_limit,
-                                   use_story_concatenation)
+        g = TrainingDataGenerator(graph, domain,
+                                  remove_duplicates,
+                                  augmentation_factor,
+                                  max_number_of_trackers,
+                                  tracker_limit,
+                                  use_story_concatenation)
         return g.generate()
     else:
         return []

@@ -18,7 +18,7 @@ from rasa_core.agent import Agent
 from rasa_core.events import ActionExecuted, UserUttered
 from rasa_core.interpreter import RegexInterpreter, RasaNLUInterpreter
 from rasa_core import training
-from rasa_core.training.generator import TrainingsDataGenerator
+from rasa_core.training.generator import TrainingDataGenerator
 from rasa_nlu.evaluate import plot_confusion_matrix, log_evaluation_table
 
 logger = logging.getLogger(__name__)
@@ -109,7 +109,7 @@ def collect_story_predictions(resource_name, policy_model_path, nlu_model_path,
     preds = []
     actual = []
 
-    g = TrainingsDataGenerator(story_graph, agent.domain,
+    g = TrainingDataGenerator(story_graph, agent.domain,
                                use_story_concatenation=False,
                                tracker_limit=100)
     completed_trackers = g.generate()

@@ -12,7 +12,7 @@ from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.domain import Domain
 from rasa_core.events import UserUttered, ActionExecuted
 from rasa_core.interpreter import RegexInterpreter, NaturalLanguageInterpreter
-from rasa_core.training.generator import TrainingsDataGenerator
+from rasa_core.training.generator import TrainingDataGenerator
 from rasa_core.training.structures import StoryGraph, StoryStep
 from rasa_nlu.training_data import TrainingData
 
@@ -270,7 +270,7 @@ def visualize_stories(
     G.add_node(-1, label="END", fillcolor="red", style="filled",
                fontsize=fontsize)
 
-    g = TrainingsDataGenerator(story_graph, domain,
+    g = TrainingDataGenerator(story_graph, domain,
                                use_story_concatenation=False,
                                tracker_limit=100,
                                augmentation_factor=0)
