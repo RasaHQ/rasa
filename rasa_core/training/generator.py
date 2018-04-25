@@ -39,7 +39,7 @@ ExtractorConfig = namedtuple("ExtractorConfig", "remove_duplicates "
 TrackerLookupDict = Dict[Optional[Text], List[DialogueStateTracker]]
 
 
-class TrainingsDataGenerator(object):
+class TrainingDataGenerator(object):
     def __init__(
             self,
             story_graph,  # type: StoryGraph

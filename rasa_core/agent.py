@@ -166,7 +166,7 @@ class Agent(object):
         # deprecation tests
         if kwargs.get('featurizer') or kwargs.get('max_history'):
             logger.warning("Passing `featurizer` and `max_history` "
-                           "through agent is deprecated. "
+                           "to `agent.train(...)` is deprecated. "
                            "Pass appropriate featurizer "
                            "directly to the policy instead.")
 
@@ -174,10 +174,10 @@ class Agent(object):
         if isinstance(training_trackers, string_types):
             # the user most likely passed in a file name to load training
             # data from
-            logger.warn("Passing a file name to `agent.train(...)` is "
-                        "deprecated. Rather load the data with "
-                        "`data = agent.load_data(file_name)` and pass it "
-                        "to `agent.train(data)`.")
+            logger.warning("Passing a file name to `agent.train(...)` is "
+                           "deprecated. Rather load the data with "
+                           "`data = agent.load_data(file_name)` and pass it "
+                           "to `agent.train(data)`.")
             training_trackers = self.load_data(training_trackers)
 
         logger.debug("Agent trainer got kwargs: {}".format(kwargs))
