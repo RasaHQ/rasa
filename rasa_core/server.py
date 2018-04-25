@@ -104,6 +104,7 @@ def bool_arg(request, name, default=True):
     d = [str(default)]
     return request.args.get(name, d)[0].lower() == 'true'
 
+
 def default_arg(request, name, default=None):
     # type: (Request, Text, Any) -> Any
     """Return a passed boolean argument of the request or a default.
@@ -115,7 +116,8 @@ def default_arg(request, name, default=None):
     if values is None or len(values) < 1:
         return default
     else:
-       return values[0]
+        return values[0]
+
 
 def request_parameters(request):
     if request.method.decode('utf-8', 'strict') == 'GET':

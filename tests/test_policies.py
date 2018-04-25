@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from rasa_core import training
+from rasa_core.policies.embedding_policy import EmbeddingPolicy
 
 try:  # py3
     from unittest.mock import patch
@@ -22,15 +23,10 @@ from rasa_core.policies.sklearn_policy import SklearnPolicy
 from rasa_core.policies.fallback import FallbackPolicy
 from rasa_core.trackers import DialogueStateTracker
 from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
-from rasa_core.featurizers import MaxHistoryTrackerFeaturizer, \
-    BinarySingleStateFeaturizer
+from rasa_core.featurizers import (
+    MaxHistoryTrackerFeaturizer,
+    BinarySingleStateFeaturizer, FullDialogueTrackerFeaturizer)
 from rasa_core.events import ActionExecuted
-
-
-def train_featurizer(max_history):
-    featurizer = MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
-                                             max_history=max_history)
-    return featurizer
 
 
 def train_trackers(domain):
@@ -58,9 +54,15 @@ class PolicyTestCollection(object):
         raise NotImplementedError
 
     @pytest.fixture(scope="module")
-    def trained_policy(self):
+    def featurizer(self):
+        featurizer = MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
+                                                 max_history=self.max_history)
+        return featurizer
+
+    @pytest.fixture(scope="module")
+    def trained_policy(self, featurizer):
         default_domain = TemplateDomain.load(DEFAULT_DOMAIN_PATH)
-        policy = self.create_policy(train_featurizer(self.max_history))
+        policy = self.create_policy(featurizer)
         training_trackers = train_trackers(default_domain)
         policy.train(training_trackers, default_domain)
         return policy
@@ -99,6 +101,17 @@ class TestKerasPolicy(PolicyTestCollection):
     @pytest.fixture(scope="module")
     def create_policy(self, featurizer):
         p = KerasPolicy(featurizer)
+        return p
+
+
+class TestEmbeddingPolicy(PolicyTestCollection):
+    @pytest.fixture(scope="module")
+    def featurizer(self):
+        return FullDialogueTrackerFeaturizer(BinarySingleStateFeaturizer())
+
+    @pytest.fixture(scope="module")
+    def create_policy(self, featurizer):
+        p = EmbeddingPolicy(featurizer)
         return p
 
 
@@ -178,9 +191,9 @@ class TestSklearnPolicy(PolicyTestCollection):
         return train_trackers(default_domain)
 
     def test_cv_none_does_not_trigger_search(
-            self, mock_search, default_domain, trackers):
+            self, mock_search, default_domain, trackers, featurizer):
         policy = self.create_policy(
-            featurizer=train_featurizer(self.max_history),
+            featurizer=featurizer,
             cv=None
         )
         policy.train(trackers, domain=default_domain)
@@ -189,9 +202,9 @@ class TestSklearnPolicy(PolicyTestCollection):
         assert policy.model != 'mockmodel'
 
     def test_cv_not_none_param_grid_none_triggers_search_without_params(
-            self, mock_search, default_domain, trackers):
+            self, mock_search, default_domain, trackers, featurizer):
         policy = self.create_policy(
-            featurizer=train_featurizer(self.max_history),
+            featurizer=featurizer,
             cv=3,
         )
         policy.train(trackers, domain=default_domain)
@@ -202,10 +215,10 @@ class TestSklearnPolicy(PolicyTestCollection):
         assert policy.model == 'mockmodel'
 
     def test_cv_not_none_param_grid_none_triggers_search_with_params(
-            self, mock_search, default_domain, trackers):
+            self, mock_search, default_domain, trackers, featurizer):
         param_grid = {'n_estimators': 50}
         policy = self.create_policy(
-            featurizer=train_featurizer(self.max_history),
+            featurizer=featurizer,
             cv=3,
             param_grid=param_grid,
         )
@@ -217,14 +230,11 @@ class TestSklearnPolicy(PolicyTestCollection):
         assert policy.model == 'mockmodel'
 
     def test_missing_classes_filled_correctly(
-            self, default_domain, trackers, tracker):
+            self, default_domain, trackers, tracker, featurizer):
         # Pretend that a couple of classes are missing and check that
         # those classes are predicted as 0, while the other class
         # probabilities are predicted normally.
-        policy = self.create_policy(
-            featurizer=train_featurizer(self.max_history),
-            cv=None,
-        )
+        policy = self.create_policy(featurizer=featurizer, cv=None)
 
         classes = [1, 3]
         new_trackers = []
@@ -255,18 +265,14 @@ class TestSklearnPolicy(PolicyTestCollection):
             else:
                 assert prob == 0.0
 
-    def test_train_kwargs_are_set_on_model(self, default_domain, trackers):
-        policy = self.create_policy(
-            featurizer=train_featurizer(self.max_history),
-            cv=None,
-        )
+    def test_train_kwargs_are_set_on_model(
+            self, default_domain, trackers, featurizer):
+        policy = self.create_policy(featurizer=featurizer, cv=None)
         policy.train(trackers, domain=default_domain, C=123)
         assert policy.model.C == 123
 
-    def test_train_with_shuffle_false(self, default_domain, trackers):
-        policy = self.create_policy(
-            featurizer=train_featurizer(self.max_history),
-            shuffle=False
-        )
+    def test_train_with_shuffle_false(
+            self, default_domain, trackers, featurizer):
+        policy = self.create_policy(featurizer=featurizer, shuffle=False)
         # does not raise
         policy.train(trackers, domain=default_domain)

@@ -100,7 +100,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
 
     @staticmethod
     def deprecated_extraction(user_input):
-        """DEPRECATED parse of user intput message."""
+        """DEPRECATED parse of user input message."""
 
         value_assign_rx = '\s*(.+)\s*=\s*(.+)\s*'
         prefixes = re.escape(RegexInterpreter.allowed_prefixes())

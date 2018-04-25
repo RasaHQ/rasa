@@ -97,7 +97,7 @@ def test_event_has_proper_implementation(one_event, another_event):
 
     ReminderScheduled("my_action", datetime.now())
 ])
-def test_dict_serialisation(one_event, default_domain):
+def test_dict_serialisation(one_event):
     evt_dict = one_event.as_dict()
     recovered_event = Event.from_parameters(evt_dict)
     assert hash(one_event) == hash(recovered_event)
