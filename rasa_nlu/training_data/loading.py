@@ -63,7 +63,7 @@ def load_data(resource_name, language='en'):
 
 def load_data_from_url(url, language='en'):
     # type: (Text, Optional[Text]) -> TrainingData
-    """Load training data from a Rasa Platform URL."""
+    """Load training data from a URL."""
 
     if not utils.is_url(url):
         raise requests.exceptions.InvalidURL(url)
