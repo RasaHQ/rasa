@@ -76,24 +76,24 @@ def test_version(app):
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
         "http://dummy-uri/parse?q=hello",
-        {u'project': None, u'entities': [], u'model': u'fallback',
-         u'intent': {u'confidence': 1.0, u'name': u'greet'}, u'text': u'hello'}
+        {'project': None, 'entities': [], 'model': 'fallback',
+         'intent': {'confidence': 1.0, 'name': 'greet'}, 'text': 'hello'}
     ),
     ResponseTest(
         "http://dummy-uri/parse?query=hello",
-        {u'project': None, u'entities': [], u'model': u'fallback',
-         u'intent': {u'confidence': 1.0, u'name': u'greet'}, u'text': u'hello'}
+        {'project': None, 'entities': [], 'model': 'fallback',
+         'intent': {'confidence': 1.0, 'name': 'greet'}, 'text': 'hello'}
     ),
     ResponseTest(
         "http://dummy-uri/parse?q=hello ńöñàśçií",
-        {u'project': None, u'entities': [], u'model': u'fallback',
-         u'intent': {u'confidence': 1.0, u'name': u'greet'},
-         u'text': u'hello \u0144\xf6\xf1\xe0\u015b\xe7i\xed'}
+        {'project': None, 'entities': [], 'model': 'fallback',
+         'intent': {'confidence': 1.0, 'name': 'greet'},
+         'text': 'hello ńöñàśçií'}
     ),
     ResponseTest(
         "http://dummy-uri/parse?q=",
-        {u'project': None, u'entities': [], u'model': u'fallback',
-         u'intent': {u'confidence': 0.0, u'name': u''}, u'text': u''}
+        {'project': None, 'entities': [], 'model': 'fallback',
+         'intent': {'confidence': 0.0, 'name': ''}, 'text': ''}
     ),
 ])
 @pytest.inlineCallbacks
@@ -110,23 +110,23 @@ def test_get_parse(app, response_test):
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
         "http://dummy-uri/parse",
-        {u'project': None, u'entities': [], u'model': u'fallback',
-         u'intent': {u'confidence': 1.0, u'name': u'greet'},
-         u'text': u'hello'},
+        {'project': None, 'entities': [], 'model': 'fallback',
+         'intent': {'confidence': 1.0, 'name': 'greet'},
+         'text': 'hello'},
         payload={"q": "hello"}
     ),
     ResponseTest(
         "http://dummy-uri/parse",
-        {u'project': None, u'entities': [], u'model': u'fallback',
-         u'intent': {u'confidence': 1.0, u'name': u'greet'},
-         u'text': u'hello'},
+        {'project': None, 'entities': [], 'model': 'fallback',
+         'intent': {'confidence': 1.0, 'name': 'greet'},
+         'text': 'hello'},
         payload={"query": "hello"}
     ),
     ResponseTest(
         "http://dummy-uri/parse",
-        {u'project': None, u'entities': [], u'model': u'fallback',
-         u'intent': {u'confidence': 1.0, u'name': u'greet'},
-         u'text': u'hello \u0144\xf6\xf1\xe0\u015b\xe7i\xed'},
+        {'project': None, 'entities': [], 'model': 'fallback',
+         'intent': {'confidence': 1.0, 'name': 'greet'},
+         'text': 'hello ńöñàśçií'},
         payload={"q": "hello ńöñàśçií"}
     ),
 ])
