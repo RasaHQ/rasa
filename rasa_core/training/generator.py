@@ -177,7 +177,7 @@ class TrainingsDataGenerator(object):
         if self.config.max_number_of_trackers is not None:
             return utils.subsample_array(incoming_trackers,
                                          self.config.max_number_of_trackers,
-                                         self.config.rand)
+                                         rand=self.config.rand)
         else:
             return incoming_trackers
 
@@ -198,7 +198,7 @@ class TrainingsDataGenerator(object):
                 ending_trackers = utils.subsample_array(
                         ending_trackers,
                         self.config.augmentation_factor,
-                        self.config.rand)
+                        rand=self.config.rand)
 
             # This is where the augmentation magic happens. We
             # will reuse all the trackers that reached the
