@@ -96,12 +96,14 @@ class FormAction(Action):
                 requested_entity = getattr(f, 'entity_name', None)
 
         slot_events = []
+        extracted_entities = {requested_entity}
 
         for f in self.required_fields():
             if isinstance(f, EntityFormField) and \
                 not f.slot_name == requested_slot and \
-                not f.entity_name == requested_entity:
+                not f.entity_name in extracted_entities:
                 slot_events.extend(f.extract(tracker))
+                extracted_entities.add(f.entity_name)
         return slot_events
 
     def get_requested_slot(self, tracker):
