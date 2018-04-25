@@ -14,7 +14,7 @@ import typing
 from typing import Text, Optional, Any, List, Dict
 
 import rasa_core
-from rasa_core import utils
+from rasa_core import utils, training
 from rasa_core.events import SlotSet, ActionExecuted
 from rasa_core.featurizers import MaxHistoryTrackerFeaturizer
 
@@ -30,7 +30,7 @@ class PolicyEnsemble(object):
     def __init__(self, policies, action_fingerprints=None):
         # type: (List[Policy], Optional[Dict]) -> None
         self.policies = policies
-        self.training_events = None
+        self.training_trackers = None
 
         if action_fingerprints:
             self.action_fingerprints = action_fingerprints
@@ -56,8 +56,7 @@ class PolicyEnsemble(object):
         if training_trackers:
             for policy in self.policies:
                 policy.train(training_trackers, domain, **kwargs)
-            self.training_events = self._training_events_from_trackers(
-                    training_trackers)
+            self.training_trackers = training_trackers
         else:
             logger.info("Skipped training, because there are no "
                         "training samples.")
@@ -112,12 +111,16 @@ class PolicyEnsemble(object):
 
         # make sure the directory we persist to exists
         domain_spec_path = os.path.join(path, 'policy_metadata.json')
+        training_data_path = os.path.join(path, 'stories.md')
         utils.create_dir_for_file(domain_spec_path)
 
         policy_names = [utils.module_path_from_instance(p)
                         for p in self.policies]
-        action_fingerprints = self._create_action_fingerprints(
-                                    self.training_events)
+
+        training_events = self._training_events_from_trackers(
+                self.training_trackers)
+
+        action_fingerprints = self._create_action_fingerprints(training_events)
 
         metadata = {
             "action_fingerprints": action_fingerprints,
@@ -128,6 +131,7 @@ class PolicyEnsemble(object):
         }
 
         utils.dump_obj_as_json_to_file(domain_spec_path, metadata)
+        training.persist_data(self.training_trackers, training_data_path)
 
     def persist(self, path):
         # type: (Text) -> None
