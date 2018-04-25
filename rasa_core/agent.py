@@ -7,6 +7,7 @@ import logging
 import os
 import shutil
 
+import typing
 from six import string_types
 from typing import Text, List, Optional, Callable, Any, Dict, Union
 
@@ -16,7 +17,6 @@ from rasa_core.domain import TemplateDomain, Domain, check_domain_sanity
 from rasa_core.events import Event
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.policies import Policy
-from rasa_core.policies import online_trainer
 from rasa_core.policies.ensemble import SimplePolicyEnsemble, PolicyEnsemble
 from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.processor import MessageProcessor
@@ -24,6 +24,9 @@ from rasa_core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa_core.trackers import DialogueStateTracker
 
 logger = logging.getLogger(__name__)
+
+if typing.TYPE_CHECKING:
+    from rasa_core.interpreter import NaturalLanguageInterpreter as NLI
 
 
 class Agent(object):
@@ -36,7 +39,7 @@ class Agent(object):
             self,
             domain,  # type: Union[Text, Domain]
             policies=None,  # type: Union[PolicyEnsemble, List[Policy], None]
-            interpreter=None,  # type: Optional[NaturalLanguageInterpreter]
+            interpreter=None,  # type: Union[NLI, Text, None]
             tracker_store=None  # type: Optional[TrackerStore]
     ):
         self.domain = self._create_domain(domain)
@@ -46,9 +49,14 @@ class Agent(object):
                 tracker_store, self.domain)
 
     @classmethod
-    def load(cls, path, interpreter=None, tracker_store=None,
-             action_factory=None):
+    def load(cls,
+             path,  # type: Text
+             interpreter=None,  # type: Union[NLI, Text, None]
+             tracker_store=None,  # type: Optional[TrackerStore]
+             action_factory=None  # type: Optional[Text]
+             ):
         # type: (Text, Any, Optional[TrackerStore]) -> Agent
+        """Load a persisted model from the passed path."""
 
         if path is None:
             raise ValueError("No domain path specified.")
@@ -99,6 +107,7 @@ class Agent(object):
                                text_message,
                                sender_id=UserMessage.DEFAULT_SENDER_ID):
         # type: (Text, Optional[Text]) -> Dict[Text, Any]
+        """Start to process a messages, returning the next action to take. """
 
         processor = self._create_processor()
         return processor.start_message_handling(
@@ -106,6 +115,9 @@ class Agent(object):
 
     def continue_message_handling(self, sender_id, executed_action, events):
         # type: (Text, Text, List[Event]) -> Dict[Text, Any]
+        """Continue to process a messages.
+
+        Predicts the next action to take by the caller"""
 
         processor = self._create_processor()
         return processor.continue_message_handling(sender_id,
@@ -146,6 +158,7 @@ class Agent(object):
                   use_story_concatenation=True  # type: bool
                   ):
         # type: (...) -> List[DialogueStateTracker]
+        """Load training data from a resource."""
 
         return training.load_data(resource_name, self.domain, remove_duplicates,
                                   augmentation_factor, max_number_of_trackers,
@@ -194,6 +207,7 @@ class Agent(object):
                      ):
         # type: (...) -> None
         from rasa_core.policies.online_trainer import OnlinePolicyEnsemble
+        """Train a policy ensemble in online learning mode."""
 
         if not self.interpreter:
             raise ValueError(
@@ -222,25 +236,35 @@ class Agent(object):
         ensemble.run_online_training(self.domain, self.interpreter,
                                      input_channel)
 
+    @staticmethod
+    def _clear_model_directory(model_path):
+        # type: (Text) -> None
+        """Remove existing files from model directory.
+
+        Only removes files if the directory seems to contain a previously
+        persisted model. Otherwise does nothing to avoid deleting
+        `/` by accident."""
+
+        if not os.path.exists(model_path):
+            return
+
+        domain_spec_path = os.path.join(model_path, 'policy_metadata.json')
+        # check if there were a model before
+        if os.path.exists(domain_spec_path):
+            logger.info("Model directory {} exists and contains old "
+                        "model files. All files will be overwritten."
+                        "".format(model_path))
+            shutil.rmtree(model_path)
+        else:
+            logger.debug("Model directory {} exists, but does not contain "
+                         "all old model files. Some files might be "
+                         "overwritten.".format(model_path))
+
     def persist(self, model_path):
         # type: (Text) -> None
         """Persists this agent into a directory for later loading and usage."""
 
-        if os.path.exists(model_path):
-            domain_spec_path = os.path.join(model_path,
-                                            'policy_metadata.json')
-            # check if there were a model before
-            if os.path.exists(domain_spec_path):
-                logger.debug("Model directory {} exists and "
-                             "contains old model files. "
-                             "All files will be overwritten."
-                             "".format(model_path))
-                shutil.rmtree(model_path)
-            else:
-                logger.debug("Model directory {} exists, but does "
-                             "not contain all old model files. "
-                             "Some files might be overwritten."
-                             "".format(model_path))
+        self._clear_model_directory(model_path)
 
         self.policy_ensemble.persist(model_path)
         self.domain.persist(os.path.join(model_path, "domain.yml"))
@@ -250,15 +274,17 @@ class Agent(object):
                     "".format(os.path.abspath(model_path)))
 
     def visualize(self,
-                  resource_name,
-                  output_file,
-                  max_history,
-                  nlu_training_data=None,
-                  should_merge_nodes=True,
-                  fontsize=12
+                  resource_name,  # type: Text
+                  output_file,  # type: Text
+                  max_history,  # type: int
+                  nlu_training_data=None,  # type: Optional[Text]
+                  should_merge_nodes=True,  # type: bool
+                  fontsize=12  # type: int
                   ):
+        # type: (...) -> None
         from rasa_core.training.visualization import visualize_stories
         from rasa_core.training.dsl import StoryFileReader
+        """Visualize the loaded training data from the resource."""
 
         story_steps = StoryFileReader.read_from_folder(resource_name,
                                                        self.domain)
@@ -274,13 +300,12 @@ class Agent(object):
         Raises an exception if any argument is missing."""
 
         if self.interpreter is None or self.tracker_store is None:
-            raise Exception(
-                    "Agent needs to be prepared before usage. "
-                    "You need to set an interpreter as well "
-                    "as a tracker store.")
+            raise Exception("Agent needs to be prepared before usage. "
+                            "You need to set an interpreter as well "
+                            "as a tracker store.")
 
     def _create_processor(self, preprocessor=None):
-        # type: (Callable[[Text], Text]) -> MessageProcessor
+        # type: (Optional[Callable[[Text], Text]]) -> MessageProcessor
         """Instantiates a processor based on the set state of the agent."""
 
         self._ensure_agent_is_prepared()
@@ -290,6 +315,8 @@ class Agent(object):
 
     @staticmethod
     def _create_domain(domain):
+        # type: (Union[Domain, Text]) -> Domain
+
         if isinstance(domain, string_types):
             return TemplateDomain.load(domain)
         elif isinstance(domain, Domain):
@@ -318,6 +345,7 @@ class Agent(object):
 
     @staticmethod
     def _create_ensemble(policies):
+        # type: (Union[List[Policy], PolicyEnsemble, None]) -> PolicyEnsemble
         if policies is None:
             return SimplePolicyEnsemble([])
         if isinstance(policies, list):
