@@ -64,6 +64,24 @@ class ActionSearchPeople(FormAction):
         return []
 
 
+class ActionSearchTravel(FormAction):
+
+    RANDOMIZE = False
+
+    @staticmethod
+    def required_fields():
+        return [
+            EntityFormField("GPE", "GPE_origin"),
+            EntityFormField("GPE", "GPE_destination")
+        ]
+
+    def name(self):
+        return 'action_search_travel'
+
+    def submit(self, dispatcher, tracker, domain):
+        return []
+
+
 def test_restaurant_form():
     domain = TemplateDomain.load("data/test_domains/restaurant_form.yml")
     tracker_store = InMemoryTrackerStore(domain)
@@ -233,3 +251,34 @@ def test_people_form():
 
     assert events[0].key == "person_name"
     assert events[0].value == name
+
+
+def test_travel_form():
+    domain = TemplateDomain.load("data/test_domains/travel_form.yml")
+    tracker_store = InMemoryTrackerStore(domain)
+    out = CollectingOutputChannel()
+    sender_id = "test-travel"
+    dispatcher = Dispatcher(sender_id, out, domain)
+    tracker = tracker_store.get_or_create_tracker(sender_id)
+
+    # first user utterance
+    tracker.update(UserUttered("", intent={"name": "inform"}))
+    events = ActionSearchTravel().run(dispatcher, tracker, domain)
+    assert len(events) == 1
+    assert isinstance(events[0], SlotSet)
+    assert events[0].key == "requested_slot"
+    assert events[0].value == "GPE_origin"
+    tracker.update(events[0])
+
+    # first user utterance
+    entities = [{"entity": "GPE", "value": "Berlin"}]
+    tracker.update(UserUttered("", intent={"name": "inform"}, entities=entities))
+    events = ActionSearchTravel().run(dispatcher, tracker, domain)
+    for e in events:
+        print(e.as_story_string())
+    assert len(events) == 2
+    assert isinstance(events[0], SlotSet)
+    assert events[0].key == "GPE_origin"
+    assert events[0].value == "Berlin"
+    assert events[1].key == "requested_slot"
+    assert events[1].value == "GPE_destination"

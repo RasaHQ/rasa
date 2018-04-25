@@ -89,10 +89,20 @@ class FormAction(Action):
 
     def get_other_slots(self, tracker):
         requested_slot = tracker.get_slot("requested_slot")
-        slot_events = [f.extract(tracker) for f in self.required_fields()
-                       if isinstance(f, EntityFormField) and
-                       not f.slot_name == requested_slot]
-        return [e for events in slot_events for e in events]
+
+        requested_entity = None
+        for f in self.required_fields():
+            if f.slot_name == requested_slot:
+                requested_entity = getattr(f, 'entity_name', None)
+
+        slot_events = []
+
+        for f in self.required_fields():
+            if isinstance(f, EntityFormField) and \
+                not f.slot_name == requested_slot and \
+                not f.entity_name == requested_entity:
+                slot_events.extend(f.extract(tracker))
+        return slot_events
 
     def get_requested_slot(self, tracker):
         requested_slot = tracker.get_slot("requested_slot")
