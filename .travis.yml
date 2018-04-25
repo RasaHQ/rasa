@@ -1,8 +1,5 @@
 language: python
 sudo: required
-addons:
-  apt_packages:
-    - pandoc
 cache:
   directories:
   - $HOME/.cache/pip
