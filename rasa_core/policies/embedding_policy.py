@@ -54,7 +54,7 @@ class EmbeddingPolicy(Policy):
         "hidden_layer_size_b": [],
         "rnn_size": 32,
         "batch_size": 16,
-        "epochs": 1000,
+        "epochs": 2000,
 
         # embedding parameters
         "embed_dim": 10,
@@ -191,7 +191,6 @@ class EmbeddingPolicy(Policy):
             action_placeholder=None,  # type: Optional[tf.Tensor]
             slots_placeholder=None,  # type: Optional[tf.Tensor]
             similarity_op=None,  # type: Optional[tf.Tensor]
-            alignment_history=None
     ):
         # type: (...) -> None
         self._check_tensorflow()
@@ -225,7 +224,7 @@ class EmbeddingPolicy(Policy):
         self.b_in = action_placeholder
         self.c_in = slots_placeholder
         self.sim_op = similarity_op
-        self.alignment_history = alignment_history
+        self.alignment_history = None
         # for continue training
         self.train_op = None
         self.is_training = None
@@ -250,13 +249,6 @@ class EmbeddingPolicy(Policy):
         X = data_X[:, :, :slot_start]
         slots = data_X[:, :, slot_start:prev_start]
 
-        # slots[slots < 0] = 1
-        # print(slots[0])
-        # ex1 = np.roll(1 - slots, 1, axis=1)
-        # ex1[:, 0, :] = 1
-        # slots *= ex1
-        # print(slots[0])
-        # exit()
         return X, slots
 
     def _create_Y_actions_for_X(self, data_Y):
@@ -308,11 +300,12 @@ class EmbeddingPolicy(Policy):
 
         keep_prob = 1.0 - (self.droprate['rnn'] *
                            tf.cast(self.is_training, tf.float32))
-        cell_decoder = tf.contrib.rnn.LayerNormBasicLSTMCell(
+        cell_decoder = ChronoLayerNormBasicLSTMCell(
                 num_units=self.rnn_size,
                 layer_norm=False,
                 dropout_keep_prob=keep_prob,
-                forget_bias=fbias
+                forget_bias=fbias,
+                input_bias=-fbias
         )
 
         num_utter_units = int(emb_utter.shape[-1])
@@ -323,15 +316,9 @@ class EmbeddingPolicy(Policy):
                 probability_fn=tf.identity
         )
 
-        def cell_input_fn(inputs, attention, inv_norm):
-
-            res = tf.concat([#inv_norm *
-                             #inputs[:, :num_utter_units] +
-                             attention[:, :num_utter_units],
-                             inputs[:, num_utter_units:]# +
-                             #attention[:, num_utter_units:]
-                             ], -1)
-            # res = inputs + attention
+        def cell_input_fn(inputs, attention):
+            res = tf.concat([attention[:, :num_utter_units],
+                             inputs[:, num_utter_units:]], -1)
             return res
 
         attn_cell = TimeAttentionWrapper(
@@ -688,13 +675,13 @@ class EmbeddingPolicy(Policy):
                                     self.c_in: slots}
         )
 
-        result = _sim[0, -1, :].tolist()
-        # if self.similarity_type == 'inner':
-            # TODO inner similarity is not bounded by 1, need normalization?
-            # max similarity is set to 1
-            # result /= max(result)
+        result = _sim[0, -1, :]
+        if self.similarity_type == 'inner':
+            # normalize result to [0, 1]
+            result = np.exp(result)
+            result /= np.sum(result)
 
-        return result
+        return result.tolist()
 
     def persist(self, path):
         # type: (Text) -> None
@@ -779,26 +766,47 @@ class EmbeddingPolicy(Policy):
 # modified tensorflow attention wrapper
 def _compute_time_attention(attention_mechanism, cell_output,
                             attention_state, time, attention_layer):
-    """Computes the attention and alignments
+    """Computes the attention and alignments limited by time
     for a given attention_mechanism."""
     alignments, next_attention_state = attention_mechanism(
       cell_output, state=attention_state)
 
-    # t = time + 1
-    # ones = tf.ones_like(alignments[0])
-    # zeros = tf.zeros_like(alignments[0])
-    # until_time = tf.concat([ones[:t], zeros[t:]], 0)
-    # alignments *= until_time
-    # norm = tf.reduce_sum(alignments, -1, keepdims=True) + 1
-    # alignments /= norm
-
-    zeros = tf.zeros_like(alignments)
-    # time_bias = tf.where(time > 0,
-    #                      tf.log(tf.cast(time, tf.float32)), 0)
-    time_bias = tf.log(tf.cast(time + 1, tf.float32))
+    time_weight = time + 1
+    time_bias = tf.log(tf.cast(time_weight, tf.float32))
     probs = tf.nn.softmax(tf.concat([alignments[:, :time],
                                      alignments[:, time:time+1] +
                                      time_bias], 1))
+    # `time_weight = time + 1` was not chosen arbitrary
+    #
+    # if we assume that we have simple stories where each action
+    # is followed by `action_listen` then:
+    #
+    # if `time_weight = 1`, the initial `probs[:, time]`
+    # will be `1/(time+1)`
+    # and the initial `sum of probs` for 0-intent (before `action_listen`)
+    # will be `1/2 for any time`
+    #
+    # if `time_weight = time`, the initial `probs[:, time]`
+    # will be `1/2 for any time`
+    # and the initial `sum of probs` for 0-intent (before `action_listen`)
+    # will be `(1/4)(time+1)/time`
+    #
+    # if `time_weight = time + 2`, the initial `probs[:, time]`
+    # will be `(1/2)(time+2)/(time+1)`
+    # and the initial `sum of probs` for 0-intent (before `action_listen`)
+    # will be `1/4 for any time`
+    #
+    # we do not want initial `probs` to be independent of time
+    # to allow different times to be descriptive, but
+    # we want `lim(probs) = const` when `time -> inf`
+    # to avoid vanishing alignments for large time
+    #
+    # if `time_weight = time + 1`, the initial `probs[:, time]`
+    # will be `(1/2)(time+1)/(time+1/2)`
+    # and the initial `sum of probs` for 0-intent (before `action_listen`)
+    # will be `(1/4)(time+1)/(time+1/2)`
+
+    zeros = tf.zeros_like(alignments)
     alignments = tf.concat([probs, zeros[:, time+1:]], 1)
 
     # Reshape from [batch_size, memory_time] to [batch_size, 1, memory_time]
@@ -821,26 +829,30 @@ def _compute_time_attention(attention_mechanism, cell_output,
     else:
         attention = context
 
-    #alignments = tf.concat([alignments[:, :-1], 1 / norm], 1)
     return attention, alignments, next_attention_state
 
 
 class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
+    """Custom AttentionWrapper that takes into account time
+        when calculating attention."""
 
     def call(self, inputs, state):
         """Perform a step of attention-wrapped RNN.
 
-        - Step 1: Mix the `inputs` and previous step's `attention` output via
-          `cell_input_fn`.
-        - Step 2: Call the wrapped `cell` with this input and its previous state.
-        - Step 3: Score the cell's output with `attention_mechanism`.
-        - Step 4: Calculate the alignments by passing the score through the
-          `normalizer`.
-        - Step 5: Calculate the context vector as the inner product between the
+        The order is changed:
+        - Step 1: Calculate output for attention based on the previous output
+          and current input
+        - Step 2: Score the output with `attention_mechanism`.
+        - Step 3: Calculate the alignments by passing the score through the
+          `normalizer` and limit them by time.
+        - Step 4: Calculate the context vector as the inner product between the
           alignments and the attention_mechanism's values (memory).
-        - Step 6: Calculate the attention output by concatenating the cell output
+        - Step 5: Calculate the attention output by concatenating the cell output
           and context through the attention layer (a linear layer with
           `attention_layer_size` outputs).
+        - Step 6: Mix the `inputs` and `attention` output via
+          `cell_input_fn`.
+        - Step 7: Call the wrapped `cell` with this input and its previous state.
 
         Args:
           inputs: (Possibly nested tuple of) Tensor, the input at this time step.
@@ -861,24 +873,15 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             raise TypeError("Expected state to be instance of AttentionWrapperState. "
                             "Received type %s instead." % type(state))
 
-        # Step 1: Calculate the true inputs to the cell based on the
-        # previous attention value.
-
-        # ones = tf.ones_like(state.alignments[:, -1:])
-        # inv_norm = tf.where(state.alignments[:, -1:] > 0, state.alignments[:, -1:], ones)
-
-        # cell_inputs = self._cell_input_fn(inputs, state.attention, inv_norm)
-        # cell_state = state.cell_state
-        # cell_output, next_cell_state = self._cell(cell_inputs, cell_state)
-
+        # Step 1: Calculate attention based on the previous output and current input
         if isinstance(state.cell_state, tf.contrib.rnn.LSTMStateTuple):
-            (_, m_prev) = state.cell_state
-            cell_output = tf.concat([m_prev, inputs], 1)
+            (c, h) = state.cell_state
+            out_for_attn = tf.concat([c, h, inputs], 1)
         else:
-            cell_output = tf.concat([state.cell_state, inputs], 1)
+            out_for_attn = tf.concat([state.cell_state, inputs], 1)
 
         cell_batch_size = (
-                cell_output.shape[0].value or tf.shape(cell_output)[0])
+                out_for_attn.shape[0].value or tf.shape(out_for_attn)[0])
         error_message = (
                 "When applying AttentionWrapper %s: " % self.name +
                 "Non-matching batch sizes between the memory "
@@ -888,8 +891,8 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                 "multiple=beam_width.")
         with tf.control_dependencies(
                 self._batch_size_checks(cell_batch_size, error_message)):
-            cell_output = tf.identity(
-                cell_output, name="checked_cell_output")
+            out_for_attn = tf.identity(
+                out_for_attn, name="checked_out_for_attn")
 
         if self._is_multi:
             previous_attention_state = state.attention_state
@@ -904,7 +907,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         maybe_all_histories = []
         for i, attention_mechanism in enumerate(self._attention_mechanisms):
             attention, alignments, next_attention_state = _compute_time_attention(
-                attention_mechanism, cell_output, previous_attention_state[i],
+                attention_mechanism, out_for_attn, previous_attention_state[i],
                 state.time,  # time is added to calculate time attention
                 self._attention_layers[i] if self._attention_layers else None)
 
@@ -918,7 +921,9 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
 
         attention = tf.concat(all_attentions, 1)
 
-        cell_inputs = self._cell_input_fn(inputs, attention, 1)
+        # Step 6: Calculate the true inputs to the cell based on the
+        # previous attention value.
+        cell_inputs = self._cell_input_fn(inputs, attention)
         cell_state = state.cell_state
         cell_output, next_cell_state = self._cell(cell_inputs, cell_state)
 
@@ -931,6 +936,66 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             alignment_history=self._item_or_tuple(maybe_all_histories))
 
         if self._output_attention:
+            # does not make too much sense now
             return attention, next_state
         else:
             return cell_output, next_state
+
+
+class ChronoLayerNormBasicLSTMCell(tf.contrib.rnn.LayerNormBasicLSTMCell):
+    """Custom LayerNormBasicLSTMCell that allows chrono initialization
+        of gate biases."""
+
+    def __init__(self,
+                 num_units,
+                 forget_bias=1.0,
+                 input_bias=0.0,
+                 input_size=None,
+                 activation=tf.tanh,
+                 layer_norm=True,
+                 norm_gain=1.0,
+                 norm_shift=0.0,
+                 dropout_keep_prob=1.0,
+                 dropout_prob_seed=None,
+                 reuse=None):
+        super(ChronoLayerNormBasicLSTMCell, self).__init__(
+                num_units,
+                forget_bias=forget_bias,
+                input_size=input_size,
+                activation=activation,
+                layer_norm=layer_norm,
+                norm_gain=norm_gain,
+                norm_shift=norm_shift,
+                dropout_keep_prob=dropout_keep_prob,
+                dropout_prob_seed=dropout_prob_seed,
+                reuse=reuse
+        )
+        self._input_bias = input_bias
+
+    def call(self, inputs, state):
+        """LSTM cell with layer normalization and recurrent dropout."""
+        c, h = state
+        args = tf.concat([inputs, h], 1)
+        concat = self._linear(args)
+        dtype = args.dtype
+
+        i, j, f, o = tf.split(value=concat, num_or_size_splits=4, axis=1)
+        if self._layer_norm:
+            i = self._norm(i, "input", dtype=dtype)
+            j = self._norm(j, "transform", dtype=dtype)
+            f = self._norm(f, "forget", dtype=dtype)
+            o = self._norm(o, "output", dtype=dtype)
+
+        g = self._activation(j)
+        if (not isinstance(self._keep_prob, float)) or self._keep_prob < 1:
+            g = tf.nn.dropout(g, self._keep_prob, seed=self._seed)
+
+        new_c = (
+            c * tf.sigmoid(f + self._forget_bias) +
+            g * tf.sigmoid(i + self._input_bias))  # added input_bias
+        if self._layer_norm:
+            new_c = self._norm(new_c, "state", dtype=dtype)
+        new_h = self._activation(new_c) * tf.sigmoid(o)
+
+        new_state = tf.nn.rnn_cell.LSTMStateTuple(new_c, new_h)
+        return new_h, new_state
