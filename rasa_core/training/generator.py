@@ -7,6 +7,7 @@ from __future__ import unicode_literals
 import copy
 import json
 import logging
+import random
 from collections import defaultdict, namedtuple
 
 import typing
@@ -66,7 +67,7 @@ class TrainingDataGenerator(object):
                 max_number_of_trackers=max_number_of_trackers,
                 tracker_limit=tracker_limit,
                 use_story_concatenation=use_story_concatenation,
-                rand=None)  # random.Random(42))
+                rand=random.Random(42))
 
     def generate(self):
         # type: () -> List[DialogueStateTracker]
