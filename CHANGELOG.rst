@@ -18,7 +18,9 @@ Added
 - ``/conversations`` endpoint for listing sender ids of running conversations
 - added a Mattermost channel that allows Rasa Core to communicate via a Mattermost app
 - added a Twilio channel that allows Rasa Core to communicate via SMS
-- Dockerfile which starts ``rasa_core.server`` with a dialogue and Rasa NLU model
+- ``FallbackPolicy`` for executing a default message if NLU or core model confidence is low.
+- ``FormAction`` class to make it easier to collect multiple pieces of information with fewer stories.
+- Dockerfile for ``rasa_core.server`` with a dialogue and Rasa NLU model
 
 Changed
 -------

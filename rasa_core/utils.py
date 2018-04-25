@@ -87,7 +87,7 @@ def dump_obj_as_str_to_file(filename, text):
 
 
 def subsample_array(arr, max_values, can_modify_incoming_array=True, rand=None):
-    # type: (List[Any], bool, Optional[Random]) -> List[Any]
+    # type: (List[Any], int, Optional[bool], Optional[Random]) -> List[Any]
     """Shuffles the array and returns `max_values` number of elements."""
     import random
 
@@ -156,9 +156,13 @@ def str_range_list(start, end):
     return [str(e) for e in range(start, end)]
 
 
-def generate_id(prefix=""):
+def generate_id(prefix="", max_chars=None):
     import uuid
-    return "{}{}".format(prefix, uuid.uuid4().hex)
+    r = "{}{}".format(prefix, uuid.uuid4().hex)
+    if max_chars:
+        return r[:max_chars]
+    else:
+        return r
 
 
 def configure_colored_logging(loglevel):
@@ -334,3 +338,17 @@ def read_file(filename, encoding="utf-8"):
 def is_training_data_empty(X):
     """Check if the training matrix does contain training samples."""
     return X.shape[0] == 0
+
+
+def cap_length(s, char_limit=20, append_ellipsis=True):
+    """Makes sure the string doesn't exceed the passed char limit.
+
+    Appends an ellipsis if the string is to long."""
+
+    if len(s) > char_limit:
+        if append_ellipsis:
+            return s[:char_limit-3] + "..."
+        else:
+            return s[:char_limit]
+    else:
+        return s
