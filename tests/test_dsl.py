@@ -126,15 +126,23 @@ def test_generate_training_data_with_cycles(tmpdir, default_domain):
         default_domain,
         augmentation_factor=0
     )
-    # TODO for some reason sometimes it creates 1 or 2 trackers
-    assert len(training_trackers) == 2
 
     training_data = featurizer.featurize_trackers(training_trackers,
                                                   default_domain)
     y = training_data.y.argmax(axis=-1)
-    np.testing.assert_array_equal(
-            y,
-            [2, 4, 0, 2, 4, 0, 1, 0, 2, 4, 0, 1, 0, 0, 3])
+
+    # how many there are depends on the graph which is not created in a
+    # deterministic way but should always be 3 or
+    if len(training_trackers) == 4:
+        np.testing.assert_array_equal(
+                y,
+                [0, 3, 0, 2, 0, 4, 1, 0, 4, 1, 0, 2, 0, 4, 2])
+    elif len(training_trackers) == 3:
+        np.testing.assert_array_equal(
+                y,
+                [0, 3, 0, 4, 1, 0, 2, 0, 4, 1, 0, 2, 0, 4])
+    else:
+        assert False, "There must be 3 or 4 trackers"
 
 
 def test_visualize_training_data_graph(tmpdir, default_domain):

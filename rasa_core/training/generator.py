@@ -75,6 +75,10 @@ class TrainingDataGenerator(object):
         self._mark_first_action_in_story_steps_as_unpredictable()
 
         unused_checkpoints = set()  # type: Set[Text]
+        previous_unused = set()  # type: Set[Text]
+
+        everything_reachable_is_reached = False
+
         used_checkpoints = set()  # type: Set[Text]
         active_trackers = defaultdict(list)  # type: TrackerLookupDict
 
@@ -89,21 +93,22 @@ class TrainingDataGenerator(object):
 
         finished_trackers = []
 
-        num_aug_rounds = 0
-        if self.config.augmentation_factor > 0:
-            # TODO find a number or pass it as an argument
-            num_aug_rounds = 2
-        phases = self._phase_names(num_aug_rounds)
+        phase = 0
+        min_num_phases = 3 if self.config.augmentation_factor > 0 else 0
 
-        for i, phase_name in enumerate(phases):
+        # we will continue generating data until we have reached all
+        # checkpoints that seem to be reachable. This is a heuristic,
+        # if we did not reach any new checkpoints in an iteration, we
+        # assume we have reached all and stop.
+        while not everything_reachable_is_reached or phase < min_num_phases:
+            phase_name = "data generation round {}".format(phase)
             num_trackers = self._count_trackers(active_trackers)
-
-            logger.debug("Starting {} (phase {} of {})... (using {} trackers)"
-                         "".format(phase_name, i + 1, len(phases),
-                                   num_trackers))
+            logger.debug("Starting {} ... (using {} trackers)"
+                         "".format(phase_name, num_trackers))
 
             pbar = tqdm(self.story_graph.ordered_steps(),
                         desc="Processed Story Blocks")
+
             for step in pbar:
                 incoming_trackers = []
                 for start in step.start_checkpoints:
@@ -145,22 +150,22 @@ class TrainingDataGenerator(object):
             logger.debug("Finished phase. ({} training samples found)"
                          "".format(len(finished_trackers)))
 
+            # check if we reached all nodes that can be reached
+            # if we reached at least one more node this round than last one,
+            # we assume there is still something left to reach and we continue
+            unused = unused_checkpoints - used_checkpoints
+            everything_reachable_is_reached = unused == previous_unused
+
+            # prepare next round
+            previous_unused = unused
+            phase += 1
+
         unused_checkpoints -= used_checkpoints
         self._issue_unused_checkpoint_notification(unused_checkpoints)
         logger.debug("Found {} training examples."
                      "".format(len(finished_trackers)))
 
         return finished_trackers
-
-    @staticmethod
-    def _phase_names(num_aug_rounds=0):
-        # type: (int) -> List[Text]
-        """Create names for the different data generation phases"""
-
-        phases = ["normal generation"]
-        for i in range(1, num_aug_rounds + 1):
-            phases.append("augmentation round {})".format(i))
-        return phases
 
     @staticmethod
     def _count_trackers(active_trackers):
