@@ -400,7 +400,7 @@ class StoryGraph(object):
                                style="filled",
                                fillcolor=color)
                 else:
-                    G.add_node(next_node_idx[0], label=self._as_label(c.name))
+                    G.add_node(next_node_idx[0], label=utils.cap_length(c.name))
 
         G.add_node(nodes["STORY_START"],
                    label="START", fillcolor="green", style="filled")
