@@ -320,16 +320,8 @@ class EmbeddingPolicy(Policy):
                 num_units=num_utter_units, memory=emb_utter,
                 memory_sequence_length=real_length,
                 normalize=True,
-                # probability_fn=tf.sigmoid
                 probability_fn=tf.identity
         )
-        # num_slots_units = int(emb_slots.shape[-1])
-        # attn_mech_slots = tf.contrib.seq2seq.BahdanauAttention(
-        #     num_units=num_slots_units, memory=emb_slots,
-        #     memory_sequence_length=real_length,
-        #     normalize=True,
-        #     probability_fn=tf.sigmoid
-        # )
 
         def cell_input_fn(inputs, attention, inv_norm):
 
@@ -343,7 +335,7 @@ class EmbeddingPolicy(Policy):
             return res
 
         attn_cell = TimeAttentionWrapper(
-                cell_decoder, attn_mech_utter,# attn_mech_slots],
+                cell_decoder, attn_mech_utter,
                 # attention_layer_size=num_units,
                 cell_input_fn=cell_input_fn,
                 output_attention=False,
@@ -568,7 +560,7 @@ class EmbeddingPolicy(Policy):
                               ep_loss, train_acc))
 
         t = 9
-        for i, idx in enumerate(actions_for_X[ids[0], :t+2]):
+        for i, idx in enumerate(actions_for_X[ids[0], :t+1]):
             print("{:.3f} -- {}".format(_x[0, t, i], self.domain.actions[idx].name()))
         print(np.sum(_x[0, t]))
         # idx = actions_for_X[ids[0], 10]
@@ -792,7 +784,7 @@ def _compute_time_attention(attention_mechanism, cell_output,
     alignments, next_attention_state = attention_mechanism(
       cell_output, state=attention_state)
 
-    t = time + 1
+    # t = time + 1
     # ones = tf.ones_like(alignments[0])
     # zeros = tf.zeros_like(alignments[0])
     # until_time = tf.concat([ones[:t], zeros[t:]], 0)
@@ -801,10 +793,13 @@ def _compute_time_attention(attention_mechanism, cell_output,
     # alignments /= norm
 
     zeros = tf.zeros_like(alignments)
-    bias = tf.log(tf.cast(t, tf.float32))
+    # time_bias = tf.where(time > 0,
+    #                      tf.log(tf.cast(time, tf.float32)), 0)
+    time_bias = tf.log(tf.cast(time + 1, tf.float32))
     probs = tf.nn.softmax(tf.concat([alignments[:, :time],
-                                     alignments[:, time:t] + bias], 1))
-    alignments = tf.concat([probs, zeros[:, t:]], 1)
+                                     alignments[:, time:time+1] +
+                                     time_bias], 1))
+    alignments = tf.concat([probs, zeros[:, time+1:]], 1)
 
     # Reshape from [batch_size, memory_time] to [batch_size, 1, memory_time]
     expanded_alignments = tf.expand_dims(alignments, 1)
@@ -875,8 +870,12 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         # cell_inputs = self._cell_input_fn(inputs, state.attention, inv_norm)
         # cell_state = state.cell_state
         # cell_output, next_cell_state = self._cell(cell_inputs, cell_state)
-        (_, m_prev) = state.cell_state
-        cell_output = tf.concat([m_prev, inputs], 1)
+
+        if isinstance(state.cell_state, tf.contrib.rnn.LSTMStateTuple):
+            (_, m_prev) = state.cell_state
+            cell_output = tf.concat([m_prev, inputs], 1)
+        else:
+            cell_output = tf.concat([state.cell_state, inputs], 1)
 
         cell_batch_size = (
                 cell_output.shape[0].value or tf.shape(cell_output)[0])

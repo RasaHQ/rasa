@@ -204,10 +204,10 @@ class Agent(object):
         if isinstance(training_trackers, string_types):
             # the user most likely passed in a file name to load training
             # data from
-            logger.warn("Passing a file name to `agent.train_online(...)` is "
-                        "deprecated. Rather load the data with "
-                        "`data = agent.load_data(file_name)` and pass it "
-                        "to `agent.train_online(data)`.")
+            logger.warning("Passing a file name to `agent.train_online(...)` "
+                           "is deprecated. Rather load the data with "
+                           "`data = agent.load_data(file_name)` and pass it "
+                           "to `agent.train_online(data)`.")
             training_trackers = self.load_data(training_trackers)
 
         logger.debug("Agent online trainer got kwargs: {}".format(kwargs))
