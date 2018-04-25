@@ -255,8 +255,8 @@ class DataRouter(object):
         for ex in examples:
             logger.debug("Going to parse: {}".format(ex.as_dict()))
             response = self.project_store[project].parse(ex.text,
-                                                            None,
-                                                            model)
+                                                         None,
+                                                         model)
             logger.debug("Received response: {}".format(response))
             predictions.append(response)
 
