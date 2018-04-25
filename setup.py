@@ -52,7 +52,8 @@ install_requires = [
     'slackclient',
     'python-telegram-bot',
     'twilio',
-    'mattermostwrapper'
+    'mattermostwrapper',
+    'colorhash',
 ]
 
 extras_requires = {
