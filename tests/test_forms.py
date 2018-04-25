@@ -272,7 +272,9 @@ def test_travel_form():
 
     # first user utterance
     entities = [{"entity": "GPE", "value": "Berlin"}]
-    tracker.update(UserUttered("", intent={"name": "inform"}, entities=entities))
+    tracker.update(UserUttered("",
+                               intent={"name": "inform"},
+                               entities=entities))
     events = ActionSearchTravel().run(dispatcher, tracker, domain)
     for e in events:
         print(e.as_story_string())
