@@ -314,7 +314,7 @@ class DialogueStateTracker(object):
         """Dump the tracker as a story to a file."""
 
         with io.open(export_path, 'a') as f:
-            f.write(self.export_stories())
+            f.write(self.export_stories() + "\n")
 
     ###
     # Internal methods for the modification of the trackers state. Should
