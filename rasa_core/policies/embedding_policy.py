@@ -436,7 +436,7 @@ class EmbeddingPolicy(Policy):
         emb_act = self._create_embed(b, name=name_b)
 
         c = c_in
-        # TODO do we need hidden layers for slots?
+        # TODO: FUTURE do we need hidden layers for slots?
         c = tf.layers.dropout(c, rate=self.droprate['c'],
                               training=self.is_training)
         emb_slots = self._create_embed(c, name='c')
