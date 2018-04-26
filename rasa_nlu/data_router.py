@@ -320,7 +320,8 @@ class DataRouter(object):
                                   train_config,
                                   data_file,
                                   path=self.project_dir,
-                                  project=project)
+                                  project=project,
+                                  storage=self.remote_storage)
         result = deferred_from_future(result)
         result.addCallback(training_callback)
         result.addErrback(training_errback)
