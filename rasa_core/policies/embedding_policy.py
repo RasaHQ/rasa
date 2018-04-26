@@ -560,17 +560,18 @@ class EmbeddingPolicy(Policy):
               ):
         # type: (...) -> None
         """Trains the policy on given training trackers."""
-        self.domain = domain
-        # dealing with training data
+        self.domain = domain  # TODO delete it!
+
         logger.debug('Started to train embedding policy.')
 
-        training_data = self.featurize_for_training(training_trackers,
-                                                    domain,
-                                                    **kwargs)
         if kwargs:
             logger.debug("Config is updated with {}".format(kwargs))
             self._load_params(**kwargs)
 
+        # dealing with training data
+        training_data = self.featurize_for_training(training_trackers,
+                                                    domain,
+                                                    **kwargs)
         self.mean_time = np.mean(training_data.true_length)
 
         self.encoded_all_actions = \
@@ -732,31 +733,34 @@ class EmbeddingPolicy(Policy):
             file_name = 'tensorflow_embedding.ckpt'
             checkpoint = os.path.join(path, file_name)
 
-            graph = tf.Graph()
-            with graph.as_default():
-                sess = tf.Session()
-                saver = tf.train.import_meta_graph(checkpoint + '.meta')
+            if os.path.exists(checkpoint + '.meta'):
+                graph = tf.Graph()
+                with graph.as_default():
+                    sess = tf.Session()
+                    saver = tf.train.import_meta_graph(checkpoint + '.meta')
 
-                saver.restore(sess, checkpoint)
+                    saver.restore(sess, checkpoint)
 
-                a_in = tf.get_collection('intent_placeholder')[0]
-                b_in = tf.get_collection('action_placeholder')[0]
-                c_in = tf.get_collection('slots_placeholder')[0]
-                sim_op = tf.get_collection('similarity_op')[0]
+                    a_in = tf.get_collection('intent_placeholder')[0]
+                    b_in = tf.get_collection('action_placeholder')[0]
+                    c_in = tf.get_collection('slots_placeholder')[0]
+                    sim_op = tf.get_collection('similarity_op')[0]
 
-            with io.open(os.path.join(
-                    path,
-                    file_name + ".encoded_all_actions.pkl"), 'rb') as f:
-                encoded_all_actions = pickle.load(f)
+                with io.open(os.path.join(
+                        path,
+                        file_name + ".encoded_all_actions.pkl"), 'rb') as f:
+                    encoded_all_actions = pickle.load(f)
 
-            return cls(featurizer,
-                       encoded_all_actions=encoded_all_actions,
-                       session=sess,
-                       graph=graph,
-                       intent_placeholder=a_in,
-                       action_placeholder=b_in,
-                       slots_placeholder=c_in,
-                       similarity_op=sim_op)
+                return cls(featurizer,
+                           encoded_all_actions=encoded_all_actions,
+                           session=sess,
+                           graph=graph,
+                           intent_placeholder=a_in,
+                           action_placeholder=b_in,
+                           slots_placeholder=c_in,
+                           similarity_op=sim_op)
+            else:
+                return cls(featurizer=featurizer)
 
         else:
             raise Exception("Failed to load dialogue model. Path {} "

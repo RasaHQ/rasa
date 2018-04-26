@@ -27,6 +27,11 @@ if typing.TYPE_CHECKING:
 class KerasPolicy(Policy):
     SUPPORTS_ONLINE_TRAINING = True
 
+    defaults = {
+        # Neural Net and training params
+        "rnn_size": 32
+    }
+
     def __init__(self,
                  featurizer=None,  # type: Optional[TrackerFeaturizer]
                  model=None,  # type: Optional[keras.models.Sequential]
@@ -36,6 +41,8 @@ class KerasPolicy(Policy):
         # type: (...) -> None
 
         super(KerasPolicy, self).__init__(featurizer)
+
+        self.rnn_size = self.defaults['rnn_size']
 
         if KerasPolicy.is_using_tensorflow() and not graph:
             from keras.backend import tf
@@ -74,7 +81,6 @@ class KerasPolicy(Policy):
         from keras.layers import \
             Masking, LSTM, Dense, TimeDistributed, Activation
 
-        n_hidden = 32  # Neural Net and training params
         # Build Model
         model = Sequential()
 
@@ -86,8 +92,8 @@ class KerasPolicy(Policy):
             # only the last output from the rnn is used to
             # calculate the loss
             model.add(Masking(mask_value=-1, input_shape=input_shape))
-            model.add(LSTM(n_hidden, dropout=0.2))
-            model.add(Dense(input_dim=n_hidden, units=output_shape[-1]))
+            model.add(LSTM(self.rnn_size, dropout=0.2))
+            model.add(Dense(input_dim=self.rnn_size, units=output_shape[-1]))
         elif len(output_shape) == 2:
             # y is (num examples, max_dialogue_len, num features) so
             # all the outputs from the rnn are used to
@@ -99,7 +105,7 @@ class KerasPolicy(Policy):
             # during prediction
             model.add(Masking(mask_value=-1,
                               input_shape=(None, input_shape[1])))
-            model.add(LSTM(n_hidden, return_sequences=True, dropout=0.2))
+            model.add(LSTM(self.rnn_size, return_sequences=True, dropout=0.2))
             model.add(TimeDistributed(Dense(units=output_shape[-1])))
         else:
             raise ValueError("Cannot construct the model because"
@@ -123,6 +129,11 @@ class KerasPolicy(Policy):
               **kwargs  # type: **Any
               ):
         # type: (...) -> Dict[Text: Any]
+
+        if kwargs.get('rnn_size') is not None:
+            logger.debug("Parameter `rnn_size` is updated with {}"
+                         "".format(kwargs.get('rnn_size')))
+            self.rnn_size = kwargs.get('rnn_size')
 
         training_data = self.featurize_for_training(training_trackers,
                                                     domain,
