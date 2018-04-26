@@ -522,11 +522,11 @@ class EmbeddingPolicy(Policy):
                         batch_c[:] = 0
 
                 sess_out = self.session.run(
-                    {'loss': loss, 'train_op': self.train_op},
-                    feed_dict={self.a_in: batch_a,
-                               self.b_in: batch_b,
-                               self.c_in: batch_c,
-                               self.is_training: True}
+                        {'loss': loss, 'train_op': self.train_op},
+                        feed_dict={self.a_in: batch_a,
+                                   self.b_in: batch_b,
+                                   self.c_in: batch_c,
+                                   self.is_training: True}
                 )
                 ep_loss += sess_out.get('loss') / batches_per_epoch
 
@@ -545,12 +545,12 @@ class EmbeddingPolicy(Policy):
         ids = np.random.permutation(len(X))[:n]
         all_Y_d_x = np.stack([all_Y_d for _ in range(X[ids].shape[0])])
 
-        _sim, _mask, _x = self.session.run(
-            [self.sim_op, mask, self.alignment_history],
-            feed_dict={self.a_in: X[ids],
-                       self.b_in: all_Y_d_x,
-                       self.c_in: slots[ids],
-                       self.is_training: False}
+        _sim, _mask = self.session.run(
+                [self.sim_op, mask],
+                feed_dict={self.a_in: X[ids],
+                           self.b_in: all_Y_d_x,
+                           self.c_in: slots[ids],
+                           self.is_training: False}
         )
 
         train_acc = np.sum((np.argmax(_sim, -1) ==
