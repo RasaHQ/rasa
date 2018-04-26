@@ -54,7 +54,7 @@ class EmbeddingPolicy(Policy):
         "hidden_layer_size_b": [],
         "rnn_size": 64,
         "batch_size": 16,
-        "epochs": 2000,
+        "epochs": 1,
 
         # embedding parameters
         "embed_dim": 10,
@@ -288,15 +288,14 @@ class EmbeddingPolicy(Policy):
                                 reuse=tf.AUTO_REUSE)
         return emb_x
 
-    def _create_rnn(self, emb_utter, emb_slots, real_length):
-
-        cell_input = tf.concat([emb_utter, emb_slots], -1)
+    def _create_attn_cell(self, memory, real_length):
+        """Create attention cell with given memory"""
 
         # chrono initialization for forget bias
-        # assuming that characteristic time is mean dialogue length
+        # assuming that characteristic time is average dialogue length
         fbias = np.log(
-            (self.mean_time - 2) *
-            np.random.random(self.rnn_size) + 1)
+                (self.mean_time - 2) *
+                np.random.random(self.rnn_size) + 1)
 
         keep_prob = 1.0 - (self.droprate['rnn'] *
                            tf.cast(self.is_training, tf.float32))
@@ -308,26 +307,35 @@ class EmbeddingPolicy(Policy):
                 input_bias=-fbias
         )
 
-        num_utter_units = int(emb_utter.shape[-1])
-        attn_mech_utter = tf.contrib.seq2seq.BahdanauAttention(
-                num_units=num_utter_units, memory=emb_utter,
+        num_units = int(memory.shape[-1])
+        attn_mech = tf.contrib.seq2seq.BahdanauAttention(
+                num_units=num_units, memory=memory,
                 memory_sequence_length=real_length,
                 normalize=True,
                 probability_fn=tf.identity
         )
 
         def cell_input_fn(inputs, attention):
-            res = tf.concat([attention[:, :num_utter_units],
-                             inputs[:, num_utter_units:]], -1)
+            res = tf.concat([attention[:, :num_units],
+                             inputs[:, num_units:]], -1)
             return res
 
         attn_cell = TimeAttentionWrapper(
-                cell_decoder, attn_mech_utter,
-                # attention_layer_size=num_units,
+                cell_decoder, attn_mech,
+                # attention_layer_size=self.embed_dim,
                 cell_input_fn=cell_input_fn,
                 output_attention=False,
                 alignment_history=True
         )
+
+        return attn_cell
+
+    def _create_rnn(self, emb_utter, emb_slots, real_length):
+        """Create rnn"""
+
+        cell_input = tf.concat([emb_utter, emb_slots], -1)
+
+        attn_cell = self._create_attn_cell(emb_utter, real_length)
 
         cell_output, final_state = tf.nn.dynamic_rnn(
                 attn_cell, cell_input,
@@ -881,9 +889,13 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             raise TypeError("Expected state to be instance of AttentionWrapperState. "
                             "Received type %s instead." % type(state))
 
-        # Step 1: Calculate attention based on the previous output and current input
+        # Step 1: Calculate attention based on
+        #          the previous output and current input
         if isinstance(state.cell_state, tf.contrib.rnn.LSTMStateTuple):
             (_, h) = state.cell_state
+            # the hidden state is not included, in hope that algorithm
+            # would learn correct attention at least to some tokens
+            # regardless of the hidden state of lstm memory
             out_for_attn = tf.concat([h, inputs], 1)
         else:
             out_for_attn = tf.concat([state.cell_state, inputs], 1)
@@ -930,7 +942,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         attention = tf.concat(all_attentions, 1)
 
         # Step 6: Calculate the true inputs to the cell based on the
-        # previous attention value.
+        #          previous attention value.
         cell_inputs = self._cell_input_fn(inputs, attention)
         cell_state = state.cell_state
         cell_output, next_cell_state = self._cell(cell_inputs, cell_state)

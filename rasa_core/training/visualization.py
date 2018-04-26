@@ -271,9 +271,9 @@ def visualize_stories(
                fontsize=fontsize)
 
     g = TrainingDataGenerator(story_graph, domain,
-                               use_story_concatenation=False,
-                               tracker_limit=100,
-                               augmentation_factor=0)
+                              use_story_concatenation=False,
+                              tracker_limit=100,
+                              augmentation_factor=0)
     completed_trackers = g.generate()
 
     for tracker in completed_trackers:
