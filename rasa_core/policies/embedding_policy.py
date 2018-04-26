@@ -52,7 +52,7 @@ class EmbeddingPolicy(Policy):
         "hidden_layer_size_a": [],
         "num_hidden_layers_b": 0,
         "hidden_layer_size_b": [],
-        "rnn_size": 32,
+        "rnn_size": 64,
         "batch_size": 16,
         "epochs": 2000,
 
