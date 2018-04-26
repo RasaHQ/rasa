@@ -20,7 +20,6 @@ from rasa_core.featurizers import MaxHistoryTrackerFeaturizer, \
 
 
 def test_can_read_test_story(default_domain):
-    # TODO max_history was controlling augmentation
     trackers = training.load_data(
             "data/test_stories/stories.md",
             default_domain,

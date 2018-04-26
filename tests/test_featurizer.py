@@ -12,7 +12,6 @@ def test_fail_to_load_non_existent_featurizer():
     assert TrackerFeaturizer.load("non_existent_class") is None
 
 
-# TODO featurizers changed quite a lot, testing SingleStateFeaturizer
 def test_binary_featurizer_handles_on_non_existing_features():
     f = BinarySingleStateFeaturizer()
     f.input_state_map = {"a": 0, "b": 3, "c": 2, "d": 1}
