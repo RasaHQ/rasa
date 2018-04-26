@@ -12,7 +12,6 @@ from collections import Counter
 import numpy as np
 
 from rasa_core import training
-from rasa_core.training import extract_story_graph
 from rasa_core.events import ActionExecuted, UserUttered
 from rasa_core.training.structures import Story
 from rasa_core.featurizers import MaxHistoryTrackerFeaturizer, \
@@ -47,8 +46,8 @@ def test_can_read_test_story(default_domain):
 
 
 def test_persist_and_read_test_story_graph(tmpdir, default_domain):
-    graph = extract_story_graph("data/test_stories/stories.md",
-                                default_domain)
+    graph = training.extract_story_graph("data/test_stories/stories.md",
+                                         default_domain)
     out_path = tmpdir.join("persisted_story.md")
     with io.open(out_path.strpath, "w") as f:
         f.write(graph.as_story_string())
@@ -76,8 +75,8 @@ def test_persist_and_read_test_story_graph(tmpdir, default_domain):
 
 
 def test_persist_and_read_test_story(tmpdir, default_domain):
-    graph = extract_story_graph("data/test_stories/stories.md",
-                                default_domain)
+    graph = training.extract_story_graph("data/test_stories/stories.md",
+                                         default_domain)
     out_path = tmpdir.join("persisted_story.md")
     Story(graph.story_steps).dump_to_file(out_path.strpath)
 
@@ -103,9 +102,8 @@ def test_persist_and_read_test_story(tmpdir, default_domain):
 
 
 def test_read_story_file_with_cycles(tmpdir, default_domain):
-    graph = extract_story_graph(
-                "data/test_stories/stories_with_cycle.md",
-                default_domain)
+    graph = training.extract_story_graph(
+            "data/test_stories/stories_with_cycle.md", default_domain)
 
     assert len(graph.story_steps) == 5
 
@@ -142,9 +140,8 @@ def test_generate_training_data_with_cycles(tmpdir, default_domain):
 
 
 def test_visualize_training_data_graph(tmpdir, default_domain):
-    graph = extract_story_graph(
-                "data/test_stories/stories_with_cycle.md",
-                default_domain)
+    graph = training.extract_story_graph(
+                "data/test_stories/stories_with_cycle.md", default_domain)
 
     graph = graph.with_cycles_removed()
 
