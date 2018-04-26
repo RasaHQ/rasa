@@ -20,7 +20,6 @@ class RestaurantPolicy(KerasPolicy):
         from keras.layers import \
             Masking, LSTM, Dense, TimeDistributed, Activation
 
-        n_hidden = 32  # size of hidden layer in LSTM
         # Build Model
         model = Sequential()
 
@@ -32,8 +31,8 @@ class RestaurantPolicy(KerasPolicy):
             # only the last output from the rnn is used to
             # calculate the loss
             model.add(Masking(mask_value=-1, input_shape=input_shape))
-            model.add(LSTM(n_hidden))
-            model.add(Dense(input_dim=n_hidden, units=output_shape[-1]))
+            model.add(LSTM(self.rnn_size))
+            model.add(Dense(input_dim=self.rnn_size, units=output_shape[-1]))
         elif len(output_shape) == 2:
             # y is (num examples, max_dialogue_len, num features) so
             # all the outputs from the rnn are used to
@@ -45,7 +44,7 @@ class RestaurantPolicy(KerasPolicy):
             # during prediction
             model.add(Masking(mask_value=-1,
                               input_shape=(None, input_shape[1])))
-            model.add(LSTM(n_hidden, return_sequences=True))
+            model.add(LSTM(self.rnn_size, return_sequences=True))
             model.add(TimeDistributed(Dense(units=output_shape[-1])))
         else:
             raise ValueError("Cannot construct the model because"

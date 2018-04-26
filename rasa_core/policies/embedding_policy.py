@@ -74,7 +74,10 @@ class EmbeddingPolicy(Policy):
         "droprate_rnn": 0.1,
         "droprate_out": 0.1,
 
-        "nuke_slots_ones_in_epochs": 3  # set to None or 0 to disable
+        "nuke_slots_ones_in_epochs": 3,  # set to None or 0 to disable
+
+        # attention parameters
+        "init_bias_to_current_input": 0.5  # set to 1 to turn off attention
     }
 
     @staticmethod
@@ -171,6 +174,8 @@ class EmbeddingPolicy(Policy):
         self._load_embedding_params(config)
         # regularization
         self._load_regularization_params(config)
+        # attention parameters
+        self.init_bias_to_current_input = max(config['init_bias_to_current_input'], 0.0)
 
     @staticmethod
     def _check_tensorflow():
@@ -288,8 +293,8 @@ class EmbeddingPolicy(Policy):
                                 reuse=tf.AUTO_REUSE)
         return emb_x
 
-    def _create_attn_cell(self, memory, real_length):
-        """Create attention cell with given memory"""
+    def _create_rnn_cell(self):
+        """Create one rnn cell"""
 
         # chrono initialization for forget bias
         # assuming that characteristic time is average dialogue length
@@ -299,13 +304,19 @@ class EmbeddingPolicy(Policy):
 
         keep_prob = 1.0 - (self.droprate['rnn'] *
                            tf.cast(self.is_training, tf.float32))
-        cell_decoder = ChronoLayerNormBasicLSTMCell(
+        cell = ChronoLayerNormBasicLSTMCell(
                 num_units=self.rnn_size,
                 layer_norm=False,
                 dropout_keep_prob=keep_prob,
                 forget_bias=fbias,
                 input_bias=-fbias
         )
+        return cell
+
+    @staticmethod
+    def _create_attn_cell(cell, memory,
+                          real_length, init_bias_to_current_input):
+        """Create wrap cell in attention cell with given memory"""
 
         num_units = int(memory.shape[-1])
         attn_mech = tf.contrib.seq2seq.BahdanauAttention(
@@ -321,13 +332,12 @@ class EmbeddingPolicy(Policy):
             return res
 
         attn_cell = TimeAttentionWrapper(
-                cell_decoder, attn_mech,
-                # attention_layer_size=self.embed_dim,
+                cell, attn_mech,
+                init_bias_to_current_input=init_bias_to_current_input,
                 cell_input_fn=cell_input_fn,
                 output_attention=False,
-                alignment_history=True
+                alignment_history=False
         )
-
         return attn_cell
 
     def _create_rnn(self, emb_utter, emb_slots, real_length):
@@ -335,21 +345,20 @@ class EmbeddingPolicy(Policy):
 
         cell_input = tf.concat([emb_utter, emb_slots], -1)
 
-        attn_cell = self._create_attn_cell(emb_utter, real_length)
+        cell = self._create_rnn_cell()
 
-        cell_output, final_state = tf.nn.dynamic_rnn(
-                attn_cell, cell_input,
+        if self.init_bias_to_current_input < 1.0:
+            cell = self._create_attn_cell(cell, emb_utter,
+                                          real_length,
+                                          self.init_bias_to_current_input)
+
+        cell_output, _ = tf.nn.dynamic_rnn(
+                cell, cell_input,
                 dtype=tf.float32,
                 sequence_length=real_length,
                 scope='rnn_decoder_{}'.format(0)
         )
-
-        # extract alignments history
-        alignment_history = final_state.alignment_history.stack()
-        # Reshape to (batch, time, memory_time)
-        alignment_history = tf.transpose(alignment_history, [1, 0, 2])
-
-        return cell_output, alignment_history
+        return cell_output
 
     def _tf_sim(self, emb_dial, emb_act, mask):
         """Define similarity"""
@@ -435,8 +444,7 @@ class EmbeddingPolicy(Policy):
                                            1, shape_b[-1]])
         emb_act = self._create_embed(b, name=name_b)
 
-        c = c_in
-        # TODO do we need hidden layers for slots?
+        c = c_in  # no hidden layers for slots
         c = tf.layers.dropout(c, rate=self.droprate['c'],
                               training=self.is_training)
         emb_slots = self._create_embed(c, name='c')
@@ -446,8 +454,7 @@ class EmbeddingPolicy(Policy):
         real_length = tf.cast(tf.reduce_sum(mask, 1), tf.int32)
 
         # create rnn
-        cell_output, alignment_history = self._create_rnn(
-                emb_utter, emb_slots, real_length)
+        cell_output = self._create_rnn(emb_utter, emb_slots, real_length)
 
         cell_output = tf.layers.dropout(cell_output,
                                         rate=self.droprate['out'],
@@ -457,7 +464,7 @@ class EmbeddingPolicy(Policy):
         sim, sim_act = self._tf_sim(emb_dial, emb_act, mask)
         loss = self._tf_loss(sim, sim_act, mask)
 
-        return sim, loss, mask, alignment_history
+        return sim, loss, mask
 
     def _create_batch_b(self, batch_pos_b, intent_ids):
         """Create batch of actions, where the first is correct action
@@ -492,7 +499,7 @@ class EmbeddingPolicy(Policy):
         batches_per_epoch = (len(X) // self.batch_size +
                              int(len(X) % self.batch_size > 0))
 
-        pbar = tqdm(range(self.epochs), desc="Epochs")
+        pbar = tqdm(range(self.epochs), desc="Epochs", initial=1)
         for ep in pbar:
             ids = np.random.permutation(X.shape[0])
 
@@ -523,13 +530,12 @@ class EmbeddingPolicy(Policy):
                 )
                 ep_loss += sess_out.get('loss') / batches_per_epoch
 
-            pbar.set_postfix({"loss": ep_loss})
-
             if logger.isEnabledFor(logging.INFO) and (
                     (ep + 1) % 50 == 0 or (ep + 1) == self.epochs):
                 self._output_training_stat(X, slots,
                                            actions_for_X, all_Y_d,
                                            mask, ep, ep_loss)
+            pbar.set_postfix({"loss": ep_loss})
 
     def _output_training_stat(self,
                               X, slots, actions_for_X, all_Y_d,
@@ -554,13 +560,6 @@ class EmbeddingPolicy(Policy):
                     "".format((ep + 1), self.epochs,
                               ep_loss, train_acc))
 
-        t = 9
-        for i, idx in enumerate(actions_for_X[ids[0], :t+1]):
-            print("{:.3f} -- {}".format(_x[0, t, i], self.domain.actions[idx].name()))
-        print(np.sum(_x[0, t]))
-        # idx = actions_for_X[ids[0], 10]
-        # print("{}\n".format(self.domain.actions[idx].name()))
-
     def train(self,
               training_trackers,  # type: List[DialogueStateTracker]
               domain,  # type: Domain
@@ -568,7 +567,6 @@ class EmbeddingPolicy(Policy):
               ):
         # type: (...) -> None
         """Trains the policy on given training trackers."""
-        self.domain = domain  # TODO delete it!
 
         logger.debug('Started to train embedding policy.')
 
@@ -615,11 +613,9 @@ class EmbeddingPolicy(Policy):
                                        name='c')
             self.is_training = tf.placeholder_with_default(False, shape=())
 
-            (self.sim_op,
-             loss, mask,
-             self.alignment_history) = self._create_tf_graph(self.a_in,
-                                                             self.b_in,
-                                                             self.c_in)
+            self.sim_op, loss, mask = self._create_tf_graph(self.a_in,
+                                                            self.b_in,
+                                                            self.c_in)
 
             self.train_op = tf.train.AdamOptimizer().minimize(loss)
 
@@ -779,19 +775,23 @@ class EmbeddingPolicy(Policy):
 
 
 # modified tensorflow attention wrapper
-def _compute_time_attention(attention_mechanism, cell_output,
-                            attention_state, time, attention_layer):
+def _compute_time_attention(attention_mechanism, cell_output, attention_state,
+                            # time is added to calculate time attention
+                            time, init_bias_to_current_input,
+                            attention_layer):
     """Computes the attention and alignments limited by time
     for a given attention_mechanism."""
+
     alignments, next_attention_state = attention_mechanism(
       cell_output, state=attention_state)
 
-    time_weight = time + 1
-    time_bias = tf.log(tf.cast(time_weight, tf.float32))
+    alpha = init_bias_to_current_input/(1.0 - init_bias_to_current_input)
+    time_weight = alpha * tf.cast(time, tf.float32) + 1.0
+    time_bias = tf.log(time_weight)
     probs = tf.nn.softmax(tf.concat([alignments[:, :time],
                                      alignments[:, time:time+1] +
                                      time_bias], 1))
-    # `time_weight = time + 1` was not chosen arbitrary
+    # `time_weight = a * time + 1` was not chosen arbitrary
     #
     # if we assume that we have simple stories where each action
     # is followed by `action_listen` then:
@@ -810,16 +810,16 @@ def _compute_time_attention(attention_mechanism, cell_output,
     # will be `(1/2)(time+2)/(time+1)`
     # and the initial `sum of probs` for 0-intent (before `action_listen`)
     # will be `1/4 for any time`
-    #
+
     # we do not want initial `probs` to be independent of time
     # to allow different times to be descriptive, but
     # we want `lim(probs) = const` when `time -> inf`
     # to avoid vanishing alignments for large time
-    #
-    # if `time_weight = time + 1`, the initial `probs[:, time]`
-    # will be `(1/2)(time+1)/(time+1/2)`
+
+    # if `time_weight = a * time + 1`, the initial `probs[:, time]`
+    # will be `(a/(a+1))(time+1/a)/(time+1/(a+1))`
     # and the initial `sum of probs` for 0-intent (before `action_listen`)
-    # will be `(1/4)(time+1)/(time+1/2)`
+    # will be `(1/(2a+2))(time+1/a)/(time+1/(a+1))`
 
     zeros = tf.zeros_like(alignments)
     alignments = tf.concat([probs, zeros[:, time+1:]], 1)
@@ -851,6 +851,28 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
     """Custom AttentionWrapper that takes into account time
         when calculating attention.
         Attention is calculated before calling rnn cell."""
+
+    def __init__(self,
+                 cell,
+                 attention_mechanism,
+                 attention_layer_size=None,
+                 init_bias_to_current_input=0.0,
+                 alignment_history=False,
+                 cell_input_fn=None,
+                 output_attention=True,
+                 initial_cell_state=None,
+                 name=None):
+        super(TimeAttentionWrapper, self).__init__(
+                cell,
+                attention_mechanism,
+                attention_layer_size,
+                alignment_history,
+                cell_input_fn,
+                output_attention,
+                initial_cell_state,
+                name
+        )
+        self._init_bias_to_current_input = init_bias_to_current_input
 
     def call(self, inputs, state):
         """Perform a step of attention-wrapped RNN.
@@ -928,7 +950,8 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         for i, attention_mechanism in enumerate(self._attention_mechanisms):
             attention, alignments, next_attention_state = _compute_time_attention(
                 attention_mechanism, out_for_attn, previous_attention_state[i],
-                state.time,  # time is added to calculate time attention
+                # time is added to calculate time attention
+                state.time, self._init_bias_to_current_input,
                 self._attention_layers[i] if self._attention_layers else None)
 
             alignment_history = previous_alignment_history[i].write(
