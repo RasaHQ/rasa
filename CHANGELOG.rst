@@ -21,7 +21,7 @@ Removed
 Fixed
 -----
 
-[0.12.2] - 2018-03-20
+[0.12.2] - 2018-04-20
 ^^^^^^^^^^^^^^^^^^^^^
 
 Fixed
@@ -29,8 +29,11 @@ Fixed
 - fixed duckling text extraction for ner_duckling_http 
 
 
-[0.12.1] - 2018-03-18
+[0.12.1] - 2018-04-18
 ^^^^^^^^^^^^^^^^^^^^^
+Added
+-----
+- support for retrieving training data from a URL
 
 Fixed
 -----
@@ -39,7 +42,7 @@ Fixed
   documentation
 
 
-[0.12.0] - 2018-03-17
+[0.12.0] - 2018-04-17
 ^^^^^^^^^^^^^^^^^^^^^
 
 Added

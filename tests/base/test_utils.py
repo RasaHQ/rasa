@@ -9,12 +9,11 @@ import pickle
 import tempfile
 
 import pytest
-from rasa_nlu import utils
 
+from rasa_nlu import utils
 from rasa_nlu.utils import (
-    relative_normpath,
-    create_dir,
-    ordered, is_model_dir, remove_model, write_json_to_file, write_to_file)
+    relative_normpath, create_dir, is_url, ordered, is_model_dir, remove_model,
+    write_json_to_file, write_to_file)
 
 
 @pytest.fixture
@@ -104,3 +103,8 @@ def test_remove_model_invalid(empty_model_dir):
         remove_model(empty_model_dir)
 
     os.remove(test_file_path)
+
+
+def test_is_url():
+    assert not is_url('./some/file/path')
+    assert is_url('https://rasa.com/')
