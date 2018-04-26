@@ -115,7 +115,8 @@ class MemoizationPolicy(Policy):
                                 del self.lookup[feature_key]
                     else:
                         self.lookup[feature_key] = feature_item
-                pbar.set_postfix({"# examples": len(self.lookup)})
+                pbar.set_postfix({"# examples": "{:d}".format(
+                                                    len(self.lookup))})
 
     def _create_feature_key(self, states):
         feature_str = json.dumps(states, sort_keys=True).replace("\"", "")

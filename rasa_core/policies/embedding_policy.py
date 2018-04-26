@@ -77,7 +77,11 @@ class EmbeddingPolicy(Policy):
         "nuke_slots_ones_in_epochs": 3,  # set to None or 0 to disable
 
         # attention parameters
-        "init_bias_to_current_input": 0.5  # set to 1 to turn off attention
+        "attn_bias_for_last_input": 0.5,  # set to 1 to turn off attention
+
+        # visualization of accuracy
+        "calc_acc_ones_in_epochs": 50,  # small values affect performance
+        "calc_acc_on_num_examples": 100  # large values affect performance
     }
 
     @staticmethod
@@ -165,6 +169,16 @@ class EmbeddingPolicy(Policy):
 
         self.nuke_slots_ones_in_epochs = config['nuke_slots_ones_in_epochs']
 
+    def _load_attn_params(self, config):
+        self.attn_bias_for_last_input = max(
+                config['attn_bias_for_last_input'], 0.0)
+
+    def _load_visual_params(self, config):
+        self.calc_acc_ones_in_epochs = config['calc_acc_ones_in_epochs']
+        if self.calc_acc_ones_in_epochs < 1:
+            self.calc_acc_ones_in_epochs = self.epochs
+        self.calc_acc_on_num_examples = config['calc_acc_on_num_examples']
+
     def _load_params(self, **kwargs):
         config = copy.deepcopy(self.defaults)
         config.update(kwargs)
@@ -175,7 +189,9 @@ class EmbeddingPolicy(Policy):
         # regularization
         self._load_regularization_params(config)
         # attention parameters
-        self.init_bias_to_current_input = max(config['init_bias_to_current_input'], 0.0)
+        self._load_attn_params(config)
+        # visualization of accuracy
+        self._load_visual_params(config)
 
     @staticmethod
     def _check_tensorflow():
@@ -315,7 +331,7 @@ class EmbeddingPolicy(Policy):
 
     @staticmethod
     def _create_attn_cell(cell, memory,
-                          real_length, init_bias_to_current_input):
+                          real_length, attn_bias_for_last_input):
         """Create wrap cell in attention cell with given memory"""
 
         num_units = int(memory.shape[-1])
@@ -333,7 +349,7 @@ class EmbeddingPolicy(Policy):
 
         attn_cell = TimeAttentionWrapper(
                 cell, attn_mech,
-                init_bias_to_current_input=init_bias_to_current_input,
+                attn_bias_for_last_input=attn_bias_for_last_input,
                 cell_input_fn=cell_input_fn,
                 output_attention=False,
                 alignment_history=False
@@ -347,10 +363,10 @@ class EmbeddingPolicy(Policy):
 
         cell = self._create_rnn_cell()
 
-        if self.init_bias_to_current_input < 1.0:
+        if self.attn_bias_for_last_input < 1.0:
             cell = self._create_attn_cell(cell, emb_utter,
                                           real_length,
-                                          self.init_bias_to_current_input)
+                                          self.attn_bias_for_last_input)
 
         cell_output, _ = tf.nn.dynamic_rnn(
                 cell, cell_input,
@@ -499,7 +515,12 @@ class EmbeddingPolicy(Policy):
         batches_per_epoch = (len(X) // self.batch_size +
                              int(len(X) % self.batch_size > 0))
 
+        if self.calc_acc_on_num_examples:
+            logger.info("Accuracy is updated every {} epochs"
+                        "".format(self.calc_acc_ones_in_epochs))
         pbar = tqdm(range(self.epochs), desc="Epochs", initial=1)
+        train_acc = 0
+        last_loss = 0
         for ep in pbar:
             ids = np.random.permutation(X.shape[0])
 
@@ -530,18 +551,32 @@ class EmbeddingPolicy(Policy):
                 )
                 ep_loss += sess_out.get('loss') / batches_per_epoch
 
-            if logger.isEnabledFor(logging.INFO) and (
-                    (ep + 1) % 50 == 0 or (ep + 1) == self.epochs):
-                self._output_training_stat(X, slots,
-                                           actions_for_X, all_Y_d,
-                                           mask, ep, ep_loss)
-            pbar.set_postfix({"loss": ep_loss})
+            if self.calc_acc_on_num_examples:
+                if (ep + 1) == 1 or \
+                        (ep + 1) % self.calc_acc_ones_in_epochs == 0 or \
+                        (ep + 1) == self.epochs:
+                    train_acc = self._calc_train_acc(X, slots, actions_for_X,
+                                                     all_Y_d, mask)
+                    last_loss = ep_loss
 
-    def _output_training_stat(self,
-                              X, slots, actions_for_X, all_Y_d,
-                              mask, ep, ep_loss):
-        """Output training statistics"""
-        n = 100  # choose n examples to calculate train accuracy
+                pbar.set_postfix({
+                    "loss": "{:.3f}".format(ep_loss),
+                    "acc": "{:.3f}".format(train_acc)
+                })
+            else:
+                pbar.set_postfix({
+                    "loss": "{:.3f}".format(ep_loss)
+                })
+
+        if self.calc_acc_on_num_examples:
+            logger.info("loss={:.3f}, accuracy={:.3f}"
+                        "".format(last_loss, train_acc))
+
+    def _calc_train_acc(self, X, slots,
+                        actions_for_X, all_Y_d, mask):
+        """Calculate training accuracy"""
+        # choose n examples to calculate train accuracy
+        n = self.calc_acc_on_num_examples
         ids = np.random.permutation(len(X))[:n]
         all_Y_d_x = np.stack([all_Y_d for _ in range(X[ids].shape[0])])
 
@@ -556,9 +591,7 @@ class EmbeddingPolicy(Policy):
         train_acc = np.sum((np.argmax(_sim, -1) ==
                             actions_for_X[ids]) * _mask)
         train_acc /= np.sum(_mask)
-        logger.info("epoch {} / {}: loss={:.3f}, accuracy={:.3f}"
-                    "".format((ep + 1), self.epochs,
-                              ep_loss, train_acc))
+        return train_acc
 
     def train(self,
               training_trackers,  # type: List[DialogueStateTracker]
@@ -777,7 +810,7 @@ class EmbeddingPolicy(Policy):
 # modified tensorflow attention wrapper
 def _compute_time_attention(attention_mechanism, cell_output, attention_state,
                             # time is added to calculate time attention
-                            time, init_bias_to_current_input,
+                            time, attn_bias_for_last_input,
                             attention_layer):
     """Computes the attention and alignments limited by time
     for a given attention_mechanism."""
@@ -785,7 +818,7 @@ def _compute_time_attention(attention_mechanism, cell_output, attention_state,
     alignments, next_attention_state = attention_mechanism(
       cell_output, state=attention_state)
 
-    alpha = init_bias_to_current_input/(1.0 - init_bias_to_current_input)
+    alpha = attn_bias_for_last_input/(1.0 - attn_bias_for_last_input)
     time_weight = alpha * tf.cast(time, tf.float32) + 1.0
     time_bias = tf.log(time_weight)
     probs = tf.nn.softmax(tf.concat([alignments[:, :time],
@@ -856,7 +889,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                  cell,
                  attention_mechanism,
                  attention_layer_size=None,
-                 init_bias_to_current_input=0.0,
+                 attn_bias_for_last_input=0.0,
                  alignment_history=False,
                  cell_input_fn=None,
                  output_attention=True,
@@ -872,7 +905,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                 initial_cell_state,
                 name
         )
-        self._init_bias_to_current_input = init_bias_to_current_input
+        self._attn_bias_for_last_input = attn_bias_for_last_input
 
     def call(self, inputs, state):
         """Perform a step of attention-wrapped RNN.
@@ -951,7 +984,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             attention, alignments, next_attention_state = _compute_time_attention(
                 attention_mechanism, out_for_attn, previous_attention_state[i],
                 # time is added to calculate time attention
-                state.time, self._init_bias_to_current_input,
+                state.time, self._attn_bias_for_last_input,
                 self._attention_layers[i] if self._attention_layers else None)
 
             alignment_history = previous_alignment_history[i].write(
