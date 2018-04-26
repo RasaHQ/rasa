@@ -45,7 +45,7 @@ def test_agent_handle_message(default_agent):
                        'text': 'hey there Rasa!'}]
 
 
-# TODO: deprecated - remove in version 0.10
+# TODO: DEPRECATED - remove in version 0.10
 def test_deprecated_use_of_train(tmpdir, default_domain):
     training_data_file = 'examples/moodbot/data/stories.md'
     agent = Agent("examples/moodbot/domain.yml",

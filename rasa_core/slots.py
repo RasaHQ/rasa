@@ -34,7 +34,7 @@ class Slot(object):
         """After how many turns the slot should be reset to the initial_value.
 
         If the delay is set to `None`, the slot will keep its value forever."""
-        # TODO: this needs to be implemented - slots are not reset yet
+        # TODO: FUTURE this needs to be implemented - slots are not reset yet
         return self._value_reset_delay
 
     def as_feature(self):

@@ -184,7 +184,7 @@ class Agent(object):
                            "Pass appropriate featurizer "
                            "directly to the policy instead.")
 
-        # TODO: deprecated - remove in version 0.10
+        # TODO: DEPRECATED - remove in version 0.10
         if isinstance(training_trackers, string_types):
             # the user most likely passed in a file name to load training
             # data from
@@ -215,7 +215,7 @@ class Agent(object):
                     "When using online learning, you need to specify "
                     "an interpreter for the agent to use.")
 
-        # TODO: deprecated - remove in version 0.10
+        # TODO: DEPRECATED - remove in version 0.10
         if isinstance(training_trackers, string_types):
             # the user most likely passed in a file name to load training
             # data from
