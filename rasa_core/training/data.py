@@ -45,10 +45,3 @@ class DialogueTrainingData(object):
     def append(self, X, y):
         self.X = np.vstack((self.X, X))
         self.y = np.vstack((self.y, y))
-
-    @classmethod
-    def empty(cls, domain):
-        # TODO is it correct?
-        X = np.zeros((0, domain.num_states))
-        y = np.zeros((0, domain.num_actions))
-        return cls(X, y, {})

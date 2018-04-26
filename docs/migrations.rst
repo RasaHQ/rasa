@@ -5,6 +5,17 @@ Migration Guide
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+0.8.x to 0.9.0
+--------------
+
+.. warning::
+
+  This is a release **breaking backwards compatibility**.
+  Unfortunately, it is not possible to load
+  previously trained models (as the stored file formats have changed as
+  well as the configuration and metadata). Please make sure to retrain
+  a model before trying to use it with this improved version.
+
 0.7.x to 0.8.0
 --------------
 

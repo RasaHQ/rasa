@@ -60,11 +60,12 @@ class Agent(object):
 
         if path is None:
             raise ValueError("No domain path specified.")
+
+        ensemble = PolicyEnsemble.load(path)
         domain = TemplateDomain.load(os.path.join(path, "domain.yml"),
                                      action_factory)
         # ensures the domain hasn't changed between test and train
         domain.compare_with_specification(path)
-        ensemble = PolicyEnsemble.load(path)
         _interpreter = NaturalLanguageInterpreter.create(interpreter)
         _tracker_store = cls.create_tracker_store(tracker_store, domain)
 

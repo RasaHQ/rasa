@@ -26,6 +26,20 @@ if typing.TYPE_CHECKING:
     from rasa_core.trackers import DialogueStateTracker
 
 
+class UnsupportedDialogueModelError(Exception):
+    """Raised when a model is to old to be loaded.
+
+    Attributes:
+        message -- explanation of why the model is invalid
+    """
+
+    def __init__(self, message):
+        self.message = message
+
+    def __str__(self):
+        return self.message
+
+
 class PolicyEnsemble(object):
     def __init__(self, policies, action_fingerprints=None):
         # type: (List[Policy], Optional[Dict]) -> None
@@ -151,12 +165,27 @@ class PolicyEnsemble(object):
             metadata = json.loads(f.read())
         return metadata
 
+    @staticmethod
+    def ensure_model_compatibility(metadata):
+        from packaging import version
+
+        model_version = metadata.get("rasa_core", "0.0.0")
+        if version.parse(model_version) < version.parse("0.9.0a4"):
+            raise UnsupportedDialogueModelError(
+                "The model version is to old to be "
+                "loaded by this Rasa Core instance. "
+                "Either retrain the model, or run with"
+                "an older version. "
+                "Model version: {} Instance version: {}"
+                "".format(model_version, rasa_core.__version__))
+
     @classmethod
     def load(cls, path):
         # type: (Text) -> PolicyEnsemble
         """Loads policy and domain specification from storage"""
 
         metadata = cls.load_metadata(path)
+        cls.ensure_model_compatibility(metadata)
         policies = []
         for i, policy_name in enumerate(metadata["policy_names"]):
             policy_cls = utils.class_from_module_path(policy_name)
