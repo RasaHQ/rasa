@@ -282,11 +282,8 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
         for state_name, prob in states.items():
 
             if state_name in self.user_labels:
-                if PREV_PREFIX + ACTION_LISTEN_NAME not in states:
-                    # we predict next action from bot action
-                    # TODO do we need state_name = 'intent_listen' ?
-                    used_features[:len(self.user_vocab)] = 0
-                else:
+                if PREV_PREFIX + ACTION_LISTEN_NAME in states:
+                    # else we predict next action from bot action and memory
                     for t in state_name.split(self.split_symbol):
                         used_features[self.user_vocab[t]] += 1
 
