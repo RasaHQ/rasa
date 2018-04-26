@@ -677,8 +677,11 @@ class EmbeddingPolicy(Policy):
         )
 
         result = _sim[0, -1, :]
-        if self.similarity_type == 'inner':
-            # normalize result to [0, 1]
+        if self.similarity_type == 'cosine':
+            # clip negative values to zero
+            result[result < 0] = 0
+        elif self.similarity_type == 'inner':
+            # normalize result to [0, 1] with softmax
             result = np.exp(result)
             result /= np.sum(result)
 
@@ -838,7 +841,8 @@ def _compute_time_attention(attention_mechanism, cell_output,
 
 class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
     """Custom AttentionWrapper that takes into account time
-        when calculating attention."""
+        when calculating attention.
+        Attention is calculated before calling rnn cell."""
 
     def call(self, inputs, state):
         """Perform a step of attention-wrapped RNN.
@@ -879,8 +883,8 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
 
         # Step 1: Calculate attention based on the previous output and current input
         if isinstance(state.cell_state, tf.contrib.rnn.LSTMStateTuple):
-            (c, h) = state.cell_state
-            out_for_attn = tf.concat([c, h, inputs], 1)
+            (_, h) = state.cell_state
+            out_for_attn = tf.concat([h, inputs], 1)
         else:
             out_for_attn = tf.concat([state.cell_state, inputs], 1)
 
@@ -941,6 +945,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
 
         if self._output_attention:
             # does not make too much sense now
+            # because rnn cell is called after attention
             return attention, next_state
         else:
             return cell_output, next_state
