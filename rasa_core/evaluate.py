@@ -110,8 +110,8 @@ def collect_story_predictions(resource_name, policy_model_path, nlu_model_path,
     actual = []
 
     g = TrainingDataGenerator(story_graph, agent.domain,
-                               use_story_concatenation=False,
-                               tracker_limit=100)
+                              use_story_concatenation=False,
+                              tracker_limit=100)
     completed_trackers = g.generate()
 
     logger.info(

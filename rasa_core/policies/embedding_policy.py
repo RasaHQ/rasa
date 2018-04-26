@@ -54,7 +54,7 @@ class EmbeddingPolicy(Policy):
         "hidden_layer_size_b": [],
         "rnn_size": 64,
         "batch_size": 16,
-        "epochs": 2000,
+        "epochs": 1,
 
         # embedding parameters
         "embed_dim": 10,
@@ -881,9 +881,13 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             raise TypeError("Expected state to be instance of AttentionWrapperState. "
                             "Received type %s instead." % type(state))
 
-        # Step 1: Calculate attention based on the previous output and current input
+        # Step 1: Calculate attention based on
+        #          the previous output and current input
         if isinstance(state.cell_state, tf.contrib.rnn.LSTMStateTuple):
             (_, h) = state.cell_state
+            # the context is not included, in hope that algorithm
+            # would learn correct attention at least to some tokens
+            # regardless of the context
             out_for_attn = tf.concat([h, inputs], 1)
         else:
             out_for_attn = tf.concat([state.cell_state, inputs], 1)
@@ -930,7 +934,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         attention = tf.concat(all_attentions, 1)
 
         # Step 6: Calculate the true inputs to the cell based on the
-        # previous attention value.
+        #          previous attention value.
         cell_inputs = self._cell_input_fn(inputs, attention)
         cell_state = state.cell_state
         cell_output, next_cell_state = self._cell(cell_inputs, cell_state)
