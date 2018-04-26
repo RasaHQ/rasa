@@ -335,11 +335,6 @@ def read_file(filename, encoding="utf-8"):
         return f.read()
 
 
-def is_training_data_empty(X):
-    """Check if the training matrix does contain training samples."""
-    return X.shape[0] == 0
-
-
 def cap_length(s, char_limit=20, append_ellipsis=True):
     """Makes sure the string doesn't exceed the passed char limit.
 

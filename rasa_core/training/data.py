@@ -5,8 +5,6 @@ from __future__ import unicode_literals
 
 import numpy as np
 
-from rasa_core import utils
-
 
 class DialogueTrainingData(object):
     def __init__(self, X, y, true_length=None):
@@ -20,7 +18,8 @@ class DialogueTrainingData(object):
         self.true_length = self.true_length[:max_samples]
 
     def is_empty(self):
-        return utils.is_training_data_empty(self.X)
+        """Check if the training matrix does contain training samples."""
+        return self.X.shape[0] == 0
 
     def max_history(self):
         return self.X.shape[1]
