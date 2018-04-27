@@ -518,7 +518,7 @@ class EmbeddingPolicy(Policy):
         if self.calc_acc_on_num_examples:
             logger.info("Accuracy is updated every {} epochs"
                         "".format(self.calc_acc_ones_in_epochs))
-        pbar = tqdm(range(self.epochs), desc="Epochs", initial=1)
+        pbar = tqdm(range(self.epochs), desc="Epochs")
         train_acc = 0
         last_loss = 0
         for ep in pbar:
@@ -569,7 +569,8 @@ class EmbeddingPolicy(Policy):
                 })
 
         if self.calc_acc_on_num_examples:
-            logger.info("loss={:.3f}, accuracy={:.3f}"
+            logger.info("Finished training embedding policy, "
+                        "loss={:.3f}, train accuracy={:.3f}"
                         "".format(last_loss, train_acc))
 
     def _calc_train_acc(self, X, slots,
@@ -601,7 +602,7 @@ class EmbeddingPolicy(Policy):
         # type: (...) -> None
         """Trains the policy on given training trackers."""
 
-        logger.debug('Started to train embedding policy.')
+        logger.debug('Started training embedding policy.')
 
         if kwargs:
             logger.debug("Config is updated with {}".format(kwargs))
