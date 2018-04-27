@@ -73,9 +73,7 @@ def train_nlu():
     from rasa_nlu.model import Trainer
 
     training_data = load_data('data/franken_data.json')
-
     trainer = Trainer(config.load("nlu_model_config.yml"))
-
     trainer.train(training_data)
     model_directory = trainer.persist('models/nlu/',
                                       fixed_model_name="current")
