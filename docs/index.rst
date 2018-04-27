@@ -19,7 +19,7 @@ Welcome to the Rasa Documentation!
     - implement the actions your bot can take in python code (recommended),
     - or use Rasa Core as a webservice (experimental, see :ref:`section_http`).
 
-    Go `here <https://colab.research.google.com/github/RasaHQ/rasa_core/blob/tweak_docs/getting_started.ipynb>`_ to try it out right away.
+    Go `here <https://colab.research.google.com/github/RasaHQ/rasa_core/blob/master/getting_started.ipynb>`_ to try it out right away.
 
 *What's cool about it?*
 
@@ -34,7 +34,7 @@ Welcome to the Rasa Documentation!
 *Can I see it in action?*
 
     We thought you'd never ask!
-    You can build a full example without installing anything on `colab <https://colab.research.google.com/github/RasaHQ/rasa_core/blob/tweak_docs/getting_started.ipynb>`_.
+    You can build a full example without installing anything on `colab <https://colab.research.google.com/github/RasaHQ/rasa_core/blob/master/getting_started.ipynb>`_.
     If you want to run stuff on your machine, follow the :ref:`installation`
     and check out :ref:`tutorial_basics` afterwards!
 
