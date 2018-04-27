@@ -33,23 +33,34 @@ class RasaCoreClient(object):
     Used to retrieve information about models and conversations."""
 
     def __init__(self, host, token):
+        # type: (Text, Text) -> None
+
         self.host = host
         self.token = token
 
     def status(self):
+        """Get the status of the remote core server (e.g. the version.)"""
+
         url = "{}/version?token={}".format(self.host, self.token)
         result = requests.get(url)
         return result.json()
 
     def all_clients(self):
+        """Get a list of all conversations."""
+
         url = "{}/conversations?token={}".format(self.host, self.token)
         result = requests.get(url)
         return result.json()
 
-    def retrieve_tracker(self, sender_id, domain,
-                         only_events_after_latest_restart=False,
-                         include_events=True,
-                         until=None):
+    def retrieve_tracker(self,
+                         sender_id,  # type: Text
+                         domain,  # type: Domain
+                         only_events_after_latest_restart=False,  # type: bool
+                         include_events=True,  # type: bool
+                         until=None  # type: Optional[int]
+                         ):
+        """Retrieve and recreate a tracker fetched from the remote instance."""
+
         tracker_json = self.retrieve_tracker_json(
                 sender_id, only_events_after_latest_restart,
                 include_events, until)
@@ -59,26 +70,33 @@ class RasaCoreClient(object):
                                                  domain)
         return tracker
 
-    def retrieve_tracker_json(self, sender_id,
-                              use_history=True,
-                              include_events=True,
-                              until=None):
+    def retrieve_tracker_json(self,
+                              sender_id,  # type: Text
+                              use_history=True,  # type: bool
+                              include_events=True,  # type: bool
+                              until=None  # type: Optional[int]
+                              ):
+        """Retrieve a trackers json representation from remote instance."""
+
         url = ("{}/conversations/{}/tracker?token={}"
                "&ignore_restarts={}"
-               "&events={}").format(
-                self.host, sender_id, self.token,
-                use_history,
-                include_events)
+               "&events={}").format(self.host, sender_id, self.token,
+                                    use_history, include_events)
         if until:
             url += "&until={}".format(until)
+
         result = requests.get(url)
         return result.json()
 
     def append_events_to_tracker(self, sender_id, events):
         # type: (Text, List[Event]) -> None
+        """Add some more events to the tracker of a conversation."""
+
         url = "{}/conversations/{}/tracker/events?token={}".format(
                 self.host, sender_id, self.token)
-        result = requests.post(url, json=[event.as_dict() for event in events])
+
+        data= [event.as_dict() for event in events]
+        result = requests.post(url, json=data)
         return result.json()
 
     def parse(self, message, sender_id):
@@ -87,11 +105,14 @@ class RasaCoreClient(object):
 
         url = "{}/conversations/{}/parse?token={}".format(
                 self.host, sender_id, quote_plus(self.token))
+
         data = json.dumps({"query": message}, ensure_ascii=False)
+
         response = requests.post(url, data=data.encode("utf-8"),
                                  headers={
                                      'Content-type': 'text/plain; '
                                                      'charset=utf-8'})
+
         if response.status_code == 200:
             return response.json()
         else:
@@ -101,6 +122,9 @@ class RasaCoreClient(object):
             return None
 
     def upload_model(self, model_dir, max_retries=1):
+        # type: (Text, int) -> Optional[Dict[Text, Any]]
+        """Upload a Rasa core model to the remote instance."""
+
         url = "{}/load?token={}".format(self.host, quote_plus(self.token))
         logger.debug("Uploading model to rasa core server.")
 
@@ -152,10 +176,13 @@ class RasaCoreClient(object):
 
 
 class RemoteAgent(object):
+    """A special agent that is connected to a model running on another server.
+    """
+
     def __init__(
             self,
             domain,  # type: Union[Text, Domain]
-            core_client
+            core_client  # type: RasaCoreClient
     ):
         self.domain = domain
         self.core_client = core_client
