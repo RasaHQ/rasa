@@ -57,20 +57,21 @@ The full run command looks like this:
 .. code-block:: bash
 
    docker run \
-      --mount type=bind,source=<PATH_TO_DIALOGUE_MODEL>,target=/app/model/dialogue \
-      --mount type=bind,source=<PATH_TO_NLU_MODEL>,target=/app/model/nlu \
+      --mount type=bind,source=<PATH_TO_DIALOGUE_MODEL_DIR>,target=/app/model/dialogue \
+      --mount type=bind,source=<PATH_TO_NLU_MODEL_DIR>,target=/app/model/nlu \
       rasa_core
 
 You also have the option to use the container to train a model with
 
 .. code-block:: bash
 
-   docker run rasa_core train [OPTIONS]
+   docker run \
+      --mount type=bind,source=<PATH_TO_STORIES_FILE>/stories.md,target=/app/stories/stories.md \
+      --mount type=bind,source=<PATH_TO_DOMAIN_FILE>/domain.yml,target=/app/domain/domain.yml \
+      --mount type=bind,source=<OUT_PATH>,target=/app/out \
+      rasa_core train
 
-Here you need the usual command-line options needed for the ``rasa_core.train``
-module.
-
-You may in addition run an arbitrary command inside the container with
+You may in addition run any Rasa Core command inside the container with
 ``docker run rasa_core run [COMMAND]``.
 
 Rasa Core with ZERO Python
