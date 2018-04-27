@@ -51,10 +51,16 @@ class MemoizationPolicy(Policy):
         # without state_featurizer
         return MaxHistoryTrackerFeaturizer(None, max_history)
 
-    def __init__(self, max_history=None, lookup=None):
-        # type: (Optional[int], Optional[Dict]) -> None
+    def __init__(self,
+                 featurizer=None,  # type: Optional[TrackerFeaturizer]
+                 max_history=None,  # type: Optional[int]
+                 lookup=None  # type: Optional[Dict]
+                 ):
+        # type: (...) -> None
 
-        featurizer = self._standard_featurizer(max_history)
+        if not featurizer:
+            featurizer = self._standard_featurizer(max_history)
+
         super(MemoizationPolicy, self).__init__(featurizer)
 
         self.max_history = self.featurizer.max_history
@@ -131,7 +137,7 @@ class MemoizationPolicy(Policy):
               domain,  # type: Domain
               **kwargs  # type: **Any
               ):
-        # type: (...) -> Dict[Text: Any]
+        # type: (...) -> None
         """Trains the policy on given training trackers."""
         self.lookup = {}
 
@@ -152,13 +158,24 @@ class MemoizationPolicy(Policy):
         self._add(trackers_as_states, trackers_as_actions,
                   domain, online=True)
 
-    def _recall(self, states):
+    def _recall_states(self, states):
+        # type: (List[Dict[Text, float]]) -> Optional[int]
+
         for states_aug in self._preprocess_states(states):
             memorised = self.lookup.get(
                 self._create_feature_key(states_aug))
             if memorised is not None:
                 return memorised
         return None
+
+    def recall(self,
+               states,  # type: List[Dict[Text, float]]
+               tracker,  # type: DialogueStateTracker
+               domain  # type: Domain
+               ):
+        # type: (...) -> Optional[int]
+
+        return self._recall_states(states)
 
     def predict_action_probabilities(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> List[float]
@@ -177,7 +194,7 @@ class MemoizationPolicy(Policy):
                                 [tracker], domain)
         states = tracker_as_states[0]
         logger.debug("Current tracker state {}".format(states))
-        recalled = self._recall(states)
+        recalled = self.recall(states, tracker, domain)
         if recalled is not None:
             logger.debug("Used memorised next action '{}'"
                          "".format(recalled))
@@ -187,6 +204,8 @@ class MemoizationPolicy(Policy):
 
     def persist(self, path):
         # type: (Text) -> None
+
+        self.featurizer.persist(path)
 
         memorized_file = os.path.join(path, 'memorized_turns.json')
         data = {
@@ -200,13 +219,14 @@ class MemoizationPolicy(Policy):
     def load(cls, path):
         # type: (Text) -> MemoizationPolicy
 
+        featurizer = TrackerFeaturizer.load(path)
         memorized_file = os.path.join(path, 'memorized_turns.json')
         if os.path.isfile(memorized_file):
             with io.open(memorized_file) as f:
                 data = json.loads(f.read())
-            return cls(data["max_history"], data["lookup"])
+            return cls(featurizer=featurizer, lookup=data["lookup"])
         else:
             logger.info("Couldn't load memoization for policy. "
                         "File '{}' doesn't exist. Falling back to empty "
                         "turn memory.".format(memorized_file))
-            return MemoizationPolicy()
+            return cls()

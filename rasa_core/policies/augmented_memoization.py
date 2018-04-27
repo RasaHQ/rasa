@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 import logging
 import typing
 
-from typing import Dict, List, Text
+from typing import Dict, List, Text, Optional
 
 from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.events import ActionExecuted
@@ -93,7 +93,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         mcfly_trackers = self._back_to_the_future(tracker)
 
         tracker_as_states = self.featurizer.prediction_states(
-                                mcfly_trackers, domain)
+                mcfly_trackers, domain)
 
         for states in tracker_as_states:
             logger.debug("Current tracker state {}".format(states))
@@ -104,32 +104,16 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
         # No match found
         return None
 
-    def predict_action_probabilities(self, tracker, domain):
-        # type: (DialogueStateTracker, Domain) -> List[float]
-        """Predicts the next action the bot should take
-            after seeing the tracker.
+    def recall(self,
+               states,  # type: List[Dict[Text, float]]
+               tracker,  # type: DialogueStateTracker
+               domain  # type: Domain
+               ):
+        # type: (...) -> Optional[int]
 
-            Returns the list of probabilities for the next actions.
-            If memorized action was found returns 1.0 for its index,
-            else returns 0.0 for all actions."""
-        result = [0.0] * domain.num_actions
-
-        if not self.is_enabled:
-            return result
-
-        tracker_as_states = self.featurizer.prediction_states(
-                                [tracker], domain)
-        states = tracker_as_states[0]
-        logger.debug("Current tracker state {}".format(states))
-
-        recalled = self._recall(states)
+        recalled = self._recall_states(states)
         if recalled is None:
             # let's try a different method to recall that tracker
-            recalled = self._recall_using_delorean(tracker, domain)
-
-        if recalled is not None:
-            logger.debug("Used memorised next action '{}'"
-                         "".format(recalled))
-            result[recalled] = 1.0
-
-        return result
+            return self._recall_using_delorean(tracker, domain)
+        else:
+            return recalled

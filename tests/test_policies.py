@@ -115,16 +115,6 @@ class TestEmbeddingPolicy(PolicyTestCollection):
         return p
 
 
-class TestScoringPolicy(PolicyTestCollection):
-    @pytest.fixture(scope="module")
-    def create_policy(self, featurizer):
-        max_history = None
-        if isinstance(featurizer, MaxHistoryTrackerFeaturizer):
-            max_history = featurizer.max_history
-        p = AugmentedMemoizationPolicy(max_history)
-        return p
-
-
 class TestFallbackPolicy(PolicyTestCollection):
     @pytest.fixture(scope="module")
     def create_policy(self, featurizer):
@@ -138,28 +128,36 @@ class TestMemoizationPolicy(PolicyTestCollection):
         max_history = None
         if isinstance(featurizer, MaxHistoryTrackerFeaturizer):
             max_history = featurizer.max_history
-        p = MemoizationPolicy(max_history)
+        p = MemoizationPolicy(max_history=max_history)
         return p
 
     def test_memorise(self, trained_policy, default_domain):
-        training_trackers = train_trackers(default_domain)
-        trained_policy.train(training_trackers, default_domain)
+        trackers = train_trackers(default_domain)
+        trained_policy.train(trackers, default_domain)
 
-        (trackers_as_states,
-         trackers_as_actions
-         ) = trained_policy.featurizer.training_states_and_actions(
-                                training_trackers, default_domain)
+        (all_states, all_actions) = \
+            trained_policy.featurizer.training_states_and_actions(
+                    trackers, default_domain)
 
-        for ii in range(len(trackers_as_states)):
-            recalled = trained_policy._recall(trackers_as_states[ii])
-            assert recalled == default_domain.index_for_action(
-                trackers_as_actions[ii][0])
+        for tracker, states, actions in zip(trackers, all_states, all_actions):
+            recalled = trained_policy.recall(states, tracker, default_domain)
+            assert recalled == default_domain.index_for_action(actions[0])
 
         nums = np.random.randn(default_domain.num_states)
-        random_states = {f: num
+        random_states = [{f: num
                          for f, num in
-                         zip(default_domain.input_states, nums)}
-        assert trained_policy._recall(random_states) is None
+                         zip(default_domain.input_states, nums)}]
+        assert trained_policy._recall_states(random_states) is None
+
+
+class TestAugmentedMemoizationPolicy(PolicyTestCollection):
+    @pytest.fixture(scope="module")
+    def create_policy(self, featurizer):
+        max_history = None
+        if isinstance(featurizer, MaxHistoryTrackerFeaturizer):
+            max_history = featurizer.max_history
+        p = AugmentedMemoizationPolicy(max_history=max_history)
+        return p
 
 
 class TestSklearnPolicy(PolicyTestCollection):
