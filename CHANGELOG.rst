@@ -18,6 +18,8 @@ Added
 - ``/conversations`` endpoint for listing sender ids of running conversations
 - added a Mattermost channel that allows Rasa Core to communicate via a Mattermost app
 - added a Twilio channel that allows Rasa Core to communicate via SMS
+- ``FallbackPolicy`` for executing a default message if NLU or core model confidence is low.
+- ``FormAction`` class to make it easier to collect multiple pieces of information with fewer stories.
 
 Changed
 -------
