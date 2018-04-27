@@ -64,18 +64,18 @@ def test_remote_example():
                                                     [])
     assert next_response.get("next_action") == "action_listen"
 
-
-def test_restaurantbot_example():
-    sys.path.append("examples/restaurantbot/")
-    from bot import train_dialogue
-
-    p = "examples/restaurantbot/"
-    agent = train_dialogue(os.path.join(p, "restaurant_domain.yml"),
-                           os.path.join(p, "models", "dialogue"),
-                           os.path.join(p, "data", "babi_stories.md"))
-
-    responses = agent.handle_message("/greet")
-    assert responses[0]['text'] == 'how can I help you?'
+#
+# def test_restaurantbot_example():
+#     sys.path.append("examples/restaurantbot/")
+#     from bot import train_dialogue
+#
+#     p = "examples/restaurantbot/"
+#     agent = train_dialogue(os.path.join(p, "restaurant_domain.yml"),
+#                            os.path.join(p, "models", "dialogue"),
+#                            os.path.join(p, "data", "babi_stories.md"))
+#
+#     responses = agent.handle_message("/greet")
+#     assert responses[0]['text'] == 'how can I help you?'
 
 
 def test_concerts_online_example():
