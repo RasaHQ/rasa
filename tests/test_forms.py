@@ -270,7 +270,7 @@ def test_travel_form():
     assert events[0].value == "GPE_origin"
     tracker.update(events[0])
 
-    # first user utterance
+    # second user utterance
     entities = [{"entity": "GPE", "value": "Berlin"}]
     tracker.update(UserUttered("",
                                intent={"name": "inform"},
