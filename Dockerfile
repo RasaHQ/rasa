@@ -23,18 +23,18 @@ RUN apt-get update -qq && \
 WORKDIR /app
 
 # Copy as early as possible so we can cache ...
-COPY requirements.txt ./
+ADD requirements.txt .
 
 RUN pip install -r requirements.txt
 
-COPY . /app
+ADD . .
 
 RUN pip install -e .
 
-VOLUME ["/app/model"]
+VOLUME ["/app/dialogue", "/app/nlu", "/app/domain", "/app/stories", "/app/out"]
 
 EXPOSE 5005
 
 ENTRYPOINT ["./entrypoint.sh"]
 
-CMD ["start", "--core", "./model/dialogue", "--nlu", "./model/nlu"]
+CMD ["start", "-d", "./dialogue", "-u", "./nlu"]
