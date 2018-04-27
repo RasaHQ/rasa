@@ -31,7 +31,7 @@ ADD . .
 
 RUN pip install -e .
 
-VOLUME ["/app/dialogue", "/app/nlu", "/app/domain", "/app/stories", "/app/out"]
+VOLUME ["/app/dialogue", "/app/nlu", "/app/out"]
 
 EXPOSE 5005
 

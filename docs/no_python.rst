@@ -57,8 +57,8 @@ The full run command looks like this:
 .. code-block:: bash
 
    docker run \
-      --mount type=bind,source=<PATH_TO_DIALOGUE_MODEL_DIR>,target=/app/model/dialogue \
-      --mount type=bind,source=<PATH_TO_NLU_MODEL_DIR>,target=/app/model/nlu \
+      --mount type=bind,source=<PATH_TO_DIALOGUE_MODEL_DIR>,target=/app/dialogue \
+      --mount type=bind,source=<PATH_TO_NLU_MODEL_DIR>,target=/app/nlu \
       rasa_core
 
 You also have the option to use the container to train a model with
@@ -66,8 +66,8 @@ You also have the option to use the container to train a model with
 .. code-block:: bash
 
    docker run \
-      --mount type=bind,source=<PATH_TO_STORIES_FILE>/stories.md,target=/app/stories/stories.md \
-      --mount type=bind,source=<PATH_TO_DOMAIN_FILE>/domain.yml,target=/app/domain/domain.yml \
+      --mount type=bind,source=<PATH_TO_STORIES_FILE>/stories.md,target=/app/stories.md \
+      --mount type=bind,source=<PATH_TO_DOMAIN_FILE>/domain.yml,target=/app/domain.yml \
       --mount type=bind,source=<OUT_PATH>,target=/app/out \
       rasa_core train
 
