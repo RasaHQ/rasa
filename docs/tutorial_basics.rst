@@ -131,11 +131,12 @@ Let's run
 
 .. code-block:: bash
 
-   make train-nlu
+   python -m rasa_nlu.train -c nlu_config.yml --data data/nlu_data.md -o models
+   --fixed_model_name nlu --project current --verbose
 
 to train our NLU model. A new directory ``models/current/nlu`` should have been
 created containing the NLU model. Note that ``current`` stands for project name,
-since this is specified in the train command in the Makefile.
+since this is specified in the train command.
 
 .. note::
 
@@ -184,7 +185,7 @@ To train the dialogue model, run:
 
 .. code-block:: bash
 
-   make train-core
+   python -m rasa_core.train -d domain.yml -s data/stories.md -o models/current/dialogue --epochs 200
 
 This will train the dialogue model for ``200`` epochs and store it
 into ``models/current/dialogue``. Where ``1`` epoch corresponds to one pass of
@@ -196,7 +197,7 @@ Here we'll just talk to the bot on the command line:
 
 .. code-block:: bash
 
-   make cmdline
+   python -m rasa_core.run -d models/current/dialogue -u models/current/nlu
 
 And there we have it! A minimal bot containing all the important pieces of
 Rasa Core.
