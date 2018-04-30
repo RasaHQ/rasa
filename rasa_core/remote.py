@@ -33,16 +33,17 @@ class RasaCoreClient(object):
     Used to retrieve information about models and conversations."""
 
     def __init__(self, host, token):
-        # type: (Text, Text) -> None
+        # type: (Text, Optional[Text]) -> None
 
         self.host = host
-        self.token = token
+        self.token = token if token else ""
 
     def status(self):
         """Get the status of the remote core server (e.g. the version.)"""
 
         url = "{}/version?token={}".format(self.host, self.token)
         result = requests.get(url)
+        result.raise_for_status()
         return result.json()
 
     def all_clients(self):
@@ -50,6 +51,7 @@ class RasaCoreClient(object):
 
         url = "{}/conversations?token={}".format(self.host, self.token)
         result = requests.get(url)
+        result.raise_for_status()
         return result.json()
 
     def retrieve_tracker(self,
@@ -76,7 +78,7 @@ class RasaCoreClient(object):
                               include_events=True,  # type: bool
                               until=None  # type: Optional[int]
                               ):
-        """Retrieve a trackers json representation from remote instance."""
+        """Retrieve a tracker's json representation from remote instance."""
 
         url = ("{}/conversations/{}/tracker?token={}"
                "&ignore_restarts={}"
@@ -86,6 +88,7 @@ class RasaCoreClient(object):
             url += "&until={}".format(until)
 
         result = requests.get(url)
+        result.raise_for_status()
         return result.json()
 
     def append_events_to_tracker(self, sender_id, events):
@@ -95,8 +98,9 @@ class RasaCoreClient(object):
         url = "{}/conversations/{}/tracker/events?token={}".format(
                 self.host, sender_id, self.token)
 
-        data= [event.as_dict() for event in events]
+        data = [event.as_dict() for event in events]
         result = requests.post(url, json=data)
+        result.raise_for_status()
         return result.json()
 
     def parse(self, message, sender_id):
@@ -132,15 +136,19 @@ class RasaCoreClient(object):
 
         response = None
         while max_retries > 0:
+            max_retries -= 1
+
             with io.open(model_zip, "rb") as f:
                 response = requests.post(url, files={"model": f})
-            max_retries -= 1
+
             if response.status_code == 200:
                 logger.debug("Finished uploading")
                 return response.json()
-            else:
+
+            if max_retries > 0:
+                # some resting time before we try again - e.g. server
+                # might be unavailable / not started yet
                 time.sleep(2)
-                max_retries -= 1
 
         logger.warn("Got a bad response from rasa core while uploading "
                     "the model (Status: {} "
@@ -203,55 +211,70 @@ class RemoteAgent(object):
         logger.info("Starting sync listening on input channel")
         input_channel.start_sync_listening(message_handler)
 
+    def _run_next_action(self, action_name, message):
+        # type: (Text, UserMessage) -> Dict[Text, Any]
+        """Run the next action communicating with the remote core server."""
+
+        tracker = self.core_client.retrieve_tracker(message.sender_id,
+                                                    self.domain)
+        dispatcher = Dispatcher(message.sender_id,
+                                message.output_channel,
+                                self.domain)
+
+        action = self.domain.action_for_name(action_name)
+        # events and return values are used to update
+        # the tracker state after an action has been taken
+        try:
+            action_events = action.run(dispatcher, tracker, self.domain)
+        except Exception:
+            logger.exception(
+                    "Encountered an exception while running action "
+                    "'{}'. Bot will continue, but the actions "
+                    "events are lost. Make sure to fix the "
+                    "exception in your custom code."
+                    "".format(action.name()))
+            action_events = []
+
+        # this is similar to what is done in the processor, but instead of
+        # logging the events on the tracker we need to return them to the
+        # remote core instance
+        events = []
+        for m in dispatcher.latest_bot_messages:
+            events.append(BotUttered(text=m.text, data=m.data))
+
+        events.extend(action_events)
+        return self.core_client.continue_core(action_name,
+                                              events,
+                                              message.sender_id)
+
     def process_message(self, message):
         # type: (UserMessage) -> None
         """Process a message using a remote rasa core instance."""
 
-        # message = UserMessage(text, , sender_id)
-        response = self.core_client.parse(message.text, message.sender_id)
+        try:
+            response = self.core_client.parse(message.text, message.sender_id)
 
-        while response and response.get("next_action") != ACTION_LISTEN_NAME:
-            dispatcher = Dispatcher(message.sender_id,
-                                    message.output_channel,
-                                    self.domain)
-            action_name = response.get("next_action")
-            tracker = self.core_client.retrieve_tracker(message.sender_id,
-                                                        self.domain)
+            while (response and
+                   response.get("next_action") != ACTION_LISTEN_NAME):
 
-            if action_name is not None:
-                action = self.domain.action_for_name(action_name)
-                # events and return values are used to update
-                # the tracker state after an action has been taken
-                try:
-                    action_events = action.run(dispatcher, tracker, self.domain)
-                except Exception as e:
-                    logger.error(
-                            "Encountered an exception while running action "
-                            "'{}'. Bot will continue, but the actions "
-                            "events are lost. Make sure to fix the "
-                            "exception in your custom code."
-                            "".format(action.name()))
-                    logger.error(e, exc_info=True)
-                    action_events = []
-                events = []
-                for m in dispatcher.latest_bot_messages:
-                    events.append(BotUttered(text=m.text, data=m.data))
+                action_name = response.get("next_action")
+                if action_name is not None:
+                    response = self._run_next_action(action_name, message)
+                else:
+                    logger.error("Rasa Core did not return an action. "
+                                 "Response: {}".format(response))
+                    break
 
-                events.extend(action_events)
-                response = self.core_client.continue_core(action_name,
-                                                          events,
-                                                          message.sender_id)
-            else:
-                logger.error("Rasa Core did not return an action. Response: "
-                             "{}".format(response))
-                response = None
-        logger.info("Done processing message")
+        except Exception:
+            logger.exception("Failed to process message.")
+        else:
+            logger.info("Done processing message")
 
     @classmethod
     def load(cls,
              path,  # type: Text
              core_host,  # type: Text
-             auth_token,  # type: Optional[Text]
+             auth_token=None,  # type: Optional[Text]
              action_factory=None  # type: Optional[Text]
              ):
         # type: (...) -> RemoteAgent
