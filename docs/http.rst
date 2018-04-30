@@ -109,6 +109,11 @@ to start the training:
     You cannot send a training request for a project
     already training a new model (see below).
 
+.. note::
+
+    The server will automatically generate a name for the trained model. If
+    you want to set the name yourself, call the endpoint using
+    ``localhost:5000/train?project=my_project&model=my_model_name``
 
 ``POST /evaluate``
 ^^^^^^^^^^^^^^^^^^

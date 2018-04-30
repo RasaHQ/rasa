@@ -282,7 +282,10 @@ class RasaNLU(object):
     @check_cors
     @inlineCallbacks
     def train(self, request):
+        # if not set will use the default project name, e.g. "default"
         project = parameter_or_default(request, "project", default=None)
+        # if set will not generate a model name but use the passed one
+        model_name = parameter_or_default(request, "model", default=None)
 
         request_content = request.content.read().decode('utf-8', 'strict')
 
@@ -304,8 +307,11 @@ class RasaNLU(object):
 
         try:
             request.setResponseCode(200)
+
             response = yield self.data_router.start_train_process(
-                    data_file, project, RasaNLUModelConfig(model_config))
+                    data_file, project,
+                    RasaNLUModelConfig(model_config), model_name)
+
             returnValue(json_to_string({'info': 'new model trained: {}'
                                                 ''.format(response)}))
         except AlreadyTrainingError as e:
