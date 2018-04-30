@@ -7,7 +7,6 @@ import io
 import logging
 import os
 import typing
-import json
 
 import jsonpickle
 import numpy as np
@@ -86,7 +85,8 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
         self.num_features = domain.num_states
         self.input_state_map = domain.input_state_map
 
-        self.user_feature_len = len(domain.intent_states)
+        self.user_feature_len = (len(domain.intent_states) +
+                                 len(domain.entity_states))
         self.slot_feature_len = len(domain.slot_states)
 
     def encode(self, states):
