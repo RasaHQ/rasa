@@ -264,7 +264,7 @@ class Interpreter(object):
                 "".format(model_version, rasa_nlu.__version__))
 
     @staticmethod
-    def load(model_dir, component_builder=None, skip_valdation=False):
+    def load(model_dir, component_builder=None, skip_validation=False):
         """Creates an interpreter based on a persisted model."""
 
         model_metadata = Metadata.load(model_dir)
@@ -273,12 +273,12 @@ class Interpreter(object):
 
         return Interpreter.create(model_metadata,
                                   component_builder,
-                                  skip_valdation)
+                                  skip_validation)
 
     @staticmethod
     def create(model_metadata,  # type: Metadata
                component_builder=None,  # type: Optional[ComponentBuilder]
-               skip_valdation=False  # type: bool
+               skip_validation=False  # type: bool
                ):
         # type: (...) -> Interpreter
         """Load stored model and components defined by the provided metadata."""
@@ -294,7 +294,7 @@ class Interpreter(object):
 
         # Before instantiating the component classes,
         # lets check if all required packages are available
-        if not skip_valdation:
+        if not skip_validation:
             components.validate_requirements(model_metadata.component_classes)
 
         for component_name in model_metadata.component_classes:
