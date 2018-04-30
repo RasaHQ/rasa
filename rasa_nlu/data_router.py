@@ -237,13 +237,12 @@ class DataRouter(object):
                             project, e))
 
         time = data.get('time')
-        response, used_model = self.project_store[project].parse(data['text'],
-                                                                 time,
-                                                                 model)
+        response = self.project_store[project].parse(data['text'], time,
+                                                     model)
 
         if self.responses:
             self.responses.info('', user_input=response, project=project,
-                                model=used_model)
+                                model=response.get('model'))
 
         return self.format_response(response)
 
@@ -260,9 +259,9 @@ class DataRouter(object):
         predictions = []
         for ex in examples:
             logger.debug("Going to parse: {}".format(ex.as_dict()))
-            response, _ = self.project_store[project].parse(ex.text,
-                                                            None,
-                                                            model)
+            response = self.project_store[project].parse(ex.text,
+                                                         None,
+                                                         model)
             logger.debug("Received response: {}".format(response))
             predictions.append(response)
 

@@ -11,6 +11,7 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 Added
 -----
+- Returning used model name and project name in the response of ``GET /parse`` and ``POST /parse`` as ``model`` and ``project`` respectively.
 
 Changed
 -------
