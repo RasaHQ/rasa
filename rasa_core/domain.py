@@ -235,7 +235,7 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         # Set all found entities with the state value 1.0
         for entity in tracker.latest_message.entities:
             key = "entity_{0}".format(entity["entity"])
-            state_dict[key] = 1.
+            state_dict[key] = 1.0
 
         # Set all set slots with the featurization of the stored value
         for key, slot in tracker.slots.items():
@@ -267,7 +267,7 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         if latest_action:
             prev_action_name = PREV_PREFIX + latest_action
             if prev_action_name in self.input_state_map:
-                return {prev_action_name: 1}
+                return {prev_action_name: 1.0}
             else:
                 logger.warning(
                         "Failed to use action '{}' in history. "
