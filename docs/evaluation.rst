@@ -12,7 +12,7 @@ The evaluation script `evaluate.py` allows you to test your models performance f
         --model projects/default/model_20180323-145833
 
 Where **model** specifies the model to evaluate on the test data specified
-wioth **data**.
+with **data**.
 
 If you would like to evaluate your pipeline using
 *cross-validation*, you can run the evaluation script with the mode

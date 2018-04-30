@@ -121,10 +121,31 @@ class Project(object):
             self._loader_lock.release()
 
         response = self._models[model_name].parse(text, time)
+        response['project'] = self._project
+        response['model'] = model_name
 
         self._end_read()
 
-        return response, model_name
+        return response
+
+    def load_model(self):
+        self._begin_read()
+        status = False
+        model_name = self._dynamic_load_model()
+        logger.debug('Loading model %s', model_name)
+
+        self._loader_lock.acquire()
+        try:
+            if not self._models.get(model_name):
+                interpreter = self._interpreter_for_model(model_name)
+                self._models[model_name] = interpreter
+                status = True
+        finally:
+            self._loader_lock.release()
+
+        self._end_read()
+
+        return status
 
     def update(self, model_name):
         self._writer_lock.acquire()

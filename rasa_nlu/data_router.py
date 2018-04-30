@@ -93,7 +93,6 @@ class DataRouter(object):
                  emulation_mode=None,
                  remote_storage=None,
                  component_builder=None):
-
         self._training_processes = max(max_training_processes, 1)
         self.responses = self._create_query_logger(response_log)
         self.project_dir = config.make_path_absolute(project_dir)
@@ -170,6 +169,12 @@ class DataRouter(object):
                     remote_storage=self.remote_storage)
         return project_store
 
+    def _pre_load(self, projects):
+        logger.debug("loading %s", projects)
+        for project in self.project_store:
+            if project in projects:
+                self.project_store[project].load_model()
+
     def _list_projects_in_cloud(self):
         try:
             from rasa_nlu.persistor import get_persistor
@@ -232,13 +237,12 @@ class DataRouter(object):
                             "Error: {}".format(project, e))
 
         time = data.get('time')
-        response, used_model = self.project_store[project].parse(data['text'],
-                                                                 time,
-                                                                 model)
+        response = self.project_store[project].parse(data['text'], time,
+                                                     model)
 
         if self.responses:
             self.responses.info('', user_input=response, project=project,
-                                model=used_model)
+                                model=response.get('model'))
 
         return self.format_response(response)
 
@@ -255,9 +259,9 @@ class DataRouter(object):
         predictions = []
         for ex in examples:
             logger.debug("Going to parse: {}".format(ex.as_dict()))
-            response, _ = self.project_store[project].parse(ex.text,
-                                                            None,
-                                                            model)
+            response = self.project_store[project].parse(ex.text,
+                                                         None,
+                                                         model)
             logger.debug("Received response: {}".format(response))
             predictions.append(response)
 
@@ -321,7 +325,8 @@ class DataRouter(object):
                                   data_file,
                                   path=self.project_dir,
                                   project=project,
-                                  fixed_model_name=model_name)
+                                  fixed_model_name=model_name,
+                                  storage=self.remote_storage)
         result = deferred_from_future(result)
         result.addCallback(training_callback)
         result.addErrback(training_errback)

@@ -93,7 +93,7 @@ pipelines consult the documentation.
 
 #### Markdown format
 ```
-wget 'https://raw.githubusercontent.com/RasaHQ/rasa_nlu/sample_configs/config_train_server_md.yml'
+wget 'https://raw.githubusercontent.com/RasaHQ/rasa_nlu/master/sample_configs/config_train_server_md.yml'
 curl --request POST --header 'content-type: application/x-yml' --data-binary @config_train_server_md.yml --url 'localhost:5000/train?project=test_model'
 ```
 

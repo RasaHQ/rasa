@@ -9,6 +9,7 @@ import io
 import json
 import logging
 import os
+import re
 import tempfile
 
 import simplejson
@@ -265,6 +266,15 @@ def is_model_dir(model_dir):
     only_valid_files = all([ext in allowed_extensions
                             for ext in file_extenstions])
     return only_valid_files
+
+
+def is_url(resource_name):
+    """Return True if string is an http, ftp, or file URL path.
+
+    This implementation is the same as the one used by matplotlib"""
+
+    URL_REGEX = re.compile(r'http://|https://|ftp://|file://|file:\\')
+    return URL_REGEX.match(resource_name) is not None
 
 
 def remove_model(model_dir):

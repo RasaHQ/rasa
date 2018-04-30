@@ -102,7 +102,7 @@ class CountVectorsFeaturizer(Featurizer):
         self.vect = None
 
         # preprocessor
-        self.preprocessor = lambda s: re.sub(r'\b[0-9]+\b', 'NUMBER', s)
+        self.preprocessor = lambda s: re.sub(r'\b[0-9]+\b', 'NUMBER', s.lower())
 
     @classmethod
     def required_packages(cls):
