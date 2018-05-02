@@ -76,23 +76,23 @@ def test_version(app):
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
         "http://dummy-uri/parse?q=hello",
-        {'project': None, 'entities': [], 'model': 'fallback',
+        {'project': 'default', 'entities': [], 'model': 'fallback',
          'intent': {'confidence': 1.0, 'name': 'greet'}, 'text': 'hello'}
     ),
     ResponseTest(
         "http://dummy-uri/parse?query=hello",
-        {'project': None, 'entities': [], 'model': 'fallback',
+        {'project': 'default', 'entities': [], 'model': 'fallback',
          'intent': {'confidence': 1.0, 'name': 'greet'}, 'text': 'hello'}
     ),
     ResponseTest(
         "http://dummy-uri/parse?q=hello ńöñàśçií",
-        {'project': None, 'entities': [], 'model': 'fallback',
+        {'project': 'default', 'entities': [], 'model': 'fallback',
          'intent': {'confidence': 1.0, 'name': 'greet'},
          'text': 'hello ńöñàśçií'}
     ),
     ResponseTest(
         "http://dummy-uri/parse?q=",
-        {'project': None, 'entities': [], 'model': 'fallback',
+        {'project': 'default', 'entities': [], 'model': 'fallback',
          'intent': {'confidence': 0.0, 'name': ''}, 'text': ''}
     ),
 ])
@@ -110,21 +110,21 @@ def test_get_parse(app, response_test):
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
         "http://dummy-uri/parse",
-        {'project': None, 'entities': [], 'model': 'fallback',
+        {'project': 'default', 'entities': [], 'model': 'fallback',
          'intent': {'confidence': 1.0, 'name': 'greet'},
          'text': 'hello'},
         payload={"q": "hello"}
     ),
     ResponseTest(
         "http://dummy-uri/parse",
-        {'project': None, 'entities': [], 'model': 'fallback',
+        {'project': 'default', 'entities': [], 'model': 'fallback',
          'intent': {'confidence': 1.0, 'name': 'greet'},
          'text': 'hello'},
         payload={"query": "hello"}
     ),
     ResponseTest(
         "http://dummy-uri/parse",
-        {'project': None, 'entities': [], 'model': 'fallback',
+        {'project': 'default', 'entities': [], 'model': 'fallback',
          'intent': {'confidence': 1.0, 'name': 'greet'},
          'text': 'hello ńöñàśçií'},
         payload={"q": "hello ńöñàśçií"}
