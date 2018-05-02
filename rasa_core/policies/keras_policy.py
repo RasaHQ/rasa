@@ -141,8 +141,9 @@ class KerasPolicy(Policy):
 
         shuffled_X, shuffled_y = training_data.shuffled_X_y()
 
-        self.model = self.model_architecture(shuffled_X.shape[1:],
-                                             shuffled_y.shape[1:])
+        if self.model is None:
+            self.model = self.model_architecture(shuffled_X.shape[1:],
+                                                 shuffled_y.shape[1:])
 
         validation_split = kwargs.get("validation_split", 0.0)
         logger.info("Fitting model with {} total samples and a validation "
