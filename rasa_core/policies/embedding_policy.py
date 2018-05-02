@@ -57,7 +57,7 @@ class EmbeddingPolicy(Policy):
         "epochs": 1,
 
         # embedding parameters
-        "embed_dim": 10,
+        "embed_dim": 20,
         "mu_pos": 0.8,  # should be 0.0 < ... < 1.0 for 'cosine'
         "mu_neg": -0.2,  # should be -1.0 < ... < 1.0 for 'cosine'
         "similarity_type": 'cosine',  # string 'cosine' or 'inner'
@@ -334,7 +334,8 @@ class EmbeddingPolicy(Policy):
         )
         return cell
 
-    def _create_attn_cell(self, cell, emb_utter, emb_prev_act,
+    @staticmethod
+    def _create_attn_cell(cell, emb_utter, emb_prev_act,
                           real_length, attn_bias_for_last_input):
         """Create wrap cell in attention cell with given memory"""
 
@@ -344,15 +345,15 @@ class EmbeddingPolicy(Policy):
                 memory_sequence_length=real_length,
                 normalize=True,
                 probability_fn=tf.identity,
-                name='attention_on_utter'
+                name='limit_time_softmax'
         )
         num_prev_act_units = int(emb_prev_act.shape[-1])
         attn_mech_prev_act = tf.contrib.seq2seq.BahdanauAttention(
-            num_units=num_prev_act_units, memory=emb_prev_act,
-            memory_sequence_length=real_length,
-            normalize=True,
-            probability_fn=tf.sigmoid,
-            name='attention_on_prev_act'
+                num_units=num_prev_act_units, memory=emb_prev_act,
+                memory_sequence_length=real_length,
+                normalize=True,
+                probability_fn=tf.identity,
+                name='inv_time_geometric'
         )
         attn_mechs = [attn_mech_utter, attn_mech_prev_act]
 
@@ -362,10 +363,8 @@ class EmbeddingPolicy(Policy):
                              attention[:, num_utter_units:]], -1)
             return res
 
-        cell2 = tf.contrib.rnn.BasicRNNCell(self.rnn_size)
-
         attn_cell = TimeAttentionWrapper(
-                cell, cell2, attn_mechs,
+                cell, attn_mechs,
                 attn_bias_for_last_input=attn_bias_for_last_input,
                 cell_input_fn=cell_input_fn,
                 output_attention=False,
@@ -380,10 +379,9 @@ class EmbeddingPolicy(Policy):
 
         cell = self._create_rnn_cell()
 
-        if self.attn_bias_for_last_input < 1.0:
-            cell = self._create_attn_cell(cell, emb_utter, emb_prev_act,
-                                          real_length,
-                                          self.attn_bias_for_last_input)
+        cell = self._create_attn_cell(cell, emb_utter, emb_prev_act,
+                                      real_length,
+                                      self.attn_bias_for_last_input)
 
         cell_output, final_state = tf.nn.dynamic_rnn(
                 cell, cell_input,
@@ -876,56 +874,64 @@ def _compute_time_attention(attention_mechanism, cell_output, attention_state,
     for a given attention_mechanism."""
 
     alignments, next_attention_state = attention_mechanism(
-                            cell_output, state=attention_state)
+            cell_output, state=attention_state)
+    zeros = tf.zeros_like(alignments)
 
-    if attention_mechanism._name == 'attention_on_utter':
+    if attention_mechanism._name == 'limit_time_softmax':
         # normal like softmax attention
-        alpha = attn_bias_for_last_input/(1.0 - attn_bias_for_last_input)
-        time_weight = alpha * tf.cast(time, tf.float32) + 1.0
-        time_bias = tf.log(time_weight)
-        probs = tf.nn.softmax(tf.concat([alignments[:, :time],
-                                         alignments[:, time:time+1] +
-                                         time_bias], 1))
-        # `time_weight = a * time + 1` was not chosen arbitrary
-        #
-        # if we assume that we have simple stories where each action
-        # is followed by `action_listen` then:
-        #
-        # if `time_weight = 1`, the initial `probs[:, time]`
-        # will be `1/(time+1)`
-        # and the initial `sum of probs` for 0-intent (before `action_listen`)
-        # will be `1/2 for any time`
-        #
-        # if `time_weight = time`, the initial `probs[:, time]`
-        # will be `1/2 for any time`
-        # and the initial `sum of probs` for 0-intent (before `action_listen`)
-        # will be `(1/4)(time+1)/time`
-        #
-        # if `time_weight = time + 2`, the initial `probs[:, time]`
-        # will be `(1/2)(time+2)/(time+1)`
-        # and the initial `sum of probs` for 0-intent (before `action_listen`)
-        # will be `1/4 for any time`
+        if attn_bias_for_last_input < 1.0:
+            alpha = attn_bias_for_last_input/(1.0 - attn_bias_for_last_input)
+            time_weight = alpha * tf.cast(time, tf.float32) + 1.0
+            time_bias = tf.log(time_weight)
 
-        # we do not want initial `probs` to be independent of time
-        # to allow different times to be descriptive, but
-        # we want `lim(probs) = const` when `time -> inf`
-        # to avoid vanishing alignments for large time
+            probs = tf.nn.softmax(tf.concat([alignments[:, :time],
+                                             alignments[:, time:time+1] +
+                                             time_bias], 1))
+            # `time_weight = a * time + 1` was not chosen arbitrary
+            #
+            # if we assume that we have simple stories where each action
+            # is followed by `action_listen` then:
+            #
+            # if `time_weight = 1`, the initial `probs[:, time]`
+            # will be `1/(time+1)`
+            # and the initial `sum of probs` for 0-intent (before `action_listen`)
+            # will be `1/2 for any time`
+            #
+            # if `time_weight = time`, the initial `probs[:, time]`
+            # will be `1/2 for any time`
+            # and the initial `sum of probs` for 0-intent (before `action_listen`)
+            # will be `(1/4)(time+1)/time`
+            #
+            # if `time_weight = time + 2`, the initial `probs[:, time]`
+            # will be `(1/2)(time+2)/(time+1)`
+            # and the initial `sum of probs` for 0-intent (before `action_listen`)
+            # will be `1/4 for any time`
 
-        # if `time_weight = a * time + 1`, the initial `probs[:, time]`
-        # will be `(a/(a+1))(time+1/a)/(time+1/(a+1))`
-        # and the initial `sum of probs` for 0-intent (before `action_listen`)
-        # will be `(1/(2a+2))(time+1/a)/(time+1/(a+1))`
+            # we do not want initial `probs` to be independent of time
+            # to allow different times to be descriptive, but
+            # we want `lim(probs) = const` when `time -> inf`
+            # to avoid vanishing alignments for large time
 
-    elif attention_mechanism._name == 'attention_on_prev_act':
-        # inverse time monotonic like attention
-        probs = alignments[:, :time+1]
+            # if `time_weight = a * time + 1`, the initial `probs[:, time]`
+            # will be `(a/(a+1))(time+1/a)/(time+1/(a+1))`
+            # and the initial `sum of probs` for 0-intent (before `action_listen`)
+            # will be `(1/(2a+2))(time+1/a)/(time+1/(a+1))`
+
+        else:
+            ones = tf.ones_like(alignments)
+            # set alignments of current time input to 1
+            probs = tf.concat([zeros[:, :time], ones[:, time:time+1]], 1)
+
+    elif attention_mechanism._name == 'inv_time_geometric':
+        # probability
+        probs = tf.sigmoid(alignments[:, :time+1])
+        # construct geometric distribution starting from current time
         probs *= tf.cumprod(1 - probs, axis=1, exclusive=True, reverse=True)
 
     else:
         raise ValueError("Wrong attention mechanism {}"
                          "".format(attention_mechanism._name))
 
-    zeros = tf.zeros_like(alignments)
     alignments = tf.concat([probs, zeros[:, time+1:]], 1)
 
     # Reshape from [batch_size, memory_time] to [batch_size, 1, memory_time]
@@ -958,7 +964,6 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
 
     def __init__(self,
                  cell,
-                 cell2,
                  attention_mechanism,
                  attention_layer_size=None,
                  attn_bias_for_last_input=0.0,
@@ -978,7 +983,6 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                 name
         )
         self._attn_bias_for_last_input = attn_bias_for_last_input
-        self._cell2 = cell2
 
     def call(self, inputs, state):
         """Perform a step of attention-wrapped RNN.
@@ -1074,11 +1078,6 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         cell_inputs = self._cell_input_fn(inputs, attention)
         cell_state = state.cell_state
         cell_output, next_cell_state = self._cell(cell_inputs, cell_state)
-
-        # cell_output, _ = self._cell2(inputs, cell_output)
-        #
-        # c = next_cell_state.c
-        # next_cell_state = tf.contrib.rnn.LSTMStateTuple(c, cell_output)
 
         next_state = tf.contrib.seq2seq.AttentionWrapperState(
             time=state.time + 1,
