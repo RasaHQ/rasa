@@ -113,11 +113,7 @@ In order to use this with slack you need a external webhook, typically the best 
 
 .. code-block:: bash
   
-  ngrok httpd 5002
-  
-**Ngrok is only needed if you don't have a public IP and are testing locally**
-  
-This will then give a output showing a https address that you need to supply for the interactive components request URL and for the incoming webhook and the address should be whatever ngrok supplies you with /webhook added to the end.  
+See ngrok_. for more information on hosting a webhook from your local machine if you don't have a public address or host.
 
 This is what allows slack to send the messages from it to your bot to get the responses.  Once you put in your webhook address in the OAuth & Permissions section and save it you will have the credentials you need for the slack_credentials.yml file.
 
@@ -229,6 +225,8 @@ that URL, go to ``myurl.com/app/set_webhook`` first to set the webhook.
       with */bot*
 
     For more information on the Telegram HTTP API, go to https://core.telegram.org/bots/api
+
+.. _ngrok:
 
 Using Ngrok For Local Testing
 =========================================
