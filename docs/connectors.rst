@@ -236,7 +236,7 @@ The command to run a ngrok instance for port 5002 for example would be:
 
 .. code-block:: bash
 
-`ngrok httpd 5002`
+ngrok httpd 5002
 
 **Ngrok is only needed if you don't have a public IP and are testing locally**
   
