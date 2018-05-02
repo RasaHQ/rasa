@@ -229,3 +229,15 @@ that URL, go to ``myurl.com/app/set_webhook`` first to set the webhook.
       with */bot*
 
     For more information on the Telegram HTTP API, go to https://core.telegram.org/bots/api
+
+Using Ngrok For Local Testing
+=========================================
+You can use https://ngrok.com/ to create a local webhook from your machine that is Publicly available on the internet so you can use it with applications like Slack, Facebook, etc.
+
+The command to run a ngrok instance for port 5002 for example would be:
+
+`ngrok httpd 5002`
+
+**Ngrok is only needed if you don't have a public IP and are testing locally**
+  
+This will then give a output showing a https address that you need to supply for the interactive components request URL and for the incoming webhook and the address should be whatever ngrok supplies you with /webhook added to the end.  This basically takes the code running on your local machine and punches it through the internet at the ngrok address supplied.
