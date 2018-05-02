@@ -109,9 +109,7 @@ If you want to connect to the slack input channel using the run script, e.g. usi
 
 Setting Up Webhook
 ^^^^^^^^^^^^^^^^^^
-In order to use this with slack you need a external webhook, typically the best way to do this is use https://ngrok.com/ in order to expose ports externally from your machine.  So in the above example we are using port 5002 so using ngrok we would run:
-
-.. code-block:: bash
+In order to use this with slack you need a external webhook, typically the best way to do this is use ngrok_. in order to expose ports externally from your machine.
   
 See ngrok_. for more information on hosting a webhook from your local machine if you don't have a public address or host.
 
@@ -236,7 +234,7 @@ The command to run a ngrok instance for port 5002 for example would be:
 
 .. code-block:: bash
 
-ngrok httpd 5002
+  ngrok httpd 5002
 
 **Ngrok is only needed if you don't have a public IP and are testing locally**
   
