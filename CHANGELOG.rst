@@ -11,7 +11,6 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 Added
 -----
-- Returning used model name and project name in the response of ``GET /parse`` and ``POST /parse`` as ``model`` and ``project`` respectively.
 
 Changed
 -------
@@ -21,14 +20,27 @@ Removed
 
 Fixed
 -----
+
+
+[0.12.3] - 2018-05-02
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Added
+-----
+- Returning used model name and project name in the response of ``GET /parse`` and ``POST /parse`` as ``model`` and ``project`` respectively.
+
+Fixed
+-----
 - readded possibility to set fixed model name from http train endpoint
+
 
 [0.12.2] - 2018-04-20
 ^^^^^^^^^^^^^^^^^^^^^
 
 Fixed
 -----
-- fixed duckling text extraction for ner_duckling_http 
+- fixed duckling text extraction for ner_duckling_http
 
 
 [0.12.1] - 2018-04-18
