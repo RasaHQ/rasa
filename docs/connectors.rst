@@ -109,9 +109,9 @@ If you want to connect to the slack input channel using the run script, e.g. usi
 
 Setting Up Webhook
 ^^^^^^^^^^^^^^^^^^
-In order to use this with slack you need a external webhook, typically the best way to do this is use ngrok_. in order to expose ports externally from your machine.
+In order to use this with slack you need a external webhook, typically the best way to do this is use ngrok_ in order to expose ports externally from your machine.
   
-See ngrok_. for more information on hosting a webhook from your local machine if you don't have a public address or host.
+See ngrok_ for more information on hosting a webhook from your local machine if you don't have a public address or host.
 
 This is what allows slack to send the messages from it to your bot to get the responses.  Once you put in your webhook address in the OAuth & Permissions section and save it you will have the credentials you need for the slack_credentials.yml file.
 
