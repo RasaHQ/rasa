@@ -47,9 +47,9 @@ class LUISEmulator(NoEmulator):
                 {
                     "entity": e["value"],
                     "type": e["entity"],
-                    "startIndex": e["start"],
-                    "endIndex": e["end"]-1,
-                    "score": e["confidence"]
+                    "startIndex": e["start"] if "start" in e else None,
+                    "endIndex": (e["end"] - 1) if "end" in e else None,
+                    "score": e["confidence"] if "confidence" in e else None
                 } for e in data["entities"]
             ] if "entities" in data else []
         }
