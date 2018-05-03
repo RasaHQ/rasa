@@ -80,6 +80,54 @@ facebook developer portal.
 Slack Setup
 -----------
 
+Using run script
+^^^^^^^^^^^^^^^^
+If you want to connect to the slack input channel using the run script, e.g. using
+
+.. code-block:: bash
+
+  python -m rasa_core.run -d models/dialogue -u models/nlu/current \
+      --port 5002 --connector slack --credentials slack_credentials.yml
+
+you need to supply a ``slack_credentials.yml`` with the following content:
+
+.. literalinclude:: ../examples/moodbot/slack_credentials.yml
+   :linenos:
+
+
+Directly using python
+^^^^^^^^^^^^^^^^^^^^^
+
+A ``SlackInput`` instance provides a flask blueprint for creating
+a webserver. This lets you separate the exact endpoints and implementation
+from your webserver creation logic.
+
+Code to create a Messenger-compatible webserver looks like this:
+
+
+.. code-block:: python
+    :linenos:
+
+    from rasa_core.channels import HttpInputChannel
+    from rasa_core.channels.slack import SlackInput
+    from rasa_core.agent import Agent
+    from rasa_core.interpreter import RegexInterpreter
+
+    # load your trained agent
+    agent = Agent.load("dialogue", interpreter=RegexInterpreter())
+
+    input_channel = SlackInput(
+       slack_token="YOUR_SLACK_TOKEN",  # this is the `bot_user_o_auth_access_token`
+       slack_channel="YOUR_SLACK_CHANNEL"  # the name of your channel to which the bot posts (optional)
+    )
+
+    agent.handle_channel(HttpInputChannel(5004, "/app", input_channel))
+
+The arguments for the ``HttpInputChannel`` are the port, the url prefix, and the input channel.
+The default endpoint for receiving facebook messenger messages is ``/webhook``, so the example
+above would listen for messages on ``/app/webhook``. This is the url you should add in the
+facebook developer portal. N.b. if you do not set the ``slack_channel`` keyword argument, messages will by delivered back to the user who sent them.
+
 .. note::
 
    **How to get the Slack credentials:** You need to set up a Slack app.
