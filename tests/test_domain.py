@@ -70,7 +70,7 @@ def test_create_train_data_with_history(default_domain):
         '[null, null, null, {}]',
         '[null, null, {}, '
         '{"entity_name": 1.0, "intent_greet": 1.0, '
-        '"prev_action_listen": 1, "slot_name_0": 1.0}]',
+        '"prev_action_listen": 1.0, "slot_name_0": 1.0}]',
         '[null, null, {}, '
         '{"intent_greet": 1.0, "prev_action_listen": 1.0}]',
         '[null, {}, '
