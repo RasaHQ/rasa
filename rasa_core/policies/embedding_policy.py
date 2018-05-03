@@ -76,11 +76,11 @@ class EmbeddingPolicy(Policy):
         "droprate_rnn": 0.1,
         "droprate_out": 0.1,
 
-        "nuke_slots_ones_in_epochs": 3,  # set to None or 0 to disable
+        "nuke_slots_ones_in_epochs": 0,  # set to None or 0 to disable
 
         # attention parameters
-        "attn_bias_for_last_input": 0.5,  # set to 1 to turn off attention
-        "sparse_attention": False,
+        "attn_bias_for_last_input": 0.5,  # 1.0 turns off user attention
+        "sparse_attention": False,  # flag to use sparsemax
 
         # visualization of accuracy
         "calc_acc_ones_in_epochs": 50,  # small values affect performance
@@ -549,7 +549,8 @@ class EmbeddingPolicy(Policy):
 
         return np.concatenate([batch_pos_b, batch_neg_b], -2)
 
-    def _train_tf(self, X, Y, slots, prev_act, actions_for_X, all_Y_d, loss, mask):
+    def _train_tf(self, X, Y, slots, prev_act, actions_for_X, all_Y_d,
+                  loss, mask):
         """Train tf graph"""
         self.session.run(tf.global_variables_initializer())
 
@@ -598,8 +599,9 @@ class EmbeddingPolicy(Policy):
                 if (ep + 1) == 1 or \
                         (ep + 1) % self.calc_acc_ones_in_epochs == 0 or \
                         (ep + 1) == self.epochs:
-                    train_acc = self._calc_train_acc(X, slots, prev_act, actions_for_X,
-                                                     all_Y_d, mask)
+                    train_acc = self._calc_train_acc(X, slots, prev_act,
+                                                     actions_for_X, all_Y_d,
+                                                     mask)
                     last_loss = ep_loss
 
                 pbar.set_postfix({
@@ -1115,7 +1117,9 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             attention, alignments, next_attention_state = _compute_time_attention(
                 attention_mechanism, out_for_attn, previous_attention_state[i],
                 # time is added to calculate time attention
-                state.time, self._attn_bias_for_last_input, self._sparse_attention,
+                state.time,
+                # attention hyperparameters
+                self._attn_bias_for_last_input, self._sparse_attention,
                 self._attention_layers[i] if self._attention_layers else None)
 
             alignment_history = previous_alignment_history[i].write(
