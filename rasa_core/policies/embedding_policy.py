@@ -80,6 +80,7 @@ class EmbeddingPolicy(Policy):
 
         # attention parameters
         "attn_bias_for_last_input": 0.5,  # set to 1 to turn off attention
+        "sparse_attention": False,
 
         # visualization of accuracy
         "calc_acc_ones_in_epochs": 50,  # small values affect performance
@@ -174,6 +175,7 @@ class EmbeddingPolicy(Policy):
     def _load_attn_params(self, config):
         self.attn_bias_for_last_input = max(
                 config['attn_bias_for_last_input'], 0.0)
+        self.sparse_attention = config['sparse_attention']
 
     def _load_visual_params(self, config):
         self.calc_acc_ones_in_epochs = config['calc_acc_ones_in_epochs']
@@ -349,6 +351,8 @@ class EmbeddingPolicy(Policy):
                 memory_sequence_length=real_length,
                 normalize=True,
                 probability_fn=tf.identity,
+                # -inf does not work with sparsemax
+                score_mask_value=-1e+5,
                 name='limit_time_softmax'
         )
         num_prev_act_units = int(emb_prev_act.shape[-1])
@@ -370,6 +374,7 @@ class EmbeddingPolicy(Policy):
         attn_cell = TimeAttentionWrapper(
                 cell, attn_mechs,
                 attn_bias_for_last_input=self.attn_bias_for_last_input,
+                sparse_attention=self.sparse_attention,
                 cell_input_fn=cell_input_fn,
                 output_attention=False,
                 alignment_history=True
@@ -629,8 +634,7 @@ class EmbeddingPolicy(Policy):
         )
 
         # t = 7
-        # l = len(actions_for_X[ids[0], :t + 1])
-        # for i in range(l):
+        # for i in range(t+1):
         #     if i > 0:
         #         idx_prev = actions_for_X[ids[0], i - 1]
         #     else:
@@ -786,19 +790,19 @@ class EmbeddingPolicy(Policy):
         # _ps[1] - alignments over prev action
 
         # code to output attention for the current last action:
-        # for i in range(_sim.shape[1]):
-        #     if i > 0:
-        #         idx_prev = np.argmax(_sim[0, i - 1, :])
-        #     else:
-        #         idx_prev = 0
-        #     idx = np.argmax(_sim[0, i, :])
-        #     print("{:.3f} || {:.3f} -- {} ----> {}"
-        #           "".format(_ps[0][0, -1, i], _ps[1][0, -1, i],
-        #                     domain.actions[idx_prev].name(),
-        #                     domain.actions[idx].name()))
-        # print("{:.3f} || {:.3f}"
-        #       "".format(np.sum(_ps[0][0, -1]),
-        #                 np.sum(_ps[1][0, -1])))
+        for i in range(_sim.shape[1]):
+            if i > 0:
+                idx_prev = np.argmax(_sim[0, i - 1, :])
+            else:
+                idx_prev = 0
+            idx = np.argmax(_sim[0, i, :])
+            print("{:.3f} || {:.3f} -- {} ----> {}"
+                  "".format(_ps[0][0, -1, i], _ps[1][0, -1, i],
+                            domain.actions[idx_prev].name(),
+                            domain.actions[idx].name()))
+        print("{:.3f} || {:.3f}"
+              "".format(np.sum(_ps[0][0, -1]),
+                        np.sum(_ps[1][0, -1])))
 
         result = _sim[0, -1, :]
         if self.similarity_type == 'cosine':
@@ -922,7 +926,7 @@ class EmbeddingPolicy(Policy):
 # modified tensorflow attention wrapper
 def _compute_time_attention(attention_mechanism, cell_output, attention_state,
                             # time is added to calculate time attention
-                            time, attn_bias_for_last_input,
+                            time, attn_bias_for_last_input, sparse_attention,
                             attention_layer):
     """Computes the attention and alignments limited by time
     for a given attention_mechanism."""
@@ -934,43 +938,30 @@ def _compute_time_attention(attention_mechanism, cell_output, attention_state,
     if attention_mechanism._name == 'limit_time_softmax':
         # limit time softmax probabilities for attention
         if attn_bias_for_last_input < 1.0:
-            alpha = attn_bias_for_last_input/(1.0 - attn_bias_for_last_input)
-            time_weight = alpha * tf.cast(time, tf.float32) + 1.0
-            time_bias = tf.log(time_weight)
 
-            probs = tf.nn.softmax(tf.concat([alignments[:, :time],
-                                             alignments[:, time:time+1] +
-                                             time_bias], 1))
-            # `time_weight = a * time + 1` was not chosen arbitrary
-            #
-            # if we assume that we have simple stories where each action
-            # is followed by `action_listen` then:
-            #
-            # if `time_weight = 1`, the initial `probs[:, time]`
-            # will be `1/(time+1)`
-            # and the initial `sum of probs` for 0-intent (before `action_listen`)
-            # will be `1/2 for any time`
-            #
-            # if `time_weight = time`, the initial `probs[:, time]`
-            # will be `1/2 for any time`
-            # and the initial `sum of probs` for 0-intent (before `action_listen`)
-            # will be `(1/4)(time+1)/time`
-            #
-            # if `time_weight = time + 2`, the initial `probs[:, time]`
-            # will be `(1/2)(time+2)/(time+1)`
-            # and the initial `sum of probs` for 0-intent (before `action_listen`)
-            # will be `1/4 for any time`
+            if sparse_attention:
+                probs = tf.contrib.sparsemax.sparsemax(
+                    tf.concat([alignments[:, :time],
+                               alignments[:, time:time+1] +
+                               attn_bias_for_last_input], 1))
+            else:
+                alpha = (attn_bias_for_last_input /
+                         (1.0 - attn_bias_for_last_input))
 
-            # we do not want initial `probs` to be independent of time
-            # to allow different times to be descriptive, but
-            # we want `lim(probs) = const` when `time -> inf`
-            # to avoid vanishing alignments for large time
+                # add time_weight to current input
+                time_weight = alpha * tf.cast(time, tf.float32) + 1.0
 
-            # if `time_weight = a * time + 1`, the initial `probs[:, time]`
-            # will be `(a/(a+1))(time+1/a)/(time+1/(a+1))`
-            # and the initial `sum of probs` for 0-intent (before `action_listen`)
-            # will be `(1/(2a+2))(time+1/a)/(time+1/(a+1))`
+                # if `time_weight = a * time + 1`,
+                # the initial `probs[:, time]`
+                #   will be `(a/(a+1))(time+1/a)/(time+1/(a+1))`
+                # and the initial `sum of probs`
+                #   for 0-intent (before `action_listen`)
+                #   will be `(1/(2a+2))(time+1/a)/(time+1/(a+1))`
 
+                time_bias = tf.log(time_weight)
+                probs = tf.nn.softmax(tf.concat([alignments[:, :time],
+                                                 alignments[:, time:time+1] +
+                                                 time_bias], 1))
         else:
             ones = tf.ones_like(alignments)
             # set alignments of current time input to 1
@@ -978,7 +969,13 @@ def _compute_time_attention(attention_mechanism, cell_output, attention_state,
 
     elif attention_mechanism._name == 'inv_time_geometric':
         # limit time sigmoid probabilities for attention
-        probs = tf.sigmoid(alignments[:, :time+1])
+        if sparse_attention:
+            # linear approximation of sigmoid
+            probs = tf.minimum(1.0,
+                               0.25 * tf.nn.relu(
+                                   alignments[:, :time+1] + 2.0))
+        else:
+            probs = tf.sigmoid(alignments[:, :time+1])
         # construct inverse time geometric distribution
         # starting from current time
         probs *= tf.cumprod(1 - probs, axis=1, exclusive=True, reverse=True)
@@ -988,6 +985,7 @@ def _compute_time_attention(attention_mechanism, cell_output, attention_state,
                          "".format(attention_mechanism._name))
 
     alignments = tf.concat([probs, zeros[:, time+1:]], 1)
+    # alignments = tf.where(alignments > 0.1, alignments, zeros)
 
     # Reshape from [batch_size, memory_time] to [batch_size, 1, memory_time]
     expanded_alignments = tf.expand_dims(alignments, 1)
@@ -1022,6 +1020,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                  attention_mechanism,
                  attention_layer_size=None,
                  attn_bias_for_last_input=0.0,
+                 sparse_attention=False,
                  alignment_history=False,
                  cell_input_fn=None,
                  output_attention=False,
@@ -1038,6 +1037,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                 name
         )
         self._attn_bias_for_last_input = attn_bias_for_last_input
+        self._sparse_attention = sparse_attention
 
     def call(self, inputs, state):
         """Perform a step of attention-wrapped RNN.
@@ -1115,7 +1115,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             attention, alignments, next_attention_state = _compute_time_attention(
                 attention_mechanism, out_for_attn, previous_attention_state[i],
                 # time is added to calculate time attention
-                state.time, self._attn_bias_for_last_input,
+                state.time, self._attn_bias_for_last_input, self._sparse_attention,
                 self._attention_layers[i] if self._attention_layers else None)
 
             alignment_history = previous_alignment_history[i].write(
