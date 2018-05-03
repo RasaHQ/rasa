@@ -101,9 +101,21 @@ def bool_arg(request, name, default=True):
     Checks the `name` parameter of the request if it contains a valid
     boolean value. If not, `default` is returned."""
 
-    d = str(default)
-    return request.args.get(name, d).lower() == 'true'
+    d = [str(default)]
+    return request.args.get(name, d)[0].lower() == 'true'
 
+def default_arg(request, name, default=None):
+    # type: (Request, Text, Any) -> Any
+    """Return a passed boolean argument of the request or a default.
+
+    Checks the `name` parameter of the request if it contains a value. 
+    If not, `default` is returned."""
+
+    values = request.args.get(name) 
+    if values is None or len(values) < 1:
+        return default
+    else:
+       return values[0]
 
 def request_parameters(request):
     if request.method.decode('utf-8', 'strict') == 'GET':
@@ -134,8 +146,12 @@ def check_cors(f):
         if origin:
             if '*' in self.config['cors_origins']:
                 request.setHeader('Access-Control-Allow-Origin', '*')
+                request.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+                request.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS, PUT, DELETE')
             elif origin in self.config['cors_origins']:
                 request.setHeader('Access-Control-Allow-Origin', origin)
+                request.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+                request.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS, PUT, DELETE')
             else:
                 request.setResponseCode(403)
                 return 'forbidden'
@@ -269,6 +285,13 @@ class RasaCoreServer(object):
         self.agent.tracker_store.save(tracker)
         return json.dumps(tracker.current_state())
 
+    @app.route("/conversations",
+               methods=['GET', 'OPTIONS'])
+    @check_cors
+    @ensure_loaded_agent
+    def list_trackers(self, request):
+        return json.dumps(list(self.agent.tracker_store.keys()))
+
     @app.route("/conversations/<sender_id>/tracker",
                methods=['GET', 'OPTIONS'])
     @check_cors
@@ -279,7 +302,7 @@ class RasaCoreServer(object):
         # parameters
         use_history = bool_arg(request, 'ignore_restarts', default=False)
         should_include_events = bool_arg(request, 'events', default=True)
-        until_time = request.args.get('until', None)
+        until_time = default_arg(request, 'until', None)
 
         # retrieve tracker and set to requested state
         tracker = self.agent.tracker_store.get_or_create_tracker(sender_id)

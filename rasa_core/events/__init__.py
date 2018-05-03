@@ -35,6 +35,18 @@ def deserialise_events(serialized_events):
             if "event" in e]
 
 
+def first_key(d, default_key):
+    if len(d) > 1:
+        for k, v in d.items():
+            if k != default_key:
+                # we return the first key that is not the default key
+                return k
+    elif len(d) == 1:
+        return list(d.keys())[0]
+    else:
+        return None
+
+
 # noinspection PyProtectedMember
 class Event(object):
     """An event is one of the following:
@@ -294,8 +306,12 @@ class TopicSet(Event):
 
     @classmethod
     def _from_story_string(cls, parameters):
-        topic = list(parameters.keys())[0] if parameters else ""
-        return TopicSet(topic)
+        topic = first_key(parameters, default_key="name")
+
+        if topic is not None:
+            return TopicSet(topic)
+        else:
+            return None
 
     def as_dict(self):
         d = super(TopicSet, self).as_dict()
@@ -346,7 +362,8 @@ class SlotSet(Event):
 
     @classmethod
     def _from_story_string(cls, parameters):
-        slot_key = list(parameters.keys())[0] if parameters else None
+        slot_key = first_key(parameters, default_key="name")
+
         if slot_key:
             return SlotSet(slot_key, parameters[slot_key])
         else:
