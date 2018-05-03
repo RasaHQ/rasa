@@ -76,7 +76,7 @@ class EmbeddingPolicy(Policy):
         "droprate_rnn": 0.1,
         "droprate_out": 0.1,
 
-        "nuke_slots_ones_in_epochs": 3,  # set to None or 0 to disable
+        "nuke_slots_ones_in_epochs": 0,  # set to None or 0 to disable
 
         # attention parameters
         "attn_bias_for_last_input": 0.5,  # 1.0 turns off user attention
