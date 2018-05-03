@@ -9,10 +9,6 @@ HTTP server
     data, and train a model. You can then use the trained model for remote code
     execution! See :ref:`tutorial_basics` for an introduction.
 
-.. warning::
-
-    The HTTP API is still experimental and we'd appreciate your feedback (e.g.
-    via `Gitter <https://gitter.im/RasaHQ/rasa_core>`_).
 
 The HTTP api exists to make it easy for non-python projects to use Rasa Core.
 
@@ -471,6 +467,29 @@ Endpoints
               "price": null
           }
       }
+
+   :statuscode 200: no error
+
+
+.. http:get:: /conversations
+
+   List the sender ids of all the running conversations.
+
+   **Example request**:
+
+   .. sourcecode:: bash
+
+      curl http://localhost:5005/conversations | python -mjson.tool
+
+   **Example response**:
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Vary: Accept
+      Content-Type: text/javascript
+
+      ["default"]
 
    :statuscode 200: no error
 

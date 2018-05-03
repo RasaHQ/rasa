@@ -5,6 +5,9 @@ Installation
 
 Install Rasa Core to get started with the Rasa stack.
 
+.. note::
+    You can also get started without installing anything by using this `colab notebook <https://colab.research.google.com/github/RasaHQ/rasa_core/blob/master/getting_started.ipynb>`_.
+
 Install Rasa Core
 -----------------
 The recommended way to install Rasa Core is using pip:

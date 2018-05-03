@@ -24,4 +24,7 @@ scikit-learn==0.19.1
 slackclient==1.1.0
 requests==2.18.4
 python-telegram-bot==8.1.1
-rasa_nlu==0.12.0a2
+rasa_nlu>=0.12.0,<0.13.0
+mattermostwrapper==2.1
+twilio==6.11.0
+colorhash==1.0.2

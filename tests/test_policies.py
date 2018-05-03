@@ -17,6 +17,7 @@ from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.policies.scoring_policy import ScoringPolicy
 from rasa_core.policies.sklearn_policy import SklearnPolicy
+from rasa_core.policies.fallback import FallbackPolicy
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training import (
     DialogueTrainingData,
@@ -102,6 +103,13 @@ class TestScoringPolicy(PolicyTestCollection):
     @pytest.fixture(scope="module")
     def create_policy(self):
         p = ScoringPolicy()
+        return p
+
+
+class TestFallbackPolicy(PolicyTestCollection):
+    @pytest.fixture(scope="module")
+    def create_policy(self):
+        p = FallbackPolicy()
         return p
 
 

@@ -1,8 +1,5 @@
 language: python
 sudo: required
-addons:
-  apt_packages:
-    - pandoc
 cache:
   directories:
   - "$HOME/.cache/pip"
@@ -16,9 +13,6 @@ install:
 - sudo apt-get install graphviz graphviz-dev
 - pip install --only-binary=numpy,scipy,scikit-learn numpy scipy scikit-learn
 - pip install -r dev-requirements.txt
-- pip install spacy sklearn-crfsuite==0.3.5
-- pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-1.2.0/en_core_web_sm-1.2.0.tar.gz > jnk
-- python -m spacy link en_core_web_sm en
 - pip install -e .
 - pip list
 script:
@@ -46,14 +40,14 @@ jobs:
     - git config --global user.name "Travis CI"
     - git remote set-url --push origin "git@github.com:$TRAVIS_REPO_SLUG"
     - export ${!TRAVIS*}
-    - sphinx-versioning push docs gh-pages .
+    - sphinx-versioning push docs docs .
   - stage: deploy
-    install:
-    - pip install pypandoc==1.4
+    install: skip
     script: skip
     deploy:
       provider: pypi
       user: amn41
+      distributions: "sdist bdist_wheel"
       on:
         branch: master
         tags: true

@@ -34,7 +34,7 @@ After this tutorial, the folder structure should look like this:
    │   ├── stories.md              # dialogue training data
    │   └── concert_messages.md     # nlu training data
    ├── concert_domain_remote.yml   # dialogue configuration
-   └── nlu_model_config.json       # nlu configuration
+   └── nlu_model_config.yml        # nlu configuration
 
 The first steps of creating a bot are very similar to other Rasa Core bots.
 But let's go through each of them anyway - we will get to the HTTP
@@ -73,10 +73,11 @@ some intent examples in ``data/concert_messages.md``:
    :linenos:
    :language: md
 
-Furthermore, we need a configuration file ``nlu_model_config.json`` for the
+Furthermore, we need a configuration file ``nlu_model_config.yml`` for the
 NLU model:
 
-.. literalinclude:: ../examples/remotebot/nlu_model_config.json
+.. literalinclude:: ../examples/remotebot/nlu_model_config.yml
+   :language: yaml
    :linenos:
 
 We can now train a NLU model using our examples (make sure to
@@ -88,7 +89,8 @@ Let's run
 
 .. code-block:: bash
 
-   python -m rasa_nlu.train -c nlu_model_config.json --fixed_model_name current
+   python -m rasa_nlu.train -c nlu_model_config.yml --fixed_model_name current \
+         --project nlu --path models --data data/concert_messages.md
 
 to train our NLU model. A new directory ``models/nlu/current`` should have been
 created containing the NLU model.

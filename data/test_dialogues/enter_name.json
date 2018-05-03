@@ -57,11 +57,6 @@
       "key": "name"
     },
     {
-      "py/object": "rasa_core.events.SlotSet",
-      "value": "central",
-      "key": "location"
-    },
-    {
       "py/object": "rasa_core.events.ActionExecuted",
       "action_name": "action_listen",
       "unpredictable": false
