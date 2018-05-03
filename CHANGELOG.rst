@@ -20,6 +20,7 @@ Removed
 
 Fixed
 -----
+- Fixed Luis emulation output to add start, end position and confidence for each entity.
 
 
 [0.12.3] - 2018-05-02
