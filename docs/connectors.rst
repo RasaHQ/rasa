@@ -7,7 +7,9 @@ Here's how to connect your conversational AI to the outside world.
 
 Input channels are defined in the ``rasa_core.channels`` module.
 Currently, there is an implementation for the command line as well as
-connection to facebook, slack and telegram.
+connection to facebook, slack, telegram, mattermost and twilio.
+
+You need an external webhook to use any of these channels.  If you're testing the connection locally, you can set up a temporary webhook using ngrok_
 
 .. _facebook_connector:
 
@@ -123,10 +125,10 @@ Code to create a Messenger-compatible webserver looks like this:
 
     agent.handle_channel(HttpInputChannel(5004, "/app", input_channel))
 
-The arguments for the ``HttpInputChannel`` are the port, the url prefix, and the input channel.
-The default endpoint for receiving facebook messenger messages is ``/webhook``, so the example
-above would listen for messages on ``/app/webhook``. This is the url you should add in the
-facebook developer portal. N.b. if you do not set the ``slack_channel`` keyword argument, messages will by delivered back to the user who sent them.
+The arguments for the HttpInputChannel are the port, the url prefix, and the input channel. 
+The default endpoint for receiving messages is /webhook, so the example above would listen for messages on /app/webhook. 
+This is the url you should add in the OAuth & Permissions section. N.b. if you do not set the slack_channel keyword 
+argument, messages will by delivered back to the user who sent them.
 
 .. note::
 
@@ -155,18 +157,6 @@ If you want to connect to the slack input channel using the run script, e.g. usi
   python -m rasa_core.run -d models/dialogue -u models/nlu/current \
       --port 5002 --connector slack --credentials slack_credentials.yml
 
-Setting Up Webhook
-^^^^^^^^^^^^^^^^^^
-In order to use this with slack you need a external webhook, typically the best way to do this is use ngrok_ in order to expose ports externally from your machine.
-  
-See ngrok_ for more information on hosting a webhook from your local machine if you don't have a public address or host.
-
-This is what allows slack to send the messages from it to your bot to get the responses.  Once you put in your webhook address in the OAuth & Permissions section and save it you will have the credentials you need for the slack_credentials.yml file.
-
-you need to supply a ``slack_credentials.yml`` with the following content:
-
-.. literalinclude:: ../examples/moodbot/slack_credentials.yml
-   :linenos:
 
 
 Directly using python
