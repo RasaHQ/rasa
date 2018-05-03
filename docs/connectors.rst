@@ -254,8 +254,10 @@ that URL, go to ``myurl.com/app/set_webhook`` first to set the webhook.
 
       1. To create the bot, go to: https://web.telegram.org/#/im?p=@BotFather, enter
       */newbot* and follow the instructions.
+	  
       2. At the end you should get your ``access_token`` and the username you set will
       be your ``verify``.
+	  
       3. If you want to use your bot in a group setting, it's advisable to turn on group privacy
       mode by entering */setprivacy*. Then the bot will only listen when the message is started
       with */bot*
