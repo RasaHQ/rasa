@@ -62,7 +62,7 @@ class Policy(object):
         ignored_params = {key: kwargs.get(key)
                           for key in kwargs.keys()
                           if not params.get(key)}
-        logger.debug("Ignored parameters: {}"
+        logger.debug("Parameters ignored by `model.fit(...)`: {}"
                      "".format(ignored_params))
         return params
 

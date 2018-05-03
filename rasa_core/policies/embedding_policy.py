@@ -661,7 +661,7 @@ class EmbeddingPolicy(Policy):
         # type: (...) -> None
         """Trains the policy on given training trackers."""
         logger.debug('Started training embedding policy.')
-
+        # self.domain = domain
         if kwargs:
             logger.debug("Config is updated with {}".format(kwargs))
             self._load_params(**kwargs)

@@ -32,20 +32,20 @@ def test_create_train_data_no_history(default_domain):
 
     assert hashed == [
         '[{}]',
-        '[{"intent_greet": 1.0, "prev_utter_greet": 1}]',
-        '[{"intent_greet": 1.0, "prev_action_listen": 1}]',
-        '[{"intent_goodbye": 1.0, "prev_utter_goodbye": 1}]',
-        '[{"intent_goodbye": 1.0, "prev_action_listen": 1}]',
-        '[{"intent_default": 1.0, "prev_utter_default": 1}]',
-        '[{"intent_default": 1.0, "prev_utter_default": 1, '
+        '[{"intent_greet": 1.0, "prev_utter_greet": 1.0}]',
+        '[{"intent_greet": 1.0, "prev_action_listen": 1.0}]',
+        '[{"intent_goodbye": 1.0, "prev_utter_goodbye": 1.0}]',
+        '[{"intent_goodbye": 1.0, "prev_action_listen": 1.0}]',
+        '[{"intent_default": 1.0, "prev_utter_default": 1.0}]',
+        '[{"intent_default": 1.0, "prev_utter_default": 1.0, '
         '"slot_name_0": 1.0}]',
-        '[{"intent_default": 1.0, "prev_action_listen": 1}]',
-        '[{"intent_default": 1.0, "prev_action_listen": 1, '
+        '[{"intent_default": 1.0, "prev_action_listen": 1.0}]',
+        '[{"intent_default": 1.0, "prev_action_listen": 1.0, '
         '"slot_name_0": 1.0}]',
         '[{"entity_name": 1.0, "intent_greet": 1.0, '
-        '"prev_utter_greet": 1, "slot_name_0": 1.0}]',
+        '"prev_utter_greet": 1.0, "slot_name_0": 1.0}]',
         '[{"entity_name": 1.0, "intent_greet": 1.0, '
-        '"prev_action_listen": 1, "slot_name_0": 1.0}]'
+        '"prev_action_listen": 1.0, "slot_name_0": 1.0}]'
     ]
 
 
@@ -72,44 +72,44 @@ def test_create_train_data_with_history(default_domain):
         '{"entity_name": 1.0, "intent_greet": 1.0, '
         '"prev_action_listen": 1, "slot_name_0": 1.0}]',
         '[null, null, {}, '
-        '{"intent_greet": 1.0, "prev_action_listen": 1}]',
+        '{"intent_greet": 1.0, "prev_action_listen": 1.0}]',
         '[null, {}, '
         '{"entity_name": 1.0, "intent_greet": 1.0, '
-        '"prev_action_listen": 1, "slot_name_0": 1.0}, '
+        '"prev_action_listen": 1.0, "slot_name_0": 1.0}, '
         '{"entity_name": 1.0, "intent_greet": 1.0, '
-        '"prev_utter_greet": 1, "slot_name_0": 1.0}]',
+        '"prev_utter_greet": 1.0, "slot_name_0": 1.0}]',
         '[null, {}, '
-        '{"intent_greet": 1.0, "prev_action_listen": 1}, '
-        '{"intent_greet": 1.0, "prev_utter_greet": 1}]',
+        '{"intent_greet": 1.0, "prev_action_listen": 1.0}, '
+        '{"intent_greet": 1.0, "prev_utter_greet": 1.0}]',
         '[{"entity_name": 1.0, "intent_greet": 1.0, '
-        '"prev_action_listen": 1, "slot_name_0": 1.0}, '
+        '"prev_action_listen": 1.0, "slot_name_0": 1.0}, '
         '{"entity_name": 1.0, "intent_greet": 1.0, '
-        '"prev_utter_greet": 1, "slot_name_0": 1.0}, '
+        '"prev_utter_greet": 1.0, "slot_name_0": 1.0}, '
         '{"intent_default": 1.0, '
-        '"prev_action_listen": 1, "slot_name_0": 1.0}, '
+        '"prev_action_listen": 1.0, "slot_name_0": 1.0}, '
         '{"intent_default": 1.0, '
-        '"prev_utter_default": 1, "slot_name_0": 1.0}]',
-        '[{"intent_default": 1.0, "prev_action_listen": 1}, '
-        '{"intent_default": 1.0, "prev_utter_default": 1}, '
-        '{"intent_goodbye": 1.0, "prev_action_listen": 1}, '
-        '{"intent_goodbye": 1.0, "prev_utter_goodbye": 1}]',
-        '[{"intent_greet": 1.0, "prev_action_listen": 1}, '
-        '{"intent_greet": 1.0, "prev_utter_greet": 1}, '
-        '{"intent_default": 1.0, "prev_action_listen": 1}, '
-        '{"intent_default": 1.0, "prev_utter_default": 1}]',
-        '[{"intent_greet": 1.0, "prev_utter_greet": 1}, '
-        '{"intent_default": 1.0, "prev_action_listen": 1}, '
-        '{"intent_default": 1.0, "prev_utter_default": 1}, '
-        '{"intent_goodbye": 1.0, "prev_action_listen": 1}]',
+        '"prev_utter_default": 1.0, "slot_name_0": 1.0}]',
+        '[{"intent_default": 1.0, "prev_action_listen": 1.0}, '
+        '{"intent_default": 1.0, "prev_utter_default": 1.0}, '
+        '{"intent_goodbye": 1.0, "prev_action_listen": 1.0}, '
+        '{"intent_goodbye": 1.0, "prev_utter_goodbye": 1.0}]',
+        '[{"intent_greet": 1.0, "prev_action_listen": 1.0}, '
+        '{"intent_greet": 1.0, "prev_utter_greet": 1.0}, '
+        '{"intent_default": 1.0, "prev_action_listen": 1.0}, '
+        '{"intent_default": 1.0, "prev_utter_default": 1.0}]',
+        '[{"intent_greet": 1.0, "prev_utter_greet": 1.0}, '
+        '{"intent_default": 1.0, "prev_action_listen": 1.0}, '
+        '{"intent_default": 1.0, "prev_utter_default": 1.0}, '
+        '{"intent_goodbye": 1.0, "prev_action_listen": 1.0}]',
         '[{}, {"entity_name": 1.0, "intent_greet": 1.0, '
-        '"prev_action_listen": 1, "slot_name_0": 1.0}, '
+        '"prev_action_listen": 1.0, "slot_name_0": 1.0}, '
         '{"entity_name": 1.0, "intent_greet": 1.0, '
-        '"prev_utter_greet": 1, "slot_name_0": 1.0}, '
+        '"prev_utter_greet": 1.0, "slot_name_0": 1.0}, '
         '{"intent_default": 1.0, '
-        '"prev_action_listen": 1, "slot_name_0": 1.0}]',
-        '[{}, {"intent_greet": 1.0, "prev_action_listen": 1}, '
-        '{"intent_greet": 1.0, "prev_utter_greet": 1}, '
-        '{"intent_default": 1.0, "prev_action_listen": 1}]'
+        '"prev_action_listen": 1.0, "slot_name_0": 1.0}]',
+        '[{}, {"intent_greet": 1.0, "prev_action_listen": 1.0}, '
+        '{"intent_greet": 1.0, "prev_utter_greet": 1.0}, '
+        '{"intent_default": 1.0, "prev_action_listen": 1.0}]'
     ]
 
 
