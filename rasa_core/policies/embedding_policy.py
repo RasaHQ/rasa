@@ -499,9 +499,9 @@ class EmbeddingPolicy(Policy):
         b_prev = self._create_tf_nn(b_prev_in,
                                     self.num_hidden_layers_b,
                                     self.hidden_layer_size_b,
-                                    self.droprate['b'],
+                                    self.droprate['a'],
                                     name=name_b)
-        b_prev = tf.layers.dropout(b_prev, rate=self.droprate['b'],
+        b_prev = tf.layers.dropout(b_prev, rate=self.droprate['a'],
                                    training=self.is_training)
         emb_prev_act = self._create_embed(b_prev, name=name_b)
 
