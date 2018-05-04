@@ -33,12 +33,6 @@ class LUISEmulator(NoEmulator):
             top = self._top_intent(data)
             return [top] if top else []
 
-    def check_key(self, key, dict_):
-        if key == "end":
-            return (dict_[key] - 1) if key in dict_ else None
-        else:
-            return dict_[key] if key in dict_ else None
-
     def normalise_response_json(self, data):
         # type: (Dict[Text, Any]) -> Dict[Text, Any]
         """Transform data to luis.ai format."""
@@ -53,9 +47,9 @@ class LUISEmulator(NoEmulator):
                 {
                     "entity": e["value"],
                     "type": e["entity"],
-                    "startIndex": self.check_key("start", e),
-                    "endIndex": self.check_key("end", e),
-                    "score": self.check_key("confidence", e)
+                    "startIndex": e["start"] if "start" in e else None,
+                    "endIndex": (e["end"] - 1) if "end" in e else None,
+                    "score": e["confidence"] if "confidence" in e else None
                 } for e in data["entities"]
             ] if "entities" in data else []
         }
