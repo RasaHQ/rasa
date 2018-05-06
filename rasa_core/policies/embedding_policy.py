@@ -70,16 +70,18 @@ class EmbeddingPolicy(Policy):
         "C2": 0.001,
         "C_emb": 0.8,
 
-        "droprate_a": 0.1,
-        "droprate_b": 0.1,
-        "droprate_c": 0.3,
+        "droprate_a": 0.0,
+        "droprate_b": 0.0,
+        "droprate_c": 0.0,
         "droprate_rnn": 0.1,
         "droprate_out": 0.1,
 
         "nuke_slots_ones_in_epochs": 0,  # set to None or 0 to disable
+        "score_noise": 0.3,
+        "embed_noise": 0.3,
 
         # attention parameters
-        "attn_bias_for_last_input": 0.5,  # 1.0 turns off user attention
+        "droprate_mem": 0.3,
         "sparse_attention": False,  # flag to use sparsemax
 
         # visualization of accuracy
@@ -171,10 +173,11 @@ class EmbeddingPolicy(Policy):
         self.droprate['out'] = config['droprate_out']
 
         self.nuke_slots_ones_in_epochs = config['nuke_slots_ones_in_epochs']
+        self.score_noise = config['score_noise']
+        self.embed_noise = config['embed_noise']
 
     def _load_attn_params(self, config):
-        self.attn_bias_for_last_input = max(
-                config['attn_bias_for_last_input'], 0.0)
+        self.droprate['mem'] = config['droprate_mem']
         self.sparse_attention = config['sparse_attention']
 
     def _load_visual_params(self, config):
@@ -308,8 +311,8 @@ class EmbeddingPolicy(Policy):
                                 kernel_regularizer=reg,
                                 name='hidden_layer_{}_{}'.format(name, i),
                                 reuse=tf.AUTO_REUSE)
-            x = tf.layers.dropout(x, rate=droprate,
-                                  training=self.is_training)
+
+            x = no_scale_dropout(x, rate=droprate, training=self.is_training)
         return x
 
     def _create_embed(self, x, name):
@@ -319,6 +322,13 @@ class EmbeddingPolicy(Policy):
                                 kernel_regularizer=reg,
                                 name='embed_layer_{}'.format(name),
                                 reuse=tf.AUTO_REUSE)
+
+        noise_level = self.embed_noise * tf.cast(self.is_training, tf.float32)
+        noise_range = noise_level * tf.reduce_mean(tf.abs(emb_x))
+        noise = tf.random_normal(tf.shape(emb_x), dtype=emb_x.dtype)
+
+        emb_x += noise_range * noise
+
         return emb_x
 
     def _create_rnn_cell(self):
@@ -345,25 +355,38 @@ class EmbeddingPolicy(Policy):
                           real_length):
         """Create wrap cell in attention cell with given memory"""
 
+        noise_level = self.score_noise * tf.cast(self.is_training, tf.float32)
+
+        def noisy_identity(score):
+            noise_range = noise_level * tf.reduce_mean(
+                    tf.minimum(tf.abs(score), 10))
+            noise = tf.random_normal(tf.shape(score), dtype=score.dtype)
+            return score + noise_range * noise
+
         num_utter_units = int(emb_utter.shape[-1])
         attn_mech_utter = tf.contrib.seq2seq.BahdanauAttention(
                 num_units=num_utter_units, memory=emb_utter,
                 memory_sequence_length=real_length,
                 normalize=True,
-                probability_fn=tf.identity,
-                # -inf does not work with sparsemax
-                score_mask_value=-1e+5,
-                name='limit_time_softmax'
+                probability_fn=noisy_identity,  # tf.identity,
+                # we only attend to memory up to a current time
+                score_mask_value=0,  # it does not matter
+                name='limit_time_prob'
         )
         num_prev_act_units = int(emb_prev_act.shape[-1])
         attn_mech_prev_act = tf.contrib.seq2seq.BahdanauAttention(
                 num_units=num_prev_act_units, memory=emb_prev_act,
                 memory_sequence_length=real_length,
                 normalize=True,
-                probability_fn=tf.identity,
+                probability_fn=noisy_identity,  # tf.identity,
+                # we only attend to memory up to a current time
+                score_mask_value=0,  # it does not matter
                 name='inv_time_geometric'
         )
         attn_mechs = [attn_mech_utter, attn_mech_prev_act]
+
+        attn_droprate = (self.droprate['mem'] *
+                         tf.cast(self.is_training, tf.float32))
 
         def cell_input_fn(inputs, attention):
             res = tf.concat([attention[:, :num_utter_units],
@@ -373,7 +396,7 @@ class EmbeddingPolicy(Policy):
 
         attn_cell = TimeAttentionWrapper(
                 cell, attn_mechs,
-                attn_bias_for_last_input=self.attn_bias_for_last_input,
+                attn_droprate=attn_droprate,
                 sparse_attention=self.sparse_attention,
                 cell_input_fn=cell_input_fn,
                 output_attention=False,
@@ -388,8 +411,9 @@ class EmbeddingPolicy(Policy):
 
         cell = self._create_rnn_cell()
 
-        cell = self._create_attn_cell(cell, emb_utter, emb_prev_act,
-                                      real_length)
+        if self.droprate['mem'] < 1.0:
+            cell = self._create_attn_cell(cell, emb_utter, emb_prev_act,
+                                          real_length)
 
         cell_output, final_state = tf.nn.dynamic_rnn(
                 cell, cell_input,
@@ -400,10 +424,11 @@ class EmbeddingPolicy(Policy):
 
         # extract alignments history
         self.alignment_history = []
-        for alignments in final_state.alignment_history:
-            # Reshape to (batch, time, memory_time)
-            alignments = tf.transpose(alignments.stack(), [1, 0, 2])
-            self.alignment_history.append(alignments)
+        if self.droprate['mem'] < 1.0:
+            for alignments in final_state.alignment_history:
+                # Reshape to (batch, time, memory_time)
+                alignments = tf.transpose(alignments.stack(), [1, 0, 2])
+                self.alignment_history.append(alignments)
 
         return cell_output
 
@@ -431,8 +456,11 @@ class EmbeddingPolicy(Policy):
     def _tf_loss(self, sim, sim_act, mask):
         """Define loss"""
 
+        noise_range = self.embed_noise * tf.reduce_mean(tf.abs(sim[:, :, 1:]))
+        noise = tf.random_normal(tf.shape(sim[:, :, 1:]), dtype=sim.dtype)
+
         if self.use_max_sim_neg:
-            max_sim_neg = tf.reduce_max(sim[:, :, 1:], -1)
+            max_sim_neg = tf.reduce_max(sim[:, :, 1:] + noise_range * noise, -1)
             loss = (tf.maximum(0., self.mu_pos - sim[:, :, 0]) +
                     tf.maximum(0., self.mu_neg + max_sim_neg)) * mask
 
@@ -474,8 +502,8 @@ class EmbeddingPolicy(Policy):
                                self.hidden_layer_size_a,
                                self.droprate['a'],
                                name=name_a)
-        a = tf.layers.dropout(a, rate=self.droprate['a'],
-                              training=self.is_training)
+        a = no_scale_dropout(a, rate=self.droprate['a'],
+                             training=self.is_training)
         emb_utter = self._create_embed(a, name=name_a)
 
         b = self._create_tf_nn(b_in,
@@ -484,16 +512,16 @@ class EmbeddingPolicy(Policy):
                                self.droprate['b'],
                                name=name_b)
         shape_b = tf.shape(b)
-        b = tf.layers.dropout(b, rate=self.droprate['b'],
-                              training=self.is_training,
-                              noise_shape=[shape_b[0],
-                                           shape_b[1],
-                                           1, shape_b[-1]])
+        b = no_scale_dropout(b, rate=self.droprate['b'],
+                             training=self.is_training,
+                             noise_shape=(shape_b[0],
+                                          shape_b[1],
+                                          1, shape_b[-1]))
         emb_act = self._create_embed(b, name=name_b)
 
         c = c_in  # no hidden layers for slots
-        c = tf.layers.dropout(c, rate=self.droprate['c'],
-                              training=self.is_training)
+        c = no_scale_dropout(c, rate=self.droprate['c'],
+                             training=self.is_training)
         emb_slots = self._create_embed(c, name='c')
 
         b_prev = self._create_tf_nn(b_prev_in,
@@ -501,8 +529,8 @@ class EmbeddingPolicy(Policy):
                                     self.hidden_layer_size_b,
                                     self.droprate['a'],
                                     name=name_b)
-        b_prev = tf.layers.dropout(b_prev, rate=self.droprate['a'],
-                                   training=self.is_training)
+        b_prev = no_scale_dropout(b_prev, rate=self.droprate['a'],
+                                  training=self.is_training)
         emb_prev_act = self._create_embed(b_prev, name=name_b)
 
         # if there is at least one `-1` it should be masked
@@ -663,7 +691,7 @@ class EmbeddingPolicy(Policy):
         # type: (...) -> None
         """Trains the policy on given training trackers."""
         logger.debug('Started training embedding policy.')
-        # self.domain = domain
+        self.domain = domain
         if kwargs:
             logger.debug("Config is updated with {}".format(kwargs))
             self._load_params(**kwargs)
@@ -718,7 +746,7 @@ class EmbeddingPolicy(Policy):
                                                             self.b_prev_in)
 
             self.train_op = tf.train.AdamOptimizer(
-                    # learning_rate=0.0008, epsilon=1e-16
+                    learning_rate=0.001, epsilon=1e-16
                                                    ).minimize(loss)
             # train tensorflow graph
             self.session = tf.Session()
@@ -798,10 +826,11 @@ class EmbeddingPolicy(Policy):
         #     else:
         #         idx_prev = 0
         #     idx = np.argmax(_sim[0, i, :])
-        #     print("{:.3f} || {:.3f} -- {} ----> {}"
+        #     print("{:.3f} || {:.3f} -- {} ----> {} -- {:.3f}"
         #           "".format(_ps[0][0, -1, i], _ps[1][0, -1, i],
         #                     domain.actions[idx_prev].name(),
-        #                     domain.actions[idx].name()))
+        #                     domain.actions[idx].name(),
+        #                     np.max(_sim[0, i, :])))
         # print("{:.3f} || {:.3f}"
         #       "".format(np.sum(_ps[0][0, -1]),
         #                 np.sum(_ps[1][0, -1])))
@@ -899,8 +928,8 @@ class EmbeddingPolicy(Policy):
                     alignment_history = []
                     for i in range(cls.NUM_ATTENTION_TYPES):
                         alignments = tf.get_collection('alignment_history_{}'
-                                                       ''.format(i))[0]
-                        alignment_history.append(alignments)
+                                                       ''.format(i))
+                        alignment_history.extend(alignments)
 
                 with io.open(os.path.join(
                         path,
@@ -925,10 +954,22 @@ class EmbeddingPolicy(Policy):
                             "doesn't exist".format(os.path.abspath(path)))
 
 
-# modified tensorflow attention wrapper
+# modified tensorflow methods
+def no_scale_dropout(x, rate=0.5, noise_shape=None, training=None):
+    if training is None:
+        keep_prob = 1.0 - rate
+    else:
+        keep_prob = 1.0 - (rate *
+                           tf.cast(training, tf.float32))
+    # rescale x back
+    x_dropped = keep_prob * tf.nn.dropout(x, keep_prob=keep_prob,
+                                          noise_shape=noise_shape)
+    return x_dropped
+
+
 def _compute_time_attention(attention_mechanism, cell_output, attention_state,
                             # time is added to calculate time attention
-                            time, attn_bias_for_last_input, sparse_attention,
+                            time, sparse_attention, attn_droprate,
                             attention_layer):
     """Computes the attention and alignments limited by time
     for a given attention_mechanism."""
@@ -937,37 +978,12 @@ def _compute_time_attention(attention_mechanism, cell_output, attention_state,
             cell_output, state=attention_state)
     zeros = tf.zeros_like(alignments)
 
-    if attention_mechanism._name == 'limit_time_softmax':
-        # limit time softmax probabilities for attention
-        if attn_bias_for_last_input < 1.0:
-
-            if sparse_attention:
-                probs = tf.contrib.sparsemax.sparsemax(
-                    tf.concat([alignments[:, :time],
-                               alignments[:, time:time+1] +
-                               attn_bias_for_last_input], 1))
-            else:
-                alpha = (attn_bias_for_last_input /
-                         (1.0 - attn_bias_for_last_input))
-
-                # add time_weight to current input
-                time_weight = alpha * tf.cast(time, tf.float32) + 1.0
-
-                # if `time_weight = a * time + 1`,
-                # the initial `probs[:, time]`
-                #   will be `(a/(a+1))(time+1/a)/(time+1/(a+1))`
-                # and the initial `sum of probs`
-                #   for 0-intent (before `action_listen`)
-                #   will be `(1/(2a+2))(time+1/a)/(time+1/(a+1))`
-
-                time_bias = tf.log(time_weight)
-                probs = tf.nn.softmax(tf.concat([alignments[:, :time],
-                                                 alignments[:, time:time+1] +
-                                                 time_bias], 1))
+    if attention_mechanism._name == 'limit_time_prob':
+        # limit time probabilities for attention
+        if sparse_attention:
+            probs = tf.contrib.sparsemax.sparsemax(alignments[:, :time+1])
         else:
-            ones = tf.ones_like(alignments)
-            # set alignments of current time input to 1
-            probs = tf.concat([zeros[:, :time], ones[:, time:time+1]], 1)
+            probs = tf.nn.softmax(alignments[:, :time+1])
 
     elif attention_mechanism._name == 'inv_time_geometric':
         # limit time sigmoid probabilities for attention
@@ -986,8 +1002,18 @@ def _compute_time_attention(attention_mechanism, cell_output, attention_state,
         raise ValueError("Wrong attention mechanism {}"
                          "".format(attention_mechanism._name))
 
+    # drop some memories from prev times
+    prev_probs = no_scale_dropout(probs[:, :time],
+                                  rate=attn_droprate)
+    probs = tf.concat([prev_probs, probs[:, time:time+1]], 1)
+
+    # add noise
+    noise = tf.random_normal(tf.shape(probs), dtype=probs.dtype)
+    probs = tf.minimum(1.0,
+                       tf.nn.relu(
+                           probs + attn_droprate * attn_droprate * noise))
+
     alignments = tf.concat([probs, zeros[:, time+1:]], 1)
-    # alignments = tf.where(alignments > 0.1, alignments, zeros)
 
     # Reshape from [batch_size, memory_time] to [batch_size, 1, memory_time]
     expanded_alignments = tf.expand_dims(alignments, 1)
@@ -1021,7 +1047,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                  cell,
                  attention_mechanism,
                  attention_layer_size=None,
-                 attn_bias_for_last_input=0.0,
+                 attn_droprate=0.0,
                  sparse_attention=False,
                  alignment_history=False,
                  cell_input_fn=None,
@@ -1038,8 +1064,8 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                 initial_cell_state,
                 name
         )
-        self._attn_bias_for_last_input = attn_bias_for_last_input
         self._sparse_attention = sparse_attention
+        self._attn_droprate = attn_droprate
 
     def call(self, inputs, state):
         """Perform a step of attention-wrapped RNN.
@@ -1119,7 +1145,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                 # time is added to calculate time attention
                 state.time,
                 # attention hyperparameters
-                self._attn_bias_for_last_input, self._sparse_attention,
+                self._sparse_attention, self._attn_droprate,
                 self._attention_layers[i] if self._attention_layers else None)
 
             alignment_history = previous_alignment_history[i].write(
