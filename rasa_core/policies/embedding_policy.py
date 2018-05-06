@@ -1008,10 +1008,10 @@ def _compute_time_attention(attention_mechanism, cell_output, attention_state,
     probs = tf.concat([prev_probs, probs[:, time:time+1]], 1)
 
     # add noise
-    noise = tf.random_normal(tf.shape(probs), dtype=probs.dtype)
-    probs = tf.minimum(1.0,
-                       tf.nn.relu(
-                           probs + attn_droprate * attn_droprate * noise))
+    # noise = tf.random_normal(tf.shape(probs), dtype=probs.dtype)
+    # probs = tf.minimum(1.0,
+    #                    tf.nn.relu(
+    #                        probs + attn_droprate * attn_droprate * noise))
 
     alignments = tf.concat([probs, zeros[:, time+1:]], 1)
 
