@@ -108,6 +108,9 @@ class DataRouter(object):
         self.project_loader = ProjectLoader.create(project_dir,
                                                    remote_storage,
                                                    component_builder)
+
+        self.project_store = self.project_loader.get_projects()
+
         self.pool = ProcessPool(self._training_processes)
 
     def __del__(self):
@@ -175,9 +178,7 @@ class DataRouter(object):
         project_instance = self.project_loader.load_project(project)
 
         time = data.get('time')
-        response, used_model = project_instance.parse(data['text'],
-                                                      time,
-                                                      model)
+        response = project_instance.parse(data['text'], time, model)
 
         if self.responses:
             self.responses.info('', user_input=response, project=project,
@@ -213,9 +214,12 @@ class DataRouter(object):
         return {
             "available_projects": {
                 name: project.as_dict()
-                for name, project in self.project_loader.get_projects().items()
+                for name, project in self.project_store.items()
             }
         }
+
+    def _pre_load(self, projects):
+        self.project_loader.pre_load(projects)
 
     def start_train_process(self,
                             data_file,  # type: Text
@@ -229,7 +233,7 @@ class DataRouter(object):
         if not project:
             raise InvalidProjectError("Missing project name to train")
 
-        project_instance = self.project_loader.load_project(project)
+        project_instance = self.project_loader.load_or_create_project(project)
 
         if project_instance.status == 1:
             raise AlreadyTrainingError
