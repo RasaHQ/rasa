@@ -120,6 +120,12 @@ class ProjectLoader(object):
 
         return self.project_store[project]
 
+    def _pre_load(self, projects):
+        logger.debug("loading %s", projects)
+        for project in self.project_store:
+            if project in projects:
+                self.project_store[project].load_model()
+
     def get_projects(self):
         # type: () -> Dict[str, Project]
         # get all in-memory projects
