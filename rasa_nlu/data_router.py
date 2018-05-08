@@ -94,7 +94,6 @@ class DataRouter(object):
                  emulation_mode=None,
                  remote_storage=None,
                  component_builder=None):
-
         self._training_processes = max(max_training_processes, 1)
         self.responses = self._create_query_logger(response_log)
         self.project_dir = config.make_path_absolute(project_dir)
@@ -131,11 +130,10 @@ class DataRouter(object):
             # Instantiate a standard python logger,
             # which we are going to use to log requests
             utils.create_dir_for_file(response_logfile)
+            out_file = io.open(response_logfile, 'a', encoding='utf8')
             query_logger = Logger(
-                observer=jsonFileLogObserver(
-                        io.open(response_logfile, 'a', encoding='utf8'),
-                        recordSeparator=''),
-                namespace='query-logger')
+                    observer=jsonFileLogObserver(out_file, recordSeparator=''),
+                    namespace='query-logger')
             # Prevents queries getting logged with parent logger
             # --> might log them to stdout
             logger.info("Logging requests to '{}'.".format(response_logfile))
@@ -183,7 +181,7 @@ class DataRouter(object):
 
         if self.responses:
             self.responses.info('', user_input=response, project=project,
-                                model=used_model)
+                                model=response.get('model'))
 
         return self.format_response(response)
 
@@ -219,8 +217,13 @@ class DataRouter(object):
             }
         }
 
-    def start_train_process(self, data_file, project, train_config):
-        # type: (Text, Text, RasaNLUModelConfig) -> Deferred
+    def start_train_process(self,
+                            data_file,  # type: Text
+                            project,  # type: Text
+                            train_config,  # type: RasaNLUModelConfig
+                            model_name=None  # type: Optional[Text]
+                            ):
+        # type: (...) -> Deferred
         """Start a model training."""
 
         if not project:
@@ -255,7 +258,9 @@ class DataRouter(object):
                                   train_config,
                                   data_file,
                                   path=self.project_dir,
-                                  project=project)
+                                  project=project,
+                                  fixed_model_name=model_name,
+                                  storage=self.remote_storage)
         result = deferred_from_future(result)
         result.addCallback(training_callback)
         result.addErrback(training_errback)

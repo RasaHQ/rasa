@@ -17,6 +17,7 @@ from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.model import Interpreter
 from rasa_nlu.model import Trainer
 from rasa_nlu.training_data import load_data
+from rasa_nlu.training_data.loading import load_data_from_url
 
 logger = logging.getLogger(__name__)
 
@@ -32,20 +33,25 @@ def create_argument_parser():
                         default=None,
                         help="Path where model files will be saved")
 
-    parser.add_argument('-d', '--data',
-                        default=None,
-                        required=True,
-                        help="Location of the training data. For JSON and "
-                             "markdown data, this can either be a single file "
-                             "or a directory containing multiple training "
-                             "data files.")
+    group = parser.add_mutually_exclusive_group(required=True)
+
+    group.add_argument('-d', '--data',
+                       default=None,
+                       help="Location of the training data. For JSON and "
+                            "markdown data, this can either be a single file "
+                            "or a directory containing multiple training "
+                            "data files.")
+
+    group.add_argument('-u', '--url',
+                       default=None,
+                       help="URL from which to retrieve training data.")
 
     parser.add_argument('-c', '--config',
                         required=True,
                         help="Rasa NLU configuration file")
 
     parser.add_argument('-t', '--num_threads',
-                        default=None,
+                        default=1,
                         type=int,
                         help="Number of threads to use during model training")
 
@@ -96,7 +102,7 @@ def create_persistor(persistor):
         return None
 
 
-def do_train_in_worker(config,  # type: RasaNLUModelConfig
+def do_train_in_worker(cfg,  # type: RasaNLUModelConfig
                        data,  # type: Text
                        path,  # type: Text
                        project=None,  # type: Optional[Text]
@@ -109,7 +115,7 @@ def do_train_in_worker(config,  # type: RasaNLUModelConfig
     """Loads the trainer and the data and runs the training in a worker."""
 
     try:
-        _, _, persisted_path = do_train(config, data, path, project,
+        _, _, persisted_path = do_train(cfg, data, path, project,
                                         fixed_model_name, storage,
                                         component_builder)
         return persisted_path
@@ -120,12 +126,13 @@ def do_train_in_worker(config,  # type: RasaNLUModelConfig
 
 def do_train(cfg,  # type: RasaNLUModelConfig
              data,  # type: Text
-             path=None,  # type: Text
+             path=None,  # type: Optional[Text]
              project=None,  # type: Optional[Text]
              fixed_model_name=None,  # type: Optional[Text]
-             storage=None,  # type: Text
+             storage=None,  # type: Optional[Text]
              component_builder=None,  # type: Optional[ComponentBuilder]
-             **kwargs   # type: Any
+             url=None,  # type: Optional[Text]
+             **kwargs  # type: Any
              ):
     # type: (...) -> Tuple[Trainer, Interpreter, Text]
     """Loads the trainer and the data and runs the training of the model."""
@@ -135,7 +142,10 @@ def do_train(cfg,  # type: RasaNLUModelConfig
     # trained in another subprocess
     trainer = Trainer(cfg, component_builder)
     persistor = create_persistor(storage)
-    training_data = load_data(data, cfg.language)
+    if url is not None:
+        training_data = load_data_from_url(url, cfg.language)
+    else:
+        training_data = load_data(data, cfg.language)
     interpreter = trainer.train(training_data, **kwargs)
 
     if path:
@@ -160,5 +170,6 @@ if __name__ == '__main__':
              cmdline_args.project,
              cmdline_args.fixed_model_name,
              cmdline_args.storage,
+             url=cmdline_args.url,
              num_threads=cmdline_args.num_threads)
     logger.info("Finished training")

@@ -31,8 +31,7 @@ def app(tmpdir_factory):
 
     _, nlu_log_file = tempfile.mkstemp(suffix="_rasa_nlu_logs.json")
 
-    router = DataRouter(tmpdir_factory.mktemp("projects").strpath,
-                        emulation_mode="wit")
+    router = DataRouter(tmpdir_factory.mktemp("projects").strpath)
     rasa = RasaNLU(router,
                    logfile=nlu_log_file,
                    testing=True)
@@ -77,22 +76,24 @@ def test_version(app):
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
         "http://dummy-uri/parse?q=hello",
-        [{"entities": {}, "confidence": 1.0, "intent": "greet",
-          "_text": "hello"}]
+        {'project': 'default', 'entities': [], 'model': 'fallback',
+         'intent': {'confidence': 1.0, 'name': 'greet'}, 'text': 'hello'}
     ),
     ResponseTest(
         "http://dummy-uri/parse?query=hello",
-        [{"entities": {}, "confidence": 1.0, "intent": "greet",
-          "_text": "hello"}]
+        {'project': 'default', 'entities': [], 'model': 'fallback',
+         'intent': {'confidence': 1.0, 'name': 'greet'}, 'text': 'hello'}
     ),
     ResponseTest(
         "http://dummy-uri/parse?q=hello ńöñàśçií",
-        [{"entities": {}, "confidence": 1.0, "intent": "greet",
-          "_text": "hello ńöñàśçií"}]
+        {'project': 'default', 'entities': [], 'model': 'fallback',
+         'intent': {'confidence': 1.0, 'name': 'greet'},
+         'text': 'hello ńöñàśçií'}
     ),
     ResponseTest(
         "http://dummy-uri/parse?q=",
-        [{"entities": {}, "confidence": 0.0, "intent": None, "_text": ""}]
+        {'project': 'default', 'entities': [], 'model': 'fallback',
+         'intent': {'confidence': 0.0, 'name': ''}, 'text': ''}
     ),
 ])
 @pytest.inlineCallbacks
@@ -100,28 +101,32 @@ def test_get_parse(app, response_test):
     response = yield app.get(response_test.endpoint)
     rjs = yield response.json()
     assert response.code == 200
-    assert len(rjs) == 1
-    assert all(prop in rjs[0] for prop in
-               ['entities', 'intent', '_text', 'confidence'])
+    assert rjs == response_test.expected_response
+    assert all(prop in rjs for prop in
+               ['project', 'entities', 'intent',
+                'text', 'model'])
 
 
 @pytest.mark.parametrize("response_test", [
     ResponseTest(
         "http://dummy-uri/parse",
-        [{"entities": {}, "confidence": 1.0, "intent": "greet",
-          "_text": "hello"}],
+        {'project': 'default', 'entities': [], 'model': 'fallback',
+         'intent': {'confidence': 1.0, 'name': 'greet'},
+         'text': 'hello'},
         payload={"q": "hello"}
     ),
     ResponseTest(
         "http://dummy-uri/parse",
-        [{"entities": {}, "confidence": 1.0, "intent": "greet",
-          "_text": "hello"}],
+        {'project': 'default', 'entities': [], 'model': 'fallback',
+         'intent': {'confidence': 1.0, 'name': 'greet'},
+         'text': 'hello'},
         payload={"query": "hello"}
     ),
     ResponseTest(
         "http://dummy-uri/parse",
-        [{"entities": {}, "confidence": 1.0, "intent": "greet",
-          "_text": "hello ńöñàśçií"}],
+        {'project': 'default', 'entities': [], 'model': 'fallback',
+         'intent': {'confidence': 1.0, 'name': 'greet'},
+         'text': 'hello ńöñàśçií'},
         payload={"q": "hello ńöñàśçií"}
     ),
 ])
@@ -131,9 +136,10 @@ def test_post_parse(app, response_test):
                               json=response_test.payload)
     rjs = yield response.json()
     assert response.code == 200
-    assert len(rjs) == 1
-    assert all(prop in rjs[0] for prop in
-               ['entities', 'intent', '_text', 'confidence'])
+    assert rjs == response_test.expected_response
+    assert all(prop in rjs for prop in
+               ['project', 'entities', 'intent',
+                'text', 'model'])
 
 
 @utilities.slowtest

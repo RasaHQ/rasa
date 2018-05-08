@@ -137,15 +137,16 @@ Now we can train a spacy model by running:
 What do these parameters mean?
 
 - **config**: configuration of the machine learning model
-- **data**: file / folder that contains the training data
+- **data**: file or folder that contains the training data. You can also
+pull training data from a URL using ``--url`` instead.
 - **path**: output path where the model is persisted to
+
 
 If you want to know more about the parameters, there is an overview of the
 :ref:`section_configuration`. After a few minutes, Rasa NLU will finish
 training, and you'll see a new folder named as
 ``projects/default/model_YYYYMMDD-HHMMSS`` with the timestamp
 when training finished.
-
 
 .. _tutorial_using_your_model:
 

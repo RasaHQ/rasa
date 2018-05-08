@@ -31,12 +31,20 @@ def create_argument_parser():
 
     parser.add_argument('-e', '--emulate',
                         choices=['wit', 'luis', 'dialogflow'],
-                        help='which service to emulate (default: None i.e. use '
-                             'simple built in format)')
+                        help='which service to emulate (default: None i.e. use'
+                             ' simple built in format)')
     parser.add_argument('-P', '--port',
                         type=int,
                         default=5000,
                         help='port on which to run server')
+    parser.add_argument('--pre_load',
+                        nargs='+',
+                        default=[],
+                        help='Preload models into memory before starting the '
+                             'server. \nIf given `all` as input all the models'
+                             ' will be loaded.\nElse you can specify a list of'
+                             ' specific project names.\n Eg: python -m rasa_'
+                             'nlu.server -p project1 project2 --path projects')
     parser.add_argument('-t', '--token',
                         help="auth token. If set, reject requests which don't "
                              "provide this token as a query parameter")
@@ -229,7 +237,8 @@ class RasaNLU(object):
             try:
                 request.setResponseCode(200)
                 response = yield (self.data_router.parse(data) if self._testing
-                                  else threads.deferToThread(self.data_router.parse, data))
+                                  else threads.deferToThread(
+                                  self.data_router.parse, data))
                 returnValue(json_to_string(response))
             except InvalidProjectError as e:
                 request.setResponseCode(404)
@@ -273,7 +282,10 @@ class RasaNLU(object):
     @check_cors
     @inlineCallbacks
     def train(self, request):
+        # if not set will use the default project name, e.g. "default"
         project = parameter_or_default(request, "project", default=None)
+        # if set will not generate a model name but use the passed one
+        model_name = parameter_or_default(request, "model", default=None)
 
         request_content = request.content.read().decode('utf-8', 'strict')
 
@@ -295,8 +307,11 @@ class RasaNLU(object):
 
         try:
             request.setResponseCode(200)
+
             response = yield self.data_router.start_train_process(
-                    data_file, project, RasaNLUModelConfig(model_config))
+                    data_file, project,
+                    RasaNLUModelConfig(model_config), model_name)
+
             returnValue(json_to_string({'info': 'new model trained: {}'
                                                 ''.format(response)}))
         except AlreadyTrainingError as e:
@@ -360,12 +375,19 @@ if __name__ == '__main__':
     cmdline_args = create_argument_parser().parse_args()
 
     utils.configure_colored_logging(cmdline_args.loglevel)
+    pre_load = cmdline_args.pre_load
 
     router = DataRouter(cmdline_args.path,
                         cmdline_args.max_training_processes,
                         cmdline_args.response_log,
                         cmdline_args.emulate,
                         cmdline_args.storage)
+    if pre_load:
+        logger.debug('Preloading....')
+        if 'all' in pre_load:
+            pre_load = router.project_store.keys()
+        router._pre_load(pre_load)
+
     rasa = RasaNLU(
             router,
             cmdline_args.loglevel,

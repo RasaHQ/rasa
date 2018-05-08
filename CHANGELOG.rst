@@ -20,9 +20,35 @@ Removed
 
 Fixed
 -----
+- Fixed Luis emulation output to add start, end position and confidence for each entity.
 
-[0.12.1] - 2018-03-18
+
+[0.12.3] - 2018-05-02
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Added
+-----
+- Returning used model name and project name in the response of ``GET /parse`` and ``POST /parse`` as ``model`` and ``project`` respectively.
+
+Fixed
+-----
+- readded possibility to set fixed model name from http train endpoint
+
+
+[0.12.2] - 2018-04-20
 ^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed duckling text extraction for ner_duckling_http
+
+
+[0.12.1] - 2018-04-18
+^^^^^^^^^^^^^^^^^^^^^
+Added
+-----
+- support for retrieving training data from a URL
 
 Fixed
 -----
@@ -31,7 +57,7 @@ Fixed
   documentation
 
 
-[0.12.0] - 2018-03-17
+[0.12.0] - 2018-04-17
 ^^^^^^^^^^^^^^^^^^^^^
 
 Added
