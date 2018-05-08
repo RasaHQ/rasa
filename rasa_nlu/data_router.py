@@ -317,6 +317,10 @@ class DataRouter(object):
         if project is None:
             raise InvalidProjectError("No project specified".format(project))
 
+        if not self.project_loader.project_exists(project):
+            raise InvalidProjectError("Project {} could not "
+                                      "be found".format(project))
+
         project_instance = self.project_loader.load_project(project)
 
         try:
