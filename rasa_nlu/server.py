@@ -18,7 +18,7 @@ from rasa_nlu import utils, config
 from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.data_router import (
     DataRouter, InvalidProjectError,
-    AlreadyTrainingError)
+    MaxTrainingError)
 from rasa_nlu.train import TrainingException
 from rasa_nlu.utils import json_to_string
 from rasa_nlu.version import __version__
@@ -314,7 +314,7 @@ class RasaNLU(object):
 
             returnValue(json_to_string({'info': 'new model trained: {}'
                                                 ''.format(response)}))
-        except AlreadyTrainingError as e:
+        except MaxTrainingError as e:
             request.setResponseCode(403)
             returnValue(json_to_string({"error": "{}".format(e)}))
         except InvalidProjectError as e:

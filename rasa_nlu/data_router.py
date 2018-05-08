@@ -43,16 +43,16 @@ logger = logging.getLogger(__name__)
 DEFERRED_RUN_IN_REACTOR_THREAD = True
 
 
-class AlreadyTrainingError(Exception):
-    """Raised when a training is requested for a project that is
-       already training.
+class MaxTrainingError(Exception):
+    """Raised when a training is requested for and the server has
+        reached the max count of training processes.
 
     Attributes:
         message -- explanation of why the request is invalid
     """
 
     def __init__(self):
-        self.message = 'The project is already being trained!'
+        self.message = 'The server can\'t train more models right now!'
 
     def __str__(self):
         return self.message
@@ -94,6 +94,7 @@ class DataRouter(object):
                  remote_storage=None,
                  component_builder=None):
         self._training_processes = max(max_training_processes, 1)
+        self._current_training_processes = 0
         self.responses = self._create_query_logger(response_log)
         self.project_dir = config.make_path_absolute(project_dir)
         self.emulator = self._create_emulator(emulation_mode)
@@ -276,6 +277,7 @@ class DataRouter(object):
         # be other trainings run in different processes we don't know about.
 
         return {
+            "current_training_processes": self._current_training_processes,
             "available_projects": {
                 name: project.as_dict()
                 for name, project in self.project_store.items()
@@ -295,8 +297,8 @@ class DataRouter(object):
             raise InvalidProjectError("Missing project name to train")
 
         if project in self.project_store:
-            if self.project_store[project].status == 1:
-                raise AlreadyTrainingError
+            if self.project_store[project].status == 1 and self._training_processes <= self._current_training_processes:
+                raise MaxTrainingError
             else:
                 self.project_store[project].status = 1
         elif project not in self.project_store:
@@ -308,17 +310,21 @@ class DataRouter(object):
         def training_callback(model_path):
             model_dir = os.path.basename(os.path.normpath(model_path))
             self.project_store[project].update(model_dir)
+            self._current_training_processes = self._current_training_processes - 1
             return model_dir
 
         def training_errback(failure):
             logger.warn(failure)
             target_project = self.project_store.get(
                     failure.value.failed_target_project)
+            self._current_training_processes = self._current_training_processes - 1
             if target_project:
                 target_project.status = 0
             return failure
 
         logger.debug("New training queued")
+
+        self._current_training_processes = self._current_training_processes + 1
 
         result = self.pool.submit(do_train_in_worker,
                                   train_config,
