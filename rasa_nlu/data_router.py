@@ -297,7 +297,7 @@ class DataRouter(object):
             raise InvalidProjectError("Missing project name to train")
 
         if project in self.project_store:
-            if self.project_store[project].status == 1 and self._training_processes <= self._current_training_processes:
+            if self._training_processes <= self._current_training_processes:
                 raise MaxTrainingError
             else:
                 self.project_store[project].status = 1
