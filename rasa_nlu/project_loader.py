@@ -120,7 +120,7 @@ class ProjectLoader(object):
 
         return self.project_store[project]
 
-    def _pre_load(self, projects):
+    def pre_load(self, projects):
         logger.debug("loading %s", projects)
         for project in self.project_store:
             if project in projects:
@@ -135,3 +135,17 @@ class ProjectLoader(object):
         # type: (str) -> bool
         # check if a given project by name exists in project store memory
         return project in self.project_store
+
+    def load_or_create_project(self, project):
+        try:
+            project_instance = self.load_project(project)
+        except InvalidProjectError:
+            # project not exists, create one
+            project_instance = Project(
+                self.component_builder, project,
+                self.project_dir, self.remote_storage)
+
+            # add to cache
+            self.project_store[project] = project_instance
+
+        return project_instance
