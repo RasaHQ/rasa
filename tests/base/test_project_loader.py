@@ -29,5 +29,5 @@ def test_list_projects_in_cloud_method():
 
     with mock.patch.object(persistor, 'get_persistor',
                            mocked_get_persistor):
-        return_value = ProjectLoader('', '')._list_projects_in_cloud()  #noqa
+        return_value = ProjectLoader('', '')._list_projects_in_cloud()  # noqa
     assert isinstance(return_value[0], UniqueValue)
