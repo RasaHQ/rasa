@@ -66,6 +66,7 @@ class ProjectLoader(object):
         if not project_store:
             default_model = RasaNLUModelConfig.DEFAULT_PROJECT_NAME
             project_store[default_model] = Project(
+                    project=default_model,
                     project_dir=self.project_dir,
                     remote_storage=self.remote_storage)
         return project_store
