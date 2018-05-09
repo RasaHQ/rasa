@@ -961,7 +961,8 @@ class TimedNTM(object):
         self.beta = tf.layers.Dense(1, tf.nn.softplus)
         # shift weighting
         if attn_shift_range:
-            self.s_w = tf.layers.Dense(2 * attn_shift_range + 1, tf.nn.softmax)
+            self.s_w = tf.layers.Dense(2 * attn_shift_range + 1,
+                                       tf.nn.softmax)
         else:
             self.s_w = None
         # sharpening parameter
@@ -994,13 +995,15 @@ class TimedNTM(object):
             # [batch=1, in_height=1, in_width, in_channels=batch]
             probs = probs[tf.newaxis, tf.newaxis, :, :]
 
-            # [filter_height=1, filter_width, in_channels=batch, channel_multiplier=1]
+            # [filter_height=1, filter_width,
+            #   in_channels=batch, channel_multiplier=1]
             s_w = tf.transpose(s_w, [1, 0])
             s_w = s_w[tf.newaxis, :, :, tf.newaxis]
 
             # perform 1d convolution
             # [batch=1, out_height=1, out_width, out_channels=batch]
-            probs = tf.nn.depthwise_conv2d_native(probs, s_w, [1, 1, 1, 1], 'SAME')
+            probs = tf.nn.depthwise_conv2d_native(probs, s_w,
+                                                  [1, 1, 1, 1], 'SAME')
             probs = probs[0, 0, :, :]
             probs = tf.transpose(probs, [1, 0])
 
@@ -1010,7 +1013,8 @@ class TimedNTM(object):
         gamma = self.gamma(cell_output)
 
         powed_probs = tf.pow(probs, gamma)
-        probs = powed_probs / (tf.reduce_sum(powed_probs, 1, keepdims=True) + 1e-32)
+        probs = (powed_probs /
+                 (tf.reduce_sum(powed_probs, 1, keepdims=True) + 1e-32))
 
         return probs, next_probs_state
 
