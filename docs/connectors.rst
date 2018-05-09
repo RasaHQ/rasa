@@ -269,7 +269,7 @@ Telegram Setup
 Using run script
 ^^^^^^^^^^^^^^^^
 
-If you want to connect to the slack input channel using the run script, e.g. using
+If you want to connect to telegram using the run script, e.g. using
 
 .. code-block:: bash
 
