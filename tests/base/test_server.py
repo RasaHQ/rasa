@@ -198,7 +198,7 @@ def test_evaluate_invalid_project_error(app, rasa_default_train_data):
     rjs = yield response.json()
     assert response.code == 500, "The project cannot be found"
     assert "error" in rjs
-    assert rjs["error"] == "Project project123 could not be found"
+    assert rjs["error"] == "No project found with name 'project123'"
 
 
 @pytest.inlineCallbacks
