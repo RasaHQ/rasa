@@ -376,7 +376,6 @@ class EmbeddingPolicy(Policy):
 
         attn_cell = TimeAttentionWrapper(
                 cell, attn_mechs,
-                # assuming that characteristic time is mean dialogue length
                 attn_shift_range=int(self.characteristic_time),
                 cell_input_fn=cell_input_fn,
                 output_attention=False,
@@ -953,6 +952,9 @@ class TimedNTM(object):
         https://arxiv.org/pdf/1410.5401.pdf
       implementation inspired by:
         https://github.com/carpedm20/NTM-tensorflow/blob/master/ntm_cell.py
+
+      ::param int attn_shift_range:
+        a time range within which to attend to the memory by location
     """
     def __init__(self, attn_shift_range):
         # interpolation gate
@@ -1024,9 +1026,9 @@ def _compute_time_attention(attention_mechanism, cell_output, attention_state,
                             time, timed_ntm,
                             attention_layer):
     """Computes the attention and alignments limited by time
-    for a given attention_mechanism.
+        for a given attention_mechanism.
 
-    Modified form tensorflow."""
+        Modified form tensorflow."""
 
     alignments, _ = attention_mechanism(cell_output, state=attention_state)
 
@@ -1067,7 +1069,13 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         when calculating attention.
         Attention is calculated before calling rnn cell.
 
-        Modified form tensorflow."""
+        Modified from tensorflow's tf.contrib.seq2seq.AttentionWrapper.
+
+        ::param int attn_shift_range:
+            a time range within which to attend to the memory by location
+            by Neural Turing Machine
+
+        See the super class for other arguments description"""
 
     def __init__(self,
                  cell,
