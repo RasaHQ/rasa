@@ -39,6 +39,7 @@ install_requires = [
     "numpy>=1.13",
     "simplejson",
     "pyyaml",
+    'coloredlogs',
 ]
 
 extras_requires = {
