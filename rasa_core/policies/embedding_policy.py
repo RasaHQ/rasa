@@ -947,60 +947,6 @@ def no_scale_dropout(x, rate=0.5, noise_shape=None, training=None):
     return x_dropped
 
 
-def _circular_convolution(vs, ks):
-    """Computes circular convolution over last axis.
-      implementation inspired by:
-        https://github.com/carpedm20/NTM-tensorflow/blob/master/ops.py
-    """
-    kernel_size = int(ks.shape[-1])
-    kernel_shift = int(kernel_size / 2)
-
-    def loop(idx, size):
-        idx = tf.cond(idx < 0, lambda: tf.floormod(idx, -size) + size, lambda: idx)
-        idx = tf.cond(idx >= size, lambda: tf.floormod(idx, size), lambda: idx)
-        return idx
-
-        # if idx < 0:
-        #     return size + idx
-        # if idx >= size:
-        #     return idx - size
-        # else:
-        #     return idx
-
-    # kernels = []
-    # for i in range(vector_size):
-    #     indices = [loop(i+j, vector_size) for j in range(kernel_shift, -kernel_shift-1, -1)]
-    #     vs_ = tf.gather(vs, indices, axis=-1)
-    #     kernels.append(tf.reduce_sum(vs_ * ks, -1))
-
-    i0 = tf.constant(0)
-
-    conv0 = tf.zeros_like(vs[:, 0:1])
-
-    def cond(i, _conv):
-        return i < tf.shape(vs)[-1]
-
-    def body(i, _conv):
-        indices = [loop(i + j, tf.shape(vs)[-1])
-                   for j in range(kernel_shift, -kernel_shift - 1, -1)]
-
-        vs_ = tf.gather(vs, indices, axis=-1)
-        kernel_i = tf.reduce_sum(vs_ * ks, -1, keepdims=True)
-        _conv = tf.cond(i > 0, lambda: tf.concat([_conv, kernel_i], -1), lambda: kernel_i)
-
-        return i + 1, _conv
-
-    _, conv = tf.while_loop(
-        cond,
-        body,
-        loop_vars=(i0, conv0),
-        shape_invariants=(i0.shape, tf.TensorShape([None, None])),
-        swap_memory=True
-    )
-
-    return conv
-
-
 class TimedNTM(object):
     """timed Neural Turing Machine
       paper:
@@ -1038,7 +984,6 @@ class TimedNTM(object):
 
         if self.s_w is not None:
             s_w = self.s_w(cell_output)
-            # probs = _circular_convolution(probs, s_w)
 
             # we want to go back in time during convolution
             probs = tf.reverse(probs, axis=[1])
@@ -1058,23 +1003,6 @@ class TimedNTM(object):
             probs = tf.nn.depthwise_conv2d_native(probs, s_w, [1, 1, 1, 1], 'SAME')
             probs = probs[0, 0, :, :]
             probs = tf.transpose(probs, [1, 0])
-
-            # # prepare probs for tf conv1d
-            # # [batch, in_width, in_channels=1]
-            # probs = tf.expand_dims(probs, 2)
-            # # [filter_width, in_channels=1, out_channels=batch]
-            # s_w = tf.expand_dims(tf.transpose(s_w, [1, 0]), 1)
-            #
-            # # perform 1d convolution
-            # # [batch, out_width, out_channels]
-            # probs = tf.nn.conv1d(probs, s_w, 1, 'SAME')
-            #
-            # # transform probs back
-            # # [batch, out_channels=batch, out_width]
-            # probs = tf.transpose(probs, [0, 2, 1])
-            # eye = tf.expand_dims(tf.eye(tf.shape(probs)[0]), -1)
-            # # [batch, out_width]
-            # probs = tf.reduce_sum(probs * eye, 1)
 
             probs = tf.reverse(probs, axis=[1])
 
