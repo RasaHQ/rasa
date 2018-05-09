@@ -25,3 +25,6 @@ def test_remote_training(tmpdir):
 
     action_types = [type(a) for a in agent.domain.actions]
     assert action_types[:3] == [ActionListen, ActionRestart, RemoteAction]
+
+
+def test_remote_server():

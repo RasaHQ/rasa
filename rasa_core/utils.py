@@ -7,15 +7,19 @@ import errno
 import json
 import logging
 import os, io
+import sys
 from collections import deque
 from hashlib import sha1
 from random import Random
+from threading import Thread
 
 import six
 import yaml
 from builtins import input, range, str
 from numpy import all, array
 from typing import Text, Any, List, Optional
+
+logger = logging.getLogger(__name__)
 
 
 def add_logging_option_arguments(parser):
@@ -359,8 +363,31 @@ def cap_length(s, char_limit=20, append_ellipsis=True):
 
     if len(s) > char_limit:
         if append_ellipsis:
-            return s[:char_limit-3] + "..."
+            return s[:char_limit - 3] + "..."
         else:
             return s[:char_limit]
     else:
         return s
+
+
+def wait_for_threads(threads):
+    # type: (List[Thread]) -> None
+    """Block until all child threads have been terminated."""
+
+    while len(threads) > 0:
+        try:
+            # Join all threads using a timeout so it doesn't block
+            # Filter out threads which have been joined or are None
+            [t.join(1000) for t in threads]
+            threads = [t for t in threads if t.isAlive()]
+        except KeyboardInterrupt:
+            logger.info("Ctrl-c received! Sending kill to threads...")
+            # It would be better at this point to properly shutdown every
+            # thread (e.g. by setting a flag on it) Unfortunately, there
+            # are IO operations that are blocking without a timeout
+            # (e.g. sys.read) so threads that are waiting for one of
+            # these calls can't check the set flag. Hence, we go the easy
+            # route for now
+            sys.exit(0)
+    logger.info("Finished waiting for input threads to terminate. "
+                "Stopping to serve forever.")
