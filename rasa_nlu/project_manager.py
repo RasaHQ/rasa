@@ -110,16 +110,21 @@ class ProjectManager(object):
                 raise InvalidProjectError(
                     "No project found with name '{}'.".format(project))
             else:
-                try:
-                    self.project_store[project] = Project(
-                            self.component_builder, project,
-                            self.project_dir, self.remote_storage)
-                except Exception as e:
-                    raise InvalidProjectError(
-                        "Unable to load project '{}'. Error: {}".format(
-                            project, e))
+                self._try_load_project(project)
 
         return self.project_store[project]
+
+    def _try_load_project(self, project):
+        # type: (str) -> None
+        # Try to load project from local storage, if failed
+        # an InvalidProjectError exception will raise
+        try:
+            self.project_store[project] = Project(
+                self.component_builder, project,
+                self.project_dir, self.remote_storage)
+        except Exception as e:
+            raise InvalidProjectError(
+                "Unable to load project '{}'. Error: {}".format(project, e))
 
     def pre_load(self, projects):
         logger.debug("loading %s", projects)
