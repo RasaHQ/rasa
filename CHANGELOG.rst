@@ -11,6 +11,7 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 Added
 -----
+- project related functions such as loading / pre-loading / auto discover are collect to ``ProjectManager`` class
 
 Changed
 -------
