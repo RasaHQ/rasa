@@ -236,7 +236,7 @@ class EmbeddingPolicy(Policy):
         self._load_params()
 
         # chrono initialization for forget bias
-        self.mean_time = None
+        self.characteristic_time = None
 
         # encode all actions with numbers
         self.encoded_all_actions = encoded_all_actions
@@ -324,7 +324,7 @@ class EmbeddingPolicy(Policy):
 
         # chrono initialization for forget bias
         # assuming that characteristic time is mean dialogue length
-        fbias = np.log((self.mean_time - 2) *
+        fbias = np.log((self.characteristic_time - 2) *
                        np.random.random(self.rnn_size) + 1)
 
         keep_prob = 1.0 - (self.droprate['rnn'] *
@@ -377,7 +377,7 @@ class EmbeddingPolicy(Policy):
         attn_cell = TimeAttentionWrapper(
                 cell, attn_mechs,
                 # assuming that characteristic time is mean dialogue length
-                shift_mono_range=int(self.mean_time),
+                attn_shift_range=int(self.characteristic_time),
                 cell_input_fn=cell_input_fn,
                 output_attention=False,
                 alignment_history=True
@@ -678,8 +678,8 @@ class EmbeddingPolicy(Policy):
         training_data = self.featurize_for_training(training_trackers,
                                                     domain,
                                                     **kwargs)
-        # TODO should it be max?
-        self.mean_time = np.mean(training_data.true_length)
+        # assume that characteristic time is the mean length of the dialogues
+        self.characteristic_time = np.mean(training_data.true_length)
 
         self.encoded_all_actions = \
             self.featurizer.state_featurizer.create_encoded_all_actions(
@@ -947,6 +947,60 @@ def no_scale_dropout(x, rate=0.5, noise_shape=None, training=None):
     return x_dropped
 
 
+def _circular_convolution(vs, ks):
+    """Computes circular convolution over last axis.
+      implementation inspired by:
+        https://github.com/carpedm20/NTM-tensorflow/blob/master/ops.py
+    """
+    kernel_size = int(ks.shape[-1])
+    kernel_shift = int(kernel_size / 2)
+
+    def loop(idx, size):
+        idx = tf.cond(idx < 0, lambda: tf.floormod(idx, -size) + size, lambda: idx)
+        idx = tf.cond(idx >= size, lambda: tf.floormod(idx, size), lambda: idx)
+        return idx
+
+        # if idx < 0:
+        #     return size + idx
+        # if idx >= size:
+        #     return idx - size
+        # else:
+        #     return idx
+
+    # kernels = []
+    # for i in range(vector_size):
+    #     indices = [loop(i+j, vector_size) for j in range(kernel_shift, -kernel_shift-1, -1)]
+    #     vs_ = tf.gather(vs, indices, axis=-1)
+    #     kernels.append(tf.reduce_sum(vs_ * ks, -1))
+
+    i0 = tf.constant(0)
+
+    conv0 = tf.zeros_like(vs[:, 0:1])
+
+    def cond(i, _conv):
+        return i < tf.shape(vs)[-1]
+
+    def body(i, _conv):
+        indices = [loop(i + j, tf.shape(vs)[-1])
+                   for j in range(kernel_shift, -kernel_shift - 1, -1)]
+
+        vs_ = tf.gather(vs, indices, axis=-1)
+        kernel_i = tf.reduce_sum(vs_ * ks, -1, keepdims=True)
+        _conv = tf.cond(i > 0, lambda: tf.concat([_conv, kernel_i], -1), lambda: kernel_i)
+
+        return i + 1, _conv
+
+    _, conv = tf.while_loop(
+        cond,
+        body,
+        loop_vars=(i0, conv0),
+        shape_invariants=(i0.shape, tf.TensorShape([None, None])),
+        swap_memory=True
+    )
+
+    return conv
+
+
 class TimedNTM(object):
     """timed Neural Turing Machine
       paper:
@@ -954,21 +1008,22 @@ class TimedNTM(object):
       implementation inspired by:
         https://github.com/carpedm20/NTM-tensorflow/blob/master/ntm_cell.py
     """
-    def __init__(self, shift_mono_range):
+    def __init__(self, attn_shift_range):
         # interpolation gate
         self.gate = tf.layers.Dense(1, tf.sigmoid)
         # key strength
         self.beta = tf.layers.Dense(1, tf.nn.softplus)
         # shift weighting
-        self.s_w = tf.layers.Dense(shift_mono_range + 1, tf.nn.softmax)
+        if attn_shift_range:
+            self.s_w = tf.layers.Dense(2 * attn_shift_range + 1, tf.nn.softmax)
+        else:
+            self.s_w = None
         # sharpening parameter
         self.gamma = tf.layers.Dense(1, lambda a: tf.nn.softplus(a) + 1.0)
 
     def __call__(self, cell_output, probs, probs_state):
         g = self.gate(cell_output)
         beta = self.beta(cell_output)
-        gamma = self.gamma(cell_output)
-        s_w = self.s_w(cell_output)
 
         # apply exponential moving average with interpolation gate weight
         # to scores from previous time which are equal to probs at this point
@@ -981,21 +1036,53 @@ class TimedNTM(object):
         # limit time probabilities for attention
         probs = tf.nn.softmax(beta * probs)
 
-        # prepare probs for tf conv1d
-        probs = probs[:, :, tf.newaxis]
-        s_w = tf.transpose(s_w[:, :, tf.newaxis], [1, 2, 0])
+        if self.s_w is not None:
+            s_w = self.s_w(cell_output)
+            # probs = _circular_convolution(probs, s_w)
 
-        # perform 1d convolution
-        probs = tf.nn.conv1d(probs, s_w, 1, 'SAME')
+            # we want to go back in time during convolution
+            probs = tf.reverse(probs, axis=[1])
 
-        # transform probs back
-        probs = tf.transpose(probs, [0, 2, 1])
-        eye = tf.expand_dims(tf.eye(tf.shape(probs)[0]), -1)
-        probs = tf.reduce_sum(probs * eye, 1)
+            # preare probs for tf.nn.depthwise_conv2d
+            # [in_width, in_channels=batch]
+            probs = tf.transpose(probs, [1, 0])
+            # [batch=1, in_height=1, in_width, in_channels=batch]
+            probs = probs[tf.newaxis, tf.newaxis, :, :]
+
+            # [filter_height=1, filter_width, in_channels=batch, channel_multiplier=1]
+            s_w = tf.transpose(s_w, [1, 0])
+            s_w = s_w[tf.newaxis, :, :, tf.newaxis]
+
+            # perform 1d convolution
+            # [batch=1, out_height=1, out_width, out_channels=batch]
+            probs = tf.nn.depthwise_conv2d_native(probs, s_w, [1, 1, 1, 1], 'SAME')
+            probs = probs[0, 0, :, :]
+            probs = tf.transpose(probs, [1, 0])
+
+            # # prepare probs for tf conv1d
+            # # [batch, in_width, in_channels=1]
+            # probs = tf.expand_dims(probs, 2)
+            # # [filter_width, in_channels=1, out_channels=batch]
+            # s_w = tf.expand_dims(tf.transpose(s_w, [1, 0]), 1)
+            #
+            # # perform 1d convolution
+            # # [batch, out_width, out_channels]
+            # probs = tf.nn.conv1d(probs, s_w, 1, 'SAME')
+            #
+            # # transform probs back
+            # # [batch, out_channels=batch, out_width]
+            # probs = tf.transpose(probs, [0, 2, 1])
+            # eye = tf.expand_dims(tf.eye(tf.shape(probs)[0]), -1)
+            # # [batch, out_width]
+            # probs = tf.reduce_sum(probs * eye, 1)
+
+            probs = tf.reverse(probs, axis=[1])
 
         # Sharpening
+        gamma = self.gamma(cell_output)
+
         powed_probs = tf.pow(probs, gamma)
-        probs = powed_probs / tf.reduce_sum(powed_probs, 1, keepdims=True)
+        probs = powed_probs / (tf.reduce_sum(powed_probs, 1, keepdims=True) + 1e-32)
 
         return probs, next_probs_state
 
@@ -1053,8 +1140,8 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
     def __init__(self,
                  cell,
                  attention_mechanism,
+                 attn_shift_range=0,
                  attention_layer_size=None,
-                 shift_mono_range=0,
                  alignment_history=False,
                  cell_input_fn=None,
                  output_attention=False,
@@ -1070,9 +1157,10 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                 initial_cell_state,
                 name
         )
-        self.timed_ntms = [TimedNTM(shift_mono_range)]
+        self.timed_ntms = [TimedNTM(attn_shift_range)]
         if self._is_multi:
-            self.timed_ntms *= len(attention_mechanism)
+            for _ in range(len(attention_mechanism)):
+                self.timed_ntms.append(TimedNTM(attn_shift_range))
 
     def call(self, inputs, state):
         """Perform a step of attention-wrapped RNN.
