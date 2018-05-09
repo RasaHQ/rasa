@@ -76,8 +76,6 @@ class EmbeddingPolicy(Policy):
         "droprate_rnn": 0.1,
         "droprate_out": 0.1,
 
-        "nuke_slots_ones_in_epochs": 0,  # set to None or 0 to disable
-
         # attention parameters
         "score_noise": 0.3,
         "use_attention": True,  # flag to use attention
@@ -169,8 +167,6 @@ class EmbeddingPolicy(Policy):
         self.droprate['c'] = config['droprate_c']
         self.droprate['rnn'] = config['droprate_rnn']
         self.droprate['out'] = config['droprate_out']
-
-        self.nuke_slots_ones_in_epochs = config['nuke_slots_ones_in_epochs']
 
     def _load_attn_params(self, config):
         self.score_noise = config['score_noise']
@@ -584,10 +580,6 @@ class EmbeddingPolicy(Policy):
 
                 batch_c = slots[ids[start_idx:end_idx]]
                 batch_b_prev = prev_act[ids[start_idx:end_idx]]
-
-                if self.nuke_slots_ones_in_epochs:
-                    if (ep + 1) % self.nuke_slots_ones_in_epochs == 0:
-                        batch_c[:] = 0
 
                 sess_out = self.session.run(
                         {'loss': loss, 'train_op': self.train_op},
