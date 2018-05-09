@@ -44,6 +44,25 @@ You can then use the loaded interpreter to parse text:
 
 which returns the same ``dict`` as the HTTP api would (without emulation).
 
+Also, you can use `ProjectManager` to provide several high-level APIs
+(such as pre-loading projects, auto discover latest model, auto load model from cloud storage, unloading projects, unloading models):
+
+.. testcode::
+
+    from rasa_nlu.project_manager import ProjectManager
+
+    # load project manager
+    project_manager = ProjectManager(project_dir, remote_storage)
+
+    # load project by given a name
+    project_instance = project_manager.load_project(project_name)
+
+    # parse query text by given model_name or set requested_model_name to None to use latest model
+    parse_result = project_instance.parse(query_text, requested_model_name=model_name)
+
+which returns the same result as previous method. See other parts of the documents for more detailed information about the meaning of
+`project_dir`, `remote_storage`, `project_name` and `model_name`.
+
 If multiple models are created, it is reasonable to share components between the different models. E.g.
 the ``'nlp_spacy'`` component, which is used by every pipeline that wants to have access to the spacy word vectors,
 can be cached to avoid storing the large word vectors more than once in main memory. To use the caching,
