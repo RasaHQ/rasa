@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 
 from mock import patch
 
-from rasa_nlu.project_loader import ProjectLoader
+from rasa_nlu.project_manager import ProjectManager
 
 
 def test_list_projects_in_cloud_method():
@@ -19,6 +19,6 @@ def test_list_projects_in_cloud_method():
 
         return MockedClass()
 
-    with patch("rasa_nlu.project_loader.get_persistor", mocked_get_persistor):
-        return_value = ProjectLoader('', '')._list_projects_in_cloud()  # noqa
+    with patch("rasa_nlu.project_manager.get_persistor", mocked_get_persistor):
+        return_value = ProjectManager('', '')._list_projects_in_cloud()  # noqa
     assert isinstance(return_value[0], UniqueValue)

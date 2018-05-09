@@ -18,7 +18,7 @@ from rasa_nlu import utils
 logger = logging.getLogger(__name__)
 
 
-class ProjectLoader(object):
+class ProjectManager(object):
     def __init__(self, project_dir, remote_storage, component_builder=None):
         # type: (str, str, ComponentBuilder) -> None
         self.project_dir = project_dir

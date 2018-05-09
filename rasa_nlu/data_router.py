@@ -27,7 +27,7 @@ from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from twisted.logger import jsonFileLogObserver, Logger
 from typing import Text, Dict, Any, Optional, List
-from rasa_nlu.project_loader import ProjectLoader
+from rasa_nlu.project_manager import ProjectManager
 
 logger = logging.getLogger(__name__)
 
@@ -105,11 +105,11 @@ class DataRouter(object):
         else:
             self.component_builder = ComponentBuilder(use_cache=True)
 
-        self.project_loader = ProjectLoader.create(project_dir,
-                                                   remote_storage,
-                                                   component_builder)
+        self.project_manager = ProjectManager.create(project_dir,
+                                                     remote_storage,
+                                                     component_builder)
 
-        self.project_store = self.project_loader.get_projects()
+        self.project_store = self.project_manager.get_projects()
 
         self.pool = ProcessPool(self._training_processes)
 
@@ -175,7 +175,7 @@ class DataRouter(object):
         project = data.get("project")
         model = data.get("model")
 
-        project_instance = self.project_loader.load_project(project)
+        project_instance = self.project_manager.load_project(project)
 
         time = data.get('time')
         response = project_instance.parse(data['text'], time, model)
@@ -190,7 +190,7 @@ class DataRouter(object):
         # type: (Optional[List[Message]], Text, Text) -> List[Dict[Text, Text]]
         """Parses a list of training examples to the project interpreter"""
 
-        project_instance = self.project_loader.load_project(project)
+        project_instance = self.project_manager.load_project(project)
 
         predictions = []
         for ex in examples:
@@ -219,7 +219,7 @@ class DataRouter(object):
         }
 
     def _pre_load(self, projects):
-        self.project_loader.pre_load(projects)
+        self.project_manager.pre_load(projects)
 
     def start_train_process(self,
                             data_file,  # type: Text
@@ -233,7 +233,7 @@ class DataRouter(object):
         if not project:
             raise InvalidProjectError("Missing project name to train")
 
-        project_instance = self.project_loader.load_or_create_project(project)
+        project_instance = self.project_manager.load_or_create_project(project)
 
         if project_instance.status == 1:
             raise AlreadyTrainingError
@@ -248,7 +248,7 @@ class DataRouter(object):
         def training_errback(failure):
             logger.warning(failure)
             try:
-                target_project = self.project_loader.load_project(
+                target_project = self.project_manager.load_project(
                     failure.value.failed_target_project)
             except InvalidProjectError:
                 pass
@@ -317,11 +317,11 @@ class DataRouter(object):
         if project is None:
             raise InvalidProjectError("No project specified".format(project))
 
-        if not self.project_loader.project_exists(project):
+        if not self.project_manager.project_exists(project):
             raise InvalidProjectError("Project {} could not "
                                       "be found".format(project))
 
-        project_instance = self.project_loader.load_project(project)
+        project_instance = self.project_manager.load_project(project)
 
         try:
             unloaded_model = project_instance.unload(model)
