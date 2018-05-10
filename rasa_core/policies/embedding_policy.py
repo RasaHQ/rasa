@@ -790,21 +790,21 @@ class EmbeddingPolicy(Policy):
         # _ps[1] - alignments over prev action
 
         # code to output attention for the current last action:
-        # if len(_ps) > 0:
-        #     for i in range(_sim.shape[1]):
-        #         if i > 0:
-        #             idx_prev = np.argmax(_sim[0, i - 1, :])
-        #         else:
-        #             idx_prev = 0
-        #         idx = np.argmax(_sim[0, i, :])
-        #         print("{:.3f} || {:.3f} -- {} ----> {} -- {:.3f}"
-        #               "".format(_ps[0][0, -1, i], _ps[1][0, -1, i],
-        #                         domain.actions[idx_prev].name(),
-        #                         domain.actions[idx].name(),
-        #                         np.max(_sim[0, i, :])))
-        #     print("{:.3f} || {:.3f}"
-        #           "".format(np.sum(_ps[0][0, -1]),
-        #                     np.sum(_ps[1][0, -1])))
+        if len(_ps) > 0:
+            for i in range(_sim.shape[1]):
+                if i > 0:
+                    idx_prev = np.argmax(_sim[0, i - 1, :])
+                else:
+                    idx_prev = 0
+                idx = np.argmax(_sim[0, i, :])
+                print("{:.3f} || {:.3f} -- {} ----> {} -- {:.3f}"
+                      "".format(_ps[0][0, -1, i], _ps[1][0, -1, i],
+                                domain.actions[idx_prev].name(),
+                                domain.actions[idx].name(),
+                                np.max(_sim[0, i, :])))
+            print("{:.3f} || {:.3f}"
+                  "".format(np.sum(_ps[0][0, -1]),
+                            np.sum(_ps[1][0, -1])))
 
         result = _sim[0, -1, :]
         if self.similarity_type == 'cosine':
@@ -981,27 +981,28 @@ class TimedNTM(object):
             s_w = self.s_w(cell_output)
 
             # we want to go back in time during convolution
-            probs = tf.reverse(probs, axis=[1])
+            conv_probs = tf.reverse(probs, axis=[1])
 
             # preare probs for tf.nn.depthwise_conv2d
             # [in_width, in_channels=batch]
-            probs = tf.transpose(probs, [1, 0])
-            # [batch=1, in_height=1, in_width, in_channels=batch]
-            probs = probs[tf.newaxis, tf.newaxis, :, :]
+            conv_probs = tf.transpose(conv_probs, [1, 0])
+            # [batch=1, in_height=1, in_width=time+1, in_channels=batch]
+            conv_probs = conv_probs[tf.newaxis, tf.newaxis, :, :]
 
-            # [filter_height=1, filter_width,
+            # [filter_height=1, filter_width=2*attn_shift_range+1,
             #   in_channels=batch, channel_multiplier=1]
             s_w = tf.transpose(s_w, [1, 0])
             s_w = s_w[tf.newaxis, :, :, tf.newaxis]
 
             # perform 1d convolution
-            # [batch=1, out_height=1, out_width, out_channels=batch]
-            probs = tf.nn.depthwise_conv2d_native(probs, s_w,
-                                                  [1, 1, 1, 1], 'SAME')
-            probs = probs[0, 0, :, :]
-            probs = tf.transpose(probs, [1, 0])
+            # [batch=1, out_height=1, out_width=time+1, out_channels=batch]
+            conv_probs = tf.nn.depthwise_conv2d_native(conv_probs, s_w,
+                                                       [1, 1, 1, 1], 'SAME')
+            conv_probs = conv_probs[0, 0, :, :]
+            conv_probs = tf.transpose(conv_probs, [1, 0])
 
-            probs = tf.reverse(probs, axis=[1])
+            conv_probs = tf.reverse(conv_probs, axis=[1])
+            probs = tf.concat([conv_probs[:, :-1], probs[:, -1:]], 1)
 
         # Sharpening
         gamma = self.gamma(cell_output)
