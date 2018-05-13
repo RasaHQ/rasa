@@ -58,7 +58,7 @@ Rasa NLU can run with a choice of backends, but for most users
 a combination of spaCy and scikit-learn is the best option.
 
 Installing spacy just requires (for more information
-visit the `spacy docu <https://spacy.io/docs/usage/>`_):
+visit the `spacy docu <https://spacy.io/usage/models>`_):
 
 .. code-block:: bash
 
