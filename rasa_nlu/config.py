@@ -20,29 +20,6 @@ DEFAULT_CONFIG_LOCATION = "config.yml"
 DEFAULT_CONFIG = {
     "language": "en",
     "pipeline": [],
-    "response_log": "logs",
-    "storage": None,
-    "aws_endpoint_url": None,
-    "duckling_dimensions": None,
-    "duckling_http_url": None,
-    "phrase_matcher": {
-        "ignore_case": True,
-        "use_tokens": True
-    },
-    "ner_crf": {
-        "BILOU_flag": True,
-        "features": [
-            ["low", "title", "upper", "pos", "pos2"],
-            ["bias", "low", "word3", "word2", "upper", "title", "digit", "pos", "pos2", "pattern"],
-            ["low", "title", "upper", "pos", "pos2"]],
-        "max_iterations": 50,
-        "L1_c": 1,
-        "L2_c": 1e-3
-    },
-    "intent_classifier_sklearn": {
-        "C": [1, 2, 5, 10, 20, 100],
-        "kernel": "linear"
-    },
     "data": None,
 }
 
