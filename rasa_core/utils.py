@@ -18,6 +18,14 @@ from numpy import all, array
 from typing import Text, Any, List, Optional
 
 
+def configure_file_logging(loglevel, logfile):
+    if logfile:
+        fh = logging.FileHandler(logfile)
+        fh.setLevel(loglevel)
+        logging.getLogger('').addHandler(fh)
+    logging.captureWarnings(True)
+
+
 def add_logging_option_arguments(parser):
     """Add options to an argument parser to configure logging levels."""
 
@@ -87,7 +95,7 @@ def dump_obj_as_str_to_file(filename, text):
 
 
 def subsample_array(arr, max_values, can_modify_incoming_array=True, rand=None):
-    # type: (List[Any], int, Optional[bool], Optional[Random]) -> List[Any]
+    # type: (List[Any], int, bool, Optional[Random]) -> List[Any]
     """Shuffles the array and returns `max_values` number of elements."""
     import random
 
@@ -333,11 +341,6 @@ def read_file(filename, encoding="utf-8"):
     """Read text from a file."""
     with io.open(filename, encoding=encoding) as f:
         return f.read()
-
-
-def is_training_data_empty(X):
-    """Check if the training matrix does contain training samples."""
-    return X.shape[0] == 0
 
 
 def cap_length(s, char_limit=20, append_ellipsis=True):

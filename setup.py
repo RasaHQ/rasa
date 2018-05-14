@@ -36,7 +36,7 @@ install_requires = [
     'requests',
     'graphviz',
     'Keras',
-    'tensorflow',
+    'tensorflow>=1.7',
     'h5py',
     'apscheduler',
     'tqdm',

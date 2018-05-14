@@ -68,12 +68,12 @@ If you've found Rasa Core, it's likely you've already tried this approach and we
 A good next step is to use our story framework to build a policy by giving it some example conversations.
 We won't use machine learning yet, we will just create a policy which memorises these stories. 
 
-We can use the ``MemoizationPolicy`` and the ``PolicyTrainer`` classes to do this.
+We can use the ``MemoizationPolicy`` to do this.
 
-Here is the ``PolicyTrainer`` class:
+Here is the ``train`` method training the policies class:
 
-.. literalinclude:: ../rasa_core/policies/trainer.py
-   :pyobject: PolicyTrainer
+.. literalinclude:: ../rasa_core/agent.py
+   :pyobject: Agent.train
 
 What the ``train()`` method does is the following:
 
@@ -92,10 +92,13 @@ What the ``train()`` method does is the following:
 
 .. note::
 
-    In fact, the rows in ``X`` describe the state of the tracker when the previous ``max_history`` actions were taken. See :ref:`featurization` for more details.
+    In fact, the rows in ``X`` describe the state of the tracker when the
+    previous ``max_history`` actions were taken. See :ref:`featurization`
+    for more details.
 
-For the ``MemoizationPolicy``, the ``train()`` method just memorises the actions taken in the story,
-so that when your bot encounters an identical situation it will make the decision you intended. 
+For the ``MemoizationPolicy``, the ``train()`` method just memorises
+the actions taken in the story, so that when your bot encounters an
+identical situation it will make the decision you intended.
 
 
 Generalising to new Dialogues
