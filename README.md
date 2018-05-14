@@ -3,6 +3,8 @@
 [![Build Status](https://travis-ci.com/RasaHQ/rasa_core.svg?branch=master)](https://travis-ci.com/RasaHQ/rasa_core)
 [![Coverage Status](https://coveralls.io/repos/github/RasaHQ/rasa_core/badge.svg?branch=master)](https://coveralls.io/github/RasaHQ/rasa_core?branch=master)
 [![PyPI version](https://img.shields.io/pypi/v/rasa_core.svg)](https://pypi.python.org/pypi/rasa-core)
+[![Documentation Status](https://img.shields.io/badge/docs-stable-brightgreen.svg)](https://core.rasa.com/)
+
 
 - **What do Rasa Core & NLU do? 🤔** [Read About the Rasa Stack](https://rasa.com/products/rasa-stack/)
 
