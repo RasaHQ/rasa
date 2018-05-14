@@ -35,6 +35,7 @@ Removed
 Fixed
 -----
 - Slack connector: ``slack_channel`` kwarg is used to send messages either back to the user or to a static channel
+- properly log to a file when using the ``run`` script
 
 [0.8.2] - 2018-02-13
 ^^^^^^^^^^^^^^^^^^^^
