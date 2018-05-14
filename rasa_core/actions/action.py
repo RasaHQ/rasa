@@ -101,6 +101,5 @@ class ActionRestart(Action):
         from rasa_core.events import Restarted
 
         # only utter the template if it is available
-        if domain.random_template_for("utter_restart") is not None:
-            dispatcher.utter_template("utter_restart")
+        dispatcher.utter_template("utter_restart", silent_fail=True)
         return [Restarted()]
