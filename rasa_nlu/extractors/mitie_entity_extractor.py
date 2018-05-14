@@ -135,7 +135,6 @@ class MitieEntityExtractor(EntityExtractor):
         ents = self.extract_entities(message.text, message.get("tokens"), mitie_feature_extractor)
         self.append_entities(message, ents)
 
-
     @classmethod
     def load(cls,
              model_dir=None,  # type: Text
