@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 class EmbeddingPolicy(Policy):
     SUPPORTS_ONLINE_TRAINING = True
 
-    NUM_ATTENTION_TYPES = 2
+    NUM_ATTENTION_TYPES = 1
 
     @classmethod
     def _standard_featurizer(cls):
@@ -54,7 +54,7 @@ class EmbeddingPolicy(Policy):
         "hidden_layer_size_a": [],
         "num_hidden_layers_b": 0,
         "hidden_layer_size_b": [],
-        "rnn_size": 64,
+        "rnn_size": 32,
         "batch_size": 16,
         "epochs": 1,
 
@@ -72,13 +72,14 @@ class EmbeddingPolicy(Policy):
 
         "droprate_a": 0.0,
         "droprate_b": 0.0,
-        "droprate_c": 0.0,
+        "droprate_slt": 0.0,
         "droprate_rnn": 0.1,
         "droprate_out": 0.1,
 
         # attention parameters
-        "score_noise": 0.3,
+        "score_noise": 0.0,  # deprecated
         "use_attention": True,  # flag to use attention
+        "attn_shift_range": None,  # if None, mean dialogue length / 2
 
         # visualization of accuracy
         "calc_acc_ones_in_epochs": 50,  # small values affect performance
@@ -164,13 +165,14 @@ class EmbeddingPolicy(Policy):
         self.droprate = dict()
         self.droprate['a'] = config['droprate_a']
         self.droprate['b'] = config['droprate_b']
-        self.droprate['c'] = config['droprate_c']
+        self.droprate['slt'] = config['droprate_slt']
         self.droprate['rnn'] = config['droprate_rnn']
         self.droprate['out'] = config['droprate_out']
 
     def _load_attn_params(self, config):
         self.score_noise = config['score_noise']
         self.use_attention = config['use_attention']
+        self.attn_shift_range = config['attn_shift_range']
 
     def _load_visual_params(self, config):
         self.calc_acc_ones_in_epochs = config['calc_acc_ones_in_epochs']
@@ -338,41 +340,57 @@ class EmbeddingPolicy(Policy):
                           real_length):
         """Create wrap cell in attention cell with given memory"""
 
-        noise_level = self.score_noise * tf.cast(self.is_training, tf.float32)
+        # noise_level = self.score_noise * tf.cast(self.is_training, tf.float32)
+        #
+        # def noisy_identity(score):
+        #     noise = tf.random_normal(tf.shape(score), dtype=score.dtype)
+        #     return score + noise_level * noise
 
-        def noisy_identity(score):
-            noise = tf.random_normal(tf.shape(score), dtype=score.dtype)
-            return score + noise_level * noise
+
+        # num_utter_units = int(emb_utter.shape[-1])
+        # attn_mech_utter = tf.contrib.seq2seq.BahdanauAttention(
+        #         num_units=num_utter_units, memory=emb_utter,
+        #         memory_sequence_length=real_length,
+        #         normalize=True,
+        #         probability_fn=noisy_identity,  # tf.identity,
+        #         # we only attend to memory up to a current time
+        #         score_mask_value=0,  # it does not affect alignments
+        # )
+        # num_prev_act_units = int(emb_prev_act.shape[-1])
+        # attn_mech_prev_act = tf.contrib.seq2seq.BahdanauAttention(
+        #         num_units=num_prev_act_units, memory=emb_prev_act,
+        #         memory_sequence_length=real_length,
+        #         normalize=True,
+        #         probability_fn=noisy_identity,  # tf.identity,
+        #         # we only attend to memory up to a current time
+        #         score_mask_value=0,  # it does not affect alignments
+        # )
+        # attn_mechs = [attn_mech_utter, attn_mech_prev_act]
+
+        emb_mem = tf.concat([emb_utter, emb_prev_act], -1)
+        num_mem_units = int(emb_mem.shape[-1])
+        attn_mech = tf.contrib.seq2seq.BahdanauAttention(
+                num_units=num_mem_units, memory=emb_mem,
+                memory_sequence_length=real_length,
+                normalize=True,
+                probability_fn=tf.identity,
+                # we only attend to memory up to a current time
+                score_mask_value=0,  # it does not affect alignments
+        )
 
         num_utter_units = int(emb_utter.shape[-1])
-        attn_mech_utter = tf.contrib.seq2seq.BahdanauAttention(
-                num_units=num_utter_units, memory=emb_utter,
-                memory_sequence_length=real_length,
-                normalize=True,
-                probability_fn=noisy_identity,  # tf.identity,
-                # we only attend to memory up to a current time
-                score_mask_value=0,  # it does not affect alignments
-        )
-        num_prev_act_units = int(emb_prev_act.shape[-1])
-        attn_mech_prev_act = tf.contrib.seq2seq.BahdanauAttention(
-                num_units=num_prev_act_units, memory=emb_prev_act,
-                memory_sequence_length=real_length,
-                normalize=True,
-                probability_fn=noisy_identity,  # tf.identity,
-                # we only attend to memory up to a current time
-                score_mask_value=0,  # it does not affect alignments
-        )
-        attn_mechs = [attn_mech_utter, attn_mech_prev_act]
 
         def cell_input_fn(inputs, attention):
-            res = tf.concat([attention[:, :num_utter_units],
-                             inputs[:, num_utter_units:],
-                             attention[:, num_utter_units:]], -1)
+            # res = tf.concat([attention[:, :num_utter_units],
+            #                  inputs[:, num_utter_units:],
+            #                  attention[:, num_utter_units:]], -1)
+            res = tf.concat([attention,
+                             inputs[:, num_utter_units:]], -1)
             return res
 
         attn_cell = TimeAttentionWrapper(
-                cell, attn_mechs,
-                attn_shift_range=int(self.characteristic_time),
+                cell, attn_mech,
+                attn_shift_range=self.attn_shift_range,
                 cell_input_fn=cell_input_fn,
                 output_attention=False,
                 alignment_history=True
@@ -400,7 +418,13 @@ class EmbeddingPolicy(Policy):
         # extract alignments history
         self.alignment_history = []
         if self.use_attention:
-            for alignments in final_state.alignment_history:
+            if self.NUM_ATTENTION_TYPES > 1:
+                for alignments in final_state.alignment_history:
+                    # Reshape to (batch, time, memory_time)
+                    alignments = tf.transpose(alignments.stack(), [1, 0, 2])
+                    self.alignment_history.append(alignments)
+            else:
+                alignments = final_state.alignment_history
                 # Reshape to (batch, time, memory_time)
                 alignments = tf.transpose(alignments.stack(), [1, 0, 2])
                 self.alignment_history.append(alignments)
@@ -492,9 +516,9 @@ class EmbeddingPolicy(Policy):
         emb_act = self._create_embed(b, name=name_b)
 
         c = c_in  # no hidden layers for slots
-        c = no_scale_dropout(c, rate=self.droprate['c'],
+        c = no_scale_dropout(c, rate=self.droprate['slt'],
                              training=self.is_training)
-        emb_slots = self._create_embed(c, name='c')
+        emb_slots = self._create_embed(c, name='slt')
 
         b_prev = self._create_tf_nn(b_prev_in,
                                     self.num_hidden_layers_b,
@@ -671,6 +695,8 @@ class EmbeddingPolicy(Policy):
                                                     **kwargs)
         # assume that characteristic time is the mean length of the dialogues
         self.characteristic_time = np.mean(training_data.true_length)
+        if self.attn_shift_range is None:
+            self.attn_shift_range = int(self.characteristic_time / 2)
 
         self.encoded_all_actions = \
             self.featurizer.state_featurizer.create_encoded_all_actions(
@@ -702,7 +728,7 @@ class EmbeddingPolicy(Policy):
             self.c_in = tf.placeholder(tf.float32,
                                        (None, dialogue_len,
                                         slots.shape[-1]),
-                                       name='c')
+                                       name='slt')
             self.b_prev_in = tf.placeholder(tf.float32,
                                             (None, dialogue_len,
                                              Y.shape[-1]),
@@ -797,14 +823,19 @@ class EmbeddingPolicy(Policy):
                 else:
                     idx_prev = 0
                 idx = np.argmax(_sim[0, i, :])
-                print("{:.3f} || {:.3f} -- {} ----> {} -- {:.3f}"
-                      "".format(_ps[0][0, -1, i], _ps[1][0, -1, i],
+                print("{:.3f} ||  -- {} ----> {} -- {:.3f}"
+                      "".format(_ps[0][0, -1, i],# _ps[1][0, -1, i],
                                 domain.actions[idx_prev].name(),
                                 domain.actions[idx].name(),
-                                np.max(_sim[0, i, :])))
-            print("{:.3f} || {:.3f}"
+                                np.max(_sim[0, i, :])
+                                ))
+
+            print("{:.3f} || "#-- {} ----> {}"
                   "".format(np.sum(_ps[0][0, -1]),
-                            np.sum(_ps[1][0, -1])))
+                            # np.sum(_ps[1][0, -1])
+                            # domain.actions[np.argmax(_sim[0, -2, :])].name(),
+                            # domain.actions[np.argmax(_sim[0, -1, :])].name()
+                            ))
 
         result = _sim[0, -1, :]
         if self.similarity_type == 'cosine':
@@ -952,7 +983,7 @@ class TimedNTM(object):
         # interpolation gate
         self.gate = tf.layers.Dense(1, tf.sigmoid)
         # key strength
-        self.beta = tf.layers.Dense(1, tf.nn.softplus)
+        # self.beta = tf.layers.Dense(1, tf.nn.softplus)
         # shift weighting
         if attn_shift_range:
             self.s_w = tf.layers.Dense(2 * attn_shift_range + 1,
@@ -964,7 +995,7 @@ class TimedNTM(object):
 
     def __call__(self, cell_output, probs, probs_state):
         g = self.gate(cell_output)
-        beta = self.beta(cell_output)
+        # beta = self.beta(cell_output)
 
         # apply exponential moving average with interpolation gate weight
         # to scores from previous time which are equal to probs at this point
@@ -975,7 +1006,7 @@ class TimedNTM(object):
         next_probs_state = probs
 
         # limit time probabilities for attention
-        probs = tf.nn.softmax(beta * probs)
+        probs = tf.nn.softmax(probs)
 
         if self.s_w is not None:
             s_w = self.s_w(cell_output)
@@ -991,18 +1022,17 @@ class TimedNTM(object):
 
             # [filter_height=1, filter_width=2*attn_shift_range+1,
             #   in_channels=batch, channel_multiplier=1]
-            s_w = tf.transpose(s_w, [1, 0])
-            s_w = s_w[tf.newaxis, :, :, tf.newaxis]
+            conv_s_w = tf.transpose(s_w, [1, 0])
+            conv_s_w = conv_s_w[tf.newaxis, :, :, tf.newaxis]
 
             # perform 1d convolution
             # [batch=1, out_height=1, out_width=time+1, out_channels=batch]
-            conv_probs = tf.nn.depthwise_conv2d_native(conv_probs, s_w,
+            conv_probs = tf.nn.depthwise_conv2d_native(conv_probs, conv_s_w,
                                                        [1, 1, 1, 1], 'SAME')
             conv_probs = conv_probs[0, 0, :, :]
             conv_probs = tf.transpose(conv_probs, [1, 0])
 
-            conv_probs = tf.reverse(conv_probs, axis=[1])
-            probs = tf.concat([conv_probs[:, :-1], probs[:, -1:]], 1)
+            probs = tf.reverse(conv_probs, axis=[1])
 
         # Sharpening
         gamma = self.gamma(cell_output)
@@ -1016,8 +1046,7 @@ class TimedNTM(object):
 
 def _compute_time_attention(attention_mechanism, cell_output, attention_state,
                             # time is added to calculate time attention
-                            time, timed_ntm,
-                            attention_layer):
+                            time, timed_ntm, attention_layer):
     """Computes the attention and alignments limited by time
         for a given attention_mechanism.
 
