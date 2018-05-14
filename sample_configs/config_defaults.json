@@ -23,7 +23,8 @@
   "duckling_dimensions": null,
   "duckling_http_url": null,
   "phrase_matcher": {
-    "ignore_case": true
+    "ignore_case": true,
+    "use_tokens": true
   },
   "ner_crf": {
     "BILOU_flag": true,

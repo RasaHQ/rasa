@@ -40,7 +40,8 @@ DEFAULT_CONFIG = {
     "duckling_dimensions": None,
     "duckling_http_url": None,
     "phrase_matcher": {
-        "ignore_case": True
+        "ignore_case": True,
+        "use_tokens": True
     },
     "ner_crf": {
         "BILOU_flag": True,

@@ -4,6 +4,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import pytest
+
 from rasa_nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
 from tests import utilities
 from rasa_nlu.training_data import TrainingData, Message
@@ -110,8 +112,10 @@ def test_unintentional_synonyms_capitalized(component_builder):
     assert ner_syn.synonyms.get("tacos") == "Mexican"
 
 
-def test_phrase_matcher(component_builder):
+@pytest.mark.parametrize("use_tokens", [True, False])
+def test_phrase_matcher(component_builder, use_tokens):
     _config = utilities.base_test_conf("all_components")
+    _config["phrase_matcher"]["use_tokens"] = use_tokens
     ner_component = "ner_phrase_matcher"
     ner_pm = component_builder.create_component(ner_component, _config)
 
@@ -124,6 +128,11 @@ def test_phrase_matcher(component_builder):
         Message.build("pizza", "food"),
         Message.build("I'd like to have some Rigatoni al forno", "food")
     ]
+
+    if use_tokens:
+        tokenizer = component_builder.create_component("tokenizer_whitespace", _config)
+        for ex in examples:
+            tokenizer.process(ex)
 
     targets = [
         [{"start": 0, "end": 5, "value": "Pizza", "entity": "food", "extractor": ner_component}],
@@ -138,9 +147,11 @@ def test_phrase_matcher(component_builder):
         assert ex.get("entities") == target
 
 
-def test_phrase_matcher_case(component_builder):
+@pytest.mark.parametrize("use_tokens", [True, False])
+def test_phrase_matcher_case(component_builder, use_tokens):
     _config = utilities.base_test_conf("all_components")
     _config["phrase_matcher"]["ignore_case"] = False
+    _config["phrase_matcher"]["use_tokens"] = use_tokens
     ner_component = "ner_phrase_matcher"
     ner_pm = component_builder.create_component(ner_component, _config)
     entity_phrases = {
@@ -152,9 +163,45 @@ def test_phrase_matcher_case(component_builder):
         Message.build("I'd like some pizza", "food"),
     ]
 
+    if use_tokens:
+        tokenizer = component_builder.create_component("tokenizer_whitespace", _config)
+        for ex in examples:
+            tokenizer.process(ex)
+
     targets = [
         [{"start": 14, "end": 19, "value": "Pizza", "entity": "food", "extractor": ner_component}],
         [],
+    ]
+
+    ner_pm.train(TrainingData(training_examples=examples, entity_phrases=entity_phrases), _config)
+
+    for ex, target in zip(examples, targets):
+        ner_pm.process(ex)
+        assert ex.get("entities") == target
+
+
+def test_phrase_matcher_tokenized(component_builder):
+    _config = utilities.base_test_conf("all_components")
+    _config["phrase_matcher"]["ignore_case"] = True
+    _config["phrase_matcher"]["use_tokens"] = True
+    ner_component = "ner_phrase_matcher"
+    ner_pm = component_builder.create_component(ner_component, _config)
+    entity_phrases = {
+        "company": {"SAP"}
+    }
+
+    examples = [
+        Message.build("We are mining sapphires", "NA"),
+        Message.build("SAP's headquarters are in Waldorf", "NA"),
+    ]
+
+    spacy_nlp = component_builder.create_component("nlp_spacy", _config)
+    for ex in examples:
+        spacy_nlp.process(ex)
+
+    targets = [
+        [],
+        [{"start": 0, "end": 3, "value": "SAP", "entity": "company", "extractor": ner_component}]
     ]
 
     ner_pm.train(TrainingData(training_examples=examples, entity_phrases=entity_phrases), _config)
