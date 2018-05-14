@@ -18,6 +18,14 @@ from numpy import all, array
 from typing import Text, Any, List, Optional
 
 
+def configure_file_logging(loglevel, logfile):
+    if logfile:
+        fh = logging.FileHandler(logfile)
+        fh.setLevel(loglevel)
+        logging.getLogger('').addHandler(fh)
+    logging.captureWarnings(True)
+
+
 def add_logging_option_arguments(parser):
     """Add options to an argument parser to configure logging levels."""
 

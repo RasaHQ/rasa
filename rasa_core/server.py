@@ -68,14 +68,6 @@ def create_argument_parser():
     return parser
 
 
-def _configure_logging(loglevel, logfile):
-    if logfile:
-        fh = logging.FileHandler(logfile)
-        fh.setLevel(loglevel)
-        logging.getLogger('').addHandler(fh)
-    logging.captureWarnings(True)
-
-
 def ensure_loaded_agent(f):
     """Wraps a request handler ensuring there is a loaded and usable model."""
 
@@ -199,7 +191,7 @@ class RasaCoreServer(object):
                  auth_token=None,
                  tracker_store=None):
 
-        _configure_logging(loglevel, logfile)
+        utils.configure_file_logging(loglevel, logfile)
 
         self.config = {"cors_origins": cors_origins if cors_origins else [],
                        "token": auth_token}
