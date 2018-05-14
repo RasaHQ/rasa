@@ -578,7 +578,7 @@ class StoryExported(Event):
     type_name = "export"
 
     def __init__(self, path=None, timestamp=None):
-        self.path = path if path else "stories.md"
+        self.path = path
         super(StoryExported, self).__init__(timestamp)
 
     def __hash__(self):
@@ -595,8 +595,8 @@ class StoryExported(Event):
 
     def apply_to(self, tracker):
         # type: (DialogueStateTracker) -> None
-
-        tracker.export_stories_to_file(self.path)
+        if self.path:
+            tracker.export_stories_to_file(self.path)
 
 
 # noinspection PyProtectedMember
