@@ -88,7 +88,6 @@ class TrainingData(object):
             else:
                 entity_phrases[entity] = phrases
 
-    @staticmethod
     def sanitize_examples(self):
         # type: () -> None
         """Makes sure the training data is clean.
