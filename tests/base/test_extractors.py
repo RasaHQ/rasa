@@ -179,8 +179,8 @@ def test_unintentional_synonyms_capitalized(component_builder):
 
 @pytest.mark.parametrize("use_tokens", [True, False])
 def test_phrase_matcher(component_builder, use_tokens):
-    _config = utilities.base_test_conf("all_components")
-    _config["phrase_matcher"]["use_tokens"] = use_tokens
+    _config = RasaNLUModelConfig({"pipeline": [{"name": "ner_phrase_matcher"}]})
+    _config.set_component_attr("ner_phrase_matcher", use_tokens=use_tokens)
     ner_component = "ner_phrase_matcher"
     ner_pm = component_builder.create_component(ner_component, _config)
 
@@ -214,9 +214,9 @@ def test_phrase_matcher(component_builder, use_tokens):
 
 @pytest.mark.parametrize("use_tokens", [True, False])
 def test_phrase_matcher_case(component_builder, use_tokens):
-    _config = utilities.base_test_conf("all_components")
-    _config["phrase_matcher"]["ignore_case"] = False
-    _config["phrase_matcher"]["use_tokens"] = use_tokens
+    _config = RasaNLUModelConfig({"pipeline": [{"name": "ner_phrase_matcher"}]})
+    _config.set_component_attr("ner_phrase_matcher", use_tokens=use_tokens)
+    _config.set_component_attr("ner_phrase_matcher", ignore_case=False)
     ner_component = "ner_phrase_matcher"
     ner_pm = component_builder.create_component(ner_component, _config)
     entity_phrases = {
@@ -246,9 +246,9 @@ def test_phrase_matcher_case(component_builder, use_tokens):
 
 
 def test_phrase_matcher_tokenized(component_builder):
-    _config = utilities.base_test_conf("all_components")
-    _config["phrase_matcher"]["ignore_case"] = True
-    _config["phrase_matcher"]["use_tokens"] = True
+    _config = RasaNLUModelConfig({"pipeline": [{"name": "ner_phrase_matcher"}]})
+    _config.set_component_attr("ner_phrase_matcher", use_tokens=True)
+    _config.set_component_attr("ner_phrase_matcher", ignore_case=True)
     ner_component = "ner_phrase_matcher"
     ner_pm = component_builder.create_component(ner_component, _config)
     entity_phrases = {

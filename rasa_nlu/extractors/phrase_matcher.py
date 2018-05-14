@@ -18,14 +18,20 @@ class PhraseMatcher(EntityExtractor):
 
     requires = ["spacy_doc", "tokens"]
 
-    def __init__(self, entity_phrases=None, ignore_case=True, use_tokens=True):
-        self.phrase_trie = self._trie_factory(use_tokens)
-        self.ignore_case = ignore_case
-        self.use_tokens = use_tokens
+    defaults = {
+        "ignore_case": True,
+        "use_tokens": True
+    }
+
+    def __init__(self, component_config=None, entity_phrases=None):
+        super(PhraseMatcher, self).__init__(component_config)
+
+        self.phrase_trie = self._trie_factory(self.component_config["use_tokens"])
         if entity_phrases:
             self._build_trie(entity_phrases)
 
-    def _trie_factory(self, use_tokens):
+    @staticmethod
+    def _trie_factory(use_tokens):
         """Return appropriate Trie for operation mode."""
         import pygtrie
         if use_tokens:
@@ -37,9 +43,9 @@ class PhraseMatcher(EntityExtractor):
         """Adjusts phrases for case sensitivity and token-based matching."""
         fitted = []
         for phrase in phrases:
-            if self.ignore_case:
+            if self.component_config["ignore_case"]:
                 phrase = phrase.lower()
-            if self.use_tokens:
+            if self.component_config["use_tokens"]:
                 phrase = phrase.split(" ")
             fitted.append(phrase)
         return fitted
@@ -51,13 +57,12 @@ class PhraseMatcher(EntityExtractor):
                 self.phrase_trie[phrase] = entity
 
     def train(self, training_data, config, **kwargs):
-        self.ignore_case = config.get("phrase_matcher", {}).get("ignore_case", True)
-        self.use_tokens = config.get("phrase_matcher", {}).get("use_tokens", True)
+        self.component_config = config.for_component(self.name, self.defaults)
         self._build_trie(training_data.entity_phrases)
 
     def process(self, message, **kwargs):
         # type: (Message) -> None
-        if self.use_tokens:
+        if self.component_config["use_tokens"]:
             self._process_tokens(message)
         else:
             self._process_chars(message)
@@ -76,7 +81,7 @@ class PhraseMatcher(EntityExtractor):
         extracted = []
         tokens = self._get_tokens(message)
         tokens, indices = zip(*tokens)
-        if self.ignore_case:
+        if self.component_config["ignore_case"]:
             tokens = [t.lower() for t in tokens]
         for i in range(len(tokens)):
             match = self.phrase_trie.longest_prefix(tokens[i:])
@@ -93,7 +98,7 @@ class PhraseMatcher(EntityExtractor):
     def _process_chars(self, message):
         extracted = []
         text = message.text
-        if self.ignore_case:
+        if self.component_config["ignore_case"]:
             text = text.lower()
 
         for i in range(len(text)):
@@ -117,20 +122,16 @@ class PhraseMatcher(EntityExtractor):
 
         return {
             "entity_phrases": entity_phrases_file,
-            "phrase_matcher": {
-                "ignore_case": self.ignore_case,
-                "use_tokens": self.use_tokens,
-            }
         }
 
     @classmethod
     def load(cls, model_dir, model_metadata, cached_component, **kwargs):
         if not model_metadata.get("entity_phrases"):
             raise ValueError("Entity phrases not defined in metadata, but component present in pipeline")
-        ignore_case = model_metadata.get("phrase_matcher", {}).get("ignore_case", True)
-        use_tokens = model_metadata.get("phrase_matcher", {}).get("use_tokens", True)
+
+        component_config = model_metadata.for_component(cls.name)
 
         entity_phrases_file = os.path.join(model_dir, model_metadata.get("entity_phrases"))
         entity_phrases = utils.read_json_file(entity_phrases_file)
 
-        return cls(entity_phrases, ignore_case, use_tokens)
+        return cls(component_config, entity_phrases)
