@@ -7,7 +7,9 @@ Here's how to connect your conversational AI to the outside world.
 
 Input channels are defined in the ``rasa_core.channels`` module.
 Currently, there is an implementation for the command line as well as
-connection to facebook, slack and telegram.
+connection to facebook, slack, telegram, mattermost and twilio.
+
+You need an external webhook to use any of these channels.  If you're testing the connection locally, you can set up a temporary webhook using ngrok_
 
 .. _facebook_connector:
 
@@ -123,10 +125,10 @@ Code to create a Messenger-compatible webserver looks like this:
 
     agent.handle_channel(HttpInputChannel(5004, "/app", input_channel))
 
-The arguments for the ``HttpInputChannel`` are the port, the url prefix, and the input channel.
-The default endpoint for receiving facebook messenger messages is ``/webhook``, so the example
-above would listen for messages on ``/app/webhook``. This is the url you should add in the
-facebook developer portal. N.b. if you do not set the ``slack_channel`` keyword argument, messages will by delivered back to the user who sent them.
+The arguments for the HttpInputChannel are the port, the url prefix, and the input channel. 
+The default endpoint for receiving messages is /webhook, so the example above would listen for messages on /app/webhook. 
+This is the url you should add in the OAuth & Permissions section. N.b. if you do not set the slack_channel keyword 
+argument, messages will by delivered back to the user who sent them.
 
 .. note::
 
@@ -145,10 +147,55 @@ facebook developer portal. N.b. if you do not set the ``slack_channel`` keyword 
    For more detailed steps, visit the
    `slack api docs <https://api.slack.com/incoming-webhooks>`_.
 
+
+Using run script
+^^^^^^^^^^^^^^^^
+If you want to connect to the slack input channel using the run script, e.g. using
+
+.. code-block:: bash
+
+  python -m rasa_core.run -d models/dialogue -u models/nlu/current \
+      --port 5002 --connector slack --credentials slack_credentials.yml
+
+
+
+Directly using python
+^^^^^^^^^^^^^^^^^^^^^
+
+A ``SlackInput`` instance provides a flask blueprint for creating
+a webserver. This lets you separate the exact endpoints and implementation
+from your webserver creation logic.
+
+Code to create a slack-compatible webserver looks like this:
+
+
+.. code-block:: python
+    :linenos:
+
+    from rasa_core.channels import HttpInputChannel
+    from rasa_core.channels.slack import SlackInput
+    from rasa_core.agent import Agent
+    from rasa_core.interpreter import RegexInterpreter
+
+    # load your trained agent
+    agent = Agent.load("dialogue", interpreter=RegexInterpreter())
+
+    input_channel = SlackInput(
+       slack_token="YOUR_SLACK_TOKEN",  # this is the `bot_user_o_auth_access_token`
+       slack_channel="YOUR_SLACK_CHANNEL"  # the name of your channel to which the bot posts
+    )
+
+    agent.handle_channel(HttpInputChannel(5004, "/app", input_channel))
+
+The arguments for the ``HttpInputChannel`` are the port, the url prefix, and the input channel.
+The default endpoint for receiving facebook messenger messages is ``/webhook``, so the example
+above would listen for messages on ``/app/webhook``. This is the url you should add in the
+facebook developer portal.
+
 .. _mattermost_connector:
 
 Mattermost Setup
------------
+----------------
 
 Using run script
 ^^^^^^^^^^^^^^^^
@@ -222,7 +269,7 @@ Telegram Setup
 Using run script
 ^^^^^^^^^^^^^^^^
 
-If you want to connect to the slack input channel using the run script, e.g. using
+If you want to connect to telegram using the run script, e.g. using
 
 .. code-block:: bash
 
@@ -275,14 +322,16 @@ that URL, go to ``myurl.com/app/set_webhook`` first to set the webhook.
 
       1. To create the bot, go to: https://web.telegram.org/#/im?p=@BotFather, enter
       */newbot* and follow the instructions.
+	  
       2. At the end you should get your ``access_token`` and the username you set will
       be your ``verify``.
+	  
       3. If you want to use your bot in a group setting, it's advisable to turn on group privacy
       mode by entering */setprivacy*. Then the bot will only listen when the message is started
       with */bot*
 
     For more information on the Telegram HTTP API, go to https://core.telegram.org/bots/api
-
+	
 .. _twilio_connector:
 
 Twilio Setup
@@ -349,3 +398,19 @@ listen for messages on ``/app/webhook``.
       you purchased in your credentials yml.
 
     For more information on the Twilio REST API, go to https://www.twilio.com/docs/iam/api
+
+.. _ngrok:
+
+Using Ngrok For Local Testing
+=========================================
+You can use https://ngrok.com/ to create a local webhook from your machine that is Publicly available on the internet so you can use it with applications like Slack, Facebook, etc.
+
+The command to run a ngrok instance for port 5002 for example would be:
+
+.. code-block:: bash
+
+  ngrok httpd 5002
+
+**Ngrok is only needed if you don't have a public IP and are testing locally**
+  
+This will then give a output showing a https address that you need to supply for the interactive components request URL and for the incoming webhook and the address should be whatever ngrok supplies you with /webhook added to the end.  This basically takes the code running on your local machine and punches it through the internet at the ngrok address supplied.

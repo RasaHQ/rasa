@@ -89,10 +89,22 @@ class FormAction(Action):
 
     def get_other_slots(self, tracker):
         requested_slot = tracker.get_slot("requested_slot")
-        slot_events = [f.extract(tracker) for f in self.required_fields()
-                       if isinstance(f, EntityFormField) and
-                       not f.slot_name == requested_slot]
-        return [e for events in slot_events for e in events]
+
+        requested_entity = None
+        for f in self.required_fields():
+            if f.slot_name == requested_slot:
+                requested_entity = getattr(f, 'entity_name', None)
+
+        slot_events = []
+        extracted_entities = {requested_entity}
+
+        for f in self.required_fields():
+            if isinstance(f, EntityFormField) and \
+                not f.slot_name == requested_slot and \
+                not f.entity_name in extracted_entities:
+                slot_events.extend(f.extract(tracker))
+                extracted_entities.add(f.entity_name)
+        return slot_events
 
     def get_requested_slot(self, tracker):
         requested_slot = tracker.get_slot("requested_slot")
@@ -124,7 +136,9 @@ class FormAction(Action):
         for field in self.required_fields():
             if self.should_request_slot(temp_tracker, field.slot_name):
                 dispatcher.utter_template(
-                    "utter_ask_{}".format(field.slot_name))
+                    "utter_ask_{}".format(field.slot_name),
+                    filled_slots=temp_tracker.current_slot_values()
+                )
 
                 events.append(SlotSet("requested_slot", field.slot_name))
                 return events
