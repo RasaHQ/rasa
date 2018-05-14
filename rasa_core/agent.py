@@ -61,6 +61,15 @@ class Agent(object):
         if path is None:
             raise ValueError("No domain path specified.")
 
+        if os.path.isfile(path):
+            raise ValueError("You are trying to load a MODEL from a file "
+                             "('{}'), which is not possible. \n"
+                             "The persisted path should be a directory "
+                             "containing the various model files. \n\n"
+                             "If you want to load training data instead of "
+                             "a model, use `agent.load_data(...)` "
+                             "instead.".format(path))
+
         ensemble = PolicyEnsemble.load(path)
         domain = TemplateDomain.load(os.path.join(path, "domain.yml"),
                                      action_factory)

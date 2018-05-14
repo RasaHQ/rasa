@@ -3,6 +3,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import pytest
+
 import rasa_core
 from rasa_core.agent import Agent
 from rasa_core.interpreter import RegexInterpreter, INTENT_MESSAGE_PREFIX
@@ -69,3 +71,14 @@ def test_deprecated_use_of_train(tmpdir, default_domain):
     assert type(loaded.policy_ensemble) is type(agent.policy_ensemble)  # nopep8
     assert [type(p) for p in loaded.policy_ensemble.policies] == \
            [type(p) for p in agent.policy_ensemble.policies]
+
+
+def test_agent_wrong_use_of_load(tmpdir, default_domain):
+    training_data_file = 'examples/moodbot/data/stories.md'
+    agent = Agent("examples/moodbot/domain.yml",
+                  policies=[AugmentedMemoizationPolicy()])
+
+    with pytest.raises(ValueError):
+        # try to load a model file from a data path, which is nonsense and
+        # should fail properly
+        agent.load(training_data_file)
