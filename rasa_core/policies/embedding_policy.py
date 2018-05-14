@@ -816,26 +816,26 @@ class EmbeddingPolicy(Policy):
         # _ps[1] - alignments over prev action
 
         # code to output attention for the current last action:
-        if len(_ps) > 0:
-            for i in range(_sim.shape[1]):
-                if i > 0:
-                    idx_prev = np.argmax(_sim[0, i - 1, :])
-                else:
-                    idx_prev = 0
-                idx = np.argmax(_sim[0, i, :])
-                print("{:.3f} ||  -- {} ----> {} -- {:.3f}"
-                      "".format(_ps[0][0, -1, i],# _ps[1][0, -1, i],
-                                domain.actions[idx_prev].name(),
-                                domain.actions[idx].name(),
-                                np.max(_sim[0, i, :])
-                                ))
-
-            print("{:.3f} || "#-- {} ----> {}"
-                  "".format(np.sum(_ps[0][0, -1]),
-                            # np.sum(_ps[1][0, -1])
-                            # domain.actions[np.argmax(_sim[0, -2, :])].name(),
-                            # domain.actions[np.argmax(_sim[0, -1, :])].name()
-                            ))
+        # if len(_ps) > 0:
+        #     for i in range(_sim.shape[1]):
+        #         if i > 0:
+        #             idx_prev = np.argmax(_sim[0, i - 1, :])
+        #         else:
+        #             idx_prev = 0
+        #         idx = np.argmax(_sim[0, i, :])
+        #         print("{:.3f} ||  -- {} ----> {} -- {:.3f}"
+        #               "".format(_ps[0][0, -1, i],# _ps[1][0, -1, i],
+        #                         domain.actions[idx_prev].name(),
+        #                         domain.actions[idx].name(),
+        #                         np.max(_sim[0, i, :])
+        #                         ))
+        #
+        #     print("{:.3f} || "#-- {} ----> {}"
+        #           "".format(np.sum(_ps[0][0, -1]),
+        #                     # np.sum(_ps[1][0, -1])
+        #                     # domain.actions[np.argmax(_sim[0, -2, :])].name(),
+        #                     # domain.actions[np.argmax(_sim[0, -1, :])].name()
+        #                     ))
 
         result = _sim[0, -1, :]
         if self.similarity_type == 'cosine':
