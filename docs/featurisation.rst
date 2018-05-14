@@ -46,17 +46,21 @@ of the tracker has a couple steps:
             The vectors ``X, y`` indicate a presence of a certain intent,
             entity, previous action or slot e.g. ``[0 0 1 0 0 1 ...]``.
 
-        - ``LabelTokenizerSingleStateFeaturizer`` creates an embedding of the feature label:
-            The features label (e.g. ``prev_action_listen``) is split into
-            tokens and represented as a bag-of-words. For example, actions
+        - ``LabelTokenizerSingleStateFeaturizer`` creates an vector based on the feature label:
+            All active feature labels (e.g. ``prev_action_listen``) are split
+            into tokens and represented as a bag-of-words. For example, actions
             ``utter_explain_details_hotel`` and
             ``utter_explain_details_restaurant`` will have 3 features in
             common, and differ by a single feature indicating a domain.
 
-            Labels for user inputs (intents, entities) and bot actions are featurized separately.
-            Each label in the two categories is tokenized on a special character ``split_symbol`` (e.g. ``action_search_restaurant = {action, search, restaurant}``),
-            creating two vocabularies. A bag-of-words representation is then created for each label using the appropriate vocabulary.
-            The slots are featurized as binary vectors, indicating their presence or absence at each step of the dialogue.
+            Labels for user inputs (intents, entities) and bot actions
+            are featurized separately. Each label in the two categories
+            is tokenized on a special character ``split_symbol``
+            (e.g. ``action_search_restaurant = {action, search, restaurant}``),
+            creating two vocabularies. A bag-of-words representation
+            is then created for each label using the appropriate vocabulary.
+            The slots are featurized as binary vectors, indicating
+            their presence or absence at each step of the dialogue.
 
 
 .. note::
