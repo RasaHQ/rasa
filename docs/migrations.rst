@@ -39,7 +39,8 @@ how you can migrate from one version to another.
   which is similar, but is able to match more states to states it has seen
   during trainer (e.g. it is able to handle slots better)
 
-- featurizers need to be **passed directly to the policy** that should use them.
+- if you use custom featurizers, you need to
+  **pass them directly to the policy** that should use them.
   This allows the policies to use different featurizers. Passing a featurizer
   is **optional**. Accordingly, the ``max_history`` parameter moved to that
   featurizer:
@@ -51,12 +52,14 @@ how you can migrate from one version to another.
 
       featurizer = MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
                                                max_history=5)
+
       agent = Agent(domain_file,
-                    policies=[MemoizationPolicy(featurizer), KerasPolicy()])
+                    policies=[MemoizationPolicy(max_history=5),
+                              KerasPolicy(featurizer)])
 
   If no featurizer is passed during policy creation, the policies default
-  featurizer will be used (e.g. in the above example ``KerasPolicy``
-  will use the default).
+  featurizer will be used. The `MemoizationPolicy` allows passing in the
+  `max_history` parameter directly, without creating a featurizer.
 
 
 0.7.x to 0.8.0

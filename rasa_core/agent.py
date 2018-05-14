@@ -179,10 +179,11 @@ class Agent(object):
 
         # deprecation tests
         if kwargs.get('featurizer') or kwargs.get('max_history'):
-            logger.warning("Passing `featurizer` and `max_history` "
-                           "to `agent.train(...)` is deprecated. "
-                           "Pass appropriate featurizer "
-                           "directly to the policy instead.")
+            raise Exception("Passing `featurizer` and `max_history` "
+                            "to `agent.train(...)` is not supported anymore. "
+                            "Pass appropriate featurizer "
+                            "directly to the policy instead. More info "
+                            "https://core.rasa.com/migrations.html#x-to-0-9-0")
 
         # TODO: DEPRECATED - remove in version 0.10
         if isinstance(training_trackers, string_types):

@@ -52,10 +52,10 @@ def core_server(tmpdir_factory):
     model_path = tmpdir_factory.mktemp("model").strpath
 
     agent = Agent("data/test_domains/default_with_topic.yml",
-                  policies=[AugmentedMemoizationPolicy()])
+                  policies=[AugmentedMemoizationPolicy(max_history=3)])
 
     training_data = agent.load_data(DEFAULT_STORIES_FILE)
-    agent.train(training_data, max_history=3)
+    agent.train(training_data)
     agent.persist(model_path)
 
     return RasaCoreServer(model_path, interpreter=RegexInterpreter())

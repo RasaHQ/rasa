@@ -92,10 +92,13 @@ What the ``train()`` method does is the following:
 
 .. note::
 
-    In fact, the rows in ``X`` describe the state of the tracker when the previous ``max_history`` actions were taken. See :ref:`featurization` for more details.
+    In fact, the rows in ``X`` describe the state of the tracker when the
+    previous ``max_history`` actions were taken. See :ref:`featurization`
+    for more details.
 
-For the ``MemoizationPolicy``, the ``train()`` method just memorises the actions taken in the story,
-so that when your bot encounters an identical situation it will make the decision you intended. 
+For the ``MemoizationPolicy``, the ``train()`` method just memorises
+the actions taken in the story, so that when your bot encounters an
+identical situation it will make the decision you intended.
 
 
 Generalising to new Dialogues

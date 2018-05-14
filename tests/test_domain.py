@@ -14,7 +14,7 @@ from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 
 
 def test_create_train_data_no_history(default_domain):
-    featurizer = MaxHistoryTrackerFeaturizer(None, max_history=1)
+    featurizer = MaxHistoryTrackerFeaturizer(max_history=1)
     training_trackers = training.load_data(
             DEFAULT_STORIES_FILE,
             default_domain,
@@ -50,7 +50,7 @@ def test_create_train_data_no_history(default_domain):
 
 
 def test_create_train_data_with_history(default_domain):
-    featurizer = MaxHistoryTrackerFeaturizer(None, max_history=4)
+    featurizer = MaxHistoryTrackerFeaturizer(max_history=4)
     training_trackers = training.load_data(
         DEFAULT_STORIES_FILE,
         default_domain,
