@@ -20,6 +20,7 @@ Added
 - added a Twilio channel that allows Rasa Core to communicate via SMS
 - ``FallbackPolicy`` for executing a default message if NLU or core model confidence is low.
 - ``FormAction`` class to make it easier to collect multiple pieces of information with fewer stories.
+- Dockerfile for ``rasa_core.server`` with a dialogue and Rasa NLU model
 
 Changed
 -------
