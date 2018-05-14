@@ -10,6 +10,7 @@ from collections import defaultdict
 from collections import namedtuple
 
 import numpy as np
+import joblib
 
 from rasa_nlu import training_data, utils, config
 from rasa_nlu.config import RasaNLUModelConfig
@@ -562,13 +563,14 @@ def combine_entity_result(results, interpreter, data):
     return results
 
 
-def run_cv_evaluation(data, n_folds, nlu_config):
+def run_cv_evaluation(data, n_folds, nlu_config, n_jobs=-1):
     # type: (TrainingData, int, RasaNLUModelConfig) -> CVEvaluationResult
     """Stratified cross validation on data
 
     :param data: Training Data
     :param n_folds: integer, number of cv folds
     :param nlu_config: nlu config file
+    :param n_jobs: how many CPU cores will be used
     :return: dictionary with key, list structure, where each entry in list
               corresponds to the relevant result for one fold
     """
@@ -582,9 +584,16 @@ def run_cv_evaluation(data, n_folds, nlu_config):
     entity_test_results = defaultdict(lambda: defaultdict(list))
     tmp_dir = tempfile.mkdtemp()
 
-    for train, test in generate_folds(n_folds, data):
-        interpreter = trainer.train(train)
+    train_test_datasets = [(train, test)
+                           for train, test in generate_folds(n_folds, data)]
 
+    interpreter_list = joblib.Parallel(n_jobs=n_jobs)(
+        joblib.delayed(trainer.train)(i[0]) for i in train_test_datasets
+    )
+
+    evaluate_intermediate_data = zip(train_test_datasets, interpreter_list)
+
+    for train, test, interpreter in evaluate_intermediate_data:
         # calculate train accuracy
         train_results = combine_intent_result(train_results, interpreter, train)
         test_results = combine_intent_result(test_results, interpreter, test)
