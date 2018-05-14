@@ -3,6 +3,45 @@ Migration Guide
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+0.11.x to 0.12.0
+----------------
+
+.. warning::
+
+  This is a release **breaking backwards compatibility**.
+  Unfortunately, it is not possible to load
+  previously trained models (as the stored file formats have changed as
+  well as the configuration and metadata). Please make sure to retrain
+  a model before trying to use it with this improved version.
+
+model configuration
+~~~~~~~~~~~~~~~~~~~
+We have split the configuration in a model configuration and parameters used
+to configure the server, train, and evaluate scripts. The configuration
+file now only contains the ``pipeline`` as well as the ``language``
+parameters. Example:
+
+  .. code-block:: yaml
+
+      langauge: "en"
+
+      pipeline:
+      - name: "nlp_spacy"
+        model: "en"               # parameter of the spacy component
+      - name: "ner_synonyms"
+
+
+All other parameters have either been moved to the scripts
+for training (:ref:`train_parameters`), serving models
+(:ref:`server_parameters`), or put into the pipeline
+configuration (:ref:`section_pipeline`).
+
+persistors:
+~~~~~~~~~~~
+- renamed ``AWS_REGION`` to ``AWS_DEFAULT_REGION``
+- always make sure to specify the bucket using env ``BUCKET_NAME``
+- are now configured solely over environment variables
+
 0.9.x to 0.10.0
 ---------------
 - We introduced a new concept called a ``project``. You can have multiple versions

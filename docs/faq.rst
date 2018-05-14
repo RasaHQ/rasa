@@ -21,7 +21,7 @@ To assess your model's performance, :ref:`run the server and manually test some 
 
 Does it run with python 3?
 --------------------------
-Yes it does, rasa NLU supports python 2.7 as well as python 3.5 and 3.6. If there are any issues with a specific python version, feel free to create an issue or directly provide a fix.
+Yes it does, Rasa NLU supports python 2.7 as well as python 3.5 and 3.6. If there are any issues with a specific python version, feel free to create an issue or directly provide a fix.
 
 Which languages are supported?
 ------------------------------
@@ -31,9 +31,9 @@ section or the `gitter chat <https://gitter.im/RasaHQ/rasa_nlu>`_.
 
 .. _section_faq_version:
 
-Which version of rasa NLU am I running?
+Which version of Rasa NLU am I running?
 ---------------------------------------
-To find out which rasa version you are running, you can execute
+To find out which Rasa version you are running, you can execute
 
 .. code-block:: bash
 

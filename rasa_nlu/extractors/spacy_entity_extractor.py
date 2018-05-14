@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from __future__ import division
-from __future__ import unicode_literals, print_function
+from __future__ import print_function
+from __future__ import unicode_literals
 
 import typing
 from typing import Any
@@ -32,7 +33,8 @@ class SpacyEntityExtractor(EntityExtractor):
         extracted = self.extract_entities(doc)
         self.append_entities(message, extracted)
 
-    def extract_entities(self, doc):
+    @staticmethod
+    def extract_entities(doc):
         # type: (Doc) -> List[Dict[Text, Any]]
 
         entities = [
@@ -40,6 +42,7 @@ class SpacyEntityExtractor(EntityExtractor):
                 "entity": ent.label_,
                 "value": ent.text,
                 "start": ent.start_char,
+                "confidence": None,
                 "end": ent.end_char
             }
             for ent in doc.ents]

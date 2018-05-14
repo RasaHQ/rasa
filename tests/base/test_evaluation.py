@@ -8,26 +8,32 @@ import logging
 
 import pytest
 
-from rasa_nlu.evaluate import is_token_within_entity, do_entities_overlap, merge_labels, patch_duckling_entities, \
-    remove_empty_intent_examples, get_entity_extractors, get_duckling_dimensions, known_duckling_dimensions, \
-    find_component, patch_duckling_extractors, prepare_data, run_cv_evaluation, substitute_labels
+from rasa_nlu.evaluate import (
+    is_token_within_entity, do_entities_overlap,
+    merge_labels, remove_duckling_entities,
+    remove_empty_intent_examples, get_entity_extractors,
+    get_duckling_dimensions, known_duckling_dimensions,
+    find_component, remove_duckling_extractors, drop_intents_below_freq,
+    run_cv_evaluation, substitute_labels)
 from rasa_nlu.evaluate import does_token_cross_borders
 from rasa_nlu.evaluate import align_entity_predictions
 from rasa_nlu.evaluate import determine_intersection
-from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.tokenizers import Token
-from rasa_nlu import training_data
+from rasa_nlu import training_data, config
 from tests import utilities
 
 logging.basicConfig(level="DEBUG")
 
 
-@pytest.fixture(scope="module")
-def duckling_interpreter(component_builder):
-    _conf = utilities.base_test_conf("")
-    _conf["pipeline"] = ["ner_duckling"]
-    _conf["data"] = "./data/examples/rasa/demo-rasa.json"
-    return utilities.interpreter_for(component_builder, _conf)
+@pytest.fixture(scope="session")
+def duckling_interpreter(component_builder, tmpdir_factory):
+    conf = RasaNLUModelConfig({"pipeline": [{"name": "ner_duckling"}]})
+    return utilities.interpreter_for(
+            component_builder,
+            data="./data/examples/rasa/demo-rasa.json",
+            path=tmpdir_factory.mktemp("projects").strpath,
+            config=conf)
 
 
 # Chinese Example
@@ -198,45 +204,40 @@ def test_duckling_patching():
             "value": "near Alexanderplatz",
             "entity": "location",
             "extractor": "ner_crf"
-        },
-        {
-            "start": 57,
-            "end": 64,
-            "value": "tonight",
-            "entity": "Time",
-            "extractor": "ner_duckling (Time)"
-
         }
     ]]
-    assert patch_duckling_entities(entities) == patched
+    assert remove_duckling_entities(entities) == patched
 
 
-def test_prepare_data():
+def test_drop_intents_below_freq():
     td = training_data.load_data('data/examples/rasa/demo-rasa.json')
-    clean_data = prepare_data(td, 0)
-    unique_intents = sorted(set([i.data["intent"] for i in clean_data]))
-    assert (unique_intents == ['affirm', 'goodbye', 'greet', 'restaurant_search'])
+    clean_td = drop_intents_below_freq(td, 0)
+    assert clean_td.intents == {'affirm', 'goodbye', 'greet',
+                                'restaurant_search'}
 
-    clean_data = prepare_data(td, 10)
-    unique_intents = sorted(set([i.data["intent"] for i in clean_data]))
-    assert (unique_intents == ['affirm', 'restaurant_search'])
+    clean_td = drop_intents_below_freq(td, 10)
+    assert clean_td.intents == {'affirm', 'restaurant_search'}
 
 
 def test_run_cv_evaluation():
-    import numpy as np
     td = training_data.load_data('data/examples/rasa/demo-rasa.json')
-    n_folds = 3
-    nlu_config = RasaNLUConfig("sample_configs/config_defaults.json")
+    nlu_config = config.load("sample_configs/config_spacy.yml")
 
-    np.seed(2018)
-    results = run_cv_evaluation(td, n_folds, nlu_config)
+    n_folds = 2
+    results, entity_results = run_cv_evaluation(td, n_folds, nlu_config)
 
-    rel_tol = 1e-09
-    abs_tol = 0.01
-
-    acc = np.mean(results["accuracy"])
-    exp_acc = 0.65  # expected result
-    np.testing.assert_approx_equal(acc, exp_acc, significant=5)
+    assert len(results.train["Accuracy"]) == n_folds
+    assert len(results.train["Precision"]) == n_folds
+    assert len(results.train["F1-score"]) == n_folds
+    assert len(results.test["Accuracy"]) == n_folds
+    assert len(results.test["Precision"]) == n_folds
+    assert len(results.test["F1-score"]) == n_folds
+    assert len(entity_results.train['ner_crf']["Accuracy"]) == n_folds
+    assert len(entity_results.train['ner_crf']["Precision"]) == n_folds
+    assert len(entity_results.train['ner_crf']["F1-score"]) == n_folds
+    assert len(entity_results.test['ner_crf']["Accuracy"]) == n_folds
+    assert len(entity_results.test['ner_crf']["Precision"]) == n_folds
+    assert len(entity_results.test['ner_crf']["F1-score"]) == n_folds
 
 
 def test_empty_intent_removal():
@@ -279,11 +280,10 @@ def test_find_component(duckling_interpreter):
     assert name == "ner_duckling"
 
 
-def test_patch_duckling_extractors(duckling_interpreter):
-    target = {"ner_duckling ({})".format(dim)
-              for dim in known_duckling_dimensions}
+def test_remove_duckling_extractors(duckling_interpreter):
+    target = set([])
 
-    patched = patch_duckling_extractors(duckling_interpreter, {"ner_duckling"})
+    patched = remove_duckling_extractors({"ner_duckling"})
     assert patched == target
 
 

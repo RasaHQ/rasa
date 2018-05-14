@@ -1,8 +1,8 @@
 .. _section_python:
 
-Using rasa NLU from python
+Using Rasa NLU from python
 ==========================
-Apart from running rasa NLU as a HTTP server you can use it directly in your python program.
+Apart from running Rasa NLU as a HTTP server you can use it directly in your python program.
 Rasa NLU supports both Python 2 and 3.
 
 Training Time
@@ -13,18 +13,19 @@ Or, you can train directly in python with a script like the following (using spa
 .. testcode::
 
     from rasa_nlu.training_data import load_data
-    from rasa_nlu.config import RasaNLUConfig
+    from rasa_nlu.config import RasaNLUModelConfig
     from rasa_nlu.model import Trainer
+    from rasa_nlu import config
 
     training_data = load_data('data/examples/rasa/demo-rasa.json')
-    trainer = Trainer(RasaNLUConfig("sample_configs/config_spacy.json"))
+    trainer = Trainer(config.load("sample_configs/config_spacy.yml"))
     trainer.train(training_data)
     model_directory = trainer.persist('./projects/default/')  # Returns the directory the model is stored in
 
 Prediction Time
 ---------------
 
-You can call rasa NLU directly from your python script. To do so, you need to load the metadata of
+You can call Rasa NLU directly from your python script. To do so, you need to load the metadata of
 your model and instantiate an interpreter. The ``metadata.json`` in your model dir contains the
 necessary info to recover your model:
 
@@ -33,7 +34,7 @@ necessary info to recover your model:
     from rasa_nlu.model import Metadata, Interpreter
 
     # where `model_directory points to the folder the model is persisted in
-    interpreter = Interpreter.load(model_directory, RasaNLUConfig("sample_configs/config_spacy.json"))
+    interpreter = Interpreter.load(model_directory)
 
 You can then use the loaded interpreter to parse text:
 
@@ -53,14 +54,14 @@ Here is a short example on how to create a component builder, that can be reused
 .. testcode::
 
     from rasa_nlu.training_data import load_data
-    from rasa_nlu.config import RasaNLUConfig
+    from rasa_nlu import config
     from rasa_nlu.components import ComponentBuilder
     from rasa_nlu.model import Trainer
 
     builder = ComponentBuilder(use_cache=True)      # will cache components between pipelines (where possible)
 
     training_data = load_data('data/examples/rasa/demo-rasa.json')
-    trainer = Trainer(RasaNLUConfig("sample_configs/config_spacy.json"), builder)
+    trainer = Trainer(config.load("sample_configs/config_spacy.yml"), builder)
     trainer.train(training_data)
     model_directory = trainer.persist('./projects/default/')  # Returns the directory the model is stored in
 
@@ -69,13 +70,13 @@ The same builder can be used to load a model (can be a totally different one). T
 .. testcode::
 
     from rasa_nlu.model import Metadata, Interpreter
-    config = RasaNLUConfig("sample_configs/config_spacy.json")
+    from rasa_nlu import config
 
     # For simplicity we will load the same model twice, usually you would want to use the metadata of
     # different models
 
-    interpreter = Interpreter.load(model_directory, config, builder)     # to use the builder, pass it as an arg when loading the model
+    interpreter = Interpreter.load(model_directory, builder)     # to use the builder, pass it as an arg when loading the model
     # the clone will share resources with the first model, as long as the same builder is passed!
-    interpreter_clone = Interpreter.load(model_directory, config, builder)
+    interpreter_clone = Interpreter.load(model_directory, builder)
 
 

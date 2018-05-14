@@ -40,7 +40,8 @@ and pass that path to the trainer.
 Emulation
 ---------
 
-To make Rasa NLU easy to try out with existing projects, the server can `emulate` wit, LUIS, or Dialogflow.
+To make Rasa NLU easy to try out with existing projects,
+the server can `emulate` wit, LUIS, or Dialogflow.
 In native mode, a request / response looks like this : 
 
 .. code-block:: console
@@ -61,7 +62,8 @@ In native mode, a request / response looks like this :
     }
 
 
-if we run in ``wit`` mode (e.g. ``python -m rasa_nlu.server -e wit``)
+if we run in ``wit`` mode
+(e.g. ``python -m rasa_nlu.server --emulate wit --path projects``).
 
 then instead have to make a GET request
 

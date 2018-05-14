@@ -9,6 +9,8 @@ help:
 	@echo "        Check style with flake8."
 	@echo "    test"
 	@echo "        Run py.test"
+	@echo "    check-readme"
+	@echo "        Check if the readme can be converted from md to rst for pypi"
 
 clean:
 	find . -name '*.pyc' -exec rm -f {} +
@@ -27,3 +29,7 @@ test: clean
 
 livedocs:
 	cd docs && make livehtml
+
+check-readme:
+	# if this runs through we can be sure the readme is properly shown on pypi
+	python setup.py check --restructuredtext --strict

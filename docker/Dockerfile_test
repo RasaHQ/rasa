@@ -5,11 +5,11 @@
 #         `docker build -f docker/Dockerfile_test .` (from project root)
 #         `docker run -it [id-output-from-above]`
 
-FROM python:2.7-slim
+FROM python:3.6-slim
 
 ENV RASA_NLU_DOCKER="YES" \
     RASA_NLU_HOME=/app \
-    RASA_NLU_PYTHON_PACKAGES=/usr/local/lib/python2.7/dist-packages
+    RASA_NLU_PYTHON_PACKAGES=/usr/local/lib/python3.6/dist-packages
 
 # Run updates, install basics and cleanup
 # - build-essential: Compile specific dependencies
@@ -103,7 +103,7 @@ RUN pip install -r alt_requirements/requirements_dev.txt
 
 RUN pip install -e .
 
-RUN  sed -i -e 's/backend      : tkagg/backend      : PDF/' /usr/local/lib/python2.7/site-packages/matplotlib/mpl-data/matplotlibrc
+RUN  sed -i -e 's/backend      : tkagg/backend      : PDF/' /usr/local/lib/python3.6/site-packages/matplotlib/mpl-data/matplotlibrc
 
 VOLUME ["/app/projects", "/app/logs", "/app/data"]
 

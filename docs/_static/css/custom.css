@@ -65,6 +65,11 @@ input[class="didnt-finish"]:focus + svg {
   fill: rgb(255, 255, 0);
 }
 
+.wy-table-responsive table td,
+.wy-table-responsive table th {
+    white-space: normal !important;
+}
+
 /*
    fixes wrong line height in code snippets. (line height between code lines
    and shown line numbers is different so that the line numbers and the code

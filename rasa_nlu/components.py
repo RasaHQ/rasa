@@ -14,8 +14,10 @@ from typing import Optional
 from typing import Set
 from typing import Text
 from typing import Tuple
+from typing import Hashable
 
-from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu import config
+from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.training_data import Message
 
 if typing.TYPE_CHECKING:
@@ -102,6 +104,27 @@ class MissingArgumentError(ValueError):
         return self.message
 
 
+class UnsupportedLanguageError(Exception):
+    """Raised when a component is created but the language is not supported.
+
+    Attributes:
+        component -- component name
+        language -- language that component doesn't support
+    """
+
+    def __init__(self, component, language):
+        # type: (Text, Text) -> None
+        self.component = component
+        self.language = language
+
+        super(UnsupportedLanguageError, self).__init__(component, language)
+
+    def __str__(self):
+        return "component {} does not support language {}".format(
+            self.component, self.language
+        )
+
+
 class Component(object):
     """A component is a message processing unit in a pipeline.
 
@@ -142,7 +165,22 @@ class Component(object):
     # within the above described `provides` property.
     requires = []
 
-    def __init__(self):
+    # Defines the default configuration parameters of a component
+    # these values can be overwritten in the pipeline configuration
+    # of the model. The component should choose sensible defaults
+    # and should be able to create reasonable results with the defaults.
+    defaults = {}
+
+    # Defines what language(s) this component can handle.
+    # This attribute is designed for instance method: `can_handle_language`.
+    # Default value is None which means it can handle all languages.
+    # This is an important feature for backwards compatibility of components.
+    language_list = None
+
+    def __init__(self, component_config=None):
+        self.component_config = config.override_defaults(
+                self.defaults, component_config)
+
         self.partial_processing_pipeline = None
         self.partial_processing_context = None
 
@@ -159,7 +197,7 @@ class Component(object):
     def required_packages(cls):
         # type: () -> List[Text]
         """Specify which python packages need to be installed to use this
-        component, e.g. `["spacy", "numpy"]`.
+        component, e.g. `["spacy"]`.
 
         This list of requirements allows us to fail early during training
         if a required package is not installed."""
@@ -181,15 +219,26 @@ class Component(object):
         Components can rely on any context attributes that are
         created by `pipeline_init` calls to components previous
         to this one."""
-        return cached_component if cached_component else cls()
+        if cached_component:
+            return cached_component
+        else:
+            component_config = model_metadata.for_component(cls.name)
+            return cls(component_config)
 
     @classmethod
-    def create(cls, config):
-        # type: (RasaNLUConfig) -> Component
+    def create(cls, cfg):
+        # type: (RasaNLUModelConfig) -> Component
         """Creates this component (e.g. before a training is started).
 
         Method can access all configuration parameters."""
-        return cls()
+
+        # Check language supporting
+        language = cfg.language
+        if not cls.can_handle_language(language):
+            # check failed
+            raise UnsupportedLanguageError(cls.name, language)
+
+        return cls(cfg.for_component(cls.name, cls.defaults))
 
     def provide_context(self):
         # type: () -> Optional[Dict[Text, Any]]
@@ -206,8 +255,8 @@ class Component(object):
         (e.g. loading word vectors for the pipeline)."""
         pass
 
-    def train(self, training_data, config, **kwargs):
-        # type: (TrainingData, RasaNLUConfig, **Any) -> None
+    def train(self, training_data, cfg, **kwargs):
+        # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
         """Train this component.
 
         This is the components chance to train itself provided
@@ -233,6 +282,7 @@ class Component(object):
     def persist(self, model_dir):
         # type: (Text) -> Optional[Dict[Text, Any]]
         """Persist this component to disk for future loading."""
+
         pass
 
     @classmethod
@@ -276,6 +326,20 @@ class Component(object):
             logger.info("Failed to run partial processing due "
                         "to missing pipeline.")
         return message
+
+    @classmethod
+    def can_handle_language(cls, language):
+        # type: (Hashable) -> bool
+        """Check if component supports a specific language.
+
+        This method can be overwritten when needed. (e.g. dynamically
+        determine which language is supported.)"""
+
+        # if language_list is set to `None` it means: support all languages
+        if language is None or cls.language_list is None:
+            return True
+
+        return language in cls.language_list
 
 
 class ComponentBuilder(object):
@@ -341,8 +405,8 @@ class ComponentBuilder(object):
             raise Exception("Failed to load component '{}'. "
                             "{}".format(component_name, e))
 
-    def create_component(self, component_name, config):
-        # type: (Text, RasaNLUConfig) -> Component
+    def create_component(self, component_name, cfg):
+        # type: (Text, RasaNLUModelConfig) -> Component
         """Tries to retrieve a component from the cache,
         calls `create` to create a new component."""
         from rasa_nlu import registry
@@ -350,10 +414,10 @@ class ComponentBuilder(object):
 
         try:
             component, cache_key = self.__get_cached_component(
-                    component_name, Metadata(config.as_dict(), None))
+                    component_name, Metadata(cfg.as_dict(), None))
             if component is None:
                 component = registry.create_component_by_name(component_name,
-                                                              config)
+                                                              cfg)
                 self.__add_to_cache(component, cache_key)
             return component
         except MissingArgumentError as e:  # pragma: no cover

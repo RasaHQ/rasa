@@ -4,10 +4,62 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
-[Unreleased 0.12.0.aX] - `master`_
+[Unreleased 0.13.0.aX] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. note:: This version is not yet released and is under active development.
+
+Added
+-----
+- A new entity extraction component using predefined entity lists: ``ner_phrase_matcher``
+
+Changed
+-------
+
+Removed
+-------
+
+Fixed
+-----
+- Fixed Luis emulation output to add start, end position and confidence for each entity.
+
+
+[0.12.3] - 2018-05-02
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Added
+-----
+- Returning used model name and project name in the response of ``GET /parse`` and ``POST /parse`` as ``model`` and ``project`` respectively.
+
+Fixed
+-----
+- readded possibility to set fixed model name from http train endpoint
+
+
+[0.12.2] - 2018-04-20
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed duckling text extraction for ner_duckling_http
+
+
+[0.12.1] - 2018-04-18
+^^^^^^^^^^^^^^^^^^^^^
+Added
+-----
+- support for retrieving training data from a URL
+
+Fixed
+-----
+- properly set duckling http url through environment setting
+- improvements and fixes to the configuration and pipeline
+  documentation
+
+
+[0.12.0] - 2018-04-17
+^^^^^^^^^^^^^^^^^^^^^
 
 Added
 -----
@@ -15,17 +67,68 @@ Added
 - support for regex features in markdown training format
 - support for splitting and training data into multiple and mixing formats
 - support for markdown files containing regex-features or synonyms only
-- A new entity extraction component using predefined entity lists: ``ner_phrase_matcher``
+- added ability to list projects in cloud storage services for model loading
+- server evaluation endpoint at ``POST /evaluate``
+- server endpoint at ``DELETE /models`` to unload models from server memory
+- CRF entity recognizer now returns a confidence score when extracting entities
+- added count vector featurizer to create bag of words representation
+- added embedding intent classifier implemented in tensorflow
+- added tensorflow requirements
+- added docs blurb on handling contextual dialogue
+- distribute package as wheel file in addition to source
+  distribution (faster install)
+- allow a component to specify which languages it supports
+- support for persisting models to Azure Storage
+- added tokenizer for CHINESE (``zh``) as well as instructions on how to load
+  MITIE model
 
 Changed
 -------
-- Regex features are now sorted internally. **retrain your model if you use regex features**
-- The keyword intent classifier now returns ``null`` instead of ``"None"`` as intent name in the json result
-if there's no match
-
+- model configuration is separated from server / train configuration. This is a
+  **breaking change** and models need to be retrained. See migrations guide.
+- Regex features are now sorted internally.
+  **retrain your model if you use regex features**
+- The keyword intent classifier now returns ``null`` instead
+  of ``"None"`` as intent name in the json result if there's no match
+- in teh evaluation results, replaced ``O`` with the string
+  ``no_entity`` for better understanding
+- The ``CRFEntityExtractor`` now only trains entity examples that have
+  ``"extractor": "ner_crf"`` or no extractor at all
+- Ignore hidden files when listing projects or models
+- Docker Images now run on python 3.6 for better non-latin character set support
+- changed key name for a file in ngram featurizer
+- changed ``jsonObserver`` to generate logs without a record seperator
+- Improve jsonschema validation: text attribute of training data samples
+  can not be empty
+- made the NLU server's ``/evaluate`` endpoint asynchronous
 
 Fixed
 -----
+- fixed certain command line arguments not getting passed into
+  the ``data_router``
+
+[0.11.4] - 2018-03-19
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- google analytics docs survey code
+
+
+[0.11.3] - 2018-02-13
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- capitalization issues during spacy named entity recognition
+
+
+[0.11.2] - 2018-02-06
+^^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- Formatting of tokens without assigned entities in evaluation
 
 
 [0.11.1] - 2018-02-02
@@ -35,6 +138,7 @@ Fixed
 -----
 - Changelog doc formatting
 - fixed project loading for newly added projects to a running server
+- fixed certain command line arguments not getting passed into the data_router
 
 
 [0.11.0] - 2018-01-30

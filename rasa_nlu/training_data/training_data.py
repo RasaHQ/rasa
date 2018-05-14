@@ -11,6 +11,7 @@ import warnings
 
 from copy import deepcopy
 from builtins import object, str
+from rasa_nlu.training_data import Message
 
 from typing import Any
 from typing import Dict
@@ -58,6 +59,7 @@ class TrainingData(object):
     def merge(self, *others):
         # type: (List[TrainingData]) -> TrainingData
         """Merges the TrainingData instance with others and creates a new one."""
+
         training_examples = deepcopy(self.training_examples)
         entity_synonyms = self.entity_synonyms.copy()
         regex_features = deepcopy(self.regex_features)
@@ -86,6 +88,7 @@ class TrainingData(object):
             else:
                 entity_phrases[entity] = phrases
 
+    @staticmethod
     def sanitize_examples(self):
         # type: () -> None
         """Makes sure the training data is clean.
@@ -136,7 +139,8 @@ class TrainingData(object):
     def sort_regex_features(self):
         """Sorts regex features lexicographically by name+pattern"""
         self.regex_features = sorted(self.regex_features,
-                                     key=lambda e: "{}+{}".format(e['name'], e['pattern']))
+                                     key=lambda e: "{}+{}".format(e['name'],
+                                                                  e['pattern']))
 
     def as_json(self, **kwargs):
         # type: (**Any) -> str
@@ -164,7 +168,7 @@ class TrainingData(object):
 
     def sorted_entities(self):
         # type: () -> List[Any]
-        """Extracts all entities from all examples and sorts them by entity type."""
+        """Extract all entities from examples and sorts them by entity type."""
 
         entity_examples = [entity
                            for ex in self.entity_examples
@@ -189,21 +193,26 @@ class TrainingData(object):
                           "training data. This may result in wrong "
                           "intent predictions.")
 
+        # emit warnings for intents with only a few training samples
         for intent, count in self.examples_per_intent.items():
             if count < self.MIN_EXAMPLES_PER_INTENT:
                 warnings.warn("Intent '{}' has only {} training examples! "
-                              "Minimum is {}, training may fail.".format(intent, count,
-                                                                         self.MIN_EXAMPLES_PER_INTENT))
+                              "Minimum is {}, training may fail."
+                              .format(intent, count,
+                                      self.MIN_EXAMPLES_PER_INTENT))
+
+        # emit warnings for entities with only a few training samples
         for entity_type, count in self.examples_per_entity.items():
             if count < self.MIN_EXAMPLES_PER_ENTITY:
                 warnings.warn("Entity '{}' has only {} training examples! "
-                              "minimum is {}, training may fail.".format(entity_type, count,
-                                                                         self.MIN_EXAMPLES_PER_ENTITY))
+                              "minimum is {}, training may fail."
+                              "".format(entity_type, count,
+                                        self.MIN_EXAMPLES_PER_ENTITY))
 
     def print_stats(self):
         logger.info("Training data stats: \n" +
-                    "\t- intent examples: {} ({} distinct intents)\n".format(len(self.intent_examples),
-                                                                             len(self.intents)) +
+                    "\t- intent examples: {} ({} distinct intents)\n".format(
+                            len(self.intent_examples), len(self.intents)) +
                     "\t- Found intents: {}\n".format(
                             list_to_str(self.intents)) +
                     "\t- entity examples: {} ({} distinct entities)\n".format(

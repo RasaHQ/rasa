@@ -34,6 +34,7 @@ linkcheck_timeout = 5
 extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.doctest',
+    'sphinxcontrib.programoutput',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -51,7 +52,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'rasa NLU'
+project = u'Rasa NLU'
 copyright = u'2017, Rasa Technologies GmbH'
 author = u'Alan Nichol'
 
@@ -312,7 +313,8 @@ scv_sort = ('semver',)
 scv_whitelist_branches = ('master', 'latest')
 scv_grm_exclude = ('README.md', '.gitignore', '.nojekyll', 'CNAME')
 scv_whitelist_tags = (re.compile(r'^[123456789]+\.[0-9]+\.\d+$'),
-                      re.compile(r'^0\.[123456789][123456789]+\.\d+$'),
+                      re.compile(r'^0\.[123456789][23456789]+\.\d+$'),
+                      '0.11.4',
                       '0.10.6',
                       '0.9.2',
                       '0.8.12',
