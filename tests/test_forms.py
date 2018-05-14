@@ -82,6 +82,24 @@ class ActionSearchTravel(FormAction):
         return []
 
 
+class ActionSearchQuery(FormAction):
+
+    RANDOMIZE = False
+
+    @staticmethod
+    def required_fields():
+        return [
+            FreeTextFormField("username"),
+            FreeTextFormField("query")
+        ]
+
+    def name(self):
+        return 'action_perform_query'
+
+    def submit(self, dispatcher, tracker, domain):
+        return []
+
+
 def test_restaurant_form():
     domain = TemplateDomain.load("data/test_domains/restaurant_form.yml")
     tracker_store = InMemoryTrackerStore(domain)
@@ -284,3 +302,59 @@ def test_travel_form():
     assert events[0].value == "Berlin"
     assert events[1].key == "requested_slot"
     assert events[1].value == "GPE_destination"
+
+
+def test_query_form_set_username_directly():
+    domain = TemplateDomain.load("data/test_domains/query_form.yml")
+    tracker_store = InMemoryTrackerStore(domain)
+    out = CollectingOutputChannel()
+    sender_id = "test-form"
+    dispatcher = Dispatcher(sender_id, out, domain)
+    tracker = tracker_store.get_or_create_tracker(sender_id)
+
+    # pre-fill username slot
+    username = "Monty"
+    tracker.update(SlotSet('username', username))
+
+    # first user utterance
+    tracker.update(UserUttered("", intent={"name": "inform"}))
+    events = ActionSearchQuery().run(dispatcher, tracker, domain)
+    last_message = dispatcher.latest_bot_messages[-1]
+    assert len(events) == 1
+    assert isinstance(events[0], SlotSet)
+    assert events[0].key == "requested_slot"
+    assert events[0].value == "query"
+    assert username in last_message.text
+
+
+def test_query_form_set_username_in_form():
+    domain = TemplateDomain.load("data/test_domains/query_form.yml")
+    tracker_store = InMemoryTrackerStore(domain)
+    out = CollectingOutputChannel()
+    sender_id = "test-form"
+    dispatcher = Dispatcher(sender_id, out, domain)
+    tracker = tracker_store.get_or_create_tracker(sender_id)
+
+    # first user utterance
+    tracker.update(UserUttered("", intent={"name": "inform"}))
+    events = ActionSearchQuery().run(dispatcher, tracker, domain)
+    last_message = dispatcher.latest_bot_messages[-1]
+    assert len(events) == 1
+    assert isinstance(events[0], SlotSet)
+    assert events[0].key == "requested_slot"
+    assert events[0].value == "username"
+    assert last_message.text == 'what is your name?'
+    tracker.update(events[0])
+
+    # second user utterance
+    username = 'Monty'
+    tracker.update(UserUttered(username, intent={"name": "inform"}))
+    events = ActionSearchQuery().run(dispatcher, tracker, domain)
+    last_message = dispatcher.latest_bot_messages[-1]
+    assert len(events) == 2
+    assert isinstance(events[0], SlotSet)
+    assert events[0].key == "username"
+    assert events[0].value == username
+    assert events[1].key == "requested_slot"
+    assert events[1].value == "query"
+    assert username in last_message.text
