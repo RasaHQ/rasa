@@ -136,7 +136,9 @@ class FormAction(Action):
         for field in self.required_fields():
             if self.should_request_slot(temp_tracker, field.slot_name):
                 dispatcher.utter_template(
-                    "utter_ask_{}".format(field.slot_name))
+                    "utter_ask_{}".format(field.slot_name),
+                    filled_slots=temp_tracker.current_slot_values()
+                )
 
                 events.append(SlotSet("requested_slot", field.slot_name))
                 return events

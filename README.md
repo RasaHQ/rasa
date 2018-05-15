@@ -1,8 +1,10 @@
 # Rasa Core
 [![Join the chat on Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/RasaHQ/rasa_core?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Build Status](https://travis-ci.org/RasaHQ/rasa_core.svg?branch=master)](https://travis-ci.org/RasaHQ/rasa_core)
+[![Build Status](https://travis-ci.com/RasaHQ/rasa_core.svg?branch=master)](https://travis-ci.com/RasaHQ/rasa_core)
 [![Coverage Status](https://coveralls.io/repos/github/RasaHQ/rasa_core/badge.svg?branch=master)](https://coveralls.io/github/RasaHQ/rasa_core?branch=master)
 [![PyPI version](https://img.shields.io/pypi/v/rasa_core.svg)](https://pypi.python.org/pypi/rasa-core)
+[![Documentation Status](https://img.shields.io/badge/docs-stable-brightgreen.svg)](https://core.rasa.com/)
+
 
 - **What do Rasa Core & NLU do? 🤔** [Read About the Rasa Stack](https://rasa.com/products/rasa-stack/)
 
@@ -82,25 +84,6 @@ and apply your changes.
 ## License
 Licensed under the Apache License, Version 2.0. Copyright 2018 Rasa Technologies GmbH. [Copy of the license](LICENSE.txt).
 
-As a reference, the following contains a listing of the licenses of the different dependencies as of this writing. 
-Licenses of the dependencies:
-
-| required package | License              |
-|------------------|----------------------|
-| apscheduler      | MIT                  |
-| fakeredis        | BSD                  |
-| graphviz         | MIT                  |
-| typing           | PSF                  |
-| future           | MIT                  |
-| six              | MIT                  |
-| h5py             | BSD                  |
-| jsonpickle       | BSD                  |
-| keras            | MIT                  |
-| numpy            | BSD                  |
-| pandoc           | MIT                  |
-| redis            | MIT                  |
-| tensorflow       | Apache Licence 2.0   |
-| networkx         | BSD                  |
-| fbmessenger      | Apache Licence 2.0   |
-| tqdm             | MIT                  |
-| ConfigArgParse   | MIT                  |
+A list of the Licenses of the dependencies of the project can be found at
+the bottom of the
+[Libraries Summary](https://libraries.io/github/RasaHQ/rasa_core).

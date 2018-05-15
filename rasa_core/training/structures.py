@@ -53,7 +53,7 @@ class Checkpoint(object):
         for slot_name, slot_value in self.conditions.items():
             trackers = [t
                         for t in trackers
-                        if t.tracker.get_slot(slot_name) == slot_value]
+                        if t.get_slot(slot_name) == slot_value]
         return trackers
 
     def __repr__(self):

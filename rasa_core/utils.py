@@ -22,6 +22,14 @@ from typing import Text, Any, List, Optional
 logger = logging.getLogger(__name__)
 
 
+def configure_file_logging(loglevel, logfile):
+    if logfile:
+        fh = logging.FileHandler(logfile)
+        fh.setLevel(loglevel)
+        logging.getLogger('').addHandler(fh)
+    logging.captureWarnings(True)
+
+
 def add_logging_option_arguments(parser):
     """Add options to an argument parser to configure logging levels."""
 
@@ -91,7 +99,7 @@ def dump_obj_as_str_to_file(filename, text):
 
 
 def subsample_array(arr, max_values, can_modify_incoming_array=True, rand=None):
-    # type: (List[Any], int, Optional[bool], Optional[Random]) -> List[Any]
+    # type: (List[Any], int, bool, Optional[Random]) -> List[Any]
     """Shuffles the array and returns `max_values` number of elements."""
     import random
 

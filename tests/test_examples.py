@@ -70,9 +70,10 @@ def test_restaurantbot_example():
     from bot import train_dialogue
 
     p = "examples/restaurantbot/"
+    stories = os.path.join("data", "test_stories", "stories_babi_small.md")
     agent = train_dialogue(os.path.join(p, "restaurant_domain.yml"),
                            os.path.join(p, "models", "dialogue"),
-                           os.path.join(p, "data", "babi_stories.md"))
+                           stories)
 
     responses = agent.handle_message("/greet")
     assert responses[0]['text'] == 'how can I help you?'

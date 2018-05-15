@@ -179,7 +179,7 @@ class DialogueStateTracker(object):
 
         return self._topic_stack.top
 
-    def _init_copy(self):
+    def init_copy(self):
         # type: () -> DialogueStateTracker
         """Creates a new state tracker with the same initial values."""
         from rasa_core.channels import UserMessage
@@ -189,22 +189,23 @@ class DialogueStateTracker(object):
                                     self.topics,
                                     self.default_topic)
 
-    def generate_all_prior_states(self):
+    def generate_all_prior_trackers(self):
         # type: () -> Generator[DialogueStateTracker, None, None]
-        """Returns a generator of the previous states of this tracker.
+        """Returns a generator of the previous trackers of this tracker.
 
-        The resulting array is representing the state before each action."""
+        The resulting array is representing
+        the trackers before each action."""
 
-        tracker = self._init_copy()
+        tracker = self.init_copy()
 
-        for event in self._applied_events():
+        for event in self.applied_events():
             if isinstance(event, ActionExecuted):
                 yield tracker
             tracker.update(event)
 
         yield tracker  # yields the final state
 
-    def _applied_events(self):
+    def applied_events(self):
         # type: () -> List[Event]
         """Returns all actions that should be applied - w/o reverted events."""
         def undo_till_previous(event_type, done_events):
@@ -236,7 +237,7 @@ class DialogueStateTracker(object):
         # type: () -> None
         """Update the tracker based on a list of events."""
 
-        applied_events = self._applied_events()
+        applied_events = self.applied_events()
         for event in applied_events:
             event.apply_to(self)
 
@@ -268,7 +269,7 @@ class DialogueStateTracker(object):
         passed time stamp will be replayed. Events that occur exactly
         at the target time will be included."""
 
-        tracker = self._init_copy()
+        tracker = self.init_copy()
 
         for event in self.events:
             if event.timestamp <= target_time:
@@ -305,7 +306,7 @@ class DialogueStateTracker(object):
         Returns the dumped tracker as a string."""
         from rasa_core.training.structures import Story
 
-        story = Story.from_events(self._applied_events())
+        story = Story.from_events(self.applied_events())
         return story.as_story_string(flat=True)
 
     def export_stories_to_file(self, export_path="debug.md"):
@@ -313,7 +314,7 @@ class DialogueStateTracker(object):
         """Dump the tracker as a story to a file."""
 
         with io.open(export_path, 'a') as f:
-            f.write(self.export_stories())
+            f.write(self.export_stories() + "\n")
 
     ###
     # Internal methods for the modification of the trackers state. Should
@@ -360,9 +361,7 @@ class DialogueStateTracker(object):
 
     def __eq__(self, other):
         if isinstance(other, type(self)):
-            other_encoded = jsonpickle.encode(other.as_dialogue())
-            encoded = jsonpickle.encode(self.as_dialogue())
-            return (other_encoded == encoded and
+            return (other.events == self.events and
                     self.sender_id == other.sender_id)
         else:
             return False

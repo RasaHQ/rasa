@@ -15,7 +15,7 @@ from functools import wraps
 import six
 from builtins import str
 from klein import Klein
-from typing import Union, Text, Optional
+from typing import Union, Text, Optional, Any
 
 from rasa_core import utils, events
 from rasa_core.agent import Agent
@@ -68,14 +68,6 @@ def create_argument_parser():
     return parser
 
 
-def _configure_logging(loglevel, logfile):
-    if logfile:
-        fh = logging.FileHandler(logfile)
-        fh.setLevel(loglevel)
-        logging.getLogger('').addHandler(fh)
-    logging.captureWarnings(True)
-
-
 def ensure_loaded_agent(f):
     """Wraps a request handler ensuring there is a loaded and usable model."""
 
@@ -104,6 +96,7 @@ def bool_arg(request, name, default=True):
     d = [str(default)]
     return request.args.get(name, d)[0].lower() == 'true'
 
+
 def default_arg(request, name, default=None):
     # type: (Request, Text, Any) -> Any
     """Return a passed boolean argument of the request or a default.
@@ -115,7 +108,8 @@ def default_arg(request, name, default=None):
     if values is None or len(values) < 1:
         return default
     else:
-       return values[0]
+        return values[0]
+
 
 def request_parameters(request):
     if request.method.decode('utf-8', 'strict') == 'GET':
@@ -197,7 +191,7 @@ class RasaCoreServer(object):
                  auth_token=None,
                  tracker_store=None):
 
-        _configure_logging(loglevel, logfile)
+        utils.configure_file_logging(loglevel, logfile)
 
         self.config = {"cors_origins": cors_origins if cors_origins else [],
                        "token": auth_token}
