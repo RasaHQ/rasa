@@ -317,7 +317,7 @@ class DataRouter(object):
                 - 1
             if self.project_store[project].status == 1 \
                 and self.project_store[project].current_training_processes \
-                == 0:
+                    == 0:
                 self.project_store[project].status = 0
             return model_dir
 
@@ -331,7 +331,7 @@ class DataRouter(object):
                 self.project_store[project].current_training_processes - 1
             if target_project \
                 and self.project_store[project].current_training_processes \
-                == 0:
+                    == 0:
                 target_project.status = 0
             return failure
 
