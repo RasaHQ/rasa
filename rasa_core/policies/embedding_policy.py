@@ -79,7 +79,7 @@ class EmbeddingPolicy(Policy):
         # attention parameters
         "score_noise": 0.0,  # deprecated
         "use_attention": True,  # flag to use attention
-        "sparse_attention": False,  # if use sparsemax for probs
+        "sparse_attention": False,  # if use sparse for probs or gate if None
         "attn_shift_range": None,  # if None, mean dialogue length / 2
 
         # visualization of accuracy
@@ -993,9 +993,14 @@ class TimedNTM(object):
     """
     def __init__(self, attn_shift_range, sparse_attention):
         # interpolation gate
-        self.gate = tf.layers.Dense(1, tf.sigmoid)
+        self.inter_gate = tf.layers.Dense(1, tf.sigmoid)
+
         # if use sparsemax instead of softmax for probs
         self.sparse_attention = sparse_attention
+        if self.sparse_attention is None:
+            # the gate between sparsemax and softmax for probs
+            self.sparse_gate = tf.layers.Dense(1, tf.sigmoid)
+
         # shift weighting
         if attn_shift_range:
             self.s_w = tf.layers.Dense(2 * attn_shift_range + 1,
@@ -1006,18 +1011,22 @@ class TimedNTM(object):
         self.gamma = tf.layers.Dense(1, lambda a: tf.nn.softplus(a) + 1.0)
 
     def __call__(self, cell_output, probs, probs_state):
-        g = self.gate(cell_output)
 
         # apply exponential moving average with interpolation gate weight
         # to scores from previous time which are equal to probs at this point
         # different from original NTM where it is applied after softmax
-        probs = tf.concat([g * probs[:, :-1] + (1 - g) * probs_state,
+        i_g = self.inter_gate(cell_output)
+        probs = tf.concat([i_g * probs[:, :-1] + (1 - i_g) * probs_state,
                            probs[:, -1:]], 1)
 
         next_probs_state = probs
 
         # limit time probabilities for attention
-        if self.sparse_attention:
+        if self.sparse_attention is None:
+            s_g = self.sparse_gate(cell_output)
+            probs = (s_g * tf.contrib.sparsemax.sparsemax(probs) +
+                     (1 - s_g) * tf.nn.softmax(probs))
+        elif self.sparse_attention:
             probs = tf.contrib.sparsemax.sparsemax(probs)
         else:
             probs = tf.nn.softmax(probs)
