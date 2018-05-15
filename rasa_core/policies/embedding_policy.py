@@ -54,8 +54,8 @@ class EmbeddingPolicy(Policy):
         "hidden_layer_size_a": [],
         "num_hidden_layers_b": 0,
         "hidden_layer_size_b": [],
-        "rnn_size": 32,
-        "batch_size": 16,
+        "rnn_size": 64,
+        "batch_size": [2, 32],
         "epochs": 1,
 
         # embedding parameters
@@ -79,6 +79,7 @@ class EmbeddingPolicy(Policy):
         # attention parameters
         "score_noise": 0.0,  # deprecated
         "use_attention": True,  # flag to use attention
+        "sparse_attention": True,  # if use sparsemax for probs
         "attn_shift_range": None,  # if None, mean dialogue length / 2
 
         # visualization of accuracy
@@ -148,6 +149,8 @@ class EmbeddingPolicy(Policy):
         self.rnn_size = config['rnn_size']
 
         self.batch_size = config['batch_size']
+        if not isinstance(self.batch_size, list):
+            self.batch_size = [self.batch_size, self.batch_size]
         self.epochs = config['epochs']
 
     def _load_embedding_params(self, config):
@@ -172,6 +175,7 @@ class EmbeddingPolicy(Policy):
     def _load_attn_params(self, config):
         self.score_noise = config['score_noise']
         self.use_attention = config['use_attention']
+        self.sparse_attention = config['sparse_attention']
         self.attn_shift_range = config['attn_shift_range']
 
     def _load_visual_params(self, config):
@@ -391,6 +395,7 @@ class EmbeddingPolicy(Policy):
         attn_cell = TimeAttentionWrapper(
                 cell, attn_mech,
                 attn_shift_range=self.attn_shift_range,
+                sparse_attention=self.sparse_attention,
                 cell_input_fn=cell_input_fn,
                 output_attention=False,
                 alignment_history=True
@@ -578,8 +583,8 @@ class EmbeddingPolicy(Policy):
         """Train tf graph"""
         self.session.run(tf.global_variables_initializer())
 
-        batches_per_epoch = (len(X) // self.batch_size +
-                             int(len(X) % self.batch_size > 0))
+        # batches_per_epoch = (len(X) // self.batch_size +
+        #                      int(len(X) % self.batch_size > 0))
 
         if self.calc_acc_on_num_examples:
             logger.info("Accuracy is updated every {} epochs"
@@ -590,10 +595,17 @@ class EmbeddingPolicy(Policy):
         for ep in pbar:
             ids = np.random.permutation(X.shape[0])
 
+            batch_size = int(self.batch_size[0] +
+                             ep * (self.batch_size[1] -
+                                   self.batch_size[0]) /
+                             (self.epochs - 1))
+            batches_per_epoch = (len(X) // batch_size +
+                                 int(len(X) % batch_size > 0))
+
             ep_loss = 0
             for i in range(batches_per_epoch):
-                start_idx = i * self.batch_size
-                end_idx = (i + 1) * self.batch_size
+                start_idx = i * batch_size
+                end_idx = (i + 1) * batch_size
 
                 batch_a = X[ids[start_idx:end_idx]]
 
@@ -979,11 +991,11 @@ class TimedNTM(object):
       ::param int attn_shift_range:
         a time range within which to attend to the memory by location
     """
-    def __init__(self, attn_shift_range):
+    def __init__(self, attn_shift_range, sparse_attention):
         # interpolation gate
         self.gate = tf.layers.Dense(1, tf.sigmoid)
-        # key strength
-        # self.beta = tf.layers.Dense(1, tf.nn.softplus)
+        # if use sparsemax instead of softmax for probs
+        self.sparse_attention = sparse_attention
         # shift weighting
         if attn_shift_range:
             self.s_w = tf.layers.Dense(2 * attn_shift_range + 1,
@@ -995,7 +1007,6 @@ class TimedNTM(object):
 
     def __call__(self, cell_output, probs, probs_state):
         g = self.gate(cell_output)
-        # beta = self.beta(cell_output)
 
         # apply exponential moving average with interpolation gate weight
         # to scores from previous time which are equal to probs at this point
@@ -1006,7 +1017,10 @@ class TimedNTM(object):
         next_probs_state = probs
 
         # limit time probabilities for attention
-        probs = tf.nn.softmax(probs)
+        if self.sparse_attention:
+            probs = tf.contrib.sparsemax.sparsemax(probs)
+        else:
+            probs = tf.nn.softmax(probs)
 
         if self.s_w is not None:
             s_w = self.s_w(cell_output)
@@ -1103,6 +1117,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                  cell,
                  attention_mechanism,
                  attn_shift_range=0,
+                 sparse_attention=False,
                  attention_layer_size=None,
                  alignment_history=False,
                  cell_input_fn=None,
@@ -1119,10 +1134,11 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                 initial_cell_state,
                 name
         )
-        self.timed_ntms = [TimedNTM(attn_shift_range)]
+        self.timed_ntms = [TimedNTM(attn_shift_range, sparse_attention)]
         if self._is_multi:
             for _ in range(len(attention_mechanism)):
-                self.timed_ntms.append(TimedNTM(attn_shift_range))
+                self.timed_ntms.append(TimedNTM(attn_shift_range,
+                                                sparse_attention))
 
     def call(self, inputs, state):
         """Perform a step of attention-wrapped RNN.
