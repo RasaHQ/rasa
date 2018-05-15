@@ -4,7 +4,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from rasa_core.policies.policy import Policy
-from rasa_core.policies.embedding_policy import EmbeddingPolicy
 from rasa_core.policies.ensemble import SimplePolicyEnsemble, PolicyEnsemble
 from rasa_core.policies.fallback import FallbackPolicy
 from rasa_core.policies.keras_policy import KerasPolicy
