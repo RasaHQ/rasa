@@ -215,7 +215,7 @@ class Project(object):
 
     def as_dict(self):
         return {'status': 'training' if self.status else 'ready',
-                'current_training_processes': self.current_training_processes
+                'current_training_processes': self.current_training_processes,
                 'available_models': list(self._models.keys()),
                 'loaded_models': self._list_loaded_models()}
 
