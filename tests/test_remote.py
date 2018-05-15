@@ -28,3 +28,4 @@ def test_remote_training(tmpdir):
 
 
 def test_remote_server():
+    pass
