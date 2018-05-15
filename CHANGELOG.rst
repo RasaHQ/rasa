@@ -11,9 +11,12 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 Added
 -----
+- Current training processes count for server and projects.
 
 Changed
 -------
+- Allow multiple training processes per project
+- Changed AlreadyTrainingError to MaxTrainingError. The first one was used to indicate that the project was already training. The latest will show an error when the server isn't able to training more models.
 
 Removed
 -------
