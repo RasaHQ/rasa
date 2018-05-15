@@ -9,7 +9,7 @@ import json
 import fakeredis
 import pytest
 
-from rasa_core import training
+from rasa_core import training, restore
 from rasa_core import utils
 from rasa_core.actions.action import ActionListen, ACTION_LISTEN_NAME
 from rasa_core.channels import UserMessage
@@ -72,7 +72,7 @@ def test_tracker_store_storage_and_retrieval(store):
     assert tracker.sender_id == "some-id"
 
     # Action listen should be in there
-    assert list(tracker.events) == [ActionExecuted(ActionListen().name())]
+    assert list(tracker.events) == [ActionExecuted(ACTION_LISTEN_NAME)]
 
     # lets log a test message
     intent = {"name": "greet", "confidence": 1.0}
@@ -342,20 +342,18 @@ def test_dump_and_restore_as_json(default_agent, tmpdir_factory):
         dumped = tracker.current_state(should_include_events=True)
         utils.dump_obj_as_json_to_file(out_path.strpath, dumped)
 
-        tracker_json = json.loads(utils.read_file(out_path.strpath))
-        sender_id = tracker_json.get("sender_id", UserMessage.DEFAULT_SENDER_ID)
-        restored_tracker = DialogueStateTracker.from_dict(
-                sender_id, tracker_json.get("events", []), default_agent.domain)
+        restored_tracker = restore.load_tracker_from_json(out_path.strpath,
+                                                          default_agent.domain)
 
         assert restored_tracker == tracker
 
 
 def test_read_json_dump(default_agent):
-    json_content = utils.read_file("data/test_trackers/tracker_moodbot.json")
-    tracker_json = json.loads(json_content)
-    sender_id = tracker_json.get("sender_id", UserMessage.DEFAULT_SENDER_ID)
-    restored_tracker = DialogueStateTracker.from_dict(
-            sender_id, tracker_json.get("events", []), default_agent.domain)
+    tracker_dump = "data/test_trackers/tracker_moodbot.json"
+    tracker_json = json.loads(utils.read_file(tracker_dump))
+
+    restored_tracker = restore.load_tracker_from_json(tracker_dump,
+                                                      default_agent.domain)
 
     assert len(restored_tracker.events) == 7
     assert restored_tracker.latest_action_name == "action_listen"

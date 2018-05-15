@@ -8,6 +8,7 @@ import logging
 import matplotlib
 import pytest
 
+from rasa_core import train
 from rasa_core.agent import Agent
 from rasa_core.channels.console import ConsoleOutputChannel
 from rasa_core.channels.direct import CollectingOutputChannel
@@ -77,3 +78,13 @@ def default_processor(default_domain):
                             agent.policy_ensemble,
                             default_domain,
                             tracker_store)
+
+
+@pytest.fixture(scope="session")
+def trained_moodbot_path():
+    model_path = "examples/moodbot/models/dialogue"
+    train.train_dialogue_model("examples/moodbot/domain.yml",
+                               "examples/moodbot/data/stories.md",
+                               model_path,
+                               False, None, {})
+    return model_path
