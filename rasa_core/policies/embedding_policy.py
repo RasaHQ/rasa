@@ -79,7 +79,7 @@ class EmbeddingPolicy(Policy):
         # attention parameters
         "score_noise": 0.0,  # deprecated
         "use_attention": True,  # flag to use attention
-        "sparse_attention": True,  # if use sparsemax for probs
+        "sparse_attention": False,  # if use sparsemax for probs
         "attn_shift_range": None,  # if None, mean dialogue length / 2
 
         # visualization of accuracy
