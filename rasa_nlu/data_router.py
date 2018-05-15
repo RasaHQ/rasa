@@ -44,7 +44,7 @@ DEFERRED_RUN_IN_REACTOR_THREAD = True
 
 
 class MaxTrainingError(Exception):
-    """Raised when a training is requested for and the server has
+    """Raised when a training is requested and the server has
         reached the max count of training processes.
 
     Attributes:
