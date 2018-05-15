@@ -10,6 +10,8 @@ from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.training_data import Message
 from rasa_nlu import utils
 
+ENTITY_PHRASES_FILE = "entity_phrases.json"
+
 
 class PhraseMatcher(EntityExtractor):
     name = "ner_phrase_matcher"
@@ -114,24 +116,23 @@ class PhraseMatcher(EntityExtractor):
     def persist(self, model_dir):
         entity_phrases = defaultdict(list)
         for phrase, entity in self.phrase_trie.items():
+            if self.component_config["use_tokens"]:
+                phrase = " ".join(phrase)
             entity_phrases[entity].append(phrase)
 
-        entity_phrases_file = "entity_phrases.json"
-        entity_phrases_file_path = os.path.join(model_dir, entity_phrases_file)
+        entity_phrases_file_path = os.path.join(model_dir, ENTITY_PHRASES_FILE)
         utils.write_json_to_file(entity_phrases_file_path, entity_phrases)
 
         return {
-            "entity_phrases": entity_phrases_file,
+            "entity_phrases": ENTITY_PHRASES_FILE
         }
 
     @classmethod
     def load(cls, model_dir, model_metadata, cached_component, **kwargs):
-        if not model_metadata.get("entity_phrases"):
-            raise ValueError("Entity phrases not defined in metadata, but component present in pipeline")
-
         component_config = model_metadata.for_component(cls.name)
 
-        entity_phrases_file = os.path.join(model_dir, model_metadata.get("entity_phrases"))
-        entity_phrases = utils.read_json_file(entity_phrases_file)
+        entity_phrases_file = model_metadata.get("entity_phrases", ENTITY_PHRASES_FILE)
+        entity_phrases_file_path = os.path.join(model_dir, entity_phrases_file)
+        entity_phrases = utils.read_json_file(entity_phrases_file_path)
 
         return cls(component_config, entity_phrases)
