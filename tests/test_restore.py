@@ -14,7 +14,9 @@ def test_restoring_tracker(trained_moodbot_path, recwarn):
 
     # makes sure there are no warnings. warnings are raised, if the models
     # predictions differ from the tracker when the dumped tracker is replayed
-    assert len(recwarn) == 0
+    assert [e
+            for e in recwarn
+            if e._category_name == "UserWarning"] == []
 
     assert len(tracker.events) == 7
     assert tracker.latest_action_name == "action_listen"
