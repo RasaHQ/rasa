@@ -228,17 +228,15 @@ def test_remote_client(http_app, default_agent, tmpdir):
 
     default_agent.persist(model_path)
 
-    core_client = RasaCoreClient(http_app, None)
-    core_client.upload_model(model_path, max_retries=5)
-
-    remote_agent = RemoteAgent(default_agent.domain, core_client)
+    remote_agent = RemoteAgent.load(model_path,
+                                    http_app)
 
     message = UserMessage("""/greet{"name":"Rasa"}""",
                           output_channel=CollectingOutputChannel())
 
     remote_agent.process_message(message)
 
-    tracker = core_client.tracker_json("default")
+    tracker = remote_agent.core_client.tracker_json("default")
 
     assert len(tracker.get("events")) == 6
 
