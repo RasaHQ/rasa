@@ -4,20 +4,17 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import argparse
-import io
-import json
 import logging
 import os
 import tempfile
 import zipfile
 from functools import wraps
-from gevent.pywsgi import WSGIServer
 
-import six
 from builtins import str
 from flask import Flask, request, abort, Response, jsonify
 from flask_cors import CORS, cross_origin
-from typing import Union, Text, Optional, Any
+from gevent.pywsgi import WSGIServer
+from typing import Union, Text, Optional
 
 from rasa_core import utils, events
 from rasa_core.agent import Agent
@@ -100,11 +97,8 @@ def bool_arg(name, default=True):
 
 
 def request_parameters():
-    if request.method.decode('utf-8', 'strict') == 'GET':
-        return {
-            key.decode('utf-8', 'strict'): value[0].decode('utf-8',
-                                                           'strict')
-            for key, value in request.args.items()}
+    if request.method == 'GET':
+        return request.args
     else:
 
         try:
@@ -122,10 +116,7 @@ def requires_auth(token=None):
     def decorator(f):
         @wraps(f)
         def decorated(*args, **kwargs):
-            if six.PY3:
-                provided = request.args.get(b'token', '').decode("utf8")
-            else:
-                provided = str(request.args.get('token', ''))
+            provided = request.args.get('token')
             if token is None or provided == token:
                 return f(*args, **kwargs)
             abort(401)
