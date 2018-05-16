@@ -47,6 +47,7 @@ install_requires = [
     'coloredlogs',
     'ruamel.yaml',
     'flask',
+    'flask_cors',
     'scikit-learn',
     'rasa_nlu>=0.12.0,<0.13.0',
     'slackclient',
