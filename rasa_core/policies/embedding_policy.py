@@ -55,7 +55,7 @@ class EmbeddingPolicy(Policy):
         "num_hidden_layers_b": 0,
         "hidden_layer_size_b": [],
         "rnn_size": 64,
-        "batch_size": [2, 32],
+        "batch_size": [4, 32],
         "epochs": 1,
 
         # embedding parameters
@@ -77,9 +77,9 @@ class EmbeddingPolicy(Policy):
         "droprate_out": 0.1,
 
         # attention parameters
-        "score_noise": 0.0,  # deprecated
         "use_attention": True,  # flag to use attention
-        "sparse_attention": False,  # if use sparse for probs or gate if None
+        "sparse_attention": False,  # flag to use sparsemax for probs
+        "skip_cells": False,  # flag to add gate to skip rnn time step
         "attn_shift_range": None,  # if None, mean dialogue length / 2
 
         # visualization of accuracy
@@ -173,9 +173,9 @@ class EmbeddingPolicy(Policy):
         self.droprate['out'] = config['droprate_out']
 
     def _load_attn_params(self, config):
-        self.score_noise = config['score_noise']
         self.use_attention = config['use_attention']
         self.sparse_attention = config['sparse_attention']
+        self.skip_cells = config['skip_cells']
         self.attn_shift_range = config['attn_shift_range']
 
     def _load_visual_params(self, config):
@@ -396,6 +396,7 @@ class EmbeddingPolicy(Policy):
                 cell, attn_mech,
                 attn_shift_range=self.attn_shift_range,
                 sparse_attention=self.sparse_attention,
+                skip_cells=self.skip_cells,
                 cell_input_fn=cell_input_fn,
                 output_attention=False,
                 alignment_history=True
@@ -841,7 +842,6 @@ class EmbeddingPolicy(Policy):
         #                         domain.actions[idx].name(),
         #                         np.max(_sim[0, i, :])
         #                         ))
-        #
         #     print("{:.3f} || "#-- {} ----> {}"
         #           "".format(np.sum(_ps[0][0, -1]),
         #                     # np.sum(_ps[1][0, -1])
@@ -1127,6 +1127,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                  attention_mechanism,
                  attn_shift_range=0,
                  sparse_attention=False,
+                 skip_cells=False,
                  attention_layer_size=None,
                  alignment_history=False,
                  cell_input_fn=None,
@@ -1148,6 +1149,8 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             for _ in range(len(attention_mechanism)):
                 self.timed_ntms.append(TimedNTM(attn_shift_range,
                                                 sparse_attention))
+        if skip_cells:
+            self.skip_gate = tf.layers.Dense(1, tf.sigmoid)
 
     def call(self, inputs, state):
         """Perform a step of attention-wrapped RNN.
@@ -1189,9 +1192,9 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         # Step 1: Calculate attention based on
         #          the previous output and current input
         if isinstance(state.cell_state, tf.contrib.rnn.LSTMStateTuple):
-            # the hidden state is not included, in hope that algorithm
-            # would learn correct attention at least to some tokens
-            # regardless of the hidden state of lstm memory
+            # the hidden state c is not included, in hope that algorithm
+            # would learn correct attention
+            # regardless of the hidden state c of lstm memory
             out_for_attn = tf.concat([state.cell_state.h, inputs], 1)
         else:
             out_for_attn = tf.concat([state.cell_state, inputs], 1)
@@ -1243,6 +1246,19 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         cell_inputs = self._cell_input_fn(inputs, attention)
         cell_state = state.cell_state
         cell_output, next_cell_state = self._cell(cell_inputs, cell_state)
+
+        if self.skip_gate is not None:
+            c_g = self.skip_gate(cell_output)
+            if isinstance(cell_state, tf.contrib.rnn.LSTMStateTuple):
+                # in case of lstm only skip hidden state c
+                old_c = cell_state.c
+                c, h = next_cell_state
+                new_c = c_g * c + (1 - c_g) * old_c
+                next_cell_state = tf.contrib.rnn.LSTMStateTuple(new_c, h)
+            else:
+                old_c = cell_state
+                c = next_cell_state
+                next_cell_state = c_g * c + (1 - c_g) * old_c
 
         next_state = tf.contrib.seq2seq.AttentionWrapperState(
             time=state.time + 1,
