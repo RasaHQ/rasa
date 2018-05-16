@@ -9,28 +9,21 @@ import os
 import signal
 import uuid
 from multiprocessing import Process
-from threading import Thread
-
-from builtins import str
 
 import pytest
+from builtins import str
 from freezegun import freeze_time
-from gevent.pywsgi import WSGIServer
-from treq.testing import StubTreq
 
 import rasa_core
+from rasa_core import server, events
 from rasa_core.agent import Agent
 from rasa_core.channels import UserMessage
 from rasa_core.channels.direct import CollectingOutputChannel
-from rasa_core.domain import TemplateDomain
-from rasa_core.events import \
-    (
-    UserUttered, BotUttered, SlotSet, TopicSet, Event)
+from rasa_core.events import (UserUttered, BotUttered, SlotSet, TopicSet, Event)
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.policies.augmented_memoization import \
     AugmentedMemoizationPolicy
 from rasa_core.remote import RasaCoreClient, RemoteAgent
-from rasa_core import server, events
 from tests.conftest import DEFAULT_STORIES_FILE
 
 # a couple of event instances that we can use for testing
