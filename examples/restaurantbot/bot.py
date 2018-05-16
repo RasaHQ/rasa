@@ -112,7 +112,3 @@ if __name__ == '__main__':
         train_dialogue()
     elif task == "run":
         run()
-    else:
-        warnings.warn("Need to pass either 'train-nlu', 'train-dialogue' or "
-                      "'run' to use the script.")
-        exit(1)
