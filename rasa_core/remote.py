@@ -46,7 +46,7 @@ class RasaCoreClient(object):
         result.raise_for_status()
         return result.json()
 
-    def all_clients(self):
+    def clients(self):
         """Get a list of all conversations."""
 
         url = "{}/conversations?token={}".format(self.host, self.token)
@@ -54,16 +54,16 @@ class RasaCoreClient(object):
         result.raise_for_status()
         return result.json()
 
-    def retrieve_tracker(self,
-                         sender_id,  # type: Text
-                         domain,  # type: Domain
-                         only_events_after_latest_restart=False,  # type: bool
-                         include_events=True,  # type: bool
-                         until=None  # type: Optional[int]
-                         ):
+    def tracker(self,
+                sender_id,  # type: Text
+                domain,  # type: Domain
+                only_events_after_latest_restart=False,  # type: bool
+                include_events=True,  # type: bool
+                until=None  # type: Optional[int]
+                ):
         """Retrieve and recreate a tracker fetched from the remote instance."""
 
-        tracker_json = self.retrieve_tracker_json(
+        tracker_json = self.tracker_json(
                 sender_id, only_events_after_latest_restart,
                 include_events, until)
 
@@ -72,12 +72,12 @@ class RasaCoreClient(object):
                                                  domain)
         return tracker
 
-    def retrieve_tracker_json(self,
-                              sender_id,  # type: Text
-                              use_history=True,  # type: bool
-                              include_events=True,  # type: bool
-                              until=None  # type: Optional[int]
-                              ):
+    def tracker_json(self,
+                     sender_id,  # type: Text
+                     use_history=True,  # type: bool
+                     include_events=True,  # type: bool
+                     until=None  # type: Optional[int]
+                     ):
         """Retrieve a tracker's json representation from remote instance."""
 
         url = ("{}/conversations/{}/tracker?token={}"
@@ -215,8 +215,8 @@ class RemoteAgent(object):
         # type: (Text, UserMessage) -> Dict[Text, Any]
         """Run the next action communicating with the remote core server."""
 
-        tracker = self.core_client.retrieve_tracker(message.sender_id,
-                                                    self.domain)
+        tracker = self.core_client.tracker(message.sender_id,
+                                           self.domain)
         dispatcher = Dispatcher(message.sender_id,
                                 message.output_channel,
                                 self.domain)
