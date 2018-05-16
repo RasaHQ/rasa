@@ -104,7 +104,7 @@ class RasaCoreClient(object):
         return result.json()
 
     def parse(self, message, sender_id):
-        # type: (UserMessage, Text) -> Optional[Dict[Text, Any]]
+        # type: (Text, Text) -> Optional[Dict[Text, Any]]
         """Send a parse request to a rasa core server."""
 
         url = "{}/conversations/{}/parse?token={}".format(

@@ -16,10 +16,12 @@ from freezegun import freeze_time
 
 import rasa_core
 from rasa_core import server, events
+from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.agent import Agent
 from rasa_core.channels import UserMessage
 from rasa_core.channels.direct import CollectingOutputChannel
-from rasa_core.events import (UserUttered, BotUttered, SlotSet, TopicSet, Event)
+from rasa_core.events import (
+    UserUttered, BotUttered, SlotSet, TopicSet, Event, ActionExecuted)
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.policies.augmented_memoization import \
     AugmentedMemoizationPolicy
@@ -252,3 +254,36 @@ def test_remote_client(http_app, default_agent, tmpdir):
     assert tracker["events"][4]["text"] == "hey there Rasa!"
     # listen
     assert tracker["events"][5]["name"] == "action_listen"
+
+
+def test_remote_status(http_app):
+    client = RasaCoreClient(http_app, None)
+
+    status = client.status()
+
+    assert status.get("version") == rasa_core.__version__
+
+
+def test_remote_clients(http_app):
+    client = RasaCoreClient(http_app, None)
+
+    cid = str(uuid.uuid1())
+    client.parse("/greet", cid)
+
+    clients = client.clients()
+
+    assert cid in clients
+
+
+def test_remote_append_events(http_app):
+    client = RasaCoreClient(http_app, None)
+
+    cid = str(uuid.uuid1())
+
+    client.append_events_to_tracker(cid, test_events[:2])
+
+    tracker = client.tracker_json(cid)
+
+    evts = tracker.get("events")
+    expected = [ActionExecuted(ACTION_LISTEN_NAME)] + test_events[:2]
+    assert events.deserialise_events(evts) == expected
