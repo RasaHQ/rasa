@@ -1151,6 +1151,8 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                                                 sparse_attention))
         if skip_cells:
             self.skip_gate = tf.layers.Dense(1, tf.sigmoid)
+        else:
+            self.skip_gate = None
 
     def call(self, inputs, state):
         """Perform a step of attention-wrapped RNN.
