@@ -22,6 +22,10 @@ class JiebaTokenizer(Tokenizer, Component):
 
     language_list = ["zh"]
 
+    defaults = {
+        "dictionary_path": None  # default don't load custom dictionary
+    }
+
     @classmethod
     def required_packages(cls):
         # type: () -> List[Text]
@@ -56,6 +60,11 @@ class JiebaTokenizer(Tokenizer, Component):
     def tokenize(self, text):
         # type: (Text) -> List[Token]
         import jieba
+
+        dictionary_path = self.component_config['dictionary_path']
+        if dictionary_path is not None:
+            self.load_custom_dictionary(dictionary_path)
+
         tokenized = jieba.tokenize(text)
         tokens = [Token(word, start) for (word, start, end) in tokenized]
         return tokens
