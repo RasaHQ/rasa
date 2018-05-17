@@ -79,7 +79,7 @@ class EmbeddingPolicy(Policy):
         # attention parameters
         "use_attention": True,  # flag to use attention
         "sparse_attention": False,  # flag to use sparsemax for probs
-        "skip_cells": False,  # flag to add gate to skip rnn time step
+        "skip_cells": True,  # flag to add gate to skip rnn time step
         "attn_shift_range": None,  # if None, mean dialogue length / 2
 
         # visualization of accuracy
@@ -218,6 +218,10 @@ class EmbeddingPolicy(Policy):
             prev_act_placeholder=None,  # type: Optional[tf.Tensor]
             similarity_op=None,  # type: Optional[tf.Tensor]
             alignment_history=None,  # type: Optional[List[[tf.Tensor]]
+            user_embed=None,  # type: Optional[List[[tf.Tensor]]
+            bot_embed=None,  # type: Optional[List[[tf.Tensor]]
+            slot_embed=None,  # type: Optional[List[[tf.Tensor]]
+            dial_embed=None  # type: Optional[List[[tf.Tensor]]
     ):
         # type: (...) -> None
         self._check_tensorflow()
@@ -255,6 +259,10 @@ class EmbeddingPolicy(Policy):
         # a list of tensors for each attention type
         # of length cls.NUM_ATTENTION_TYPES
         self.alignment_history = alignment_history
+        self.user_embed = user_embed
+        self.bot_embed = bot_embed
+        self.slot_embed = slot_embed
+        self.dial_embed = dial_embed
 
         # for continue training
         self.train_op = None
@@ -507,6 +515,7 @@ class EmbeddingPolicy(Policy):
         a = no_scale_dropout(a, rate=self.droprate['a'],
                              training=self.is_training)
         emb_utter = self._create_embed(a, name=name_a)
+        self.user_embed = emb_utter
 
         b = self._create_tf_nn(b_in,
                                self.num_hidden_layers_b,
@@ -520,11 +529,13 @@ class EmbeddingPolicy(Policy):
                                           shape_b[1],
                                           1, shape_b[-1]))
         emb_act = self._create_embed(b, name=name_b)
+        self.bot_embed = emb_act
 
         c = c_in  # no hidden layers for slots
         c = no_scale_dropout(c, rate=self.droprate['slt'],
                              training=self.is_training)
         emb_slots = self._create_embed(c, name='slt')
+        self.slot_embed = emb_slots
 
         b_prev = self._create_tf_nn(b_prev_in,
                                     self.num_hidden_layers_b,
@@ -547,6 +558,7 @@ class EmbeddingPolicy(Policy):
                                         rate=self.droprate['out'],
                                         training=self.is_training)
         emb_dial = self._create_embed(cell_output, name='out')
+        self.dial_embed = emb_dial
 
         sim, sim_act = self._tf_sim(emb_dial, emb_act, mask)
         loss = self._tf_loss(sim, sim_act, mask)
@@ -822,6 +834,24 @@ class EmbeddingPolicy(Policy):
                            self.b_prev_in: prev_act}
         )
 
+        # _eu, _eb, _es, _ed = self.session.run(
+        #         [self.user_embed, self.bot_embed, self.slot_embed, self.dial_embed],
+        #         feed_dict={self.a_in: X,
+        #                    self.b_in: all_Y_d_x,
+        #                    self.c_in: slots,
+        #                    self.b_prev_in: prev_act}
+        # )
+        # if _eu.shape[1] == 36:
+        #     print(_eu[0].shape)
+        #     print(_eb[0].shape)
+        #     print(_es[0].shape)
+        #     print(_ed[0].shape)
+        # for i in range(self.encoded_all_actions.shape[0]):
+        #     print(domain.actions[i].name())
+        #
+        # print(_eb[0, 1])
+        # exit()
+
         # _ps is attention probability distribution stored as
         # a list of tensors for each attention type
         # of length cls.NUM_ATTENTION_TYPES
@@ -900,6 +930,19 @@ class EmbeddingPolicy(Policy):
                                              ''.format(i),
                                              alignments)
 
+            self.graph.clear_collection('user_embed')
+            self.graph.add_to_collection('user_embed',
+                                         self.user_embed)
+            self.graph.clear_collection('bot_embed')
+            self.graph.add_to_collection('bot_embed',
+                                         self.bot_embed)
+            self.graph.clear_collection('slot_embed')
+            self.graph.add_to_collection('slot_embed',
+                                         self.slot_embed)
+            self.graph.clear_collection('dial_embed')
+            self.graph.add_to_collection('dial_embed',
+                                         self.dial_embed)
+
             saver = tf.train.Saver()
             saver.save(self.session, checkpoint)
 
@@ -945,6 +988,11 @@ class EmbeddingPolicy(Policy):
                                                        ''.format(i))
                         alignment_history.extend(alignments)
 
+                    user_embed = tf.get_collection('user_embed')[0]
+                    bot_embed = tf.get_collection('bot_embed')[0]
+                    slot_embed = tf.get_collection('slot_embed')[0]
+                    dial_embed = tf.get_collection('dial_embed')[0]
+
                 with io.open(os.path.join(
                         path,
                         file_name + ".encoded_all_actions.pkl"), 'rb') as f:
@@ -959,7 +1007,11 @@ class EmbeddingPolicy(Policy):
                            slots_placeholder=c_in,
                            prev_act_placeholder=b_prev_in,
                            similarity_op=sim_op,
-                           alignment_history=alignment_history)
+                           alignment_history=alignment_history,
+                           user_embed=user_embed,
+                           bot_embed=bot_embed,
+                           slot_embed=slot_embed,
+                           dial_embed=dial_embed)
             else:
                 return cls(featurizer=featurizer)
 
