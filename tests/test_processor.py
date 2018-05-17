@@ -11,7 +11,8 @@ from rasa_core.dispatcher import Button
 def test_message_processor(default_processor):
     out = CollectingOutputChannel()
     default_processor.handle_message(UserMessage('/greet{"name":"Core"}', out))
-    assert ("default", "hey there Core!") == out.latest_output()
+    assert {'recipient_id': 'default',
+            'text': 'hey there Core!'} == out.latest_output()
 
 
 def test_logging_of_bot_utterances_on_tracker(default_processor,

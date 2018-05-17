@@ -9,19 +9,36 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 .. note:: This version is not yet released and is under active development.
 
+This is a major new release with backward incompatible changes. Old trained
+models can not be read with the new version - you need to retrain your model.
+
 Added
 -----
+- supported loading training data from a folder - loads all stories from
+  all files in that directory
+- parameter to specify NLU project when instantiating a ``RasaNLUInterpreter``
+- simple ``/respond`` endpoint to get bot response to a user message
+- ``/conversations`` endpoint for listing sender ids of running conversations
+- added a Mattermost channel that allows Rasa Core to communicate via a Mattermost app
+- added a Twilio channel that allows Rasa Core to communicate via SMS
+- ``FallbackPolicy`` for executing a default message if NLU or core model confidence is low.
+- ``FormAction`` class to make it easier to collect multiple pieces of information with fewer stories.
+- Dockerfile for ``rasa_core.server`` with a dialogue and Rasa NLU model
 
 Changed
 -------
 - updated dependency fbmessenger from 4.3.1 to 5.0.0
+- updated Rasa NLU to 0.12.x
 
 Removed
 -------
 
 Fixed
 -----
+- Slack connector: ``slack_channel`` kwarg is used to send messages either back to the user or to a static channel
+- properly log to a file when using the ``run`` script
 - documentation fix on stories
+
 
 [0.8.2] - 2018-02-13
 ^^^^^^^^^^^^^^^^^^^^

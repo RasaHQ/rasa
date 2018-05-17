@@ -21,13 +21,13 @@ def test_moodbot_example():
     agent = run.main("examples/moodbot/models/dialogue")
 
     responses = agent.handle_message("/greet")
-    assert responses[0] == 'Hey! How are you?'
+    assert responses[0]['text'] == 'Hey! How are you?'
 
     responses.extend(agent.handle_message("/mood_unhappy"))
-    assert responses[-1] in {"Did that help you?"}
+    assert responses[-1]['text'] in {"Did that help you?"}
 
     # (there is a 'I am on it' message in the middle we are not checking)
-    assert len(responses) == 6
+    assert len(responses) == 4
 
 
 def test_remote_example():
@@ -70,12 +70,13 @@ def test_restaurantbot_example():
     from bot import train_dialogue
 
     p = "examples/restaurantbot/"
+    stories = os.path.join("data", "test_stories", "stories_babi_small.md")
     agent = train_dialogue(os.path.join(p, "restaurant_domain.yml"),
                            os.path.join(p, "models", "dialogue"),
-                           os.path.join(p, "data", "babi_stories.md"))
+                           stories)
 
     responses = agent.handle_message("/greet")
-    assert responses[0] == 'how can I help you?'
+    assert responses[0]['text'] == 'how can I help you?'
 
 
 def test_concerts_online_example():
@@ -95,6 +96,6 @@ def test_concerts_online_example():
     agent = run_concertbot_online(input_channel, RegexInterpreter(),
                                   domain_file, training_file)
     responses = agent.handle_message("/greet")
-    assert responses[-1] in {"hey there!",
-                             "how can I help you?",
-                             "default message"}
+    assert responses[-1]['text'] in {"hey there!",
+                                     "how can I help you?",
+                                     "default message"}

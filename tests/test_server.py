@@ -14,21 +14,23 @@ from treq.testing import StubTreq
 
 import rasa_core
 from rasa_core.agent import Agent
-from rasa_core.events import UserUttered, BotUttered, SlotSet, TopicSet, Event
+from rasa_core.events import \
+    UserUttered, BotUttered, SlotSet, TopicSet, Event
 from rasa_core.interpreter import RegexInterpreter
-from rasa_core.policies.scoring_policy import ScoringPolicy
+from rasa_core.policies.augmented_memoization import \
+    AugmentedMemoizationPolicy
 from rasa_core.server import RasaCoreServer
 from tests.conftest import DEFAULT_STORIES_FILE
 
 # a couple of event instances that we can use for testing
 test_events = [
-    Event.from_parameters(UserUttered.type_name,
-                          {"text": "/goodbye",
+    Event.from_parameters({"event": UserUttered.type_name,
+                           "text": "/goodbye",
                            "parse_data": {
-                                "intent": {
-                                    "confidence": 1.0, "name": "greet"},
-                                "entities": []}
-                           }, None),
+                               "intent": {
+                                   "confidence": 1.0, "name": "greet"},
+                               "entities": []}
+                           }),
     BotUttered("Welcome!", {"test": True}),
     TopicSet("question"),
     SlotSet("cuisine", 34),
@@ -50,9 +52,10 @@ def core_server(tmpdir_factory):
     model_path = tmpdir_factory.mktemp("model").strpath
 
     agent = Agent("data/test_domains/default_with_topic.yml",
-                  policies=[ScoringPolicy()])
+                  policies=[AugmentedMemoizationPolicy(max_history=3)])
 
-    agent.train(DEFAULT_STORIES_FILE, max_history=3)
+    training_data = agent.load_data(DEFAULT_STORIES_FILE)
+    agent.train(training_data)
     agent.persist(model_path)
 
     return RasaCoreServer(model_path, interpreter=RegexInterpreter())
@@ -193,3 +196,19 @@ def test_put_tracker(core_server, app):
     assert tracker is not None
     assert len(tracker.events) == len(test_events)
     assert list(tracker.events) == test_events
+
+
+@pytest.inlineCallbacks
+def test_list_conversations(app):
+    data = json.dumps({"query": "/greet"})
+    response = yield app.post("http://dummy/conversations/myid/parse",
+                              data=data, content_type='application/json')
+    content = yield response.json()
+    assert response.code == 200
+
+    response = yield app.get("http://dummy/conversations")
+    content = yield response.json()
+    assert response.code == 200
+
+    assert len(content) > 0
+    assert "myid" in content

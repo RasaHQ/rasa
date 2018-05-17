@@ -44,16 +44,12 @@ class TelegramOutput(Bot, OutputChannel):
             button_list = [[InlineKeyboardButton(s["title"],
                             callback_data=s["payload"]) for s in buttons]]
             reply_markup = InlineKeyboardMarkup(button_list)
-            return self.send_message(recipient_id, text,
-                                     reply_markup=reply_markup)
-        if button_type == "vertical":
-            button_list = []
-            for s in buttons:
-                button_list.append([InlineKeyboardButton(s["title"],
-                                    callback_data=s["payload"])])
-                reply_markup = InlineKeyboardMarkup(button_list)
-            return self.send_message(recipient_id, text,
-                                     reply_markup=reply_markup)
+            
+        elif button_type == "vertical":
+            button_list = [[InlineKeyboardButton(s["title"],
+                            callback_data=s["payload"])] for s in buttons]
+            reply_markup = InlineKeyboardMarkup(button_list)
+            
         elif button_type == "custom":
             button_list = []
             for bttn in buttons:
@@ -65,8 +61,12 @@ class TelegramOutput(Bot, OutputChannel):
             reply_markup = ReplyKeyboardMarkup(button_list,
                                                resize_keyboard=True,
                                                one_time_keyboard=True)
-            return self.send_message(recipient_id, text,
-                                     reply_markup=reply_markup)
+        else:
+            logger.error('Trying to send text with buttons for unknown '
+                         'button type {}'.format(button_type))
+            return
+
+        return self.send_message(recipient_id, text, reply_markup=reply_markup)
 
 
 class TelegramInput(HttpInputComponent):
@@ -102,10 +102,13 @@ class TelegramInput(HttpInputComponent):
         def set_webhook():
             s = out_channel.setWebhook(self.webhook_url)
             if s:
+                logger.info("Webhook Setup Successful")
                 return "Webhook setup successful"
             else:
+                logger.warning("Webhook Setup Failed")
                 return "Invalid webhook"
-
+        set_webhook()
+        
         @telegram_webhook.route("/webhook", methods=['GET', 'POST'])
         def message():
             if request.method == 'POST':

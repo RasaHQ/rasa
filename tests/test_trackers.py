@@ -8,18 +8,17 @@ import json
 
 import pytest
 
+from rasa_core import training
 from rasa_core import utils
 from rasa_core.actions.action import ActionListen, ACTION_LISTEN_NAME
 from rasa_core.channels import UserMessage
 from rasa_core.conversation import Topic
 from rasa_core.domain import TemplateDomain
 from rasa_core.events import (
-    UserUttered, TopicSet, ActionExecuted, SlotSet,
-    Restarted, ActionReverted, UserUtteranceReverted)
-from rasa_core.featurizers import BinaryFeaturizer
+    UserUttered, TopicSet, ActionExecuted, Restarted, ActionReverted,
+    UserUtteranceReverted)
 from rasa_core.tracker_store import InMemoryTrackerStore, RedisTrackerStore
 from rasa_core.trackers import DialogueStateTracker
-from rasa_core.training import STORY_START, extract_trackers_from_file
 from tests.conftest import DEFAULT_STORIES_FILE
 from tests.utilities import tracker_from_dialogue_file, read_dialogue_file
 
@@ -53,7 +52,7 @@ def test_tracker_duplicate():
     # There is always one duplicated tracker more than we have actions,
     # as the tracker also gets duplicated for the
     # action that would be next (but isn't part of the operations)
-    assert len(list(tracker.generate_all_prior_states())) == num_actions + 1
+    assert len(list(tracker.generate_all_prior_trackers())) == num_actions + 1
 
 
 @pytest.mark.parametrize("store", stores_to_be_tested(),
@@ -99,12 +98,19 @@ def test_tracker_write_to_story(tmpdir, default_domain):
             "data/test_dialogues/enter_name.json", default_domain)
     p = tmpdir.join("export.md")
     tracker.export_stories_to_file(p.strpath)
-    trackers = extract_trackers_from_file(p.strpath, default_domain,
-                                          BinaryFeaturizer())
+    trackers = training.load_data(
+            p.strpath,
+            default_domain,
+            use_story_concatenation=False,
+            tracker_limit=1000,
+            remove_duplicates=False
+    )
     assert len(trackers) == 1
     recovered = trackers[0]
-    assert len(recovered.events) == 8
-    assert recovered.events[6] == SlotSet("location", "central")
+    assert len(recovered.events) == 7
+    assert recovered.events[5].type_name == "slot"
+    assert recovered.events[5].key == "name"
+    assert recovered.events[5].value == "holger"
 
 
 def test_tracker_state_regression_without_bot_utterance(default_agent):
@@ -171,7 +177,7 @@ def test_restart_event(default_domain):
 
     assert len(tracker.events) == 4
     assert tracker.latest_message.text == "/greet"
-    assert len(list(tracker.generate_all_prior_states())) == 4
+    assert len(list(tracker.generate_all_prior_trackers())) == 4
 
     tracker.update(Restarted())
 
@@ -179,7 +185,7 @@ def test_restart_event(default_domain):
     assert tracker.follow_up_action is not None
     assert tracker.follow_up_action.name() == ACTION_LISTEN_NAME
     assert tracker.latest_message.text is None
-    assert len(list(tracker.generate_all_prior_states())) == 1
+    assert len(list(tracker.generate_all_prior_trackers())) == 1
 
     dialogue = tracker.as_dialogue()
 
@@ -193,7 +199,7 @@ def test_restart_event(default_domain):
     assert tracker.follow_up_action is not None
     assert tracker.follow_up_action.name() == ACTION_LISTEN_NAME
     assert recovered.latest_message.text is None
-    assert len(list(recovered.generate_all_prior_states())) == 1
+    assert len(list(recovered.generate_all_prior_trackers())) == 1
 
 
 def test_revert_action_event(default_domain):
@@ -213,7 +219,7 @@ def test_revert_action_event(default_domain):
     #   +3 executed actions
     #   +1 final state
     assert tracker.latest_action_name == ACTION_LISTEN_NAME
-    assert len(list(tracker.generate_all_prior_states())) == 4
+    assert len(list(tracker.generate_all_prior_trackers())) == 4
 
     tracker.update(ActionReverted())
 
@@ -222,7 +228,7 @@ def test_revert_action_event(default_domain):
     #   +1 final state
     #   -1 reverted action
     assert tracker.latest_action_name == "my_action"
-    assert len(list(tracker.generate_all_prior_states())) == 3
+    assert len(list(tracker.generate_all_prior_trackers())) == 3
 
     dialogue = tracker.as_dialogue()
 
@@ -233,7 +239,7 @@ def test_revert_action_event(default_domain):
 
     assert recovered.current_state() == tracker.current_state()
     assert tracker.latest_action_name == "my_action"
-    assert len(list(tracker.generate_all_prior_states())) == 3
+    assert len(list(tracker.generate_all_prior_trackers())) == 3
 
 
 def test_revert_user_utterance_event(default_domain):
@@ -258,7 +264,7 @@ def test_revert_user_utterance_event(default_domain):
     #   +5 executed actions
     #   +1 final state
     assert tracker.latest_action_name == ACTION_LISTEN_NAME
-    assert len(list(tracker.generate_all_prior_states())) == 6
+    assert len(list(tracker.generate_all_prior_trackers())) == 6
 
     tracker.update(UserUtteranceReverted())
 
@@ -268,7 +274,7 @@ def test_revert_user_utterance_event(default_domain):
     #   -2 rewound actions associated with the /goodbye
     #   -1 rewound action from the listen right before /goodbye
     assert tracker.latest_action_name == "my_action_1"
-    assert len(list(tracker.generate_all_prior_states())) == 3
+    assert len(list(tracker.generate_all_prior_trackers())) == 3
 
     dialogue = tracker.as_dialogue()
 
@@ -279,7 +285,7 @@ def test_revert_user_utterance_event(default_domain):
 
     assert recovered.current_state() == tracker.current_state()
     assert tracker.latest_action_name == "my_action_1"
-    assert len(list(tracker.generate_all_prior_states())) == 3
+    assert len(list(tracker.generate_all_prior_trackers())) == 3
 
 
 def test_traveling_back_in_time(default_domain):
@@ -306,7 +312,7 @@ def test_traveling_back_in_time(default_domain):
     #   +1 final state
     assert tracker.latest_action_name == ACTION_LISTEN_NAME
     assert len(tracker.events) == 4
-    assert len(list(tracker.generate_all_prior_states())) == 4
+    assert len(list(tracker.generate_all_prior_trackers())) == 4
 
     tracker = tracker.travel_back_in_time(time_for_timemachine)
 
@@ -315,20 +321,15 @@ def test_traveling_back_in_time(default_domain):
     #   +1 final state
     assert tracker.latest_action_name == ACTION_LISTEN_NAME
     assert len(tracker.events) == 2
-    assert len(list(tracker.generate_all_prior_states())) == 2
+    assert len(list(tracker.generate_all_prior_trackers())) == 2
 
 
-def test_dump_and_restore_as_json(default_agent, tmpdir):
-    trackers = extract_trackers_from_file(
-            DEFAULT_STORIES_FILE,
-            default_agent.domain,
-            default_agent.featurizer,
-            default_agent.interpreter,
-            default_agent.policy_ensemble.max_history())
-
-    out_path = tmpdir.join("dumped_tracker.json")
+def test_dump_and_restore_as_json(default_agent, tmpdir_factory):
+    trackers = default_agent.load_data(DEFAULT_STORIES_FILE)
 
     for tracker in trackers:
+        out_path = tmpdir_factory.mktemp("tracker").join("dumped_tracker.json")
+
         dumped = tracker.current_state(should_include_events=True)
         utils.dump_obj_as_json_to_file(out_path.strpath, dumped)
 

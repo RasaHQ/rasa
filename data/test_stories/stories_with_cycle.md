@@ -1,24 +1,24 @@
-## Greeting
+## utter greet
 * greet
 - utter_greet
 > get_name
 
-## Get Name - None
+## user no name
 > get_name
 * default{"name":null}
 > process_name
 
-## Get Name - Value
+## user sends name
 > get_name
 * default{"name":"Josh"}
 > process_name
 
-## Have name
+## goodbye
 > process_name{"name":"Josh"}
 - utter_goodbye
 - action_restart
 
-## Dont have name
+## utter default
 > process_name{"name":null}
 - utter_default
 > get_name

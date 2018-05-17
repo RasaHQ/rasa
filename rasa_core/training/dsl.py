@@ -11,6 +11,7 @@ import os
 import re
 import warnings
 
+from rasa_nlu import utils as nlu_utils
 from typing import Optional, List, Text, Any, Dict
 
 from rasa_core import utils
@@ -18,7 +19,7 @@ from rasa_core.events import (
     ActionExecuted, UserUttered, Event)
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.training.structures import (
-    Checkpoint, STORY_END, STORY_START, StoryStep)
+    Checkpoint, STORY_START, StoryStep)
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +80,8 @@ class StoryStepBuilder(object):
             # user can use the express the same thing
             # we need to copy the blocks and create one
             # copy for each possible message
-            generated_checkpoint = utils.generate_id("GENERATED_M_")
+            generated_checkpoint = utils.generate_id("GENERATED_M_",
+                                                     max_chars=5)
             updated_steps = []
             for t in self.current_steps:
                 for m in messages:
@@ -132,19 +134,35 @@ class StoryFileReader(object):
         self.template_variables = template_vars if template_vars else {}
 
     @staticmethod
+    def read_from_folder(resource_name, domain, interpreter=RegexInterpreter(),
+                         template_variables=None):
+        """Given a path reads all contained story files."""
+
+        story_steps = []
+        for f in nlu_utils.list_files(resource_name):
+            steps = StoryFileReader.read_from_file(f, domain, interpreter,
+                                                   template_variables)
+            story_steps.extend(steps)
+        return story_steps
+
+    @staticmethod
     def read_from_file(filename, domain, interpreter=RegexInterpreter(),
                        template_variables=None):
-        """Given a json file reads the contained stories."""
+        """Given a md file reads the contained stories."""
 
         try:
             with io.open(filename, "r") as f:
                 lines = f.readlines()
             reader = StoryFileReader(domain, interpreter, template_variables)
             return reader.process_lines(lines)
-        except Exception:
-            logger.exception("Failed to parse '{}'".format(
-                    os.path.abspath(filename)))
-            raise ValueError("Invalid story file format.")
+        except ValueError as err:
+            file_info = ("Invalid story file format. Failed to parse "
+                         "'{}'".format(os.path.abspath(filename)))
+            logger.exception(file_info)
+            if not err.args:
+                err.args = ('',)
+            err.args = err.args + (file_info,)
+            raise
 
     @staticmethod
     def _parameters_from_json_string(s, line):
@@ -217,7 +235,7 @@ class StoryFileReader(object):
             except Exception as e:
                 msg = "Error in line {}: {}".format(line_num, e.message)
                 logger.error(msg, exc_info=1)
-                raise Exception(msg)
+                raise ValueError(msg)
         self._add_current_stories_to_result()
         return self.story_steps
 
@@ -271,8 +289,7 @@ class StoryFileReader(object):
             # other events, so we need to take a shortcut here
             parameters = {"text": m, "parse_data": parse_data}
             utterance = Event.from_story_string(UserUttered.type_name,
-                                                parameters,
-                                                self.domain)
+                                                parameters)
             if m.startswith("_"):
                 c = utterance.as_story_string()
                 logger.warn("Stating user intents with a leading '_' is "
@@ -288,7 +305,9 @@ class StoryFileReader(object):
         self.current_step_builder.add_user_messages(parsed_messages)
 
     def add_event(self, event_name, parameters):
-        parsed = Event.from_story_string(event_name, parameters, self.domain,
+        if "name" not in parameters:
+            parameters["name"] = event_name
+        parsed = Event.from_story_string(event_name, parameters,
                                          default=ActionExecuted)
         if parsed is None:
             raise StoryParseError("Unknown event '{}'. It is Neither an event "

@@ -31,7 +31,6 @@ BotMessage = namedtuple("BotMessage", "text data")
 
 
 class Button(dict):
-    # TODO: Decide if this should do more
     pass
 
 
