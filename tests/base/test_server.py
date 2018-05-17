@@ -58,6 +58,7 @@ def test_status(app):
     rjs = yield response.json()
     assert response.code == 200 and "available_projects" in rjs
     assert "current_training_processes" in rjs
+    assert "max_training_processes" in rjs
     assert "default" in rjs["available_projects"]
 
 

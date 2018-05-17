@@ -277,6 +277,7 @@ class DataRouter(object):
         # be other trainings run in different processes we don't know about.
 
         return {
+            "max_training_processes": self._training_processes,
             "current_training_processes": self._current_training_processes,
             "available_projects": {
                 name: project.as_dict()
