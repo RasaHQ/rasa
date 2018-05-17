@@ -21,6 +21,7 @@ Removed
 
 Fixed
 -----
+- documentation fix on stories
 
 [0.8.2] - 2018-02-13
 ^^^^^^^^^^^^^^^^^^^^
