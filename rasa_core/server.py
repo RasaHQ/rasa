@@ -75,8 +75,8 @@ def ensure_loaded_agent(agent):
         def decorated(*args, **kwargs):
             if not agent:
                 return Response(
-                        "No agent loaded. To continue processing, a model of a "
-                        "trained agent needs to be loaded.",
+                        "No agent loaded. To continue processing, a model "
+                        "of a trained agent needs to be loaded.",
                         status=503)
 
             return f(*args, **kwargs)
@@ -299,9 +299,10 @@ def create_app(model_directory,
         elif 'q' in request_params:
             message = request_params.pop('q')
         else:
-            return Response(jsonify(error="Invalid parse parameter specified."),
-                            status=400,
-                            mimetype="application/json")
+            return Response(
+                    jsonify(error="Invalid parse parameter specified."),
+                    status=400,
+                    mimetype="application/json")
 
         try:
             response = agent().start_message_handling(message, sender_id)

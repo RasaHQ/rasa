@@ -54,8 +54,8 @@ def _check_prediction_aligns_with_story(last_prediction,
     p, a = evaluate.align_lists(last_prediction, actions_between_utterances)
     if p != a:
         warnings.warn("Model predicted different actions than the "
-                    "model used to create the story! Expected: "
-                    "{} but got {}.".format(p, a))
+                      "model used to create the story! Expected: "
+                      "{} but got {}.".format(p, a))
 
 
 def replay_events(tracker, agent):
@@ -104,7 +104,7 @@ def load_tracker_from_json(tracker_dump, domain):
 
 
 def recreate_agent(model_directory,  # type: Text
-                   nlu_model=None,   # type: Optional[Text]
+                   nlu_model=None,  # type: Optional[Text]
                    tracker_dump=None  # type: Optional[Text]
                    ):
     # type: (...) -> Tuple[Agent, DialogueStateTracker]
