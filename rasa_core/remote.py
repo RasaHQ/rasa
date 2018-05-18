@@ -67,9 +67,8 @@ class RasaCoreClient(object):
                 sender_id, only_events_after_latest_restart,
                 include_events, until)
 
-        tracker = DialogueStateTracker.from_dict(sender_id,
-                                                 tracker_json.get("events", []),
-                                                 domain)
+        tracker = DialogueStateTracker.from_dict(
+                sender_id, tracker_json.get("events", []), domain)
         return tracker
 
     def tracker_json(self,
@@ -201,7 +200,7 @@ class RemoteAgent(object):
             message_preprocessor=None  # type: Optional[Callable[[Text], Text]]
     ):
         # type: (...) -> None
-        """Handle incoming messages from the input channel using remote core."""
+        """Handle messages from the input channel using remote core."""
 
         def message_handler(message):
             if message_preprocessor is not None:

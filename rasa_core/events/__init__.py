@@ -750,5 +750,3 @@ class AgentUttered(Event):
         except KeyError as e:
             raise ValueError("Failed to parse agent uttered event. "
                              "{}".format(e))
-
-
