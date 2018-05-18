@@ -38,7 +38,7 @@ For example, an ``action`` can:
 
 .. note::
 
-  For mor information about the utter template format (e.g. the use of
+  For more information about the utter template format (e.g. the use of
   variables like ``{name}`` or buttons) take a look at :ref:`utter_templates`.
 
 .. _custom_actions:
