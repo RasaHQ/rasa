@@ -113,18 +113,25 @@ class Agent(object):
         return processor.handle_message(
                 UserMessage(text_message, output_channel, sender_id))
 
-    def start_message_handling(self,
-                               text_message,
-                               sender_id=UserMessage.DEFAULT_SENDER_ID):
-        # type: (Text, Optional[Text]) -> Dict[Text, Any]
+    def start_message_handling(
+            self,
+            text_message,   # type: Text
+            sender_id=UserMessage.DEFAULT_SENDER_ID  # type: Optional[Text]
+    ):
+        # type: (...) -> Dict[Text, Any]
         """Start to process a messages, returning the next action to take. """
 
         processor = self._create_processor()
         return processor.start_message_handling(
                 UserMessage(text_message, None, sender_id))
 
-    def continue_message_handling(self, sender_id, executed_action, events):
-        # type: (Text, Text, List[Event]) -> Dict[Text, Any]
+    def continue_message_handling(
+            self,
+            sender_id,  # type: Text
+            executed_action,   # type: Text
+            events   # type: List[Event]
+    ):
+        # type: (...) -> Dict[Text, Any]
         """Continue to process a messages.
 
         Predicts the next action to take by the caller"""
@@ -134,16 +141,22 @@ class Agent(object):
                                                    executed_action,
                                                    events)
 
-    def handle_channel(self, input_channel,
-                       message_preprocessor=None):
-        # type: (InputChannel, Optional[Callable[[Text], Text]]) -> None
+    def handle_channel(
+            self,
+            input_channel,  # type: InputChannel
+            message_preprocessor=None   # type: Optional[Callable[[Text], Text]]
+    ):
+        # type: (...) -> None
         """Handle messages coming from the channel."""
 
         processor = self._create_processor(message_preprocessor)
         processor.handle_channel(input_channel)
 
-    def toggle_memoization(self, activate):
-        # type: (bool) -> None
+    def toggle_memoization(
+            self,
+            activate   # type: bool
+    ):
+        # type: (...) -> None
         """Toggles the memoization on and off.
 
         If a memoization policy is present in the ensemble, this will toggle

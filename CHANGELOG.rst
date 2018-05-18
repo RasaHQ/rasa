@@ -27,6 +27,7 @@ Added
 
 Changed
 -------
+- moved server from klein to flask
 - updated dependency fbmessenger from 4.3.1 to 5.0.0
 - updated Rasa NLU to 0.12.x
 
