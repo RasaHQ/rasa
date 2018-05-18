@@ -63,6 +63,7 @@ class Policy(object):
                           for key in kwargs.keys()
                           if not params.get(key)}
 
+        # TODO change that
         if isinstance(params['batch_size'], list):
             params['batch_size'] = params['batch_size'][0]
 
