@@ -4,7 +4,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from rasa_core import training
-from rasa_core.policies.embedding_policy import EmbeddingPolicy
 
 try:  # py3
     from unittest.mock import patch
@@ -101,17 +100,6 @@ class TestKerasPolicy(PolicyTestCollection):
     @pytest.fixture(scope="module")
     def create_policy(self, featurizer):
         p = KerasPolicy(featurizer)
-        return p
-
-
-class TestEmbeddingPolicy(PolicyTestCollection):
-    @pytest.fixture(scope="module")
-    def featurizer(self):
-        return FullDialogueTrackerFeaturizer(BinarySingleStateFeaturizer())
-
-    @pytest.fixture(scope="module")
-    def create_policy(self, featurizer):
-        p = EmbeddingPolicy(featurizer)
         return p
 
 

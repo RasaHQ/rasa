@@ -3,22 +3,17 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import sys
-
 import os
+import sys
 
 from rasa_core.channels.file import FileInputChannel
 from rasa_core.interpreter import RegexInterpreter
 
 
-def test_moodbot_example():
-    from rasa_core import train, run
+def test_moodbot_example(trained_moodbot_path):
+    from rasa_core import run
 
-    train.train_dialogue_model("examples/moodbot/domain.yml",
-                               "examples/moodbot/data/stories.md",
-                               "examples/moodbot/models/dialogue",
-                               False, None, {})
-    agent = run.main("examples/moodbot/models/dialogue")
+    agent = run.main(trained_moodbot_path)
 
     responses = agent.handle_message("/greet")
     assert responses[0]['text'] == 'Hey! How are you?'

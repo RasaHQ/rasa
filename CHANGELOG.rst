@@ -27,6 +27,7 @@ Added
 
 Changed
 -------
+- moved server from klein to flask
 - updated dependency fbmessenger from 4.3.1 to 5.0.0
 - updated Rasa NLU to 0.12.x
 
@@ -37,6 +38,8 @@ Fixed
 -----
 - Slack connector: ``slack_channel`` kwarg is used to send messages either back to the user or to a static channel
 - properly log to a file when using the ``run`` script
+- documentation fix on stories
+
 
 [0.8.2] - 2018-02-13
 ^^^^^^^^^^^^^^^^^^^^
