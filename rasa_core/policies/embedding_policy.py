@@ -216,10 +216,10 @@ class EmbeddingPolicy(Policy):
             prev_act_placeholder=None,  # type: Optional[tf.Tensor]
             similarity_op=None,  # type: Optional[tf.Tensor]
             alignment_history=None,  # type: Optional[List[[tf.Tensor]]
-            user_embed=None,  # type: Optional[List[[tf.Tensor]]
-            bot_embed=None,  # type: Optional[List[[tf.Tensor]]
-            slot_embed=None,  # type: Optional[List[[tf.Tensor]]
-            dial_embed=None  # type: Optional[List[[tf.Tensor]]
+            user_embed=None,  # type: Optional[tf.Tensor]
+            bot_embed=None,  # type: Optional[tf.Tensor]
+            slot_embed=None,  # type: Optional[tf.Tensor]
+            dial_embed=None  # type: Optional[tf.Tensor]
     ):
         # type: (...) -> None
         self._check_tensorflow()
