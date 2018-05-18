@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import io
 import logging
 import os
+from tqdm import tqdm
 
 import typing
 from typing import List, Text, Any, Optional, Dict
@@ -64,7 +65,7 @@ class EmbeddingIntentClassifier(Component):
         "hidden_layer_size_a": [256, 128],
         "num_hidden_layers_b": 0,
         "hidden_layer_size_b": [],
-        "batch_size": 32,
+        "batch_size": [256, 512],
         "epochs": 300,
 
         # embedding parameters
@@ -81,8 +82,12 @@ class EmbeddingIntentClassifier(Component):
         "droprate": 0.2,
 
         # flag if tokenize intents
-        "intent_tokenization_flag": False,
-        "intent_split_symbol": '_'
+        "intent_tokenization_flag": True,
+        "intent_split_symbol": '_',
+
+        # visualization of accuracy
+        "calc_acc_ones_in_epochs": 10,  # small values affect performance
+        "calc_acc_on_num_examples": 1000  # large values affect performance
     }
 
     def _load_nn_architecture_params(self):
@@ -91,6 +96,8 @@ class EmbeddingIntentClassifier(Component):
         self.num_hidden_layers_b = self.component_config['num_hidden_layers_b']
         self.hidden_layer_size_b = self.component_config['hidden_layer_size_b']
         self.batch_size = self.component_config['batch_size']
+        if not isinstance(self.batch_size, list):
+            self.batch_size = [self.batch_size, self.batch_size]
         self.epochs = self.component_config['epochs']
 
     def _load_embedding_params(self):
@@ -115,6 +122,14 @@ class EmbeddingIntentClassifier(Component):
             logger.warning("intent_split_symbol was not specified, "
                            "so intent tokenization will be ignored")
             self.intent_tokenization_flag = False
+
+    def _load_visual_params(self):
+        self.calc_acc_ones_in_epochs = self.component_config[
+                                            'calc_acc_ones_in_epochs']
+        if self.calc_acc_ones_in_epochs < 1:
+            self.calc_acc_ones_in_epochs = self.epochs
+        self.calc_acc_on_num_examples = self.component_config[
+                                            'calc_acc_on_num_examples']
 
     @staticmethod
     def _check_hidden_layer_sizes(num_layers, layer_size, name=''):
@@ -164,7 +179,9 @@ class EmbeddingIntentClassifier(Component):
                  graph=None,  # type: Optional[tf.Graph]
                  intent_placeholder=None,  # type: Optional[tf.Tensor]
                  embedding_placeholder=None,  # type: Optional[tf.Tensor]
-                 similarity_op=None   # type: Optional[tf.Tensor]
+                 similarity_op=None,   # type: Optional[tf.Tensor]
+                 word_embed=None,  # type: Optional[tf.Tensor]
+                 intent_embed=None  # type: Optional[tf.Tensor]
                  ):
         # type: (...) -> None
         """Declare instant variables with default values"""
@@ -179,6 +196,8 @@ class EmbeddingIntentClassifier(Component):
         self._load_regularization_params()
         # flag if tokenize intents
         self._load_flag_if_tokenize_intents()
+        # visualization of accuracy
+        self._load_visual_params()
 
         # check if hidden_layer_sizes are valid
         (self.num_hidden_layers_a,
@@ -203,6 +222,10 @@ class EmbeddingIntentClassifier(Component):
         self.intent_placeholder = intent_placeholder
         self.embedding_placeholder = embedding_placeholder
         self.similarity_op = similarity_op
+
+        # persisted embeddings
+        self.word_embed = word_embed
+        self.intent_embed = intent_embed
 
     @classmethod
     def required_packages(cls):
@@ -269,11 +292,7 @@ class EmbeddingIntentClassifier(Component):
         Y = np.stack([self.encoded_all_intents[intent_idx]
                       for intent_idx in intents_for_X])
 
-        all_Y = self._create_all_Y(X.shape[0])
-
-        helper_data = intents_for_X, all_Y
-
-        return X, Y, helper_data
+        return X, Y, intents_for_X
 
     # tf helpers:
     def _create_tf_embed_nn(self, x_in, is_training,
@@ -379,22 +398,33 @@ class EmbeddingIntentClassifier(Component):
 
         return np.concatenate([batch_pos_b, batch_neg_b], 1)
 
-    def _train_tf(self, X, Y, helper_data,
+    def _train_tf(self, X, Y, intents_for_X,
                   sess, a_in, b_in, sim,
                   loss, is_training, train_op):
         """Train tf graph"""
         sess.run(tf.global_variables_initializer())
 
-        intents_for_X, all_Y = helper_data
+        if self.calc_acc_on_num_examples:
+            logger.info("Accuracy is updated every {} epochs"
+                        "".format(self.calc_acc_ones_in_epochs))
 
-        batches_per_epoch = (len(X) // self.batch_size +
-                             int(len(X) % self.batch_size > 0))
-        for ep in range(self.epochs):
+        pbar = tqdm(range(self.epochs), desc="Epochs")
+        train_acc = 0
+        last_loss = 0
+        for ep in pbar:
             indices = np.random.permutation(len(X))
-            sess_out = {}
+
+            batch_size = int(self.batch_size[0] +
+                             ep * (self.batch_size[1] -
+                                   self.batch_size[0]) /
+                             (self.epochs - 1))
+            batches_per_epoch = (len(X) // batch_size +
+                                 int(len(X) % batch_size > 0))
+
+            ep_loss = 0
             for i in range(batches_per_epoch):
-                end_idx = (i + 1) * self.batch_size
-                start_idx = i * self.batch_size
+                end_idx = (i + 1) * batch_size
+                start_idx = i * batch_size
                 batch_a = X[indices[start_idx:end_idx]]
                 batch_pos_b = Y[indices[start_idx:end_idx]]
                 intents_for_b = intents_for_X[indices[start_idx:end_idx]]
@@ -405,27 +435,45 @@ class EmbeddingIntentClassifier(Component):
                                     feed_dict={a_in: batch_a,
                                                b_in: batch_b,
                                                is_training: True})
+                ep_loss += sess_out.get('loss') / batches_per_epoch
 
-            if logger.isEnabledFor(logging.INFO) and (ep + 1) % 10 == 0:
-                self._output_training_stat(X, intents_for_X, all_Y,
-                                           sess, a_in, b_in,
-                                           sim, is_training,
-                                           ep, sess_out)
+            if self.calc_acc_on_num_examples:
+                if (ep + 1) == 1 or \
+                        (ep + 1) % self.calc_acc_ones_in_epochs == 0 or \
+                        (ep + 1) == self.epochs:
+                    train_acc = self._output_training_stat(X, intents_for_X,
+                                                           sess, a_in, b_in,
+                                                           sim, is_training)
+                    last_loss = ep_loss
 
-    def _output_training_stat(self,
-                              X, intents_for_X, all_Y,
-                              sess, a_in, b_in, sim, is_training,
-                              ep, sess_out):
+                pbar.set_postfix({
+                    "loss": "{:.3f}".format(ep_loss),
+                    "acc": "{:.3f}".format(train_acc)
+                })
+            else:
+                pbar.set_postfix({
+                    "loss": "{:.3f}".format(ep_loss)
+                })
+
+        if self.calc_acc_on_num_examples:
+            logger.info("Finished training embedding policy, "
+                        "loss={:.3f}, train accuracy={:.3f}"
+                        "".format(last_loss, train_acc))
+
+    def _output_training_stat(self, X, intents_for_X,
+                              sess, a_in, b_in, sim, is_training):
         """Output training statistics"""
+        n = self.calc_acc_on_num_examples
+        ids = np.random.permutation(len(X))[:n]
+        all_Y = self._create_all_Y(X[ids].shape[0])
 
-        train_sim = sess.run(sim, feed_dict={a_in: X,
+        train_sim = sess.run(sim, feed_dict={a_in: X[ids],
                                              b_in: all_Y,
                                              is_training: False})
 
-        train_acc = np.mean(np.argmax(train_sim, -1) == intents_for_X)
-        logger.info("epoch {} / {}: loss {}, train accuracy : {:.3f}"
-                    "".format((ep + 1), self.epochs,
-                              sess_out.get('loss'), train_acc))
+        train_acc = np.mean(np.argmax(train_sim, -1) == intents_for_X[ids])
+        return train_acc
+
 
     def train(self, training_data, cfg=None, **kwargs):
         # type: (TrainingData, Optional[RasaNLUModelConfig], **Any) -> None
@@ -442,7 +490,7 @@ class EmbeddingIntentClassifier(Component):
         self.encoded_all_intents = self._create_encoded_intents(
                                         intent_dict)
 
-        X, Y, helper_data = self._prepare_data_for_training(
+        X, Y, intents_for_X = self._prepare_data_for_training(
                                 training_data, intent_dict)
 
         # check if number of negatives is less than number of intents
@@ -474,7 +522,7 @@ class EmbeddingIntentClassifier(Component):
             sess = tf.Session()
             self.session = sess
 
-            self._train_tf(X, Y, helper_data,
+            self._train_tf(X, Y, intents_for_X,
                            sess, a_in, b_in, sim,
                            loss, is_training, train_op)
 
