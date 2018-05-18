@@ -210,8 +210,8 @@ def create_app(model_directory,
         evts = events.deserialise_events(encoded_events)
         try:
             response = agent().continue_message_handling(sender_id,
-                                                       executed_action,
-                                                       evts)
+                                                         executed_action,
+                                                         evts)
         except ValueError as e:
             return Response(jsonify(error=e.message),
                             status=400,
@@ -334,8 +334,8 @@ def create_app(model_directory,
         try:
             out = CollectingOutputChannel()
             responses = agent().handle_message(message,
-                                             output_channel=out,
-                                             sender_id=sender_id)
+                                               output_channel=out,
+                                               sender_id=sender_id)
             return jsonify(responses)
 
         except Exception as e:
