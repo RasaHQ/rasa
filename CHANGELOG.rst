@@ -11,6 +11,7 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 Added
 -----
+- support for `tokenizer_jieba` load custom dictionary from config
 
 Changed
 -------
