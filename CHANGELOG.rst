@@ -23,9 +23,11 @@ Added
 - added a Twilio channel that allows Rasa Core to communicate via SMS
 - ``FallbackPolicy`` for executing a default message if NLU or core model confidence is low.
 - ``FormAction`` class to make it easier to collect multiple pieces of information with fewer stories.
+- Dockerfile for ``rasa_core.server`` with a dialogue and Rasa NLU model
 
 Changed
 -------
+- moved server from klein to flask
 - updated dependency fbmessenger from 4.3.1 to 5.0.0
 - updated Rasa NLU to 0.12.x
 
@@ -35,6 +37,9 @@ Removed
 Fixed
 -----
 - Slack connector: ``slack_channel`` kwarg is used to send messages either back to the user or to a static channel
+- properly log to a file when using the ``run`` script
+- documentation fix on stories
+
 
 [0.8.2] - 2018-02-13
 ^^^^^^^^^^^^^^^^^^^^

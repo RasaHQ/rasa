@@ -1,7 +1,3 @@
-.PHONY: clean test lint
-
-TEST_PATH=./
-
 help:
 	@echo "    train-nlu"
 	@echo "        Train the natural language understanding using Rasa NLU."

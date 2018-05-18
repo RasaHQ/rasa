@@ -161,6 +161,8 @@ if __name__ == '__main__':
     cmdline_args = arg_parser.parse_args()
 
     utils.configure_colored_logging(cmdline_args.loglevel)
+    utils.configure_file_logging(cmdline_args.loglevel,
+                                 cmdline_args.log_file)
 
     main(cmdline_args.core,
          cmdline_args.nlu,
