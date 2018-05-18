@@ -841,16 +841,19 @@ class EmbeddingPolicy(Policy):
         #                    self.c_in: slots,
         #                    self.b_prev_in: prev_act}
         # )
-        # if _eu.shape[1] == 36:
+        # if _eu.shape[1] == 21:
         #     print(_eu[0].shape)
         #     print(_eb[0].shape)
         #     print(_es[0].shape)
-        #     print(_ed[0].shape)
-        # for i in range(self.encoded_all_actions.shape[0]):
-        #     print(domain.actions[i].name())
+        #     print(_ed[0])
+        #     for i in range(_sim.shape[1]):
+        #         idx = np.argmax(_sim[0, i, :])
+        #         print(domain.actions[idx].name())
         #
-        # print(_eb[0, 1])
-        # exit()
+        #     print(_eb[0, 0])
+        #     for i in range(self.encoded_all_actions.shape[0]):
+        #         print(domain.actions[i].name())
+
 
         # _ps is attention probability distribution stored as
         # a list of tensors for each attention type
