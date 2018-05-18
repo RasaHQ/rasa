@@ -520,6 +520,7 @@ tokenizer_jieba
 
         pipeline:
         - name: "tokenizer_jieba"
+          dictionary_path: "path/to/custom/dictionary/dir"  # or None (which is default value) means don't use custom dictionary
 
 tokenizer_mitie
 ~~~~~~~~~~~~~~~
