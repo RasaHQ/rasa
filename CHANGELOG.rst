@@ -11,7 +11,8 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 Added
 -----
-- 2-character and a 5-character prefix features for ``ner_crf``
+- 2-character and a 5-character prefix features to ``ner_crf``
+- ``ner_crf`` with whitespaced tokens to ``tensorflow_embedding`` pipeline
 
 Changed
 -------

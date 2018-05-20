@@ -72,7 +72,7 @@ class CRFEntityExtractor(EntityExtractor):
         'suffix5': lambda doc: doc[0][-5:],
         'suffix3': lambda doc: doc[0][-3:],
         'suffix2': lambda doc: doc[0][-2:],
-        'word1': lambda doc: doc[0][-1:],
+        'suffix1': lambda doc: doc[0][-1:],
         'pos': lambda doc: doc[1],
         'pos2': lambda doc: doc[1][:2],
         'bias': lambda doc: 'bias',
