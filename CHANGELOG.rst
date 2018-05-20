@@ -11,12 +11,15 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 Added
 -----
+- 2-character and a 5-character prefix features for ``ner_crf``
 
 Changed
 -------
+- L1 and L2 regularisation defaults in ``ner_crf`` both set to 0.1
 
 Removed
 -------
+- dependence on spaCy when training ``ner_crf`` without POS features
 
 Fixed
 -----

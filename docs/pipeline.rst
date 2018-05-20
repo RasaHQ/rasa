@@ -125,6 +125,8 @@ Here's an example configuration:
     language: "en"
 
     pipeline:
+    - name: "tokenizer_whitespace"
+    - name: "ner_crf"
     - name: "intent_featurizer_count_vectors"
     - name: "intent_classifier_tensorflow_embedding"
       intent_tokenization_flag: true
@@ -658,6 +660,7 @@ ner_crf
     and the states are entity classes. Features of the words (capitalisation, POS tagging,
     etc.) give probabilities to certain entity classes, as are transitions between
     neighbouring entity tags: the most likely set of tags is then calculated and returned.
+    If POS features are used (pos or pos2), spaCy has to be installed.
 :Configuration:
    .. code-block:: yaml
 
@@ -669,26 +672,27 @@ ner_crf
           # in array before will have the feature
           # "is the preceding word in title case?".
           # Available features are:
-          # ``low``, ``title``, ``word3``, ``word2``, ``pos``,
-          # ``pos2``, ``bias``, ``upper`` and ``digit``
-          features: [["low", "title"], ["bias", "word3"], ["upper", "pos", "pos2"]]
+          # ``low``, ``title``, ``suffix5``, ``suffix3``, ``suffix2``, ``pos``,
+          # ``pos2``, ``prefix5``, ``prefix2``, ``bias``, ``upper`` and
+          # ``digit``
+          features: [["low", "title"], ["bias", "suffix3"], ["upper", "pos", "pos2"]]
 
-          # The flag determines whether to use BILOU tagging or not. BILOU
+          # The flag determines whether to use BILUO tagging or not. BILUO
           # tagging is more rigorous however
           # requires more examples per entity. Rule of thumb: use only
           # if more than 100 examples per entity.
-          BILOU_flag: true
+          BILUO_flag: true
 
           # This is the value given to sklearn_crfcuite.CRF tagger before training.
           max_iterations: 50
 
           # This is the value given to sklearn_crfcuite.CRF tagger before training.
           # Specifies the L1 regularization coefficient.
-          L1_c: 1.0
+          L1_c: 0.1
 
           # This is the value given to sklearn_crfcuite.CRF tagger before training.
           # Specifies the L2 regularization coefficient.
-          L2_c: 1e-3
+          L2_c: 0.1
 
 .. _section_pipeline_duckling:
 

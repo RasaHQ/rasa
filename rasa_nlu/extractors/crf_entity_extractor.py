@@ -47,10 +47,11 @@ class CRFEntityExtractor(EntityExtractor):
         # features to use for each word, for example, 'title' in
         # array before will have the feature
         # "is the preceding word in title case?"
+        # POS features require spaCy to be installed
         "features": [
             ["low", "title", "upper"],
-            ["bias", "low", "pre5", "pre2", "word5", "word3",
-             "word2", "upper", "title", "digit", "pattern"],
+            ["bias", "low", "prefix5", "prefix2", "suffix5", "suffix3",
+             "suffix2", "upper", "title", "digit", "pattern"],
             ["low", "title", "upper"]],
 
         # The maximum number of iterations for optimization algorithms.
@@ -66,12 +67,14 @@ class CRFEntityExtractor(EntityExtractor):
     function_dict = {
         'low': lambda doc: doc[0].lower(),
         'title': lambda doc: doc[0].istitle(),
-        'pre5': lambda doc: doc[0][:5],
-        'pre2': lambda doc: doc[0][:2],
-        'word5': lambda doc: doc[0][-5:],
-        'word3': lambda doc: doc[0][-3:],
-        'word2': lambda doc: doc[0][-2:],
+        'prefix5': lambda doc: doc[0][:5],
+        'prefix2': lambda doc: doc[0][:2],
+        'suffix5': lambda doc: doc[0][-5:],
+        'suffix3': lambda doc: doc[0][-3:],
+        'suffix2': lambda doc: doc[0][-2:],
         'word1': lambda doc: doc[0][-1:],
+        'pos': lambda doc: doc[1],
+        'pos2': lambda doc: doc[1][:2],
         'bias': lambda doc: 'bias',
         'upper': lambda doc: doc[0].isupper(),
         'digit': lambda doc: doc[0].isdigit(),
