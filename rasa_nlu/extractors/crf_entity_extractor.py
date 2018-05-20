@@ -250,7 +250,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         if len(tokens) != len(entities):
             raise Exception('Inconsistency in amount of tokens '
-                            'between crfsuite and spacy')
+                            'between crfsuite and message')
 
         if self.component_config["BILUO_flag"]:
             return self._convert_biluo_tagging_to_entity_result(
@@ -431,3 +431,105 @@ class CRFEntityExtractor(EntityExtractor):
                 all_possible_transitions=True
         )
         self.ent_tagger.fit(X_train, y_train)
+
+
+class SpacyCRFEntityExtractor(CRFEntityExtractor):
+
+    name = "spacy_ner_crf"
+
+    requires = ["spacy_doc", "tokens"]
+
+    defaults = CRFEntityExtractor.defaults.update({
+        "features": [["low", "title", "upper", "pos", "pos2"],
+                     ["bias", "low", "word3", "word2", "upper",
+                      "title", "digit", "pos", "pos2", "pattern"],
+                     ["low", "title", "upper", "pos", "pos2"]]
+    })
+
+    function_dict = CRFEntityExtractor.function_dict.update({
+        'pos': lambda doc: doc[1],
+        'pos2': lambda doc: doc[1][:2]
+    })
+
+    @classmethod
+    def required_packages(cls):
+        return ["sklearn_crfsuite", "sklearn"]
+
+    def _from_crf_to_json(self, message, entities):
+        # type: (Message, List[Any]) -> List[Dict[Text, Any]]
+
+        sentence_doc = message.get("spacy_doc")
+
+        if len(sentence_doc) != len(entities):
+            raise Exception('Inconsistency in amount of tokens '
+                            'between crfsuite and spacy')
+
+        if self.component_config["BILOU_flag"]:
+            return self._convert_biluo_tagging_to_entity_result(
+                sentence_doc, entities)
+        else:
+            # not using BILOU tagging scheme, multi-word entities are split.
+            return self._convert_simple_tagging_to_entity_result(
+                sentence_doc, entities)
+
+    def _convert_simple_tagging_to_entity_result(self, sentence_doc, entities):
+        json_ents = []
+
+        for word_idx in range(len(sentence_doc)):
+            entity_label, confidence = self.most_likely_entity(
+                word_idx, entities)
+            word = sentence_doc[word_idx]
+            if entity_label != 'O':
+                ent = {'start': word.idx,
+                       'end': word.idx + len(word),
+                       'value': word.text,
+                       'entity': entity_label,
+                       'confidence': confidence}
+                json_ents.append(ent)
+
+        return json_ents
+
+    def _from_json_to_crf(self,
+                          message,  # type: Message
+                          entity_offsets  # type: List[Tuple[int, int, Text]]
+                          ):
+        # type: (...) -> List[Tuple[Text, Text, Text, Text]]
+        """Convert json examples to format of underlying crfsuite."""
+        from spacy.gold import GoldParse
+
+        doc = message.get("spacy_doc")
+        gold = GoldParse(doc, entities=entity_offsets)
+        ents = [l[5] for l in gold.orig_annot]
+        if '-' in ents:
+            logger.warn("Misaligned entity annotation in sentence '{}'. "
+                        "Make sure the start and end values of the "
+                        "annotated training examples end at token "
+                        "boundaries (e.g. don't include trailing "
+                        "whitespaces).".format(doc.text))
+        if not self.component_config["BILOU_flag"]:
+            for i, label in enumerate(ents):
+                if self._bilou_from_label(label) in {"B", "I", "U", "L"}:
+                    # removes BILOU prefix from label
+                    ents[i] = self._entity_from_label(label)
+
+        return self._from_text_to_crf(message, ents)
+
+    @staticmethod
+    def __tag_of_token(token):
+        import spacy
+        if spacy.about.__version__ > "2" and token._.has("tag"):
+            return token._.get("tag")
+        else:
+            return token.tag_
+
+    def _from_text_to_crf(self, message, entities=None):
+        # type: (Message, List[Text]) -> List[Tuple[Text, Text, Text, Text]]
+        """Takes a sentence and switches it to crfsuite format."""
+
+        crf_format = []
+        for i, token in enumerate(message.get("spacy_doc")):
+            pattern = self.__pattern_of_token(message, i)
+            entity = entities[i] if entities else "N/A"
+            tag = self.__tag_of_token(token)
+            crf_format.append((token.text, tag, entity, pattern))
+        return crf_format
