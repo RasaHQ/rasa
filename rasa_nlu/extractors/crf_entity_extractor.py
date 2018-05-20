@@ -11,7 +11,7 @@ from builtins import str
 from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa_nlu.config import RasaNLUModelConfig
-from rasa_nlu.extractors import EntityExtractor
+from rasa_nlu.extractors import EntityExtractor, biluo_tags_from_offsets
 from rasa_nlu.model import Metadata
 from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
@@ -29,7 +29,7 @@ class CRFEntityExtractor(EntityExtractor):
 
     provides = ["entities"]
 
-    requires = ["spacy_doc", "tokens"]
+    requires = ["tokens"]
 
     defaults = {
         # BILOU_flag determines whether to use BILOU tagging or not.
@@ -43,29 +43,30 @@ class CRFEntityExtractor(EntityExtractor):
         # array before will have the feature
         # "is the preceding word in title case?"
         "features": [
-            ["low", "title", "upper", "pos", "pos2"],
-            ["bias", "low", "word3", "word2", "upper",
-             "title", "digit", "pos", "pos2", "pattern"],
-            ["low", "title", "upper", "pos", "pos2"]],
+            ["low", "title", "upper"],
+            ["bias", "low", "pre5", "pre2", "word5", "word3",
+             "word2", "upper", "title", "digit", "pattern"],
+            ["low", "title", "upper"]],
 
         # The maximum number of iterations for optimization algorithms.
         "max_iterations": 50,
 
         # weight of theL1 regularization
-        "L1_c": 1,
+        "L1_c": 0.1,
 
         # weight of the L2 regularization
-        "L2_c": 1e-3
+        "L2_c": 0.1
     }
 
     function_dict = {
         'low': lambda doc: doc[0].lower(),
         'title': lambda doc: doc[0].istitle(),
+        'pre5': lambda doc: doc[0][:5],
+        'pre2': lambda doc: doc[0][:2],
+        'word5': lambda doc: doc[0][-5:],
         'word3': lambda doc: doc[0][-3:],
         'word2': lambda doc: doc[0][-2:],
         'word1': lambda doc: doc[0][-1:],
-        'pos': lambda doc: doc[1],
-        'pos2': lambda doc: doc[1][:2],
         'bias': lambda doc: 'bias',
         'upper': lambda doc: doc[0].isupper(),
         'digit': lambda doc: doc[0].isdigit(),
@@ -88,7 +89,7 @@ class CRFEntityExtractor(EntityExtractor):
 
     @classmethod
     def required_packages(cls):
-        return ["sklearn_crfsuite", "sklearn", "spacy"]
+        return ["sklearn_crfsuite", "sklearn"]
 
     def train(self, training_data, config, **kwargs):
         # type: (TrainingData, RasaNLUModelConfig) -> None
@@ -244,19 +245,19 @@ class CRFEntityExtractor(EntityExtractor):
     def _from_crf_to_json(self, message, entities):
         # type: (Message, List[Any]) -> List[Dict[Text, Any]]
 
-        sentence_doc = message.get("spacy_doc")
+        tokens = message.get("tokens")
 
-        if len(sentence_doc) != len(entities):
+        if len(tokens) != len(entities):
             raise Exception('Inconsistency in amount of tokens '
                             'between crfsuite and spacy')
 
         if self.component_config["BILOU_flag"]:
             return self._convert_bilou_tagging_to_entity_result(
-                    sentence_doc, entities)
+                    tokens, entities)
         else:
             # not using BILOU tagging scheme, multi-word entities are split.
             return self._convert_simple_tagging_to_entity_result(
-                    sentence_doc, entities)
+                    tokens, entities)
 
     def _convert_bilou_tagging_to_entity_result(self, sentence_doc, entities):
         # using the BILOU tagging scheme
@@ -375,17 +376,15 @@ class CRFEntityExtractor(EntityExtractor):
                           ):
         # type: (...) -> List[Tuple[Text, Text, Text, Text]]
         """Convert json examples to format of underlying crfsuite."""
-        from spacy.gold import GoldParse
 
-        doc = message.get("spacy_doc")
-        gold = GoldParse(doc, entities=entity_offsets)
-        ents = [l[5] for l in gold.orig_annot]
+        tokens = message.get("tokens")
+        ents = biluo_tags_from_offsets(tokens, entity_offsets)
         if '-' in ents:
             logger.warn("Misaligned entity annotation in sentence '{}'. "
                         "Make sure the start and end values of the "
                         "annotated training examples end at token "
                         "boundaries (e.g. don't include trailing "
-                        "whitespaces).".format(doc.text))
+                        "whitespaces).".format(message.text))
         if not self.component_config["BILOU_flag"]:
             for i, label in enumerate(ents):
                 if self._bilou_from_label(label) in {"B", "I", "U", "L"}:
@@ -401,24 +400,15 @@ class CRFEntityExtractor(EntityExtractor):
         else:
             return None
 
-    @staticmethod
-    def __tag_of_token(token):
-        import spacy
-        if spacy.about.__version__ > "2" and token._.has("tag"):
-            return token._.get("tag")
-        else:
-            return token.tag_
-
     def _from_text_to_crf(self, message, entities=None):
         # type: (Message, List[Text]) -> List[Tuple[Text, Text, Text, Text]]
         """Takes a sentence and switches it to crfsuite format."""
 
         crf_format = []
-        for i, token in enumerate(message.get("spacy_doc")):
+        for i, token in enumerate(message.get("tokens")):
             pattern = self.__pattern_of_token(message, i)
             entity = entities[i] if entities else "N/A"
-            tag = self.__tag_of_token(token)
-            crf_format.append((token.text, tag, entity, pattern))
+            crf_format.append((token.text, None, entity, pattern))
         return crf_format
 
     def _train_model(self, df_train):
