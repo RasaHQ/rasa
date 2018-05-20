@@ -76,8 +76,10 @@ class EntityExtractor(Component):
 
 
 def biluo_tags_from_offsets(tokens, entities, missing='O'):
-    """Encode labelled spans into per-token tags, using the
+    """Implementation adapted from spacy.
+    See https://github.com/explosion/spaCy/blob/master/spacy/gold.pyx#L493
     """
+
     starts = {token.offset: i for i, token in enumerate(tokens)}
     ends = {token.offset+len(token.text): i for i, token in enumerate(tokens)}
     biluo = ['-' for _ in tokens]
