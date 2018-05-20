@@ -72,7 +72,7 @@ registered_pipeline_templates = {
         "tokenizer_spacy",
         "intent_featurizer_spacy",
         "intent_entity_featurizer_regex",
-        "spacy_ner_crf",
+        "ner_crf",
         "ner_synonyms",
         "intent_classifier_sklearn",
     ],
