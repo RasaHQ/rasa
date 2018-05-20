@@ -32,10 +32,10 @@ class CRFEntityExtractor(EntityExtractor):
     requires = ["tokens"]
 
     defaults = {
-        # BILOU_flag determines whether to use BILOU tagging or not.
+        # BILUO_flag determines whether to use BILUO tagging or not.
         # More rigorous however requires more examples per entity
         # rule of thumb: use only if more than 100 egs. per entity
-        "BILOU_flag": True,
+        "BILUO_flag": True,
 
         # crf_features is [before, word, after] array with before, word,
         # after holding keys about which
@@ -157,8 +157,8 @@ class CRFEntityExtractor(EntityExtractor):
         if entity_probs:
             label = max(entity_probs,
                         key=lambda key: entity_probs[key])
-            if self.component_config["BILOU_flag"]:
-                # if we are using bilou flags, we will combine the prob
+            if self.component_config["BILUO_flag"]:
+                # if we are using biluo flags, we will combine the prob
                 # of the B, I, L and U tags for an entity (so if we have a
                 # score of 60% for `B-address` and 40% and 30%
                 # for `I-address`, we will return 70%)
@@ -171,11 +171,12 @@ class CRFEntityExtractor(EntityExtractor):
             return "", 0.0
 
     @staticmethod
-    def _create_entity_dict(sentence_doc, start, end, entity, confidence):
+    def _create_entity_dict(tokens, start, end, entity, confidence):
+        value = ' '.join(t.text for t in tokens[start:end + 1])
         return {
-            'start': sentence_doc[start].idx,
-            'end': sentence_doc[start:end + 1].end_char,
-            'value': sentence_doc[start:end + 1].text,
+            'start': tokens[start].offset,
+            'end': tokens[end].end,
+            'value': value,
             'entity': entity,
             'confidence': confidence
         }
@@ -185,12 +186,12 @@ class CRFEntityExtractor(EntityExtractor):
         return label[2:]
 
     @staticmethod
-    def _bilou_from_label(label):
+    def _biluo_from_label(label):
         if len(label) >= 2 and label[1] == "-":
             return label[0].upper()
         return None
 
-    def _find_bilou_end(self, word_idx, entities):
+    def _find_biluo_end(self, word_idx, entities):
         ent_word_idx = word_idx + 1
         finished = False
 
@@ -206,7 +207,7 @@ class CRFEntityExtractor(EntityExtractor):
 
             if label[2:] != entity_label:
                 # words are not tagged the same entity class
-                logger.debug("Inconsistent BILOU tagging found, B- tag, L- "
+                logger.debug("Inconsistent BILUO tagging found, B- tag, L- "
                              "tag pair encloses multiple entity classes.i.e. "
                              "[B-a, I-b, L-a] instead of [B-a, I-a, L-a].\n"
                              "Assuming B- class is correct.")
@@ -221,21 +222,21 @@ class CRFEntityExtractor(EntityExtractor):
                 # entity not closed by an L- tag
                 finished = True
                 ent_word_idx -= 1
-                logger.debug("Inconsistent BILOU tagging found, B- tag not "
+                logger.debug("Inconsistent BILUO tagging found, B- tag not "
                              "closed by L- tag, i.e [B-a, I-a, O] instead of "
                              "[B-a, L-a, O].\nAssuming last tag is L-")
         return ent_word_idx, confidence
 
-    def _handle_bilou_label(self, word_idx, entities):
+    def _handle_biluo_label(self, word_idx, entities):
         label, confidence = self.most_likely_entity(word_idx, entities)
         entity_label = self._entity_from_label(label)
 
-        if self._bilou_from_label(label) == "U":
+        if self._biluo_from_label(label) == "U":
             return word_idx, confidence, entity_label
 
-        elif self._bilou_from_label(label) == "B":
+        elif self._biluo_from_label(label) == "B":
             # start of multi word-entity need to represent whole extent
-            ent_word_idx, confidence = self._find_bilou_end(
+            ent_word_idx, confidence = self._find_biluo_end(
                     word_idx, entities)
             return ent_word_idx, confidence, entity_label
 
@@ -251,24 +252,24 @@ class CRFEntityExtractor(EntityExtractor):
             raise Exception('Inconsistency in amount of tokens '
                             'between crfsuite and spacy')
 
-        if self.component_config["BILOU_flag"]:
-            return self._convert_bilou_tagging_to_entity_result(
-                    tokens, entities)
+        if self.component_config["BILUO_flag"]:
+            return self._convert_biluo_tagging_to_entity_result(
+                tokens, entities)
         else:
-            # not using BILOU tagging scheme, multi-word entities are split.
+            # not using BILUO tagging scheme, multi-word entities are split.
             return self._convert_simple_tagging_to_entity_result(
-                    tokens, entities)
+                tokens, entities)
 
-    def _convert_bilou_tagging_to_entity_result(self, sentence_doc, entities):
-        # using the BILOU tagging scheme
+    def _convert_biluo_tagging_to_entity_result(self, tokens, entities):
+        # using the BILUO tagging scheme
         json_ents = []
         word_idx = 0
-        while word_idx < len(sentence_doc):
-            end_idx, confidence, entity_label = self._handle_bilou_label(
+        while word_idx < len(tokens):
+            end_idx, confidence, entity_label = self._handle_biluo_label(
                     word_idx, entities)
 
             if end_idx is not None:
-                ent = self._create_entity_dict(sentence_doc,
+                ent = self._create_entity_dict(tokens,
                                                word_idx,
                                                end_idx,
                                                entity_label,
@@ -279,16 +280,16 @@ class CRFEntityExtractor(EntityExtractor):
                 word_idx += 1
         return json_ents
 
-    def _convert_simple_tagging_to_entity_result(self, sentence_doc, entities):
+    def _convert_simple_tagging_to_entity_result(self, tokens, entities):
         json_ents = []
 
-        for word_idx in range(len(sentence_doc)):
+        for word_idx in range(len(tokens)):
             entity_label, confidence = self.most_likely_entity(
                     word_idx, entities)
-            word = sentence_doc[word_idx]
+            word = tokens[word_idx]
             if entity_label != 'O':
-                ent = {'start': word.idx,
-                       'end': word.idx + len(word),
+                ent = {'start': word.offset,
+                       'end': word.offset + len(word.text),
                        'value': word.text,
                        'entity': entity_label,
                        'confidence': confidence}
@@ -385,10 +386,10 @@ class CRFEntityExtractor(EntityExtractor):
                         "annotated training examples end at token "
                         "boundaries (e.g. don't include trailing "
                         "whitespaces).".format(message.text))
-        if not self.component_config["BILOU_flag"]:
+        if not self.component_config["BILUO_flag"]:
             for i, label in enumerate(ents):
-                if self._bilou_from_label(label) in {"B", "I", "U", "L"}:
-                    # removes BILOU prefix from label
+                if self._biluo_from_label(label) in {"B", "I", "U", "L"}:
+                    # removes BILUO prefix from label
                     ents[i] = self._entity_from_label(label)
 
         return self._from_text_to_crf(message, ents)
