@@ -72,7 +72,8 @@ class FallbackPolicy(Policy):
         a. predicted NLU confidence is lower than ``nlu_threshold`` &&
         b. last action is NOT fallback action
         """
-        return nlu_confidence < self.nlu_threshold and last_action_name != self.fallback_action_name  # noqa
+        return (nlu_confidence < self.nlu_threshold and
+                last_action_name != self.fallback_action_name)
 
     def predict_action_probabilities(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> List[float]
