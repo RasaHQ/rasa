@@ -10,7 +10,7 @@ import typing
 from builtins import str
 from typing import Any, Dict, List, Optional, Text, Tuple
 
-from rasa_nlu.config import RasaNLUModelConfig
+from rasa_nlu.config import RasaNLUModelConfig, InvalidConfigError
 from rasa_nlu.extractors import EntityExtractor, biluo_tags_from_offsets
 from rasa_nlu.model import Metadata
 from rasa_nlu.training_data import Message
@@ -146,8 +146,16 @@ class CRFEntityExtractor(EntityExtractor):
             dataset.append(self._from_json_to_crf(example, entity_offsets))
         return dataset
 
+    def _check_spacy_doc(self, message):
+        if self.pos_features and message.get("spacy_doc") is None:
+            raise InvalidConfigError('POS features require a '
+                                     'pipeline component that provides '
+                                     '`spacy_doc` attributes')
+
     def process(self, message, **kwargs):
         # type: (Message, **Any) -> None
+
+        self._check_spacy_doc(message)
 
         extracted = self.add_extractor_name(self.extract_entities(message))
         message.set("entities", message.get("entities", []) + extracted,
