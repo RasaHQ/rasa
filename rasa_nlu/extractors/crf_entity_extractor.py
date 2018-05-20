@@ -195,12 +195,19 @@ class CRFEntityExtractor(EntityExtractor):
         else:
             return "", 0.0
 
-    @staticmethod
-    def _create_entity_dict(tokens, start, end, entity, confidence):
-        value = ' '.join(t.text for t in tokens[start:end + 1])
+    def _create_entity_dict(self, tokens, start, end, entity, confidence):
+        if self.pos_features:
+            _start = tokens[start].idx
+            _end = tokens[start:end + 1].end_char
+            value = tokens[start:end + 1].text
+        else:
+            _start = tokens[start].offset
+            _end = tokens[end].end
+            value = ' '.join(t.text for t in tokens[start:end + 1])
+
         return {
-            'start': tokens[start].offset,
-            'end': tokens[end].end,
+            'start': _start,
+            'end': _end,
             'value': value,
             'entity': entity,
             'confidence': confidence
