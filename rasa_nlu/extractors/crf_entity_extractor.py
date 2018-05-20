@@ -90,13 +90,15 @@ class CRFEntityExtractor(EntityExtractor):
         self._check_pos_features_and_spacy()
 
     def _check_pos_features_and_spacy(self):
-        features = self.component_config["defaults"].get("features", [])
-        self.pos_features = set(features) & set(['pos', 'pos2']) != set()
+        import itertools
+        features = self.component_config.get("features", [])
+        fts = list(itertools.chain.from_iterable(features))
+        self.pos_features = set(fts) & set(['pos', 'pos2']) != set()
         if self.pos_features:
-            self._check_spacy_import()
+            self._check_spacy()
 
     @staticmethod
-    def _check_tensorflow():
+    def _check_spacy():
         if spacy is None:
             raise ImportError(
                 'Failed to import `spaCy`. '

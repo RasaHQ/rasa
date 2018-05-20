@@ -81,7 +81,7 @@ def biluo_tags_from_offsets(tokens, entities, missing='O'):
     """
 
     starts = {token.offset: i for i, token in enumerate(tokens)}
-    ends = {token.offset+len(token.text): i for i, token in enumerate(tokens)}
+    ends = {token.end: i for i, token in enumerate(tokens)}
     biluo = ['-' for _ in tokens]
     # Handle entity cases
     for start_char, end_char, label in entities:
@@ -102,7 +102,7 @@ def biluo_tags_from_offsets(tokens, entities, missing='O'):
         for i in range(start_char, end_char):
             entity_chars.add(i)
     for n, token in enumerate(tokens):
-        for i in range(token.offset, token.offset + len(token.text)):
+        for i in range(token.offset, token.end):
             if i in entity_chars:
                 break
         else:
