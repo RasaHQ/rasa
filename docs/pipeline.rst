@@ -672,9 +672,9 @@ ner_crf
           # in array before will have the feature
           # "is the preceding word in title case?".
           # Available features are:
-          # ``low``, ``title``, ``suffix5``, ``suffix3``, ``suffix2``, ``pos``,
-          # ``pos2``, ``prefix5``, ``prefix2``, ``bias``, ``upper`` and
-          # ``digit``
+          # ``low``, ``title``, ``suffix5``, ``suffix3``, ``suffix2``,
+          # ``suffix1``, ``pos``, ``pos2``, ``prefix5``, ``prefix2``,
+          # ``bias``, ``upper`` and ``digit``
           features: [["low", "title"], ["bias", "suffix3"], ["upper", "pos", "pos2"]]
 
           # The flag determines whether to use BILOU tagging or not. BILOU
