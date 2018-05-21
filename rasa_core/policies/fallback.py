@@ -63,6 +63,18 @@ class FallbackPolicy(Policy):
 
         pass
 
+    def should_fallback(self,
+                        nlu_confidence,  # type float
+                        last_action_name  # type: Text
+                        ):
+        # type: (...) -> bool
+        """It should predict fallback action only if
+        a. predicted NLU confidence is lower than ``nlu_threshold`` &&
+        b. last action is NOT fallback action
+        """
+        return (nlu_confidence < self.nlu_threshold and
+                last_action_name != self.fallback_action_name)
+
     def predict_action_probabilities(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> List[float]
         """Predicts a fallback action if NLU confidence is low
@@ -77,7 +89,7 @@ class FallbackPolicy(Policy):
         # to not override standard behaviour
         nlu_confidence = nlu_data["intent"].get("confidence", 1.0)
 
-        if nlu_confidence < self.nlu_threshold:
+        if self.should_fallback(nlu_confidence, tracker.latest_action_name):
             logger.debug("NLU confidence {} is lower "
                          "than NLU threshold {}. "
                          "Predicting fallback action: {}"
