@@ -11,7 +11,7 @@ from builtins import str
 from typing import Any, Dict, List, Optional, Text, Tuple
 
 from rasa_nlu.config import RasaNLUModelConfig, InvalidConfigError
-from rasa_nlu.extractors import EntityExtractor, biluo_tags_from_offsets
+from rasa_nlu.extractors import EntityExtractor
 from rasa_nlu.model import Metadata
 from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
@@ -51,7 +51,7 @@ class CRFEntityExtractor(EntityExtractor):
         "features": [
             ["low", "title", "upper"],
             ["bias", "low", "prefix5", "prefix2", "suffix5", "suffix3",
-             "suffix2", "upper", "title", "digit", "pattern"],
+             "suffix2", "upper", "title", "digit", "pattern", "pos", "pos2"],
             ["low", "title", "upper"]],
 
         # The maximum number of iterations for optimization algorithms.
@@ -148,9 +148,11 @@ class CRFEntityExtractor(EntityExtractor):
 
     def _check_spacy_doc(self, message):
         if self.pos_features and message.get("spacy_doc") is None:
-            raise InvalidConfigError('POS features require a '
-                                     'pipeline component that provides '
-                                     '`spacy_doc` attributes')
+            raise InvalidConfigError(
+                'Could not find `spacy_doc` attribute '
+                'for message {}\n'
+                'POS features require a pipeline component that provides '
+                '`spacy_doc` attributes'.format(message.text))
 
     def process(self, message, **kwargs):
         # type: (Message, **Any) -> None
@@ -435,7 +437,7 @@ class CRFEntityExtractor(EntityExtractor):
             gold = GoldParse(doc, entities=entity_offsets)
             ents = [l[5] for l in gold.orig_annot]
         else:
-            ents = biluo_tags_from_offsets(tokens, entity_offsets)
+            ents = self._biluo_tags_from_offsets(tokens, entity_offsets)
 
         if '-' in ents:
             logger.warn("Misaligned entity annotation in sentence '{}'. "
@@ -450,6 +452,39 @@ class CRFEntityExtractor(EntityExtractor):
                     ents[i] = self._entity_from_label(label)
 
         return self._from_text_to_crf(message, ents)
+
+    @staticmethod
+    def _biluo_tags_from_offsets(tokens, entities, missing='O'):
+        # From spacy.spacy.GoldParse, under MIT License
+        starts = {token.offset: i for i, token in enumerate(tokens)}
+        ends = {token.end: i for i, token in enumerate(tokens)}
+        biluo = ['-' for _ in tokens]
+        # Handle entity cases
+        for start_char, end_char, label in entities:
+            start_token = starts.get(start_char)
+            end_token = ends.get(end_char)
+            # Only interested if the tokenization is correct
+            if start_token is not None and end_token is not None:
+                if start_token == end_token:
+                    biluo[start_token] = 'U-%s' % label
+                else:
+                    biluo[start_token] = 'B-%s' % label
+                    for i in range(start_token + 1, end_token):
+                        biluo[i] = 'I-%s' % label
+                    biluo[end_token] = 'L-%s' % label
+        # Now distinguish the O cases from ones where we miss the tokenization
+        entity_chars = set()
+        for start_char, end_char, label in entities:
+            for i in range(start_char, end_char):
+                entity_chars.add(i)
+        for n, token in enumerate(tokens):
+            for i in range(token.offset, token.end):
+                if i in entity_chars:
+                    break
+            else:
+                biluo[n] = missing
+
+        return biluo
 
     @staticmethod
     def __pattern_of_token(message, i):

@@ -73,39 +73,3 @@ class EntityExtractor(Component):
                         time=message.time))
 
         return filtered
-
-
-def biluo_tags_from_offsets(tokens, entities, missing='O'):
-    """Implementation adapted from spacy.
-    See https://github.com/explosion/spaCy/blob/master/spacy/gold.pyx#L493
-    """
-
-    starts = {token.offset: i for i, token in enumerate(tokens)}
-    ends = {token.end: i for i, token in enumerate(tokens)}
-    biluo = ['-' for _ in tokens]
-    # Handle entity cases
-    for start_char, end_char, label in entities:
-        start_token = starts.get(start_char)
-        end_token = ends.get(end_char)
-        # Only interested if the tokenization is correct
-        if start_token is not None and end_token is not None:
-            if start_token == end_token:
-                biluo[start_token] = 'U-%s' % label
-            else:
-                biluo[start_token] = 'B-%s' % label
-                for i in range(start_token+1, end_token):
-                    biluo[i] = 'I-%s' % label
-                biluo[end_token] = 'L-%s' % label
-    # Now distinguish the O cases from ones where we miss the tokenization
-    entity_chars = set()
-    for start_char, end_char, label in entities:
-        for i in range(start_char, end_char):
-            entity_chars.add(i)
-    for n, token in enumerate(tokens):
-        for i in range(token.offset, token.end):
-            if i in entity_chars:
-                break
-        else:
-            biluo[n] = missing
-
-    return biluo

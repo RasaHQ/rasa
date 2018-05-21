@@ -11,12 +11,12 @@ pipeline:
   dimensions:
   - "NUMBER"
 - name: "ner_crf"
-  BILOU_flag: true
+  BILUO_flag: true
   features:
     # features for word before token
     - ["low", "title", "upper", "pos", "pos2"]
     # features of token itself
-    - ["bias", "low", "word3", "word2", "upper", "title", "digit", "pos", "pos2", "pattern"]
+    - ["bias", "low", "suffix3", "suffix2", "upper", "title", "digit", "pos", "pos2", "pattern"]
     # features for word after the token we want to tag
     - ["low", "title", "upper", "pos", "pos2"]
   max_iterations: 50

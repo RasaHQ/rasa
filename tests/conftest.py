@@ -32,6 +32,17 @@ def spacy_nlp(component_builder, default_config):
 
 
 @pytest.fixture(scope="session")
+def ner_crf_pos_feature_config():
+    return {
+        "features": [
+            ["low", "title", "upper", "pos", "pos2"],
+            ["bias", "low", "suffix3", "suffix2", "upper",
+             "title", "digit", "pos", "pos2", "pattern"],
+            ["low", "title", "upper", "pos", "pos2"]]
+    }
+
+
+@pytest.fixture(scope="session")
 def mitie_feature_extractor(component_builder, default_config):
     return component_builder.create_component("nlp_mitie", default_config).extractor
 
