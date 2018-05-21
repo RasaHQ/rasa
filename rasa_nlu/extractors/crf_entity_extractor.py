@@ -37,10 +37,10 @@ class CRFEntityExtractor(EntityExtractor):
     requires = ["tokens"]
 
     defaults = {
-        # BILUO_flag determines whether to use BILUO tagging or not.
+        # BILOU_flag determines whether to use BILOU tagging or not.
         # More rigorous however requires more examples per entity
         # rule of thumb: use only if more than 100 egs. per entity
-        "BILUO_flag": True,
+        "BILOU_flag": True,
 
         # crf_features is [before, word, after] array with before, word,
         # after holding keys about which
@@ -192,8 +192,8 @@ class CRFEntityExtractor(EntityExtractor):
         if entity_probs:
             label = max(entity_probs,
                         key=lambda key: entity_probs[key])
-            if self.component_config["BILUO_flag"]:
-                # if we are using biluo flags, we will combine the prob
+            if self.component_config["BILOU_flag"]:
+                # if we are using bilou flags, we will combine the prob
                 # of the B, I, L and U tags for an entity (so if we have a
                 # score of 60% for `B-address` and 40% and 30%
                 # for `I-address`, we will return 70%)
@@ -228,12 +228,12 @@ class CRFEntityExtractor(EntityExtractor):
         return label[2:]
 
     @staticmethod
-    def _biluo_from_label(label):
+    def _bilou_from_label(label):
         if len(label) >= 2 and label[1] == "-":
             return label[0].upper()
         return None
 
-    def _find_biluo_end(self, word_idx, entities):
+    def _find_bilou_end(self, word_idx, entities):
         ent_word_idx = word_idx + 1
         finished = False
 
@@ -249,7 +249,7 @@ class CRFEntityExtractor(EntityExtractor):
 
             if label[2:] != entity_label:
                 # words are not tagged the same entity class
-                logger.debug("Inconsistent BILUO tagging found, B- tag, L- "
+                logger.debug("Inconsistent BILOU tagging found, B- tag, L- "
                              "tag pair encloses multiple entity classes.i.e. "
                              "[B-a, I-b, L-a] instead of [B-a, I-a, L-a].\n"
                              "Assuming B- class is correct.")
@@ -264,21 +264,21 @@ class CRFEntityExtractor(EntityExtractor):
                 # entity not closed by an L- tag
                 finished = True
                 ent_word_idx -= 1
-                logger.debug("Inconsistent BILUO tagging found, B- tag not "
+                logger.debug("Inconsistent BILOU tagging found, B- tag not "
                              "closed by L- tag, i.e [B-a, I-a, O] instead of "
                              "[B-a, L-a, O].\nAssuming last tag is L-")
         return ent_word_idx, confidence
 
-    def _handle_biluo_label(self, word_idx, entities):
+    def _handle_bilou_label(self, word_idx, entities):
         label, confidence = self.most_likely_entity(word_idx, entities)
         entity_label = self._entity_from_label(label)
 
-        if self._biluo_from_label(label) == "U":
+        if self._bilou_from_label(label) == "U":
             return word_idx, confidence, entity_label
 
-        elif self._biluo_from_label(label) == "B":
+        elif self._bilou_from_label(label) == "B":
             # start of multi word-entity need to represent whole extent
-            ent_word_idx, confidence = self._find_biluo_end(
+            ent_word_idx, confidence = self._find_bilou_end(
                     word_idx, entities)
             return ent_word_idx, confidence, entity_label
 
@@ -297,20 +297,20 @@ class CRFEntityExtractor(EntityExtractor):
             raise Exception('Inconsistency in amount of tokens '
                             'between crfsuite and message')
 
-        if self.component_config["BILUO_flag"]:
-            return self._convert_biluo_tagging_to_entity_result(
+        if self.component_config["BILOU_flag"]:
+            return self._convert_bilou_tagging_to_entity_result(
                 tokens, entities)
         else:
-            # not using BILUO tagging scheme, multi-word entities are split.
+            # not using BILOU tagging scheme, multi-word entities are split.
             return self._convert_simple_tagging_to_entity_result(
                 tokens, entities)
 
-    def _convert_biluo_tagging_to_entity_result(self, tokens, entities):
-        # using the BILUO tagging scheme
+    def _convert_bilou_tagging_to_entity_result(self, tokens, entities):
+        # using the BILOU tagging scheme
         json_ents = []
         word_idx = 0
         while word_idx < len(tokens):
-            end_idx, confidence, entity_label = self._handle_biluo_label(
+            end_idx, confidence, entity_label = self._handle_bilou_label(
                     word_idx, entities)
 
             if end_idx is not None:
@@ -437,7 +437,7 @@ class CRFEntityExtractor(EntityExtractor):
             gold = GoldParse(doc, entities=entity_offsets)
             ents = [l[5] for l in gold.orig_annot]
         else:
-            ents = self._biluo_tags_from_offsets(tokens, entity_offsets)
+            ents = self._bilou_tags_from_offsets(tokens, entity_offsets)
 
         if '-' in ents:
             logger.warn("Misaligned entity annotation in sentence '{}'. "
@@ -445,20 +445,20 @@ class CRFEntityExtractor(EntityExtractor):
                         "annotated training examples end at token "
                         "boundaries (e.g. don't include trailing "
                         "whitespaces).".format(message.text))
-        if not self.component_config["BILUO_flag"]:
+        if not self.component_config["BILOU_flag"]:
             for i, label in enumerate(ents):
-                if self._biluo_from_label(label) in {"B", "I", "U", "L"}:
-                    # removes BILUO prefix from label
+                if self._bilou_from_label(label) in {"B", "I", "U", "L"}:
+                    # removes BILOU prefix from label
                     ents[i] = self._entity_from_label(label)
 
         return self._from_text_to_crf(message, ents)
 
     @staticmethod
-    def _biluo_tags_from_offsets(tokens, entities, missing='O'):
+    def _bilou_tags_from_offsets(tokens, entities, missing='O'):
         # From spacy.spacy.GoldParse, under MIT License
         starts = {token.offset: i for i, token in enumerate(tokens)}
         ends = {token.end: i for i, token in enumerate(tokens)}
-        biluo = ['-' for _ in tokens]
+        bilou = ['-' for _ in tokens]
         # Handle entity cases
         for start_char, end_char, label in entities:
             start_token = starts.get(start_char)
@@ -466,12 +466,12 @@ class CRFEntityExtractor(EntityExtractor):
             # Only interested if the tokenization is correct
             if start_token is not None and end_token is not None:
                 if start_token == end_token:
-                    biluo[start_token] = 'U-%s' % label
+                    bilou[start_token] = 'U-%s' % label
                 else:
-                    biluo[start_token] = 'B-%s' % label
+                    bilou[start_token] = 'B-%s' % label
                     for i in range(start_token + 1, end_token):
-                        biluo[i] = 'I-%s' % label
-                    biluo[end_token] = 'L-%s' % label
+                        bilou[i] = 'I-%s' % label
+                    bilou[end_token] = 'L-%s' % label
         # Now distinguish the O cases from ones where we miss the tokenization
         entity_chars = set()
         for start_char, end_char, label in entities:
@@ -482,9 +482,9 @@ class CRFEntityExtractor(EntityExtractor):
                 if i in entity_chars:
                     break
             else:
-                biluo[n] = missing
+                bilou[n] = missing
 
-        return biluo
+        return bilou
 
     @staticmethod
     def __pattern_of_token(message, i):

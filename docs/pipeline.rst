@@ -596,7 +596,7 @@ ner_spacy
         }
 
 :Description:
-    Using spacy this component predicts the entities of a message. spacy uses a statistical BILUO transition model.
+    Using spacy this component predicts the entities of a message. spacy uses a statistical BILOU transition model.
     As of now, this component can only use the spacy builtin entity extraction models and can not be retrained.
     This extractor does not provide any confidence scores.
 
@@ -677,11 +677,11 @@ ner_crf
           # ``digit``
           features: [["low", "title"], ["bias", "suffix3"], ["upper", "pos", "pos2"]]
 
-          # The flag determines whether to use BILUO tagging or not. BILUO
+          # The flag determines whether to use BILOU tagging or not. BILOU
           # tagging is more rigorous however
           # requires more examples per entity. Rule of thumb: use only
           # if more than 100 examples per entity.
-          BILUO_flag: true
+          BILOU_flag: true
 
           # This is the value given to sklearn_crfcuite.CRF tagger before training.
           max_iterations: 50

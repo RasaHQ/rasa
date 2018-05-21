@@ -31,7 +31,7 @@ def test_crf_extractor(spacy_nlp, ner_crf_pos_feature_config):
             "spacy_doc": spacy_nlp("central indian restaurant")
         })]
 
-    # uses BILUO and the default features
+    # uses BILOU and the default features
     ext.train(TrainingData(training_examples=examples), RasaNLUModelConfig())
     sentence = 'anywhere in the west'
     doc = {"spacy_doc": spacy_nlp(sentence)}
@@ -58,7 +58,7 @@ def test_crf_extractor(spacy_nlp, ner_crf_pos_feature_config):
     }, 'Original examples are not mutated'
 
 
-def test_crf_json_from_BILUO(spacy_nlp, ner_crf_pos_feature_config):
+def test_crf_json_from_BILOU(spacy_nlp, ner_crf_pos_feature_config):
     from rasa_nlu.extractors.crf_entity_extractor import CRFEntityExtractor
     ext = CRFEntityExtractor(component_config=ner_crf_pos_feature_config)
     sentence = u"I need a home cleaning close-by"
@@ -85,9 +85,9 @@ def test_crf_json_from_BILUO(spacy_nlp, ner_crf_pos_feature_config):
                     'value': 'close-by', 'entity': 'where'}
 
 
-def test_crf_json_from_non_BILUO(spacy_nlp, ner_crf_pos_feature_config):
+def test_crf_json_from_non_BILOU(spacy_nlp, ner_crf_pos_feature_config):
     from rasa_nlu.extractors.crf_entity_extractor import CRFEntityExtractor
-    ner_crf_pos_feature_config.update({"BILUO_flag": False})
+    ner_crf_pos_feature_config.update({"BILOU_flag": False})
     ext = CRFEntityExtractor(component_config=ner_crf_pos_feature_config)
     sentence = u"I need a home cleaning close-by"
     doc = {"spacy_doc": spacy_nlp(sentence)}
@@ -101,7 +101,7 @@ def test_crf_json_from_non_BILUO(spacy_nlp, ner_crf_pos_feature_config):
                                 {'where': 1.0},
                                 {'where': 1.0}])
 
-    # non BILUO will split multi-word entities - hence 5
+    # non BILOU will split multi-word entities - hence 5
     assert len(rs) == 5, "There should be five entities"
 
     for r in rs:

@@ -11,7 +11,7 @@ pipeline:
   dimensions:
   - "NUMBER"
 - name: "ner_crf"
-  BILUO_flag: true
+  BILOU_flag: true
   features:
     # features for word before token
     - ["low", "title", "upper", "pos", "pos2"]

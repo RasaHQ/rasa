@@ -56,21 +56,21 @@ fitted to your training data.
 
 Entity Scoring
 ^^^^^^^^^^^^^^
-To evaluate entity extraction we apply a simple tag-based approach. We don't consider BILUO tags, but only the
+To evaluate entity extraction we apply a simple tag-based approach. We don't consider BILOU tags, but only the
 entity type tags on a per token basis. For location entity like "near Alexanderplatz" we
-expect the labels "LOC" "LOC" instead of the BILUO-based "B-LOC" "L-LOC". Our approach is more lenient
+expect the labels "LOC" "LOC" instead of the BILOU-based "B-LOC" "L-LOC". Our approach is more lenient
 when it comes to evaluation, as it rewards partial extraction and does not punish the splitting of entities.
 For example, the given the aforementioned entity "near Alexanderplatz" and a system that extracts
 "Alexanderplatz", this reward the extraction of "Alexanderplatz" and punish the missed out word "near".
-The BILUO-based approach, however, would label this as a complete failure since it expects Alexanderplatz
+The BILOU-based approach, however, would label this as a complete failure since it expects Alexanderplatz
 to be labeled as a last token in an entity (L-LOC) instead of a single token entity (U-LOC). Also note,
 a splitted extraction of "near" and "Alexanderplatz" would get full scores on our approach and zero on the
-BILUO-based one.
+BILOU-based one.
 
 Here's a comparison between both different scoring mechanisms for the phrase "near Alexanderplatz tonight":
 
 ==================================================  ========================  ===========================
-extracted                                           Simple tags (score)       BILUO tags (score)
+extracted                                           Simple tags (score)       BILOU tags (score)
 ==================================================  ========================  ===========================
 [near Alexanderplatz](loc) [tonight](time)          loc loc time (3)          B-loc L-loc U-time (3)
 [near](loc) [Alexanderplatz](loc) [tonight](time)   loc loc time (3)          U-loc U-loc U-time (1)
