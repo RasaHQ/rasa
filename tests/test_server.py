@@ -13,6 +13,7 @@ from multiprocessing import Process
 import pytest
 from builtins import str
 from freezegun import freeze_time
+from gevent.pywsgi import WSGIServer
 
 import rasa_core
 from rasa_core import server, events
@@ -46,21 +47,14 @@ test_events = [
 ]
 
 
+def run_server(core_server):
+    http_server = WSGIServer(('0.0.0.0', 1234), core_server)
+    http_server.serve_forever()
+
+
 @pytest.fixture(scope="module")
-def http_app(tmpdir_factory):
-    model_path = tmpdir_factory.mktemp("model").strpath
-
-    agent = Agent("data/test_domains/default_with_topic.yml",
-                  policies=[AugmentedMemoizationPolicy(max_history=3)])
-
-    training_data = agent.load_data(DEFAULT_STORIES_FILE)
-    agent.train(training_data)
-    agent.persist(model_path)
-
-    core_server = server.create_app(model_path,
-                                    interpreter=RegexInterpreter())
-
-    p = Process(target=core_server.run, args=("0.0.0.0", 1234))
+def http_app(core_server):
+    p = Process(target=run_server, args=(core_server,))
     p.daemon = True
     p.start()
     yield "http://0.0.0.0:1234"
