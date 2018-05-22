@@ -73,9 +73,9 @@ class PolicyTestCollection(object):
 
         for tracker in trackers:
             predicted_probabilities = loaded.predict_action_probabilities(
-                    tracker, default_domain)
+                tracker, default_domain)
             actual_probabilities = trained_policy.predict_action_probabilities(
-                    tracker, default_domain)
+                tracker, default_domain)
             assert predicted_probabilities == actual_probabilities
 
     def test_prediction_on_empty_tracker(self, trained_policy, default_domain):
@@ -84,7 +84,7 @@ class PolicyTestCollection(object):
                                        default_domain.topics,
                                        default_domain.default_topic)
         probabilities = trained_policy.predict_action_probabilities(
-                tracker, default_domain)
+            tracker, default_domain)
         assert len(probabilities) == default_domain.num_actions
         assert max(probabilities) <= 1.0
         assert min(probabilities) >= 0.0
@@ -97,6 +97,7 @@ class PolicyTestCollection(object):
 
 
 class TestKerasPolicy(PolicyTestCollection):
+
     @pytest.fixture(scope="module")
     def create_policy(self, featurizer):
         p = KerasPolicy(featurizer)
@@ -104,13 +105,33 @@ class TestKerasPolicy(PolicyTestCollection):
 
 
 class TestFallbackPolicy(PolicyTestCollection):
+
     @pytest.fixture(scope="module")
     def create_policy(self, featurizer):
         p = FallbackPolicy()
         return p
 
+    @pytest.mark.parametrize(
+        "nlu_confidence, prev_action_is_fallback, should_fallback",
+        [
+            (0.1, True, False),
+            (0.1, False, True),
+            (0.9, True, False),
+            (0.9, False, False),
+        ])
+    def test_something(self,
+                       trained_policy,
+                       nlu_confidence,
+                       prev_action_is_fallback,
+                       should_fallback):
+        last_action_name = trained_policy.fallback_action_name if \
+            prev_action_is_fallback else 'not_fallback'
+        assert trained_policy.should_fallback(
+            nlu_confidence, last_action_name) is should_fallback
+
 
 class TestMemoizationPolicy(PolicyTestCollection):
+
     @pytest.fixture(scope="module")
     def create_policy(self, featurizer):
         max_history = None
@@ -125,7 +146,7 @@ class TestMemoizationPolicy(PolicyTestCollection):
 
         (all_states, all_actions) = \
             trained_policy.featurizer.training_states_and_actions(
-                    trackers, default_domain)
+                trackers, default_domain)
 
         for tracker, states, actions in zip(trackers, all_states, all_actions):
             recalled = trained_policy.recall(states, tracker, default_domain)
@@ -133,12 +154,13 @@ class TestMemoizationPolicy(PolicyTestCollection):
 
         nums = np.random.randn(default_domain.num_states)
         random_states = [{f: num
-                         for f, num in
-                         zip(default_domain.input_states, nums)}]
+                          for f, num in
+                          zip(default_domain.input_states, nums)}]
         assert trained_policy._recall_states(random_states) is None
 
 
 class TestAugmentedMemoizationPolicy(PolicyTestCollection):
+
     @pytest.fixture(scope="module")
     def create_policy(self, featurizer):
         max_history = None
@@ -149,6 +171,7 @@ class TestAugmentedMemoizationPolicy(PolicyTestCollection):
 
 
 class TestSklearnPolicy(PolicyTestCollection):
+
     def create_policy(self, featurizer, **kwargs):
         p = SklearnPolicy(featurizer, **kwargs)
         return p

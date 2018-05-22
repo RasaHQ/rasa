@@ -1,6 +1,7 @@
 *#
 *.DS_Store
 *.egg
+*.eggs
 *.egg-info
 *.egg-info/
 *.iml
@@ -13,6 +14,7 @@
 *npy
 *pyc
 *~
+.env
 .cache/
 .coverage
 .idea/
