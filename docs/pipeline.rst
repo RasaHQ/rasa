@@ -423,7 +423,7 @@ intent_classifier_tensorflow_embedding
     It is recommended to use ``intent_featurizer_count_vectors`` that can be optionally preceded
     by ``nlp_spacy`` and ``tokenizer_spacy``.
 
-    .. note:: If during prediction time, a message contains only words unseen during training,
+    .. note:: If during prediction time a message contains only words unseen during training,
               and no custom OOV preprocessor was used,
               empty intent ``""`` is predicted with confidence ``0.0``.
 
