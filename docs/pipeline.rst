@@ -425,7 +425,7 @@ intent_classifier_tensorflow_embedding
 
     .. note:: If during prediction time, a message contains only words unseen during training,
               and no custom OOV preprocessor was used,
-              empty string ``""`` intent is predicted with confidence ``0.0``.
+              empty intent ``""`` is predicted with confidence ``0.0``.
 
 :Configuration:
     If you want to split intents into multiple labels, e.g. for predicting multiple intents or for
