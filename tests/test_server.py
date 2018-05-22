@@ -48,7 +48,9 @@ test_events = [
 
 @pytest.fixture(scope="module")
 def http_app(core_server):
-    p = Process(target=core_server.run, args=("0.0.0.0", 1234))
+    p = Process(target=core_server.run,
+                args=("0.0.0.0", 1234),
+                kwargs={"debug": True})
     p.daemon = True
     p.start()
     yield "http://0.0.0.0:1234"
