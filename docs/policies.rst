@@ -1,15 +1,19 @@
-.. _custom_policies:
+.. _policies:
 
-Custom Policies
-===============
+Policies
+========
 
 
-The ``Policy`` is the core of your bot, and it really just has one important method:
+The ``Policy`` is the core of your bot, with its most important method:
 
 .. doctest::
 
     def predict_action_probabilities(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> List[float]
+        """Predicts the next action the bot should take
+        after seeing the tracker.
+
+        Returns the list of probabilities for the next actions"""
 
         return []
 
@@ -41,8 +45,9 @@ Let's look at a simple example for a custom policy:
 
 
 **How does this work?**
-When the controller processes a message from a user, it will keep asking for the next most likely action using ``predict_action_probabilities``.
-The bot then executes that action, until it receives an ``ActionListen`` instruction.
+When the controller processes a message from a user, it will keep asking for the next most likely action using
+``predict_action_probabilities``. The bot then executes that action, then call ``predict_action_probabilities`` again
+with a new ``tracker``, until it receives an ``ActionListen`` instruction.
 This breaks the loop and makes the bot await further instructions. 
 
 In pseudocode, what the ``SimplePolicy`` above does is:
@@ -54,55 +59,49 @@ In pseudocode, what the ``SimplePolicy`` above does is:
     if we were previously listening:
         return a canned response
     else:
-        we must have just said something, so let's Listen again
+        we must have just said something, so let's listen again
 
 
 Note that the policy itself is stateless, and all the state is carried by the ``tracker`` object.
 
 
 Creating Policies from Stories
-------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Writing rules like in the SimplePolicy above is not a great way to build a bot, it gets messy fast & is hard to debug.
 If you've found Rasa Core, it's likely you've already tried this approach and were looking for something better.
+
+The second important method of any policy is ``train(...)``:
+
+.. doctest::
+
+    def train(self,
+          training_trackers,  # type: List[DialogueStateTracker]
+          domain,  # type: Domain
+          **kwargs  # type: **Any
+          ):
+    # type: (...) -> None
+    """Trains the policy on given training trackers."""
+
+This method creates "some rules" for prediction depending on the training data.
+
+
+Memorising the training data
+----------------------------
+
 A good next step is to use our story framework to build a policy by giving it some example conversations.
 We won't use machine learning yet, we will just create a policy which memorises these stories. 
 
 We can use the ``MemoizationPolicy`` to do this.
 
-Here is the ``train`` method training the policies class:
-
-.. literalinclude:: ../rasa_core/agent.py
-   :pyobject: Agent.train
-
-What the ``train()`` method does is the following:
-
-1. reads the stories from a file
-2. creates all possible dialogues from these stories
-3. creates the following variables:
-
-   a. ``y`` - a 1D array representing all of the actions taken in the dialogues
-   b. ``X`` - a 2D array where each row represents the state of the tracker when an action was taken
-
-4. calls the policy's ``train()`` method to create a policy from these ``X, y``
-   state-action pairs (don't mind the ``ensemble`` it is just a collection of
-   policies - e.g. you can combine multiple policies and train them all at
-   once using the ensemble)
-
-
 .. note::
-
-    In fact, the rows in ``X`` describe the state of the tracker when the
-    previous ``max_history`` actions were taken. See :ref:`featurization`
-    for more details.
-
-For the ``MemoizationPolicy``, the ``train()`` method just memorises
-the actions taken in the story, so that when your bot encounters an
-identical situation it will make the decision you intended.
+    For the ``MemoizationPolicy``, the ``train()`` method just memorises
+    the actions taken in the story, so that when your bot encounters an
+    identical situation it will make the decision you intended.
 
 
 Generalising to new Dialogues
------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The stories data format gives you a compact way to describe a large number of possible dialogues without much effort. 
 But humans are infinitely creative, and you could never hope to describe *every* possible dialogue programatically.
@@ -111,23 +110,33 @@ Even if you could, it probably wouldn't fit in memory :)
 So how do we create a policy which behaves well even in scenarios you haven't thought of?
 We will try to achieve this generalisation by creating a policy based on Machine Learning. 
 
+Any policy should be initialized with a featurizer.
+The policy's ``train`` method calls this featurizer on provided ``training_trackers`` to create ``X, y`` data,
+suitable for ML algorithm (see :ref:`featurization` for details).
+
+The method to featurize trackers is defined here:
+
+.. literalinclude:: ../rasa_core/policies/policy.py
+   :pyobject: Policy.featurize_for_training
+
+
+Keras policy
+-----------
+
 You can use whichever machine learning library you like to train your policy.
 One implementation that ships with Rasa is the ``KerasPolicy``,
 which uses Keras as a machine learning library to train your dialogue model.
-These base classes have already implemented the logic of persisting and reloading models.
+This class has already implemented the logic of persisting and reloading models.
 
-By default, each of these trains a linear model to fit the ``X, y`` data.
-
-The model is defined here: 
+The model is defined here:
 
 .. literalinclude:: ../rasa_core/policies/keras_policy.py
    :pyobject: KerasPolicy.model_architecture
-
 
 and the training is run here:
 
 .. literalinclude:: ../rasa_core/policies/keras_policy.py
    :pyobject: KerasPolicy.train
 
-
-You can implement the model of your choice by overriding these methods.
+You can implement the model of your choice by overriding these methods,
+or initialize ``KerasPolicy`` with already defined ``keras model``.
