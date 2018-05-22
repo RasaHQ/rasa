@@ -5,10 +5,8 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import json
-import logging
 import os
 import signal
-import sys
 import uuid
 from multiprocessing import Process
 
@@ -47,28 +45,22 @@ test_events = [
     SlotSet("location", [34, "34", None]),
 ]
 
-logger = logging.getLogger(__name__)
-
-
-class ServerProc(Process):
-    def __init__(self, core_server):
-        super(ServerProc, self).__init__(target=core_server.run,
-                                         args=("0.0.0.0", 1234))
-
-    def run(self):
-        self.initialize_logging()
-        super(ServerProc, self).run()
-
-    def initialize_logging(self):
-        sys.stdout = open("{}.out".format(os.getpid()), "a", buffering=0)
-        sys.stderr = open("{}_error.out".format(os.getpid()), "a", buffering=0)
-
-        print('stdout initialized')
-
 
 @pytest.fixture(scope="module")
-def http_app(core_server):
-    p = ServerProc(core_server)
+def http_app(tmpdir_factory):
+    model_path = tmpdir_factory.mktemp("model").strpath
+
+    agent = Agent("data/test_domains/default_with_topic.yml",
+                  policies=[AugmentedMemoizationPolicy(max_history=3)])
+
+    training_data = agent.load_data(DEFAULT_STORIES_FILE)
+    agent.train(training_data)
+    agent.persist(model_path)
+
+    core_server = server.create_app(model_path,
+                                    interpreter=RegexInterpreter())
+
+    p = Process(target=core_server.run, args=("0.0.0.0", 1234))
     p.daemon = True
     p.start()
     yield "http://0.0.0.0:1234"
