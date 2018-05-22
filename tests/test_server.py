@@ -53,7 +53,7 @@ logger = logging.getLogger(__name__)
 class ServerProc(Process):
     def __init__(self, core_server):
         super(ServerProc, self).__init__(target=core_server.run,
-                                     args=("0.0.0.0", 1234))
+                                         args=("0.0.0.0", 1234))
 
     def run(self):
         self.initialize_logging()
