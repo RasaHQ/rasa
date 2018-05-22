@@ -20,7 +20,10 @@ Community Written Documentation
     - `Part 3 <https://blog.spg.ai/build-a-chatbot-was-rasa-nlu-part-3-b53c61954e86>`_ - A Complete Chatbot on Slack and Twilio
 - Documentation on using Rasa NLU with Docker
     - `Using Rasa NLU with Docker <https://blog.spg.ai/using-rasa-nlu-with-docker-96b86856b392>`_ - The easiest way to get started working with Rasa    
+- Documentation on using Rasa NLU with other languages
+    - `Rasa NLU in Chinese <http://www.crownpku.com/2017/07/27/%E7%94%A8Rasa_NLU%E6%9E%84%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84%E4%B8%AD%E6%96%87NLU%E7%B3%BB%E7%BB%9F.html>`_
 - `Failing Gracefully with Rasa NLU <https://blog.spg.ai/failing-gracefully-with-rasa-nlu-14a7d8e53af9>`_
+
 
 Community Open Source Tools/Software
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
