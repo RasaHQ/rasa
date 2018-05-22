@@ -51,6 +51,7 @@ extras_requires = {
               ],
     'tensorflow': ["scikit-learn",
                    "tensorflow",
+                   "sklearn-crfsuite"
                    ],
     'mitie': ["mitie"],
 }
