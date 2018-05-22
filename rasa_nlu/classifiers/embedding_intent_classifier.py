@@ -434,9 +434,9 @@ class EmbeddingIntentClassifier(Component):
                 ep_loss += sess_out.get('loss') / batches_per_epoch
 
             if self.calc_acc_on_num_examples:
-                if (ep + 1) == 1 or \
-                        (ep + 1) % self.calc_acc_ones_in_epochs == 0 or \
-                        (ep + 1) == self.epochs:
+                if ((ep + 1) == 1 or
+                        (ep + 1) % self.calc_acc_ones_in_epochs == 0 or
+                        (ep + 1) == self.epochs):
                     train_acc = self._output_training_stat(X, intents_for_X,
                                                            is_training)
                     last_loss = ep_loss
@@ -542,7 +542,7 @@ class EmbeddingIntentClassifier(Component):
         # type: (Message, **Any) -> None
         """Return the most likely intent and its similarity to the input."""
 
-        intent = {"name": None, "confidence": 0.0}
+        intent = {"name": '', "confidence": 0.0}
         intent_ranking = []
 
         if self.session is None:
@@ -561,7 +561,8 @@ class EmbeddingIntentClassifier(Component):
             # load tf graph and session
             intent_ids, message_sim = self._calculate_message_sim(X, all_Y)
 
-            if intent_ids.size > 0:
+            # if X contains all zeros do not predict some label
+            if X.any() and intent_ids.size > 0:
                 intent = {"name": self.inv_intent_dict[intent_ids[0]],
                           "confidence": message_sim[0]}
 
