@@ -270,6 +270,8 @@ intent_featurizer_count_vectors
     Creates bag-of-words representation of intent features using
     `sklearn's CountVectorizer <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_. All tokens which consist only of digits (e.g. 123 and 99 but not a123d) will be assigned to the same feature.
 
+    .. note:: Words that were not seen during training are ignored during prediction time.
+
 :Configuration:
     See `sklearn's CountVectorizer docs <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_
     for detailed description of the configuration parameters
@@ -420,6 +422,10 @@ intent_classifier_tensorflow_embedding
     This featurizer creates the features used for the embeddings.
     It is recommended to use ``intent_featurizer_count_vectors`` that can be optionally preceded
     by ``nlp_spacy`` and ``tokenizer_spacy``.
+
+    .. note:: If during prediction time, a message contains only words unseen during training,
+              and no custom OOV preprocessor was used,
+              empty string ``""`` intent is predicted with confidence ``0.0``.
 
 :Configuration:
     If you want to split intents into multiple labels, e.g. for predicting multiple intents or for
