@@ -6,17 +6,8 @@ Policies
 
 The ``Policy`` is the core of your bot, with its most important method:
 
-.. doctest::
-
-    def predict_action_probabilities(self, tracker, domain):
-        # type: (DialogueStateTracker, Domain) -> List[float]
-        """Predicts the next action the bot should take
-        after seeing the tracker.
-
-        Returns the list of probabilities for the next actions"""
-
-        return []
-
+.. literalinclude:: ../rasa_core/policies/policy.py
+   :pyobject: Policy.predict_action_probabilities
 
 This uses the current state of the conversation (provided by the tracker) to choose the next action to take.
 The domain is there if you need it, but only some policy types make use of it. The returned array contains
@@ -73,15 +64,8 @@ If you've found Rasa Core, it's likely you've already tried this approach and we
 
 The second important method of any policy is ``train(...)``:
 
-.. doctest::
-
-    def train(self,
-          training_trackers,  # type: List[DialogueStateTracker]
-          domain,  # type: Domain
-          **kwargs  # type: **Any
-          ):
-    # type: (...) -> None
-    """Trains the policy on given training trackers."""
+.. literalinclude:: ../rasa_core/policies/policy.py
+   :pyobject: Policy.train
 
 This method creates "some rules" for prediction depending on the training data.
 
