@@ -51,7 +51,7 @@ class CRFEntityExtractor(EntityExtractor):
         "features": [
             ["low", "title", "upper"],
             ["bias", "low", "prefix5", "prefix2", "suffix5", "suffix3",
-             "suffix2", "upper", "title", "digit", "pattern", "pos", "pos2"],
+             "suffix2", "upper", "title", "digit", "pattern"],
             ["low", "title", "upper"]],
 
         # The maximum number of iterations for optimization algorithms.
