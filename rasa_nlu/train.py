@@ -128,6 +128,7 @@ def do_train_in_worker(cfg,  # type: RasaNLUModelConfig
         logger.exception("Failed to train project '{}'.".format(project))
         raise TrainingException(project, Exception(traceback.format_exc()))
 
+        
 def do_train(cfg,  # type: RasaNLUModelConfig
              data,  # type: Text
              path=None,  # type: Optional[Text]
