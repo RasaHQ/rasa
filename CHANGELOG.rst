@@ -12,6 +12,7 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 Added
 -----
 - doc link to a community contribution for Rasa NLU in Chinese
+- predict empty string instead of None for intent name
 
 Changed
 -------
