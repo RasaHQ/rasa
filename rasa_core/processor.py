@@ -326,9 +326,9 @@ class MessageProcessor(object):
                 if s and s.has_features():
                     logger.warn("Action '{0}' set a slot type '{1}' that "
                                 "it never set during the training. This "
-                                "can throw of the prediction. Make sure to"
+                                "can throw of the prediction. Make sure to "
                                 "include training examples in your stories "
-                                "for the different types of slots this"
+                                "for the different types of slots this "
                                 "action can return. Remember: you need to "
                                 "set the slots manually in the stories by "
                                 "adding '- slot{{\"{1}\": \"{2}\"}}' "

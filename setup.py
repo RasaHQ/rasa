@@ -13,15 +13,15 @@ with io.open(os.path.join(here, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
 tests_requires = [
-    "pytest",
-    "pytest-pep8",
-    "pytest-services",
-    "pytest-cov",
-    "treq",
-    "freezegun",
+    "pytest~=3.0",
+    "pytest-pep8~=1.0",
+    "pytest-services~=1.0",
+    "pytest-cov~=2.0",
+    "treq~=17.0",
+    "freezegun~=0.3.0",
     "nbsphinx>=0.3",
-    "matplotlib",
-    "pygraphviz",
+    "matplotlib~=2.0",
+    "pygraphviz~=1.0",
 ]
 
 install_requires = [
