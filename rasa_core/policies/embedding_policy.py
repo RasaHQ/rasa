@@ -135,8 +135,8 @@ class EmbeddingPolicy(Policy):
                                             self.hidden_layer_size_b,
                                             name='b')
         if self.share_embedding:
-            if self.num_hidden_layers_a != self.num_hidden_layers_b or \
-                    self.hidden_layer_size_a != self.hidden_layer_size_b:
+            if (self.num_hidden_layers_a != self.num_hidden_layers_b or
+                    self.hidden_layer_size_a != self.hidden_layer_size_b):
                 logger.debug("Due to sharing vocabulary in featurizer, "
                              "embedding weights are shared as well. "
                              "So num_hidden_layers_b and "
@@ -589,9 +589,9 @@ class EmbeddingPolicy(Policy):
                 ep_loss += sess_out.get('loss') / batches_per_epoch
 
             if self.calc_acc_on_num_examples:
-                if (ep + 1) == 1 or \
-                        (ep + 1) % self.calc_acc_ones_in_epochs == 0 or \
-                        (ep + 1) == self.epochs:
+                if ((ep + 1) == 1 or
+                        (ep + 1) % self.calc_acc_ones_in_epochs == 0 or
+                        (ep + 1) == self.epochs):
                     train_acc = self._calc_train_acc(X, slots, prev_act,
                                                      actions_for_X, all_Y_d,
                                                      mask)
