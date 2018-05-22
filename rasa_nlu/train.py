@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import argparse
 import logging
+import traceback
 
 import typing
 from typing import Optional, Any
@@ -122,7 +123,10 @@ def do_train_in_worker(cfg,  # type: RasaNLUModelConfig
     except Exception as e:
         logger.exception("Failed to train project '{}'.".format(project))
         raise TrainingException(project, e)
-
+    except:
+        # Unexpected error
+        logger.exception("Failed to train project '{}'.".format(project))
+        raise TrainingException(project, Exception(traceback.format_exc()))
 
 def do_train(cfg,  # type: RasaNLUModelConfig
              data,  # type: Text
