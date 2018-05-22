@@ -17,6 +17,7 @@ tests_requires = [
     "pytest-pep8~=1.0",
     "pytest-services~=1.0",
     "pytest-cov~=2.0",
+    "pytest_localserver~=0.4.0",
     "treq~=17.0",
     "freezegun~=0.3.0",
     "nbsphinx>=0.3",
