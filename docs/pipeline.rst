@@ -457,6 +457,9 @@ intent_classifier_tensorflow_embedding
 
     .. note:: For ``cosine`` similarity ``mu_pos`` and ``mu_neg`` should be between ``-1`` and ``1``.
 
+    .. note:: There is an option to use linearly increasing batch size. The idea comes from `<https://arxiv.org/abs/1711.00489>`_.
+              In order to do it pass a list to ``batch_size``, e.g. ``"batch_size": [64, 256]``.
+
     In the config, you can specify these parameters:
 
     .. code-block:: yaml
@@ -468,10 +471,10 @@ intent_classifier_tensorflow_embedding
           "hidden_layer_size_a": [256, 128]
           "num_hidden_layers_b": 0
           "hidden_layer_size_b": []
-          "batch_size": 32
+          "batch_size": 64
           "epochs": 300
           # embedding parameters
-          "embed_dim": 10
+          "embed_dim": 20
           "mu_pos": 0.8  # should be 0.0 < ... < 1.0 for 'cosine'
           "mu_neg": -0.4  # should be -1.0 < ... < 1.0 for 'cosine'
           "similarity_type": "cosine"  # string 'cosine' or 'inner'
@@ -484,10 +487,14 @@ intent_classifier_tensorflow_embedding
           # flag if to tokenize intents
           "intent_tokenization_flag": false
           "intent_split_symbol": "_"
+          # visualization of accuracy
+          "calc_acc_ones_in_epochs": 10  # small values affect performance
+          "calc_acc_on_num_examples": 1000  # large values affect performance
 
     .. note:: Parameter ``mu_neg`` is set to a negative value to mimic the original
               starspace algorithm in the case ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``.
               See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
+
 
 intent_entity_featurizer_regex
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
