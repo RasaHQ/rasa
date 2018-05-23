@@ -41,6 +41,35 @@ Fixed
 - documentation fix on stories
 
 
+[0.8.6] - 2018-04-18
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- pin rasa nlu version to 0.11.4 (0.12.x only works with master)
+
+[0.8.5] - 2018-03-19
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- updated google analytics docs survey code
+
+
+[0.8.4] - 2018-03-14
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- pin ``pykwalify<=1.6.0`` as update to ``1.6.1`` breaks compatibility
+
+[0.8.3] - 2018-02-28
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- pin ``fbmessenger`` version to avoid major update
+
 [0.8.2] - 2018-02-13
 ^^^^^^^^^^^^^^^^^^^^
 
