@@ -28,7 +28,8 @@ class PhraseMatcher(EntityExtractor):
     def __init__(self, component_config=None, entity_phrases=None):
         super(PhraseMatcher, self).__init__(component_config)
 
-        self.phrase_trie = self._trie_factory(self.component_config["use_tokens"])
+        self.phrase_trie = self._trie_factory(
+                self.component_config["use_tokens"])
         if entity_phrases:
             self._build_trie(entity_phrases)
 
@@ -77,7 +78,9 @@ class PhraseMatcher(EntityExtractor):
         elif tokens is not None:
             return [(t.text, t.offset) for t in tokens]
         else:
-            raise ValueError("Neither 'spacy_doc' nor 'tokens' present for phrase matcher in tokenized mode.")
+            raise ValueError(
+                "Neither 'spacy_doc' nor 'tokens' present for phrase matcher "
+                "in tokenized mode.")
 
     def _process_tokens(self, message):
         extracted = []
@@ -93,7 +96,8 @@ class PhraseMatcher(EntityExtractor):
                 end = indices[end_i] + len(tokens[end_i])
                 value = message.text[start:end]
                 entity_type = match[1]
-                extracted.append(utils.build_entity(start, end, value, entity_type))
+                extracted.append(
+                    utils.build_entity(start, end, value, entity_type))
 
         self.append_entities(message, extracted)
 
@@ -109,7 +113,8 @@ class PhraseMatcher(EntityExtractor):
                 start, end = i, i + len(match[0])
                 value = message.text[start:end]
                 entity_type = match[1]
-                extracted.append(utils.build_entity(start, end, value, entity_type))
+                extracted.append(
+                    utils.build_entity(start, end, value, entity_type))
 
         self.append_entities(message, extracted)
 
@@ -131,7 +136,8 @@ class PhraseMatcher(EntityExtractor):
     def load(cls, model_dir, model_metadata, cached_component, **kwargs):
         component_config = model_metadata.for_component(cls.name)
 
-        entity_phrases_file = model_metadata.get("entity_phrases", ENTITY_PHRASES_FILE)
+        entity_phrases_file = model_metadata.get("entity_phrases",
+                                                 ENTITY_PHRASES_FILE)
         entity_phrases_file_path = os.path.join(model_dir, entity_phrases_file)
         entity_phrases = utils.read_json_file(entity_phrases_file_path)
 

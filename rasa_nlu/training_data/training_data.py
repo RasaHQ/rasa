@@ -41,7 +41,8 @@ class TrainingData(object):
                  entity_synonyms=None,
                  regex_features=None,
                  entity_phrases=None):
-        # type: (Optional[List[Message]], Optional[Dict[Text, Text]], Optional[List[Dict[Text, Text]]]) -> None
+        # type: (Optional[List[Message]], Optional[Dict[Text, Text]],
+        # Optional[List[Dict[Text, Text]]]) -> None
 
         self.training_examples = training_examples if training_examples else []
         self.sanitize_examples()
@@ -58,7 +59,8 @@ class TrainingData(object):
 
     def merge(self, *others):
         # type: (List[TrainingData]) -> TrainingData
-        """Merges the TrainingData instance with others and creates a new one."""
+        """Merges the TrainingData instance with others and creates a new
+        one."""
 
         training_examples = deepcopy(self.training_examples)
         entity_synonyms = self.entity_synonyms.copy()
@@ -71,12 +73,14 @@ class TrainingData(object):
             self._merge_entity_synonyms(entity_synonyms, o)
             self._merge_entity_phrases(entity_phrases, o)
 
-        return TrainingData(training_examples, entity_synonyms, regex_features, entity_phrases)
+        return TrainingData(training_examples, entity_synonyms, regex_features,
+                            entity_phrases)
 
     def _merge_entity_synonyms(self, entity_synonyms, o):
         """Merges entity synonyms and warns for inconsistencies."""
         for text, syn in o.entity_synonyms.items():
-            check_duplicate_synonym(entity_synonyms, text, syn, "merging training data")
+            check_duplicate_synonym(entity_synonyms, text, syn,
+                                    "merging training data")
 
         entity_synonyms.update(o.entity_synonyms)
 

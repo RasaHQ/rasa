@@ -132,7 +132,8 @@ class MitieEntityExtractor(EntityExtractor):
             raise Exception("Failed to train 'intent_featurizer_mitie'. "
                             "Missing a proper MITIE feature extractor.")
 
-        ents = self.extract_entities(message.text, message.get("tokens"), mitie_feature_extractor)
+        ents = self.extract_entities(message.text, message.get("tokens"),
+                                     mitie_feature_extractor)
         self.append_entities(message, ents)
 
     @classmethod
