@@ -41,6 +41,35 @@ Fixed
 - documentation fix on stories
 
 
+[0.8.6] - 2018-04-18
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- pin rasa nlu version to 0.11.4 (0.12.x only works with master)
+
+[0.8.5] - 2018-03-19
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- updated google analytics docs survey code
+
+
+[0.8.4] - 2018-03-14
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- pin ``pykwalify<=1.6.0`` as update to ``1.6.1`` breaks compatibility
+
+[0.8.3] - 2018-02-28
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- pin ``fbmessenger`` version to avoid major update
+
 [0.8.2] - 2018-02-13
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -222,7 +251,7 @@ Changed
 - renamed ``rasa_dm.util`` to ``rasa_dm.utils``
 - renamed the whole package to ``rasa_core`` (so ``rasa_dm`` is gone!)
 - renamed ``Reminder`` attribute ``id`` to ``name``
-- a lot of documentation improvements. docs are now at https://core.rasa.ai
+- a lot of documentation improvements. docs are now at https://core.rasa.com
 - use hashing when writing memorized turns into persistence - requires retraining of all models that are trained with a version prior to this
 - changed ``agent.handle_message(...)`` interface for easier usage
 

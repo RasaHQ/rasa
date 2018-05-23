@@ -330,7 +330,7 @@ or if none of the dialogue policies predict an action with confidence higher tha
    from rasa_core.agent import Agent
 
    fallback = FallbackPolicy(fallback_action_name="utter_default",
-                             core_threshold=0.3
+                             core_threshold=0.3,
                              nlu_threshold=0.3)
 
    agent = Agent("domain.yml",

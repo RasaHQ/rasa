@@ -97,7 +97,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
         for states in tracker_as_states:
             logger.debug("Current tracker state {}".format(states))
-            memorised = self._recall(states)
+            memorised = self._recall_states(states)
             if memorised is not None:
                 return memorised
 
