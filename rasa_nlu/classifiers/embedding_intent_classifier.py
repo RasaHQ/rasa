@@ -533,10 +533,16 @@ class EmbeddingIntentClassifier(Component):
         intent_ids = message_sim.argsort()[::-1]
         message_sim[::-1].sort()
 
-        # transform sim to python list for JSON serializing
-        message_sim = message_sim.tolist()
+        if self.similarity_type == 'cosine':
+            # clip negative values to zero
+            message_sim[message_sim < 0] = 0
+        elif self.similarity_type == 'inner':
+            # normalize result to [0, 1] with softmax
+            message_sim = np.exp(message_sim)
+            message_sim /= np.sum(message_sim)
 
-        return intent_ids, message_sim
+        # transform sim to python list for JSON serializing
+        return intent_ids, message_sim.tolist()
 
     def process(self, message, **kwargs):
         # type: (Message, **Any) -> None
