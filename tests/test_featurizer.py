@@ -57,7 +57,7 @@ def test_label_tokenizer_featurizer_handles_on_non_existing_features():
     f.user_labels = ["a_d"]
     f.bot_labels = ["c_b"]
     f.user_vocab = {"a": 0, "d": 1}
-    f.slot_labels = {"b": 1, "c": 0}
+    f.bot_vocab = {"b": 1, "c": 0}
     f.num_features = (len(f.user_vocab) +
                       len(f.slot_labels) +
                       len(f.bot_vocab))
@@ -70,7 +70,7 @@ def test_label_tokenizer_featurizer_uses_correct_dtype_int():
     f.user_labels = ["a_d"]
     f.bot_labels = ["c_b"]
     f.user_vocab = {"a": 0, "d": 1}
-    f.slot_labels = {"b": 1, "c": 0}
+    f.bot_vocab = {"b": 1, "c": 0}
     f.num_features = (len(f.user_vocab) +
                       len(f.slot_labels) +
                       len(f.bot_vocab))
@@ -83,7 +83,7 @@ def test_label_tokenizer_featurizer_uses_correct_dtype_float():
     f.user_labels = ["a_d"]
     f.bot_labels = ["c_b"]
     f.user_vocab = {"a": 0, "d": 1}
-    f.slot_labels = {"b": 1, "c": 0}
+    f.bot_vocab = {"b": 1, "c": 0}
     f.num_features = (len(f.user_vocab) +
                       len(f.slot_labels) +
                       len(f.bot_vocab))
@@ -96,7 +96,7 @@ def test_label_tokenizer_featurizer_handles_on_non_existing_probabilistic():
     f.user_labels = ["a_d"]
     f.bot_labels = ["c_b"]
     f.user_vocab = {"a": 0, "d": 1}
-    f.slot_labels = {"b": 1, "c": 0}
+    f.bot_vocab = {"b": 1, "c": 0}
     f.num_features = (len(f.user_vocab) +
                       len(f.slot_labels) +
                       len(f.bot_vocab))
@@ -109,7 +109,7 @@ def test_label_tokenizer_featurizer_handles_probabilistic_intents():
     f.user_labels = ["intent_a", "intent_d"]
     f.bot_labels = ["c", "b"]
     f.user_vocab = {"intent": 2, "a": 0, "d": 1}
-    f.slot_labels = {"b": 1, "c": 0}
+    f.bot_vocab = {"b": 1, "c": 0}
     f.num_features = (len(f.user_vocab) +
                       len(f.slot_labels) +
                       len(f.bot_vocab))
