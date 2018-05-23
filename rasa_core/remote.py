@@ -137,12 +137,16 @@ class RasaCoreClient(object):
         while max_retries > 0:
             max_retries -= 1
 
-            with io.open(model_zip, "rb") as f:
-                response = requests.post(url, files={"model": f})
+            try:
+                with io.open(model_zip, "rb") as f:
+                    response = requests.post(url, files={"model": f})
 
-            if response.status_code == 200:
-                logger.debug("Finished uploading")
-                return response.json()
+                if response.status_code == 200:
+                    logger.debug("Finished uploading")
+                    return response.json()
+            except Exception as e:
+                logger.warn("Failed to send model upload request. "
+                            "{}".format(e))
 
             if max_retries > 0:
                 # some resting time before we try again - e.g. server
