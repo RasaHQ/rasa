@@ -55,17 +55,17 @@ Setup
 For this tutorial to work, you need to have ``rasa_core`` installed,
 ``rasa_nlu``, as well as ``spaCy``:
 
-.. code-block::
+.. code-block:: bash
 
-  pip install rasa_nlu[spacy]
-  pip install rasa_core
+    pip install rasa_nlu[spacy]
+    pip install rasa_core
 
 You'll also need the english language model:
 
-.. code-block::
+.. code-block:: bash
 
-  python -m spacy download en_core_web_md
-  python -m spacy link en_core_web_md en
+    python -m spacy download en_core_web_md
+    python -m spacy link en_core_web_md en
 
 1. Define a Domain
 ^^^^^^^^^^^^^^^^^^
