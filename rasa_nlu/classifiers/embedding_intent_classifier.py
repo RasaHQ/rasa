@@ -65,7 +65,7 @@ class EmbeddingIntentClassifier(Component):
         "hidden_layer_size_a": [256, 128],
         "num_hidden_layers_b": 0,
         "hidden_layer_size_b": [],
-        "batch_size": [64, 256],
+        "batch_size": 64,
         "epochs": 300,
 
         # embedding parameters
@@ -82,7 +82,7 @@ class EmbeddingIntentClassifier(Component):
         "droprate": 0.2,
 
         # flag if tokenize intents
-        "intent_tokenization_flag": True,
+        "intent_tokenization_flag": False,
         "intent_split_symbol": '_',
 
         # visualization of accuracy
