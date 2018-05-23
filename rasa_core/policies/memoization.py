@@ -41,8 +41,12 @@ class MemoizationPolicy(Policy):
         some slots might not be set during prediction time, and there are
         training stories for this, use AugmentedMemoizationPolicy.
     """
+
     ENABLE_FEATURE_STRING_COMPRESSION = True
+
     SUPPORTS_ONLINE_TRAINING = True
+
+    USE_NLU_CONFIDENCE_AS_SCORE = False
 
     @classmethod
     def _standard_featurizer(cls, max_history=None):
@@ -199,9 +203,13 @@ class MemoizationPolicy(Policy):
             logger.debug("There is a memorised next action '{}'"
                          "".format(recalled))
 
-            # the memoization will use the confidence of NLU on the latest
-            # user message to set the confidence of the action
-            score = tracker.latest_message.intent.get("confidence", 1.0)
+            if self.USE_NLU_CONFIDENCE_AS_SCORE:
+                # the memoization will use the confidence of NLU on the latest
+                # user message to set the confidence of the action
+                score = tracker.latest_message.intent.get("confidence", 1.0)
+            else:
+                score = 1.0
+
             result[recalled] = score
         else:
             logger.debug("There is no memorised next action")
