@@ -4,7 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from rasa_core.featurizers import TrackerFeaturizer, \
-    BinarySingleStateFeaturizer, ProbabilisticSingleStateFeaturizer
+    BinarySingleStateFeaturizer
 import numpy as np
 
 
@@ -37,7 +37,7 @@ def test_binary_featurizer_uses_correct_dtype_float():
 
 
 def test_probabilistic_featurizer_handles_on_non_existing_features():
-    f = ProbabilisticSingleStateFeaturizer()
+    f = BinarySingleStateFeaturizer()
     f.input_state_map = {"a": 0, "b": 3, "c": 2, "d": 1}
     f.num_features = len(f.input_state_map)
     encoded = f.encode({"a": 1.0, "b": 0.2, "c": 0.0, "e": 1.0})
@@ -45,7 +45,7 @@ def test_probabilistic_featurizer_handles_on_non_existing_features():
 
 
 def test_probabilistic_featurizer_handles_intent_probs():
-    f = ProbabilisticSingleStateFeaturizer()
+    f = BinarySingleStateFeaturizer()
     f.input_state_map = {"intent_a": 0, "b": 3, "intent_c": 2, "d": 1}
     f.num_features = len(f.input_state_map)
     encoded = f.encode({"intent_a": 0.5, "b": 0.2, "intent_c": 1.0})
