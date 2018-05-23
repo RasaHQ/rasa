@@ -93,7 +93,7 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
         # type: (Optional[Text, float]) -> np.ndarray
         """Returns a binary vector indicating which features are active.
 
-        If TrackerFeaturizer.binary_flag is True (default behaviour):
+        If TrackerFeaturizer.binary_intent_prob is True (default behaviour):
             Given a dictionary of states (e.g. 'intent_greet',
             'prev_action_listen',...) return a binary vector indicating which
             features of `self.input_features` are in the bag. NB it's a
@@ -102,7 +102,7 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
             For example with two active features out of five possible features
             this would return a vector like `[0 0 1 0 1]`
 
-        If TrackerFeaturizer.binary_flag is False:
+        If TrackerFeaturizer.binary_intent_prob is False:
             intent features are given with a probability.
 
              For example with two active features and two uncertain intents out
@@ -272,11 +272,11 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
 
 class TrackerFeaturizer(object):
     """Base class for actual tracker featurizers"""
-    def __init__(self, state_featurizer=None, binary_flag=True):
+    def __init__(self, state_featurizer=None, binary_intent_prob=True):
         # type: (Optional[SingleStateFeaturizer]) -> None
 
         self.state_featurizer = state_featurizer or SingleStateFeaturizer()
-        self.binary_flag = binary_flag
+        self.binary_intent_prob = binary_intent_prob
 
     def _pad_states(self, states):
         return states
@@ -329,7 +329,7 @@ class TrackerFeaturizer(object):
     def _create_states(self, tracker, domain):
         states = domain.states_for_tracker_history(tracker)
 
-        if self.binary_flag:
+        if self.binary_intent_prob:
             bin_states = []
             for state in states:
                 bin_state = dict()
@@ -427,10 +427,10 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
     Training data is padded up to the length of the longest
     dialogue with -1"""
 
-    def __init__(self, state_featurizer, binary_flag=True):
+    def __init__(self, state_featurizer, binary_intent_prob=True):
         # type: (SingleStateFeaturizer) -> None
         super(FullDialogueTrackerFeaturizer, self).__init__(state_featurizer,
-                                                            binary_flag)
+                                                            binary_intent_prob)
 
         self.max_len = None
 
@@ -512,10 +512,10 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
     Training data is padded up to the max_history with -1"""
 
     def __init__(self, state_featurizer=None,
-                 max_history=5, remove_duplicates=True, binary_flag=True):
+                 max_history=5, remove_duplicates=True, binary_intent_prob=True):
         # type: (Optional(SingleStateFeaturizer), int, bool) -> None
         super(MaxHistoryTrackerFeaturizer, self).__init__(state_featurizer,
-                                                          binary_flag)
+                                                          binary_intent_prob)
 
         self.max_history = max_history
 
