@@ -120,26 +120,26 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
 
         if state is None or None in state:
             return np.ones(self.num_features, dtype=np.int32) * -1
-        else:
-            # we are going to use floats and convert to int later if possible
-            used_features = np.zeros(self.num_features, dtype=np.float)
-            using_only_ints = True
-            for state_name, prob in state.items():
-                if state_name in self.input_state_map:
-                    idx = self.input_state_map[state_name]
-                    used_features[idx] = prob
-                    using_only_ints = using_only_ints and utils.is_int(prob)
-                else:
-                    logger.debug(
-                            "Feature '{}' (value: '{}') could not be found in "
-                            "feature map. Make sure you added all intents and "
-                            "entities to the domain".format(state_name, prob))
 
-            if using_only_ints:
-                # this is an optimization - saves us a bit of memory
-                return used_features.astype(np.int32)
+        # we are going to use floats and convert to int later if possible
+        used_features = np.zeros(self.num_features, dtype=np.float)
+        using_only_ints = True
+        for state_name, prob in state.items():
+            if state_name in self.input_state_map:
+                idx = self.input_state_map[state_name]
+                used_features[idx] = prob
+                using_only_ints = using_only_ints and utils.is_int(prob)
             else:
-                return used_features
+                logger.debug(
+                        "Feature '{}' (value: '{}') could not be found in "
+                        "feature map. Make sure you added all intents and "
+                        "entities to the domain".format(state_name, prob))
+
+        if using_only_ints:
+            # this is an optimization - saves us a bit of memory
+            return used_features.astype(np.int32)
+        else:
+            return used_features
 
     def create_encoded_all_actions(self, domain):
         # type: (Domain) -> np.ndarray
@@ -223,6 +223,7 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
         if state is None or None in state:
             return np.ones(self.num_features, dtype=np.int32) * -1
 
+        # we are going to use floats and convert to int later if possible
         used_features = np.zeros(self.num_features, dtype=np.float)
         using_only_ints = True
         for state_name, prob in state.items():
