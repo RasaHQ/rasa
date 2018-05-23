@@ -65,7 +65,7 @@ Also make sure to install a language model for the language you need, e.g.
     python -m spacy link en_core_web_md en
 
 
-Full instructions can be found `here <https://nlu.rasa.ai/installation.html>`_.
+Full instructions can be found `here <https://nlu.rasa.com/installation.html>`_.
 
 You can also use other NLU services like wit.ai, dialogflow, or LUIS. 
 In fact, you don't need to use NLU at all, if your messaging app uses buttons

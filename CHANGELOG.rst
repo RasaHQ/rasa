@@ -222,7 +222,7 @@ Changed
 - renamed ``rasa_dm.util`` to ``rasa_dm.utils``
 - renamed the whole package to ``rasa_core`` (so ``rasa_dm`` is gone!)
 - renamed ``Reminder`` attribute ``id`` to ``name``
-- a lot of documentation improvements. docs are now at https://core.rasa.ai
+- a lot of documentation improvements. docs are now at https://core.rasa.com
 - use hashing when writing memorized turns into persistence - requires retraining of all models that are trained with a version prior to this
 - changed ``agent.handle_message(...)`` interface for easier usage
 

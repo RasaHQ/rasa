@@ -81,7 +81,7 @@ def _raise_missing_credentials_exception(channel):
                     "The argument should be a file path pointing to"
                     "a yml file containing the {} authentication"
                     "information. Details in the docs: "
-                    "https://core.rasa.ai/connectors.html#{}-setup".
+                    "https://core.rasa.com/connectors.html#{}-setup".
                     format(channel, channel, channel_doc_link))
 
 

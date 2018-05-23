@@ -92,8 +92,9 @@ setup(
     keywords="nlp machine-learning machine-learning-library bot bots "
              "botkit rasa conversational-agents conversational-ai chatbot"
              "chatbot-framework bot-framework",
-    url="https://rasa.ai",
-    download_url="https://github.com/RasaHQ/rasa_core/archive/{}.tar.gz".format(__version__),
+    url="https://rasa.com",
+    download_url="https://github.com/RasaHQ/rasa_core/archive/{}.tar.gz"
+                 "".format(__version__),
     project_urls={
         'Bug Reports': 'https://github.com/rasahq/rasa_core/issues',
         'Source': 'https://github.com/rasahq/rasa_core',

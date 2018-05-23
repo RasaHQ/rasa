@@ -125,7 +125,7 @@ Language Understanding (NLU) and transforms the message into structured output.
 In this example we are going to use Rasa NLU for this purpose.
 
 In Rasa NLU, we need to define the user messages our bot should be able to
-handle in the `Rasa NLU training data format <https://nlu.rasa.ai/dataformat.html>`_.
+handle in the `Rasa NLU training data format <https://nlu.rasa.com/dataformat.html>`_.
 In this tutorial we are going to use Markdown Format for NLU training data.
 Let's create some intent examples in ``data/nlu_data.md``:
 
@@ -141,9 +141,9 @@ NLU model:
     :linenos:
 
 We can now train an NLU model using our examples (make sure to
-`install Rasa NLU <http://nlu.rasa.ai/installation.html#setting-up-rasa-nlu>`_
+`install Rasa NLU <http://nlu.rasa.com/installation.html#setting-up-rasa-nlu>`_
 first, as well as
-`spaCy <http://nlu.rasa.ai/installation.html#best-for-most-spacy-sklearn>`_).
+`spaCy <http://nlu.rasa.com/installation.html#best-for-most-spacy-sklearn>`_).
 
 Let's run
 
@@ -159,7 +159,7 @@ since this is specified in the train command.
 .. note::
 
    To gather more insights about the above configuration and Rasa NLU features
-   head over to the `Rasa NLU documentation <https://nlu.rasa.ai>`_.
+   head over to the `Rasa NLU documentation <https://nlu.rasa.com>`_.
 
 3. Define stories
 ^^^^^^^^^^^^^^^^^
