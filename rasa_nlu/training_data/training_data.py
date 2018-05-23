@@ -43,15 +43,15 @@ class TrainingData(object):
                  entity_phrases=None):
         # type: (Optional[List[Message]], Optional[Dict[Text, Text]], Optional[List[Dict[Text, Text]]]) -> None
 
-        self.training_examples = training_examples or []
+        self.training_examples = training_examples if training_examples else []
         self.sanitize_examples()
 
-        self.entity_synonyms = entity_synonyms or {}
+        self.entity_synonyms = entity_synonyms if entity_synonyms else {}
 
-        self.regex_features = regex_features or []
+        self.regex_features = regex_features if regex_features else []
         self.sort_regex_features()
 
-        self.entity_phrases = entity_phrases or {}
+        self.entity_phrases = entity_phrases if entity_phrases else {}
 
         self.validate()
         self.print_stats()
