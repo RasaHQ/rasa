@@ -196,13 +196,15 @@ class MemoizationPolicy(Policy):
         logger.debug("Current tracker state {}".format(states))
         recalled = self.recall(states, tracker, domain)
         if recalled is not None:
-            logger.debug("Used memorised next action '{}'"
+            logger.debug("There is a memorised next action '{}'"
                          "".format(recalled))
 
             # the memoization will use the confidence of NLU on the latest
             # user message to set the confidence of the action
             score = tracker.latest_message.intent.get("confidence", 1.0)
             result[recalled] = score
+        else:
+            logger.debug("There is no memorised next action")
 
         return result
 

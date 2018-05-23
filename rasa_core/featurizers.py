@@ -93,13 +93,21 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
         # type: (Optional[Text, float]) -> np.ndarray
         """Returns a binary vector indicating which features are active.
 
-        Given a dictionary of states (e.g. 'intent_greet',
-        'prev_action_listen',...) return a binary vector indicating which
-        features of `self.input_features` are in the bag. NB it's a
-        regular double precision float array type.
+        If TrackerFeaturizer.binary_flag is True (default behaviour):
+            Given a dictionary of states (e.g. 'intent_greet',
+            'prev_action_listen',...) return a binary vector indicating which
+            features of `self.input_features` are in the bag. NB it's a
+            regular double precision float array type.
 
-        For example with two active features out of five possible features
-        this would return a vector like `[0 0 1 0 1]`
+            For example with two active features out of five possible features
+            this would return a vector like `[0 0 1 0 1]`
+
+        If TrackerFeaturizer.binary_flag is False:
+            intent features are given with a probability.
+
+             For example with two active features and two uncertain intents out
+            of five possible features this would return a vector
+            like `[0.3, 0.7, 1, 0, 1]`.
 
         If this is just a padding vector we set all values to `-1`.
         padding vectors are specified by a `None` or `[None]`
@@ -114,39 +122,18 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
             return np.ones(self.num_features, dtype=np.int32) * -1
         else:
             # we are going to use floats and convert to int later if possible
-            used_features = np.zeros(self.num_features, dtype=float)
+            used_features = np.zeros(self.num_features, dtype=np.float)
             using_only_ints = True
-            best_intent = None
-            best_intent_prob = 0.0
-
             for state_name, prob in state.items():
-                if state_name.startswith('intent_'):
-                    if prob >= best_intent_prob:
-                        best_intent = state_name
-                        best_intent_prob = prob
-                elif state_name in self.input_state_map:
-                    if prob != 0.0:
-                        idx = self.input_state_map[state_name]
-                        used_features[idx] = prob
-                        using_only_ints = using_only_ints and utils.is_int(prob)
+                if state_name in self.input_state_map:
+                    idx = self.input_state_map[state_name]
+                    used_features[idx] = prob
+                    using_only_ints = using_only_ints and utils.is_int(prob)
                 else:
                     logger.debug(
                             "Feature '{}' (value: '{}') could not be found in "
                             "feature map. Make sure you added all intents and "
                             "entities to the domain".format(state_name, prob))
-
-            if best_intent is not None:
-                # finding the maximum confidence intent and
-                # appending it to the states val
-                index_in_feature_list = self.input_state_map.get(best_intent)
-                if index_in_feature_list is not None:
-                    used_features[index_in_feature_list] = 1
-                else:
-                    logger.warning(
-                            "Couldn't set most probable feature '{}', "
-                            "it wasn't found in the feature list of the domain."
-                            " Make sure you added all intents and "
-                            "entities to the domain.".format(best_intent))
 
             if using_only_ints:
                 # this is an optimization - saves us a bit of memory
@@ -159,48 +146,6 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
         """Create matrix with all actions from domain
             encoded in rows as bag of words."""
         return np.eye(domain.num_actions)
-
-
-class ProbabilisticSingleStateFeaturizer(BinarySingleStateFeaturizer):
-    """Uses intent probabilities of the NLU and feeds them into the model."""
-
-    def encode(self, state):
-        # type: (Optional[Text, float]) -> np.ndarray
-        """Returns a binary vector indicating active features,
-        but with intent features given with a probability.
-
-        Given a dictionary of states (e.g. 'intent_greet',
-        'prev_action_listen',...) and intent probabilities
-        from rasa_nlu, will be a binary vector indicating which features
-        of `self.input_features` are active.
-
-        For example with two active features and two uncertain intents out
-        of five possible features this would return a vector
-        like `[0.3, 0.7, 1, 0, 1]`.
-
-        If this is just a padding vector we set all values to `-1`.
-        padding vectors are specified by a `None` or `[None]`
-        value for states."""
-
-        if not self.num_features:
-            raise Exception("ProbabilisticSingleStateFeaturizer "
-                            "was not prepared "
-                            "before encoding.")
-
-        if state is None or None in state:
-            return np.ones(self.num_features, dtype=np.int32) * -1
-        else:
-
-            used_features = np.zeros(self.num_features, dtype=np.float)
-            for state, value in state.items():
-                if state in self.input_state_map:
-                    idx = self.input_state_map[state]
-                    used_features[idx] = value
-                else:
-                    logger.debug(
-                            "Found feature not in feature map. "
-                            "Name: {} Value: {}".format(state, value))
-            return used_features
 
 
 class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
@@ -276,11 +221,12 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
                             "was not prepared before encoding.")
 
         if state is None or None in state:
-            return np.ones(self.num_features, dtype=int) * -1
+            return np.ones(self.num_features, dtype=np.int32) * -1
 
-        used_features = np.zeros(self.num_features, dtype=int)
+        used_features = np.zeros(self.num_features, dtype=np.float)
+        using_only_ints = True
         for state_name, prob in state.items():
-
+            using_only_ints = using_only_ints and utils.is_int(prob)
             if state_name in self.user_labels:
                 if PREV_PREFIX + ACTION_LISTEN_NAME in state:
                     # else we predict next action from bot action and memory
@@ -304,7 +250,11 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
                     "Feature '{}' could not be found in "
                     "feature map.".format(state_name))
 
-        return used_features
+        if using_only_ints:
+            # this is an optimization - saves us a bit of memory
+            return used_features.astype(np.int32)
+        else:
+            return used_features
 
     def create_encoded_all_actions(self, domain):
         # type: (Domain) -> np.ndarray
@@ -377,9 +327,8 @@ class TrackerFeaturizer(object):
 
     def _create_states(self, tracker, domain):
         states = domain.states_for_tracker_history(tracker)
+
         if self.binary_flag:
-            print('--------')
-            print(states)
             bin_states = []
             for state in states:
                 bin_state = dict()
@@ -388,19 +337,20 @@ class TrackerFeaturizer(object):
                 for state_name, prob in state.items():
                     if state_name.startswith('intent_'):
                         if prob >= best_intent_prob:
+                            # finding the maximum confidence intent
                             best_intent = state_name
                             best_intent_prob = prob
                     else:
-                        bin_state[state_name] = int(prob)
+                        bin_state[state_name] = prob
 
                 if best_intent is not None:
-                    # finding the maximum confidence intent and
-                    # appending it to the states val
-                    bin_state[best_intent] = 1
+                    # appending the maximum confidence intent
+                    # to the binary states with prob 1.0
+                    bin_state[best_intent] = 1.0
 
                 bin_states.append(bin_state)
-            print(bin_states)
-            exit()
+            states = bin_states
+
         return states
 
     def training_states_and_actions(
