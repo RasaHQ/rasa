@@ -26,6 +26,7 @@ from rasa_core.featurizers import (
     MaxHistoryTrackerFeaturizer,
     BinarySingleStateFeaturizer, FullDialogueTrackerFeaturizer)
 from rasa_core.events import ActionExecuted
+from tests.utilities import read_dialogue_file
 
 
 def train_trackers(domain):
@@ -157,6 +158,21 @@ class TestMemoizationPolicy(PolicyTestCollection):
                           for f, num in
                           zip(default_domain.input_states, nums)}]
         assert trained_policy._recall_states(random_states) is None
+
+    def test_memorise_with_nlu(self, trained_policy, default_domain):
+        trackers = train_trackers(default_domain)
+        trained_policy.train(trackers, default_domain)
+
+        filename = "data/test_dialogues/nlu_dialogue.json"
+        dialogue = read_dialogue_file(filename)
+
+        tracker = DialogueStateTracker(dialogue.name, default_domain.slots)
+        tracker.recreate_from_dialogue(dialogue)
+        states = trained_policy.featurizer.prediction_states([tracker],
+                                                             default_domain)[0]
+
+        recalled = trained_policy.recall(states, tracker, default_domain)
+        assert recalled is not None
 
 
 class TestAugmentedMemoizationPolicy(PolicyTestCollection):
