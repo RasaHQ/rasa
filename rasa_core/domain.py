@@ -297,8 +297,9 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         if self.store_entities_as_slots:
             slot_events = []
             for s in self.slots:
-                matching_entities = [e['value'] for e in entities if
-                                     e['entity'] == s.name]
+                matching_entities = [e['value']
+                                     for e in entities
+                                     if e['entity'] == s.name]
                 if matching_entities:
                     if s.type_name == 'list':
                         slot_events.append(SlotSet(s.name, matching_entities))
