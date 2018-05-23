@@ -92,7 +92,7 @@ setup(
     keywords="nlp machine-learning machine-learning-library bot bots "
              "botkit rasa conversational-agents conversational-ai chatbot"
              "chatbot-framework bot-framework",
-    url="https://rasa.ai",
+    url="https://rasa.com",
     download_url="https://github.com/RasaHQ/rasa_core/archive/{}.tar.gz"
                  "".format(__version__),
     project_urls={
