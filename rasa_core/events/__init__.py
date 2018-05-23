@@ -367,17 +367,12 @@ class SlotSet(Event):
             if slot_key != "name":
                 slots.append(SlotSet(slot_key, slot_val))
 
-        if slots:
+        if len(slots) == 1:
+            return slots[0]
+        elif len(slots) > 1:
             return slots
         else:
             return None
-
-        # slot_key = first_key(parameters, default_key="name")
-        #
-        # if slot_key:
-        #     return SlotSet(slot_key, parameters[slot_key])
-        # else:
-        #     return None
 
     def as_dict(self):
         d = super(SlotSet, self).as_dict()
