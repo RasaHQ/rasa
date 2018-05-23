@@ -8,7 +8,7 @@ Interactive Learning
     This is the place to start if you have a great idea for a bot but you
     don't have any conversations to use as training data. We will assume that
     you've already thought of what intents and entities you need (check out the
-    `Rasa NLU <http://nlu.rasa.ai/tutorial.html#tutorial-a-simple-restaurant-search-bot>`_
+    `Rasa NLU <http://nlu.rasa.com/tutorial.html#tutorial-a-simple-restaurant-search-bot>`_
     docs if you don't know what those are).
 
     We're using this `Example Code on GitHub <https://github.com/RasaHQ/rasa_core/tree/master/examples/concertbot>`_.
