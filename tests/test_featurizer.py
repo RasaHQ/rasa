@@ -61,7 +61,8 @@ def test_label_tokenizer_featurizer_handles_on_non_existing_features():
     f.num_features = (len(f.user_vocab) +
                       len(f.slot_labels) +
                       len(f.bot_vocab))
-    encoded = f.encode({"a_d": 1.0, "prev_c_b": 0.0, "e": 1.0, "prev_action_listen": 1.0})
+    encoded = f.encode({"a_d": 1.0, "prev_c_b": 0.0, "e": 1.0,
+                        "prev_action_listen": 1.0})
     assert (encoded == np.array([1, 1, 0, 0])).all()
 
 
@@ -74,7 +75,8 @@ def test_label_tokenizer_featurizer_uses_correct_dtype_int():
     f.num_features = (len(f.user_vocab) +
                       len(f.slot_labels) +
                       len(f.bot_vocab))
-    encoded = f.encode({"a_d": 1.0, "prev_c_b": 0.0, "prev_action_listen": 1.0})
+    encoded = f.encode({"a_d": 1.0, "prev_c_b": 0.0,
+                        "prev_action_listen": 1.0})
     assert encoded.dtype == np.int32
 
 
@@ -87,7 +89,8 @@ def test_label_tokenizer_featurizer_uses_correct_dtype_float():
     f.num_features = (len(f.user_vocab) +
                       len(f.slot_labels) +
                       len(f.bot_vocab))
-    encoded = f.encode({"a_d": 0.2, "prev_c_b": 0.0, "prev_action_listen": 1.0})
+    encoded = f.encode({"a_d": 0.2, "prev_c_b": 0.0,
+                        "prev_action_listen": 1.0})
     assert encoded.dtype == np.float64
 
 
@@ -117,4 +120,3 @@ def test_label_tokenizer_featurizer_handles_probabilistic_intents():
     encoded = f.encode({"intent_a": 0.5, "prev_b": 0.2, "intent_d": 1.0,
                         "prev_action_listen": 1.0})
     assert (encoded == np.array([0.5, 1.0, 1.5, 0.0, 0.2])).all()
-
