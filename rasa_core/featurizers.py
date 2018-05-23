@@ -45,7 +45,7 @@ class SingleStateFeaturizer(object):
         """Helper method to init based on domain"""
         pass
 
-    def encode(self, states):
+    def encode(self, state):
         # type: (Optional[Text, float]) -> np.ndarray
         raise NotImplementedError("SingleStateFeaturizer must have "
                                   "the capacity to "
@@ -89,7 +89,7 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
                                  len(domain.entity_states))
         self.slot_feature_len = len(domain.slot_states)
 
-    def encode(self, states):
+    def encode(self, state):
         # type: (Optional[Text, float]) -> np.ndarray
         """Returns a binary vector indicating which features are active.
 
@@ -110,7 +110,7 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
                             "was not prepared "
                             "before encoding.")
 
-        if states is None or None in states:
+        if state is None or None in state:
             return np.ones(self.num_features, dtype=np.int32) * -1
         else:
             # we are going to use floats and convert to int later if possible
@@ -119,7 +119,7 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
             best_intent = None
             best_intent_prob = 0.0
 
-            for state_name, prob in states.items():
+            for state_name, prob in state.items():
                 if state_name.startswith('intent_'):
                     if prob >= best_intent_prob:
                         best_intent = state_name
@@ -164,7 +164,7 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
 class ProbabilisticSingleStateFeaturizer(BinarySingleStateFeaturizer):
     """Uses intent probabilities of the NLU and feeds them into the model."""
 
-    def encode(self, states):
+    def encode(self, state):
         # type: (Optional[Text, float]) -> np.ndarray
         """Returns a binary vector indicating active features,
         but with intent features given with a probability.
@@ -187,12 +187,12 @@ class ProbabilisticSingleStateFeaturizer(BinarySingleStateFeaturizer):
                             "was not prepared "
                             "before encoding.")
 
-        if states is None or None in states:
+        if state is None or None in state:
             return np.ones(self.num_features, dtype=np.int32) * -1
         else:
 
             used_features = np.zeros(self.num_features, dtype=np.float)
-            for state, value in states.items():
+            for state, value in state.items():
                 if state in self.input_state_map:
                     idx = self.input_state_map[state]
                     used_features[idx] = value
@@ -269,35 +269,35 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
         self.user_feature_len = len(self.user_vocab)
         self.slot_feature_len = len(self.slot_labels)
 
-    def encode(self, states):
+    def encode(self, state):
         # type: (Optional[Text, float]) -> np.ndarray
         if not self.num_features:
             raise Exception("LabelTokenizerSingleStateFeaturizer "
                             "was not prepared before encoding.")
 
-        if states is None or None in states:
+        if state is None or None in state:
             return np.ones(self.num_features, dtype=int) * -1
 
         used_features = np.zeros(self.num_features, dtype=int)
-        for state_name, prob in states.items():
+        for state_name, prob in state.items():
 
             if state_name in self.user_labels:
-                if PREV_PREFIX + ACTION_LISTEN_NAME in states:
+                if PREV_PREFIX + ACTION_LISTEN_NAME in state:
                     # else we predict next action from bot action and memory
                     for t in state_name.split(self.split_symbol):
-                        used_features[self.user_vocab[t]] += 1
+                        used_features[self.user_vocab[t]] += prob
 
             elif state_name in self.slot_labels:
                 offset = len(self.user_vocab)
                 idx = self.slot_labels.index(state_name)
-                used_features[offset + idx] += 1
+                used_features[offset + idx] += prob
 
             elif state_name[len(PREV_PREFIX):] in self.bot_labels:
                 action_name = state_name[len(PREV_PREFIX):]
                 for t in action_name.split(self.split_symbol):
                     offset = len(self.user_vocab) + len(self.slot_labels)
                     idx = self.bot_vocab[t]
-                    used_features[offset + idx] += 1
+                    used_features[offset + idx] += prob
 
             else:
                 logger.warning(
@@ -321,10 +321,11 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
 
 class TrackerFeaturizer(object):
     """Base class for actual tracker featurizers"""
-    def __init__(self, state_featurizer=None):
+    def __init__(self, state_featurizer=None, binary_flag=True):
         # type: (Optional[SingleStateFeaturizer]) -> None
 
         self.state_featurizer = state_featurizer or SingleStateFeaturizer()
+        self.binary_flag = binary_flag
 
     def _pad_states(self, states):
         return states
@@ -373,6 +374,34 @@ class TrackerFeaturizer(object):
         y = np.array(labels).squeeze()
 
         return y
+
+    def _create_states(self, tracker, domain):
+        states = domain.states_for_tracker_history(tracker)
+        if self.binary_flag:
+            print('--------')
+            print(states)
+            bin_states = []
+            for state in states:
+                bin_state = dict()
+                best_intent = None
+                best_intent_prob = 0.0
+                for state_name, prob in state.items():
+                    if state_name.startswith('intent_'):
+                        if prob >= best_intent_prob:
+                            best_intent = state_name
+                            best_intent_prob = prob
+                    else:
+                        bin_state[state_name] = int(prob)
+
+                if best_intent is not None:
+                    # finding the maximum confidence intent and
+                    # appending it to the states val
+                    bin_state[best_intent] = 1
+
+                bin_states.append(bin_state)
+            print(bin_states)
+            exit()
+        return states
 
     def training_states_and_actions(
             self,
@@ -447,9 +476,10 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
     Training data is padded up to the length of the longest
     dialogue with -1"""
 
-    def __init__(self, state_featurizer):
+    def __init__(self, state_featurizer, binary_flag=True):
         # type: (SingleStateFeaturizer) -> None
-        super(FullDialogueTrackerFeaturizer, self).__init__(state_featurizer)
+        super(FullDialogueTrackerFeaturizer, self).__init__(state_featurizer,
+                                                            binary_flag)
 
         self.max_len = None
 
@@ -478,7 +508,8 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         trackers_as_actions = []
 
         for tracker in trackers:
-            states = domain.states_for_tracker_history(tracker)
+
+            states = self._create_states(tracker, domain)
 
             delete_first_state = False
             actions = []
@@ -516,7 +547,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
                           ):
         # type: (...) -> List[List[Dict[Text, float]]]
 
-        trackers_as_states = [domain.states_for_tracker_history(tracker)
+        trackers_as_states = [self._create_states(tracker, domain)
                               for tracker in trackers]
 
         return trackers_as_states
@@ -530,9 +561,10 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
     Training data is padded up to the max_history with -1"""
 
     def __init__(self, state_featurizer=None,
-                 max_history=5, remove_duplicates=True):
+                 max_history=5, remove_duplicates=True, binary_flag=True):
         # type: (Optional(SingleStateFeaturizer), int, bool) -> None
-        super(MaxHistoryTrackerFeaturizer, self).__init__(state_featurizer)
+        super(MaxHistoryTrackerFeaturizer, self).__init__(state_featurizer,
+                                                          binary_flag)
 
         self.max_history = max_history
 
@@ -566,7 +598,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         trackers_as_actions = []
 
         for tracker in trackers:
-            states = domain.states_for_tracker_history(tracker)
+            states = self._create_states(tracker, domain)
 
             idx = 0
             for event in tracker.applied_events():
@@ -598,7 +630,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                           ):
         # type: (...) -> List[List[Dict[Text, float]]]
 
-        trackers_as_states = [domain.states_for_tracker_history(tracker)
+        trackers_as_states = [self._create_states(tracker, domain)
                               for tracker in trackers]
         trackers_as_states = [self.slice_state_history(states,
                                                        self.max_history)
