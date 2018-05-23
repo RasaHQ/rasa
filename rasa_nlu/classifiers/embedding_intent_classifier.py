@@ -427,10 +427,12 @@ class EmbeddingIntentClassifier(Component):
                 # add negatives
                 batch_b = self._create_batch_b(batch_pos_b, intents_for_b)
 
-                sess_out = self.session.run({'loss': loss, 'train_op': train_op},
-                                            feed_dict={self.a_in: batch_a,
-                                                       self.b_in: batch_b,
-                                                       is_training: True})
+                sess_out = self.session.run(
+                        {'loss': loss, 'train_op': train_op},
+                        feed_dict={self.a_in: batch_a,
+                                   self.b_in: batch_b,
+                                   is_training: True}
+                )
                 ep_loss += sess_out.get('loss') / batches_per_epoch
 
             if self.calc_acc_on_num_examples:
