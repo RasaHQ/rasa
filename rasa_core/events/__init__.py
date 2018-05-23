@@ -364,8 +364,7 @@ class SlotSet(Event):
     def _from_story_string(cls, parameters):
         slots = []
         for slot_key, slot_val in parameters.items():
-            if slot_key != "name":
-                slots.append(SlotSet(slot_key, slot_val))
+            slots.append(SlotSet(slot_key, slot_val))
 
         if len(slots) == 1:
             return slots[0]
