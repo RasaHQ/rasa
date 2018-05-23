@@ -273,7 +273,7 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
 class TrackerFeaturizer(object):
     """Base class for actual tracker featurizers"""
     def __init__(self, state_featurizer=None, binary_intent_prob=True):
-        # type: (Optional[SingleStateFeaturizer]) -> None
+        # type: (Optional[SingleStateFeaturizer], bool) -> None
 
         self.state_featurizer = state_featurizer or SingleStateFeaturizer()
         self.binary_intent_prob = binary_intent_prob
@@ -428,7 +428,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
     dialogue with -1"""
 
     def __init__(self, state_featurizer, binary_intent_prob=True):
-        # type: (SingleStateFeaturizer) -> None
+        # type: (SingleStateFeaturizer, bool) -> None
         super(FullDialogueTrackerFeaturizer, self).__init__(state_featurizer,
                                                             binary_intent_prob)
 
@@ -511,9 +511,9 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
     for prediction.
     Training data is padded up to the max_history with -1"""
 
-    def __init__(self, state_featurizer=None,
-                 max_history=5, remove_duplicates=True, binary_intent_prob=True):
-        # type: (Optional(SingleStateFeaturizer), int, bool) -> None
+    def __init__(self, state_featurizer=None, max_history=5,
+                 remove_duplicates=True, binary_intent_prob=True):
+        # type: (Optional(SingleStateFeaturizer), int, bool, bool) -> None
         super(MaxHistoryTrackerFeaturizer, self).__init__(state_featurizer,
                                                           binary_intent_prob)
 
