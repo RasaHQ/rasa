@@ -214,6 +214,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 max_confidence = confidence
                 result = probabilities
                 best_policy_name = 'policy_{}_{}'.format(i, type(p).__name__)
+
         logger.debug("Predicted next action using {}"
                      "".format(best_policy_name))
         return result
