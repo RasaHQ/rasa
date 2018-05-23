@@ -12,7 +12,7 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 Added
 -----
 - A new entity extraction component using predefined entity lists: ``ner_phrase_matcher``
-
+- doc link to a community contribution for Rasa NLU in Chinese
 Changed
 -------
 
