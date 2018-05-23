@@ -53,7 +53,9 @@ class MemoizationPolicy(Policy):
         max_history = max_history or cls.MAX_HISTORY_DEFAULT
         # Memoization policy always uses MaxHistoryTrackerFeaturizer
         # without state_featurizer
-        return MaxHistoryTrackerFeaturizer(None, max_history, binary_intent_prob=True)
+        return MaxHistoryTrackerFeaturizer(state_featurizer=None,
+                                           max_history=max_history,
+                                           binary_intent_prob=True)
 
     def __init__(self,
                  featurizer=None,  # type: Optional[TrackerFeaturizer]
