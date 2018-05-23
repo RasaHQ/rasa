@@ -61,6 +61,9 @@ how you can migrate from one version to another.
   featurizer will be used. The `MemoizationPolicy` allows passing in the
   `max_history` parameter directly, without creating a featurizer.
 
+- the ListSlot now stores a list of entities (with the same name)
+  present in an utterance
+
 
 0.7.x to 0.8.0
 --------------

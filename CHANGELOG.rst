@@ -37,6 +37,7 @@ Removed
 
 Fixed
 -----
+- List slot is now populated with a list
 - Slack connector: ``slack_channel`` kwarg is used to send messages either back to the user or to a static channel
 - properly log to a file when using the ``run`` script
 - documentation fix on stories
