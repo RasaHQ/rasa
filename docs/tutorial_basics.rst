@@ -49,6 +49,24 @@ The files that are important for this tutorial are described below:
 Let's go through each of them! Just copy the example code below into each of
 the relevant files as you go along.
 
+Setup
+^^^^^
+
+For this tutorial to work, you need to have ``rasa_core`` installed,
+``rasa_nlu``, as well as ``spaCy``:
+
+.. code-block::
+
+  pip install rasa_nlu[spacy]
+  pip install rasa_core
+
+You'll also need the english language model:
+
+.. code-block::
+
+  python -m spacy download en_core_web_md
+  python -m spacy link en_core_web_md en
+
 1. Define a Domain
 ^^^^^^^^^^^^^^^^^^
 

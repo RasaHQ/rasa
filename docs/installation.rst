@@ -56,6 +56,14 @@ We use Rasa NLU for intent classification & entity extraction. To get it, run
 
     pip install rasa_nlu[spacy]
 
+Also make sure to install a language model for the language you need, e.g.
+
+
+.. code-block:: bash
+
+    python -m spacy download en_core_web_md
+    python -m spacy link en_core_web_md en
+
 
 Full instructions can be found `here <https://nlu.rasa.ai/installation.html>`_.
 
