@@ -312,4 +312,8 @@ class StoryFileReader(object):
         if parsed is None:
             raise StoryParseError("Unknown event '{}'. It is Neither an event "
                                   "nor an action).".format(event_name))
-        self.current_step_builder.add_event(parsed)
+        if isinstance(parsed, list):
+            for p in parsed:
+                self.current_step_builder.add_event(p)
+        else:
+            self.current_step_builder.add_event(parsed)
