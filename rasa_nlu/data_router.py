@@ -311,14 +311,11 @@ class DataRouter(object):
         def training_callback(model_path):
             model_dir = os.path.basename(os.path.normpath(model_path))
             self.project_store[project].update(model_dir)
-            self._current_training_processes = \
-                self._current_training_processes - 1
-            self.project_store[project].current_training_processes = \
-                self.project_store[project].current_training_processes \
-                - 1
-            if self.project_store[project].status == 1 \
-                and self.project_store[project].current_training_processes \
-                    == 0:
+            self._current_training_processes -= 1
+            self.project_store[project].current_training_processes -= 1
+            if (self.project_store[project].status == 1
+                and self.project_store[project].current_training_processes
+                    == 0):
                 self.project_store[project].status = 0
             return model_dir
 
@@ -326,22 +323,18 @@ class DataRouter(object):
             logger.warn(failure)
             target_project = self.project_store.get(
                     failure.value.failed_target_project)
-            self._current_training_processes = \
-                self._current_training_processes - 1
-            self.project_store[project].current_training_processes = \
-                self.project_store[project].current_training_processes - 1
-            if target_project \
-                and self.project_store[project].current_training_processes \
-                    == 0:
+            self._current_training_processes -= 1
+            self.project_store[project].current_training_processes -= 1
+            if (target_project
+                and self.project_store[project].current_training_processes
+                    == 0):
                 target_project.status = 0
             return failure
 
         logger.debug("New training queued")
 
-        self._current_training_processes = \
-            self._current_training_processes + 1
-        self.project_store[project].current_training_processes = \
-            self.project_store[project].current_training_processes + 1
+        self._current_training_processes += 1
+        self.project_store[project].current_training_processes += 1
 
         result = self.pool.submit(do_train_in_worker,
                                   train_config,
