@@ -147,15 +147,14 @@ def collect_story_predictions(resource_name, policy_model_path, nlu_model_path,
                 actions_between_utterances.append(event.action_name)
 
         if last_prediction:
-
-            preds.extend(last_prediction)
+            story["predicted"].extend(last_prediction)
             preds_padding = (len(actions_between_utterances) -
                              len(last_prediction))
 
             story["predicted"].extend(["None"] * preds_padding)
             preds.extend(story["predicted"])
 
-            actual.extend(actions_between_utterances)
+            story["actual"].extend(actions_between_utterances)
             actual_padding = (len(last_prediction) -
                               len(actions_between_utterances))
 
@@ -227,7 +226,7 @@ if __name__ == '__main__':
     run_story_evaluation(cmdline_args.stories,
                          cmdline_args.core,
                          cmdline_args.nlu,
-                         cmdline_args.failed,
                          cmdline_args.max_stories,
+                         cmdline_args.failed,
                          cmdline_args.output)
     logger.info("Finished evaluation")
