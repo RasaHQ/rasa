@@ -432,8 +432,8 @@ intent_classifier_tensorflow_embedding
     modeling hierarchical intent structure, use these flags:
 
     - tokenization of intent labels:
-        - ``intent_tokenization_flag`` if ``true`` the algorithm will split the intent labels into tokens and use bag-of-words representations for them;
-        - ``intent_split_symbol`` sets the delimiter string to split the intent labels. Default ``_``
+        - ``intent_tokenization_flag`` if ``true`` the algorithm will split the intent labels into tokens and use bag-of-words representations for them, default ``false``;
+        - ``intent_split_symbol`` sets the delimiter string to split the intent labels, default ``_``.
 
 
     The algorithm also has hyperparameters to control:
@@ -458,7 +458,8 @@ intent_classifier_tensorflow_embedding
     .. note:: For ``cosine`` similarity ``mu_pos`` and ``mu_neg`` should be between ``-1`` and ``1``.
 
     .. note:: There is an option to use linearly increasing batch size. The idea comes from `<https://arxiv.org/abs/1711.00489>`_.
-              In order to do it pass a list to ``batch_size``, e.g. ``"batch_size": [64, 256]``.
+              In order to do it pass a list to ``batch_size``, e.g. ``"batch_size": [64, 256]`` (default behaviour).
+              If constant ``batch_size`` is required, pass an ``int``, e.g. ``"batch_size": 64``.
 
     In the config, you can specify these parameters:
 
@@ -471,7 +472,7 @@ intent_classifier_tensorflow_embedding
           "hidden_layer_size_a": [256, 128]
           "num_hidden_layers_b": 0
           "hidden_layer_size_b": []
-          "batch_size": 64
+          "batch_size": [64, 256]
           "epochs": 300
           # embedding parameters
           "embed_dim": 20

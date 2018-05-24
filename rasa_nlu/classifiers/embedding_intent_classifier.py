@@ -65,8 +65,8 @@ class EmbeddingIntentClassifier(Component):
         "hidden_layer_size_a": [256, 128],
         "num_hidden_layers_b": 0,
         "hidden_layer_size_b": [],
-        "batch_size": 64,
-        "epochs": 300,
+        "batch_size": [64, 256],
+        "epochs": 3,
 
         # embedding parameters
         "embed_dim": 20,
