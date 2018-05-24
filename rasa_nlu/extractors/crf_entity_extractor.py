@@ -3,7 +3,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import json
 import logging
 import os
 
@@ -96,8 +95,8 @@ class CRFEntityExtractor(EntityExtractor):
     def _check_pos_features_and_spacy(self):
         import itertools
         features = self.component_config.get("features", [])
-        fts = list(itertools.chain.from_iterable(features))
-        self.pos_features = 'pos' not in set(fts) and 'pos2' not in set(fts)
+        fts = set(itertools.chain.from_iterable(features))
+        self.pos_features = 'pos' not in fts and 'pos2' not in fts
         if self.pos_features:
             self._check_spacy()
 
@@ -429,9 +428,7 @@ class CRFEntityExtractor(EntityExtractor):
                           ):
         # type: (...) -> List[Tuple[Text, Text, Text, Text]]
         """Convert json examples to format of underlying crfsuite."""
-        
-        print(json.dumps(self.defaults, indent=4))
-        print(json.dumps(self.component_config, indent=4))
+
         if self.pos_features:
             from spacy.gold import GoldParse
 
