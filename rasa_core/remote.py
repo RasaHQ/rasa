@@ -11,6 +11,7 @@ import time
 
 import requests
 from future.moves.urllib.parse import quote_plus
+from requests.exceptions import RequestException
 from typing import Callable, Union
 from typing import Text, List, Optional, Dict, Any
 
@@ -144,7 +145,7 @@ class RasaCoreClient(object):
                 if response.status_code == 200:
                     logger.debug("Finished uploading")
                     return response.json()
-            except Exception as e:
+            except RequestException as e:
                 logger.warn("Failed to send model upload request. "
                             "{}".format(e))
 
@@ -153,10 +154,11 @@ class RasaCoreClient(object):
                 # might be unavailable / not started yet
                 time.sleep(2)
 
-        logger.warn("Got a bad response from rasa core while uploading "
-                    "the model (Status: {} "
-                    "Response: {}".format(response.status_code,
-                                          response.text))
+        if response:
+            logger.warn("Got a bad response from rasa core while uploading "
+                        "the model (Status: {} "
+                        "Response: {})".format(response.status_code,
+                                               response.text))
         return None
 
     def continue_core(self, action_name, events, sender_id):
