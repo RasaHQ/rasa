@@ -15,6 +15,7 @@ Added
 - predict empty string instead of None for intent name
 - update default parameters for tensorflow embedding classifier
 - do not predict anything if feature vector contains only zeros in tensorflow embedding classifier
+- change persistence keywords in tensorflow embedding classifier (make previously trained models impossible to load)
 
 Changed
 -------
