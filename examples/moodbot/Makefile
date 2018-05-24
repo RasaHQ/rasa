@@ -8,7 +8,7 @@ help:
 
 train-nlu:
 	python -m rasa_nlu.train -c nlu_model_config.yml --fixed_model_name current \
-	       --data ./data/nlu.md --path models/nlu
+	       --data ./data/nlu.md --path models/ --project nlu
 
 train-core:
 	python -m rasa_core.train -s data/stories.md -d domain.yml -o models/dialogue --epochs 300

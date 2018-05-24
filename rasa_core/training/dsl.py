@@ -16,7 +16,7 @@ from typing import Optional, List, Text, Any, Dict
 
 from rasa_core import utils
 from rasa_core.events import (
-    ActionExecuted, UserUttered, Event)
+    ActionExecuted, UserUttered, Event, SlotSet)
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.training.structures import (
     Checkpoint, STORY_START, StoryStep)
@@ -305,11 +305,19 @@ class StoryFileReader(object):
         self.current_step_builder.add_user_messages(parsed_messages)
 
     def add_event(self, event_name, parameters):
-        if "name" not in parameters:
+
+        # add 'name' only if event is not a SlotSet,
+        # because there might be a slot with slot_key='name'
+        if "name" not in parameters and event_name != SlotSet.type_name:
             parameters["name"] = event_name
+
         parsed = Event.from_story_string(event_name, parameters,
                                          default=ActionExecuted)
         if parsed is None:
             raise StoryParseError("Unknown event '{}'. It is Neither an event "
                                   "nor an action).".format(event_name))
-        self.current_step_builder.add_event(parsed)
+        if isinstance(parsed, list):
+            for p in parsed:
+                self.current_step_builder.add_event(p)
+        else:
+            self.current_step_builder.add_event(parsed)

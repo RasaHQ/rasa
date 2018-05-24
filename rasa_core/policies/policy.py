@@ -74,7 +74,7 @@ class Policy(object):
 
     def featurize_for_training(
             self,
-            trackers,  # type: List[DialogueStateTracker]
+            training_trackers,  # type: List[DialogueStateTracker]
             domain,  # type: Domain
             **kwargs  # type: **Any
     ):
@@ -83,7 +83,7 @@ class Policy(object):
         The trackers, consisting of multiple turns, will be transformed
         into a float vector which can be used by a ML model."""
 
-        training_data = self.featurizer.featurize_trackers(trackers,
+        training_data = self.featurizer.featurize_trackers(training_trackers,
                                                            domain)
 
         max_training_samples = kwargs.get('max_training_samples')
