@@ -206,7 +206,7 @@ class SimplePolicyEnsemble(PolicyEnsemble):
         # type: (DialogueStateTracker, Domain) -> List[float]
         result = None
         max_confidence = -1
-        best_policy_name = ''
+        best_policy_name = None
         for i, p in enumerate(self.policies):
             probabilities = p.predict_action_probabilities(tracker, domain)
             confidence = np.max(probabilities)

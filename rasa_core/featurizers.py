@@ -46,14 +46,14 @@ class SingleStateFeaturizer(object):
         pass
 
     def encode(self, state):
-        # type: (Optional[Text, float]) -> np.ndarray
+        # type: (Dict[Text, float]) -> np.ndarray
         raise NotImplementedError("SingleStateFeaturizer must have "
                                   "the capacity to "
                                   "encode states to a feature vector")
 
     @staticmethod
     def action_as_one_hot(action, domain):
-        # type: (Optional[Text, float], Domain) -> np.ndarray
+        # type: (Text, Domain) -> np.ndarray
         if action is None:
             return np.ones(domain.num_actions, dtype=int) * -1
 
@@ -90,10 +90,9 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
         self.slot_feature_len = len(domain.slot_states)
 
     def encode(self, state):
-        # type: (Optional[Text, float]) -> np.ndarray
+        # type: (Dict[Text, float]) -> np.ndarray
         """Returns a binary vector indicating which features are active.
 
-        If TrackerFeaturizer.binary_intent_prob is True (default behaviour):
             Given a dictionary of states (e.g. 'intent_greet',
             'prev_action_listen',...) return a binary vector indicating which
             features of `self.input_features` are in the bag. NB it's a
@@ -102,16 +101,15 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
             For example with two active features out of five possible features
             this would return a vector like `[0 0 1 0 1]`
 
-        If TrackerFeaturizer.binary_intent_prob is False:
-            intent features are given with a probability.
-
-             For example with two active features and two uncertain intents out
+            If intent features are given with a probability, for example
+            with two active features and two uncertain intents out
             of five possible features this would return a vector
-            like `[0.3, 0.7, 1, 0, 1]`.
+            like `[0.3, 0.7, 1.0, 0, 1.0]`.
 
-        If this is just a padding vector we set all values to `-1`.
-        padding vectors are specified by a `None` or `[None]`
-        value for states."""
+            If this is just a padding vector we set all values to `-1`.
+            padding vectors are specified by a `None` or `[None]`
+            value for states.
+        """
 
         if not self.num_features:
             raise Exception("BinarySingleStateFeaturizer "
@@ -156,16 +154,16 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
     :param Text split_symbol:
       The symbol that separates words in intets and action names.
 
-    :param bool share_vocab:
+    :param bool use_shared_vocab:
       The flag that specifies if to create the same vocabulary for
       user intents and bot actions."""
 
-    def __init__(self, share_vocab=False, split_symbol='_'):
+    def __init__(self, use_shared_vocab=False, split_symbol='_'):
         # type: (bool, Text) -> None
         """inits vocabulary for label bag of words representation"""
         super(LabelTokenizerSingleStateFeaturizer, self).__init__()
 
-        self.share_vocab = share_vocab
+        self.use_shared_vocab = use_shared_vocab
         self.split_symbol = split_symbol
 
         self.num_features = None
@@ -196,7 +194,7 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
         self.slot_labels = domain.slot_states
         self.bot_labels = domain.action_names
 
-        if self.share_vocab:
+        if self.use_shared_vocab:
             self.bot_vocab = self._create_label_token_dict(self.bot_labels +
                                                            self.user_labels,
                                                            self.split_symbol)
@@ -215,7 +213,7 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
         self.slot_feature_len = len(self.slot_labels)
 
     def encode(self, state):
-        # type: (Optional[Text, float]) -> np.ndarray
+        # type: (Dict[Text, float]) -> np.ndarray
         if not self.num_features:
             raise Exception("LabelTokenizerSingleStateFeaturizer "
                             "was not prepared before encoding.")
@@ -272,11 +270,43 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
 
 class TrackerFeaturizer(object):
     """Base class for actual tracker featurizers"""
-    def __init__(self, state_featurizer=None, binary_intent_prob=True):
+    def __init__(self, state_featurizer=None, use_intent_probabilites=False):
         # type: (Optional[SingleStateFeaturizer], bool) -> None
 
         self.state_featurizer = state_featurizer or SingleStateFeaturizer()
-        self.binary_intent_prob = binary_intent_prob
+        self.use_intent_probabilites = use_intent_probabilites
+
+    def _create_states(self, tracker, domain):
+        """Create states: a list of dictionaries.
+            If use_intent_probabilites is False (default behaviour),
+            pick the most probable intent out of all provided ones and
+            set its probability to 1.0, while all the others to 0.0."""
+        states = domain.states_for_tracker_history(tracker)
+
+        if self.use_intent_probabilites:
+            bin_states = []
+            for state in states:
+                bin_state = dict()
+                best_intent = None
+                best_intent_prob = 0.0
+                for state_name, prob in state.items():
+                    if state_name.startswith('intent_'):
+                        if prob >= best_intent_prob:
+                            # finding the maximum confidence intent
+                            best_intent = state_name
+                            best_intent_prob = prob
+                    else:
+                        bin_state[state_name] = prob
+
+                if best_intent is not None:
+                    # appending the maximum confidence intent
+                    # to the binary states with prob 1.0
+                    bin_state[best_intent] = 1.0
+
+                bin_states.append(bin_state)
+            states = bin_states
+
+        return states
 
     def _pad_states(self, states):
         return states
@@ -325,34 +355,6 @@ class TrackerFeaturizer(object):
         y = np.array(labels).squeeze()
 
         return y
-
-    def _create_states(self, tracker, domain):
-        states = domain.states_for_tracker_history(tracker)
-
-        if self.binary_intent_prob:
-            bin_states = []
-            for state in states:
-                bin_state = dict()
-                best_intent = None
-                best_intent_prob = 0.0
-                for state_name, prob in state.items():
-                    if state_name.startswith('intent_'):
-                        if prob >= best_intent_prob:
-                            # finding the maximum confidence intent
-                            best_intent = state_name
-                            best_intent_prob = prob
-                    else:
-                        bin_state[state_name] = prob
-
-                if best_intent is not None:
-                    # appending the maximum confidence intent
-                    # to the binary states with prob 1.0
-                    bin_state[best_intent] = 1.0
-
-                bin_states.append(bin_state)
-            states = bin_states
-
-        return states
 
     def training_states_and_actions(
             self,
@@ -427,10 +429,10 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
     Training data is padded up to the length of the longest
     dialogue with -1"""
 
-    def __init__(self, state_featurizer, binary_intent_prob=True):
+    def __init__(self, state_featurizer, use_intent_probabilites=False):
         # type: (SingleStateFeaturizer, bool) -> None
         super(FullDialogueTrackerFeaturizer, self).__init__(state_featurizer,
-                                                            binary_intent_prob)
+                                                            use_intent_probabilites)
 
         self.max_len = None
 
@@ -512,10 +514,10 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
     Training data is padded up to the max_history with -1"""
 
     def __init__(self, state_featurizer=None, max_history=5,
-                 remove_duplicates=True, binary_intent_prob=True):
+                 remove_duplicates=True, use_intent_probabilites=False):
         # type: (Optional(SingleStateFeaturizer), int, bool, bool) -> None
         super(MaxHistoryTrackerFeaturizer, self).__init__(state_featurizer,
-                                                          binary_intent_prob)
+                                                          use_intent_probabilites)
 
         self.max_history = max_history
 
