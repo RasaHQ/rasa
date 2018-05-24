@@ -45,15 +45,15 @@ class SingleStateFeaturizer(object):
         """Helper method to init based on domain"""
         pass
 
-    def encode(self, states):
-        # type: (Optional[Text, float]) -> np.ndarray
+    def encode(self, state):
+        # type: (Dict[Text, float]) -> np.ndarray
         raise NotImplementedError("SingleStateFeaturizer must have "
                                   "the capacity to "
                                   "encode states to a feature vector")
 
     @staticmethod
     def action_as_one_hot(action, domain):
-        # type: (Optional[Text, float], Domain) -> np.ndarray
+        # type: (Text, Domain) -> np.ndarray
         if action is None:
             return np.ones(domain.num_actions, dtype=int) * -1
 
@@ -89,118 +89,61 @@ class BinarySingleStateFeaturizer(SingleStateFeaturizer):
                                  len(domain.entity_states))
         self.slot_feature_len = len(domain.slot_states)
 
-    def encode(self, states):
-        # type: (Optional[Text, float]) -> np.ndarray
+    def encode(self, state):
+        # type: (Dict[Text, float]) -> np.ndarray
         """Returns a binary vector indicating which features are active.
 
-        Given a dictionary of states (e.g. 'intent_greet',
-        'prev_action_listen',...) return a binary vector indicating which
-        features of `self.input_features` are in the bag. NB it's a
-        regular double precision float array type.
+            Given a dictionary of states (e.g. 'intent_greet',
+            'prev_action_listen',...) return a binary vector indicating which
+            features of `self.input_features` are in the bag. NB it's a
+            regular double precision float array type.
 
-        For example with two active features out of five possible features
-        this would return a vector like `[0 0 1 0 1]`
+            For example with two active features out of five possible features
+            this would return a vector like `[0 0 1 0 1]`
 
-        If this is just a padding vector we set all values to `-1`.
-        padding vectors are specified by a `None` or `[None]`
-        value for states."""
+            If intent features are given with a probability, for example
+            with two active features and two uncertain intents out
+            of five possible features this would return a vector
+            like `[0.3, 0.7, 1.0, 0, 1.0]`.
+
+            If this is just a padding vector we set all values to `-1`.
+            padding vectors are specified by a `None` or `[None]`
+            value for states.
+        """
 
         if not self.num_features:
             raise Exception("BinarySingleStateFeaturizer "
                             "was not prepared "
                             "before encoding.")
 
-        if states is None or None in states:
+        if state is None or None in state:
             return np.ones(self.num_features, dtype=np.int32) * -1
-        else:
-            # we are going to use floats and convert to int later if possible
-            used_features = np.zeros(self.num_features, dtype=float)
-            using_only_ints = True
-            best_intent = None
-            best_intent_prob = 0.0
 
-            for state_name, prob in states.items():
-                if state_name.startswith('intent_'):
-                    if prob >= best_intent_prob:
-                        best_intent = state_name
-                        best_intent_prob = prob
-                elif state_name in self.input_state_map:
-                    if prob != 0.0:
-                        idx = self.input_state_map[state_name]
-                        used_features[idx] = prob
-                        using_only_ints = using_only_ints and utils.is_int(prob)
-                else:
-                    logger.debug(
-                            "Feature '{}' (value: '{}') could not be found in "
-                            "feature map. Make sure you added all intents and "
-                            "entities to the domain".format(state_name, prob))
-
-            if best_intent is not None:
-                # finding the maximum confidence intent and
-                # appending it to the states val
-                index_in_feature_list = self.input_state_map.get(best_intent)
-                if index_in_feature_list is not None:
-                    used_features[index_in_feature_list] = 1
-                else:
-                    logger.warning(
-                            "Couldn't set most probable feature '{}', "
-                            "it wasn't found in the feature list of the domain."
-                            " Make sure you added all intents and "
-                            "entities to the domain.".format(best_intent))
-
-            if using_only_ints:
-                # this is an optimization - saves us a bit of memory
-                return used_features.astype(np.int32)
+        # we are going to use floats and convert to int later if possible
+        used_features = np.zeros(self.num_features, dtype=np.float)
+        using_only_ints = True
+        for state_name, prob in state.items():
+            if state_name in self.input_state_map:
+                idx = self.input_state_map[state_name]
+                used_features[idx] = prob
+                using_only_ints = using_only_ints and utils.is_int(prob)
             else:
-                return used_features
+                logger.debug(
+                        "Feature '{}' (value: '{}') could not be found in "
+                        "feature map. Make sure you added all intents and "
+                        "entities to the domain".format(state_name, prob))
+
+        if using_only_ints:
+            # this is an optimization - saves us a bit of memory
+            return used_features.astype(np.int32)
+        else:
+            return used_features
 
     def create_encoded_all_actions(self, domain):
         # type: (Domain) -> np.ndarray
         """Create matrix with all actions from domain
             encoded in rows as bag of words."""
         return np.eye(domain.num_actions)
-
-
-class ProbabilisticSingleStateFeaturizer(BinarySingleStateFeaturizer):
-    """Uses intent probabilities of the NLU and feeds them into the model."""
-
-    def encode(self, states):
-        # type: (Optional[Text, float]) -> np.ndarray
-        """Returns a binary vector indicating active features,
-        but with intent features given with a probability.
-
-        Given a dictionary of states (e.g. 'intent_greet',
-        'prev_action_listen',...) and intent probabilities
-        from rasa_nlu, will be a binary vector indicating which features
-        of `self.input_features` are active.
-
-        For example with two active features and two uncertain intents out
-        of five possible features this would return a vector
-        like `[0.3, 0.7, 1, 0, 1]`.
-
-        If this is just a padding vector we set all values to `-1`.
-        padding vectors are specified by a `None` or `[None]`
-        value for states."""
-
-        if not self.num_features:
-            raise Exception("ProbabilisticSingleStateFeaturizer "
-                            "was not prepared "
-                            "before encoding.")
-
-        if states is None or None in states:
-            return np.ones(self.num_features, dtype=np.int32) * -1
-        else:
-
-            used_features = np.zeros(self.num_features, dtype=np.float)
-            for state, value in states.items():
-                if state in self.input_state_map:
-                    idx = self.input_state_map[state]
-                    used_features[idx] = value
-                else:
-                    logger.debug(
-                            "Found feature not in feature map. "
-                            "Name: {} Value: {}".format(state, value))
-            return used_features
 
 
 class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
@@ -211,16 +154,16 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
     :param Text split_symbol:
       The symbol that separates words in intets and action names.
 
-    :param bool share_vocab:
+    :param bool use_shared_vocab:
       The flag that specifies if to create the same vocabulary for
       user intents and bot actions."""
 
-    def __init__(self, share_vocab=False, split_symbol='_'):
+    def __init__(self, use_shared_vocab=False, split_symbol='_'):
         # type: (bool, Text) -> None
         """inits vocabulary for label bag of words representation"""
         super(LabelTokenizerSingleStateFeaturizer, self).__init__()
 
-        self.share_vocab = share_vocab
+        self.use_shared_vocab = use_shared_vocab
         self.split_symbol = split_symbol
 
         self.num_features = None
@@ -251,7 +194,7 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
         self.slot_labels = domain.slot_states
         self.bot_labels = domain.action_names
 
-        if self.share_vocab:
+        if self.use_shared_vocab:
             self.bot_vocab = self._create_label_token_dict(self.bot_labels +
                                                            self.user_labels,
                                                            self.split_symbol)
@@ -269,42 +212,48 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
         self.user_feature_len = len(self.user_vocab)
         self.slot_feature_len = len(self.slot_labels)
 
-    def encode(self, states):
-        # type: (Optional[Text, float]) -> np.ndarray
+    def encode(self, state):
+        # type: (Dict[Text, float]) -> np.ndarray
         if not self.num_features:
             raise Exception("LabelTokenizerSingleStateFeaturizer "
                             "was not prepared before encoding.")
 
-        if states is None or None in states:
-            return np.ones(self.num_features, dtype=int) * -1
+        if state is None or None in state:
+            return np.ones(self.num_features, dtype=np.int32) * -1
 
-        used_features = np.zeros(self.num_features, dtype=int)
-        for state_name, prob in states.items():
-
+        # we are going to use floats and convert to int later if possible
+        used_features = np.zeros(self.num_features, dtype=np.float)
+        using_only_ints = True
+        for state_name, prob in state.items():
+            using_only_ints = using_only_ints and utils.is_int(prob)
             if state_name in self.user_labels:
-                if PREV_PREFIX + ACTION_LISTEN_NAME in states:
+                if PREV_PREFIX + ACTION_LISTEN_NAME in state:
                     # else we predict next action from bot action and memory
                     for t in state_name.split(self.split_symbol):
-                        used_features[self.user_vocab[t]] += 1
+                        used_features[self.user_vocab[t]] += prob
 
             elif state_name in self.slot_labels:
                 offset = len(self.user_vocab)
                 idx = self.slot_labels.index(state_name)
-                used_features[offset + idx] += 1
+                used_features[offset + idx] += prob
 
             elif state_name[len(PREV_PREFIX):] in self.bot_labels:
                 action_name = state_name[len(PREV_PREFIX):]
                 for t in action_name.split(self.split_symbol):
                     offset = len(self.user_vocab) + len(self.slot_labels)
                     idx = self.bot_vocab[t]
-                    used_features[offset + idx] += 1
+                    used_features[offset + idx] += prob
 
             else:
                 logger.warning(
                     "Feature '{}' could not be found in "
                     "feature map.".format(state_name))
 
-        return used_features
+        if using_only_ints:
+            # this is an optimization - saves us a bit of memory
+            return used_features.astype(np.int32)
+        else:
+            return used_features
 
     def create_encoded_all_actions(self, domain):
         # type: (Domain) -> np.ndarray
@@ -321,10 +270,47 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
 
 class TrackerFeaturizer(object):
     """Base class for actual tracker featurizers"""
-    def __init__(self, state_featurizer=None):
-        # type: (Optional[SingleStateFeaturizer]) -> None
+    def __init__(self, state_featurizer=None, use_intent_probabilities=False):
+        # type: (Optional[SingleStateFeaturizer], bool) -> None
 
         self.state_featurizer = state_featurizer or SingleStateFeaturizer()
+        self.use_intent_probabilities = use_intent_probabilities
+
+    def _create_states(self, tracker, domain):
+        """Create states: a list of dictionaries.
+            If use_intent_probabilities is False (default behaviour),
+            pick the most probable intent out of all provided ones and
+            set its probability to 1.0, while all the others to 0.0."""
+        states = domain.states_for_tracker_history(tracker)
+
+        if not self.use_intent_probabilities:
+            bin_states = []
+            for state in states:
+                # copy state dict to preserve internal order of keys
+                bin_state = dict(state)
+                best_intent = None
+                best_intent_prob = -1.0
+                for state_name, prob in state.items():
+                    if state_name.startswith('intent_'):
+                        if prob > best_intent_prob:
+                            # finding the maximum confidence intent
+                            if best_intent is not None:
+                                # delete previous best intent
+                                del bin_state[best_intent]
+                            best_intent = state_name
+                            best_intent_prob = prob
+                        else:
+                            # delete other intents
+                            del bin_state[state_name]
+
+                if best_intent is not None:
+                    # set the confidence of best intent to 1.0
+                    bin_state[best_intent] = 1.0
+
+                bin_states.append(bin_state)
+            states = bin_states
+
+        return states
 
     def _pad_states(self, states):
         return states
@@ -447,10 +433,11 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
     Training data is padded up to the length of the longest
     dialogue with -1"""
 
-    def __init__(self, state_featurizer):
-        # type: (SingleStateFeaturizer) -> None
-        super(FullDialogueTrackerFeaturizer, self).__init__(state_featurizer)
-
+    def __init__(self, state_featurizer, use_intent_probabilities=False):
+        # type: (SingleStateFeaturizer, bool) -> None
+        super(FullDialogueTrackerFeaturizer, self).__init__(
+                state_featurizer, use_intent_probabilities
+        )
         self.max_len = None
 
     @staticmethod
@@ -478,7 +465,8 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         trackers_as_actions = []
 
         for tracker in trackers:
-            states = domain.states_for_tracker_history(tracker)
+
+            states = self._create_states(tracker, domain)
 
             delete_first_state = False
             actions = []
@@ -516,7 +504,7 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
                           ):
         # type: (...) -> List[List[Dict[Text, float]]]
 
-        trackers_as_states = [domain.states_for_tracker_history(tracker)
+        trackers_as_states = [self._create_states(tracker, domain)
                               for tracker in trackers]
 
         return trackers_as_states
@@ -529,13 +517,13 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
     for prediction.
     Training data is padded up to the max_history with -1"""
 
-    def __init__(self, state_featurizer=None,
-                 max_history=5, remove_duplicates=True):
-        # type: (Optional(SingleStateFeaturizer), int, bool) -> None
-        super(MaxHistoryTrackerFeaturizer, self).__init__(state_featurizer)
-
+    def __init__(self, state_featurizer=None, max_history=5,
+                 remove_duplicates=True, use_intent_probabilities=False):
+        # type: (Optional(SingleStateFeaturizer), int, bool, bool) -> None
+        super(MaxHistoryTrackerFeaturizer, self).__init__(
+                state_featurizer, use_intent_probabilities
+        )
         self.max_history = max_history
-
         self.remove_duplicates = remove_duplicates
 
     @staticmethod
@@ -566,7 +554,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         trackers_as_actions = []
 
         for tracker in trackers:
-            states = domain.states_for_tracker_history(tracker)
+            states = self._create_states(tracker, domain)
 
             idx = 0
             for event in tracker.applied_events():
@@ -598,7 +586,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                           ):
         # type: (...) -> List[List[Dict[Text, float]]]
 
-        trackers_as_states = [domain.states_for_tracker_history(tracker)
+        trackers_as_states = [self._create_states(tracker, domain)
                               for tracker in trackers]
         trackers_as_states = [self.slice_state_history(states,
                                                        self.max_history)

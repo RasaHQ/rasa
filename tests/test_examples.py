@@ -27,6 +27,7 @@ def test_moodbot_example(trained_moodbot_path):
 
 def test_remote_example():
     from rasa_core import train, run
+    from rasa_core.events import SlotSet
 
     train.train_dialogue_model("examples/remotebot/concert_domain_remote.yml",
                                "examples/remotebot/data/stories.md",
@@ -55,8 +56,10 @@ def test_remote_example():
     del result['latest_event_time']
     assert reference == result
 
-    next_response = agent.continue_message_handling("default", "search_venues",
-                                                    [])
+    venues = [{"name": "Big Arena", "reviews": 4.5}]
+    next_response = agent.continue_message_handling(
+        "default", "search_venues", [SlotSet("venues", venues)]
+    )
     assert next_response.get("next_action") == "action_listen"
 
 

@@ -53,7 +53,9 @@ class MemoizationPolicy(Policy):
         max_history = max_history or cls.MAX_HISTORY_DEFAULT
         # Memoization policy always uses MaxHistoryTrackerFeaturizer
         # without state_featurizer
-        return MaxHistoryTrackerFeaturizer(None, max_history)
+        return MaxHistoryTrackerFeaturizer(state_featurizer=None,
+                                           max_history=max_history,
+                                           use_intent_probabilities=False)
 
     def __init__(self,
                  featurizer=None,  # type: Optional[TrackerFeaturizer]
@@ -200,7 +202,7 @@ class MemoizationPolicy(Policy):
         logger.debug("Current tracker state {}".format(states))
         recalled = self.recall(states, tracker, domain)
         if recalled is not None:
-            logger.debug("Used memorised next action '{}'"
+            logger.debug("There is a memorised next action '{}'"
                          "".format(recalled))
 
             if self.USE_NLU_CONFIDENCE_AS_SCORE:
@@ -211,6 +213,8 @@ class MemoizationPolicy(Policy):
                 score = 1.0
 
             result[recalled] = score
+        else:
+            logger.debug("There is no memorised next action")
 
         return result
 
