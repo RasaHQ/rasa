@@ -283,7 +283,7 @@ class TrackerFeaturizer(object):
             set its probability to 1.0, while all the others to 0.0."""
         states = domain.states_for_tracker_history(tracker)
 
-        if self.use_intent_probabilities:
+        if not self.use_intent_probabilities:
             bin_states = []
             for state in states:
                 bin_state = dict()

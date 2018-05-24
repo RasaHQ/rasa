@@ -55,7 +55,7 @@ class MemoizationPolicy(Policy):
         # without state_featurizer
         return MaxHistoryTrackerFeaturizer(state_featurizer=None,
                                            max_history=max_history,
-                                           use_intent_probabilites=False)
+                                           use_intent_probabilities=False)
 
     def __init__(self,
                  featurizer=None,  # type: Optional[TrackerFeaturizer]
