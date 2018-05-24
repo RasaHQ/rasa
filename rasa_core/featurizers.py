@@ -297,7 +297,7 @@ class TrackerFeaturizer(object):
                             best_intent = state_name
                             best_intent_prob = prob
                         else:
-                            # delete other keys
+                            # delete other intents
                             del bin_state[state_name]
 
                 if best_intent is not None:
