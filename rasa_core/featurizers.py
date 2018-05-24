@@ -286,21 +286,22 @@ class TrackerFeaturizer(object):
         if not self.use_intent_probabilities:
             bin_states = []
             for state in states:
-                bin_state = dict()
+                # copy state dict to preserve internal order of keys
+                bin_state = dict(state)
                 best_intent = None
-                best_intent_prob = 0.0
+                best_intent_prob = -1.0
                 for state_name, prob in state.items():
                     if state_name.startswith('intent_'):
-                        if prob >= best_intent_prob:
+                        if prob > best_intent_prob:
                             # finding the maximum confidence intent
                             best_intent = state_name
                             best_intent_prob = prob
-                    else:
-                        bin_state[state_name] = prob
+                        else:
+                            # delete other keys
+                            del bin_state[state_name]
 
                 if best_intent is not None:
-                    # appending the maximum confidence intent
-                    # to the binary states with prob 1.0
+                    # set the confidence of best intent to 1.0
                     bin_state[best_intent] = 1.0
 
                 bin_states.append(bin_state)
