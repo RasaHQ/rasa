@@ -54,10 +54,12 @@ def load(filename=None, **kwargs):
 
 
 def override_defaults(defaults, custom):
-    cfg = defaults or {}
     if custom:
+        cfg = defaults.copy() if defaults else {}
         cfg.update(custom)
-    return cfg
+        return cfg
+
+    return defaults
 
 
 def make_path_absolute(path):

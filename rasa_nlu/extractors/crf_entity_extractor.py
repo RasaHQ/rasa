@@ -96,7 +96,7 @@ class CRFEntityExtractor(EntityExtractor):
         import itertools
         features = self.component_config.get("features", [])
         fts = set(itertools.chain.from_iterable(features))
-        self.pos_features = 'pos' not in fts and 'pos2' not in fts
+        self.pos_features = ('pos' in fts or 'pos2' in fts)
         if self.pos_features:
             self._check_spacy()
 
