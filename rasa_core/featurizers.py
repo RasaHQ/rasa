@@ -270,20 +270,20 @@ class LabelTokenizerSingleStateFeaturizer(SingleStateFeaturizer):
 
 class TrackerFeaturizer(object):
     """Base class for actual tracker featurizers"""
-    def __init__(self, state_featurizer=None, use_intent_probabilites=False):
+    def __init__(self, state_featurizer=None, use_intent_probabilities=False):
         # type: (Optional[SingleStateFeaturizer], bool) -> None
 
         self.state_featurizer = state_featurizer or SingleStateFeaturizer()
-        self.use_intent_probabilites = use_intent_probabilites
+        self.use_intent_probabilities = use_intent_probabilities
 
     def _create_states(self, tracker, domain):
         """Create states: a list of dictionaries.
-            If use_intent_probabilites is False (default behaviour),
+            If use_intent_probabilities is False (default behaviour),
             pick the most probable intent out of all provided ones and
             set its probability to 1.0, while all the others to 0.0."""
         states = domain.states_for_tracker_history(tracker)
 
-        if self.use_intent_probabilites:
+        if self.use_intent_probabilities:
             bin_states = []
             for state in states:
                 bin_state = dict()
@@ -429,11 +429,11 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
     Training data is padded up to the length of the longest
     dialogue with -1"""
 
-    def __init__(self, state_featurizer, use_intent_probabilites=False):
+    def __init__(self, state_featurizer, use_intent_probabilities=False):
         # type: (SingleStateFeaturizer, bool) -> None
-        super(FullDialogueTrackerFeaturizer, self).__init__(state_featurizer,
-                                                            use_intent_probabilites)
-
+        super(FullDialogueTrackerFeaturizer, self).__init__(
+                state_featurizer, use_intent_probabilities
+        )
         self.max_len = None
 
     @staticmethod
@@ -514,13 +514,12 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
     Training data is padded up to the max_history with -1"""
 
     def __init__(self, state_featurizer=None, max_history=5,
-                 remove_duplicates=True, use_intent_probabilites=False):
+                 remove_duplicates=True, use_intent_probabilities=False):
         # type: (Optional(SingleStateFeaturizer), int, bool, bool) -> None
-        super(MaxHistoryTrackerFeaturizer, self).__init__(state_featurizer,
-                                                          use_intent_probabilites)
-
+        super(MaxHistoryTrackerFeaturizer, self).__init__(
+                state_featurizer, use_intent_probabilities
+        )
         self.max_history = max_history
-
         self.remove_duplicates = remove_duplicates
 
     @staticmethod
