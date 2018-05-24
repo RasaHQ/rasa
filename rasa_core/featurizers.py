@@ -294,6 +294,9 @@ class TrackerFeaturizer(object):
                     if state_name.startswith('intent_'):
                         if prob > best_intent_prob:
                             # finding the maximum confidence intent
+                            if best_intent is not None:
+                                # delete previous best intent
+                                del bin_state[best_intent]
                             best_intent = state_name
                             best_intent_prob = prob
                         else:
