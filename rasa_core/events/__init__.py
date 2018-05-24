@@ -366,9 +366,7 @@ class SlotSet(Event):
         for slot_key, slot_val in parameters.items():
             slots.append(SlotSet(slot_key, slot_val))
 
-        if len(slots) == 1:
-            return slots[0]
-        elif len(slots) > 1:
+        if slots:
             return slots
         else:
             return None
