@@ -4,13 +4,31 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
-[Unreleased 0.9.0.aX] - `master`_
+[Unreleased 0.10.0.aX] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. note:: This version is not yet released and is under active development.
 
-This is a major new release with backward incompatible changes. Old trained
-models can not be read with the new version - you need to retrain your model.
+Added
+-----
+
+Changed
+-------
+
+Removed
+-------
+
+Fixed
+-----
+
+
+[0.9.0] - 2018-05-24
+^^^^^^^^^^^^^^^^^^^^
+
+.. warning::
+
+    This is a major new release with backward incompatible changes. Old trained
+    models can not be read with the new version - you need to retrain your model.
 
 Added
 -----
@@ -31,9 +49,6 @@ Changed
 - updated dependency fbmessenger from 4.3.1 to 5.0.0
 - updated Rasa NLU to 0.12.x
 - updated all the dependencies to the latest versions
-
-Removed
--------
 
 Fixed
 -----
