@@ -76,10 +76,10 @@ class EmbeddingPolicy(Policy):
         "droprate_out": 0.1,
 
         # attention parameters
-        "skip_cells": True,  # flag to add gate to skip rnn time step
-        "use_attention": True,  # flag to use attention
+        "use_attention": False,  # flag to use attention
         "sparse_attention": False,  # flag to use sparsemax for probs
-        "attn_shift_range": None,  # if None, mean dialogue length / 2
+        "attn_shift_range": 5,  # if None, mean dialogue length / 2
+        "skip_cells": False,  # flag to add gate to skip rnn time step
 
         # visualization of accuracy
         "calc_acc_ones_in_epochs": 50,  # small values affect performance
