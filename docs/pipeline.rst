@@ -479,7 +479,7 @@ intent_classifier_tensorflow_embedding
           "mu_pos": 0.8  # should be 0.0 < ... < 1.0 for 'cosine'
           "mu_neg": -0.4  # should be -1.0 < ... < 1.0 for 'cosine'
           "similarity_type": "cosine"  # string 'cosine' or 'inner'
-          "num_neg": 10
+          "num_neg": 20
           "use_max_sim_neg": true  # flag which loss function to use
           # regularization
           "C2": 0.002
