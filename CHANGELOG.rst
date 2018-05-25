@@ -16,6 +16,7 @@ Added
 - update default parameters for tensorflow embedding classifier
 - do not predict anything if feature vector contains only zeros in tensorflow embedding classifier
 - change persistence keywords in tensorflow embedding classifier (make previously trained models impossible to load)
+- add basic OOV support to intent_featurizer_count_vectors (make previously trained models impossible to load)
 
 Changed
 -------

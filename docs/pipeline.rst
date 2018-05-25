@@ -270,11 +270,16 @@ intent_featurizer_count_vectors
     Creates bag-of-words representation of intent features using
     `sklearn's CountVectorizer <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_. All tokens which consist only of digits (e.g. 123 and 99 but not a123d) will be assigned to the same feature.
 
-    .. note:: Words that were not seen during training are ignored during prediction time.
-
 :Configuration:
     See `sklearn's CountVectorizer docs <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_
     for detailed description of the configuration parameters
+
+    Handling Out-Of-Vacabulary (OOV) words:
+        - ``OOV_token`` set a keyword for unseen words, if ``None`` (default behaviour) words that were not seen during training will be ignored during prediction time;
+        - ``OOV_words`` set a list of words to be treated as ``OOV_token`` during training.
+
+        .. note:: Providing ``OOV_words`` is optional, training data can contain ``OOV_token`` input manually or by custom additional preprocessor.
+                  Unseen words will be substituted with ``OOV_token`` **only** if this token is present in the training data or ``OOV_words`` list is provided.
 
     .. code-block:: yaml
 
@@ -297,10 +302,16 @@ intent_featurizer_count_vectors
           # integer - absolute counts
           "max_df": 1.0  # float in range [0.0, 1.0] or int
           # set ngram range
-          "min_ngram": 1
-          "max_ngram": 1
+          "min_ngram": 1  # int
+          "max_ngram": 1  # int
           # limit vocabulary size
-          "max_features": None
+          "max_features": None  # int or None
+          # if convert all characters to lowercase
+          "lowercase": true  # bool
+          # handling Out-Of-Vacabulary (OOV) words
+          # will be converted to lowercase if lowercase is true
+          "OOV_token": None  # string or None
+          "OOV_words": []  # list of strings
 
 intent_classifier_keyword
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -424,7 +435,7 @@ intent_classifier_tensorflow_embedding
     by ``nlp_spacy`` and ``tokenizer_spacy``.
 
     .. note:: If during prediction time a message contains **only** words unseen during training,
-              and no custom OOV preprocessor was used,
+              and no OOV preprocessor was used,
               empty intent ``""`` is predicted with confidence ``0.0``.
 
 :Configuration:

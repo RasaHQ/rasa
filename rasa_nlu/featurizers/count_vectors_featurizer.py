@@ -112,6 +112,7 @@ class CountVectorsFeaturizer(Featurizer):
 
     def _load_OOV_params(self):
         self.OOV_token = self.component_config['OOV_token']
+
         self.OOV_words = self.component_config['OOV_words']
         if self.OOV_words and not self.OOV_token:
             logger.error("The list of OOV words {} was given, but "
