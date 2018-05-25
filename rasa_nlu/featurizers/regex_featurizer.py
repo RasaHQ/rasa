@@ -43,7 +43,8 @@ class RegexFeaturizer(Featurizer):
     def train(self, training_data, config, **kwargs):
         # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
 
-        self.known_patterns = [ex for ex in training_data.regex_features]
+        self.known_patterns = [pattern
+                               for pattern in training_data.regex_features]
 
         for example in training_data.training_examples:
             updated = self._text_features_with_regex(example)
