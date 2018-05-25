@@ -15,8 +15,8 @@ from typing import List
 
 from rasa_core import utils
 from rasa_core import events
-from rasa_core.conversation import Dialogue, Topic
-from rasa_core.events import UserUttered, TopicSet, ActionExecuted, \
+from rasa_core.conversation import Dialogue
+from rasa_core.events import UserUttered, ActionExecuted, \
     Event, SlotSet, Restarted, ActionReverted, UserUtteranceReverted, BotUttered
 
 logger = logging.getLogger(__name__)
@@ -37,15 +37,12 @@ class DialogueStateTracker(object):
         the tracker, these events will be replayed to recreate the state."""
 
         evts = events.deserialise_events(dump_as_dict)
-        tracker = cls(sender_id, domain.slots, domain.topics,
-                      domain.default_topic)
+        tracker = cls(sender_id, domain.slots)
         for e in evts:
             tracker.update(e)
         return tracker
 
     def __init__(self, sender_id, slots,
-                 topics=None,
-                 default_topic=None,
                  max_event_history=None):
         """Initialize the tracker.
 
@@ -59,10 +56,6 @@ class DialogueStateTracker(object):
         self.events = self._create_events([])
         # id of the source of the messages
         self.sender_id = sender_id
-        # available topics in the domain
-        self.topics = topics if topics is not None else []
-        # default topic of the domain
-        self.default_topic = default_topic
         # slots that can be filled in this domain
         self.slots = {slot.name: copy.deepcopy(slot) for slot in slots}
 
@@ -75,8 +68,6 @@ class DialogueStateTracker(object):
         self._paused = None
         # A deterministically scheduled action to be executed next
         self.follow_up_action = None
-        # topic tracking
-        self._topic_stack = None
         self.latest_action_name = None
         self.latest_message = None
         self.latest_bot_utterance = None
@@ -162,32 +153,13 @@ class DialogueStateTracker(object):
         """Return a list of events after the most recent restart."""
         return list(self.events)[self.idx_after_latest_restart():]
 
-    @property
-    def previous_topic(self):
-        # type: () -> Optional[Text]
-        """Retrieves the topic that was set before the current one."""
-
-        for event in reversed(self.events_after_latest_restart()):
-            if isinstance(event, TopicSet):
-                return event.topic
-        return None
-
-    @property
-    def topic(self):
-        # type: () -> Topic
-        """Retrieves current topic, or default if no topic has been set yet."""
-
-        return self._topic_stack.top
-
     def init_copy(self):
         # type: () -> DialogueStateTracker
         """Creates a new state tracker with the same initial values."""
         from rasa_core.channels import UserMessage
 
         return DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
-                                    self.slots.values(),
-                                    self.topics,
-                                    self.default_topic)
+                                    self.slots.values())
 
     def generate_all_prior_trackers(self):
         # type: () -> Generator[DialogueStateTracker, None, None]
@@ -331,8 +303,6 @@ class DialogueStateTracker(object):
         self.latest_message = UserUttered.empty()
         self.latest_bot_utterance = BotUttered.empty()
         self.follow_up_action = None
-        self._topic_stack = utils.TopicStack(self.topics, [],
-                                             self.default_topic)
 
     def _reset_slots(self):
         # type: () -> None
