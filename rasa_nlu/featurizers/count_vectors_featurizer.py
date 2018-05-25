@@ -137,7 +137,9 @@ class CountVectorsFeaturizer(Featurizer):
 
         for i, example in enumerate(training_data.intent_examples):
             # create bag for each example
-            example.set("text_features", X[i])
+            example.set("text_features",
+                        self._combine_with_existing_text_features(example,
+                                                                  X[i]))
 
     def process(self, message, **kwargs):
         # type: (Message, **Any) -> None
@@ -146,8 +148,11 @@ class CountVectorsFeaturizer(Featurizer):
                          "component is either not trained or "
                          "didn't receive enough training data")
         else:
-            bag = self.vect.transform([self._lemmatize(message)]).toarray()
-            message.set("text_features", bag)
+            bag = self.vect.transform([self._lemmatize(message)]
+                                      ).toarray().squeeze()
+            message.set("text_features",
+                        self._combine_with_existing_text_features(message,
+                                                                  bag))
 
     @staticmethod
     def _lemmatize(message):
