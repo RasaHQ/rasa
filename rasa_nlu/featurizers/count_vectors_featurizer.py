@@ -211,7 +211,7 @@ class CountVectorsFeaturizer(Featurizer):
                          "didn't receive enough training data")
         else:
             message_text = self._lemmatize(message)
-            print(self.vect.vocabulary_)
+
             if self.OOV_token and self.OOV_token in self.vect.vocabulary_:
                 message_text = self._strip_punctuation(message_text)
                 message_text = ' '.join([
