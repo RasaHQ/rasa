@@ -17,9 +17,7 @@ from rasa_core.trackers import DialogueStateTracker
 
 def test_restart(default_dispatcher_cmd, default_domain):
     tracker = DialogueStateTracker("default",
-                                   default_domain.slots,
-                                   default_domain.topics,
-                                   default_domain.default_topic)
+                                   default_domain.slots)
     events = ActionRestart().run(default_dispatcher_cmd, tracker,
                                  default_domain)
     assert events == [Restarted()]
@@ -30,10 +28,6 @@ def test_text_format():
            "Action('action_listen')"
     assert "{}".format(UtterAction("my_action_name")) == \
            "UtterAction('my_action_name')"
-
-
-def test_default_reset_topic():
-    assert not Action().resets_topic()
 
 
 def test_action_factories():
