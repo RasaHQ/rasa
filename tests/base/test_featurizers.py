@@ -138,6 +138,6 @@ def test_count_vector_featurizer(sentence, expected):
     data = TrainingData([message])
 
     ftr.train(data)
-    ftr.process(message)
+    ftr.process(Message(sentence))
 
-    assert np.all(message.get("text_features")[0] == expected)
+    assert np.all(message.get("text_features") == expected)

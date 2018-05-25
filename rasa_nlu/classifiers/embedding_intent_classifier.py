@@ -90,6 +90,11 @@ class EmbeddingIntentClassifier(Component):
         "calc_acc_on_num_examples": 1000  # large values affect performance
     }
 
+    @classmethod
+    def required_packages(cls):
+        # type: () -> List[Text]
+        return ["tensorflow"]
+
     def _load_nn_architecture_params(self):
         self.num_hidden_layers_a = self.component_config['num_hidden_layers_a']
         self.hidden_layer_size_a = self.component_config['hidden_layer_size_a']
@@ -226,11 +231,6 @@ class EmbeddingIntentClassifier(Component):
         # persisted embeddings
         self.word_embed = word_embed
         self.intent_embed = intent_embed
-
-    @classmethod
-    def required_packages(cls):
-        # type: () -> List[Text]
-        return ["tensorflow"]
 
     # training data helpers:
     @staticmethod
