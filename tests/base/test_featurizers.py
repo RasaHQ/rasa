@@ -141,3 +141,48 @@ def test_count_vector_featurizer(sentence, expected):
     ftr.process(Message(sentence))
 
     assert np.all(message.get("text_features") == expected)
+
+
+@pytest.mark.parametrize("sentence, expected", [
+    ("hello hello hello hello hello __OOV__", [1, 5]),
+    ("hello goodbye hello __oov__", [1, 1, 2]),
+    ("a b c d e f __oov__ __OOV__ __OOV__", [3, 1, 1, 1, 1, 1, 1]),
+    ("__OOV__ a 1 2 __oov__ __OOV__", [2, 3, 1])
+])
+def test_count_vector_featurizer_oov_token(sentence, expected):
+    from rasa_nlu.featurizers.count_vectors_featurizer import \
+        CountVectorsFeaturizer
+
+    ftr = CountVectorsFeaturizer({"token_pattern": r'(?u)\b\w+\b',
+                                  "OOV_token": '__oov__'})
+    message = Message(sentence)
+    message.set("intent", "bla")
+    data = TrainingData([message])
+
+    ftr.train(data)
+    ftr.process(Message(sentence))
+
+    assert np.all(message.get("text_features") == expected)
+
+
+@pytest.mark.parametrize("sentence, expected", [
+    ("hello hello hello hello hello oov_word0", [1, 5]),
+    ("hello goodbye hello oov_word0 OOV_word0", [2, 1, 2]),
+    ("a b c d e f __oov__ OOV_word0 oov_word1", [3, 1, 1, 1, 1, 1, 1]),
+    ("__OOV__ a 1 2 __oov__ OOV_word1", [2, 3, 1])
+])
+def test_count_vector_featurizer_oov_words(sentence, expected):
+    from rasa_nlu.featurizers.count_vectors_featurizer import \
+        CountVectorsFeaturizer
+
+    ftr = CountVectorsFeaturizer({"token_pattern": r'(?u)\b\w+\b',
+                                  "OOV_token": '__oov__',
+                                  "OOV_words": ['oov_word0', 'OOV_word1']})
+    message = Message(sentence)
+    message.set("intent", "bla")
+    data = TrainingData([message])
+
+    ftr.train(data)
+    ftr.process(Message(sentence))
+
+    assert np.all(message.get("text_features") == expected)
