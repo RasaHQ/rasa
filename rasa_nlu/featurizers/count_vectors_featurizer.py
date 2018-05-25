@@ -155,12 +155,11 @@ class CountVectorsFeaturizer(Featurizer):
     def _strip_punctuation(self, message_text):
         import string
         punctuation = string.punctuation.replace('_', '')
-        table = str.maketrans({key: ' ' for key in punctuation})
-
+        regex_punctuation = re.compile('[{}]'.format(re.escape(punctuation)))
         if self.lowercase:
-            return message_text.translate(table).lower()
+            return regex_punctuation.sub(' ', message_text).lower()
         else:
-            return message_text.translate(table)
+            return regex_punctuation.sub(' ', message_text)
 
     def _handle_OOV(self, message_text):
         if self.OOV_token and self.OOV_words:
