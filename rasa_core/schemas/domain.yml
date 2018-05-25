@@ -6,8 +6,6 @@ mapping:
     - type: !!python/str "str"
   action_factory:
     type: !!python/str "str"
-    sequence:
-    - type: !!python/str "str"
   entities:
     type: !!python/str "seq"
     sequence:
