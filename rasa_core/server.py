@@ -73,7 +73,8 @@ def ensure_loaded_agent(agent):
     def decorator(f):
         @wraps(f)
         def decorated(*args, **kwargs):
-            if not agent:
+            __agent = agent()
+            if not __agent:
                 return Response(
                         "No agent loaded. To continue processing, a model "
                         "of a trained agent needs to be loaded.",
@@ -193,7 +194,7 @@ def create_app(model_directory,
                methods=['POST', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
     @requires_auth(auth_token)
-    @ensure_loaded_agent(agent())
+    @ensure_loaded_agent(agent)
     def continue_predicting(sender_id):
         """Continue a prediction started with parse.
 
@@ -227,7 +228,7 @@ def create_app(model_directory,
     @app.route("/conversations/<sender_id>/tracker/events",
                methods=['POST', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
-    @ensure_loaded_agent(agent())
+    @ensure_loaded_agent(agent)
     def append_events(sender_id):
         """Append a list of events to the state of a conversation"""
 
@@ -242,14 +243,14 @@ def create_app(model_directory,
     @app.route("/conversations",
                methods=['GET', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
-    @ensure_loaded_agent(agent())
+    @ensure_loaded_agent(agent)
     def list_trackers():
         return jsonify(list(agent().tracker_store.keys()))
 
     @app.route("/conversations/<sender_id>/tracker",
                methods=['GET', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
-    @ensure_loaded_agent(agent())
+    @ensure_loaded_agent(agent)
     def retrieve_tracker(sender_id):
         """Get a dump of a conversations tracker including its events."""
 
@@ -272,7 +273,7 @@ def create_app(model_directory,
     @app.route("/conversations/<sender_id>/tracker",
                methods=['PUT', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
-    @ensure_loaded_agent(agent())
+    @ensure_loaded_agent(agent)
     def update_tracker(sender_id):
         """Use a list of events to set a conversations tracker to a state."""
 
@@ -290,7 +291,7 @@ def create_app(model_directory,
                methods=['GET', 'POST', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
     @requires_auth(auth_token)
-    @ensure_loaded_agent(agent())
+    @ensure_loaded_agent(agent)
     def parse(sender_id):
         request_params = request_parameters()
 
@@ -318,7 +319,7 @@ def create_app(model_directory,
                methods=['GET', 'POST', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
     @requires_auth(auth_token)
-    @ensure_loaded_agent(agent())
+    @ensure_loaded_agent(agent)
     def respond(sender_id):
         request_params = request_parameters()
 
