@@ -87,11 +87,9 @@ class Metadata(object):
             return []
 
     def for_component(self, name, defaults=None):
-        for c in self.get('pipeline', []):
-            if c.get("name") == name:
-                return override_defaults(defaults, c)
-        else:
-            return defaults or {}
+        return config.component_config_from_pipeline(self.get('pipeline', []),
+                                                    name,
+                                                    defaults)
 
     @property
     def language(self):
