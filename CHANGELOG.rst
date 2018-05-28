@@ -20,6 +20,8 @@ Removed
 
 Fixed
 -----
+- persistence of training data collected during online learning if default
+  file path is used
 - the ``agent()`` method used in some ``rasa_core.server`` endpoints is re-run at every new call of the ``ensure_loaded_agent`` decorator
 
 
