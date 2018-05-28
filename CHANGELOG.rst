@@ -20,7 +20,8 @@ Removed
 
 Fixed
 -----
-
+- persistence of training data collected during online learning if default
+  file path is used
 
 [0.9.0] - 2018-05-24
 ^^^^^^^^^^^^^^^^^^^^
