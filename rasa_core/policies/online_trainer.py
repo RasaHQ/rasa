@@ -155,10 +155,10 @@ class OnlinePolicyEnsemble(PolicyEnsemble):
     @staticmethod
     def _export_stories(tracker):
         # export current stories and quit
-        file_promt = ("File to export to (if file exists, this "
-                      "will append the stories) "
-                      "[{}]: ").format(DEFAULT_FILE_EXPORT_PATH)
-        export_file_path = utils.request_input(prompt=file_promt)
+        file_prompt = ("File to export to (if file exists, this "
+                       "will append the stories) "
+                       "[{}]: ").format(DEFAULT_FILE_EXPORT_PATH)
+        export_file_path = utils.request_input(prompt=file_prompt)
 
         if not export_file_path:
             export_file_path = DEFAULT_FILE_EXPORT_PATH
