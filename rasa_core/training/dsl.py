@@ -80,7 +80,8 @@ class StoryStepBuilder(object):
             # user can use the express the same thing
             # we need to copy the blocks and create one
             # copy for each possible message
-            generated_checkpoint = utils.generate_id("GENERATED_M_")
+            generated_checkpoint = utils.generate_id("GENERATED_M_",
+                                                     max_chars=5)
             updated_steps = []
             for t in self.current_steps:
                 for m in messages:
