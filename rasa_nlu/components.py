@@ -178,6 +178,10 @@ class Component(object):
     language_list = None
 
     def __init__(self, component_config=None):
+        # makes sure the name of the configuration is part of the config
+        # this is important for e.g. persistence
+        component_config["name"] = self.name
+
         self.component_config = config.override_defaults(
                 self.defaults, component_config)
 
