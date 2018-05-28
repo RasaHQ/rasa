@@ -178,14 +178,18 @@ class Agent(object):
                   augmentation_factor=20,  # type: int
                   max_number_of_trackers=2000,  # type: int
                   tracker_limit=None,  # type: Optional[int]
-                  use_story_concatenation=True  # type: bool
+                  use_story_concatenation=True,  # type: bool
+                  exclusion_file=None,
+                  exclusion_percentage=None
                   ):
         # type: (...) -> List[DialogueStateTracker]
         """Load training data from a resource."""
 
         return training.load_data(resource_name, self.domain, remove_duplicates,
                                   augmentation_factor, max_number_of_trackers,
-                                  tracker_limit, use_story_concatenation)
+                                  tracker_limit, use_story_concatenation,
+                                  exclusion_file=exclusion_file,
+                                  exclusion_percentage=exclusion_percentage)
 
     def train(self,
               training_trackers,  # type: List[DialogueStateTracker]

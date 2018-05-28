@@ -135,13 +135,22 @@ class StoryFileReader(object):
 
     @staticmethod
     def read_from_folder(resource_name, domain, interpreter=RegexInterpreter(),
-                         template_variables=None):
+                         template_variables=None, exclusion_file=None,
+                         exclusion_percentage=None):
         """Given a path reads all contained story files."""
 
         story_steps = []
         for f in nlu_utils.list_files(resource_name):
             steps = StoryFileReader.read_from_file(f, domain, interpreter,
                                                    template_variables)
+            # if exclusion file is precent, exclude a percentage of randomly
+            # selected stories
+            if exclusion_file and exclusion_percentage is not 0:
+                import random
+                if f == exclusion_file:
+                    idx = int(round(exclusion_percentage/100.0 * len(steps)))
+                    random.shuffle(steps)
+                    steps = steps[:-idx]
             story_steps.extend(steps)
         return story_steps
 
