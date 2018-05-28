@@ -47,7 +47,7 @@ class TrainingDataGenerator(object):
             domain,  # type: Domain
             remove_duplicates=True,  # type: bool
             augmentation_factor=20,  # type: int
-            max_number_of_trackers=2000,  # type: int
+            max_number_of_trackers=2000,  # type: Optional[int]
             tracker_limit=None,  # type: Optional[int]
             use_story_concatenation=True  # type: bool
     ):
@@ -126,12 +126,11 @@ class TrainingDataGenerator(object):
                     # step and that need to handle all events of the step
                     incoming_trackers = self._subsample_trackers(
                             incoming_trackers)
+                    # update progress bar
+                    pbar.set_postfix({"# trackers": "{:d}".format(
+                        len(incoming_trackers))})
 
                     trackers = self._process_step(step, incoming_trackers)
-
-                    # update progress bar
-                    pbar.set_postfix({
-                        "# trackers": len(incoming_trackers)})
 
                     # update our tracker dictionary with the trackers
                     # that handled the events of the step and

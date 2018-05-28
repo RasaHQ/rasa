@@ -35,7 +35,7 @@ def load_data(
         domain,  # type: Domain
         remove_duplicates=True,  # type: bool
         augmentation_factor=20,  # type: int
-        max_number_of_trackers=2000,  # type: int
+        max_number_of_trackers=2000,  # type: Optional[int]
         tracker_limit=None,  # type: Optional[int]
         use_story_concatenation=True  # type: bool
 

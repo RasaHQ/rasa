@@ -7,6 +7,7 @@ import io
 import logging
 import os
 import typing
+from tqdm import tqdm
 
 import jsonpickle
 import numpy as np
@@ -464,8 +465,8 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         trackers_as_states = []
         trackers_as_actions = []
 
-        for tracker in trackers:
-
+        pbar = tqdm(trackers, desc="Processed trackers")
+        for tracker in pbar:
             states = self._create_states(tracker, domain)
 
             delete_first_state = False
@@ -553,7 +554,12 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         trackers_as_states = []
         trackers_as_actions = []
 
-        for tracker in trackers:
+        # from multiple states that create equal featurizations
+        # we only need to keep one.
+        hashed_featurizations = set()
+
+        pbar = tqdm(trackers, desc="Processed trackers")
+        for tracker in pbar:
             states = self._create_states(tracker, domain)
 
             idx = 0
@@ -564,19 +570,31 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                         # predicted at a stories start
                         sliced_states = self.slice_state_history(
                             states[:idx + 1], self.max_history)
-                        trackers_as_states.append(sliced_states)
-                        trackers_as_actions.append([event.action_name])
+                        sliced_actions = [event.action_name]
+
+                        if self.remove_duplicates:
+                            frozen_states = tuple((s if s is None
+                                                   else frozenset(s.items())
+                                                   for s in sliced_states))
+                            frozen_actions = tuple(sliced_actions)
+                            hashed = hash((frozen_states, frozen_actions))
+
+                            # only continue with tracker_states that created a
+                            # hashed_featurization we haven't observed
+                            if hashed not in hashed_featurizations:
+                                hashed_featurizations.add(hashed)
+                                trackers_as_states.append(sliced_states)
+                                trackers_as_actions.append(sliced_actions)
+                        else:
+                            trackers_as_states.append(sliced_states)
+                            trackers_as_actions.append(sliced_actions)
+
+                        pbar.set_postfix({"# actions": "{:d}".format(
+                            len(trackers_as_actions))})
                     idx += 1
 
-        if self.remove_duplicates:
-            logger.debug("Got {} action examples."
-                         "".format(len(trackers_as_actions)))
-            (trackers_as_states,
-             trackers_as_actions) = self._remove_duplicate_states(
-                                        trackers_as_states,
-                                        trackers_as_actions)
-            logger.debug("Deduplicated to {} unique action examples."
-                         "".format(len(trackers_as_actions)))
+        logger.debug("Got {} action examples."
+                     "".format(len(trackers_as_actions)))
 
         return trackers_as_states, trackers_as_actions
 
@@ -593,38 +611,3 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                               for states in trackers_as_states]
 
         return trackers_as_states
-
-    @staticmethod
-    def _remove_duplicate_states(
-            trackers_as_states,  # type: List[List[Dict[Text, float]]]
-            trackers_as_actions,  # type: List[List[Text]]
-    ):
-        # type: (...) -> Tuple[List[List[Dict]], List[List[Dict]]]
-        """Removes states that create equal featurizations.
-
-        From multiple states that create equal featurizations
-        we only need to keep one."""
-
-        hashed_featurizations = set()
-
-        # collected trackers_as_states that created different featurizations
-        unique_trackers_as_states = []
-        unique_trackers_as_actions = []
-
-        for (tracker_states,
-             tracker_actions) in zip(trackers_as_states,
-                                     trackers_as_actions):
-
-            frozen_states = tuple((s if s is None else frozenset(s.items())
-                                   for s in tracker_states))
-            frozen_actions = tuple(tracker_actions)
-            hashed = hash((frozen_states, frozen_actions))
-
-            # only continue with tracker_states that created a
-            # hashed_featurization we haven't observed
-            if hashed not in hashed_featurizations:
-                hashed_featurizations.add(hashed)
-                unique_trackers_as_states.append(tracker_states)
-                unique_trackers_as_actions.append(tracker_actions)
-
-        return unique_trackers_as_states, unique_trackers_as_actions
