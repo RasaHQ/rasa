@@ -101,8 +101,8 @@ def actions_since_last_utterance(tracker):
     return actions
 
 
-def collect_story_predictions(resource_name, policy_model_path, nlu_model_path,
-                              max_stories):
+def collect_story_predictions(resource_name, policy_model_path, nlu_model_path=None,
+                              max_stories=100):
     """Test the stories from a file, running them through the stored model."""
 
     if nlu_model_path is not None:
