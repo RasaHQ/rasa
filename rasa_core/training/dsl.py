@@ -143,7 +143,7 @@ class StoryFileReader(object):
         for f in nlu_utils.list_files(resource_name):
             steps = StoryFileReader.read_from_file(f, domain, interpreter,
                                                    template_variables)
-            # if exclusion file is precent, exclude a percentage of randomly
+            # if exclusion file is present, exclude a percentage of randomly
             # selected stories
             if exclusion_file and exclusion_percentage is not 0:
                 import random
