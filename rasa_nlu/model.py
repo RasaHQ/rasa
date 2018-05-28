@@ -87,9 +87,9 @@ class Metadata(object):
             return []
 
     def for_component(self, name, defaults=None):
-        return config.component_config_from_pipeline(self.get('pipeline', []),
-                                                    name,
-                                                    defaults)
+        return config.component_config_from_pipeline(name,
+                                                     self.get('pipeline', []),
+                                                     defaults)
 
     @property
     def language(self):
