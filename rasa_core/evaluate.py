@@ -187,8 +187,9 @@ def log_failed_stories(failed_stories, failed_output):
                         f.write("{:40} predicted: {:40}\n".format(a, p))
 
 
-def run_story_evaluation(resource_name, policy_model_path, nlu_model_path,
-                         max_stories,
+def run_story_evaluation(resource_name, policy_model_path,
+                         nlu_model_path=None,
+                         max_stories=None,
                          out_file_stories=None,
                          out_file_plot=None):
     """Run the evaluation of the stories, optionally plots the results."""

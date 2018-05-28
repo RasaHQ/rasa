@@ -28,6 +28,8 @@ if typing.TYPE_CHECKING:
     from rasa_core.interpreter import NaturalLanguageInterpreter
     from rasa_core.channels import InputChannel
 
+DEFAULT_FILE_EXPORT_PATH = "stories.md"
+
 
 class TrainingFinishedException(Exception):
     """Signal a finished online learning. Needed to break out of loops."""
@@ -153,9 +155,14 @@ class OnlinePolicyEnsemble(PolicyEnsemble):
     @staticmethod
     def _export_stories(tracker):
         # export current stories and quit
-        export_file_path = utils.request_input(
-                prompt="File to export to (if file exists, this "
-                       "will append the stories) [stories.md]: ")
+        file_prompt = ("File to export to (if file exists, this "
+                       "will append the stories) "
+                       "[{}]: ").format(DEFAULT_FILE_EXPORT_PATH)
+        export_file_path = utils.request_input(prompt=file_prompt)
+
+        if not export_file_path:
+            export_file_path = DEFAULT_FILE_EXPORT_PATH
+
         exported = StoryExported(export_file_path)
         tracker.update(exported)
         logger.info("Stories got exported to '{}'.".format(
