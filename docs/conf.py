@@ -55,7 +55,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Rasa Core'
-copyright = u'2017, Rasa Technologies GmbH'
+copyright = u'2018, Rasa Technologies GmbH'
 author = u'Rasa Technologies GmbH'
 
 # The version info for the project you're documenting, acts as replacement for
