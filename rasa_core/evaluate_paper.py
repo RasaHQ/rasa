@@ -63,6 +63,7 @@ def run_comparison_evaluation(models, stories, output):
         num_correct['keras'].append(correct_keras)
         num_correct['embed'].append(correct_embed)
 
+    ## TODO: check if dir exists
     with open(output + 'results.json', 'wb') as f:
         json.dump(num_correct, f)
 
