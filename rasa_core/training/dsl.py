@@ -45,9 +45,9 @@ class StoryStepBuilder(object):
             self.start_checkpoints.append(Checkpoint(name, conditions))
         else:
             if conditions:
-                logger.warn("End or intermediate checkpoints "
-                            "do not support conditions! "
-                            "(checkpoint: {})".format(name))
+                logger.warning("End or intermediate checkpoints "
+                               "do not support conditions! "
+                               "(checkpoint: {})".format(name))
             additional_steps = []
             for t in self.current_steps:
                 if t.end_checkpoints:
@@ -225,13 +225,13 @@ class StoryFileReader(object):
                         "-"):  # reached a slot, event, or executed action
                     event_name, parameters = self._parse_event_line(line[1:])
                     self.add_event(event_name, parameters)
-                elif line.startswith("*"):  # reached a user message
+                elif line.startswith("*"):  # reached a user messageasked_hsn
                     user_messages = [el.strip() for el in
                                      line[1:].split(" OR ")]
                     self.add_user_messages(user_messages, line_num)
                 else:  # reached an unknown type of line
-                    logger.warn("Skipping line {}. No valid command found. "
-                                "Line Content: '{}'".format(line_num, line))
+                    logger.warning("Skipping line {}. No valid command found. "
+                                   "Line Content: '{}'".format(line_num, line))
             except Exception as e:
                 msg = "Error in line {}: {}".format(line_num, e.message)
                 logger.error(msg, exc_info=1)
@@ -292,15 +292,15 @@ class StoryFileReader(object):
                                                 parameters)
             if m.startswith("_"):
                 c = utterance.as_story_string()
-                logger.warn("Stating user intents with a leading '_' is "
-                            "deprecated. The new format is "
-                            "'* {}'. Please update "
-                            "your example '{}' to the new format.".format(c, m))
+                logger.warning("Stating user intents with a leading '_' is "
+                               "deprecated. The new format is "
+                               "'* {}'. Please update "
+                               "your example '{}' to the new format.".format(c, m))
             intent_name = utterance.intent.get("name")
             if intent_name not in self.domain.intents:
-                logger.warn("Found unknown intent '{}' on line {}. Please, "
-                            "make sure that all intents are listed in your "
-                            "domain yaml.".format(intent_name, line_num))
+                logger.warning("Found unknown intent '{}' on line {}. Please, "
+                               "make sure that all intents are listed in your "
+                               "domain yaml.".format(intent_name, line_num))
             parsed_messages.append(utterance)
         self.current_step_builder.add_user_messages(parsed_messages)
 
