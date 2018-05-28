@@ -156,7 +156,7 @@ class RasaNLUModelConfig(object):
         return json_to_string(self.__dict__, indent=4)
 
     def for_component(self, name, defaults=None):
-        return component_config_from_pipeline(self.pipeline, name, defaults)
+        return component_config_from_pipeline(name, self.pipeline, defaults)
 
     @property
     def component_names(self):
