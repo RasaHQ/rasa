@@ -55,12 +55,18 @@ def create_argument_parser():
             type=int,
             default=3,
             help="Number of runs for experiments")
+    parser.add_argument(
+            '--domain',
+            type=str,
+            required=True,
+            help="Path of domain file")
 
     utils.add_logging_option_arguments(parser)
     return parser
 
 
 def train_domain_policy(story_filename,
+                        domain,
                         output_path=None,
                         exclusion_file=None,
                         exclusion_percentage=None,
@@ -82,7 +88,7 @@ def train_domain_policy(story_filename,
         epochs = 400
         batch_size = 32
 
-    agent = Agent("domain.yml",
+    agent = Agent(domain,
                   policies=policies)
     data = agent.load_data(story_filename,
                            remove_duplicates=True,
@@ -102,10 +108,10 @@ def train_domain_policy(story_filename,
     agent.persist(model_path=output_path)
 
 
-def get_no_of_stories(exclude):
+def get_no_of_stories(exclude, domain):
     no_stories = len(StoryFileReader.read_from_file(exclude,
                                                     TemplateDomain.load(
-                                                        'domain.yml')))
+                                                        domain)))
     return no_stories
 
 
@@ -117,15 +123,16 @@ if __name__ == '__main__':
     for r in xrange(1, cmdline_args.runs):
         for i in cmdline_args.percentages:
             current_round = cmdline_args.percentages.index(i) + 1
-            output_path_keras = (cmdline_args.path + 'run_' + r + 'keras'
-                                 + current_round)
-            output_path_embed = (cmdline_args.path + 'run_' + r + 'embed'
-                                 + current_round)
+            output_path_keras = (cmdline_args.path + 'run_' + str(r) + '/keras'
+                                 + str(current_round))
+            output_path_embed = (cmdline_args.path + 'run_' + str(r) + '/embed'
+                                 + str(current_round))
             logging.info("Starting to train embed round {}/{}".format(
                                                 current_round,
                                                 len(cmdline_args.percentages)))
 
             train_domain_policy(story_filename=cmdline_args.data,
+                                domain=cmdline_args.domain,
                                 output_path=output_path_embed,
                                 exclusion_file=cmdline_args.exclude,
                                 exclusion_percentage=i,
@@ -140,6 +147,7 @@ if __name__ == '__main__':
                                                 len(cmdline_args.percentages)))
 
             train_domain_policy(story_filename=cmdline_args.data,
+                                domain=cmdline_args.domain,
                                 output_path=output_path_keras,
                                 exclusion_file=cmdline_args.exclude,
                                 exclusion_percentage=i,
@@ -148,7 +156,7 @@ if __name__ == '__main__':
             logger.info("Finished training keras round {}/{}".format(
                                                 current_round,
                                                 len(cmdline_args.percentages)))
-    no_stories = get_no_of_stories(cmdline_args.exclude)
+    no_stories = get_no_of_stories(cmdline_args.exclude, cmdline_args.domain)
     story_range = [round((x/100.0) * no_stories) for x in
                    cmdline_args.percentages]
     pickle.dump(story_range, open(cmdline_args.path + 'num_stories.p', 'wb'))

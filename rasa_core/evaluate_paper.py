@@ -55,6 +55,7 @@ def run_comparison_evaluation(models, stories, output):
         for model in nlu_utils.list_subdirectories(run):
             actual, preds, failed_stories = collect_story_predictions(stories,
                                                                       model)
+            print(actual)
             if 'keras' in model:
                 correct_keras.append(len(actual) - len(failed_stories))
             elif 'embed' in model:
@@ -62,7 +63,7 @@ def run_comparison_evaluation(models, stories, output):
         num_correct['keras'].append(correct_keras)
         num_correct['embed'].append(correct_embed)
 
-    with open(output + 'results.json', 'w') as f:
+    with open(output + 'results.json', 'wb') as f:
         json.dump(num_correct, f)
 
 
@@ -95,6 +96,6 @@ if __name__ == '__main__':
     run_comparison_evaluation(cmdline_args.models, cmdline_args.stories,
                               cmdline_args.output)
 
-    no_stories = pickle.load(cmdline_args.models + 'num_stories.p', 'rb')
+    no_stories = pickle.load(open(cmdline_args.models + 'num_stories.p', 'rb'))
 
     plot_curve(cmdline_args.output + 'results.json', no_stories)
