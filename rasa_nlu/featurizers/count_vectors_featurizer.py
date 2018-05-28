@@ -75,7 +75,7 @@ class CountVectorsFeaturizer(Featurizer):
         # handling Out-Of-Vacabulary (OOV) words
         # will be converted to lowercase if lowercase is True
         "OOV_token": None,  # string or None
-        "OOV_words": []  # list of strings
+        "OOV_words": []  # string or list of strings
     }
 
     @classmethod
@@ -140,10 +140,29 @@ class CountVectorsFeaturizer(Featurizer):
         # declare class instance for CountVectorizer
         self.vect = None
 
-    @staticmethod
-    def vect_preprocessor(s):
-        # preprocessor for CountVectorizer
-        return re.sub(r'\b[0-9]+\b', '__number__', s.lower())
+    def _tokenizer(self, text):
+        """Override tokenizer in CountVectorizer"""
+        text = re.sub(r'\b[0-9]+\b', '__NUMBER__', text)
+
+        token_pattern = re.compile(self.token_pattern)
+        tokens = token_pattern.findall(text)
+
+        if self.OOV_token:
+            if hasattr(self.vect, 'vocabulary_'):
+                # CountVectorizer is trained, process for prediction
+                if self.OOV_token in self.vect.vocabulary_:
+                    tokens = [
+                        t if t in self.vect.vocabulary_.keys() else self.OOV_token
+                        for t in tokens
+                    ]
+            elif self.OOV_words:
+                # CountVectorizer is not trained, process for train
+                tokens = [
+                    self.OOV_token if t in self.OOV_words else t
+                    for t in tokens
+                ]
+
+        return tokens
 
     @staticmethod
     def _lemmatize(message):
@@ -152,29 +171,18 @@ class CountVectorsFeaturizer(Featurizer):
         else:
             return message.text
 
-    def _strip_punctuation(self, message_text):
-        import string
-        punctuation = string.punctuation.replace('_', '')
-        regex_punctuation = re.compile('[{}]'.format(re.escape(punctuation)))
-        if self.lowercase:
-            return regex_punctuation.sub(' ', message_text).lower()
-        else:
-            return regex_punctuation.sub(' ', message_text)
-
-    def _handle_OOV(self, message_text):
-        if self.OOV_token and self.OOV_words:
-            message_text = self._strip_punctuation(message_text)
-            message_text = ' '.join([
-                self.OOV_token if t in self.OOV_words else t
-                for t in message_text.split()
-            ])
-        return message_text
-
     def train(self, training_data, cfg=None, **kwargs):
         # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
         """Take parameters from config and
             construct a new count vectorizer using the sklearn framework."""
         from sklearn.feature_extraction.text import CountVectorizer
+
+        spacy_nlp = kwargs.get("spacy_nlp")
+        if spacy_nlp is not None:
+            # create spacy lemma_ for OOV_words
+            self.OOV_words = [t.lemma_
+                              for w in self.OOV_words
+                              for t in spacy_nlp(w)]
 
         # use even single character word as a token
         self.vect = CountVectorizer(token_pattern=self.token_pattern,
@@ -186,9 +194,9 @@ class CountVectorsFeaturizer(Featurizer):
                                     max_df=self.max_df,
                                     min_df=self.min_df,
                                     max_features=self.max_features,
-                                    preprocessor=self.vect_preprocessor)
+                                    tokenizer=self._tokenizer)
 
-        lem_exs = [self._handle_OOV(self._lemmatize(example))
+        lem_exs = [self._lemmatize(example)
                    for example in training_data.intent_examples]
 
         try:
@@ -211,14 +219,6 @@ class CountVectorsFeaturizer(Featurizer):
                          "didn't receive enough training data")
         else:
             message_text = self._lemmatize(message)
-
-            if self.OOV_token and self.OOV_token in self.vect.vocabulary_:
-                message_text = self._strip_punctuation(message_text)
-                message_text = ' '.join([
-                    t if self.vect_preprocessor(t)
-                    in self.vect.vocabulary_.keys() else self.OOV_token
-                    for t in message_text.split()
-                ])
 
             bag = self.vect.transform([message_text]).toarray().squeeze()
             message.set("text_features",
