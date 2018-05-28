@@ -11,7 +11,7 @@ import six
 import yaml
 from builtins import object
 # Describes where to search for the config file if no location is specified
-from typing import Text
+from typing import Text, Optional, Dict, Any, List
 
 from rasa_nlu import utils
 from rasa_nlu.utils import json_to_string
@@ -23,7 +23,6 @@ DEFAULT_CONFIG = {
     "pipeline": [],
     "data": None,
 }
-
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +53,11 @@ def load(filename=None, **kwargs):
         return RasaNLUModelConfig(kwargs)
 
 
-def override_defaults(defaults, custom):
+def override_defaults(
+        defaults,  # type: Optional[Dict[Text, Any]]
+        custom  # type: Optional[Dict[Text, Any]]
+):
+    # type: (...) -> Dict[Text, Any]
     if defaults:
         cfg = copy.deepcopy(defaults)
     else:
@@ -66,13 +69,19 @@ def override_defaults(defaults, custom):
 
 
 def make_path_absolute(path):
+    # type: (Text) -> Text
     if path and not os.path.isabs(path):
         return os.path.join(os.getcwd(), path)
     else:
         return path
 
 
-def component_config_from_pipeline(name, pipeline, defaults=None):
+def component_config_from_pipeline(
+        name,  # type: Text
+        pipeline,  # type: List[Dict[Text, Any]]
+        defaults=None  # type: Optional[Dict[Text, Any]]
+):
+    # type: (...) -> Dict[Text, Any]
     for c in pipeline:
         if c.get("name") == name:
             return override_defaults(defaults, c)
