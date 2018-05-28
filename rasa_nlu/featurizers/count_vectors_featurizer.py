@@ -152,8 +152,8 @@ class CountVectorsFeaturizer(Featurizer):
                 # CountVectorizer is trained, process for prediction
                 if self.OOV_token in self.vect.vocabulary_:
                     tokens = [
-                        t if t in self.vect.vocabulary_.keys() else self.OOV_token
-                        for t in tokens
+                        t if t in self.vect.vocabulary_.keys()
+                        else self.OOV_token for t in tokens
                     ]
             elif self.OOV_words:
                 # CountVectorizer is not trained, process for train
@@ -184,7 +184,6 @@ class CountVectorsFeaturizer(Featurizer):
                               for w in self.OOV_words
                               for t in spacy_nlp(w)]
 
-        # use even single character word as a token
         self.vect = CountVectorizer(token_pattern=self.token_pattern,
                                     strip_accents=self.strip_accents,
                                     lowercase=self.lowercase,
