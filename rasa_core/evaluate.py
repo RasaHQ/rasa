@@ -100,6 +100,7 @@ def actions_since_last_utterance(tracker):
     actions.reverse()
     return actions
 
+## TODO: check this doesn't mess anything up
 
 def collect_story_predictions(resource_name, policy_model_path, nlu_model_path=None,
                               max_stories=100):
