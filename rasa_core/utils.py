@@ -170,11 +170,11 @@ def str_range_list(start, end):
 
 def generate_id(prefix="", max_chars=None):
     import uuid
-    r = "{}{}".format(prefix, uuid.uuid4().hex)
+    gid = uuid.uuid4().hex
     if max_chars:
-        return r[:max_chars]
-    else:
-        return r
+        gid = gid[:max_chars]
+
+    return "{}{}".format(prefix, gid)
 
 
 def configure_colored_logging(loglevel):
