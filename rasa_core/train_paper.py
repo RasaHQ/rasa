@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import argparse
 import logging
+import pickle
 
 from rasa_core.agent import Agent
 from rasa_core.featurizers import (LabelTokenizerSingleStateFeaturizer,
@@ -12,6 +13,8 @@ from rasa_core.featurizers import (LabelTokenizerSingleStateFeaturizer,
                                    MaxHistoryTrackerFeaturizer)
 from rasa_core.policies.embedding_policy import EmbeddingPolicy
 from rasa_core.policies.keras_policy import KerasPolicy
+from rasa_core.domain import TemplateDomain
+from rasa_core.training.dsl import StoryFileReader
 from rasa_core import utils
 
 logger = logging.getLogger(__name__)
@@ -99,6 +102,13 @@ def train_domain_policy(story_filename,
     agent.persist(model_path=output_path)
 
 
+def get_no_of_stories(exclude):
+    no_stories = len(StoryFileReader.read_from_file(exclude,
+                                                    TemplateDomain.load(
+                                                        'domain.yml')))
+    return no_stories
+
+
 if __name__ == '__main__':
     arg_parser = create_argument_parser()
     cmdline_args = arg_parser.parse_args()
@@ -138,3 +148,7 @@ if __name__ == '__main__':
             logger.info("Finished training keras round {}/{}".format(
                                                 current_round,
                                                 len(cmdline_args.percentages)))
+    no_stories = get_no_of_stories(cmdline_args.exclude)
+    story_range = [round((x/100.0) * no_stories) for x in
+                   cmdline_args.percentages]
+    pickle.dump(story_range, open(cmdline_args.path + 'num_stories.p', 'wb'))
