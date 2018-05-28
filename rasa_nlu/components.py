@@ -180,6 +180,8 @@ class Component(object):
     def __init__(self, component_config=None):
         # makes sure the name of the configuration is part of the config
         # this is important for e.g. persistence
+        if component_config is None:
+            component_config = {}
         component_config["name"] = self.name
 
         self.component_config = config.override_defaults(
