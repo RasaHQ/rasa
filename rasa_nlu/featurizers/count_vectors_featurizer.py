@@ -146,7 +146,9 @@ class CountVectorsFeaturizer(Featurizer):
                          "component is either not trained or "
                          "didn't receive enough training data")
         else:
-            bag = self.vect.transform([self._get_message_text(message)]).toarray()
+            bag = self.vect.transform(
+                [self._get_message_text(message)]
+            ).toarray()
             message.set("text_features", bag)
 
     @staticmethod
