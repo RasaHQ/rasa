@@ -100,9 +100,9 @@ def actions_since_last_utterance(tracker):
     actions.reverse()
     return actions
 
-## TODO: check this doesn't mess anything up
 
-def collect_story_predictions(resource_name, policy_model_path, nlu_model_path=None,
+def collect_story_predictions(resource_name, policy_model_path,
+                              nlu_model_path=None,
                               max_stories=100):
     """Test the stories from a file, running them through the stored model."""
 
@@ -124,8 +124,10 @@ def collect_story_predictions(resource_name, policy_model_path, nlu_model_path=N
 
     failed_stories = []
 
+    no_of_stories = len(completed_trackers)
+
     logger.info("Evaluating {} stories\nProgress:"
-                "".format(len(completed_trackers)))
+                "".format(no_of_stories))
 
     for tracker in tqdm(completed_trackers):
         sender_id = "default-" + uuid.uuid4().hex
@@ -165,7 +167,7 @@ def collect_story_predictions(resource_name, policy_model_path, nlu_model_path=N
         if story["predicted"] != story["actual"]:
             failed_stories.append(story)
 
-    return actual, preds, failed_stories
+    return actual, preds, failed_stories, no_of_stories
 
 
 def log_failed_stories(failed_stories, failed_output):
@@ -193,10 +195,11 @@ def run_story_evaluation(resource_name, policy_model_path,
                          out_file_stories=None,
                          out_file_plot=None):
     """Run the evaluation of the stories, optionally plots the results."""
-    test_y, preds, failed_stories = collect_story_predictions(resource_name,
-                                                              policy_model_path,
-                                                              nlu_model_path,
-                                                              max_stories)
+    test_y, preds, failed_stories, _ = collect_story_predictions(
+                                                            resource_name,
+                                                            policy_model_path,
+                                                            nlu_model_path,
+                                                            max_stories)
     if out_file_plot:
         plot_story_evaluation(test_y, preds, out_file_plot)
 
