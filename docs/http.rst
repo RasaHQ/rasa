@@ -1,7 +1,7 @@
 .. _section_http:
 
-Using Rasa NLU as a HTTP server
-===============================
+HTTP API
+========
 
 .. note::
 

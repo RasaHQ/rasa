@@ -734,19 +734,7 @@ ner_duckling
 
 
 
-Creating new Components
------------------------
-You can create a custom Component to perform a specific task which NLU doesn't currently offer (e.g. sentiment analysis).
-A glimpse into the code of ``rasa_nlu.components.Component`` will reveal
-which functions need to be implemented to create a new component.
-You can add these to your pipeline by adding the module path to your pipeline, e.g. if you have a module called ``sentiment``
-containing a ``SentimentAnalyzer`` class:
-
-    .. code-block:: yaml
-
-        pipeline:
-        - name: "sentiment.SentimentAnalyzer"
-
+.. _section_component_lifecycle:
 
 Component Lifecycle
 -------------------
@@ -765,3 +753,41 @@ component can retrieve these feature vectors from the context and do intent clas
 Initially the context is filled with all configuration values, the arrows in the image show the call order
 and visualize the path of the passed context. After all components are trained and persisted, the
 final context dictionary is used to persist the model's metadata.
+
+
+
+Returned Entities Object
+------------------------
+In the object returned after parsing there are two fields that show information
+about how the pipeline impacted the entities returned. The ``extractor`` field
+of an entity tells you which entity extractor found this particular entity.
+The ``processors`` field contains the name of components that altered this
+specific entity.
+
+The use of synonyms can also cause the ``value`` field not match the ``text``
+exactly. Instead it will return the trained synonym.
+
+.. code-block:: json
+
+    {
+      "text": "show me chinese restaurants",
+      "intent": "restaurant_search",
+      "entities": [
+        {
+          "start": 8,
+          "end": 15,
+          "value": "chinese",
+          "entity": "cuisine",
+          "extractor": "ner_crf",
+          "confidence": 0.854,
+          "processors": []
+        }
+      ]
+    }
+
+.. note::
+
+    The `confidence` will be set by the CRF entity extractor
+    (`ner_crf` component). The duckling entity extractor will always return
+    `1`. The `ner_spacy` extractor does not provide this information and
+    returns `null`.

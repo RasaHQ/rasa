@@ -3,16 +3,11 @@
 Configuration
 =============
 
-You can provide options to Rasa NLU through:
+In older versions of Rasa NLU, the server and models were configured with a single file.
+Now, the server only takes command line arguments (see :ref:`section:server-parameters`).
+The configuration file only refers to the model that you want to train,
+i.e. the pipeline and components. 
 
-- a yaml-formatted config file
-- environment variables
-- command line arguments
-
-Environment variables override options in your config file, 
-and command line args will override any options specified elsewhere.
-Environment variables are capitalised and prefixed with ``RASA_``, 
-so the option ``pipeline`` is specified with the ``RASA_PIPELINE`` env var.
 
 Default
 -------

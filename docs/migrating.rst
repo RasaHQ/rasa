@@ -1,32 +1,19 @@
 .. _section_migration:
 
-Migrating an existing app
-=========================
+Switching from Dialogflow, LUIS, or wit
+=======================================
 
 Rasa NLU is designed to make migrating from wit/LUIS/Dialogflow as simple as possible.
 The TLDR instructions for migrating are: 
 
 - download an export of your app data from wit/LUIS/Dialogflow
-- follow the :ref:`tutorial`, using your downloaded data instead of ``demo-rasa.json``
+- follow the :ref:`quickstart`, using your downloaded data instead of ``demo-rasa.md``
 
 
 Banana Peels
 ------------
 
-Just some specific things to watch out for for each of the services you might want to migrate from
-
-wit.ai
-^^^^^^
-
-Wit used to handle ``intents`` natively. 
-Now they are somewhat obfuscated. 
-To create an ``intent`` in wit you have to create and ``entity`` which spans the entire text.
-The file you want from your download is called ``expressions.json``
-
-LUIS.ai
-^^^^^^^
-
-Nothing special here. Downloading the data and importing it into Rasa NLU should work without issues
+Some specific things to watch out for for each of the services you might want to migrate from
 
 Dialogflow
 ^^^^^^^^^^
@@ -34,6 +21,23 @@ Dialogflow
 Dialogflow exports generate multiple files rather than just one.
 Put them all in a directory (see ``data/examples/dialogflow`` in the repo)
 and pass that path to the trainer. 
+If you use Dialogflow's ``fulfillments`` feature, that isn't something Rasa NLU can do. 
+For actually responding to the user you can use `Rasa Core <https://core.rasa.com>`_. 
+
+
+LUIS.ai
+^^^^^^^
+
+If you use an old version of the API, LUIS used to annotate entities using token indexes rather than
+character indexes, which could sometimes cause issues. Recent versions should work without issue.
+
+
+wit.ai
+^^^^^^
+
+Wit used to handle ``intents`` natively, but now they are a bit hidden. 
+To create an ``intent`` in wit you have to create and ``entity`` which spans the entire text.
+The file you want from your download is called ``expressions.json``
 
 
 

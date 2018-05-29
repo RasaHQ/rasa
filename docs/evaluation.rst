@@ -3,7 +3,7 @@
 Evaluation
 ==========
 
-The evaluation script `evaluate.py` allows you to test your models performance for intent classification and entity recognition. You invoke this script supplying test data, model, and config file arguments:
+The evaluation script ``evaluate.py`` allows you to test your models performance for intent classification and entity recognition. You invoke this script supplying test data, model, and config file arguments:
 
 .. code-block:: bash
 
@@ -15,11 +15,11 @@ Where **model** specifies the model to evaluate on the test data specified
 with **data**.
 
 If you would like to evaluate your pipeline using
-*cross-validation*, you can run the evaluation script with the mode
-crossvalidation flag. This gives you an estimate of how accurately a
+*cross-validation*, you can run the evaluation script with the ``-- mode crossvalidation`` flag. 
+This gives you an estimate of how accurately a
 predictive model will perform in practice. Note that you cannot specify
 a model in this mode, as a new model will be trained on part of the data
-for every crossvalidation loop. An example invocation of your script would be:
+for every cross-validation fold. An example command is:
 
 .. code-block:: bash
 
@@ -67,7 +67,7 @@ to be labeled as a last token in an entity (L-LOC) instead of a single token ent
 a splitted extraction of "near" and "Alexanderplatz" would get full scores on our approach and zero on the
 BILOU-based one.
 
-Here's a comparison between both different scoring mechanisms for the phrase "near Alexanderplatz tonight":
+Here's a comparison between the two scoring mechanisms for the phrase "near Alexanderplatz tonight":
 
 ==================================================  ========================  ===========================
 extracted                                           Simple tags (score)       BILOU tags (score)

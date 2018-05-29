@@ -1,12 +1,12 @@
 .. _section_python:
 
-Using Rasa NLU from python
-==========================
+Python API
+==========
 Apart from running Rasa NLU as a HTTP server you can use it directly in your python program.
 Rasa NLU supports both Python 2 and 3.
 
-Training Time
--------------
+Training a Model
+----------------
 For creating your models, you can follow the same instructions as non-python users.
 Or, you can train directly in python with a script like the following (using spacy):
 

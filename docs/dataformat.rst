@@ -1,13 +1,55 @@
 .. _section_dataformat:
 
-Training and Data Format
-========================
+Training Data Format
+====================
 
 
 Data Format
 ~~~~~~~~~~~
 
-The training data for Rasa NLU is structured into different parts,
+You can provide training data as markdown or as json, as a single file or as a directory containing multiple files.
+Note that markdown is usually easier to work with. 
+
+You can use `Chatito <https://rodrigopivi.github.io/Chatito/>`__ , a tool for generating training datasets in rasa's format using a simple DSL or `Tracy <https://yuukanoo.github.io/tracy>`__, a simple GUI to create training datasets for rasa.
+
+
+Markdown Format
+---------------
+
+Markdown is the easiest Rasa NLU format for humans to read and write. 
+Examples are listed using the unordered
+list syntax, e.g. minus ``-``, asterisk ``*``, or plus ``+``.
+Examples are grouped by intent, and entities are annotated as markdown links.
+
+.. code-block:: md
+
+    ## intent:check_balance
+    - what is my balance <!-- no entity -->
+    - how much do I have on my [savings](source_account) <!-- entity "source_account" has value "savings" -->
+    - how much do I have on my [my savings account](source_account:savings) <!-- synonyms, method 1-->
+
+    ## intent:greet
+    - hey
+    - hello
+
+    ## synonym:savings   <!-- synonyms, method 2 -->
+    - pink pig
+
+    ## regex:zipcode
+    - [0-9]{5}
+
+
+The training data for Rasa NLU is structured into different parts:
+examples, synonyms, and regex features. 
+
+Synonyms will map extracted entities to the same name, for example mapping "my savings account" to simply "savings".
+However, this only happens *after* the entities have been extracted, so you need to provide examples with the synonyms present so that Rasa can learn to pick them up. 
+
+
+JSON Format
+-----------
+
+The JSON format consist of a top-level object called ``rasa_nlu_data``, with the keys
 ``common_examples``, ``entity_synonyms`` and ``regex_features``.
 The most important one is ``common_examples``.
 
@@ -21,11 +63,30 @@ The most important one is ``common_examples``.
         }
     }
 
-The ``common_examples`` are used to train both the entity and the intent models. You should put all of your training
-examples in the ``common_examples`` array. The next section describes in detail how an example looks like.
+The ``common_examples`` are used to train your model. You should put all of your training
+examples in the ``common_examples`` array. 
 Regex features are a tool to help the classifier detect entities or intents and improve the performance.
 
-You can use `Chatito <https://rodrigopivi.github.io/Chatito/>`__ , a tool for generating training datasets in rasa's format using a simple DSL or `Tracy <https://yuukanoo.github.io/tracy>`__, a simple GUI to create training datasets for rasa.
+
+Visualizing the Training Data
+-----------------------------
+
+If you're using the json format, it's always a good idea to `look` at your data before, during,
+and after training a model. Luckily, there's a
+`great tool <https://github.com/RasaHQ/rasa-nlu-trainer>`__
+for creating training data in rasa's format.
+- created by `@azazdeaz <https://github.com/azazdeaz>`_ -
+and it's also extremely helpful for inspecting and modifying existing data.
+
+
+For the demo data the output should look like this:
+
+.. image:: _static/images/rasa_nlu_intent_gui.png
+
+
+If you use the json format it is **strongly** recommended that you view your training
+data in the GUI before training.
+
 
 Common Examples
 ---------------
@@ -157,29 +218,6 @@ for these extractors. Currently, all intent classifiers make use of available re
     recognize entities and related intents. Hence, you still need to provide intent & entity examples as part of your
     training data!
 
-Markdown Format
----------------
-
-Alternatively training data can be used in the following markdown format. Examples are listed using the unordered
-list syntax, e.g. minus ``-``, asterisk ``*``, or plus ``+``:
-
-.. code-block:: md
-
-    ## intent:check_balance
-    - what is my balance <!-- no entity -->
-    - how much do I have on my [savings](source_account) <!-- entity "source_account" has value "savings" -->
-    - how much do I have on my [my savings account](source_account:savings) <!-- synonyms, method 1-->
-
-    ## intent:greet
-    - hey
-    - hello
-
-    ## synonym:savings   <!-- synonyms, method 2 -->
-    - pink pig
-
-
-    ## regex:zipcode
-    - [0-9]{5}
 
 Organization
 ------------
@@ -193,22 +231,3 @@ Storing files with different file formats, i.e. mixing markdown and JSON, is cur
     Splitting the training data into multiple files currently only works for markdown and JSON data.
     For other file formats you have to use the single-file approach.
 
-.. _train_parameters:
-
-Train a Model
-~~~~~~~~~~~~~
-
-There is a helper script that allows you to train a model.
-
-.. code-block:: bash
-
-    $ python -m rasa_nlu.train
-
-Here is a quick overview over the parameters you can pass to that script:
-
-.. program-output:: python -m rasa_nlu.train --help
-
-The other ways to train a model are
-
-- training it using your own python code
-- training it using the HTTP api (:ref:`section_http`)
