@@ -17,7 +17,8 @@ from rasa_core import utils
 from rasa_core import events
 from rasa_core.conversation import Dialogue
 from rasa_core.events import UserUttered, ActionExecuted, \
-    Event, SlotSet, Restarted, ActionReverted, UserUtteranceReverted, BotUttered
+    Event, SlotSet, Restarted, ActionReverted, UserUtteranceReverted, \
+    BotUttered, TopicSet
 
 logger = logging.getLogger(__name__)
 
@@ -201,6 +202,9 @@ class DialogueStateTracker(object):
                 # listen action).
                 undo_till_previous(UserUttered, applied_events)
                 undo_till_previous(ActionExecuted, applied_events)
+            elif isinstance(event, TopicSet):
+                logger.info("The TopicSet events are no longer in use, and "
+                            "will be deprecated in future")
             else:
                 applied_events.append(event)
         return applied_events

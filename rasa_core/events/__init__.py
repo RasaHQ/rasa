@@ -51,6 +51,7 @@ def first_key(d, default_key):
 class Event(object):
     """An event is one of the following:
     - something the user has said to the bot (starts a new turn)
+    - the topic has been set
     - the bot has taken an action
 
     Events are logged by the Tracker's update method.
@@ -274,6 +275,59 @@ class BotUttered(Event):
                               parameters.get("timestamp"))
         except KeyError as e:
             raise ValueError("Failed to parse bot uttered event. {}".format(e))
+
+
+# noinspection PyProtectedMember
+class TopicSet(Event):
+    """The topic of conversation has changed.
+
+    As a side effect self.topic will be pushed on to ``Tracker.topic_stack``."""
+
+    type_name = "topic"
+
+    def __init__(self, topic, timestamp=None):
+        self.topic = topic
+        super(TopicSet, self).__init__(timestamp)
+
+    def __str__(self):
+        return "TopicSet(topic: {})".format(self.topic)
+
+    def __hash__(self):
+        return hash(self.topic)
+
+    def __eq__(self, other):
+        if not isinstance(other, TopicSet):
+            return False
+        else:
+            return self.topic == other.topic
+
+    def as_story_string(self):
+        return "{name}[{props}]".format(name=self.type_name, props=self.topic)
+
+    @classmethod
+    def _from_story_string(cls, parameters):
+        topic = first_key(parameters, default_key="name")
+
+        if topic is not None:
+            return TopicSet(topic)
+        else:
+            return None
+
+    def as_dict(self):
+        d = super(TopicSet, self).as_dict()
+        d.update({"topic": self.topic})
+        return d
+
+    @classmethod
+    def _from_parameters(cls, parameters):
+        try:
+            return TopicSet(parameters.get("topic"),
+                            parameters.get("timestamp"))
+        except KeyError as e:
+            raise ValueError("Failed to parse set topic event. {}".format(e))
+
+    def apply_to(self, tracker):
+        tracker._topic_stack.push(self.topic)
 
 
 # noinspection PyProtectedMember
