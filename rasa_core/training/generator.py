@@ -59,7 +59,10 @@ class TrainingDataGenerator(object):
         removed and the data is augmented (if augmentation is enabled)."""
 
         self.hashed_featurizations = set()
+        self.hashed_featurizations_of_last_events = set()
+        print(story_graph.cyclic_edge_ids)
         self.story_graph = story_graph.with_cycles_removed()
+        print(self.story_graph.cyclic_edge_ids)
         self.domain = domain
         self.config = ExtractorConfig(
                 remove_duplicates=remove_duplicates,
@@ -101,11 +104,16 @@ class TrainingDataGenerator(object):
         # if we did not reach any new checkpoints in an iteration, we
         # assume we have reached all and stop.
         while not everything_reachable_is_reached or phase < min_num_phases:
-            phase_name = "data generation round {}".format(phase)
             num_trackers = self._count_trackers(active_trackers)
+            if num_trackers == 0:
+                # there is no incoming trackers
+                break
+            phase_name = "data generation round {}".format(phase)
             logger.debug("Starting {} ... (using {} trackers)"
                          "".format(phase_name, num_trackers))
 
+            print(self.story_graph.ordered_steps())
+            exit()
             pbar = tqdm(self.story_graph.ordered_steps(),
                         desc="Processed Story Blocks")
 
@@ -130,7 +138,8 @@ class TrainingDataGenerator(object):
                     pbar.set_postfix({"# trackers": "{:d}".format(
                         len(incoming_trackers))})
 
-                    trackers = self._process_step(step, incoming_trackers)
+                    trackers, end_trackers = self._process_step(
+                            step, incoming_trackers)
 
                     # update our tracker dictionary with the trackers
                     # that handled the events of the step and
@@ -141,6 +150,7 @@ class TrainingDataGenerator(object):
 
                     if not step.end_checkpoints:
                         active_trackers[STORY_END].extend(trackers)
+                    active_trackers[STORY_END].extend(end_trackers)
 
             # trackers that reached the end of a story
             completed = [t for t in active_trackers[STORY_END]]
@@ -251,9 +261,9 @@ class TrainingDataGenerator(object):
 
         trackers.extend(new_trackers)
         if self.config.remove_duplicates:
-            trackers = self._remove_duplicate_trackers(trackers)
-
-        return trackers
+            # trackers = self._remove_duplicate_trackers(trackers)
+            trackers, end_trackers = self._remove_duplicate_last_events_trackers(trackers)
+        return trackers, end_trackers
 
     def _remove_duplicate_trackers(self, trackers):
         # type: (List[DialogueStateTracker]) -> List[DialogueStateTracker]
@@ -279,6 +289,35 @@ class TrainingDataGenerator(object):
                 unique_trackers.append(tracker)
 
         return unique_trackers
+
+    def _remove_duplicate_last_events_trackers(self, trackers):
+        # type: (List[DialogueStateTracker]) -> List[DialogueStateTracker]
+        """Removes trackers that create equal featurizations for num last events.
+
+        From multiple trackers that create equal featurizations
+        we only need to keep one. Because as we continue processing
+        events and story steps, all trackers that created the
+        same featurization once will do so in the future (as we
+        feed the same events to all trackers)."""
+
+        num_last_events = 8
+        # collected trackers that created different featurizations
+        unique_trackers = []
+        end_trackers = []
+
+        for tracker in trackers:
+            states = self.domain.states_for_tracker_history(tracker)[-num_last_events:]
+            hashed = hash(tuple((frozenset(s) for s in states)))
+
+            # only continue with trackers that created a
+            # hashed_featurization we haven't observed
+            if hashed not in self.hashed_featurizations_of_last_events:
+                self.hashed_featurizations_of_last_events.add(hashed)
+                unique_trackers.append(tracker)
+            else:
+                end_trackers.append(tracker)
+
+        return unique_trackers, end_trackers
 
     def _mark_first_action_in_story_steps_as_unpredictable(self):
         # type: () -> None
