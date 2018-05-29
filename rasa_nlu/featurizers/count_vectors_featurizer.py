@@ -115,8 +115,8 @@ class CountVectorsFeaturizer(Featurizer):
 
         self.OOV_words = self.component_config['OOV_words']
         if self.OOV_words and not self.OOV_token:
-            logger.error("The list of OOV words {} was given, but "
-                         "OOV token was not set. OOV words are ignored."
+            logger.error("The list OOV_words={} was given, but "
+                         "OOV_token was not. OOV words are ignored."
                          "".format(self.OOV_words))
             self.OOV_words = []
 
@@ -171,6 +171,16 @@ class CountVectorsFeaturizer(Featurizer):
         else:
             return message.text
 
+    def _check_OOV_present(self, examples):
+        if self.OOV_token and not self.OOV_words:
+            for t in examples:
+                if self.OOV_token in t:
+                    return
+            logger.warning("OOV_token='{}' was given, but it is not present "
+                           "in training data. All unseen words during "
+                           "prediction will be ignored."
+                           "".format(self.OOV_token))
+
     def train(self, training_data, cfg=None, **kwargs):
         # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
         """Take parameters from config and
@@ -197,6 +207,8 @@ class CountVectorsFeaturizer(Featurizer):
 
         lem_exs = [self._lemmatize(example)
                    for example in training_data.intent_examples]
+
+        self._check_OOV_present(lem_exs)
 
         try:
             X = self.vect.fit_transform(lem_exs).toarray()
