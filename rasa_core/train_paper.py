@@ -72,8 +72,9 @@ def train_domain_policy(story_filename,
                         exclusion_percentage=None,
                         starspace=True,
                         epoch_no=2000):
-    """Trains a new deterministic domain policy using the stories
-    (json format) in `story_filename`."""
+
+    """Trains multiple models based on a range of exclusion percentages"""
+
     if starspace:
         featurizer = FullDialogueTrackerFeaturizer(
                         LabelTokenizerSingleStateFeaturizer())
@@ -109,6 +110,9 @@ def train_domain_policy(story_filename,
 
 
 def get_no_of_stories(exclude, domain):
+
+    "gets number of stories in a file"
+
     no_stories = len(StoryFileReader.read_from_file(exclude,
                                                     TemplateDomain.load(
                                                         domain)))

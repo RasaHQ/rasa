@@ -46,6 +46,8 @@ def create_argument_parser():
 
 def run_comparison_evaluation(models, stories, output):
 
+    """Evaluates multiple trained models on a test set"""
+
     num_correct = defaultdict(list)
 
     for run in nlu_utils.list_subdirectories(models):
@@ -69,6 +71,9 @@ def run_comparison_evaluation(models, stories, output):
 
 
 def plot_curve(output, no_stories, ax=None, **kwargs):
+
+    """ plots the results from run_comparison_evaluation"""
+
     ax = ax or plt.gca()
     with open(output + 'results.json') as f:
         data = json.load(f)
