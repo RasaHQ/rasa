@@ -33,7 +33,7 @@ def test_dispatcher_template_invalid_vars():
             [], [], [], {
                 "my_made_up_template": [{
                     "text": "a template referencing an invalid {variable}."}]},
-            [], [], None, [])
+            [], [], None)
     bot = CollectingOutputChannel()
     dispatcher = Dispatcher("my-sender", bot, domain)
     dispatcher.utter_template("my_made_up_template")
