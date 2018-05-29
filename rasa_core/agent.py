@@ -179,8 +179,8 @@ class Agent(object):
                   max_number_of_trackers=2000,  # type: int
                   tracker_limit=None,  # type: Optional[int]
                   use_story_concatenation=True,  # type: bool
-                  exclusion_file=None,
-                  exclusion_percentage=None
+                  exclusion_file=None,  # type: Text
+                  exclusion_percentage=None  # type: int
                   ):
         # type: (...) -> List[DialogueStateTracker]
         """Load training data from a resource."""

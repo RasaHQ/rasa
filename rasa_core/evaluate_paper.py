@@ -37,9 +37,8 @@ def create_argument_parser():
     parser.add_argument(
             '-o', '--output',
             type=str,
-            default="plot.pdf",
-            help="output path for the created evaluation plot. If set to None"
-                 "or an empty string, no plot will be generated.")
+            default="results/",
+            help="output path for the results")
 
     utils.add_logging_option_arguments(parser)
     return parser
@@ -53,8 +52,10 @@ def run_comparison_evaluation(models, stories, output):
         correct_embed = []
         correct_keras = []
         for model in nlu_utils.list_subdirectories(run):
-            actual, preds, failed_stories, no_of_stories = collect_story_predictions(stories,
-                                                                      model)
+            logger.info("Evaluating model {}".format(model))
+            actual, preds, failed_stories, no_of_stories = \
+                collect_story_predictions(stories,
+                                          model)
             if 'keras' in model:
                 correct_keras.append(no_of_stories - len(failed_stories))
             elif 'embed' in model:
@@ -67,9 +68,9 @@ def run_comparison_evaluation(models, stories, output):
         json.dump(num_correct, f)
 
 
-def plot_curve(filename, no_stories, ax=None, **kwargs):
+def plot_curve(output, no_stories, ax=None, **kwargs):
     ax = ax or plt.gca()
-    with open(filename) as f:
+    with open(output + 'results.json') as f:
         data = json.load(f)
     x = no_stories
     for label in ['keras', 'embed']:
@@ -84,6 +85,9 @@ def plot_curve(filename, no_stories, ax=None, **kwargs):
                         color='#6b2def',
                         alpha=0.2)
     ax.legend(loc=4)
+    ax.set_xlabel("Number of stories present during training")
+    ax.set_ylabel("Number of correct test stories")
+    plt.savefig(output + 'graph.pdf', format='pdf')
     plt.show()
 
 
@@ -98,4 +102,4 @@ if __name__ == '__main__':
 
     no_stories = pickle.load(open(cmdline_args.models + 'num_stories.p', 'rb'))
 
-    plot_curve(cmdline_args.output + 'results.json', no_stories)
+    plot_curve(cmdline_args.output, no_stories)

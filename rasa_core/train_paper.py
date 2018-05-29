@@ -120,7 +120,7 @@ if __name__ == '__main__':
     cmdline_args = arg_parser.parse_args()
 
     utils.configure_colored_logging(cmdline_args.loglevel)
-    for r in xrange(1, cmdline_args.runs):
+    for r in range(cmdline_args.runs):
         for i in cmdline_args.percentages:
             current_round = cmdline_args.percentages.index(i) + 1
             output_path_keras = (cmdline_args.path + 'run_' + str(r) + '/keras'
