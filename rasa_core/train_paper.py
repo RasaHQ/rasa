@@ -157,6 +157,6 @@ if __name__ == '__main__':
                                                 current_round,
                                                 len(cmdline_args.percentages)))
     no_stories = get_no_of_stories(cmdline_args.exclude, cmdline_args.domain)
-    story_range = [round((x/100.0) * no_stories) for x in
+    story_range = [no_stories - round((x/100.0) * no_stories) for x in
                    cmdline_args.percentages]
     pickle.dump(story_range, open(cmdline_args.path + 'num_stories.p', 'wb'))

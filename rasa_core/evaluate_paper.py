@@ -53,17 +53,16 @@ def run_comparison_evaluation(models, stories, output):
         correct_embed = []
         correct_keras = []
         for model in nlu_utils.list_subdirectories(run):
-            actual, preds, failed_stories = collect_story_predictions(stories,
+            actual, preds, failed_stories, no_of_stories = collect_story_predictions(stories,
                                                                       model)
-            print(actual)
             if 'keras' in model:
-                correct_keras.append(len(actual) - len(failed_stories))
+                correct_keras.append(no_of_stories - len(failed_stories))
             elif 'embed' in model:
-                correct_embed.append(len(actual) - len(failed_stories))
+                correct_embed.append(no_of_stories - len(failed_stories))
         num_correct['keras'].append(correct_keras)
         num_correct['embed'].append(correct_embed)
 
-    ## TODO: check if dir exists
+    utils.create_dir_for_file(output)
     with open(output + 'results.json', 'wb') as f:
         json.dump(num_correct, f)
 
