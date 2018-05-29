@@ -295,10 +295,18 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
 
     def slots_for_entities(self, entities):
         if self.store_entities_as_slots:
-            return [SlotSet(entity['entity'], entity['value'])
-                    for entity in entities
-                    for s in self.slots
-                    if entity['entity'] == s.name]
+            slot_events = []
+            for s in self.slots:
+                matching_entities = [e['value']
+                                     for e in entities
+                                     if e['entity'] == s.name]
+                if matching_entities:
+                    if s.type_name == 'list':
+                        slot_events.append(SlotSet(s.name, matching_entities))
+                    else:
+                        slot_events.append(SlotSet(s.name,
+                                                   matching_entities[-1]))
+            return slot_events
         else:
             return []
 

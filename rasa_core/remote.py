@@ -11,6 +11,7 @@ import time
 
 import requests
 from future.moves.urllib.parse import quote_plus
+from requests.exceptions import RequestException
 from typing import Callable, Union
 from typing import Text, List, Optional, Dict, Any
 
@@ -137,22 +138,27 @@ class RasaCoreClient(object):
         while max_retries > 0:
             max_retries -= 1
 
-            with io.open(model_zip, "rb") as f:
-                response = requests.post(url, files={"model": f})
+            try:
+                with io.open(model_zip, "rb") as f:
+                    response = requests.post(url, files={"model": f})
 
-            if response.status_code == 200:
-                logger.debug("Finished uploading")
-                return response.json()
+                if response.status_code == 200:
+                    logger.debug("Finished uploading")
+                    return response.json()
+            except RequestException as e:
+                logger.warn("Failed to send model upload request. "
+                            "{}".format(e))
 
             if max_retries > 0:
                 # some resting time before we try again - e.g. server
                 # might be unavailable / not started yet
                 time.sleep(2)
 
-        logger.warn("Got a bad response from rasa core while uploading "
-                    "the model (Status: {} "
-                    "Response: {}".format(response.status_code,
-                                          response.text))
+        if response:
+            logger.warn("Got a bad response from rasa core while uploading "
+                        "the model (Status: {} "
+                        "Response: {})".format(response.status_code,
+                                               response.text))
         return None
 
     def continue_core(self, action_name, events, sender_id):

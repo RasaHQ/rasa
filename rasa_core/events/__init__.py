@@ -362,10 +362,12 @@ class SlotSet(Event):
 
     @classmethod
     def _from_story_string(cls, parameters):
-        slot_key = first_key(parameters, default_key="name")
+        slots = []
+        for slot_key, slot_val in parameters.items():
+            slots.append(SlotSet(slot_key, slot_val))
 
-        if slot_key:
-            return SlotSet(slot_key, parameters[slot_key])
+        if slots:
+            return slots
         else:
             return None
 
