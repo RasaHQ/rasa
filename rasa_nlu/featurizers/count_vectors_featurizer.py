@@ -177,7 +177,7 @@ class CountVectorsFeaturizer(Featurizer):
                 if self.OOV_token in t:
                     return
             logger.warning("OOV_token='{}' was given, but it is not present "
-                           "in training data. All unseen words "
+                           "in the training data. All unseen words "
                            "will be ignored during prediction."
                            "".format(self.OOV_token))
 
