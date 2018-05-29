@@ -528,7 +528,7 @@ def generate_folds(n, td):
     """Generates n cross validation folds for training data td."""
 
     from sklearn.model_selection import StratifiedKFold
-    skf = StratifiedKFold(n_splits=n, random_state=2018, shuffle=True)
+    skf = StratifiedKFold(n_splits=n, shuffle=True)
     x = td.intent_examples
     y = [example.get("intent") for example in x]
     for i_fold, (train_index, test_index) in enumerate(skf.split(x, y)):
