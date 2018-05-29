@@ -71,10 +71,10 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
                 historic_events.append(collected_events[:])
 
-                if len(historic_events) == self.max_history - 1:
+                if len(historic_events) == self.max_history:
                     # the length of `historic_events` should be
-                    # one less than max_history, in order
-                    # to not recall again with the same features
+                    # max_history, because due to forgetting
+                    # of slots the features might be different
                     break
 
         mcfly_trackers = []
