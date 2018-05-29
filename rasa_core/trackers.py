@@ -203,8 +203,8 @@ class DialogueStateTracker(object):
                 undo_till_previous(UserUttered, applied_events)
                 undo_till_previous(ActionExecuted, applied_events)
             elif isinstance(event, TopicSet):
-                logger.info("The TopicSet events are no longer in use, and "
-                            "will be deprecated in future")
+                logger.warn("Topics are deprecated, therefore the TopicSet "
+                            "event will be ignored")
             else:
                 applied_events.append(event)
         return applied_events

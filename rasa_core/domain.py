@@ -475,7 +475,7 @@ class TemplateDomain(Domain):
         return templates
 
     def __init__(self, intents, entities, slots, templates, action_classes,
-                 action_names, action_factory,**kwargs):
+                 action_names, action_factory, **kwargs):
         self._intents = intents
         self._entities = entities
         self._slots = slots
