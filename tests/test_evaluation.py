@@ -37,11 +37,12 @@ def test_evaluation_script(tmpdir, default_agent):
     model_path = tmpdir.join("model").strpath
     default_agent.persist(model_path)
 
-    actual, preds, failed_stories = collect_story_predictions(
-            resource_name=DEFAULT_STORIES_FILE,
-            policy_model_path=model_path,
-            nlu_model_path=None,
-            max_stories=None)
+    actual, preds, failed_stories, no_of_stories = collect_story_predictions(
+                    resource_name=DEFAULT_STORIES_FILE,
+                    policy_model_path=model_path,
+                    nlu_model_path=None,
+                    max_stories=None)
     assert len(actual) == 14
     assert len(preds) == 14
     assert len(failed_stories) == 0
+    assert no_of_stories == 3
