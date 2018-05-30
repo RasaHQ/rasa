@@ -146,7 +146,9 @@ def test_count_vector_featurizer(sentence, expected):
 
 @pytest.mark.parametrize("tokens, expected", [
     (["hello", "hello", "hello", "hello", "hello"], [5]),
+    (["你好", "你好", "你好", "你好", "你好"], [5]),  # test for unicode chars
     (["hello", "goodbye", "hello"], [1, 2]),
+    (["你好", "再见", "你好"], [1, 2]),  # test for unicode chars
     (["a", "b", "c", "d", "e", "f"], [1, 1, 1, 1, 1, 1]),
     (["a", "1", "2"], [2, 1])
 ])
