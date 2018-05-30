@@ -275,11 +275,27 @@ intent_featurizer_count_vectors
     for detailed description of the configuration parameters
 
     Handling Out-Of-Vacabulary (OOV) words:
-        - ``OOV_token`` set a keyword for unseen words, if ``None`` (default behaviour) words that were not seen during training will be ignored during prediction time;
-        - ``OOV_words`` set a list of words to be treated as ``OOV_token`` during training.
 
-        .. note:: Providing ``OOV_words`` is optional, training data can contain ``OOV_token`` input manually or by custom additional preprocessor.
-                  Unseen words will be substituted with ``OOV_token`` **only** if this token is present in the training data or ``OOV_words`` list is provided.
+        Since the training is performed on limited vocabulary data, it cannot be guarantied that during prediction
+        an algorithm will not encounter an unknown word (a word that were not seen during training).
+        In order to teach an algorithm how to treat unknown words, some words in training data can be substituted by generic word ``OOV_token``.
+        In this case during prediction all unknown words will be treated as this generic word ``OOV_token``.
+
+        For example, one might create separate intent ``outofscope`` in the training data containing messages of different number of ``OOV_token``s and
+        maybe some additional general words. Then an algorithm will likely classify a message with unknown words as this intent ``outofscope``.
+
+        .. note::
+            This featurizer creates bag-of-words representation by **counting** words, so a number of ``OOV_token``s might be important.
+
+        - ``OOV_token`` set a keyword for unseen words; if training data contains ``OOV_token`` as words in some messages,
+          during prediction the words that were not seen during training will be substituted with provided ``OOV_token``;
+          if ``OOV_token=None`` (default behaviour) words that were not seen during training will be ignored during prediction time;
+        - ``OOV_words`` set a list of words to be treated as ``OOV_token`` during training; if a list of words that should be treated
+          as Out-Of-Vacabulary is known, it can be set to ``OOV_words`` instead of manually changing it in trainig data or using custom preprocessor.
+
+        .. note::
+            Providing ``OOV_words`` is optional, training data can contain ``OOV_token`` input manually or by custom additional preprocessor.
+            Unseen words will be substituted with ``OOV_token`` **only** if this token is present in the training data or ``OOV_words`` list is provided.
 
     .. code-block:: yaml
 
