@@ -14,6 +14,7 @@ from rasa_nlu.tokenizers.mitie_tokenizer import MitieTokenizer
 from rasa_nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
 from rasa_nlu.training_data import Message
 from rasa_nlu.training_data import TrainingData
+from rasa_nlu.tokenizers import Token
 
 
 @pytest.mark.parametrize("sentence, expected", [
@@ -135,6 +136,31 @@ def test_count_vector_featurizer(sentence, expected):
     ftr = CountVectorsFeaturizer({"token_pattern": r'(?u)\b\w+\b'})
     message = Message(sentence)
     message.set("intent", "bla")
+    data = TrainingData([message])
+
+    ftr.train(data)
+    ftr.process(message)
+
+    assert np.all(message.get("text_features")[0] == expected)
+
+
+@pytest.mark.parametrize("sentence, expected", [
+    (["hello", "hello", "hello", "hello", "hello"], [5]),
+    (["hello", "goodbye", "hello"], [1, 2]),
+    (["a", "b", "c", "d", "e", "f"], [1, 1, 1, 1, 1, 1]),
+    (["a", "1", "2"], [2, 1])
+])
+def test_count_vector_featurizer_using_tokens(tokens, expected):
+    from rasa_nlu.featurizers.count_vectors_featurizer import \
+        CountVectorsFeaturizer
+
+    ftr = CountVectorsFeaturizer({"token_pattern": r'(?u)\b\w+\b'})
+
+    message = Message("")
+
+    tokens_feature = [Token(i, 0) for i in tokens]
+    message.set("tokens", tokens_feature)
+
     data = TrainingData([message])
 
     ftr.train(data)
