@@ -86,8 +86,8 @@ class EmbeddingIntentClassifier(Component):
         "intent_split_symbol": '_',
 
         # visualization of accuracy
-        "calc_acc_ones_in_epochs": 10,  # small values affect performance
-        "calc_acc_on_num_examples": 1000  # large values affect performance
+        "calc_acc_ones_in_epochs": 10,  # small values may hurt performance
+        "calc_acc_on_num_examples": 1000  # large values may hurt performance
     }
 
     @classmethod
