@@ -60,9 +60,7 @@ class TrainingDataGenerator(object):
 
         self.hashed_featurizations = set()
         self.hashed_featurizations_of_last_events = set()
-        print(story_graph.cyclic_edge_ids)
         self.story_graph = story_graph.with_cycles_removed()
-        print(self.story_graph.cyclic_edge_ids)
         self.domain = domain
         self.config = ExtractorConfig(
                 remove_duplicates=remove_duplicates,
@@ -77,7 +75,7 @@ class TrainingDataGenerator(object):
 
         self._mark_first_action_in_story_steps_as_unpredictable()
 
-        unused_checkpoints = set()  # type: Set[Text]
+        # unused_checkpoints = set()  # type: Set[Text]
         previous_unused = set()  # type: Set[Text]
 
         everything_reachable_is_reached = False
@@ -109,25 +107,31 @@ class TrainingDataGenerator(object):
                 # there is no incoming trackers
                 break
             phase_name = "data generation round {}".format(phase)
-            logger.debug("Starting {} ... (using {} trackers)"
+            logger.debug("Starting {} ... (with {} trackers)"
                          "".format(phase_name, num_trackers))
+            # TODO remove permutation, just for test
+            import numpy as np
+            steps = self.story_graph.ordered_steps()
+            ids = np.random.permutation(len(steps))
+            steps = [steps[idx] for idx in ids]
 
-            print(self.story_graph.ordered_steps())
-            exit()
-            pbar = tqdm(self.story_graph.ordered_steps(),
+
+            pbar = tqdm(steps,
                         desc="Processed Story Blocks")
-
+            unused_checkpoints = set()  # type: Set[Text]
+            end_checkpoints = set()  # type: Set[Text]
             for step in pbar:
                 incoming_trackers = []
                 for start in step.start_checkpoints:
-                    if not active_trackers[start.name]:
-                        # need to skip - there was no previous step that
-                        # had this start checkpoint as an end checkpoint
-                        unused_checkpoints.add(start.name)
-                    else:
+                    if active_trackers[start.name]:
                         ts = start.filter_trackers(active_trackers[start.name])
                         incoming_trackers.extend(ts)
                         used_checkpoints.add(start.name)
+                        # end_checkpoints.discard(start.name)
+                    elif start.name not in used_checkpoints:
+                        # need to skip - there was no previous step that
+                        # had this start checkpoint as an end checkpoint
+                        unused_checkpoints.add(start.name)
 
                 if incoming_trackers:
                     # these are the trackers that reached this story
@@ -145,32 +149,46 @@ class TrainingDataGenerator(object):
                     # that handled the events of the step and
                     # that can now be used for further story steps
                     # that start with the checkpoint this step ended with
-                    for end in step.end_checkpoints:
-                        active_trackers[end.name].extend(trackers)
+                    if trackers:
+                        for end in step.end_checkpoints:
+                            active_trackers[end.name].extend(trackers)
+                            end_checkpoints.add(end.name)
 
-                    if not step.end_checkpoints:
-                        active_trackers[STORY_END].extend(trackers)
+                        if not step.end_checkpoints:
+                            active_trackers[STORY_END].extend(trackers)
+
                     active_trackers[STORY_END].extend(end_trackers)
+
+
 
             # trackers that reached the end of a story
             completed = [t for t in active_trackers[STORY_END]]
             finished_trackers.extend(completed)
-            active_trackers = self._create_start_trackers(active_trackers)
+
+            print(unused_checkpoints)
+            print(end_checkpoints)
+            unused_checkpoints |= end_checkpoints
+
+            active_trackers = self._create_start_trackers(active_trackers, unused_checkpoints)
             logger.debug("Finished phase. ({} training samples found)"
                          "".format(len(finished_trackers)))
 
             # check if we reached all nodes that can be reached
             # if we reached at least one more node this round than last one,
             # we assume there is still something left to reach and we continue
-            unused = unused_checkpoints - used_checkpoints
+            print(unused_checkpoints)
+            # exit()
+            print(self._count_trackers(active_trackers))
+            unused = unused_checkpoints #- used_checkpoints
+
             everything_reachable_is_reached = unused == previous_unused
 
             # prepare next round
             previous_unused = unused
             phase += 1
 
-        unused_checkpoints -= used_checkpoints
-        self._issue_unused_checkpoint_notification(unused_checkpoints)
+        # unused_checkpoints -= used_checkpoints
+        self._issue_unused_checkpoint_notification(previous_unused)
         logger.debug("Found {} training examples."
                      "".format(len(finished_trackers)))
 
@@ -196,7 +214,7 @@ class TrainingDataGenerator(object):
         else:
             return incoming_trackers
 
-    def _create_start_trackers(self, active_trackers):
+    def _create_start_trackers(self, active_trackers, unused_checkpoints):
         # type: (TrackerLookupDict) -> TrackerLookupDict
         """One phase is one traversal of all story steps.
 
@@ -207,6 +225,8 @@ class TrainingDataGenerator(object):
             glue_mapping[STORY_END] = STORY_START
 
         next_active_trackers = defaultdict(list)
+        for end in unused_checkpoints:
+            next_active_trackers[end].extend(active_trackers.get(end, []))
         for end, start in glue_mapping.items():
             ending_trackers = active_trackers.get(end, [])
             if start == STORY_START:
@@ -261,7 +281,7 @@ class TrainingDataGenerator(object):
 
         trackers.extend(new_trackers)
         if self.config.remove_duplicates:
-            # trackers = self._remove_duplicate_trackers(trackers)
+            trackers = self._remove_duplicate_trackers(trackers)
             trackers, end_trackers = self._remove_duplicate_last_events_trackers(trackers)
         return trackers, end_trackers
 
