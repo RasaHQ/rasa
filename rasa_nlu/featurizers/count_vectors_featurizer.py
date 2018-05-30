@@ -156,7 +156,7 @@ class CountVectorsFeaturizer(Featurizer):
         if message.get("spacy_doc"):  # if lemmatize is possible
             return ' '.join([t.lemma_ for t in message.get("spacy_doc")])
         elif message.get("tokens"):  # if directly tokens is provided
-            return ' '.join(message.get("tokens"))
+            return ' '.join([t.text for t in message.get("tokens")])
         else:
             return message.text
 
