@@ -500,8 +500,8 @@ intent_classifier_tensorflow_embedding
           "intent_tokenization_flag": false
           "intent_split_symbol": "_"
           # visualization of accuracy
-          "calc_acc_ones_in_epochs": 10  # small values affect performance
-          "calc_acc_on_num_examples": 1000  # large values affect performance
+          "calc_acc_ones_in_epochs": 10  # small values may hurt performance
+          "calc_acc_on_num_examples": 1000  # large values may hurt performance
 
     .. note:: Parameter ``mu_neg`` is set to a negative value to mimic the original
               starspace algorithm in the case ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``.
