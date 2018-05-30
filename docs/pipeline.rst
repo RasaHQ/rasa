@@ -435,7 +435,7 @@ intent_classifier_tensorflow_embedding
     by ``nlp_spacy`` and ``tokenizer_spacy``.
 
     .. note:: If during prediction time a message contains **only** words unseen during training,
-              and no OOV preprocessor was used,
+              and no Out-Of-Vacabulary preprocessor was used,
               empty intent ``""`` is predicted with confidence ``0.0``.
 
 :Configuration:
@@ -500,8 +500,8 @@ intent_classifier_tensorflow_embedding
           "intent_tokenization_flag": false
           "intent_split_symbol": "_"
           # visualization of accuracy
-          "calc_acc_ones_in_epochs": 10  # small values may hurt performance
-          "calc_acc_on_num_examples": 1000  # large values may hurt performance
+          "evaluate_every_num_epochs": 10  # small values may hurt performance
+          "evaluate_on_num_examples": 1000  # large values may hurt performance
 
     .. note:: Parameter ``mu_neg`` is set to a negative value to mimic the original
               starspace algorithm in the case ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``.

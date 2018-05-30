@@ -86,8 +86,8 @@ class EmbeddingIntentClassifier(Component):
         "intent_split_symbol": '_',
 
         # visualization of accuracy
-        "calc_acc_ones_in_epochs": 10,  # small values may hurt performance
-        "calc_acc_on_num_examples": 1000  # large values may hurt performance
+        "evaluate_every_num_epochs": 10,  # small values may hurt performance
+        "evaluate_on_num_examples": 1000  # large values may hurt performance
     }
 
     @classmethod
@@ -129,12 +129,12 @@ class EmbeddingIntentClassifier(Component):
             self.intent_tokenization_flag = False
 
     def _load_visual_params(self):
-        self.calc_acc_ones_in_epochs = self.component_config[
-                                            'calc_acc_ones_in_epochs']
-        if self.calc_acc_ones_in_epochs < 1:
-            self.calc_acc_ones_in_epochs = self.epochs
-        self.calc_acc_on_num_examples = self.component_config[
-                                            'calc_acc_on_num_examples']
+        self.evaluate_every_num_epochs = self.component_config[
+                                            'evaluate_every_num_epochs']
+        if self.evaluate_every_num_epochs < 1:
+            self.evaluate_every_num_epochs = self.epochs
+        self.evaluate_on_num_examples = self.component_config[
+                                            'evaluate_on_num_examples']
 
     @staticmethod
     def _check_hidden_layer_sizes(num_layers, layer_size, name=''):
@@ -400,20 +400,23 @@ class EmbeddingIntentClassifier(Component):
         """Train tf graph"""
         self.session.run(tf.global_variables_initializer())
 
-        if self.calc_acc_on_num_examples:
+        if self.evaluate_on_num_examples:
             logger.info("Accuracy is updated every {} epochs"
-                        "".format(self.calc_acc_ones_in_epochs))
+                        "".format(self.evaluate_every_num_epochs))
 
         pbar = tqdm(range(self.epochs), desc="Epochs")
         train_acc = 0
         last_loss = 0
         for ep in pbar:
             indices = np.random.permutation(len(X))
+            if self.epochs > 1:
+                batch_size = int(self.batch_size[0] +
+                                 ep * (self.batch_size[1] -
+                                       self.batch_size[0]) /
+                                 (self.epochs - 1))
+            else:
+                batch_size = int(self.batch_size[0])
 
-            batch_size = int(self.batch_size[0] +
-                             ep * (self.batch_size[1] -
-                                   self.batch_size[0]) /
-                             (self.epochs - 1))
             batches_per_epoch = (len(X) // batch_size +
                                  int(len(X) % batch_size > 0))
 
@@ -435,9 +438,9 @@ class EmbeddingIntentClassifier(Component):
                 )
                 ep_loss += sess_out.get('loss') / batches_per_epoch
 
-            if self.calc_acc_on_num_examples:
-                if ((ep + 1) == 1 or
-                        (ep + 1) % self.calc_acc_ones_in_epochs == 0 or
+            if self.evaluate_on_num_examples:
+                if (ep == 0 or
+                        (ep + 1) % self.evaluate_every_num_epochs == 0 or
                         (ep + 1) == self.epochs):
                     train_acc = self._output_training_stat(X, intents_for_X,
                                                            is_training)
@@ -452,14 +455,14 @@ class EmbeddingIntentClassifier(Component):
                     "loss": "{:.3f}".format(ep_loss)
                 })
 
-        if self.calc_acc_on_num_examples:
+        if self.evaluate_on_num_examples:
             logger.info("Finished training embedding policy, "
                         "loss={:.3f}, train accuracy={:.3f}"
                         "".format(last_loss, train_acc))
 
     def _output_training_stat(self, X, intents_for_X, is_training):
         """Output training statistics"""
-        n = self.calc_acc_on_num_examples
+        n = self.evaluate_on_num_examples
         ids = np.random.permutation(len(X))[:n]
         all_Y = self._create_all_Y(X[ids].shape[0])
 
