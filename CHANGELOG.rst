@@ -21,6 +21,14 @@ Removed
 Fixed
 -----
 
+[0.9.3] - 2018-05-30
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- added token auth to all endpoints of the core server
+
+
 [0.9.2] - 2018-05-30
 ^^^^^^^^^^^^^^^^^^^^
 
