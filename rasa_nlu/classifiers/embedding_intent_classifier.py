@@ -395,6 +395,14 @@ class EmbeddingIntentClassifier(Component):
 
         return np.concatenate([batch_pos_b, batch_neg_b], 1)
 
+    def _linearly_increasing_batch_size(self, ep):
+        if self.epochs > 1:
+            return int(self.batch_size[0] +
+                       ep * (self.batch_size[1] - self.batch_size[0]) /
+                       (self.epochs - 1))
+        else:
+            return int(self.batch_size[0])
+
     def _train_tf(self, X, Y, intents_for_X,
                   loss, is_training, train_op):
         """Train tf graph"""
@@ -409,14 +417,8 @@ class EmbeddingIntentClassifier(Component):
         last_loss = 0
         for ep in pbar:
             indices = np.random.permutation(len(X))
-            if self.epochs > 1:
-                batch_size = int(self.batch_size[0] +
-                                 ep * (self.batch_size[1] -
-                                       self.batch_size[0]) /
-                                 (self.epochs - 1))
-            else:
-                batch_size = int(self.batch_size[0])
 
+            batch_size = self._linearly_increasing_batch_size(ep)
             batches_per_epoch = (len(X) // batch_size +
                                  int(len(X) % batch_size > 0))
 
@@ -553,7 +555,7 @@ class EmbeddingIntentClassifier(Component):
         # type: (Message, **Any) -> None
         """Return the most likely intent and its similarity to the input."""
 
-        intent = {"name": '', "confidence": 0.0}
+        intent = {"name": None, "confidence": 0.0}
         intent_ranking = []
 
         if self.session is None:

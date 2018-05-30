@@ -183,7 +183,7 @@ class SklearnIntentClassifier(Component):
                 intent_ranking = [{"name": intent_name, "confidence": score}
                                   for intent_name, score in ranking]
             else:
-                intent = {"name": '', "confidence": 0.0}
+                intent = {"name": None, "confidence": 0.0}
                 intent_ranking = []
 
         message.set("intent", intent, add_to_output=True)

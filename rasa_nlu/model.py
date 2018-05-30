@@ -247,7 +247,7 @@ class Interpreter(object):
     # that will be returned by `parse`
     @staticmethod
     def default_output_attributes():
-        return {"intent": {"name": "", "confidence": 0.0}, "entities": []}
+        return {"intent": {"name": None, "confidence": 0.0}, "entities": []}
 
     @staticmethod
     def ensure_model_compatibility(metadata):
