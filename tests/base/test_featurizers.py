@@ -150,7 +150,9 @@ def test_count_vector_featurizer(sentence, expected):
     (["hello", "hello", "hello", "hello", "hello"], [5]),
     (["你好", "你好", "你好", "你好", "你好"], [5]),  # test for unicode chars
     (["hello", "goodbye", "hello"], [1, 2]),
-    (["你好", "再见", "你好"], [1, 2]),  # test for unicode chars
+
+    # Note: order has changed in Chinese version of "hello" & "goodbye"
+    (["你好", "再见", "你好"], [2, 1]),  # test for unicode chars
     (["a", "b", "c", "d", "e", "f"], [1, 1, 1, 1, 1, 1]),
     (["a", "1", "2"], [2, 1])
 ])
@@ -164,6 +166,7 @@ def test_count_vector_featurizer_using_tokens(tokens, expected):
 
     tokens_feature = [Token(i, 0) for i in tokens]
     message.set("tokens", tokens_feature)
+    message.set("intent", "bla")  # this is needed for a valid training example
 
     data = TrainingData([message])
 
