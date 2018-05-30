@@ -3,6 +3,9 @@
 Choosing A Pipeline
 ===================
 
+The two most important pipelines are ``tensorflow_embedding`` and ``spacy_sklearn``.
+
+
 Tensorflow Embedding or Spacy?
 
 If you want to split intents into multiple labels, e.g. for predicting multiple intents or for modeling hierarchical intent structure, use these flags:

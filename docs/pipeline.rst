@@ -112,6 +112,11 @@ The tensorflow pipeline supports any language that can be tokenized. The
 current tokenizer implementation relies on words being separated by spaces,
 so any languages that adheres to that can be trained with this pipeline.
 
+.. _section_multiple_intents:
+
+Multiple Intents
+~~~~~~~~~~~~~~~~
+
 If you want to split intents into multiple labels, e.g. for predicting multiple intents or for modeling hierarchical intent structure, use these flags:
 
     - ``intent_tokenization_flag`` if ``true`` the algorithm will split the intent labels into tokens and use bag-of-words representations for them;

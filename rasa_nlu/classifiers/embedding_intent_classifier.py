@@ -164,7 +164,8 @@ class EmbeddingIntentClassifier(Component):
                  graph=None,  # type: Optional[tf.Graph]
                  intent_placeholder=None,  # type: Optional[tf.Tensor]
                  embedding_placeholder=None,  # type: Optional[tf.Tensor]
-                 similarity_op=None   # type: Optional[tf.Tensor]
+                 similarity_op=None,   # type: Optional[tf.Tensor]
+                 a=None
                  ):
         # type: (...) -> None
         """Declare instant variables with default values"""
@@ -203,6 +204,7 @@ class EmbeddingIntentClassifier(Component):
         self.intent_placeholder = intent_placeholder
         self.embedding_placeholder = embedding_placeholder
         self.similarity_op = similarity_op
+        self.a = a
 
     @classmethod
     def required_packages(cls):
@@ -467,6 +469,10 @@ class EmbeddingIntentClassifier(Component):
 
             sim, loss = self._create_tf_graph(a_in, b_in, is_training)
             self.similarity_op = sim
+            self.a = self._create_tf_embed_nn(a_in, is_training,
+                                     self.num_hidden_layers_a,
+                                     self.hidden_layer_size_a,
+                                     name='a')
 
             train_op = tf.train.AdamOptimizer().minimize(loss)
 
@@ -477,6 +483,13 @@ class EmbeddingIntentClassifier(Component):
             self._train_tf(X, Y, helper_data,
                            sess, a_in, b_in, sim,
                            loss, is_training, train_op)
+
+    def _calculate_embedding(self, X):
+        a = self.a
+        a_in = self.embedding_placeholder
+        sess = self.session
+        message_embed = sess.run(a, feed_dict={a_in: X})
+        return message_embed
 
     # process helpers
     def _calculate_message_sim(self, X, all_Y):
@@ -520,6 +533,9 @@ class EmbeddingIntentClassifier(Component):
             # to create candidates for test examples
             all_Y = self._create_all_Y(X.shape[0])
 
+            text_embed = self._calculate_embedding(X)
+            print("embedding of text:")
+            print(text_embed)
             # load tf graph and session
             intent_ids, message_sim = self._calculate_message_sim(X, all_Y)
 
@@ -563,6 +579,7 @@ class EmbeddingIntentClassifier(Component):
                     'intent_placeholder')[0]
                 similarity_op = tf.get_collection(
                     'similarity_op')[0]
+                a = tf.get_collection('a')[0]
 
             with io.open(os.path.join(
                     model_dir,
@@ -581,7 +598,8 @@ class EmbeddingIntentClassifier(Component):
                     graph=graph,
                     intent_placeholder=intent_placeholder,
                     embedding_placeholder=embedding_placeholder,
-                    similarity_op=similarity_op
+                    similarity_op=similarity_op,
+                    a=a
             )
 
         else:
@@ -618,6 +636,11 @@ class EmbeddingIntentClassifier(Component):
             self.graph.clear_collection('similarity_op')
             self.graph.add_to_collection('similarity_op',
                                          self.similarity_op)
+
+            self.graph.clear_collection('a')
+            self.graph.add_to_collection('a',
+                                         self.a)
+
 
             saver = tf.train.Saver()
             saver.save(self.session, checkpoint)
