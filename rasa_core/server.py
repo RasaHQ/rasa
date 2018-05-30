@@ -190,6 +190,14 @@ def create_app(model_directory,
         """Check if the server is running and responds with the version."""
         return "hello from Rasa Core: " + __version__
 
+    @app.route("/version",
+               methods=['GET', 'OPTIONS'])
+    @cross_origin(origins=cors_origins)
+    def version():
+        """respond with the version number of the installed rasa core."""
+
+        return jsonify({'version': __version__})
+
     @app.route("/conversations/<sender_id>/continue",
                methods=['POST', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
@@ -228,6 +236,7 @@ def create_app(model_directory,
     @app.route("/conversations/<sender_id>/tracker/events",
                methods=['POST', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
+    @requires_auth(auth_token)
     @ensure_loaded_agent(agent)
     def append_events(sender_id):
         """Append a list of events to the state of a conversation"""
@@ -243,6 +252,7 @@ def create_app(model_directory,
     @app.route("/conversations",
                methods=['GET', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
+    @requires_auth(auth_token)
     @ensure_loaded_agent(agent)
     def list_trackers():
         return jsonify(list(agent().tracker_store.keys()))
@@ -250,6 +260,7 @@ def create_app(model_directory,
     @app.route("/conversations/<sender_id>/tracker",
                methods=['GET', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
+    @requires_auth(auth_token)
     @ensure_loaded_agent(agent)
     def retrieve_tracker(sender_id):
         """Get a dump of a conversations tracker including its events."""
@@ -273,6 +284,7 @@ def create_app(model_directory,
     @app.route("/conversations/<sender_id>/tracker",
                methods=['PUT', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
+    @requires_auth(auth_token)
     @ensure_loaded_agent(agent)
     def update_tracker(sender_id):
         """Use a list of events to set a conversations tracker to a state."""
@@ -348,6 +360,7 @@ def create_app(model_directory,
                             content_type="application/json")
 
     @app.route("/load", methods=['POST', 'OPTIONS'])
+    @requires_auth(auth_token)
     @cross_origin(origins=cors_origins)
     def load_model():
         """Loads a zipped model, replacing the existing one."""
@@ -376,14 +389,6 @@ def create_app(model_directory,
                                   action_factory, tracker_store)
         logger.debug("Finished loading new agent.")
         return jsonify({'success': 1})
-
-    @app.route("/version",
-               methods=['GET', 'OPTIONS'])
-    @cross_origin(origins=cors_origins)
-    def version():
-        """respond with the version number of the installed rasa core."""
-
-        return jsonify({'version': __version__})
 
     return app
 
