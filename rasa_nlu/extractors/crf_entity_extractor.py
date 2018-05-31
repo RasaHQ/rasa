@@ -433,8 +433,15 @@ class CRFEntityExtractor(EntityExtractor):
         # type: (...) -> List[Tuple[Text, Text, Text, Text]]
         """Convert json examples to format of underlying crfsuite."""
 
-        tokens = message.get("tokens")
-        ents = self._bilou_tags_from_offsets(tokens, entity_offsets)
+        if self.pos_features:
+            from spacy.gold import GoldParse
+
+            doc = message.get("spacy_doc")
+            gold = GoldParse(doc, entities=entity_offsets)
+            ents = [l[5] for l in gold.orig_annot]
+        else:
+            tokens = message.get("tokens")
+            ents = self._bilou_tags_from_offsets(tokens, entity_offsets)
 
         if '-' in ents:
             logger.warn("Misaligned entity annotation in sentence '{}'. "
