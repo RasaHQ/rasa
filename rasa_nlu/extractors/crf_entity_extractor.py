@@ -105,7 +105,9 @@ class CRFEntityExtractor(EntityExtractor):
         if spacy is None:
             raise ImportError(
                 'Failed to import `spaCy`. '
-                '`spaCy` is required for POS features.')
+                '`spaCy` is required for POS features '
+                'See https://spacy.io/usage/ for installation'
+                'instructions.')
 
     def _validate_configuration(self):
         if len(self.component_config.get("features", [])) % 2 != 1:
@@ -149,10 +151,12 @@ class CRFEntityExtractor(EntityExtractor):
     def _check_spacy_doc(self, message):
         if self.pos_features and message.get("spacy_doc") is None:
             raise InvalidConfigError(
-                'Could not find `spacy_doc` attribute '
-                'for message {}\n'
-                'POS features require a pipeline component that provides '
-                '`spacy_doc` attributes'.format(message.text))
+                'Could not find `spacy_doc` attribute for '
+                'message {}\n'
+                'POS features require a pipeline component '
+                'that provides `spacy_doc` attributes, i.e. `nlp_spacy`. '
+                'See https://nlu.rasa.com/pipeline.html#nlp-spacy '
+                'for details'.format(message.text))
 
     def process(self, message, **kwargs):
         # type: (Message, **Any) -> None
@@ -429,15 +433,8 @@ class CRFEntityExtractor(EntityExtractor):
         # type: (...) -> List[Tuple[Text, Text, Text, Text]]
         """Convert json examples to format of underlying crfsuite."""
 
-        if self.pos_features:
-            from spacy.gold import GoldParse
-
-            doc = message.get("spacy_doc")
-            gold = GoldParse(doc, entities=entity_offsets)
-            ents = [l[5] for l in gold.orig_annot]
-        else:
-            tokens = message.get("tokens")
-            ents = self._bilou_tags_from_offsets(tokens, entity_offsets)
+        tokens = message.get("tokens")
+        ents = self._bilou_tags_from_offsets(tokens, entity_offsets)
 
         if '-' in ents:
             logger.warn("Misaligned entity annotation in sentence '{}'. "
