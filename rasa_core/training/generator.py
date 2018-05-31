@@ -93,7 +93,7 @@ class TrainingDataGenerator(object):
         phase = 0
         min_num_aug_phases = 3 if self.config.augmentation_factor > 0 else 0
         logger.debug("Number of augmentation rounds is {}"
-                    "".format(min_num_aug_phases))
+                     "".format(min_num_aug_phases))
 
         # placeholder to track gluing process of checkpoints
         used_checkpoints = set()  # type: Set[Text]
