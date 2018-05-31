@@ -127,6 +127,8 @@ class TrainingDataGenerator(object):
                         ts = start.filter_trackers(active_trackers[start.name])
                         incoming_trackers.extend(ts)
                         if start.name not in used_checkpoints:
+                            # means end_checkpoints were created
+                            # before start ones, so the gluing is linear
                             end_checkpoints.discard(start.name)
                         used_checkpoints.add(start.name)
                     elif start.name not in used_checkpoints:
