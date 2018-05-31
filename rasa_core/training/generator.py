@@ -12,7 +12,7 @@ from collections import defaultdict, namedtuple
 
 import typing
 from tqdm import tqdm
-from typing import Optional, List, Text, Set, Dict
+from typing import Optional, List, Text, Set, Dict, Tuple
 
 from rasa_core import utils
 from rasa_core.channels import UserMessage
@@ -38,6 +38,7 @@ ExtractorConfig = namedtuple("ExtractorConfig", "remove_duplicates "
 
 # define types
 TrackerLookupDict = Dict[Optional[Text], List[DialogueStateTracker]]
+TrackersTuple = Tuple[List[DialogueStateTracker], List[DialogueStateTracker]]
 
 
 class TrainingDataGenerator(object):
@@ -69,6 +70,7 @@ class TrainingDataGenerator(object):
                 tracker_limit=tracker_limit,
                 use_story_concatenation=use_story_concatenation,
                 rand=random.Random(42))
+        self.hash_only_unique_last_num_states = 8
 
     def generate(self):
         # type: () -> List[DialogueStateTracker]
@@ -89,7 +91,9 @@ class TrainingDataGenerator(object):
         finished_trackers = []
 
         phase = 0
-        min_num_phases = 3 if self.config.augmentation_factor > 0 else 0
+        min_num_aug_phases = 3 if self.config.augmentation_factor > 0 else 0
+        logger.info("Number of augmentation rounds is {}"
+                    "".format(min_num_aug_phases))
 
         # placeholder to track gluing process of checkpoints
         used_checkpoints = set()  # type: Set[Text]
@@ -100,12 +104,18 @@ class TrainingDataGenerator(object):
         # checkpoints that seem to be reachable. This is a heuristic,
         # if we did not reach any new checkpoints in an iteration, we
         # assume we have reached all and stop.
-        while not everything_reachable_is_reached or phase < min_num_phases:
+        while not everything_reachable_is_reached or phase < min_num_aug_phases:
             num_trackers = self._count_trackers(active_trackers)
             if num_trackers == 0:
                 # there is no incoming trackers
                 break
-            phase_name = "data generation round {}".format(phase)
+            if everything_reachable_is_reached:
+                # augmentation started
+                phase = 0
+                phase_name = "augmentation round {}".format(phase)
+            else:
+                phase_name = "data generation round {}".format(phase)
+
             logger.debug("Starting {} ... (with {} trackers)"
                          "".format(phase_name, num_trackers))
 
@@ -116,7 +126,7 @@ class TrainingDataGenerator(object):
             import numpy as np
             steps = self.story_graph.ordered_steps()
             ids = np.random.permutation(len(steps))
-            # steps = [steps[idx] for idx in ids]
+            steps = [steps[idx] for idx in ids]
 
             pbar = tqdm(steps,
                         desc="Processed Story Blocks")
@@ -168,7 +178,7 @@ class TrainingDataGenerator(object):
             finished_trackers.extend(completed)
 
             active_trackers = self._create_start_trackers(active_trackers, unused_checkpoints)
-            logger.debug("Finished phase. ({} training samples found)"
+            logger.debug("Finished phase ({} training samples found)."
                          "".format(len(finished_trackers)))
 
             # check if we reached all nodes that can be reached
@@ -251,7 +261,7 @@ class TrainingDataGenerator(object):
             step,  # type: StoryStep
             incoming_trackers  # type: List[DialogueStateTracker]
     ):
-        # type: (...) -> List[DialogueStateTracker]
+        # type: (...) -> TrackersTuple
         """Processes a steps events with all trackers.
 
         The trackers that reached the steps starting checkpoint will
@@ -274,12 +284,13 @@ class TrainingDataGenerator(object):
 
         trackers.extend(new_trackers)
         if self.config.remove_duplicates:
-            trackers = self._remove_duplicate_trackers(trackers)
-            trackers, end_trackers = self._remove_duplicate_last_events_trackers(trackers)
-        return trackers, end_trackers
+            trackers, end_trackers = self._remove_duplicate_trackers(trackers)
+            return trackers, end_trackers
+        else:
+            return trackers, []
 
     def _remove_duplicate_trackers(self, trackers):
-        # type: (List[DialogueStateTracker]) -> List[DialogueStateTracker]
+        # type: (List[DialogueStateTracker]) -> TrackersTuple
         """Removes trackers that create equal featurizations.
 
         From multiple trackers that create equal featurizations
@@ -290,6 +301,7 @@ class TrainingDataGenerator(object):
 
         # collected trackers that created different featurizations
         unique_trackers = []
+        end_trackers = []
 
         for tracker in trackers:
             states = self.domain.states_for_tracker_history(tracker)
@@ -298,37 +310,15 @@ class TrainingDataGenerator(object):
             # only continue with trackers that created a
             # hashed_featurization we haven't observed
             if hashed not in self.hashed_featurizations:
+                last_num_states = states[-self.hash_only_unique_last_num_states:]
+                last_num_hashed = hash(tuple((frozenset(s) for s in last_num_states)))
+                if last_num_hashed not in self.hashed_featurizations:
+                    self.hashed_featurizations.add(last_num_hashed)
+                    unique_trackers.append(tracker)
+                else:
+                    end_trackers.append(tracker)
+
                 self.hashed_featurizations.add(hashed)
-                unique_trackers.append(tracker)
-
-        return unique_trackers
-
-    def _remove_duplicate_last_events_trackers(self, trackers):
-        # type: (List[DialogueStateTracker]) -> List[DialogueStateTracker]
-        """Removes trackers that create equal featurizations for num last events.
-
-        From multiple trackers that create equal featurizations
-        we only need to keep one. Because as we continue processing
-        events and story steps, all trackers that created the
-        same featurization once will do so in the future (as we
-        feed the same events to all trackers)."""
-
-        num_last_events = 8
-        # collected trackers that created different featurizations
-        unique_trackers = []
-        end_trackers = []
-
-        for tracker in trackers:
-            states = self.domain.states_for_tracker_history(tracker)[-num_last_events:]
-            hashed = hash(tuple((frozenset(s) for s in states)))
-
-            # only continue with trackers that created a
-            # hashed_featurization we haven't observed
-            if hashed not in self.hashed_featurizations_of_last_events:
-                self.hashed_featurizations_of_last_events.add(hashed)
-                unique_trackers.append(tracker)
-            else:
-                end_trackers.append(tracker)
 
         return unique_trackers, end_trackers
 
