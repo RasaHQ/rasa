@@ -162,6 +162,9 @@ def test_count_vector_featurizer_using_tokens(tokens, expected):
 
     ftr = CountVectorsFeaturizer({"token_pattern": r'(?u)\b\w+\b'})
 
+    # using empty string instead of real text string to make sure
+    # count vector only can come from `tokens` feature.
+    # using `message.text` can not get correct result
     message = Message("")
 
     tokens_feature = [Token(i, 0) for i in tokens]
