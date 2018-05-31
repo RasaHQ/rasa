@@ -48,7 +48,7 @@ class TrainingDataGenerator(object):
             domain,  # type: Domain
             remove_duplicates=True,  # type: bool
             augmentation_factor=20,  # type: int
-            max_number_of_trackers=2000,  # type: Optional[int]
+            max_number_of_trackers=200,  # type: Optional[int]
             tracker_limit=None,  # type: Optional[int]
             use_story_concatenation=True  # type: bool
     ):
@@ -130,7 +130,7 @@ class TrainingDataGenerator(object):
             import numpy as np
             steps = self.story_graph.ordered_steps()
             ids = np.random.permutation(len(steps))
-            steps = [steps[idx] for idx in ids]
+            # steps = [steps[idx] for idx in ids]
 
             pbar = tqdm(steps,
                         desc="Processed Story Blocks")
@@ -150,9 +150,10 @@ class TrainingDataGenerator(object):
                 if incoming_trackers:
                     # these are the trackers that reached this story
                     # step and that need to handle all events of the step
-                    # TODO this is harsh: uncontrollably loose information
-                    incoming_trackers = self._subsample_trackers(
-                            incoming_trackers)
+                    if everything_reachable_is_reached:
+                        # augmentation round
+                        incoming_trackers = self._subsample_trackers(
+                                incoming_trackers)
 
                     # update progress bar
                     pbar.set_postfix({"# trackers": "{:d}".format(
@@ -194,6 +195,8 @@ class TrainingDataGenerator(object):
             # check if we reached all nodes that can be reached
             # if we reached at least one more node this round than last one,
             # we assume there is still something left to reach and we continue
+            logger.debug("Found {} unused checkpoints"
+                         "".format(len(unused_checkpoints)))
             if not everything_reachable_is_reached:
                 everything_reachable_is_reached = (
                         unused_checkpoints == previous_unused)
@@ -203,7 +206,7 @@ class TrainingDataGenerator(object):
             phase += 1
 
         self._issue_unused_checkpoint_notification(previous_unused)
-        logger.debug("Found {} training examples."
+        logger.debug("Found {} training trackers."
                      "".format(len(finished_trackers)))
 
         return finished_trackers
@@ -234,15 +237,24 @@ class TrainingDataGenerator(object):
 
         We need to do some cleanup before processing them again."""
 
+        # mapping from loops
         glue_mapping = self.story_graph.story_end_checkpoints
+
         if self.config.use_story_concatenation:
+            # enable augmentation
             glue_mapping[STORY_END] = STORY_START
 
         next_active_trackers = defaultdict(list)
+
         for end in unused_checkpoints:
+            # process trackers ended with unused checkpoints further
             next_active_trackers[end].extend(active_trackers.get(end, []))
+
         for end, start in glue_mapping.items():
+            # process trackers from loops
             ending_trackers = active_trackers.get(end, [])
+            # add trackers for augmentation only
+            # after we processed all unused checkpoints
             if start == STORY_START:
                 ending_trackers = utils.subsample_array(
                         ending_trackers,
