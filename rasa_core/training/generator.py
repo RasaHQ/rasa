@@ -112,6 +112,8 @@ class TrainingDataGenerator(object):
             if everything_reachable_is_reached:
                 # augmentation started
                 phase = 0
+                # reset used checkpoints
+                used_checkpoints = set()  # type: Set[Text]
                 phase_name = "augmentation round {}".format(phase)
             else:
                 phase_name = "data generation round {}".format(phase)
@@ -184,11 +186,12 @@ class TrainingDataGenerator(object):
             # check if we reached all nodes that can be reached
             # if we reached at least one more node this round than last one,
             # we assume there is still something left to reach and we continue
-            everything_reachable_is_reached = (
-                    unused_checkpoints == previous_unused)
+            if not everything_reachable_is_reached:
+                everything_reachable_is_reached = (
+                        unused_checkpoints == previous_unused)
+                previous_unused = unused_checkpoints
 
             # prepare next round
-            previous_unused = unused_checkpoints
             phase += 1
 
         self._issue_unused_checkpoint_notification(previous_unused)
