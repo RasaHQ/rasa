@@ -126,8 +126,9 @@ class TrainingDataGenerator(object):
                     if active_trackers[start.name]:
                         ts = start.filter_trackers(active_trackers[start.name])
                         incoming_trackers.extend(ts)
+                        if start.name not in used_checkpoints:
+                            end_checkpoints.discard(start.name)
                         used_checkpoints.add(start.name)
-                        # end_checkpoints.discard(start.name)
                     elif start.name not in used_checkpoints:
                         # need to skip - there was no previous step that
                         # had this start checkpoint as an end checkpoint
