@@ -72,7 +72,7 @@ class TrainingDataGenerator(object):
                 rand=random.Random(42))
 
         # TODO move it to config and make it configurable
-        self.hash_only_unique_last_num_states = 8
+        self.unique_last_num_states = 8
 
     def generate(self):
         # type: () -> List[DialogueStateTracker]
@@ -318,8 +318,9 @@ class TrainingDataGenerator(object):
             # only continue with trackers that created a
             # hashed_featurization we haven't observed
             if hashed not in self.hashed_featurizations:
-                last_num_states = states[-self.hash_only_unique_last_num_states:]
-                last_num_hashed = hash(tuple((frozenset(s) for s in last_num_states)))
+                last_num_states = states[-self.unique_last_num_states:]
+                last_num_hashed = hash(tuple((frozenset(s)
+                                              for s in last_num_states)))
                 if last_num_hashed not in self.hashed_featurizations:
                     self.hashed_featurizations.add(last_num_hashed)
                     unique_trackers.append(tracker)
