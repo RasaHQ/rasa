@@ -70,6 +70,8 @@ class TrainingDataGenerator(object):
                 tracker_limit=tracker_limit,
                 use_story_concatenation=use_story_concatenation,
                 rand=random.Random(42))
+
+        # TODO move it to config and make it configurable
         self.hash_only_unique_last_num_states = 8
 
     def generate(self):
@@ -105,8 +107,8 @@ class TrainingDataGenerator(object):
         # if we did not reach any new checkpoints in an iteration, we
         # assume we have reached all and stop.
         while not everything_reachable_is_reached or phase < min_num_aug_phases:
-            num_trackers = self._count_trackers(active_trackers)
-            if num_trackers == 0:
+            num_active_trackers = self._count_trackers(active_trackers)
+            if num_active_trackers == 0:
                 # there is no incoming trackers
                 break
             if everything_reachable_is_reached:
@@ -118,13 +120,13 @@ class TrainingDataGenerator(object):
             else:
                 phase_name = "data generation round {}".format(phase)
 
-            logger.debug("Starting {} ... (with {} trackers)"
-                         "".format(phase_name, num_trackers))
+            logger.debug("Starting {} ... (with {} active trackers)"
+                         "".format(phase_name, num_active_trackers))
 
             # track unused checkpoints for this phase
             unused_checkpoints = set()  # type: Set[Text]
 
-            # TODO remove permutation, just for test
+            # TODO remove permutation, just for testing
             import numpy as np
             steps = self.story_graph.ordered_steps()
             ids = np.random.permutation(len(steps))
@@ -148,14 +150,21 @@ class TrainingDataGenerator(object):
                 if incoming_trackers:
                     # these are the trackers that reached this story
                     # step and that need to handle all events of the step
+                    # TODO this is harsh: uncontrollably loose information
                     incoming_trackers = self._subsample_trackers(
                             incoming_trackers)
+
                     # update progress bar
                     pbar.set_postfix({"# trackers": "{:d}".format(
                         len(incoming_trackers))})
 
-                    trackers, end_trackers = self._process_step(
-                            step, incoming_trackers)
+                    trackers = self._process_step(step, incoming_trackers)
+
+                    if self.config.remove_duplicates:
+                        trackers, end_trackers = \
+                            self._remove_duplicate_trackers(trackers)
+                        # append end trackers to finished trackers
+                        finished_trackers.extend(end_trackers)
 
                     # update our tracker dictionary with the trackers
                     # that handled the events of the step and
@@ -173,13 +182,12 @@ class TrainingDataGenerator(object):
                         if not step.end_checkpoints:
                             active_trackers[STORY_END].extend(trackers)
 
-                    active_trackers[STORY_END].extend(end_trackers)
-
             # trackers that reached the end of a story
             completed = [t for t in active_trackers[STORY_END]]
             finished_trackers.extend(completed)
 
-            active_trackers = self._create_start_trackers(active_trackers, unused_checkpoints)
+            active_trackers = self._create_start_trackers(active_trackers,
+                                                          unused_checkpoints)
             logger.debug("Finished phase ({} training samples found)."
                          "".format(len(finished_trackers)))
 
@@ -264,7 +272,7 @@ class TrainingDataGenerator(object):
             step,  # type: StoryStep
             incoming_trackers  # type: List[DialogueStateTracker]
     ):
-        # type: (...) -> TrackersTuple
+        # type: (...) -> List[DialogueStateTracker]
         """Processes a steps events with all trackers.
 
         The trackers that reached the steps starting checkpoint will
@@ -286,11 +294,8 @@ class TrainingDataGenerator(object):
                 tracker.update(event)
 
         trackers.extend(new_trackers)
-        if self.config.remove_duplicates:
-            trackers, end_trackers = self._remove_duplicate_trackers(trackers)
-            return trackers, end_trackers
-        else:
-            return trackers, []
+
+        return trackers
 
     def _remove_duplicate_trackers(self, trackers):
         # type: (List[DialogueStateTracker]) -> TrackersTuple
