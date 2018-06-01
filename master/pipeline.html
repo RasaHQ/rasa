@@ -545,6 +545,10 @@ character sequence is present in the word sequence or not.</p>
 </tr>
 <tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body"><p class="first">Creates bag-of-words representation of intent features using
 <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html">sklearn&#8217;s CountVectorizer</a>. All tokens which consist only of digits (e.g. 123 and 99 but not a123d) will be assigned to the same feature.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If the words in the model language cannot be split by the white-space, a language-specific tokenizer is required in the pipeline before this component (e.g. using <code class="docutils literal"><span class="pre">tokenizer_jieba</span></code> for Chinese language)</p>
+</div>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><p class="first">See <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html">sklearn&#8217;s CountVectorizer docs</a>
