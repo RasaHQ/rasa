@@ -222,4 +222,3 @@ def test_count_vector_featurizer_using_tokens(tokens, expected):
     ftr.process(message)
 
     assert np.all(message.get("text_features") == expected)
-
