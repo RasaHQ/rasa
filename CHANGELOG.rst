@@ -9,6 +9,12 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 .. note:: This version is not yet released and is under active development.
 
+.. warning::
+
+  This is a release **breaking backwards compatibility**.
+  Unfortunately, it is not possible to load previously trained models as
+  the parameters for the tensorflow and CRF models changed.
+
 Added
 -----
 - doc link to a community contribution for Rasa NLU in Chinese
