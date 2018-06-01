@@ -28,7 +28,9 @@ STORY_START = "STORY_START"
 # Checkpoint id used to identify story end blocks
 STORY_END = None
 
-GENERATED_CHECKPOINT_PREFIX = "CYCLE_"
+# need abbreviations otherwise they are not visualized well
+GENERATED_CHECKPOINT_PREFIX = "GENR_"
+CHECKPOINT_CYCLE_PREFIX = "CYCL_"
 
 GENERATED_HASH_LENGTH = 5
 
@@ -51,6 +53,7 @@ class Checkpoint(object):
             return trackers
 
         for slot_name, slot_value in self.conditions.items():
+            # TODO we'll get only the trackers that have the last slots in condition
             trackers = [t
                         for t in trackers
                         if t.get_slot(slot_name) == slot_value]
@@ -197,7 +200,7 @@ class Story(object):
 
 class StoryGraph(object):
     def __init__(self, story_steps, story_end_checkpoints=None):
-        # type: (List[StoryStep]) -> None
+        # type: (List[StoryStep], Dict[Text, Text]) -> None
         self.story_steps = story_steps
         self.step_lookup = {s.id: s for s in self.story_steps}
         ordered_ids, cyclic_edges = StoryGraph.order_steps(story_steps)
@@ -247,21 +250,28 @@ class StoryGraph(object):
         # the logic is a lot easier if we only need to make sure the change is
         # consistent if we only change one compared to changing all of them.
 
+        # collect all overlapping checkpoints
+        # we will remove unused start ones
+        all_overlapping_cps = set()
+
         for s, e in cyclic_edge_ids:
             cid = utils.generate_id(max_chars=GENERATED_HASH_LENGTH)
-            sink_cid = GENERATED_CHECKPOINT_PREFIX + "SINK_" + cid
-            connector_cid = GENERATED_CHECKPOINT_PREFIX + "CONNECT_" + cid
-            source_cid = GENERATED_CHECKPOINT_PREFIX + "SOURCE_" + cid
+            prefix = GENERATED_CHECKPOINT_PREFIX + CHECKPOINT_CYCLE_PREFIX
+            # need abbreviations otherwise they are not visualized well
+            sink_cid = prefix + "SINK_" + cid
+            connector_cid = prefix + "CONN_" + cid
+            source_cid = prefix + "SRC_" + cid
             story_end_checkpoints[sink_cid] = source_cid
 
             overlapping_cps = self.overlapping_checkpoint_names(
                     story_steps[s].end_checkpoints,
                     story_steps[e].start_checkpoints)
 
-            # changed all starts
+            all_overlapping_cps.update(overlapping_cps)
+
+            # change end checkpoints of starts
             start = story_steps[s].create_copy(use_new_id=False)
-            start.end_checkpoints = [cp
-                                     for cp in start.end_checkpoints
+            start.end_checkpoints = [cp for cp in start.end_checkpoints
                                      if cp.name not in overlapping_cps]
             start.end_checkpoints.append(Checkpoint(sink_cid))
             story_steps[s] = start
@@ -279,8 +289,13 @@ class StoryGraph(object):
                                 cid = connector_cid
                                 needs_connector = True
 
-                            additional_ends.append(Checkpoint(cid,
-                                                              cp.conditions))
+                            # if not self._is_cid_conds_already_in(
+                            #         cid, cp.conditions,
+                            #         step.start_checkpoints):
+                            # add checkpoint only if it was not added
+                            additional_ends.append(
+                                    Checkpoint(cid, cp.conditions))
+
                 if additional_ends:
                     updated = step.create_copy(use_new_id=False)
                     updated.start_checkpoints.extend(additional_ends)
@@ -289,8 +304,60 @@ class StoryGraph(object):
             if needs_connector:
                 start.end_checkpoints.append(Checkpoint(connector_cid))
 
-        return StoryGraph(story_steps.values(),
+        # the process above may generate unused start checkpoints
+        # we need to find them and remove them
+        # also there might be generated unused end checkpoints
+        unused_cps = self._unused_checkpoints(story_steps.values(),
+                                              story_end_checkpoints)
+        unused_overlapping_cps = unused_cps & all_overlapping_cps
+        unused_genr_cps = {cp_name for cp_name in unused_cps
+                           if cp_name.startswith(GENERATED_CHECKPOINT_PREFIX)}
+
+        for k, step in list(story_steps.items()):
+            # changed all ends
+            updated = step.create_copy(use_new_id=False)
+            updated.start_checkpoints = [
+                    cp for cp in updated.start_checkpoints
+                    if cp.name not in unused_overlapping_cps
+            ]
+            # remove generated unused end checkpoints
+            updated.end_checkpoints = [
+                    cp for cp in updated.end_checkpoints
+                    if cp.name not in unused_genr_cps
+            ]
+
+            story_steps[k] = updated
+
+        return StoryGraph(list(story_steps.values()),
                           story_end_checkpoints)
+
+    @staticmethod
+    def _is_cid_conds_already_in(cid, conds, cps):
+        for cp in cps:
+            if cid == cp.name and conds == cp.conditions:
+                return True
+        return False
+
+    @staticmethod
+    def _unused_checkpoints(story_steps, story_end_checkpoints):
+        """Find all end checkpoints."""
+
+        collected_start = {STORY_END, STORY_START}
+        collected_end = {STORY_END, STORY_START}
+
+        for step in story_steps:
+            for start in step.start_checkpoints:
+                collected_start.add(start.name)
+            for end in step.end_checkpoints:
+                if end.name in story_end_checkpoints.keys():
+                    end_name = story_end_checkpoints[end.name]
+                else:
+                    end_name = end.name
+                collected_end.add(end_name)
+
+        unused = collected_end ^ collected_start
+
+        return unused
 
     def get(self, step_id):
         # type: (Text) -> Optional[StoryStep]
