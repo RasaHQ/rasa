@@ -119,7 +119,7 @@ def do_train_in_worker(cfg,  # type: RasaNLUModelConfig
                                         fixed_model_name, storage,
                                         component_builder)
         return persisted_path
-    except Exception as e:
+    except BaseException as e:
         logger.exception("Failed to train project '{}'.".format(project))
         raise TrainingException(project, e)
 
