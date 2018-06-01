@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Processing Pipeline &mdash; Rasa NLU 0.12.3 documentation</title>
+  <title>Processing Pipeline &mdash; Rasa NLU 0.13.0a1 documentation</title>
   
 
   
@@ -39,7 +39,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="Rasa NLU 0.12.3 documentation" href="index.html"/>
+    <link rel="top" title="Rasa NLU 0.13.0a1 documentation" href="index.html"/>
         <link rel="next" title="Evaluation" href="evaluation.html"/>
         <link rel="prev" title="Language Support" href="languages.html"/> 
 
@@ -70,7 +70,7 @@
             
             
               <div class="version">
-                0.12
+                0.13
               </div>
             
           
@@ -358,6 +358,8 @@ so any languages that adheres to that can be trained with this pipeline.</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">language</span><span class="p p-Indicator">:</span> <span class="s">&quot;en&quot;</span>
 
 <span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;tokenizer_whitespace&quot;</span>
+<span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;ner_crf&quot;</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;intent_featurizer_count_vectors&quot;</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;intent_classifier_tensorflow_embedding&quot;</span>
   <span class="l l-Scalar l-Scalar-Plain">intent_tokenization_flag</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
@@ -547,12 +549,37 @@ character sequence is present in the word sequence or not.</p>
 <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html">sklearn&#8217;s CountVectorizer</a>. All tokens which consist only of digits (e.g. 123 and 99 but not a123d) will be assigned to the same feature.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">If the words in the model language cannot be split by the white-space, a language-specific tokenizer is required in the pipeline before this component (e.g. using <code class="docutils literal"><span class="pre">tokenizer_jieba</span></code> for Chinese language)</p>
+<p class="last">If the words in the model language cannot be split by the white-space, a language-specific tokenizer is required in the pipeline before this component (e.g. using <code class="docutils literal"><span class="pre">tokenizer_jieba</span></code> for Chinese language).</p>
 </div>
 </td>
 </tr>
 <tr class="field-even field"><th class="field-name">Configuration:</th><td class="field-body"><p class="first">See <a class="reference external" href="http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html">sklearn&#8217;s CountVectorizer docs</a>
 for detailed description of the configuration parameters</p>
+<p>Handling Out-Of-Vacabulary (OOV) words:</p>
+<blockquote>
+<div><p>Since the training is performed on limited vocabulary data, it cannot be guarantied that during prediction
+an algorithm will not encounter an unknown word (a word that were not seen during training).
+In order to teach an algorithm how to treat unknown words, some words in training data can be substituted by generic word <code class="docutils literal"><span class="pre">OOV_token</span></code>.
+In this case during prediction all unknown words will be treated as this generic word <code class="docutils literal"><span class="pre">OOV_token</span></code>.</p>
+<p>For example, one might create separate intent <code class="docutils literal"><span class="pre">outofscope</span></code> in the training data containing messages of different number of <code class="docutils literal"><span class="pre">OOV_token``s</span> <span class="pre">and</span>
+<span class="pre">maybe</span> <span class="pre">some</span> <span class="pre">additional</span> <span class="pre">general</span> <span class="pre">words.</span> <span class="pre">Then</span> <span class="pre">an</span> <span class="pre">algorithm</span> <span class="pre">will</span> <span class="pre">likely</span> <span class="pre">classify</span> <span class="pre">a</span> <span class="pre">message</span> <span class="pre">with</span> <span class="pre">unknown</span> <span class="pre">words</span> <span class="pre">as</span> <span class="pre">this</span> <span class="pre">intent</span> <span class="pre">``outofscope</span></code>.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This featurizer creates bag-of-words representation by <strong>counting</strong> words, so a number of <a href="#id2"><span class="problematic" id="id3">``</span></a>OOV_token``s might be important.</p>
+</div>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">OOV_token</span></code> set a keyword for unseen words; if training data contains <code class="docutils literal"><span class="pre">OOV_token</span></code> as words in some messages,
+during prediction the words that were not seen during training will be substituted with provided <code class="docutils literal"><span class="pre">OOV_token</span></code>;
+if <code class="docutils literal"><span class="pre">OOV_token=None</span></code> (default behaviour) words that were not seen during training will be ignored during prediction time;</li>
+<li><code class="docutils literal"><span class="pre">OOV_words</span></code> set a list of words to be treated as <code class="docutils literal"><span class="pre">OOV_token</span></code> during training; if a list of words that should be treated
+as Out-Of-Vacabulary is known, it can be set to <code class="docutils literal"><span class="pre">OOV_words</span></code> instead of manually changing it in trainig data or using custom preprocessor.</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Providing <code class="docutils literal"><span class="pre">OOV_words</span></code> is optional, training data can contain <code class="docutils literal"><span class="pre">OOV_token</span></code> input manually or by custom additional preprocessor.
+Unseen words will be substituted with <code class="docutils literal"><span class="pre">OOV_token</span></code> <strong>only</strong> if this token is present in the training data or <code class="docutils literal"><span class="pre">OOV_words</span></code> list is provided.</p>
+</div>
+</div></blockquote>
 <div class="last highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;intent_featurizer_count_vectors&quot;</span>
   <span class="c1"># the parameters are taken from</span>
@@ -572,10 +599,16 @@ for detailed description of the configuration parameters</p>
   <span class="c1"># integer - absolute counts</span>
   <span class="s">&quot;max_df&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1.0</span>  <span class="c1"># float in range [0.0, 1.0] or int</span>
   <span class="c1"># set ngram range</span>
-  <span class="s">&quot;min_ngram&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
-  <span class="s">&quot;max_ngram&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+  <span class="s">&quot;min_ngram&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>  <span class="c1"># int</span>
+  <span class="s">&quot;max_ngram&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>  <span class="c1"># int</span>
   <span class="c1"># limit vocabulary size</span>
-  <span class="s">&quot;max_features&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">None</span>
+  <span class="s">&quot;max_features&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">None</span>  <span class="c1"># int or None</span>
+  <span class="c1"># if convert all characters to lowercase</span>
+  <span class="s">&quot;lowercase&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>  <span class="c1"># bool</span>
+  <span class="c1"># handling Out-Of-Vacabulary (OOV) words</span>
+  <span class="c1"># will be converted to lowercase if lowercase is true</span>
+  <span class="s">&quot;OOV_token&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">None</span>  <span class="c1"># string or None</span>
+  <span class="s">&quot;OOV_words&quot;</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[]</span>  <span class="c1"># list of strings</span>
 </pre></div>
 </div>
 </td>
@@ -732,6 +765,12 @@ This algorithm also provides similarity rankings of the labels that did not &#82
 This featurizer creates the features used for the embeddings.
 It is recommended to use <code class="docutils literal"><span class="pre">intent_featurizer_count_vectors</span></code> that can be optionally preceded
 by <code class="docutils literal"><span class="pre">nlp_spacy</span></code> and <code class="docutils literal"><span class="pre">tokenizer_spacy</span></code>.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If during prediction time a message contains <strong>only</strong> words unseen during training,
+and no Out-Of-Vacabulary preprocessor was used,
+empty intent <code class="docutils literal"><span class="pre">&quot;&quot;</span></code> is predicted with confidence <code class="docutils literal"><span class="pre">0.0</span></code>.</p>
+</div>
 </td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Configuration:</th><td class="field-body"><p class="first">If you want to split intents into multiple labels, e.g. for predicting multiple intents or for
@@ -740,8 +779,8 @@ modeling hierarchical intent structure, use these flags:</p>
 <li><dl class="first docutils">
 <dt>tokenization of intent labels:</dt>
 <dd><ul class="first last">
-<li><code class="docutils literal"><span class="pre">intent_tokenization_flag</span></code> if <code class="docutils literal"><span class="pre">true</span></code> the algorithm will split the intent labels into tokens and use bag-of-words representations for them;</li>
-<li><code class="docutils literal"><span class="pre">intent_split_symbol</span></code> sets the delimiter string to split the intent labels. Default <code class="docutils literal"><span class="pre">_</span></code></li>
+<li><code class="docutils literal"><span class="pre">intent_tokenization_flag</span></code> if <code class="docutils literal"><span class="pre">true</span></code> the algorithm will split the intent labels into tokens and use bag-of-words representations for them, default <code class="docutils literal"><span class="pre">false</span></code>;</li>
+<li><code class="docutils literal"><span class="pre">intent_split_symbol</span></code> sets the delimiter string to split the intent labels, default <code class="docutils literal"><span class="pre">_</span></code>.</li>
 </ul>
 </dd>
 </dl>
@@ -798,6 +837,12 @@ modeling hierarchical intent structure, use these flags:</p>
 <p class="first admonition-title">Note</p>
 <p class="last">For <code class="docutils literal"><span class="pre">cosine</span></code> similarity <code class="docutils literal"><span class="pre">mu_pos</span></code> and <code class="docutils literal"><span class="pre">mu_neg</span></code> should be between <code class="docutils literal"><span class="pre">-1</span></code> and <code class="docutils literal"><span class="pre">1</span></code>.</p>
 </div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">There is an option to use linearly increasing batch size. The idea comes from <a class="reference external" href="https://arxiv.org/abs/1711.00489">https://arxiv.org/abs/1711.00489</a>.
+In order to do it pass a list to <code class="docutils literal"><span class="pre">batch_size</span></code>, e.g. <code class="docutils literal"><span class="pre">&quot;batch_size&quot;:</span> <span class="pre">[64,</span> <span class="pre">256]</span></code> (default behaviour).
+If constant <code class="docutils literal"><span class="pre">batch_size</span></code> is required, pass an <code class="docutils literal"><span class="pre">int</span></code>, e.g. <code class="docutils literal"><span class="pre">&quot;batch_size&quot;:</span> <span class="pre">64</span></code>.</p>
+</div>
 <p>In the config, you can specify these parameters:</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;intent_classifier_tensorflow_embedding&quot;</span>
@@ -806,14 +851,14 @@ modeling hierarchical intent structure, use these flags:</p>
   <span class="s">&quot;hidden_layer_size_a&quot;</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="nv">256</span><span class="p p-Indicator">,</span> <span class="nv">128</span><span class="p p-Indicator">]</span>
   <span class="s">&quot;num_hidden_layers_b&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
   <span class="s">&quot;hidden_layer_size_b&quot;</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[]</span>
-  <span class="s">&quot;batch_size&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">32</span>
+  <span class="s">&quot;batch_size&quot;</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="nv">64</span><span class="p p-Indicator">,</span> <span class="nv">256</span><span class="p p-Indicator">]</span>
   <span class="s">&quot;epochs&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">300</span>
   <span class="c1"># embedding parameters</span>
-  <span class="s">&quot;embed_dim&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">10</span>
+  <span class="s">&quot;embed_dim&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">20</span>
   <span class="s">&quot;mu_pos&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.8</span>  <span class="c1"># should be 0.0 &lt; ... &lt; 1.0 for &#39;cosine&#39;</span>
   <span class="s">&quot;mu_neg&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">-0.4</span>  <span class="c1"># should be -1.0 &lt; ... &lt; 1.0 for &#39;cosine&#39;</span>
   <span class="s">&quot;similarity_type&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;cosine&quot;</span>  <span class="c1"># string &#39;cosine&#39; or &#39;inner&#39;</span>
-  <span class="s">&quot;num_neg&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">10</span>
+  <span class="s">&quot;num_neg&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">20</span>
   <span class="s">&quot;use_max_sim_neg&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>  <span class="c1"># flag which loss function to use</span>
   <span class="c1"># regularization</span>
   <span class="s">&quot;C2&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.002</span>
@@ -822,6 +867,9 @@ modeling hierarchical intent structure, use these flags:</p>
   <span class="c1"># flag if to tokenize intents</span>
   <span class="s">&quot;intent_tokenization_flag&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
   <span class="s">&quot;intent_split_symbol&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;_&quot;</span>
+  <span class="c1"># visualization of accuracy</span>
+  <span class="s">&quot;evaluate_every_num_epochs&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">10</span>  <span class="c1"># small values may hurt performance</span>
+  <span class="s">&quot;evaluate_on_num_examples&quot;</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1000</span>  <span class="c1"># large values may hurt performance</span>
 </pre></div>
 </div>
 <div class="last admonition note">
@@ -849,7 +897,8 @@ See <a class="reference external" href="https://arxiv.org/abs/1709.03856">starsp
 If an expression is found in the input, a feature will be set, that will later be fed into intent classifier / entity
 extractor to simplify classification (assuming the classifier has learned during the training phase, that this set
 feature indicates a certain intent). Regex features for entity extraction are currently only supported by the
-<code class="docutils literal"><span class="pre">ner_crf</span></code> component!</td>
+<code class="docutils literal"><span class="pre">ner_crf</span></code> component!
+.. note:: There needs to be a tokenizer previous to this featurizer in the pipeline!</td>
 </tr>
 </tbody>
 </table>
@@ -1000,7 +1049,7 @@ The MITIE component does not provide entity confidence values.</p>
 </div>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Description:</th><td class="field-body"><p class="first last">Using spacy this component predicts the entities of a message. spacy uses a statistical BILUO transition model.
+<tr class="field-even field"><th class="field-name">Description:</th><td class="field-body"><p class="first last">Using spacy this component predicts the entities of a message. spacy uses a statistical BILOU transition model.
 As of now, this component can only use the spacy builtin entity extraction models and can not be retrained.
 This extractor does not provide any confidence scores.</p>
 </td>
@@ -1079,7 +1128,8 @@ exisiting entity, it appends itself to the processor list of this entity.</p>
 CRFs can be thought of as an undirected Markov chain where the time steps are words
 and the states are entity classes. Features of the words (capitalisation, POS tagging,
 etc.) give probabilities to certain entity classes, as are transitions between
-neighbouring entity tags: the most likely set of tags is then calculated and returned.</p>
+neighbouring entity tags: the most likely set of tags is then calculated and returned.
+If POS features are used (pos or pos2), spaCy has to be installed.</p>
 </td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Configuration:</th><td class="field-body"><div class="first last highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">pipeline</span><span class="p p-Indicator">:</span>
@@ -1090,9 +1140,10 @@ neighbouring entity tags: the most likely set of tags is then calculated and ret
   <span class="c1"># in array before will have the feature</span>
   <span class="c1"># &quot;is the preceding word in title case?&quot;.</span>
   <span class="c1"># Available features are:</span>
-  <span class="c1"># ``low``, ``title``, ``word3``, ``word2``, ``pos``,</span>
-  <span class="c1"># ``pos2``, ``bias``, ``upper`` and ``digit``</span>
-  <span class="l l-Scalar l-Scalar-Plain">features</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[[</span><span class="s">&quot;low&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;title&quot;</span><span class="p p-Indicator">],</span> <span class="p p-Indicator">[</span><span class="s">&quot;bias&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;word3&quot;</span><span class="p p-Indicator">],</span> <span class="p p-Indicator">[</span><span class="s">&quot;upper&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;pos&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;pos2&quot;</span><span class="p p-Indicator">]]</span>
+  <span class="c1"># ``low``, ``title``, ``suffix5``, ``suffix3``, ``suffix2``,</span>
+  <span class="c1"># ``suffix1``, ``pos``, ``pos2``, ``prefix5``, ``prefix2``,</span>
+  <span class="c1"># ``bias``, ``upper`` and ``digit``</span>
+  <span class="l l-Scalar l-Scalar-Plain">features</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[[</span><span class="s">&quot;low&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;title&quot;</span><span class="p p-Indicator">],</span> <span class="p p-Indicator">[</span><span class="s">&quot;bias&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;suffix3&quot;</span><span class="p p-Indicator">],</span> <span class="p p-Indicator">[</span><span class="s">&quot;upper&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;pos&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;pos2&quot;</span><span class="p p-Indicator">]]</span>
 
   <span class="c1"># The flag determines whether to use BILOU tagging or not. BILOU</span>
   <span class="c1"># tagging is more rigorous however</span>
@@ -1105,11 +1156,11 @@ neighbouring entity tags: the most likely set of tags is then calculated and ret
 
   <span class="c1"># This is the value given to sklearn_crfcuite.CRF tagger before training.</span>
   <span class="c1"># Specifies the L1 regularization coefficient.</span>
-  <span class="l l-Scalar l-Scalar-Plain">L1_c</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1.0</span>
+  <span class="l l-Scalar l-Scalar-Plain">L1_c</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.1</span>
 
   <span class="c1"># This is the value given to sklearn_crfcuite.CRF tagger before training.</span>
   <span class="c1"># Specifies the L2 regularization coefficient.</span>
-  <span class="l l-Scalar l-Scalar-Plain">L2_c</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1e-3</span>
+  <span class="l l-Scalar l-Scalar-Plain">L2_c</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.1</span>
 </pre></div>
 </div>
 </td>
@@ -1267,7 +1318,7 @@ final context dictionary is used to persist the model&#8217;s metadata.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.12.3',
+            VERSION:'0.13.0a1',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Configuration &mdash; Rasa NLU 0.12.3 documentation</title>
+  <title>Configuration &mdash; Rasa NLU 0.13.0a1 documentation</title>
   
 
   
@@ -39,7 +39,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="Rasa NLU 0.12.3 documentation" href="index.html"/>
+    <link rel="top" title="Rasa NLU 0.13.0a1 documentation" href="index.html"/>
         <link rel="next" title="Migrating an existing app" href="migrating.html"/>
         <link rel="prev" title="Tutorial: A simple restaurant search bot" href="tutorial.html"/> 
 
@@ -70,7 +70,7 @@
             
             
               <div class="version">
-                0.12
+                0.13
               </div>
             
           
@@ -238,12 +238,12 @@ so the option <code class="docutils literal"><span class="pre">pipeline</span></
     <span class="c1"># features for word before token</span>
     <span class="p p-Indicator">-</span> <span class="p p-Indicator">[</span><span class="s">&quot;low&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;title&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;upper&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;pos&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;pos2&quot;</span><span class="p p-Indicator">]</span>
     <span class="c1"># features of token itself</span>
-    <span class="p p-Indicator">-</span> <span class="p p-Indicator">[</span><span class="s">&quot;bias&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;low&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;word3&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;word2&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;upper&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;title&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;digit&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;pos&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;pos2&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;pattern&quot;</span><span class="p p-Indicator">]</span>
+    <span class="p p-Indicator">-</span> <span class="p p-Indicator">[</span><span class="s">&quot;bias&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;low&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;prefix5&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;prefix2&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;suffix3&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;suffix2&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;upper&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;title&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;digit&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;pos&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;pos2&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;pattern&quot;</span><span class="p p-Indicator">]</span>
     <span class="c1"># features for word after the token we want to tag</span>
     <span class="p p-Indicator">-</span> <span class="p p-Indicator">[</span><span class="s">&quot;low&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;title&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;upper&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;pos&quot;</span><span class="p p-Indicator">,</span> <span class="s">&quot;pos2&quot;</span><span class="p p-Indicator">]</span>
   <span class="l l-Scalar l-Scalar-Plain">max_iterations</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">50</span>
-  <span class="l l-Scalar l-Scalar-Plain">L1_c</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
-  <span class="l l-Scalar l-Scalar-Plain">L2_c</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">1e-3</span>
+  <span class="l l-Scalar l-Scalar-Plain">L1_c</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.1</span>
+  <span class="l l-Scalar l-Scalar-Plain">L2_c</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.1</span>
 <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="s">&quot;intent_classifier_sklearn&quot;</span>
   <span class="l l-Scalar l-Scalar-Plain">C</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">[</span><span class="nv">1</span><span class="p p-Indicator">,</span> <span class="nv">2</span><span class="p p-Indicator">,</span> <span class="nv">5</span><span class="p p-Indicator">,</span> <span class="nv">10</span><span class="p p-Indicator">,</span> <span class="nv">20</span><span class="p p-Indicator">,</span> <span class="nv">100</span><span class="p p-Indicator">]</span>
   <span class="l l-Scalar l-Scalar-Plain">kernel</span><span class="p p-Indicator">:</span> <span class="s">&quot;linear&quot;</span>
@@ -385,7 +385,7 @@ about available languages in <a class="reference internal" href="languages.html#
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.12.3',
+            VERSION:'0.13.0a1',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

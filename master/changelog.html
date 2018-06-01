@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Change Log &mdash; Rasa NLU 0.12.3 documentation</title>
+  <title>Change Log &mdash; Rasa NLU 0.13.0a1 documentation</title>
   
 
   
@@ -39,7 +39,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="Rasa NLU 0.12.3 documentation" href="index.html"/>
+    <link rel="top" title="Rasa NLU 0.13.0a1 documentation" href="index.html"/>
         <link rel="prev" title="Contributing" href="contribute.html"/> 
 
   
@@ -69,7 +69,7 @@
             
             
               <div class="version">
-                0.12
+                0.13
               </div>
             
           
@@ -380,13 +380,27 @@ This project adheres to <a class="reference external" href="http://semver.org/">
 <ul class="simple">
 <li>doc link to a community contribution for Rasa NLU in Chinese</li>
 <li>support for component <code class="docutils literal"><span class="pre">count_vectors_featurizer</span></code> use <code class="docutils literal"><span class="pre">tokens</span></code> feature provide by tokenizer</li>
+<li>2-character and a 5-character prefix features to <code class="docutils literal"><span class="pre">ner_crf</span></code></li>
+<li><code class="docutils literal"><span class="pre">ner_crf</span></code> with whitespaced tokens to <code class="docutils literal"><span class="pre">tensorflow_embedding</span></code> pipeline</li>
+<li>predict empty string instead of None for intent name</li>
+<li>update default parameters for tensorflow embedding classifier</li>
+<li>do not predict anything if feature vector contains only zeros in tensorflow embedding classifier</li>
+<li>change persistence keywords in tensorflow embedding classifier (make previously trained models impossible to load)</li>
+<li>intent_featurizer_count_vectors adds features to text_features instead of overwriting them</li>
+<li>add basic OOV support to intent_featurizer_count_vectors (make previously trained models impossible to load)</li>
 </ul>
 </div>
 <div class="section" id="changed">
 <h3>Changed<a class="headerlink" href="#changed" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>L1 and L2 regularisation defaults in <code class="docutils literal"><span class="pre">ner_crf</span></code> both set to 0.1</li>
+</ul>
 </div>
 <div class="section" id="removed">
 <h3>Removed<a class="headerlink" href="#removed" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li>dependence on spaCy when training <code class="docutils literal"><span class="pre">ner_crf</span></code> without POS features</li>
+</ul>
 </div>
 <div class="section" id="fixed">
 <h3>Fixed<a class="headerlink" href="#fixed" title="Permalink to this headline">¶</a></h3>
@@ -1064,7 +1078,7 @@ share the same backend</li>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.12.3',
+            VERSION:'0.13.0a1',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
