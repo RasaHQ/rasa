@@ -163,14 +163,20 @@ class Project(object):
             self._writer_lock.release()
 
     def _latest_project_model(self):
-        """Retrieves the latest trained model for an project"""
+        """Retrieves the latest trained model for a project"""
 
-        models = {model[len(MODEL_NAME_PREFIX):]: model
-                  for model in self._models.keys()
-                  if model.startswith(MODEL_NAME_PREFIX)}
+        models = {}
+        for model in self._models.keys():
+            try:
+                key = self._read_model_metadata(model).metadata.get("trained_at")
+                models[key] = model
+            except:
+                logger.warn("Failed to read metadata for model {}".format(model))
+
         if models:
-            time_list = [datetime.datetime.strptime(time, '%Y%m%d-%H%M%S')
-                         for time, model in models.items()]
+            time_list = [
+                datetime.datetime.strptime(m, '%Y%m%d-%H%M%S')
+                for m in models]
             return models[max(time_list).strftime('%Y%m%d-%H%M%S')]
         else:
             return FALLBACK_MODEL_NAME
