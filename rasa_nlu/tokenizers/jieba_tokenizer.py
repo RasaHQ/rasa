@@ -61,7 +61,7 @@ class JiebaTokenizer(Tokenizer, Component):
         # type: (Text) -> List[Token]
         import jieba
 
-        dictionary_path = self.component_config['dictionary_path']
+        dictionary_path = self.component_config.get('dictionary_path')
         if dictionary_path is not None:
             self.load_custom_dictionary(dictionary_path)
 
