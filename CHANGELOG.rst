@@ -12,6 +12,7 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 Added
 -----
 - doc link to a community contribution for Rasa NLU in Chinese
+- support for component ``count_vectors_featurizer`` use ``tokens`` feature provide by tokenizer
 - predict empty string instead of None for intent name
 - update default parameters for tensorflow embedding classifier
 - do not predict anything if feature vector contains only zeros in tensorflow embedding classifier

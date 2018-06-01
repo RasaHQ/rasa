@@ -165,9 +165,11 @@ class CountVectorsFeaturizer(Featurizer):
         return tokens
 
     @staticmethod
-    def _lemmatize(message):
-        if message.get("spacy_doc"):
+    def _get_message_text(message):
+        if message.get("spacy_doc"):  # if lemmatize is possible
             return ' '.join([t.lemma_ for t in message.get("spacy_doc")])
+        elif message.get("tokens"):  # if directly tokens is provided
+            return ' '.join([t.text for t in message.get("tokens")])
         else:
             return message.text
 
@@ -205,7 +207,7 @@ class CountVectorsFeaturizer(Featurizer):
                                     max_features=self.max_features,
                                     tokenizer=self._tokenizer)
 
-        lem_exs = [self._lemmatize(example)
+        lem_exs = [self._get_message_text(example)
                    for example in training_data.intent_examples]
 
         self._check_OOV_present(lem_exs)
@@ -229,7 +231,7 @@ class CountVectorsFeaturizer(Featurizer):
                          "component is either not trained or "
                          "didn't receive enough training data")
         else:
-            message_text = self._lemmatize(message)
+            message_text = self._get_message_text(message)
 
             bag = self.vect.transform([message_text]).toarray().squeeze()
             message.set("text_features",
