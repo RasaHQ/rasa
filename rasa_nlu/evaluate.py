@@ -685,7 +685,7 @@ def return_entity_results(results, dataset_name):
             return_results(result, dataset_name)
 
 
-if __name__ == '__main__':  # pragma: no cover
+def main():
     parser = create_argument_parser()
     cmdline_args = parser.parse_args()
 
@@ -723,3 +723,7 @@ if __name__ == '__main__':  # pragma: no cover
         run_evaluation(cmdline_args.data, cmdline_args.model)
 
     logger.info("Finished evaluation")
+
+
+if __name__ == '__main__':  # pragma: no cover
+    main()
