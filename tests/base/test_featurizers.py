@@ -136,14 +136,15 @@ def test_count_vector_featurizer(sentence, expected):
         CountVectorsFeaturizer
 
     ftr = CountVectorsFeaturizer({"token_pattern": r'(?u)\b\w+\b'})
-    message = Message(sentence)
-    message.set("intent", "bla")
-    data = TrainingData([message])
-
+    train_message = Message(sentence)
+    train_message.set("intent", "bla")
+    data = TrainingData([train_message])
     ftr.train(data)
-    ftr.process(Message(sentence))
 
-    assert np.all(message.get("text_features") == expected)
+    test_message = Message(sentence)
+    ftr.process(test_message)
+
+    assert np.all(test_message.get("text_features") == expected)
 
 
 @pytest.mark.parametrize("sentence, expected", [
@@ -158,14 +159,15 @@ def test_count_vector_featurizer_oov_token(sentence, expected):
 
     ftr = CountVectorsFeaturizer({"token_pattern": r'(?u)\b\w+\b',
                                   "OOV_token": '__oov__'})
-    message = Message(sentence)
-    message.set("intent", "bla")
-    data = TrainingData([message])
-
+    train_message = Message(sentence)
+    train_message.set("intent", "bla")
+    data = TrainingData([train_message])
     ftr.train(data)
-    ftr.process(Message(sentence))
 
-    assert np.all(message.get("text_features") == expected)
+    test_message = Message(sentence)
+    ftr.process(test_message)
+
+    assert np.all(test_message.get("text_features") == expected)
 
 
 @pytest.mark.parametrize("sentence, expected", [
@@ -181,14 +183,15 @@ def test_count_vector_featurizer_oov_words(sentence, expected):
     ftr = CountVectorsFeaturizer({"token_pattern": r'(?u)\b\w+\b',
                                   "OOV_token": '__oov__',
                                   "OOV_words": ['oov_word0', 'OOV_word1']})
-    message = Message(sentence)
-    message.set("intent", "bla")
-    data = TrainingData([message])
-
+    train_message = Message(sentence)
+    train_message.set("intent", "bla")
+    data = TrainingData([train_message])
     ftr.train(data)
-    ftr.process(Message(sentence))
 
-    assert np.all(message.get("text_features") == expected)
+    test_message = Message(sentence)
+    ftr.process(test_message)
+
+    assert np.all(test_message.get("text_features") == expected)
 
 
 @pytest.mark.parametrize("tokens, expected", [
@@ -210,15 +213,19 @@ def test_count_vector_featurizer_using_tokens(tokens, expected):
     # using empty string instead of real text string to make sure
     # count vector only can come from `tokens` feature.
     # using `message.text` can not get correct result
-    message = Message("")
 
     tokens_feature = [Token(i, 0) for i in tokens]
-    message.set("tokens", tokens_feature)
-    message.set("intent", "bla")  # this is needed for a valid training example
 
-    data = TrainingData([message])
+    train_message = Message("")
+    train_message.set("tokens", tokens_feature)
+    train_message.set("intent", "bla")  # this is needed for a valid training example
+    data = TrainingData([train_message])
 
     ftr.train(data)
-    ftr.process(message)
 
-    assert np.all(message.get("text_features") == expected)
+    test_message = Message("")
+    test_message.set("tokens", tokens_feature)
+
+    ftr.process(test_message)
+
+    assert np.all(test_message.get("text_features") == expected)
