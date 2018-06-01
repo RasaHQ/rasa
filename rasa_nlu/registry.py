@@ -80,6 +80,8 @@ registered_pipeline_templates = {
         "intent_classifier_keyword",
     ],
     "tensorflow_embedding": [
+        "tokenizer_whitespace",
+        "ner_crf",
         "intent_featurizer_count_vectors",
         "intent_classifier_tensorflow_embedding"
     ]
@@ -124,7 +126,7 @@ def load_component_by_name(component_name,  # type: Text
                            **kwargs  # type: **Any
                            ):
     # type: (...) -> Optional[Component]
-    """Resolves a component and calls it's load method to init it based on a
+    """Resolves a component and calls its load method to init it based on a
     previously persisted model."""
 
     component_clz = get_component_class(component_name)
