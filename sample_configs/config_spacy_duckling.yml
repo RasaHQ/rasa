@@ -1,7 +1,7 @@
 language: "en"
 
 pipeline:
-# this is using the spacy sklearn pipeline, adding duckling
+# this is using the spacy sklearn pipeline
 # all components will use their default values
 - name: "nlp_spacy"
 - name: "tokenizer_spacy"
@@ -9,4 +9,10 @@ pipeline:
 - name: "ner_crf"
 - name: "ner_synonyms"
 - name: "intent_classifier_sklearn"
-- name: "ner_duckling"
+# This use this pipeline you must set the duckling url
+# The configuration here is defaulted to work with the docker-compose.yml in the docker directory.
+- name: "ner_duckling_http"
+  url: "http://duckling:8000"
+  dimensions:
+    - "TIME"
+    - "EMAIL"
