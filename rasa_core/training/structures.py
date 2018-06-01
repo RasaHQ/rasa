@@ -289,12 +289,12 @@ class StoryGraph(object):
                                 cid = connector_cid
                                 needs_connector = True
 
-                            # if not self._is_cid_conds_already_in(
-                            #         cid, cp.conditions,
-                            #         step.start_checkpoints):
-                            # add checkpoint only if it was not added
-                            additional_ends.append(
-                                    Checkpoint(cid, cp.conditions))
+                            if not self._is_cid_conds_already_in(
+                                    cid, cp.conditions,
+                                    step.start_checkpoints):
+                                # add checkpoint only if it was not added
+                                additional_ends.append(
+                                        Checkpoint(cid, cp.conditions))
 
                 if additional_ends:
                     updated = step.create_copy(use_new_id=False)
