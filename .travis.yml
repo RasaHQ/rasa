@@ -1,47 +1,44 @@
 language: python
-sudo: required
+sudo: enabled
 cache:
   directories:
   - $HOME/.cache/pip
   - /tmp/cached/
 python:
-- '2.7'
-- '3.5'
-- '3.6'
+  - '2.7'
+  - '3.5'
+  - '3.6'
 env:
   # needed to fix issues with boto during testing:
   # https://github.com/travis-ci/travis-ci/issues/7940
   global: BOTO_CONFIG=/dev/null
 install:
-- pip install git+https://github.com/tmbo/MITIE.git
-- pip install -r alt_requirements/requirements_dev.txt
-- pip install -e .
-- pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.0.0/en_core_web_md-2.0.0.tar.gz
-  --no-cache-dir > jnk
-- python -m spacy link en_core_web_md en
-- pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.0.0/de_core_news_sm-2.0.0.tar.gz
-  --no-cache-dir > jnk
-- python -m spacy link de_core_news_sm de
-- if [[ ! -f /tmp/cached/total_word_feature_extractor.dat ]]; then wget --quiet -P /tmp/cached/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat;
-  fi
-- mv /tmp/cached/total_word_feature_extractor.dat data/total_word_feature_extractor.dat
-- pip list
+  - pip install git+https://github.com/tmbo/MITIE.git
+  - pip install -r alt_requirements/requirements_dev.txt
+  - pip install -e .
+  - pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_md-2.0.0/en_core_web_md-2.0.0.tar.gz --no-cache-dir > jnk
+  - python -m spacy link en_core_web_md en
+  - pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-2.0.0/de_core_news_sm-2.0.0.tar.gz --no-cache-dir > jnk
+  - python -m spacy link de_core_news_sm de
+  - if [[ ! -f /tmp/cached/total_word_feature_extractor.dat ]]; then wget --quiet -P /tmp/cached/ https://s3-eu-west-1.amazonaws.com/mitie/total_word_feature_extractor.dat;
+    fi
+  - mv /tmp/cached/total_word_feature_extractor.dat data/total_word_feature_extractor.dat
+  - pip list
 before_script:
-- mkdir $HOME/tmp
-- export TMPDIR=$HOME/tmp
+  - mkdir $HOME/tmp
+  - export TMPDIR=$HOME/tmp
 script:
-- py.test --pep8 -m pep8
-- py.test tests/base --cov rasa_nlu -v --cov-append
-- py.test tests/training --cov rasa_nlu -v --cov-append
+  - py.test --pep8 -m pep8
+  - py.test tests/base --cov rasa_nlu -v --cov-append
+  - py.test tests/training --cov rasa_nlu -v --cov-append
 after_success:
-- coveralls
+  - coveralls
 jobs:
   include:
   - stage: docs
-    if: fork = false
+    if: fork = false  # forked repository will skip building docss
     install:
-    - pip install sphinx==1.5.2 sphinx-autobuild==0.7.1 sphinxcontrib-versioning==2.2.1 sphinxcontrib-programoutput==0.11
-      nbsphinx==0.2.18
+    - pip install sphinx==1.5.2 sphinx-autobuild==0.7.1 sphinxcontrib-versioning==2.2.1 sphinxcontrib-programoutput==0.11 nbsphinx==0.2.18
     - pip install -e git://github.com/RasaHQ/sphinx_rtd_theme.git#egg=sphinx_rtd_theme
     - pip install -e .
     script:
