@@ -93,7 +93,7 @@ def test_version(app):
     ResponseTest(
         "http://dummy-uri/parse?q=",
         {'project': 'default', 'entities': [], 'model': 'fallback',
-         'intent': {'confidence': 0.0, 'name': ''}, 'text': ''}
+         'intent': {'confidence': 0.0, 'name': None}, 'text': ''}
     ),
 ])
 @pytest.inlineCallbacks

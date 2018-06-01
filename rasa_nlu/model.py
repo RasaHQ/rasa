@@ -87,11 +87,9 @@ class Metadata(object):
             return []
 
     def for_component(self, name, defaults=None):
-        for c in self.get('pipeline', []):
-            if c.get("name") == name:
-                return override_defaults(defaults, c)
-        else:
-            return defaults or {}
+        return config.component_config_from_pipeline(name,
+                                                     self.get('pipeline', []),
+                                                     defaults)
 
     @property
     def language(self):
@@ -247,14 +245,14 @@ class Interpreter(object):
     # that will be returned by `parse`
     @staticmethod
     def default_output_attributes():
-        return {"intent": {"name": "", "confidence": 0.0}, "entities": []}
+        return {"intent": {"name": None, "confidence": 0.0}, "entities": []}
 
     @staticmethod
     def ensure_model_compatibility(metadata):
         from packaging import version
 
         model_version = metadata.get("rasa_nlu_version", "0.0.0")
-        if version.parse(model_version) < version.parse("0.12.0a2"):
+        if version.parse(model_version) < version.parse("0.13.0a1"):
             raise UnsupportedModelError(
                 "The model version is to old to be "
                 "loaded by this Rasa NLU instance. "

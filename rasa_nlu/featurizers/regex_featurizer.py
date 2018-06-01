@@ -43,8 +43,7 @@ class RegexFeaturizer(Featurizer):
     def train(self, training_data, config, **kwargs):
         # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
 
-        for example in training_data.regex_features:
-            self.known_patterns.append(example)
+        self.known_patterns = training_data.regex_features
 
         for example in training_data.training_examples:
             updated = self._text_features_with_regex(example)
@@ -57,7 +56,7 @@ class RegexFeaturizer(Featurizer):
         message.set("text_features", updated)
 
     def _text_features_with_regex(self, message):
-        if self.known_patterns is not None:
+        if self.known_patterns:
             extras = self.features_for_patterns(message)
             return self._combine_with_existing_text_features(message, extras)
         else:
@@ -108,8 +107,7 @@ class RegexFeaturizer(Featurizer):
 
         Return the metadata necessary to load the model again."""
 
-        if self.known_patterns:
-            regex_file = os.path.join(model_dir, REGEX_FEATURIZER_FILE_NAME)
-            utils.write_json_to_file(regex_file, self.known_patterns, indent=4)
+        regex_file = os.path.join(model_dir, REGEX_FEATURIZER_FILE_NAME)
+        utils.write_json_to_file(regex_file, self.known_patterns, indent=4)
 
         return {"regex_file": REGEX_FEATURIZER_FILE_NAME}
