@@ -30,7 +30,7 @@ def create_argument_parser():
             description='train a custom language parser')
 
     parser.add_argument('-o', '--path',
-                        default=None,
+                        default="models/nlu/",
                         help="Path where model files will be saved")
 
     group = parser.add_mutually_exclusive_group(required=True)
@@ -119,7 +119,7 @@ def do_train_in_worker(cfg,  # type: RasaNLUModelConfig
                                         fixed_model_name, storage,
                                         component_builder)
         return persisted_path
-    except Exception as e:
+    except BaseException as e:
         logger.exception("Failed to train project '{}'.".format(project))
         raise TrainingException(project, e)
 

@@ -270,6 +270,8 @@ intent_featurizer_count_vectors
     Creates bag-of-words representation of intent features using
     `sklearn's CountVectorizer <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_. All tokens which consist only of digits (e.g. 123 and 99 but not a123d) will be assigned to the same feature.
 
+    .. note:: If the words in the model language cannot be split by the white-space, a language-specific tokenizer is required in the pipeline before this component (e.g. using ``tokenizer_jieba`` for Chinese language)
+
 :Configuration:
     See `sklearn's CountVectorizer docs <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_
     for detailed description of the configuration parameters

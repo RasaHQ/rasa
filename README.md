@@ -40,7 +40,7 @@ If you are new to Rasa NLU and want to create a bot, you should start with the [
 
 # Quick Install
 
-Fur the full installation instructions, please head over to the documenation: [Installation](https://nlu.rasa.com/installation.html)
+For the full installation instructions, please head over to the documenation: [Installation](https://nlu.rasa.com/installation.html)
 
 **Via Docker Image**
 From docker hub:

@@ -11,7 +11,10 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 Added
 -----
+<<<<<<< HEAD
 - support for `tokenizer_jieba` load custom dictionary from config
+- doc link to a community contribution for Rasa NLU in Chinese
+- support for component ``count_vectors_featurizer`` use ``tokens`` feature provide by tokenizer
 
 Changed
 -------
