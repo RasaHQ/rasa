@@ -270,11 +270,34 @@ intent_featurizer_count_vectors
     Creates bag-of-words representation of intent features using
     `sklearn's CountVectorizer <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_. All tokens which consist only of digits (e.g. 123 and 99 but not a123d) will be assigned to the same feature.
 
-    .. note:: If the words in the model language cannot be split by the white-space, a language-specific tokenizer is required in the pipeline before this component (e.g. using ``tokenizer_jieba`` for Chinese language)
+    .. note:: If the words in the model language cannot be split by the white-space, a language-specific tokenizer is required in the pipeline before this component (e.g. using ``tokenizer_jieba`` for Chinese language).
 
 :Configuration:
     See `sklearn's CountVectorizer docs <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_
     for detailed description of the configuration parameters
+
+    Handling Out-Of-Vacabulary (OOV) words:
+
+        Since the training is performed on limited vocabulary data, it cannot be guarantied that during prediction
+        an algorithm will not encounter an unknown word (a word that were not seen during training).
+        In order to teach an algorithm how to treat unknown words, some words in training data can be substituted by generic word ``OOV_token``.
+        In this case during prediction all unknown words will be treated as this generic word ``OOV_token``.
+
+        For example, one might create separate intent ``outofscope`` in the training data containing messages of different number of ``OOV_token``s and
+        maybe some additional general words. Then an algorithm will likely classify a message with unknown words as this intent ``outofscope``.
+
+        .. note::
+            This featurizer creates bag-of-words representation by **counting** words, so a number of ``OOV_token``s might be important.
+
+        - ``OOV_token`` set a keyword for unseen words; if training data contains ``OOV_token`` as words in some messages,
+          during prediction the words that were not seen during training will be substituted with provided ``OOV_token``;
+          if ``OOV_token=None`` (default behaviour) words that were not seen during training will be ignored during prediction time;
+        - ``OOV_words`` set a list of words to be treated as ``OOV_token`` during training; if a list of words that should be treated
+          as Out-Of-Vacabulary is known, it can be set to ``OOV_words`` instead of manually changing it in trainig data or using custom preprocessor.
+
+        .. note::
+            Providing ``OOV_words`` is optional, training data can contain ``OOV_token`` input manually or by custom additional preprocessor.
+            Unseen words will be substituted with ``OOV_token`` **only** if this token is present in the training data or ``OOV_words`` list is provided.
 
     .. code-block:: yaml
 
@@ -297,10 +320,16 @@ intent_featurizer_count_vectors
           # integer - absolute counts
           "max_df": 1.0  # float in range [0.0, 1.0] or int
           # set ngram range
-          "min_ngram": 1
-          "max_ngram": 1
+          "min_ngram": 1  # int
+          "max_ngram": 1  # int
           # limit vocabulary size
-          "max_features": None
+          "max_features": None  # int or None
+          # if convert all characters to lowercase
+          "lowercase": true  # bool
+          # handling Out-Of-Vacabulary (OOV) words
+          # will be converted to lowercase if lowercase is true
+          "OOV_token": None  # string or None
+          "OOV_words": []  # list of strings
 
 intent_classifier_keyword
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -423,13 +452,17 @@ intent_classifier_tensorflow_embedding
     It is recommended to use ``intent_featurizer_count_vectors`` that can be optionally preceded
     by ``nlp_spacy`` and ``tokenizer_spacy``.
 
+    .. note:: If during prediction time a message contains **only** words unseen during training,
+              and no Out-Of-Vacabulary preprocessor was used,
+              empty intent ``""`` is predicted with confidence ``0.0``.
+
 :Configuration:
     If you want to split intents into multiple labels, e.g. for predicting multiple intents or for
     modeling hierarchical intent structure, use these flags:
 
     - tokenization of intent labels:
-        - ``intent_tokenization_flag`` if ``true`` the algorithm will split the intent labels into tokens and use bag-of-words representations for them;
-        - ``intent_split_symbol`` sets the delimiter string to split the intent labels. Default ``_``
+        - ``intent_tokenization_flag`` if ``true`` the algorithm will split the intent labels into tokens and use bag-of-words representations for them, default ``false``;
+        - ``intent_split_symbol`` sets the delimiter string to split the intent labels, default ``_``.
 
 
     The algorithm also has hyperparameters to control:
@@ -453,6 +486,10 @@ intent_classifier_tensorflow_embedding
 
     .. note:: For ``cosine`` similarity ``mu_pos`` and ``mu_neg`` should be between ``-1`` and ``1``.
 
+    .. note:: There is an option to use linearly increasing batch size. The idea comes from `<https://arxiv.org/abs/1711.00489>`_.
+              In order to do it pass a list to ``batch_size``, e.g. ``"batch_size": [64, 256]`` (default behaviour).
+              If constant ``batch_size`` is required, pass an ``int``, e.g. ``"batch_size": 64``.
+
     In the config, you can specify these parameters:
 
     .. code-block:: yaml
@@ -464,14 +501,14 @@ intent_classifier_tensorflow_embedding
           "hidden_layer_size_a": [256, 128]
           "num_hidden_layers_b": 0
           "hidden_layer_size_b": []
-          "batch_size": 32
+          "batch_size": [64, 256]
           "epochs": 300
           # embedding parameters
-          "embed_dim": 10
+          "embed_dim": 20
           "mu_pos": 0.8  # should be 0.0 < ... < 1.0 for 'cosine'
           "mu_neg": -0.4  # should be -1.0 < ... < 1.0 for 'cosine'
           "similarity_type": "cosine"  # string 'cosine' or 'inner'
-          "num_neg": 10
+          "num_neg": 20
           "use_max_sim_neg": true  # flag which loss function to use
           # regularization
           "C2": 0.002
@@ -480,10 +517,14 @@ intent_classifier_tensorflow_embedding
           # flag if to tokenize intents
           "intent_tokenization_flag": false
           "intent_split_symbol": "_"
+          # visualization of accuracy
+          "evaluate_every_num_epochs": 10  # small values may hurt performance
+          "evaluate_on_num_examples": 1000  # large values may hurt performance
 
     .. note:: Parameter ``mu_neg`` is set to a negative value to mimic the original
               starspace algorithm in the case ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``.
               See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
+
 
 intent_entity_featurizer_regex
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -496,6 +537,7 @@ intent_entity_featurizer_regex
     extractor to simplify classification (assuming the classifier has learned during the training phase, that this set
     feature indicates a certain intent). Regex features for entity extraction are currently only supported by the
     ``ner_crf`` component!
+    .. note:: There needs to be a tokenizer previous to this featurizer in the pipeline!
 
 tokenizer_whitespace
 ~~~~~~~~~~~~~~~~~~~~

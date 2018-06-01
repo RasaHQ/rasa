@@ -63,18 +63,27 @@ class CountVectorsFeaturizer(Featurizer):
         "max_df": 1.0,  # float in range [0.0, 1.0] or int
 
         # set range of ngrams to be extracted
-        "min_ngram": 1,
-        "max_ngram": 1,
+        "min_ngram": 1,  # int
+        "max_ngram": 1,  # int
 
         # limit vocabulary size
-        "max_features": None
+        "max_features": None,  # int or None
+
+        # if convert all characters to lowercase
+        "lowercase": True,  # bool
+
+        # handling Out-Of-Vacabulary (OOV) words
+        # will be converted to lowercase if lowercase is True
+        "OOV_token": None,  # string or None
+        "OOV_words": []  # string or list of strings
     }
 
-    def __init__(self, component_config=None):
-        """Construct a new count vectorizer using the sklearn framework."""
+    @classmethod
+    def required_packages(cls):
+        # type: () -> List[Text]
+        return ["sklearn"]
 
-        super(CountVectorsFeaturizer, self).__init__(component_config)
-
+    def _load_count_vect_params(self):
         # regular expression for tokens
         self.token_pattern = self.component_config['token_pattern']
 
@@ -98,58 +107,62 @@ class CountVectorsFeaturizer(Featurizer):
         # limit vocabulary size
         self.max_features = self.component_config['max_features']
 
-        # declare class instance for CountVect
+        # if convert all characters to lowercase
+        self.lowercase = self.component_config['lowercase']
+
+    def _load_OOV_params(self):
+        self.OOV_token = self.component_config['OOV_token']
+
+        self.OOV_words = self.component_config['OOV_words']
+        if self.OOV_words and not self.OOV_token:
+            logger.error("The list OOV_words={} was given, but "
+                         "OOV_token was not. OOV words are ignored."
+                         "".format(self.OOV_words))
+            self.OOV_words = []
+
+        if self.lowercase and self.OOV_token:
+            # convert to lowercase
+            self.OOV_token = self.OOV_token.lower()
+            if self.OOV_words:
+                self.OOV_words = [w.lower() for w in self.OOV_words]
+
+    def __init__(self, component_config=None):
+        """Construct a new count vectorizer using the sklearn framework."""
+
+        super(CountVectorsFeaturizer, self).__init__(component_config)
+
+        # parameters for sklearn's CountVectorizer
+        self._load_count_vect_params()
+
+        # handling Out-Of-Vacabulary (OOV) words
+        self._load_OOV_params()
+
+        # declare class instance for CountVectorizer
         self.vect = None
 
-        # preprocessor
-        self.preprocessor = lambda s: re.sub(r'\b[0-9]+\b', 'NUMBER', s.lower())
+    def _tokenizer(self, text):
+        """Override tokenizer in CountVectorizer"""
+        text = re.sub(r'\b[0-9]+\b', '__NUMBER__', text)
 
-    @classmethod
-    def required_packages(cls):
-        # type: () -> List[Text]
-        return ["sklearn"]
+        token_pattern = re.compile(self.token_pattern)
+        tokens = token_pattern.findall(text)
 
-    def train(self, training_data, cfg=None, **kwargs):
-        # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
-        """Take parameters from config and
-            construct a new count vectorizer using the sklearn framework."""
-        from sklearn.feature_extraction.text import CountVectorizer
+        if self.OOV_token:
+            if hasattr(self.vect, 'vocabulary_'):
+                # CountVectorizer is trained, process for prediction
+                if self.OOV_token in self.vect.vocabulary_:
+                    tokens = [
+                        t if t in self.vect.vocabulary_.keys()
+                        else self.OOV_token for t in tokens
+                    ]
+            elif self.OOV_words:
+                # CountVectorizer is not trained, process for train
+                tokens = [
+                    self.OOV_token if t in self.OOV_words else t
+                    for t in tokens
+                ]
 
-        # use even single character word as a token
-        self.vect = CountVectorizer(token_pattern=self.token_pattern,
-                                    strip_accents=self.strip_accents,
-                                    stop_words=self.stop_words,
-                                    ngram_range=(self.min_ngram,
-                                                 self.max_ngram),
-                                    max_df=self.max_df,
-                                    min_df=self.min_df,
-                                    max_features=self.max_features,
-                                    preprocessor=self.preprocessor)
-
-        lem_exs = [self._get_message_text(example)
-                   for example in training_data.intent_examples]
-
-        try:
-            X = self.vect.fit_transform(lem_exs).toarray()
-        except ValueError:
-            self.vect = None
-            return
-
-        for i, example in enumerate(training_data.intent_examples):
-            # create bag for each example
-            example.set("text_features", X[i])
-
-    def process(self, message, **kwargs):
-        # type: (Message, **Any) -> None
-        if self.vect is None:
-            logger.error("There is no trained CountVectorizer: "
-                         "component is either not trained or "
-                         "didn't receive enough training data")
-        else:
-            bag = self.vect.transform(
-                [self._get_message_text(message)]
-            ).toarray()
-            message.set("text_features", bag)
+        return tokens
 
     @staticmethod
     def _get_message_text(message):
@@ -159,6 +172,71 @@ class CountVectorsFeaturizer(Featurizer):
             return ' '.join([t.text for t in message.get("tokens")])
         else:
             return message.text
+
+    def _check_OOV_present(self, examples):
+        if self.OOV_token and not self.OOV_words:
+            for t in examples:
+                if self.OOV_token in t:
+                    return
+            logger.warning("OOV_token='{}' was given, but it is not present "
+                           "in the training data. All unseen words "
+                           "will be ignored during prediction."
+                           "".format(self.OOV_token))
+
+    def train(self, training_data, cfg=None, **kwargs):
+        # type: (TrainingData, RasaNLUModelConfig, **Any) -> None
+        """Take parameters from config and
+            construct a new count vectorizer using the sklearn framework."""
+        from sklearn.feature_extraction.text import CountVectorizer
+
+        spacy_nlp = kwargs.get("spacy_nlp")
+        if spacy_nlp is not None:
+            # create spacy lemma_ for OOV_words
+            self.OOV_words = [t.lemma_
+                              for w in self.OOV_words
+                              for t in spacy_nlp(w)]
+
+        self.vect = CountVectorizer(token_pattern=self.token_pattern,
+                                    strip_accents=self.strip_accents,
+                                    lowercase=self.lowercase,
+                                    stop_words=self.stop_words,
+                                    ngram_range=(self.min_ngram,
+                                                 self.max_ngram),
+                                    max_df=self.max_df,
+                                    min_df=self.min_df,
+                                    max_features=self.max_features,
+                                    tokenizer=self._tokenizer)
+
+        lem_exs = [self._get_message_text(example)
+                   for example in training_data.intent_examples]
+
+        self._check_OOV_present(lem_exs)
+
+        try:
+            X = self.vect.fit_transform(lem_exs).toarray()
+        except ValueError:
+            self.vect = None
+            return
+
+        for i, example in enumerate(training_data.intent_examples):
+            # create bag for each example
+            example.set("text_features",
+                        self._combine_with_existing_text_features(example,
+                                                                  X[i]))
+
+    def process(self, message, **kwargs):
+        # type: (Message, **Any) -> None
+        if self.vect is None:
+            logger.error("There is no trained CountVectorizer: "
+                         "component is either not trained or "
+                         "didn't receive enough training data")
+        else:
+            message_text = self._get_message_text(message)
+
+            bag = self.vect.transform([message_text]).toarray().squeeze()
+            message.set("text_features",
+                        self._combine_with_existing_text_features(message,
+                                                                  bag))
 
     @classmethod
     def load(cls,
