@@ -252,7 +252,7 @@ class Interpreter(object):
         from packaging import version
 
         model_version = metadata.get("rasa_nlu_version", "0.0.0")
-        if version.parse(model_version) < version.parse("0.12.3"):
+        if version.parse(model_version) < version.parse("0.13.0a1"):
             raise UnsupportedModelError(
                 "The model version is to old to be "
                 "loaded by this Rasa NLU instance. "
