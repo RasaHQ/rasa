@@ -46,7 +46,12 @@ jobs:
     - pip install -e .
     script:
     - eval "$(ssh-agent -s)"; touch docs/key; chmod 0600 docs/key
-    - openssl aes-256-cbc -K $encrypted_4a8a3f4b9c17_key -iv $encrypted_4a8a3f4b9c17_iv -in docs/key.enc -out docs/key -d && ssh-add docs/key
+    - openssl aes-256-cbc
+      -K $encrypted_4a8a3f4b9c17_key
+      -iv $encrypted_4a8a3f4b9c17_iv
+      -in docs/key.enc
+      -out docs/key
+      -d && ssh-add docs/key
     - git config --global user.email "builds@travis-ci.com"
     - git config --global user.name "Travis CI"
     - git remote set-url --push origin "git@github.com:$TRAVIS_REPO_SLUG"
