@@ -24,6 +24,12 @@ from rasa_core.tracker_store import TrackerStore
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.version import __version__
 
+from typing import Union
+import typing
+
+if typing.TYPE_CHECKING:
+    from rasa_core.interpreter import NaturalLanguageInterpreter as NLI
+
 logger = logging.getLogger(__name__)
 
 
@@ -146,15 +152,14 @@ def _create_agent(
         return None
 
 
-def create_app(model_directory,           # type: Text
-               interpreter=None,          # type: Optional
-                                        # [Union(text,NL interpreter)]
-               loglevel="INFO",           # type: Optional [text]
-               logfile="rasa_core.log",   # type: Optional [text]
-               cors_origins=None,         # type: Optional [list]
-               action_factory=None,       # type: Optional [text]
-               auth_token=None,           # type: Optional [text]
-               tracker_store=None         # type: Optional[TrackerStore]
+def create_app(model_directory,  # type: Text
+               interpreter=None,  # type: Optional[Union(text,NL interpreter)]
+               loglevel="INFO",  # type: Optional [text]
+               logfile="rasa_core.log",  # type: Optional [text]
+               cors_origins=None,  # type: Optional [list]
+               action_factory=None,  # type: Optional [text]
+               auth_token=None,  # type: Optional [text]
+               tracker_store=None  # type: Optional[TrackerStore]
                ):
     """Class representing a Rasa Core HTTP server."""
 
@@ -165,7 +170,6 @@ def create_app(model_directory,           # type: Text
 
     if not cors_origins:
         cors_origins = []
-    type(cors_origins)
     model_directory = model_directory
 
     interpreter = interpreter
