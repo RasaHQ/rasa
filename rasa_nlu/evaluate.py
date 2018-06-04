@@ -132,9 +132,14 @@ def remove_empty_intent_examples(targets, predictions):
     """Removes those examples without intent."""
 
     targets = np.array(targets)
-    mask = targets != ""
+    mask = (targets != "") & (targets != None)  # noqa
     targets = targets[mask]
     predictions = np.array(predictions)[mask]
+
+    # substitute None values with empty string
+    # to enable sklearn evaluation
+    predictions[predictions == None] = ""  # noqa
+
     return targets, predictions
 
 
@@ -680,7 +685,7 @@ def return_entity_results(results, dataset_name):
             return_results(result, dataset_name)
 
 
-if __name__ == '__main__':  # pragma: no cover
+def main():
     parser = create_argument_parser()
     cmdline_args = parser.parse_args()
 
@@ -718,3 +723,7 @@ if __name__ == '__main__':  # pragma: no cover
         run_evaluation(cmdline_args.data, cmdline_args.model)
 
     logger.info("Finished evaluation")
+
+
+if __name__ == '__main__':  # pragma: no cover
+    main()

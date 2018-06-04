@@ -52,7 +52,7 @@ Great for getting started: spaCy + sklearn
 The ``spacy_sklearn`` pipeline combines a few different libraries and is a popular option.
 
 Installing spacy just requires (for more information
-visit the `spacy docu <https://spacy.io/docs/usage/>`_):
+visit the `spacy docu <https://spacy.io/usage/models>`_):
 
 .. code-block:: bash
 
