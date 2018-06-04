@@ -135,7 +135,7 @@ def requires_auth(token=None):
 
 def _create_agent(
         model_directory,  # type: Text
-        interpreter,  # type: Union[Text, NaturalLanguageInterpreter]
+        interpreter,  # type: Union[Text,NLI,None]
         action_factory=None,  # type: Optional[Text]
         tracker_store=None  # type: Optional[TrackerStore]
 ):
@@ -153,7 +153,7 @@ def _create_agent(
 
 
 def create_app(model_directory,  # type: Text
-               interpreter=None,  # type: Optional[Union(text,NL interpreter)]
+               interpreter=None,  # type: Optional[Union(text,NLI,None)]
                loglevel="INFO",  # type: Optional [text]
                logfile="rasa_core.log",  # type: Optional [text]
                cors_origins=None,  # type: Optional [list]
