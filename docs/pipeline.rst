@@ -274,12 +274,18 @@ intent_featurizer_count_vectors
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Short: Creates bag-of-words representation of intent features
-:Outputs: nothing, used as an input to intent classifiers that need bag-of-words representation of intent features (e.g. ``intent_classifier_tensorflow_embedding``)
+:Outputs: 
+   nothing, used as an input to intent classifiers that 
+   need bag-of-words representation of intent features  
+   (e.g. ``intent_classifier_tensorflow_embedding``)
 :Description:
     Creates bag-of-words representation of intent features using
-    `sklearn's CountVectorizer <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_. All tokens which consist only of digits (e.g. 123 and 99 but not a123d) will be assigned to the same feature.
+    `sklearn's CountVectorizer <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_. 
+    All tokens which consist only of digits (e.g. 123 and 99 but not a123d) will be assigned to the same feature.
 
-    .. note:: If the words in the model language cannot be split by the white-space, a language-specific tokenizer is required in the pipeline before this component (e.g. using ``tokenizer_jieba`` for Chinese language).
+    .. note:: If the words in the model language cannot be split by whitespace, 
+        a language-specific tokenizer is required in the pipeline before this component
+        (e.g. using ``tokenizer_jieba`` for Chinese).
 
 :Configuration:
     See `sklearn's CountVectorizer docs <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_
@@ -287,22 +293,23 @@ intent_featurizer_count_vectors
 
     Handling Out-Of-Vacabulary (OOV) words:
 
-        Since the training is performed on limited vocabulary data, it cannot be guarantied that during prediction
+        Since the training is performed on limited vocabulary data, it cannot be guaranteed that during prediction
         an algorithm will not encounter an unknown word (a word that were not seen during training).
         In order to teach an algorithm how to treat unknown words, some words in training data can be substituted by generic word ``OOV_token``.
         In this case during prediction all unknown words will be treated as this generic word ``OOV_token``.
 
-        For example, one might create separate intent ``outofscope`` in the training data containing messages of different number of ``OOV_token``s and
+        For example, one might create separate intent ``outofscope`` in the training data containing messages of different number of ``OOV_token`` s and
         maybe some additional general words. Then an algorithm will likely classify a message with unknown words as this intent ``outofscope``.
 
         .. note::
-            This featurizer creates bag-of-words representation by **counting** words, so a number of ``OOV_token``s might be important.
+            This featurizer creates a bag-of-words representation by **counting** words,
+            so the number of ``OOV_token`` s might be important.
 
-        - ``OOV_token`` set a keyword for unseen words; if training data contains ``OOV_token`` as words in some messages,
-          during prediction the words that were not seen during training will be substituted with provided ``OOV_token``;
-          if ``OOV_token=None`` (default behaviour) words that were not seen during training will be ignored during prediction time;
-        - ``OOV_words`` set a list of words to be treated as ``OOV_token`` during training; if a list of words that should be treated
-          as Out-Of-Vacabulary is known, it can be set to ``OOV_words`` instead of manually changing it in trainig data or using custom preprocessor.
+            - ``OOV_token`` set a keyword for unseen words; if training data contains ``OOV_token`` as words in some messages,
+              during prediction the words that were not seen during training will be substituted with provided ``OOV_token``;
+              if ``OOV_token=None`` (default behaviour) words that were not seen during training will be ignored during prediction time;
+            - ``OOV_words`` set a list of words to be treated as ``OOV_token`` during training; if a list of words that should be treated
+              as Out-Of-Vacabulary is known, it can be set to ``OOV_words`` instead of manually changing it in trainig data or using custom preprocessor.
 
         .. note::
             Providing ``OOV_words`` is optional, training data can contain ``OOV_token`` input manually or by custom additional preprocessor.
