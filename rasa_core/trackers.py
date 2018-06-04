@@ -184,10 +184,11 @@ class DialogueStateTracker(object):
         """Creates a new state tracker with the same initial values."""
         from rasa_core.channels import UserMessage
 
-        return DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
-                                    self.slots.values(),
-                                    self.topics,
-                                    self.default_topic)
+        return type(self)(UserMessage.DEFAULT_SENDER_ID,
+                          self.slots.values(),
+                          self.topics,
+                          self.default_topic,
+                          self._max_event_history)
 
     def generate_all_prior_trackers(self):
         # type: () -> Generator[DialogueStateTracker, None, None]
