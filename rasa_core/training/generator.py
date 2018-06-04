@@ -131,7 +131,7 @@ class TrainingDataGenerator(object):
             domain,  # type: Domain
             remove_duplicates=True,  # type: bool
             augmentation_factor=20,  # type: int
-            max_number_of_trackers=200,  # type: Optional[int]
+            max_number_of_trackers=2000,  # type: Optional[int]
             tracker_limit=None,  # type: Optional[int]
             use_story_concatenation=True  # type: bool
     ):
@@ -143,9 +143,12 @@ class TrainingDataGenerator(object):
         removed and the data is augmented (if augmentation is enabled)."""
 
         self.hashed_featurizations = set()
-        self.hashed_featurizations_of_last_events = set()
+        # story_graph.visualize('before_cycles_removed.pdf')
         self.story_graph = story_graph.with_cycles_removed()
+        self.story_graph.visualize('after_cycles_removed.pdf')
+
         self.domain = domain
+        max_number_of_trackers = augmentation_factor * 10
         self.config = ExtractorConfig(
                 remove_duplicates=remove_duplicates,
                 augmentation_factor=augmentation_factor,
@@ -155,7 +158,7 @@ class TrainingDataGenerator(object):
                 rand=random.Random(42))
 
         # TODO move it to config and make it configurable
-        self.unique_last_num_states = 8
+        self.unique_last_num_states = 5
 
     def generate(self):
         # type: () -> List[DialogueStateTracker]
@@ -176,7 +179,7 @@ class TrainingDataGenerator(object):
 
         finished_trackers = []
 
-        phase = 0
+        phase = 0  # one phase is one traversal of all story steps.
         min_num_aug_phases = 3 if self.config.augmentation_factor > 0 else 0
         logger.debug("Number of augmentation rounds is {}"
                      "".format(min_num_aug_phases))
@@ -191,19 +194,12 @@ class TrainingDataGenerator(object):
         # if we did not reach any new checkpoints in an iteration, we
         # assume we have reached all and stop.
         while not everything_reachable_is_reached or phase < min_num_aug_phases:
-            num_active_trackers = self._count_trackers(active_trackers)
-            if num_active_trackers == 0:
-                # there is no incoming trackers
-                break
             if everything_reachable_is_reached:
-                # augmentation started
-                phase = 0
-                # reset used checkpoints
-                used_checkpoints = set()  # type: Set[Text]
                 phase_name = "augmentation round {}".format(phase)
             else:
                 phase_name = "data generation round {}".format(phase)
 
+            num_active_trackers = self._count_trackers(active_trackers)
             logger.debug("Starting {} ... (with {} active trackers)"
                          "".format(phase_name, num_active_trackers))
 
@@ -211,16 +207,17 @@ class TrainingDataGenerator(object):
             unused_checkpoints = set()  # type: Set[Text]
 
             # TODO remove permutation, just for testing
-            import numpy as np
-            steps = self.story_graph.ordered_steps()
-            ids = np.random.permutation(len(steps))
+            # import numpy as np
+            story_steps = self.story_graph.ordered_steps()
+            # ids = np.random.permutation(len(story_steps))
             # steps = [steps[idx] for idx in ids]
 
-            pbar = tqdm(steps,
+            pbar = tqdm(story_steps,
                         desc="Processed Story Blocks")
             for step in pbar:
                 incoming_trackers = []
                 for start in step.start_checkpoints:
+                    # print(step.block_name, start)
                     if active_trackers[start.name]:
                         ts = start.filter_trackers(active_trackers[start.name])
                         incoming_trackers.extend(ts)
@@ -268,11 +265,10 @@ class TrainingDataGenerator(object):
                             active_trackers[STORY_END].extend(trackers)
 
             # trackers that reached the end of a story
-            completed = [t for t in active_trackers[STORY_END]]
-            finished_trackers.extend(completed)
+            # completed = [t for t in active_trackers[STORY_END]]
+            # finished_trackers.extend(completed)
+            finished_trackers.extend(active_trackers[STORY_END][:])
 
-            active_trackers = self._create_start_trackers(active_trackers,
-                                                          unused_checkpoints)
             logger.debug("Finished phase ({} training samples found)."
                          "".format(len(finished_trackers)))
 
@@ -285,10 +281,29 @@ class TrainingDataGenerator(object):
                 everything_reachable_is_reached = (
                         unused_checkpoints == previous_unused)
                 previous_unused = unused_checkpoints
+                if everything_reachable_is_reached:
+                    # augmentation started
+                    phase = -1
 
             # prepare next round
+            active_trackers = self._filter_active_trackers(active_trackers,
+                                                           unused_checkpoints)
+            num_active_trackers = self._count_trackers(active_trackers)
+            if num_active_trackers == 0:
+                # there is no incoming trackers
+                # reset used checkpoints
+                if min_num_aug_phases > 0:
+                    used_checkpoints = set()  # type: Set[Text]
+                    # generate active trackers
+                    active_trackers = \
+                        self._create_start_trackers_for_augmentation(
+                            finished_trackers)
+                else:
+                    break
+
             phase += 1
 
+        print(previous_unused)
         self._issue_unused_checkpoint_notification(previous_unused)
         logger.debug("Found {} training trackers."
                      "".format(len(finished_trackers)))
@@ -315,52 +330,53 @@ class TrainingDataGenerator(object):
         else:
             return incoming_trackers
 
-    def _create_start_trackers(self, active_trackers, unused_checkpoints):
-        # type: (TrackerLookupDict) -> TrackerLookupDict
-        """One phase is one traversal of all story steps.
-
-        We need to do some cleanup before processing them again."""
-
-        # mapping from loops
-        glue_mapping = self.story_graph.story_end_checkpoints
-
-        if self.config.use_story_concatenation:
-            # enable augmentation
-            glue_mapping[STORY_END] = STORY_START
-
+    def _filter_active_trackers(self, active_trackers, unused_checkpoints):
+        # type: (TrackerLookupDict, Set[Text]) -> TrackerLookupDict
+        """Filter active trackers that ended with unused checkpoint
+            or are parts of loops."""
         next_active_trackers = defaultdict(list)
 
         for end in unused_checkpoints:
             # process trackers ended with unused checkpoints further
             next_active_trackers[end].extend(active_trackers.get(end, []))
 
+        # mapping from loops
+        glue_mapping = self.story_graph.story_end_checkpoints
         for end, start in glue_mapping.items():
             # process trackers from loops
-            ending_trackers = active_trackers.get(end, [])
-            # add trackers for augmentation only
-            # after we processed all unused checkpoints
-            if start == STORY_START:
-                ending_trackers = utils.subsample_array(
-                        ending_trackers,
-                        self.config.augmentation_factor,
-                        rand=self.config.rand)
+            next_active_trackers[start].extend(active_trackers.get(end, []))
 
-            # This is where the augmentation magic happens. We
-            # will reuse all the trackers that reached the
-            # end checkpoint `None` (which is the end of a
-            # story) and start processing all steps again. So instead
-            # of starting with a fresh tracker, the second and
-            # all following phases will reuse a couple of the trackers
-            # that made their way to a story end.
+        return next_active_trackers
+
+    def _create_start_trackers_for_augmentation(self, finished_trackers):
+        """This is where the augmentation magic happens.
+
+            We will reuse all the trackers that reached the
+            end checkpoint `None` (which is the end of a
+            story) and start processing all steps again. So instead
+            of starting with a fresh tracker, the second and
+            all following phases will reuse a couple of the trackers
+            that made their way to a story end.
+
+            We need to do some cleanup before processing them again.
+        """
+        next_active_trackers = defaultdict(list)
+
+        if self.config.use_story_concatenation:
+            ending_trackers = utils.subsample_array(
+                    finished_trackers,
+                    self.config.augmentation_factor,
+                    rand=self.config.rand
+            )
             for t in ending_trackers:
                 # this is a nasty thing - all stories end and
                 # start with action listen - so after logging the first
                 # actions in the next phase the trackers would
                 # contain action listen followed by action listen.
                 # to fix this we are going to "undo" the last action listen
-                if start == STORY_START:
-                    t.update(ActionReverted())
-                next_active_trackers[start].append(t)
+                t.update(ActionReverted())
+                next_active_trackers[STORY_START].append(t)
+
         return next_active_trackers
 
     def _process_step(
