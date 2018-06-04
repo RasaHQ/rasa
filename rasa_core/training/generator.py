@@ -133,6 +133,7 @@ class TrainingDataGenerator(object):
             for step in pbar:
                 incoming_trackers = []
                 for start in step.start_checkpoints:
+                    # print(step.block_name, start)
                     if active_trackers[start.name]:
                         ts = start.filter_trackers(active_trackers[start.name])
                         incoming_trackers.extend(ts)

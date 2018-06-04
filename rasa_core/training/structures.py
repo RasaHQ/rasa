@@ -51,13 +51,11 @@ class Checkpoint(object):
 
         if not self.conditions:
             return trackers
-
-        for slot_name, slot_value in self.conditions.items():
-            # TODO we'll get only the trackers that have the last slots in condition
-            trackers = [t
-                        for t in trackers
-                        if t.get_slot(slot_name) == slot_value]
-        return trackers
+        else:
+            # TODO should be viewitems for python 2
+            return [t for t in trackers
+                    if (self.conditions.items() <=
+                        t.current_slot_values().items())]
 
     def __repr__(self):
         return "Checkpoint(name={!r}, conditions={})".format(
@@ -355,9 +353,7 @@ class StoryGraph(object):
                     end_name = end.name
                 collected_end.add(end_name)
 
-        unused = collected_end ^ collected_start
-
-        return unused
+        return collected_end ^ collected_start
 
     def get(self, step_id):
         # type: (Text) -> Optional[StoryStep]
