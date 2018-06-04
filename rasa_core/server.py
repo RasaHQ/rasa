@@ -24,6 +24,12 @@ from rasa_core.tracker_store import TrackerStore
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.version import __version__
 
+from typing import Union
+import typing
+
+if typing.TYPE_CHECKING:
+    from rasa_core.interpreter import NaturalLanguageInterpreter as NLI
+
 logger = logging.getLogger(__name__)
 
 
@@ -129,7 +135,7 @@ def requires_auth(token=None):
 
 def _create_agent(
         model_directory,  # type: Text
-        interpreter,  # type: Union[Text, NaturalLanguageInterpreter]
+        interpreter,  # type: Union[Text,NLI,None]
         action_factory=None,  # type: Optional[Text]
         tracker_store=None  # type: Optional[TrackerStore]
 ):
@@ -146,25 +152,24 @@ def _create_agent(
         return None
 
 
-def create_app(model_directory,
-               interpreter=None,
-               loglevel="INFO",
-               logfile="rasa_core.log",
-               cors_origins=None,
-               action_factory=None,
-               auth_token=None,
-               tracker_store=None
+def create_app(model_directory,  # type: Text
+               interpreter=None,  # type: Optional[Union(text,NLI,None)]
+               loglevel="INFO",  # type: Optional [text]
+               logfile="rasa_core.log",  # type: Optional [text]
+               cors_origins=None,  # type: Optional [list]
+               action_factory=None,  # type: Optional [text]
+               auth_token=None,  # type: Optional [text]
+               tracker_store=None  # type: Optional[TrackerStore]
                ):
     """Class representing a Rasa Core HTTP server."""
 
     app = Flask(__name__)
     CORS(app, resources={r"/*": {"origins": "*"}})
-
+    # Setting up logfile
     utils.configure_file_logging(loglevel, logfile)
 
     if not cors_origins:
         cors_origins = []
-
     model_directory = model_directory
 
     interpreter = interpreter
@@ -198,6 +203,7 @@ def create_app(model_directory,
 
         return jsonify({'version': __version__})
 
+    # <sender_id> can be be 'default' if there's only 1 client
     @app.route("/conversations/<sender_id>/continue",
                methods=['POST', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
@@ -318,8 +324,10 @@ def create_app(model_directory,
                     mimetype="application/json")
 
         try:
+            # Fetches the predicted action in a json format
             response = agent().start_message_handling(message, sender_id)
             return jsonify(response)
+
         except Exception as e:
             logger.exception("Caught an exception during parse.")
             return Response(jsonify(error="Server failure. Error: {}"
@@ -346,7 +354,9 @@ def create_app(model_directory,
                             mimetype="application/json")
 
         try:
+            # Set the output channel
             out = CollectingOutputChannel()
+            # Fetches the appropriate bot response in a json format
             responses = agent().handle_message(message,
                                                output_channel=out,
                                                sender_id=sender_id)
@@ -398,8 +408,10 @@ if __name__ == '__main__':
     arg_parser = create_argument_parser()
     cmdline_args = arg_parser.parse_args()
 
+    # Setting up the color scheme of logger
     utils.configure_colored_logging(cmdline_args.loglevel)
 
+    # Setting up the rasa_core application framework
     app = create_app(cmdline_args.core,
                      cmdline_args.nlu,
                      cmdline_args.loglevel,
@@ -409,6 +421,8 @@ if __name__ == '__main__':
 
     logger.info("Started http server on port %s" % cmdline_args.port)
 
+    # Running the server at 'this' address with the
+    # rasa_core application framework
     http_server = WSGIServer(('0.0.0.0', cmdline_args.port), app)
     logger.info("Up and running")
     try:
