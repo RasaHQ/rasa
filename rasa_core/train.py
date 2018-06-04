@@ -94,7 +94,7 @@ def train_dialogue_model(domain_file, stories_file, output_path,
                                                  "max_number_of_trackers",
                                                  "augmentation_factor",
                                                  "remove_duplicates"})
-    training_data = agent.load_data(stories_file, data_load_args)
+    training_data = agent.load_data(stories_file, **data_load_args)
 
     if use_online_learning:
         if nlu_model_path:
