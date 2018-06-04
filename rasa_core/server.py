@@ -147,7 +147,8 @@ def _create_agent(
 
 
 def create_app(model_directory,           # type: Text
-               interpreter=None,          # type: Optional [Union(text,NL interpreter)]
+               interpreter=None,          # type: Optional
+                                        # [Union(text,NL interpreter)]
                loglevel="INFO",           # type: Optional [text]
                logfile="rasa_core.log",   # type: Optional [text]
                cors_origins=None,         # type: Optional [list]
