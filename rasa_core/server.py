@@ -153,12 +153,12 @@ def _create_agent(
 
 
 def create_app(model_directory,  # type: Text
-               interpreter=None,  # type: Optional[Union(text,NLI,None)]
-               loglevel="INFO",  # type: Optional [text]
-               logfile="rasa_core.log",  # type: Optional [text]
-               cors_origins=None,  # type: Optional [list]
-               action_factory=None,  # type: Optional [text]
-               auth_token=None,  # type: Optional [text]
+               interpreter=None,  # type: Union[Text, NLI, None]
+               loglevel="INFO",  # type: Optional[Text]
+               logfile="rasa_core.log",  # type: Optional[Text]
+               cors_origins=None,  # type: Optional[List[Text]]
+               action_factory=None,  # type: Optional[Text]
+               auth_token=None,  # type: Optional[Text]
                tracker_store=None  # type: Optional[TrackerStore]
                ):
     """Class representing a Rasa Core HTTP server."""
