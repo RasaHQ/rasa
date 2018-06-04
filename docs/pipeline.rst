@@ -1,7 +1,7 @@
 .. _section_pipeline:
 
-Processing Pipeline
-===================
+Pipeline and Component Configuration
+====================================
 The process of incoming messages is split into different components. These components are executed one after another
 in a so called processing pipeline. There are components for entity extraction, for intent classification,
 pre-processing and there will be many more in the future.
@@ -58,6 +58,23 @@ the components and configure them separately:
     - name: "ner_synonyms"
     - name: "intent_classifier_sklearn"
 
+tensorflow_embedding
+~~~~~~~~~~~~~~~~~~~~
+
+to use it as a template:
+
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline: "tensorflow_embedding"
+
+The tensorflow pipeline supports any language that can be tokenized. The
+current tokenizer implementation relies on words being separated by spaces,
+so any languages that adheres to that can be trained with this pipeline.
+
+
+
 mitie
 ~~~~~
 
@@ -96,21 +113,6 @@ to use the components and configure them separately:
     pipeline:
     - name: "intent_classifier_keyword"
 
-
-tensorflow_embedding
-~~~~~~~~~~~~~~~~~~~~
-
-to use it as a template:
-
-.. code-block:: yaml
-
-    language: "en"
-
-    pipeline: "tensorflow_embedding"
-
-The tensorflow pipeline supports any language that can be tokenized. The
-current tokenizer implementation relies on words being separated by spaces,
-so any languages that adheres to that can be trained with this pipeline.
 
 .. _section_multiple_intents:
 

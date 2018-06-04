@@ -86,4 +86,6 @@ input[class="didnt-finish"]:focus + svg {
 */
 .wy-nav-side {
   padding-bottom: 3.2em;
+  position: absolute;
 }
+

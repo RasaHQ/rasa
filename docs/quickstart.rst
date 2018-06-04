@@ -5,16 +5,12 @@
 Quickstart
 ==========
 
-.. note::
-
-    See :ref:`section_migration` for how to clone your
-    existing wit/LUIS/Dialogflow app.
 
 As an example we'll start a new project covering the domain
 of searching for restaurants. We'll start with an extremely simple
 model of those conversations. You can build up from there.
 
-Let's assume that `anything` our bot's users say can be
+Let's assume that `anything` our users say can be
 categorized into one of the following **intents**:
 
 - ``greet``
@@ -100,13 +96,6 @@ If you set up the tensorflow backend, you can use
     :language: yaml
 
 
-or if you've installed the MITIE backend, you can use the following as your
-base configuration:
-
-
-.. literalinclude:: ../sample_configs/config_mitie.yml
-    :language: yaml
-
 Now we can train your model by running:
 
 .. code-block:: console
@@ -120,12 +109,13 @@ What do these parameters mean?
 
 - **config**: configuration of the machine learning model
 - **data**: file or folder that contains the training data. You can also
-pull training data from a URL using ``--url`` instead.
-- **path**: output path where the model is persisted to
+  pull training data from a URL using ``--url`` instead.
+- **path**: path where the model will be saved
 
 
-If you want to know more about the parameters, there is an overview of the
-:ref:`section_configuration`. After a few minutes, Rasa NLU will finish
+Full details of the parameters are in :ref:`section_pipeline`
+
+After a few minutes, Rasa NLU will finish
 training, and you'll see a new folder named 
 ``projects/default/model_YYYYMMDD-HHMMSS`` with the timestamp
 when training finished.
@@ -209,7 +199,7 @@ little training data to expect good performance.
     though intent classification is correct.
 
 Rasa NLU will also print a ``confidence`` value for the intent
-classification. Note that the spacy_sklearn backend tends to report very low confidence scores. 
+classification. Note that the ``spacy_sklearn`` backend tends to report very low confidence scores. 
 These are just a heuristic, not a true probability, and you shouldn't read too much into them.
 
 You can use this to do some error handling in your chatbot (ex:
@@ -218,12 +208,11 @@ helpful for prioritising which intents need more training data.
 
 .. note::
     The output may contain additional information, depending on the
-    pipeline you are using. For example, the ``mitie`` pipeline doesn't
-    include the ``"intent_ranking"`` (see example below) whereas the
-    ``spacy_sklearn`` pipeline does (see example above).
+    pipeline you are using. For example, not all pipelines include the
+    ``"intent_ranking"`` information
 
 
-With very little data, rasa NLU can in certain cases
+With very little data, Rasa NLU can in certain cases
 already generalise concepts, for example:
 
 .. code-block:: console

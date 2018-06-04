@@ -19,20 +19,6 @@ entities are distinguishable from non-entities in your use case.
 To assess your model's performance, use the :ref:`evaluation script <section_evaluation>`.
 
 
-Which (human) languages are supported?
-------------------------------
-
-Rasa NLU (with the tensorflow_embedding pipeline) can in principle be used with any language, and there are active projects running in dozens of different languages. More details :ref:`here <section_languages>`.
-
-Not all components support all languages, so you should check out :ref:`section_components` for more info.
-
-The community are always happy to share their experiences, so great places to ask for advice are the `github issues <https://github.com/RasaHQ/rasa_nlu/issues>`_ and the `gitter chat <https://gitter.im/RasaHQ/rasa_nlu>`_.
-
-
-Does it run with python 3?
---------------------------
-Yes it does, Rasa NLU supports python 2.7 as well as python 3.5 and 3.6. If there are any issues with a specific python version, feel free to create an issue or directly provide a fix.
-
 .. _section_faq_version:
 
 Which version of Rasa NLU am I running?
@@ -59,5 +45,7 @@ We'd love to help you. If you are unsure if your issue is related to your setup,
 If you found an issue with the framework, please file a report on `github issues <https://github.com/RasaHQ/rasa_nlu/issues>`_
 including all the information needed to reproduce the problem.
 
-.. toctree::
-   :maxdepth: 1
+
+Does it run with python 3?
+--------------------------
+Yes it does, Rasa NLU supports python 2.7 as well as python 3.5 and 3.6. If there are any issues with a specific python version, feel free to create an issue or directly provide a fix.

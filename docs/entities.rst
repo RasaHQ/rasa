@@ -1,30 +1,8 @@
-.. _section_showcase:
+.. _section_entities:
 
-Important Features
-==================
+Entity Extraction
+=================
 
-Domain-Specific Word Vectors
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Using pre-trained word embeddings to classify text has excellent performance when you have 
-only a little bit of training data. But this has some drawbacks as well. 
-The ``tensorflow_embedding`` pipeline can learn word vectors for words that are specific to your domain,
-so that a banking chatbot can understand that ``"balance"`` is more closely related to ``"account"`` than to ``"symmetry"``. 
-See `this blog post <https://medium.com/rasa-blog/supervised-word-vectors-from-scratch-in-rasa-nlu-6daf794efcd8>`_ for details. 
-
-Multiple Intents from one Message
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. code-block:: python
-
-   "thanks! any other suggestions?" 
-   => thankyou + ask_more_suggestions
-   
-
-
-Sometimes your users will say more than one thing at a time. In this example the user expresses both a ``thankyou`` and a ``ask_more_suggestions`` intent. Rasa can predict multiple labels for each message, e.g. the intent ``thankyou+ask_more_suggestions``.
-Details are in :ref:`section_multiple_intents`, and 
-`this blog post <https://medium.com/rasa-blog/supervised-word-vectors-from-scratch-in-rasa-nlu-6daf794efcd8>`_ has some background.
 
 Custom Entities
 ^^^^^^^^^^^^^^^
