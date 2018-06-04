@@ -399,3 +399,15 @@ def wait_for_threads(threads):
             sys.exit(0)
     logger.info("Finished waiting for input threads to terminate. "
                 "Stopping to serve forever.")
+
+
+def extract_args(kwargs, keys_to_extract):
+    remaining = {}
+    extracted = {}
+    for k, v in kwargs.items():
+        if k in keys_to_extract:
+            extracted[k] = v
+        else:
+            remaining[k] = v
+
+    return extracted, remaining
