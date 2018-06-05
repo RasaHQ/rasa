@@ -11,6 +11,14 @@ Language Understanding with Rasa NLU
    :text: Button Text
    :link: link/to/stuff.html
 
+.. card:: 
+   :title: Turn Natural Language into Structured Data
+   :subtitle: NLU Quickstart
+   :link: link/to/stuff.html
+   :description: Convert messages into intents and entities and live the actual dream.
+   :image_url: http://core.rasa.com/_images/mood_bot.png
+
+
 Rasa NLU is an open-source tool for intent classification and entity extraction. For example, taking a sentence like
 
 .. code-block:: console
@@ -53,6 +61,7 @@ You can see independent benchmarks comparing Rasa NLU to various closed source t
 .. toctree::
    :maxdepth: 2
    :caption: Getting Started
+   :hidden:
 
    installation
    quickstart
@@ -61,6 +70,7 @@ You can see independent benchmarks comparing Rasa NLU to various closed source t
 .. toctree::
    :maxdepth: 1
    :caption: User Guide
+   :hidden:
 
    choosing_pipeline
    entities

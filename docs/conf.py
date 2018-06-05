@@ -131,7 +131,6 @@ html_theme_options = {
     'github_user': 'RasaHQ',
     'github_repo': 'rasa_docs',
     'fixed_sidebar': True,
-    'sidebar_includehidden': True,
 }
 #html_theme_options = {}
 
