@@ -18,20 +18,22 @@ logger = logging.getLogger(__name__)
 class Teams(OutputChannel):
     """A Microsoft Teams communication channel. Not using any library yet."""
 
-    def __init__(self, teams_id, teams_secret, conversation, bot_id):
+    def __init__(self, teams_id, teams_secret, conversation, bot_id,
+                 service_url):
         # type: (Text, Text, Dict[Text]) -> None
 
         self.teams_id = teams_id
         self.teams_secret = teams_secret
         self.conversation = conversation
-        self.global_uri = \
-            'https://smba.trafficmanager.net/emea-client-ss.msg/v3/'
+        self.global_uri = "%s/v3/" % service_url
         self.bot_id = bot_id
 
     def get_headers(self):
         # TODO : Not ask a new token if token still valid. Expiration check
-        uri = \
-        'https://login.microsoftonline.com/botframework.com/oauth2/v2.0/token'
+
+        microsoft_oauth2_url = 'https://login.microsoftonline.com'
+        microsoft_oauth2_path = 'botframework.com/oauth2/v2.0/token'
+        uri = "%s/%s" % (microsoft_oauth2_url, microsoft_oauth2_path)
         grant_type = 'client_credentials'
         scope = 'https://api.botframework.com/.default'
         payload = {'client_id': self.teams_id,
@@ -52,6 +54,7 @@ class Teams(OutputChannel):
 
     def send(self, recipient_id, message_data):
         # type: (Text, Dict[Text, Any]) -> None
+
         post_message_uri = self.global_uri + 'conversations/%s/activities' \
                                              % self.conversation['id']
         data = {"type": "message",
@@ -71,29 +74,43 @@ class Teams(OutputChannel):
         send_response = post(post_message_uri,
                              headers=headers,
                              data=json.dumps(data))
+        
         status_code = send_response.status_code
-        if status_code != 200 or status_code != 201:
-            logger.error('Error in send')
+        if status_code not in [200, 201, 202, 204]:
+            logger.error('Error in send: %s', send_response.text)
 
     def send_text_message(self, recipient_id, message):
-        # type: (Text, Text) -> None
-
         logger.info("Sending message: " + message)
 
         text_message = {"text": message}
         self.send(recipient_id, text_message)
 
     def send_image_url(self, recipient_id, image_url):
-        raise NotImplementedError("Teams channel needs to implement a send "
-                                  "message for images.")
+        hero_content = {
+            'contentType': 'application/vnd.microsoft.card.hero',
+            'content': {
+                'images': [{'url': image_url}]
+                }
+            }
+
+        image_message = {"attachments": [hero_content]}
+        self.send(recipient_id, image_message)
 
     def send_text_with_buttons(self, recipient_id, message, buttons, **kwargs):
-        raise NotImplementedError("Teams channel needs to implement a send "
-                                  "message for buttons.")
+        hero_content = {
+            'contentType': 'application/vnd.microsoft.card.hero',
+            'content': {
+                'subtitle': message,
+                'buttons': buttons
+                }
+            }
+
+        buttons_message = {"attachments": [hero_content]}
+        self.send(recipient_id, buttons_message)
 
     def send_custom_message(self, recipient_id, elements):
-        raise NotImplementedError("Teams channel needs to implement a send "
-                                  "message for custom messages.")
+        custom_message = {"attachments": elements}
+        self.send(recipient_id, custom_message)
 
 
 class TeamsInput(HttpInputComponent):
@@ -128,7 +145,8 @@ class TeamsInput(HttpInputComponent):
             try:
                 out_channel = Teams(self.teams_id, self.teams_secret,
                                     postdata["conversation"],
-                                    postdata["recipient"])
+                                    postdata["recipient"],
+                                    postdata["serviceUrl"])
                 user_msg = UserMessage(postdata["text"], out_channel,
                                        postdata["from"]["id"])
                 on_new_message(user_msg)
