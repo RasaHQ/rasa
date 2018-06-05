@@ -85,8 +85,6 @@ class TrainingDataGenerator(object):
         init_tracker = DialogueStateTracker(
                 UserMessage.DEFAULT_SENDER_ID,
                 self.domain.slots,
-                self.domain.topics,
-                self.domain.default_topic,
                 max_event_history=self.config.tracker_limit
         )
         active_trackers[STORY_START].append(init_tracker)

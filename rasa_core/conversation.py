@@ -29,7 +29,6 @@ class Dialogue(object):
         return "Dialogue with name '{}' and turns:\n{}".format(
                 self.name, "\n\n".join(["\t{}".format(t) for t in self.events]))
 
-
 class Topic(object):
     """topic of conversation"""
 

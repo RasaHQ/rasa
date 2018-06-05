@@ -17,6 +17,7 @@ Changed
 
 Removed
 -------
+- removed support for topics
 
 Fixed
 -----
