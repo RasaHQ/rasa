@@ -17,9 +17,11 @@ Changed
 
 Removed
 -------
+- removed support for topics
 
 Fixed
 -----
+- fixed evaluation script
 
 [0.9.3] - 2018-05-30
 ^^^^^^^^^^^^^^^^^^^^

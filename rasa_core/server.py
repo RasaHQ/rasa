@@ -25,6 +25,12 @@ from rasa_core.tracker_store import TrackerStore
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.version import __version__
 
+from typing import Union
+import typing
+
+if typing.TYPE_CHECKING:
+    from rasa_core.interpreter import NaturalLanguageInterpreter as NLI
+
 logger = logging.getLogger(__name__)
 
 
@@ -80,7 +86,7 @@ def requires_auth(token=None):
 
 def _create_agent(
         model_directory,  # type: Text
-        interpreter,  # type: Union[Text, NaturalLanguageInterpreter]
+        interpreter,  # type: Union[Text, NaturalLanguageInterpreter, None]
         action_endpoint=None,  # type: Optional[ActionEndpointConfig]
         tracker_store=None,  # type: Optional[TrackerStore]
         nlg_config=None
@@ -99,12 +105,12 @@ def _create_agent(
         return None
 
 
-def create_app(model_directory,
-               interpreter=None,
+def create_app(model_directory, # type: Text
+               interpreter=None, # type: Union[Text, NLI, None]
                input_channels=None,
-               cors_origins=None,
-               auth_token=None,
-               tracker_store=None,
+               cors_origins=None, # type: Optional[List[Text]]
+               auth_token=None,  # type: Optional[Text]
+               tracker_store=None,  # type: Optional[TrackerStore]
                action_endpoint=None,
                nlg_config=None
                ):
@@ -236,7 +242,9 @@ def create_app(model_directory,
                             mimetype="application/json")
 
         try:
+            # Set the output channel
             out = CollectingOutputChannel()
+            # Fetches the appropriate bot response in a json format
             responses = agent().handle_message(message,
                                                output_channel=out,
                                                sender_id=sender_id)
@@ -292,12 +300,16 @@ if __name__ == '__main__':
     log = logging.getLogger('werkzeug')
     log.setLevel(logging.WARN)
 
+    # Setting up the color scheme of logger
     utils.configure_colored_logging(cmdline_args.loglevel)
     utils.configure_file_logging(cmdline_args.loglevel,
                                  cmdline_args.log_file)
 
     logger.info("Rasa process starting")
 
+    # Setting up the rasa_core application framework
+    # Running the server at 'this' address with the
+    # rasa_core application framework
     run.start_server(cmdline_args.core,
                      cmdline_args.nlu,
                      cmdline_args.connector,

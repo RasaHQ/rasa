@@ -7,25 +7,19 @@ import io
 
 import jsonpickle
 
-from rasa_core.conversation import Topic
 from rasa_core.domain import TemplateDomain
-from rasa_core.trackers import DialogueStateTracker, TopicSet
+from rasa_core.trackers import DialogueStateTracker
 from tests.conftest import DEFAULT_DOMAIN_PATH
 
 
 def tracker_from_dialogue_file(filename, domain=None):
     dialogue = read_dialogue_file(filename)
 
-    dialogue_topics = set([Topic(t.topic)
-                           for t in dialogue.events
-                           if isinstance(t, TopicSet)])
     if domain is not None:
         domain = domain
     else:
         domain = TemplateDomain.load(DEFAULT_DOMAIN_PATH)
-    domain.topics.extend(dialogue_topics)
-    tracker = DialogueStateTracker(dialogue.name, domain.slots,
-                                   domain.topics, domain.default_topic)
+    tracker = DialogueStateTracker(dialogue.name, domain.slots)
     tracker.recreate_from_dialogue(dialogue)
     return tracker
 

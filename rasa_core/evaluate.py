@@ -228,7 +228,7 @@ if __name__ == '__main__':
     run_story_evaluation(cmdline_args.stories,
                          cmdline_args.core,
                          cmdline_args.nlu,
-                         cmdline_args.failed,
                          cmdline_args.max_stories,
+                         cmdline_args.failed,
                          cmdline_args.output)
     logger.info("Finished evaluation")

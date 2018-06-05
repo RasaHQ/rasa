@@ -277,6 +277,7 @@ class BotUttered(Event):
             raise ValueError("Failed to parse bot uttered event. {}".format(e))
 
 
+# TODO: DEPRECATED - remove in version 0.10.0
 # noinspection PyProtectedMember
 class TopicSet(Event):
     """The topic of conversation has changed.
@@ -327,7 +328,7 @@ class TopicSet(Event):
             raise ValueError("Failed to parse set topic event. {}".format(e))
 
     def apply_to(self, tracker):
-        tracker._topic_stack.push(self.topic)
+        pass
 
 
 # noinspection PyProtectedMember

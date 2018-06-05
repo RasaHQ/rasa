@@ -34,7 +34,7 @@ def test_dispatcher_template_invalid_vars():
             [], [], [], {
                 "my_made_up_template": [{
                     "text": "a template referencing an invalid {variable}."}]},
-            [], [], None, [])
+            [], [], None)
     bot = CollectingOutputChannel()
     nlg = TemplatedNaturalLanguageGenerator(domain)
     dispatcher = Dispatcher("my-sender", bot, nlg)

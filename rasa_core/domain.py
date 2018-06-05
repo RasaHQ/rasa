@@ -23,8 +23,6 @@ from typing import Text
 from rasa_core import utils
 from rasa_core.actions import Action, action
 from rasa_core.actions.action import ActionListen, ActionRestart
-from rasa_core.conversation import DefaultTopic
-from rasa_core.conversation import Topic
 from rasa_core.slots import Slot
 from rasa_core.trackers import DialogueStateTracker, SlotSet
 from rasa_core.utils import read_yaml_file
@@ -83,14 +81,12 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
     """The domain specifies the universe in which the bot's policy acts.
 
     A Domain subclass provides the actions the bot can take, the intents
-    and entities it can recognise, and the topics it knows about."""
+    and entities it can recognise"""
 
     DEFAULT_ACTIONS = [ActionListen(), ActionRestart()]
 
-    def __init__(self, topics=None, store_entities_as_slots=True,
+    def __init__(self, store_entities_as_slots=True,
                  restart_intent="restart"):
-        self.default_topic = DefaultTopic
-        self.topics = topics if topics is not None else []
         self.store_entities_as_slots = store_entities_as_slots
         self.restart_intent = restart_intent
 
@@ -401,7 +397,6 @@ class TemplateDomain(Domain):
         cls.validate_domain_yaml(filename)
         data = read_yaml_file(filename)
         utter_templates = cls.collect_templates(data.get("templates", {}))
-        topics = [Topic(name) for name in data.get("topics", [])]
         slots = cls.collect_slots(data.get("slots", {}))
         additional_arguments = data.get("config", {})
         return TemplateDomain(
@@ -411,7 +406,6 @@ class TemplateDomain(Domain):
                 utter_templates,
                 data.get("actions", []),
                 action_endpoint,
-                topics,
                 **additional_arguments
         )
 
@@ -475,7 +469,7 @@ class TemplateDomain(Domain):
         return templates
 
     def __init__(self, intents, entities, slots, templates,
-                 action_names, action_endpoint, topics, **kwargs):
+                 action_names, action_endpoint, **kwargs):
         self._intents = intents
         self._entities = entities
         self._slots = slots
@@ -483,7 +477,7 @@ class TemplateDomain(Domain):
         self._action_names = action_names
         self._actions = self.instantiate_actions(action_names,
                                                  action_endpoint)
-        super(TemplateDomain, self).__init__(topics, **kwargs)
+        super(TemplateDomain, self).__init__(**kwargs)
 
     @staticmethod
     def instantiate_actions(action_names,
@@ -502,7 +496,6 @@ class TemplateDomain(Domain):
 
         additional_config = {
             "store_entities_as_slots": self.store_entities_as_slots}
-        topic_names = [t.name for t in self.topics]
         action_names = self.action_names[len(Domain.DEFAULT_ACTIONS):]
 
         domain_data = {
@@ -511,7 +504,6 @@ class TemplateDomain(Domain):
             "entities": self.entities,
             "slots": self._slot_definitions(),
             "templates": self.templates,
-            "topics": topic_names,
             "actions": action_names,  # class names of the actions
         }
 

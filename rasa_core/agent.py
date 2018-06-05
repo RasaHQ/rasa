@@ -33,8 +33,9 @@ if typing.TYPE_CHECKING:
 class Agent(object):
     """Public interface for common things to do.
 
-     This includes e.g. train an assistant, or handle messages
-     with an assistant."""
+     This includes e.g. train an assistant (online or offline mode),
+     handle messages with an assistant, load a dialogue model,
+     get the next action, handle channel or toggle memoization"""
 
     def __init__(
             self,
@@ -44,6 +45,7 @@ class Agent(object):
             generator=None,  # type: Union[NLG, Text, None]
             tracker_store=None  # type: Optional[TrackerStore]
     ):
+        # Initializing variables with the passed parameters.
         self.domain = self._create_domain(domain)
         self.policy_ensemble = self._create_ensemble(policies)
         self.interpreter = NaturalLanguageInterpreter.create(interpreter)
@@ -316,7 +318,8 @@ class Agent(object):
     def _create_processor(self, preprocessor=None):
         # type: (Optional[Callable[[Text], Text]]) -> MessageProcessor
         """Instantiates a processor based on the set state of the agent."""
-
+        # Checks that the interpreter and tracker store are set and
+        # creates a processor
         self._ensure_agent_is_prepared()
         return MessageProcessor(
                 self.interpreter, self.policy_ensemble, self.domain,
@@ -347,9 +350,9 @@ class Agent(object):
 
     @staticmethod
     def _create_interpreter(
-            interp  # type: Union[Text, NaturalLanguageInterpreter, None]
+            interp  # type: Union[Text, NLI, None]
     ):
-        # type: (...) -> NaturalLanguageInterpreter
+        # type: (...) -> NLI
         return NaturalLanguageInterpreter.create(interp)
 
     @staticmethod
