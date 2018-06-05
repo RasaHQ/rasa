@@ -14,6 +14,7 @@ from rasa_core.channels.rest import HttpInputComponent
 
 logger = logging.getLogger(__name__)
 
+
 class Teams(OutputChannel):
     """A Microsoft Teams communication channel. Not using any library yet."""
 
@@ -38,7 +39,7 @@ class Teams(OutputChannel):
                    'grant_type': grant_type,
                    'scope': scope}
 
-        token_response = post(uri, data = payload)
+        token_response = post(uri, data=payload)
         if token_response.status_code == 200:
             token_data = token_response.json()
             access_token = token_data['access_token']
@@ -68,10 +69,10 @@ class Teams(OutputChannel):
 
         headers = self.get_headers()
         send_response = post(post_message_uri,
-                             headers = headers,
-                             data = json.dumps(data))
-
-        if send_response.status_code != 200 or send_response.status_code != 201:
+                             headers=headers,
+                             data=json.dumps(data))
+        status_code = send_response.status_code
+        if status_code != 200 or status_code != 201:
             logger.error('Error in send')
 
     def send_text_message(self, recipient_id, message):
@@ -93,6 +94,7 @@ class Teams(OutputChannel):
     def send_custom_message(self, recipient_id, elements):
         raise NotImplementedError("Teams channel needs to implement a send "
                                   "message for custom messages.")
+
 
 class TeamsInput(HttpInputComponent):
     """Teams input channel implementation. Based on the HTTPInputChannel."""
