@@ -328,7 +328,7 @@ class TopicSet(Event):
             raise ValueError("Failed to parse set topic event. {}".format(e))
 
     def apply_to(self, tracker):
-        tracker._topic_stack.push(self.topic)
+        pass
 
 
 # noinspection PyProtectedMember
