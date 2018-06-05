@@ -10,7 +10,6 @@ import io
 import jsonpickle
 import pytest
 
-from rasa_core.conversation import QuestionTopic
 from rasa_core.domain import TemplateDomain
 from rasa_core.tracker_store import InMemoryTrackerStore
 from tests.utilities import tracker_from_dialogue_file
@@ -29,7 +28,7 @@ def test_dialogue_serialisation(filename):
 
 @pytest.mark.parametrize("filename", glob.glob('data/test_dialogues/*json'))
 def test_inmemory_tracker_store(filename):
-    domain = TemplateDomain.load("data/test_domains/default_with_topic.yml")
+    domain = TemplateDomain.load("data/test_domains/default.yml")
     tracker = tracker_from_dialogue_file(filename, domain)
     tracker_store = InMemoryTrackerStore(domain)
     tracker_store.save(tracker)
@@ -43,11 +42,3 @@ def test_tracker_restaurant():
     tracker = tracker_from_dialogue_file(filename, domain)
     assert tracker.get_slot("name") == "holger"
     assert tracker.get_slot("location") is None     # slot doesn't exist!
-
-
-def test_topic_question():
-    domain = TemplateDomain.load("data/test_domains/default_with_topic.yml")
-    filename = 'data/test_dialogues/topic_question.json'
-    tracker = tracker_from_dialogue_file(filename, domain)
-    question_topic = QuestionTopic
-    assert tracker.topic.name == question_topic.name

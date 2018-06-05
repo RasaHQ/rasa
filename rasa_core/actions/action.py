@@ -24,12 +24,6 @@ ACTION_RESTART_NAME = "action_restart"
 class Action(object):
     """Next action to be taken in response to a dialogue state."""
 
-    def resets_topic(self):
-        # type: () -> bool
-        """Indicator if this action resets the topic when run."""
-
-        return False
-
     def name(self):
         # type: () -> Text
         """Unique identifier of this simple action."""
