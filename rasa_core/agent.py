@@ -32,8 +32,8 @@ if typing.TYPE_CHECKING:
 class Agent(object):
     """Public interface for common things to do.
 
-     This includes e.g. train an assistant (online or offline mode), 
-     handle messages with an assistant, load a dialogue model, 
+     This includes e.g. train an assistant (online or offline mode),
+     handle messages with an assistant, load a dialogue model,
      get the next action, handle channel or toggle memoization"""
 
     def __init__(
@@ -110,7 +110,7 @@ class Agent(object):
             [u'how can I help you?']
 
         """
-        # Creates a new processor for the agent and handles 
+        # Creates a new processor for the agent and handles
         # the single message
         processor = self._create_processor(message_preprocessor)
         return processor.handle_message(
@@ -124,7 +124,7 @@ class Agent(object):
         # type: (...) -> Dict[Text, Any]
         """Start to process a messages, returning the next action to take. """
 
-        # Creates a new processor for the agent and starts the 
+        # Creates a new processor for the agent and starts the
         # message handling
         processor = self._create_processor()
         return processor.start_message_handling(
@@ -141,7 +141,7 @@ class Agent(object):
 
         Predicts the next action to take by the caller"""
 
-        # Creates a new processor for the agent and countinues 
+        # Creates a new processor for the agent and countinues
         # message handling
         processor = self._create_processor()
         return processor.continue_message_handling(sender_id,
