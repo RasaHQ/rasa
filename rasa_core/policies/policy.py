@@ -63,11 +63,6 @@ class Policy(object):
                           for key in kwargs.keys()
                           if not params.get(key)}
 
-        # TODO change that
-        if params.get('batch_size') and isinstance(params['batch_size'],
-                                                   list):
-            params['batch_size'] = params['batch_size'][0]
-
         logger.debug("Parameters ignored by `model.fit(...)`: {}"
                      "".format(ignored_params))
         return params
