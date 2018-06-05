@@ -345,6 +345,42 @@ listen for messages on ``/app/webhook``.
 
     For more information on the Twilio REST API, go to https://www.twilio.com/docs/iam/api
 
+.. _teams_connector:
+
+Microsoft Teams Setup
+--------------
+
+Directly using python
+^^^^^^^^^^^^^^^^^^^^^
+
+A ``TeamsInput`` instance provides a flask blueprint for creating
+a webserver. This lets you seperate the exact endpoints and implementation
+from your webserver creation logic.
+
+Code to create a Microsoft Teams-compatible webserver looks like this:
+
+.. code-block:: python
+    :linenos:
+
+    from rasa_core.channels import HttpInputChannel
+    from rasa_core.channels.teams import TeamsInput
+    from rasa_core.agent import Agent
+    from rasa_core.interpreter import RegexInterpreter
+
+    # load your trained agent
+    agent = Agent.load("dialogue", interpreter=RegexInterpreter())
+
+    input_channel = TeamsInput(
+      teams_id="YOUR_TEAMS_ID", # you get this from your Teams account
+      teams_secret="YOUR_TEAMS_SECRET" # also from your Teams account
+    )
+
+    agent.handle_channel(HttpInputChannel(5004, "/app", input_channel))
+
+The arguments for the ``HttpInputChannel`` are the port, the url prefix, and the input channel.
+The default endpoint for receiving messages is ``/api/messages``, so the example above above would
+listen for messages on ``/app/api/messages``.
+
 .. _ngrok:
 
 Using Ngrok For Local Testing
