@@ -11,6 +11,11 @@ Almost every chatbot and voice app will have some custom entities.
 In a restaurant bot, ``chinese`` is a cuisine, but in a language-learning app it would mean something very different. 
 The ``ner_crf`` component can learn custom entities in any language. 
 
+Regular Expressions (regex)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
 Extracting Places, Dates, People, Organisations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

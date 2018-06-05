@@ -7,6 +7,10 @@ Language Understanding with Rasa NLU
     that matches the version you have installed.
 
 
+.. button:: 
+   :text: Button Text
+   :link: link/to/stuff.html
+
 Rasa NLU is an open-source tool for intent classification and entity extraction. For example, taking a sentence like
 
 .. code-block:: console
@@ -47,8 +51,7 @@ You can see independent benchmarks comparing Rasa NLU to various closed source t
 
 
 .. toctree::
-   :maxdepth: 1
-   :hidden:
+   :maxdepth: 2
    :caption: Getting Started
 
    installation
@@ -57,7 +60,6 @@ You can see independent benchmarks comparing Rasa NLU to various closed source t
 
 .. toctree::
    :maxdepth: 1
-   :hidden:
    :caption: User Guide
 
    choosing_pipeline
@@ -77,6 +79,7 @@ You can see independent benchmarks comparing Rasa NLU to various closed source t
    http
    python
    persist
+   docker
 
 .. toctree::
    :maxdepth: 1

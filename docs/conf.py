@@ -35,10 +35,12 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.doctest',
     'sphinxcontrib.programoutput',
+    'rasabaster.button',
+    'rasabaster.card'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = []
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
@@ -119,11 +121,18 @@ todo_include_todos = False
 # a list of builtin themes.
 #html_theme = 'default'
 
-html_theme = "sphinx_rtd_theme"
+html_theme = "rasabaster"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
+html_theme_options = {
+    'description': "Rasa",
+    'github_user': 'RasaHQ',
+    'github_repo': 'rasa_docs',
+    'fixed_sidebar': True,
+    'sidebar_includehidden': True,
+}
 #html_theme_options = {}
 
 # Add any paths that contain custom themes here, relative to this directory.
@@ -165,7 +174,9 @@ html_static_path = ['_static']
 #html_use_smartypants = True
 
 # Custom sidebar templates, maps document names to template names.
-#html_sidebars = {}
+html_sidebars = {
+   '**': ['rasaglobaltoc.html']
+}
 
 # Additional templates that should be rendered to pages, maps page names to
 # template names.

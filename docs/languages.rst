@@ -3,11 +3,11 @@
 Language Support
 ================
 
-Rasa NLU can be used to understand any language, but this depends on 
-the backend you are using, and the features you require.
+Rasa NLU can be used to understand any language, but some backends are 
+restricted to specific languages.
 
-The ``tensorflow_embedding`` pipeline in principle supports any language, 
-though will work better for some languages than others.
+The ``tensorflow_embedding`` pipeline can be used for any language, because
+it trains custom word embeddings for your domain.
 
 Pre-trained Word Vectors
 ------------------------
