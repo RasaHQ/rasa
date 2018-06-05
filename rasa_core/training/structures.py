@@ -51,11 +51,12 @@ class Checkpoint(object):
 
         if not self.conditions:
             return trackers
-        else:
-            # TODO should be viewitems for python 2
-            return [t for t in trackers
-                    if (self.conditions.items() <=
-                        t.current_slot_values().items())]
+
+        for slot_name, slot_value in self.conditions.items():
+            trackers = [t
+                        for t in trackers
+                        if t.get_slot(slot_name) == slot_value]
+        return trackers
 
     def __repr__(self):
         return "Checkpoint(name={!r}, conditions={})".format(
@@ -332,6 +333,7 @@ class StoryGraph(object):
     @staticmethod
     def _is_cid_conds_already_in(cid, conds, cps):
         for cp in cps:
+            # TODO do not do dict1 == dict2
             if cid == cp.name and conds == cp.conditions:
                 return True
         return False

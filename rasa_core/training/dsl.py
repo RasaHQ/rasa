@@ -227,7 +227,7 @@ class StoryFileReader(object):
                         "-"):  # reached a slot, event, or executed action
                     event_name, parameters = self._parse_event_line(line[1:])
                     self.add_event(event_name, parameters)
-                elif line.startswith("*"):  # reached a user messageasked_hsn
+                elif line.startswith("*"):  # reached a user message
                     user_messages = [el.strip() for el in
                                      line[1:].split(" OR ")]
                     self.add_user_messages(user_messages, line_num)
