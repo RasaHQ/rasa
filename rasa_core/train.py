@@ -10,7 +10,6 @@ from builtins import str
 
 from rasa_core import utils
 from rasa_core.agent import Agent
-from rasa_core.channels.console import ConsoleInputChannel
 from rasa_core.interpreter import RasaNLUInterpreter, RegexInterpreter
 from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.memoization import MemoizationPolicy
@@ -95,9 +94,12 @@ def train_dialogue_model(domain_file, stories_file, output_path,
             agent.interpreter = RasaNLUInterpreter(nlu_model_path)
         else:
             agent.interpreter = RegexInterpreter()
+
+        # TODO: TB - start server instead and then run cmd to communicate with
+        #       server
         agent.train_online(
                 training_data,
-                input_channel=ConsoleInputChannel(),
+                input_channel=None,  # FIX!
                 model_path=output_path,
                 **kwargs)
     else:

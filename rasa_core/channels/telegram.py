@@ -11,7 +11,7 @@ from telegram import (Bot, InlineKeyboardButton, Update, InlineKeyboardMarkup,
                       KeyboardButton, ReplyKeyboardMarkup)
 
 from rasa_core.channels.channel import UserMessage, OutputChannel
-from rasa_core.channels.rest import HttpInputComponent
+from rasa_core.channels import InputChannel
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +69,7 @@ class TelegramOutput(Bot, OutputChannel):
         return self.send_message(recipient_id, text, reply_markup=reply_markup)
 
 
-class TelegramInput(HttpInputComponent):
+class TelegramInput(InputChannel):
     """Telegram input channel"""
 
     def __init__(self, access_token, verify, webhook_url, debug_mode=True):

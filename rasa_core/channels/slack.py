@@ -11,7 +11,7 @@ from slackclient import SlackClient
 from typing import Text, Optional
 
 from rasa_core.channels.channel import UserMessage, OutputChannel
-from rasa_core.channels.rest import HttpInputComponent
+from rasa_core.channels import InputChannel
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +65,7 @@ class SlackBot(SlackClient, OutputChannel):
                                        attachments=button_attachment)
 
 
-class SlackInput(HttpInputComponent):
+class SlackInput(InputChannel):
     """Slack input channel implementation. Based on the HTTPInputChannel."""
 
     def __init__(self, slack_token, slack_channel=None):

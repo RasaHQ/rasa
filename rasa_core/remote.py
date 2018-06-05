@@ -8,6 +8,7 @@ import json
 import logging
 import os
 import time
+from collections import namedtuple
 
 import requests
 from future.moves.urllib.parse import quote_plus
@@ -33,7 +34,7 @@ class RasaCoreClient(object):
 
     Used to retrieve information about models and conversations."""
 
-    def __init__(self, host, token):
+    def __init__(self, host="127.0.0.1:5005", token=None):
         # type: (Text, Optional[Text]) -> None
 
         self.host = host
@@ -197,6 +198,7 @@ class RemoteAgent(object):
             domain,  # type: Union[Text, Domain]
             core_client  # type: RasaCoreClient
     ):
+        self.nlg = None # TODO: TB - figure out how NLG works with remote core
         self.domain = domain
         self.core_client = core_client
 
@@ -224,7 +226,7 @@ class RemoteAgent(object):
                                            self.domain)
         dispatcher = Dispatcher(message.sender_id,
                                 message.output_channel,
-                                self.domain)
+                                self.nlg)
 
         action = self.domain.action_for_name(action_name)
         # events and return values are used to update
@@ -279,13 +281,11 @@ class RemoteAgent(object):
     def load(cls,
              path,  # type: Text
              core_host,  # type: Text
-             auth_token=None,  # type: Optional[Text]
-             action_factory=None  # type: Optional[Text]
+             auth_token=None  # type: Optional[Text]
              ):
         # type: (...) -> RemoteAgent
 
-        domain = TemplateDomain.load(os.path.join(path, "domain.yml"),
-                                     action_factory)
+        domain = TemplateDomain.load(os.path.join(path, "domain.yml"))
 
         core_client = RasaCoreClient(core_host, auth_token)
         core_client.upload_model(path, max_retries=5)

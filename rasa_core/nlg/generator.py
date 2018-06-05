@@ -7,3 +7,17 @@ from __future__ import unicode_literals
 class NaturalLanguageGenerator(object):
     def generate(self, template_name, filled_slots=None, **kwargs):
         pass
+
+    @staticmethod
+    def create(obj, domain):
+        if isinstance(obj, NaturalLanguageGenerator):
+            return obj
+        elif isinstance(obj, dict):
+            # TODO: TB - check if we should really do it this way
+            if obj.get("type") == "template":
+                from rasa_core.nlg.template import \
+                    TemplatedNaturalLanguageGenerator
+
+                return TemplatedNaturalLanguageGenerator(domain.templates)
+        else:
+            return None  # TODO: default generator

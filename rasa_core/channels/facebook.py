@@ -13,8 +13,7 @@ from fbmessenger import (
 from flask import Blueprint, request, jsonify
 from typing import Text, List, Dict, Any, Callable
 
-from rasa_core.channels.channel import UserMessage, OutputChannel
-from rasa_core.channels.rest import HttpInputComponent
+from rasa_core.channels.channel import UserMessage, OutputChannel, InputChannel
 
 logger = logging.getLogger(__name__)
 
@@ -200,7 +199,7 @@ class MessengerBot(OutputChannel):
         return {"sender": {"id": recipient_id}}
 
 
-class FacebookInput(HttpInputComponent):
+class FacebookInput(InputChannel):
     """Facebook input channel implementation. Based on the HTTPInputChannel."""
 
     def __init__(self, fb_verify, fb_secret, fb_access_token):

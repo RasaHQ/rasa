@@ -5,6 +5,14 @@ Migration Guide
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+0.9.x to 0.10.0
+--------------
+- `rasa_core.channels.direct` output channel package removed.
+  `CollectingOutputChannel` moved to `rasa_core.channels.channel`
+- `HttpInputComponent` renamed to `InputChannel` & moved to
+  `rasa_core.channels.channel.InputChannel`
+- removed package `rasa_core.channels.rest`
+
 0.8.x to 0.9.0
 --------------
 

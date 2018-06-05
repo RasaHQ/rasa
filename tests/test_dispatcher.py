@@ -4,9 +4,10 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from rasa_core.channels.console import ConsoleOutputChannel
-from rasa_core.channels.direct import CollectingOutputChannel
+from rasa_core.channels import CollectingOutputChannel
 from rasa_core.dispatcher import Button, Element, Dispatcher
 from rasa_core.domain import TemplateDomain
+from rasa_core.nlg.template import TemplatedNaturalLanguageGenerator
 
 
 def test_dispatcher_utter_attachment(default_dispatcher_collecting):
@@ -35,7 +36,8 @@ def test_dispatcher_template_invalid_vars():
                     "text": "a template referencing an invalid {variable}."}]},
             [], [], None, [])
     bot = CollectingOutputChannel()
-    dispatcher = Dispatcher("my-sender", bot, domain)
+    nlg = TemplatedNaturalLanguageGenerator(domain)
+    dispatcher = Dispatcher("my-sender", bot, nlg)
     dispatcher.utter_template("my_made_up_template")
     collected = dispatcher.output_channel.latest_output()
     assert collected['text'].startswith(
@@ -61,7 +63,8 @@ def test_dispatcher_utter_buttons_from_domain_templ():
     domain_file = "examples/moodbot/domain.yml"
     domain = TemplateDomain.load(domain_file)
     bot = CollectingOutputChannel()
-    dispatcher = Dispatcher("my-sender", bot, domain)
+    nlg = TemplatedNaturalLanguageGenerator(domain)
+    dispatcher = Dispatcher("my-sender", bot, nlg)
     dispatcher.utter_template("utter_greet")
     assert len(bot.messages) == 1
     assert bot.messages[0]['text'] == "Hey! How are you?"

@@ -20,7 +20,7 @@ from rasa_core import server, events
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.agent import Agent
 from rasa_core.channels import UserMessage
-from rasa_core.channels.direct import CollectingOutputChannel
+from rasa_core.channels import CollectingOutputChannel
 from rasa_core.events import (
     UserUttered, BotUttered, SlotSet, TopicSet, Event, ActionExecuted)
 from rasa_core.interpreter import RegexInterpreter

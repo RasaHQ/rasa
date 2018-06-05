@@ -399,3 +399,14 @@ def wait_for_threads(threads):
             sys.exit(0)
     logger.info("Finished waiting for input threads to terminate. "
                 "Stopping to serve forever.")
+
+
+def bool_arg(name, default=True):
+    # type: ( Text, bool) -> bool
+    """Return a passed boolean argument of the request or a default.
+
+    Checks the `name` parameter of the request if it contains a valid
+    boolean value. If not, `default` is returned."""
+    from flask import request
+
+    return request.args.get(name, str(default)).lower() == 'true'

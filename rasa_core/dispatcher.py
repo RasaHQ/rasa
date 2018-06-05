@@ -3,14 +3,13 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import copy
 import logging
 from collections import namedtuple
 
 from typing import Text, List, Dict, Any, Optional
 
 from rasa_core.channels import OutputChannel
-from rasa_core.domain import Domain
+from rasa_core.nlg.generator import NaturalLanguageGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -37,12 +36,12 @@ class Button(dict):
 class Dispatcher(object):
     """Send messages back to user"""
 
-    def __init__(self, sender_id, output_channel, domain):
-        # type: (Text, OutputChannel, Domain) -> None
+    def __init__(self, sender_id, output_channel, nlg):
+        # type: (Text, OutputChannel, NaturalLanguageGenerator) -> None
 
         self.sender_id = sender_id
         self.output_channel = output_channel
-        self.domain = domain
+        self.nlg = nlg
         self.send_messages = []
         self.latest_bot_messages = []
 
@@ -154,7 +153,7 @@ class Dispatcher(object):
         # type: (...) -> Dict[Text, Any]
         """"Generate a response."""
 
-        message = self.domain.nlg.generate(template, filled_slots, **kwargs)
+        message = self.nlg.generate(template, filled_slots, **kwargs)
 
         if message is None and not silent_fail:
             raise ValueError("Couldn't create message for template '{}'."

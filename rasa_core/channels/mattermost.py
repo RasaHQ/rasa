@@ -6,10 +6,9 @@ from __future__ import unicode_literals
 import logging
 
 from flask import Blueprint, request, jsonify, make_response
-import requests
 from mattermostwrapper import MattermostAPI
-from rasa_core.channels.channel import UserMessage, OutputChannel
-from rasa_core.channels.rest import HttpInputComponent
+
+from rasa_core.channels.channel import UserMessage, OutputChannel, InputChannel
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +31,7 @@ class MattermostBot(MattermostAPI, OutputChannel):
         super(MattermostBot, self).post_channel(self.bot_channel, message)
 
 
-class MattermostInput(HttpInputComponent):
+class MattermostInput(InputChannel):
     """Mattermost input channel implemenation. Based on the HTTPInputChannel."""
 
     def __init__(self, url, team, user, pw):

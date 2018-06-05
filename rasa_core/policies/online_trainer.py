@@ -14,7 +14,6 @@ from typing import Optional, Any, List
 
 from rasa_core import utils
 from rasa_core.actions.action import ACTION_LISTEN_NAME
-from rasa_core.channels.console import ConsoleInputChannel
 from rasa_core.events import ActionExecuted
 from rasa_core.events import UserUtteranceReverted, StoryExported
 from rasa_core.interpreter import RegexInterpreter
@@ -72,8 +71,8 @@ class OnlinePolicyEnsemble(PolicyEnsemble):
         bot.toggle_memoization(False)
 
         try:
-            bot.handle_channel(
-                    input_channel if input_channel else ConsoleInputChannel())
+            # TODO: TB - handle channel is gone!
+            bot.handle_channel(input_channel)
         except TrainingFinishedException:
             pass  # training has finished
 

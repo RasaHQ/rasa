@@ -4,7 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from rasa_core.channels import UserMessage
-from rasa_core.channels.direct import CollectingOutputChannel
+from rasa_core.channels import CollectingOutputChannel
 from rasa_core.dispatcher import Button
 
 

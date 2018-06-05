@@ -11,7 +11,7 @@ from flask import Blueprint, request, jsonify
 from twilio.rest import Client
 
 from rasa_core.channels import UserMessage, OutputChannel
-from rasa_core.channels.rest import HttpInputComponent
+from rasa_core.channels import InputChannel
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,7 @@ class TwilioOutput(Client, OutputChannel):
         pass
 
 
-class TwilioInput(HttpInputComponent):
+class TwilioInput(InputChannel):
     """Twilio input channel"""
 
     def __init__(self, account_sid, auth_token, twilio_number, debug_mode=True):

@@ -5,18 +5,19 @@ from __future__ import unicode_literals
 
 import argparse
 import logging
+from threading import Thread
 
 from builtins import str
+from gevent.pywsgi import WSGIServer
 
-from rasa_core import utils
-from rasa_core.agent import Agent
-from rasa_core.channels.console import ConsoleInputChannel
+from rasa_core import utils, server
+from rasa_core.channels import RestInput, console
 from rasa_core.channels.facebook import FacebookInput
-from rasa_core.channels.telegram import TelegramInput
-from rasa_core.channels.rest import HttpInputChannel
-from rasa_core.channels.slack import SlackInput
 from rasa_core.channels.mattermost import MattermostInput
+from rasa_core.channels.slack import SlackInput
+from rasa_core.channels.telegram import TelegramInput
 from rasa_core.channels.twilio import TwilioInput
+from rasa_core.constants import DEFAULT_SERVER_PORT, DEFAULT_SERVER_URL
 from rasa_core.utils import read_yaml_file
 
 logger = logging.getLogger()  # get the root logger
@@ -26,37 +27,47 @@ def create_argument_parser():
     """Parse all the command line arguments for the run script."""
 
     parser = argparse.ArgumentParser(
-        description='starts the bot')
+            description='starts the bot')
     parser.add_argument(
-        '-d', '--core',
-        required=True,
-        type=str,
-        help="core model to run")
+            '-d', '--core',
+            required=True,
+            type=str,
+            help="core model to run")
     parser.add_argument(
-        '-u', '--nlu',
-        type=str,
-        help="nlu model to run")
+            '-u', '--nlu',
+            type=str,
+            help="nlu model to run")
     parser.add_argument(
-        '-p', '--port',
-        default=5002,
-        type=int,
-        help="port to run the server at (if a server is run "
-             "- depends on the chosen channel, e.g. facebook uses this)")
+            '-p', '--port',
+            default=DEFAULT_SERVER_PORT,
+            type=int,
+            help="port to run the server at")
     parser.add_argument(
-        '-o', '--log_file',
-        type=str,
-        default="rasa_core.log",
-        help="store log file in specified file")
+            '--auth_token',
+            type=str,
+            help="Enable token based authentication. Requests need to provide "
+                 "the token to be accepted.")
     parser.add_argument(
-        '--credentials',
-        default=None,
-        help="authentication credentials for the connector as a yml file")
+            '--cors',
+            nargs='*',
+            type=str,
+            help="enable CORS for the passed origin. "
+                 "Use * to whitelist all origins")
     parser.add_argument(
-        '-c', '--connector',
-        default="cmdline",
-        choices=["facebook", "slack", "telegram", "mattermost", "cmdline",
-                 "twilio"],
-        help="service to connect to")
+            '-o', '--log_file',
+            type=str,
+            default="rasa_core.log",
+            help="store log file in specified file")
+    parser.add_argument(
+            '--credentials',
+            default=None,
+            help="authentication credentials for the connector as a yml file")
+    parser.add_argument(
+            '-c', '--connector',
+            default="cmdline",
+            choices=["facebook", "slack", "telegram", "mattermost", "cmdline",
+                     "twilio"],
+            help="service to connect to")
 
     utils.add_logging_option_arguments(parser)
     return parser
@@ -85,50 +96,52 @@ def _raise_missing_credentials_exception(channel):
                     format(channel, channel, channel_doc_link))
 
 
-def _create_external_channel(channel, port, credentials_file):
+def _create_external_channel(channel, credentials_file):
+    # the commandline input channel is the only one that doesn't need any
+    # credentials
+    if channel == "cmdline":
+        return RestInput()
+
     if credentials_file is None:
         _raise_missing_credentials_exception(channel)
 
     credentials = read_yaml_file(credentials_file)
+
     if channel == "facebook":
-        input_blueprint = FacebookInput(
-            credentials.get("verify"),
-            credentials.get("secret"),
-            credentials.get("page-access-token"))
+        return FacebookInput(
+                credentials.get("verify"),
+                credentials.get("secret"),
+                credentials.get("page-access-token"))
     elif channel == "slack":
-        input_blueprint = SlackInput(
-            credentials.get("slack_token"),
-            credentials.get("slack_channel"))
+        return SlackInput(
+                credentials.get("slack_token"),
+                credentials.get("slack_channel"))
     elif channel == "telegram":
-        input_blueprint = TelegramInput(
-            credentials.get("access_token"),
-            credentials.get("verify"),
-            credentials.get("webhook_url"))
+        return TelegramInput(
+                credentials.get("access_token"),
+                credentials.get("verify"),
+                credentials.get("webhook_url"))
     elif channel == "mattermost":
-        input_blueprint = MattermostInput(
-            credentials.get("url"),
-            credentials.get("team"),
-            credentials.get("user"),
-            credentials.get("pw"))
+        return MattermostInput(
+                credentials.get("url"),
+                credentials.get("team"),
+                credentials.get("user"),
+                credentials.get("pw"))
     elif channel == "twilio":
-        input_blueprint = TwilioInput(
-            credentials.get("account_sid"),
-            credentials.get("auth_token"),
-            credentials.get("twilio_number"))
+        return TwilioInput(
+                credentials.get("account_sid"),
+                credentials.get("auth_token"),
+                credentials.get("twilio_number"))
     else:
         Exception("This script currently only supports the facebook,"
                   " telegram, mattermost and slack connectors.")
 
-    return HttpInputChannel(port, None, input_blueprint)
 
-
-def create_input_channel(channel, port, credentials_file):
+def create_http_input_channel(channel, credentials_file):
     """Instantiate the chosen input channel."""
 
-    if channel in ['facebook', 'slack', 'telegram', 'mattermost', 'twilio']:
-        return _create_external_channel(channel, port, credentials_file)
-    elif channel == "cmdline":
-        return ConsoleInputChannel()
+    if channel in ['facebook', 'slack', 'telegram', 'mattermost', 'twilio', 'cmdline']:
+        return _create_external_channel(channel, credentials_file)
     else:
         try:
             c = utils.class_from_module_path(channel)
@@ -137,22 +150,43 @@ def create_input_channel(channel, port, credentials_file):
             raise Exception("Unknown input channel for running main.")
 
 
-def main(model_directory, nlu_model=None, channel=None, port=None,
-         credentials_file=None):
-    """Run the agent."""
+def start_cmdline_io(server_url):
 
-    log = logging.getLogger('werkzeug')
-    log.setLevel(logging.WARN)
+    p = Thread(target=console.record_messages, args=(server_url,))
+    p.start()
+    # TODO: TB - find a way to exit the commandline
 
-    logger.info("Rasa process starting")
-    agent = Agent.load(model_directory, nlu_model)
 
-    logger.info("Finished loading agent, starting input channel & server.")
-    if channel:
-        input_channel = create_input_channel(channel, port, credentials_file)
-        agent.handle_channel(input_channel)
+def start_server(model_directory, nlu_model=None, channel=None, port=None,
+                 credentials_file=None, cors=None):
+    server_config = {
+        "action_callback": None,
+        "nlg": {"type": "template"}
+    }
 
-    return agent
+    action_endpoint = server_config.get("action_callback")
+
+    input_channel = create_http_input_channel(channel, credentials_file)
+    app = server.create_app(model_directory,
+                            nlu_model,
+                            [input_channel],
+                            cors,
+                            auth_token=cmdline_args.auth_token,
+                            action_endpoint=action_endpoint,
+                            nlg_config=server_config.get("nlg"))
+
+    http_server = WSGIServer(('0.0.0.0', cmdline_args.port), app)
+    logger.info("Rasa Core server is up and running on "
+                "{}".format(DEFAULT_SERVER_URL))
+    http_server.start()
+
+    if channel == "cmdline":
+        start_cmdline_io(DEFAULT_SERVER_URL)
+
+    try:
+        http_server.serve_forever()
+    except Exception as exc:
+        logger.exception(exc)
 
 
 if __name__ == '__main__':
@@ -160,12 +194,18 @@ if __name__ == '__main__':
     arg_parser = create_argument_parser()
     cmdline_args = arg_parser.parse_args()
 
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.WARN)
+
     utils.configure_colored_logging(cmdline_args.loglevel)
     utils.configure_file_logging(cmdline_args.loglevel,
                                  cmdline_args.log_file)
 
-    main(cmdline_args.core,
-         cmdline_args.nlu,
-         cmdline_args.connector,
-         cmdline_args.port,
-         cmdline_args.credentials)
+    logger.info("Rasa process starting")
+
+    start_server(cmdline_args.core,
+                 cmdline_args.nlu,
+                 cmdline_args.connector,
+                 cmdline_args.port,
+                 cmdline_args.credentials,
+                 cmdline_args.cors)

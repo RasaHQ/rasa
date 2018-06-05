@@ -14,8 +14,8 @@ from typing import Text
 
 from rasa_core.actions import Action
 from rasa_core.actions.action import ActionRestart, ACTION_LISTEN_NAME
-from rasa_core.channels import UserMessage, InputChannel
-from rasa_core.channels.direct import CollectingOutputChannel
+from rasa_core.channels import UserMessage, InputChannel, channel
+from rasa_core.channels import CollectingOutputChannel
 from rasa_core.dispatcher import Dispatcher
 from rasa_core.domain import Domain
 from rasa_core.events import ReminderScheduled, Event
@@ -25,6 +25,7 @@ from rasa_core.interpreter import (
     NaturalLanguageInterpreter,
     INTENT_MESSAGE_PREFIX)
 from rasa_core.interpreter import RegexInterpreter
+from rasa_core.nlg.generator import NaturalLanguageGenerator
 from rasa_core.policies.ensemble import PolicyEnsemble
 from rasa_core.tracker_store import TrackerStore
 from rasa_core.trackers import DialogueStateTracker
@@ -41,34 +42,19 @@ class MessageProcessor(object):
                  policy_ensemble,  # type: PolicyEnsemble
                  domain,  # type: Domain
                  tracker_store,  # type: TrackerStore
+                 generator,  # type: NaturalLanguageGenerator
                  max_number_of_predictions=10,  # type: int
                  message_preprocessor=None,  # type: Optional[LambdaType]
                  on_circuit_break=None  # type: Optional[LambdaType]
                  ):
         self.interpreter = interpreter
+        self.nlg = generator
         self.policy_ensemble = policy_ensemble
         self.domain = domain
         self.tracker_store = tracker_store
         self.max_number_of_predictions = max_number_of_predictions
         self.message_preprocessor = message_preprocessor
         self.on_circuit_break = on_circuit_break
-
-    def handle_channel(self, input_channel=None):
-        # type: (InputChannel) -> None
-        """Handles the input channel synchronously.
-
-        Each message gets processed directly after it got received."""
-        input_channel.start_sync_listening(self.handle_message)
-
-    def handle_channel_asynchronous(self, message_queue):
-        """Handles incoming messages from the message queue.
-
-        An input channel should add messages to the queue asynchronously."""
-        while True:
-            message = message_queue.dequeue()
-            if message is None:
-                continue
-            self.handle_message(message)
 
     def handle_message(self, message):
         # type: (UserMessage) -> Optional[List[Text]]
@@ -89,56 +75,6 @@ class MessageProcessor(object):
             return message.output_channel.messages
         else:
             return None
-
-    def start_message_handling(self, message):
-        # type: (UserMessage) -> Dict[Text, Any]
-
-        # pre-process message if necessary
-        if self.message_preprocessor is not None:
-            message.text = self.message_preprocessor(message.text)
-
-        # we have a Tracker instance for each user
-        # which maintains conversation state
-        tracker = self._get_tracker(message.sender_id)
-        self._handle_message_with_tracker(message, tracker)
-
-        # Log currently set slots
-        self._log_slots(tracker)
-
-        # action loop. predicts actions until we hit action listen
-        if self._should_handle_message(tracker):
-            return self._predict_next_and_return_state(tracker)
-        else:
-            return {"next_action": None,
-                    "info": "Bot is currently paused and no restart was "
-                            "received yet.",
-                    "tracker": tracker.current_state()}
-
-    def continue_message_handling(self, sender_id, executed_action, events):
-        # type: (Text, Text, List[Event]) -> Dict[Text, Any]
-
-        tracker = self._get_tracker(sender_id)
-        if executed_action != ACTION_LISTEN_NAME:
-            if(executed_action in self.domain.action_names
-                    or executed_action is None):
-                self._log_action_on_tracker(tracker, executed_action, events)
-            else:
-                raise ValueError("Can not execute action '{}' as it is not "
-                                 "listed in the domains 'actions' section in"
-                                 "the domain YAML file. Make sure you have "
-                                 "added all actions to the domain file."
-                                 "".format(executed_action))
-
-        if self.should_predict_another_action(executed_action, events):
-            return self._predict_next_and_return_state(tracker)
-        else:
-            self._save_tracker(tracker)
-            return {"next_action": None,
-                    "info": "You do not need to call continue after action "
-                            "listen got returned for the previous continue "
-                            "call. You are expected to call 'parse' with the "
-                            "next user message.",
-                    "tracker": tracker.current_state()}
 
     def _predict_next_and_return_state(self, tracker):
         action = self._get_next_action(tracker)
@@ -243,7 +179,7 @@ class MessageProcessor(object):
 
         dispatcher = Dispatcher(message.sender_id,
                                 message.output_channel,
-                                self.domain)
+                                self.nlg)
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True
         num_predicted_actions = 0

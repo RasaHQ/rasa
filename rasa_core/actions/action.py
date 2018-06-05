@@ -4,21 +4,49 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
+from collections import namedtuple
 
+import requests
 import typing
+from requests.auth import HTTPBasicAuth
 from typing import List, Text
 
 if typing.TYPE_CHECKING:
     from rasa_core.trackers import DialogueStateTracker
     from rasa_core.dispatcher import Dispatcher
     from rasa_core.events import Event
-    from rasa_core.domain import Domain
 
 logger = logging.getLogger(__name__)
 
 ACTION_LISTEN_NAME = "action_listen"
 
 ACTION_RESTART_NAME = "action_restart"
+
+
+def ensure_action_name_uniqueness(actions):
+    actual_action_names = set()  # used to collect unique action names
+    for a in actions:
+        if a.name() in actual_action_names:
+            raise ValueError(
+                    "Action names are not unique! Found two actions with name"
+                    " '{}'. Either rename or remove one of them."
+                    "".format(a.name()))
+        else:
+            actual_action_names.add(a.name())
+
+
+def actions_from_names(action_names, action_endpoint):
+    # type: (List[Text], ActionEndpointConfig) -> List[Action]
+    """Converts the names of actions into class instances."""
+
+    actions = []
+    for name in action_names:
+        if name.startswith("utter_"):
+            actions.append(UtterAction(name))
+        else:
+            actions.append(RemoteAction(name, action_endpoint))
+
+    return actions
 
 
 class Action(object):
@@ -44,7 +72,6 @@ class Action(object):
 
         :param tracker: user state tracker
         :param dispatcher: communication channel
-        :param domain: bots custom domain
         """
 
         raise NotImplementedError
@@ -103,3 +130,58 @@ class ActionRestart(Action):
         # only utter the template if it is available
         dispatcher.utter_template("utter_restart", silent_fail=True)
         return [Restarted()]
+
+
+ActionEndpointConfig = namedtuple('ActionEndpointConfig', ["url",
+                                                           "headers",
+                                                           "basic_auth"])
+
+
+class RemoteAction(Action):
+    def __init__(self, name, action_endpoint):
+        # type: (Text, ActionEndpointConfig) -> None
+
+        self._name = name
+        self.action_endpoint = action_endpoint
+
+    def _action_call_format(self, tracker):
+        tracker_state = tracker.current_state(
+                should_include_events=True,
+                only_events_after_latest_restart=True)
+
+        return {
+            "next_action": self._name,
+            "tracker": tracker_state
+        }
+
+    def _validate_action_result(self, result):
+        return True
+
+    def run(self, dispatcher, tracker, domain):
+        json = self._action_call_format(tracker)
+
+        if self.action_endpoint.headers:
+            headers = self.action_endpoint.headers.copy()
+        else:
+            headers = {}
+        headers["Content-Type"] = "application/json"
+
+        if self.action_endpoint.basic_auth:
+            auth = HTTPBasicAuth(self.action_endpoint.basic_auth["username"],
+                                 self.action_endpoint.basic_auth["password"])
+        else:
+            auth = None
+
+        response = requests.post(self.action_endpoint.url,
+                                 headers=headers,
+                                 auth=auth,
+                                 json=json)
+
+        response.raise_for_status()
+
+        self._validate_action_result(response.json())
+
+        return []
+
+    def name(self):
+        return self._name

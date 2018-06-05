@@ -12,10 +12,11 @@ from six import string_types
 from typing import Text, List, Optional, Callable, Any, Dict, Union
 
 from rasa_core import training
+from rasa_core.actions.action import ActionEndpointConfig
 from rasa_core.channels import UserMessage, InputChannel, OutputChannel
 from rasa_core.domain import TemplateDomain, Domain, check_domain_sanity
-from rasa_core.events import Event
 from rasa_core.interpreter import NaturalLanguageInterpreter
+from rasa_core.nlg.generator import NaturalLanguageGenerator
 from rasa_core.policies import Policy
 from rasa_core.policies.ensemble import SimplePolicyEnsemble, PolicyEnsemble
 from rasa_core.policies.memoization import MemoizationPolicy
@@ -40,11 +41,13 @@ class Agent(object):
             domain,  # type: Union[Text, Domain]
             policies=None,  # type: Union[PolicyEnsemble, List[Policy], None]
             interpreter=None,  # type: Union[NLI, Text, None]
+            generator=None,  # type: Union[NLG, Text, None]
             tracker_store=None  # type: Optional[TrackerStore]
     ):
         self.domain = self._create_domain(domain)
         self.policy_ensemble = self._create_ensemble(policies)
         self.interpreter = NaturalLanguageInterpreter.create(interpreter)
+        self.nlg = NaturalLanguageGenerator.create(generator, domain)
         self.tracker_store = self.create_tracker_store(
                 tracker_store, self.domain)
 
@@ -53,7 +56,8 @@ class Agent(object):
              path,  # type: Text
              interpreter=None,  # type: Union[NLI, Text, None]
              tracker_store=None,  # type: Optional[TrackerStore]
-             action_factory=None  # type: Optional[Text]
+             action_endpoint=None,  # type: Optional[ActionEndpointConfig]
+             nlg_config=None
              ):
         # type: (Text, Any, Optional[TrackerStore]) -> Agent
         """Load a persisted model from the passed path."""
@@ -72,17 +76,34 @@ class Agent(object):
 
         ensemble = PolicyEnsemble.load(path)
         domain = TemplateDomain.load(os.path.join(path, "domain.yml"),
-                                     action_factory)
+                                     action_endpoint)
         # ensures the domain hasn't changed between test and train
         domain.compare_with_specification(path)
-        _interpreter = NaturalLanguageInterpreter.create(interpreter)
-        _tracker_store = cls.create_tracker_store(tracker_store, domain)
 
-        return cls(domain, ensemble, _interpreter, _tracker_store)
+        return cls(domain, ensemble, interpreter, nlg_config, tracker_store)
 
     def handle_message(
             self,
-            text_message,  # type: Text
+            message,  # type: UserMessage
+            message_preprocessor=None,  # type: Optional[Callable[[Text], Text]]
+            **kwargs
+    ):
+        # type: (...) -> Optional[List[Text]]
+        """Handle a single message."""
+
+        if not isinstance(message, UserMessage):
+            logger.warning("Passing a text to `agent.handle_message(...)` is "
+                           "deprecated. Rather use `agent.handle_text(...)`.")
+            return self.handle_text(message,
+                                    message_preprocessor=message_preprocessor,
+                                    **kwargs)
+
+        processor = self._create_processor(message_preprocessor)
+        return processor.handle_message(message)
+
+    def handle_text(
+            self,
+            text_message,  # type: Union[Text, Dict[Text, Any]]
             message_preprocessor=None,  # type: Optional[Callable[[Text], Text]]
             output_channel=None,  # type: Optional[OutputChannel]
             sender_id=UserMessage.DEFAULT_SENDER_ID  # type: Optional[Text]
@@ -104,57 +125,21 @@ class Agent(object):
             >>> from rasa_core.agent import Agent
             >>> agent = Agent.load("examples/restaurantbot/models/dialogue",
             ... interpreter="examples/restaurantbot/models/nlu/current")
-            >>> agent.handle_message("hello")
+            >>> agent.handle_text("hello")
             [u'how can I help you?']
 
         """
 
-        processor = self._create_processor(message_preprocessor)
-        return processor.handle_message(
-                UserMessage(text_message, output_channel, sender_id))
+        if isinstance(text_message, string_types):
+            text_message = {"text": text_message}
 
-    def start_message_handling(
-            self,
-            text_message,   # type: Text
-            sender_id=UserMessage.DEFAULT_SENDER_ID  # type: Optional[Text]
-    ):
-        # type: (...) -> Dict[Text, Any]
-        """Start to process a messages, returning the next action to take. """
+        msg = UserMessage(text_message, output_channel, sender_id)
 
-        processor = self._create_processor()
-        return processor.start_message_handling(
-                UserMessage(text_message, None, sender_id))
-
-    def continue_message_handling(
-            self,
-            sender_id,  # type: Text
-            executed_action,   # type: Text
-            events   # type: List[Event]
-    ):
-        # type: (...) -> Dict[Text, Any]
-        """Continue to process a messages.
-
-        Predicts the next action to take by the caller"""
-
-        processor = self._create_processor()
-        return processor.continue_message_handling(sender_id,
-                                                   executed_action,
-                                                   events)
-
-    def handle_channel(
-            self,
-            input_channel,  # type: InputChannel
-            message_preprocessor=None   # type: Optional[Callable[[Text], Text]]
-    ):
-        # type: (...) -> None
-        """Handle messages coming from the channel."""
-
-        processor = self._create_processor(message_preprocessor)
-        processor.handle_channel(input_channel)
+        return self.handle_message(msg, message_preprocessor)
 
     def toggle_memoization(
             self,
-            activate   # type: bool
+            activate  # type: bool
     ):
         # type: (...) -> None
         """Toggles the memoization on and off.
@@ -335,7 +320,7 @@ class Agent(object):
         self._ensure_agent_is_prepared()
         return MessageProcessor(
                 self.interpreter, self.policy_ensemble, self.domain,
-                self.tracker_store, message_preprocessor=preprocessor)
+                self.tracker_store, self.nlg, message_preprocessor=preprocessor)
 
     @staticmethod
     def _create_domain(domain):

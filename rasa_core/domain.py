@@ -21,11 +21,8 @@ from typing import Optional
 from typing import Text
 
 from rasa_core import utils
-from rasa_core.actions import Action
+from rasa_core.actions import Action, action
 from rasa_core.actions.action import ActionListen, ActionRestart
-from rasa_core.actions.factories import (
-    action_factory_by_name,
-    ensure_action_name_uniqueness)
 from rasa_core.conversation import DefaultTopic
 from rasa_core.conversation import Topic
 from rasa_core.slots import Slot
@@ -395,7 +392,7 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
 
 class TemplateDomain(Domain):
     @classmethod
-    def load(cls, filename, action_factory=None):
+    def load(cls, filename, action_endpoint=None):
         if not os.path.isfile(filename):
             raise Exception(
                     "Failed to load domain specification from '{}'. "
@@ -404,8 +401,6 @@ class TemplateDomain(Domain):
         cls.validate_domain_yaml(filename)
         data = read_yaml_file(filename)
         utter_templates = cls.collect_templates(data.get("templates", {}))
-        if not action_factory:
-            action_factory = data.get("action_factory", None)
         topics = [Topic(name) for name in data.get("topics", [])]
         slots = cls.collect_slots(data.get("slots", {}))
         additional_arguments = data.get("config", {})
@@ -415,8 +410,7 @@ class TemplateDomain(Domain):
                 slots,
                 utter_templates,
                 data.get("actions", []),
-                data.get("action_names", []),
-                action_factory,
+                action_endpoint,
                 topics,
                 **additional_arguments
         )
@@ -480,26 +474,24 @@ class TemplateDomain(Domain):
             templates[template_key] = validated_variations
         return templates
 
-    def __init__(self, intents, entities, slots, templates, action_classes,
-                 action_names, action_factory, topics, **kwargs):
+    def __init__(self, intents, entities, slots, templates,
+                 action_names, action_endpoint, topics, **kwargs):
         self._intents = intents
         self._entities = entities
         self._slots = slots
         self._templates = templates
-        self._action_classes = action_classes
         self._action_names = action_names
-        self._factory_name = action_factory
-        self._actions = self.instantiate_actions(
-                action_factory, action_classes, action_names, templates)
+        self._actions = self.instantiate_actions(action_names,
+                                                 action_endpoint)
         super(TemplateDomain, self).__init__(topics, **kwargs)
 
     @staticmethod
-    def instantiate_actions(factory_name, action_classes, action_names,
-                            templates):
-        action_factory = action_factory_by_name(factory_name)
-        custom_actions = action_factory(action_classes, action_names, templates)
+    def instantiate_actions(action_names,
+                            action_endpoint):
+        custom_actions = action.actions_from_names(action_names,
+                                                   action_endpoint)
         actions = Domain.DEFAULT_ACTIONS[:] + custom_actions
-        ensure_action_name_uniqueness(actions)
+        action.ensure_action_name_uniqueness(actions)
         return actions
 
     def _slot_definitions(self):
@@ -520,9 +512,7 @@ class TemplateDomain(Domain):
             "slots": self._slot_definitions(),
             "templates": self.templates,
             "topics": topic_names,
-            "actions": self._action_classes,  # class names of the actions
-            "action_names": action_names,  # names in stories
-            "action_factory": self._factory_name
+            "actions": action_names,  # class names of the actions
         }
 
         with io.open(filename, 'w', encoding="utf-8") as yaml_file:

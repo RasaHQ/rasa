@@ -3,7 +3,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import argparse
 import logging
 import os
 import tempfile
@@ -13,58 +12,20 @@ from functools import wraps
 from builtins import str
 from flask import Flask, request, abort, Response, jsonify
 from flask_cors import CORS, cross_origin
-from gevent.pywsgi import WSGIServer
 from typing import Union, Text, Optional
 
-from rasa_core import utils, events
+from rasa_core import run
+from rasa_core import events, utils
+from rasa_core.actions.action import ActionEndpointConfig
 from rasa_core.agent import Agent
-from rasa_core.channels.direct import CollectingOutputChannel
+from rasa_core.channels import CollectingOutputChannel
+from rasa_core.channels import channel
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.tracker_store import TrackerStore
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.version import __version__
 
 logger = logging.getLogger(__name__)
-
-
-def create_argument_parser():
-    """Parse all the command line arguments for the server script."""
-
-    parser = argparse.ArgumentParser(
-            description='starts server to serve an agent')
-    parser.add_argument(
-            '-d', '--core',
-            required=True,
-            type=str,
-            help="core model to run with the server")
-    parser.add_argument(
-            '-u', '--nlu',
-            type=str,
-            help="nlu model to run with the server")
-    parser.add_argument(
-            '-p', '--port',
-            type=int,
-            default=5005,
-            help="port to run the server at")
-    parser.add_argument(
-            '--cors',
-            nargs='*',
-            type=str,
-            help="enable CORS for the passed origin. "
-                 "Use * to whitelist all origins")
-    parser.add_argument(
-            '--auth_token',
-            type=str,
-            help="Enable token based authentication. Requests need to provide "
-                 "the token to be accepted.")
-    parser.add_argument(
-            '-o', '--log_file',
-            type=str,
-            default="rasa_core.log",
-            help="store log file in specified file")
-
-    utils.add_logging_option_arguments(parser)
-    return parser
 
 
 def ensure_loaded_agent(agent):
@@ -85,16 +46,6 @@ def ensure_loaded_agent(agent):
         return decorated
 
     return decorator
-
-
-def bool_arg(name, default=True):
-    # type: ( Text, bool) -> bool
-    """Return a passed boolean argument of the request or a default.
-
-    Checks the `name` parameter of the request if it contains a valid
-    boolean value. If not, `default` is returned."""
-
-    return request.args.get(name, str(default)).lower() == 'true'
 
 
 def request_parameters():
@@ -130,15 +81,17 @@ def requires_auth(token=None):
 def _create_agent(
         model_directory,  # type: Text
         interpreter,  # type: Union[Text, NaturalLanguageInterpreter]
-        action_factory=None,  # type: Optional[Text]
-        tracker_store=None  # type: Optional[TrackerStore]
+        action_endpoint=None,  # type: Optional[ActionEndpointConfig]
+        tracker_store=None,  # type: Optional[TrackerStore]
+        nlg_config=None
 ):
     # type: (...) -> Optional[Agent]
     try:
 
         return Agent.load(model_directory, interpreter,
                           tracker_store=tracker_store,
-                          action_factory=action_factory)
+                          action_endpoint=action_endpoint,
+                          nlg_config=nlg_config)
     except Exception as e:
         logger.warn("Failed to load any agent model. Running "
                     "Rasa Core server with out loaded model now. {}"
@@ -148,40 +101,40 @@ def _create_agent(
 
 def create_app(model_directory,
                interpreter=None,
-               loglevel="INFO",
-               logfile="rasa_core.log",
+               input_channels=None,
                cors_origins=None,
-               action_factory=None,
                auth_token=None,
-               tracker_store=None
+               tracker_store=None,
+               action_endpoint=None,
+               nlg_config=None
                ):
     """Class representing a Rasa Core HTTP server."""
 
     app = Flask(__name__)
     CORS(app, resources={r"/*": {"origins": "*"}})
 
-    utils.configure_file_logging(loglevel, logfile)
-
     if not cors_origins:
         cors_origins = []
 
-    model_directory = model_directory
-
-    interpreter = interpreter
-
-    tracker_store = tracker_store
-
-    action_factory = action_factory
-
     # this needs to be an array, so we can modify it in the nested functions...
-    _agent = [_create_agent(model_directory, interpreter,
-                            action_factory, tracker_store)]
+    _agent = [_create_agent(model_directory, interpreter, action_endpoint,
+                            tracker_store, nlg_config)]
 
     def agent():
         if _agent and _agent[0]:
             return _agent[0]
         else:
             return None
+
+    def handle_message(text_mesage):
+        def noop(text_message):
+            logger.info("Ignoring message as there is no agent to handle it.")
+
+        a = agent()
+        if a:
+            return a.handle_message(text_mesage)
+        else:
+            return noop(text_mesage)
 
     @app.route("/",
                methods=['GET', 'OPTIONS'])
@@ -197,41 +150,6 @@ def create_app(model_directory,
         """respond with the version number of the installed rasa core."""
 
         return jsonify({'version': __version__})
-
-    @app.route("/conversations/<sender_id>/continue",
-               methods=['POST', 'OPTIONS'])
-    @cross_origin(origins=cors_origins)
-    @requires_auth(auth_token)
-    @ensure_loaded_agent(agent)
-    def continue_predicting(sender_id):
-        """Continue a prediction started with parse.
-
-        Caller should have executed the action returned from the parse
-        endpoint. The events returned from that executed action are
-        passed to continue which will trigger the next action prediction.
-
-        If continue predicts action listen, the caller should wait for the
-        next user message."""
-
-        request_params = request.get_json(force=True)
-        encoded_events = request_params.get("events", [])
-        executed_action = request_params.get("executed_action", None)
-        evts = events.deserialise_events(encoded_events)
-        try:
-            response = agent().continue_message_handling(sender_id,
-                                                         executed_action,
-                                                         evts)
-        except ValueError as e:
-            return Response(jsonify(error=e.message),
-                            status=400,
-                            content_type="application/json")
-        except Exception as e:
-            logger.exception(e)
-            return Response(jsonify(error="Server failure. Error: {}"
-                                          "".format(e)),
-                            status=500,
-                            content_type="application/json")
-        return jsonify(response)
 
     @app.route("/conversations/<sender_id>/tracker/events",
                methods=['POST', 'OPTIONS'])
@@ -266,8 +184,8 @@ def create_app(model_directory,
         """Get a dump of a conversations tracker including its events."""
 
         # parameters
-        use_history = bool_arg('ignore_restarts', default=False)
-        should_include_events = bool_arg('events', default=True)
+        use_history = utils.bool_arg('ignore_restarts', default=False)
+        should_include_events = utils.bool_arg('events', default=True)
         until_time = request.args.get('until', None)
 
         # retrieve tracker and set to requested state
@@ -298,34 +216,6 @@ def create_app(model_directory,
         # will override an existing tracker with the same id!
         agent().tracker_store.save(tracker)
         return jsonify(tracker.current_state(should_include_events=True))
-
-    @app.route("/conversations/<sender_id>/parse",
-               methods=['GET', 'POST', 'OPTIONS'])
-    @cross_origin(origins=cors_origins)
-    @requires_auth(auth_token)
-    @ensure_loaded_agent(agent)
-    def parse(sender_id):
-        request_params = request_parameters()
-
-        if 'query' in request_params:
-            message = request_params.pop('query')
-        elif 'q' in request_params:
-            message = request_params.pop('q')
-        else:
-            return Response(
-                    jsonify(error="Invalid parse parameter specified."),
-                    status=400,
-                    mimetype="application/json")
-
-        try:
-            response = agent().start_message_handling(message, sender_id)
-            return jsonify(response)
-        except Exception as e:
-            logger.exception("Caught an exception during parse.")
-            return Response(jsonify(error="Server failure. Error: {}"
-                                          "".format(e)),
-                            status=500,
-                            content_type="application/json")
 
     @app.route("/conversations/<sender_id>/respond",
                methods=['GET', 'POST', 'OPTIONS'])
@@ -385,33 +275,32 @@ def create_app(model_directory,
         logger.debug("Unzipped model to {}".format(
                 os.path.abspath(model_directory)))
 
-        _agent[0] = _create_agent(model_directory, interpreter,
-                                  action_factory, tracker_store)
+        _agent[0] = _create_agent(model_directory, interpreter, tracker_store)
         logger.debug("Finished loading new agent.")
         return jsonify({'success': 1})
 
+    channel.register_blueprints(input_channels, app, handle_message,
+                                route="/webhooks/")
     return app
 
 
 if __name__ == '__main__':
     # Running as standalone python application
-    arg_parser = create_argument_parser()
+    arg_parser = run.create_argument_parser()
     cmdline_args = arg_parser.parse_args()
 
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.WARN)
+
     utils.configure_colored_logging(cmdline_args.loglevel)
+    utils.configure_file_logging(cmdline_args.loglevel,
+                                 cmdline_args.log_file)
 
-    app = create_app(cmdline_args.core,
+    logger.info("Rasa process starting")
+
+    run.start_server(cmdline_args.core,
                      cmdline_args.nlu,
-                     cmdline_args.loglevel,
-                     cmdline_args.log_file,
-                     cmdline_args.cors,
-                     auth_token=cmdline_args.auth_token)
-
-    logger.info("Started http server on port %s" % cmdline_args.port)
-
-    http_server = WSGIServer(('0.0.0.0', cmdline_args.port), app)
-    logger.info("Up and running")
-    try:
-        http_server.serve_forever()
-    except Exception as exc:
-        logger.exception(exc)
+                     cmdline_args.connector,
+                     cmdline_args.port,
+                     cmdline_args.credentials,
+                     cmdline_args.cors)
