@@ -17,10 +17,15 @@ class Dialogue(object):
     def __init__(self, name, events):
         # type: (Text, List[Event]) -> None
 
+        # This function initialises the dialogue with
+        # the dialogue name and the event list.
         self.name = name
         self.events = events
 
     def __str__(self):
+        # type: None -> Text
+
+        # This function returns the dialogue and turns.
         return "Dialogue with name '{}' and turns:\n{}".format(
                 self.name, "\n\n".join(["\t{}".format(t) for t in self.events]))
 
@@ -29,6 +34,11 @@ class Topic(object):
     """topic of conversation"""
 
     def __init__(self, name):
+        # type: Text -> None
+
+        # The parameter name sets the topic of conversation
+        # Passing None leads to 'DefaultTopic'.
+        # Similarly, passing 'question' makes a 'QuestionTopic'
         self.name = name
 
 
