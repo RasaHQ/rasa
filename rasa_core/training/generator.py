@@ -94,6 +94,8 @@ class TrainingDataGenerator(object):
         active_trackers[STORY_START].append(init_tracker)
 
         finished_trackers = []
+        # keep story end trackers separately for augmentation
+        story_end_trackers = []
 
         phase = 0  # one phase is one traversal of all story steps.
         min_num_aug_phases = 3 if self.config.augmentation_factor > 0 else 0
@@ -116,19 +118,14 @@ class TrainingDataGenerator(object):
                 phase_name = "data generation round {}".format(phase)
 
             num_active_trackers = self._count_trackers(active_trackers)
-            logger.debug("Starting {} ... (with {} active trackers)"
+
+            logger.debug("Starting {} ... (with {} trackers)"
                          "".format(phase_name, num_active_trackers))
 
             # track unused checkpoints for this phase
             unused_checkpoints = set()  # type: Set[Text]
 
-            # TODO remove permutation, just for testing
-            # import numpy as np
-            story_steps = self.story_graph.ordered_steps()
-            # ids = np.random.permutation(len(story_steps))
-            # steps = [steps[idx] for idx in ids]
-
-            pbar = tqdm(story_steps,
+            pbar = tqdm(self.story_graph.ordered_steps(),
                         desc="Processed Story Blocks")
             for step in pbar:
                 incoming_trackers = []
@@ -164,15 +161,6 @@ class TrainingDataGenerator(object):
 
                     trackers = self._process_step(step, incoming_trackers)
 
-                    # if self.config.remove_duplicates:
-                    #     trackers, end_trackers = \
-                    #         self._remove_duplicate_trackers(trackers)
-                    #     # append end trackers to finished trackers
-                    #     for t in end_trackers:
-                    #         print('---')
-                    #         print(self.domain.states_for_tracker_history(t))
-                    #     finished_trackers.extend(end_trackers)
-
                     # update our tracker dictionary with the trackers
                     # that handled the events of the step and
                     # that can now be used for further story steps
@@ -191,54 +179,60 @@ class TrainingDataGenerator(object):
                             unused_checkpoints.add(end_name)
 
                     if not step.end_checkpoints:
-                        active_trackers[STORY_END].extend(
+                        story_end_trackers.extend(
                             self._remove_duplicate_story_end_trackers(
                                 trackers))
 
-            # trackers that reached the end of a story
-            # completed = [t for t in active_trackers[STORY_END]]
-            # finished_trackers.extend(completed)
-
-            finished_trackers.extend(active_trackers[STORY_END][:])
-
             logger.debug("Finished phase ({} training samples found)."
-                         "".format(len(finished_trackers)))
-
-            # check if we reached all nodes that can be reached
-            # if we reached at least one more node this round than last one,
-            # we assume there is still something left to reach and we continue
-            logger.debug("Found {} unused checkpoints in current phase."
-                         "".format(len(unused_checkpoints)))
-
-            if not everything_reachable_is_reached:
-                everything_reachable_is_reached = (
-                        unused_checkpoints == previous_unused)
-                previous_unused = unused_checkpoints
-                if everything_reachable_is_reached:
-                    # augmentation started
-                    phase = -1
+                         "".format(len(finished_trackers) +
+                                   len(story_end_trackers)))
 
             # prepare next round
-            active_trackers = self._filter_active_trackers(active_trackers,
-                                                           unused_checkpoints)
-            num_active_trackers = self._count_trackers(active_trackers)
-            if num_active_trackers == 0:
-                # there is no incoming trackers
-                # reset used checkpoints
-                if min_num_aug_phases > 0:
-                    # used_checkpoints = set()  # type: Set[Text]
-                    # generate active trackers
-                    active_trackers = \
-                        self._create_start_trackers_for_augmentation(
-                            active_trackers[STORY_END])
-                else:
-                    break
-
             phase += 1
 
-        logger.debug("Found {} unused checkpoints"
-                     "".format(len(previous_unused - used_checkpoints)))
-        self._issue_unused_checkpoint_notification(previous_unused - used_checkpoints)
+            if not everything_reachable_is_reached:
+                # check if we reached all nodes that can be reached
+                # if we reached at least one more node this round
+                # than last one, we assume there is still
+                # something left to reach and we continue
+
+                active_trackers = self._filter_active_trackers(
+                        active_trackers, unused_checkpoints)
+                num_active_trackers = self._count_trackers(active_trackers)
+
+                everything_reachable_is_reached = (
+                        unused_checkpoints == previous_unused or
+                        num_active_trackers == 0)
+                previous_unused = unused_checkpoints
+
+                if everything_reachable_is_reached:
+                    # should happen only once
+                    previous_unused -= used_checkpoints
+
+                    logger.debug("Data generation rounds finished.")
+                    logger.debug("Found {} unused checkpoints"
+                                 "".format(len(previous_unused)))
+                    phase = 0
+                else:
+                    logger.debug("Found {} unused checkpoints "
+                                 "in current phase."
+                                 "".format(len(unused_checkpoints)))
+                    logger.debug("Found {} active trackers "
+                                 "for these checkpoints."
+                                 "".format(num_active_trackers))
+
+            if everything_reachable_is_reached:
+                # augmentation round, so we process only
+                # story end checkpoints
+                # reset used checkpoints
+                used_checkpoints = set()  # type: Set[Text]
+                # generate active trackers for augmentation
+                active_trackers = \
+                    self._create_start_trackers_for_augmentation(
+                            story_end_trackers)
+
+        finished_trackers.extend(story_end_trackers)
+        self._issue_unused_checkpoint_notification(previous_unused)
         logger.debug("Found {} training trackers."
                      "".format(len(finished_trackers)))
 
@@ -267,7 +261,8 @@ class TrainingDataGenerator(object):
     def _find_end_checkpoint_name(self, end_name):
         return self.story_graph.story_end_checkpoints.get(end_name, end_name)
 
-    def _filter_active_trackers(self, active_trackers, unused_checkpoints):
+    @staticmethod
+    def _filter_active_trackers(active_trackers, unused_checkpoints):
         # type: (TrackerLookupDict, Set[Text]) -> TrackerLookupDict
         """Filter active trackers that ended with unused checkpoint
             or are parts of loops."""
@@ -352,7 +347,6 @@ class TrainingDataGenerator(object):
         feed the same events to all trackers)."""
 
         step_hashed_featurizations = set()
-        last_hashed_featurizations = set()
 
         # collected trackers that created different featurizations
         unique_trackers = []  # for current step
@@ -368,18 +362,16 @@ class TrainingDataGenerator(object):
                 if self.unique_last_num_states:
                     last_states = states[-self.unique_last_num_states:]
                     last_hashed = hash(tuple((frozenset(s) for s in last_states)))
-                else:
-                    last_states = states
-                    last_hashed = hashed
 
-                if last_hashed not in last_hashed_featurizations:
-                    last_hashed_featurizations.add(last_hashed)
-                    unique_trackers.append(tracker)
-                elif len(states) > len(last_states):
-
-                    if hashed not in self.hashed_featurizations:
+                    if last_hashed not in step_hashed_featurizations:
+                        step_hashed_featurizations.add(last_hashed)
+                        unique_trackers.append(tracker)
+                    elif (len(states) > len(last_states) and
+                          hashed not in self.hashed_featurizations):
                         self.hashed_featurizations.add(hashed)
                         end_trackers.append(tracker)
+                else:
+                    unique_trackers.append(tracker)
 
                 step_hashed_featurizations.add(hashed)
 
@@ -395,11 +387,11 @@ class TrainingDataGenerator(object):
 
         for tracker in trackers:
             states = self.domain.states_for_tracker_history(tracker)
+            hashed = hash(tuple((frozenset(s) for s in states)))
 
             # only continue with trackers that created a
             # hashed_featurization we haven't observed
 
-            hashed = hash(tuple((frozenset(s) for s in states)))
             if hashed not in self.hashed_featurizations:
                 self.hashed_featurizations.add(hashed)
                 unique_trackers.append(tracker)
