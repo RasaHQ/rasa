@@ -209,6 +209,7 @@ class RasaNLU(object):
     @app.route("/", methods=['GET', 'OPTIONS'])
     @check_cors
     def hello(self, request):
+        print("Hitting the test page")
         """Main Rasa route to check if the server is online"""
         return "hello from Rasa NLU: " + __version__
 
@@ -282,6 +283,8 @@ class RasaNLU(object):
     @check_cors
     @inlineCallbacks
     def train(self, request):
+
+        print("inside train")
         # if not set will use the default project name, e.g. "default"
         project = parameter_or_default(request, "project", default=None)
         # if set will not generate a model name but use the passed one
@@ -292,26 +295,89 @@ class RasaNLU(object):
         if is_yaml_request(request):
             # assumes the user submitted a model configuration with a data
             # parameter attached to it
+
+            print("inside yaml model config")
+
             model_config = utils.read_yaml(request_content)
             data = model_config.get("data")
+
+            # inspecting the format of the dicts from yaml
+            print(simplejson.dumps(model_config,indent=4))
+            print(simplejson.dumps(data, indent=4))
+
+            print("==================")
+
+            print(type(model_config))
+            print(type(data))
+
+            print("==================")
+
         else:
             # assumes the caller just provided training data without config
             # this will use the default model config the server
             # was started with
-            model_config = self.default_model_config
-            data = request_content
+
+            # If we handle the config inside json, it invalidates the above assumption.
+            # We will have to test the structure of the json to see if it is just data
+            # or if it contains the config as well. I will mimic the structure from the
+            # x-yml format.
+
+            print("inside else")
+
+            # test if json has config structure
+            json_config = simplejson.loads(request_content).get("data")
+
+            # if it does then this results in correct formt.
+            if json_config:
+
+                print("inside json model config")
+
+                model_config = simplejson.loads(request_content)
+                data = json_config
+
+                # inspecting the format of the dicts from json + config
+                print(simplejson.dumps(model_config, indent=4))
+                print(simplejson.dumps(data, indent=4))
+
+                print("==================")
+
+                print(type(model_config))
+                print(type(data))
+
+                print("==================")
+
+            # otherwise use defaults.
+            else:
+                print("inside default config just data")
+                model_config = self.default_model_config
+                data = request_content
+
+                # inspecting the format of the dicts from json + config
+                print(simplejson.dumps(model_config, indent=4))
+                print(simplejson.dumps(data, indent=4))
+
+                print("==================")
+
+                print(type(model_config))
+                print(type(data))
+
+                print("==================")
+
+
 
         data_file = dump_to_data_file(data)
+
+        print(data_file)
 
         request.setHeader('Content-Type', 'application/json')
 
         try:
             request.setResponseCode(200)
-
+            print("before start train process")
             response = yield self.data_router.start_train_process(
                     data_file, project,
                     RasaNLUModelConfig(model_config), model_name)
-
+            print("before return value")
             returnValue(json_to_string({'info': 'new model trained: {}'
                                                 ''.format(response)}))
         except AlreadyTrainingError as e:
@@ -323,6 +389,9 @@ class RasaNLU(object):
         except TrainingException as e:
             request.setResponseCode(500)
             returnValue(json_to_string({"error": "{}".format(e)}))
+
+        print("done with train")
+
 
     @app.route("/evaluate", methods=['POST', 'OPTIONS'])
     @requires_auth
