@@ -4,8 +4,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import copy
-import json
 import logging
 import random
 from collections import defaultdict, namedtuple
@@ -21,7 +19,7 @@ from rasa_core.events import (
     ActionReverted, UserUtteranceReverted)
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.structures import (
-    StoryGraph, STORY_END, STORY_START, StoryStep,
+    StoryGraph, STORY_START, StoryStep,
     GENERATED_CHECKPOINT_PREFIX)
 
 logger = logging.getLogger(__name__)
@@ -157,7 +155,7 @@ class TrainingDataGenerator(object):
 
                     # update progress bar
                     pbar.set_postfix({"# trackers": "{:d}".format(
-                        len(incoming_trackers))})
+                            len(incoming_trackers))})
 
                     trackers = self._process_step(step, incoming_trackers)
 
@@ -179,9 +177,9 @@ class TrainingDataGenerator(object):
                             unused_checkpoints.add(end_name)
 
                     if not step.end_checkpoints:
-                        story_end_trackers.extend(
-                            self._remove_duplicate_story_end_trackers(
-                                trackers))
+                        unique_ends = self._remove_duplicate_story_end_trackers(
+                                trackers)
+                        story_end_trackers.extend(unique_ends)
 
             logger.debug("Finished phase ({} training samples found)."
                          "".format(len(finished_trackers) +
@@ -336,6 +334,10 @@ class TrainingDataGenerator(object):
 
         return trackers
 
+    @staticmethod
+    def _hash_states(states):
+        return hash(tuple((frozenset(s) for s in states)))
+
     def _remove_duplicate_trackers(self, trackers):
         # type: (List[DialogueStateTracker]) -> TrackersTuple
         """Removes trackers that create equal featurizations.
@@ -361,7 +363,7 @@ class TrainingDataGenerator(object):
             if hashed not in step_hashed_featurizations:
                 if self.unique_last_num_states:
                     last_states = states[-self.unique_last_num_states:]
-                    last_hashed = hash(tuple((frozenset(s) for s in last_states)))
+                    last_hashed = self._hash_states(last_states)
 
                     if last_hashed not in step_hashed_featurizations:
                         step_hashed_featurizations.add(last_hashed)
