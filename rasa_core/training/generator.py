@@ -29,6 +29,7 @@ if typing.TYPE_CHECKING:
     from rasa_core.domain import Domain
 
 ExtractorConfig = namedtuple("ExtractorConfig", "remove_duplicates "
+                                                "unique_last_num_states "
                                                 "augmentation_factor "
                                                 "max_number_of_trackers "
                                                 "tracker_limit "
@@ -152,10 +153,12 @@ class TrainingDataGenerator(object):
             story_graph,  # type: StoryGraph
             domain,  # type: Domain
             remove_duplicates=True,  # type: bool
+            unique_last_num_states=None,  # type: Optional[int]
             augmentation_factor=20,  # type: int
-            max_number_of_trackers=2000,  # type: Optional[int]
+            max_number_of_trackers=None,  # deprecated
             tracker_limit=None,  # type: Optional[int]
-            use_story_concatenation=True  # type: bool
+            use_story_concatenation=True,  # type: bool
+            debug_plots=False  # type: bool
     ):
         """Given a set of story parts, generates all stories that are possible.
 
@@ -164,23 +167,34 @@ class TrainingDataGenerator(object):
         connect complete stories. Afterwards, duplicate stories will be
         removed and the data is augmented (if augmentation is enabled)."""
 
-        self.hashed_featurizations = set()
-        # story_graph.visualize('before_cycles_removed.pdf')
+        # TODO: DEPRECATED - remove in version 0.10
+        if max_number_of_trackers is not None:
+            logger.warning("Passing a `max_number_of_trackers` to "
+                           "`TrainingDataGenerator` is deprecated. "
+                           "Use `unique_last_num_states` to limit "
+                           "number of generated trackers, "
+                           "if training time is too long.")
+
         self.story_graph = story_graph.with_cycles_removed()
-        self.story_graph.visualize('after_cycles_removed.pdf')
+        if debug_plots:
+            self.story_graph.visualize('story_blocks_connections.pdf')
 
         self.domain = domain
+
+        # 10x factor is a heuristic for augmentation rounds
         max_number_of_trackers = augmentation_factor * 10
+
         self.config = ExtractorConfig(
                 remove_duplicates=remove_duplicates,
+                unique_last_num_states=unique_last_num_states,
                 augmentation_factor=augmentation_factor,
                 max_number_of_trackers=max_number_of_trackers,
                 tracker_limit=tracker_limit,
                 use_story_concatenation=use_story_concatenation,
-                rand=random.Random(42))
-
-        # TODO move it to config and make it configurable
-        self.unique_last_num_states = 5
+                rand=random.Random(42)
+        )
+        # hashed featurization of all finished trackers
+        self.hashed_featurizations = set()
 
     @staticmethod
     def _phase_name(everything_reachable_is_reached, phase):
@@ -191,6 +205,11 @@ class TrainingDataGenerator(object):
 
     def generate(self):
         # type: () -> List[TrackerWithCachedStates]
+        if (self.config.remove_duplicates and
+                self.config.unique_last_num_states):
+            logger.debug("Generated trackers will be deduplicated "
+                         "based on their unique last {} states."
+                         "".format(self.config.unique_last_num_states))
 
         self._mark_first_action_in_story_steps_as_unpredictable()
 
@@ -206,6 +225,7 @@ class TrainingDataGenerator(object):
         )
         active_trackers[STORY_START].append(init_tracker)
 
+        # trackers that are sent to a featurizer
         finished_trackers = []
         # keep story end trackers separately for augmentation
         story_end_trackers = []
@@ -282,15 +302,15 @@ class TrainingDataGenerator(object):
 
                 for end in step.end_checkpoints:
 
-                    end_name = self._find_end_checkpoint_name(end.name)
+                    start_name = self._find_start_checkpoint_name(end.name)
 
-                    active_trackers[end_name].extend(trackers)
+                    active_trackers[start_name].extend(trackers)
 
-                    if end_name in used_checkpoints:
+                    if start_name in used_checkpoints:
                         # add end checkpoint as unused
                         # if this checkpoint was processed as
                         # start one before
-                        unused_checkpoints.add(end_name)
+                        unused_checkpoints.add(start_name)
 
                 if not step.end_checkpoints:
                     unique_ends = self._remove_duplicate_story_end_trackers(
@@ -373,7 +393,7 @@ class TrainingDataGenerator(object):
         else:
             return incoming_trackers
 
-    def _find_end_checkpoint_name(self, end_name):
+    def _find_start_checkpoint_name(self, end_name):
         return self.story_graph.story_end_checkpoints.get(end_name, end_name)
 
     @staticmethod
@@ -383,9 +403,10 @@ class TrainingDataGenerator(object):
             or are parts of loops."""
         next_active_trackers = defaultdict(list)
 
-        for end in unused_checkpoints:
+        for start_name in unused_checkpoints:
             # process trackers ended with unused checkpoints further
-            next_active_trackers[end].extend(active_trackers.get(end, []))
+            next_active_trackers[start_name].extend(
+                    active_trackers.get(start_name, []))
 
         return next_active_trackers
 
@@ -481,8 +502,8 @@ class TrainingDataGenerator(object):
             # only continue with trackers that created a
             # hashed_featurization we haven't observed
             if hashed not in step_hashed_featurizations:
-                if self.unique_last_num_states:
-                    last_states = states[-self.unique_last_num_states:]
+                if self.config.unique_last_num_states:
+                    last_states = states[-self.config.unique_last_num_states:]
                     last_hashed = hash(last_states)
 
                     if last_hashed not in step_hashed_featurizations:

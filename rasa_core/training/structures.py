@@ -199,7 +199,7 @@ class Story(object):
 
 class StoryGraph(object):
     def __init__(self, story_steps, story_end_checkpoints=None):
-        # type: (List[StoryStep], Dict[Text, Text]) -> None
+        # type: (List[StoryStep], Optional[Dict[Text, Text]]) -> None
         self.story_steps = story_steps
         self.step_lookup = {s.id: s for s in self.story_steps}
         ordered_ids, cyclic_edges = StoryGraph.order_steps(story_steps)
@@ -320,8 +320,8 @@ class StoryGraph(object):
         # the process above may generate unused start checkpoints
         # we need to find them and remove them
         # also there might be generated unused end checkpoints
-        unused_cps = self._unused_checkpoints(story_steps.values(),
-                                              story_end_checkpoints)
+        unused_cps = self._find_unused_checkpoints(story_steps.values(),
+                                                   story_end_checkpoints)
 
         unused_overlapping_cps = unused_cps.intersection(overlapping_cps)
 
@@ -349,8 +349,8 @@ class StoryGraph(object):
         return False
 
     @staticmethod
-    def _unused_checkpoints(story_steps, story_end_checkpoints):
-        """Find all end checkpoints."""
+    def _find_unused_checkpoints(story_steps, story_end_checkpoints):
+        """Find all unused checkpoints."""
 
         collected_start = {STORY_END, STORY_START}
         collected_end = {STORY_END, STORY_START}
@@ -359,11 +359,8 @@ class StoryGraph(object):
             for start in step.start_checkpoints:
                 collected_start.add(start.name)
             for end in step.end_checkpoints:
-                if end.name in story_end_checkpoints.keys():
-                    end_name = story_end_checkpoints[end.name]
-                else:
-                    end_name = end.name
-                collected_end.add(end_name)
+                start_name = story_end_checkpoints.get(end.name, end.name)
+                collected_end.add(start_name)
 
         return collected_end.symmetric_difference(collected_start)
 

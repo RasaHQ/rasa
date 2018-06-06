@@ -72,6 +72,12 @@ def create_argument_parser():
             type=int,
             default=50,
             help="how much data augmentation to use during training")
+    parser.add_argument(
+            '--debug_plots',
+            default=False,
+            action='store_true',
+            help="flag if to create plot for checkpoints"
+                 "between story blocks")
 
     utils.add_logging_option_arguments(parser)
     return parser
@@ -91,9 +97,10 @@ def train_dialogue_model(domain_file, stories_file, output_path,
 
     data_load_args, kwargs = utils.extract_args(kwargs,
                                                 {"use_story_concatenation",
-                                                 "max_number_of_trackers",
+                                                 "unique_last_num_states",
                                                  "augmentation_factor",
-                                                 "remove_duplicates"})
+                                                 "remove_duplicates",
+                                                 "debug_plots"})
     training_data = agent.load_data(stories_file, **data_load_args)
 
     if use_online_learning:
@@ -124,7 +131,8 @@ if __name__ == '__main__':
         "epochs": cmdline_args.epochs,
         "batch_size": cmdline_args.batch_size,
         "validation_split": cmdline_args.validation_split,
-        "augmentation_factor": cmdline_args.augmentation
+        "augmentation_factor": cmdline_args.augmentation,
+        "debug_plots": cmdline_args.debug_plots
     }
 
     train_dialogue_model(cmdline_args.domain,
