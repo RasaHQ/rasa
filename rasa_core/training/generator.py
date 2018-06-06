@@ -436,27 +436,16 @@ class TrainingDataGenerator(object):
             # need to copy the tracker as multiple story steps
             # might start with the same checkpoint and all of them
             # will use the same set of incoming trackers
-            trackers = []
-            for tracker in incoming_trackers:
-                copied = tracker.copy()
-                # if tracker._states is not None and not tuple(copied._states) == tuple(tracker._states):
-                #     print("NOOOO")
-                #     tracker.copy()
-                trackers.append(copied)
+            trackers = [tracker.copy() for tracker in incoming_trackers]
         else:
             trackers = []
 
         new_trackers = []
         for event in events:
             for tracker in trackers:
-                # TODO: TB - ask vova what this is needed for
                 if isinstance(event, (ActionReverted, UserUtteranceReverted)):
                     new_trackers.append(tracker.copy())
-                # tracker_before = copy.deepcopy(tracker)
                 tracker.update(event)
-                # true_states = tracker._calculate_states()
-                # if tuple(tracker.states()) != tuple(true_states):
-                #     print("NOOO")
 
         trackers.extend(new_trackers)
 
@@ -485,13 +474,6 @@ class TrainingDataGenerator(object):
         for tracker in trackers:
             states = tracker.states()
             hashed = hash(states)
-
-            # states_old = self.domain.states_for_tracker_history(tracker)
-            # states_tuple=tuple((frozenset(s) for s in states_old))
-            # hashed_old = hash(states_tuple)
-
-            # if not hashed == hashed_old:
-            #     print("NOOOOO")
 
             # only continue with trackers that created a
             # hashed_featurization we haven't observed
