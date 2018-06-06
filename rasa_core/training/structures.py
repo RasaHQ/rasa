@@ -304,13 +304,26 @@ class StoryGraph(object):
             if needs_connector:
                 start.end_checkpoints.append(Checkpoint(connector_cp_name))
 
+        self._remove_unused_generated_cps(story_steps,
+                                          all_overlapping_cps,
+                                          story_end_checkpoints)
+
+        return StoryGraph(list(story_steps.values()),
+                          story_end_checkpoints)
+
+    @staticmethod
+    def _checkpoint_difference(cps, cp_to_ignore):
+        return [cp for cp in cps if cp.name not in cp_to_ignore]
+
+    def _remove_unused_generated_cps(self, story_steps, overlapping_cps,
+                                     story_end_checkpoints):
         # the process above may generate unused start checkpoints
         # we need to find them and remove them
         # also there might be generated unused end checkpoints
         unused_cps = self._unused_checkpoints(story_steps.values(),
                                               story_end_checkpoints)
 
-        unused_overlapping_cps = unused_cps.intersection(all_overlapping_cps)
+        unused_overlapping_cps = unused_cps.intersection(overlapping_cps)
 
         unused_genr_cps = {cp_name
                            for cp_name in unused_cps
@@ -319,20 +332,14 @@ class StoryGraph(object):
         for k, step in story_steps.items():
             # changed all ends
             updated = step.create_copy(use_new_id=False)
-            updated.start_checkpoints = [
-                    cp for cp in updated.start_checkpoints
-                    if cp.name not in unused_overlapping_cps
-            ]
+            updated.start_checkpoints = self._checkpoint_difference(
+                    updated.start_checkpoints, unused_overlapping_cps)
+
             # remove generated unused end checkpoints
-            updated.end_checkpoints = [
-                    cp for cp in updated.end_checkpoints
-                    if cp.name not in unused_genr_cps
-            ]
+            updated.end_checkpoints = self._checkpoint_difference(
+                    updated.end_checkpoints, unused_genr_cps)
 
             story_steps[k] = updated
-
-        return StoryGraph(list(story_steps.values()),
-                          story_end_checkpoints)
 
     @staticmethod
     def _is_checkpoint_in_list(checkpoint_name, conditions, cps):
