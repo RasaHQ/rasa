@@ -3,7 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-
+import json
 import logging
 
 import six.moves.cPickle as pickler
@@ -16,8 +16,9 @@ logger = logging.getLogger(__name__)
 
 
 class TrackerStore(object):
-    def __init__(self, domain):
+    def __init__(self, domain, event_broker=None):
         self.domain = domain
+        self.event_broker = event_broker
 
     def get_or_create_tracker(self, sender_id):
         tracker = self.retrieve(sender_id)
@@ -49,6 +50,21 @@ class TrackerStore(object):
         # type: (Text) -> Optional[DialogueStateTracker]
         raise NotImplementedError()
 
+    def stream_events(self, tracker):
+        old_tracker = self.retrieve(tracker.sender_id)
+        offset = len(old_tracker.events) if old_tracker else 0
+        new_events = [evt.as_dict() for evt in tracker.events[offset:]]
+
+        # find the timestamp of the oldest event in the list
+        timestamp = new_events[0].get("timestamp")
+
+        body = {
+            "sender_id": tracker.sender_id,
+            "events": new_events,
+            "timestamp": timestamp
+        }
+        self.event_broker.process(json.dumps(body))
+
     def keys(self):
         # type: (Text) -> List[Text]
         raise NotImplementedError()
@@ -66,14 +82,15 @@ class TrackerStore(object):
 
 
 class InMemoryTrackerStore(TrackerStore):
-    def __init__(self, domain):
-
+    def __init__(self, domain, event_broker=None):
         self.store = {}
-        super(InMemoryTrackerStore, self).__init__(domain)
+        super(InMemoryTrackerStore, self).__init__(domain, event_broker)
 
     def save(self, tracker):
         serialised = InMemoryTrackerStore.serialise_tracker(tracker)
         self.store[tracker.sender_id] = serialised
+        if self.event_broker:
+            self._stream_events(tracker)
 
     def retrieve(self, sender_id):
         if sender_id in self.store:
@@ -90,7 +107,6 @@ class InMemoryTrackerStore(TrackerStore):
 
 
 class RedisTrackerStore(TrackerStore):
-
     def keys(self):
         pass
 
