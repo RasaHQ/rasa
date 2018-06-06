@@ -69,7 +69,6 @@ class Dispatcher(object):
     def utter_message(self, text):
         # type: (Text) -> None
         """"Send a text to the output channel"""
-        
         # Adding the text to the latest bot messages (with no data)
         self.latest_bot_messages.append(BotMessage(text=text,
                                                    data=None))
