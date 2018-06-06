@@ -139,8 +139,11 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
 
 # define types
-TrackerLookupDict = Dict[Optional[Text], List[DialogueStateTracker]]
-TrackersTuple = Tuple[List[DialogueStateTracker], List[DialogueStateTracker]]
+TrackerLookupDict = Dict[Optional[Text],
+                         List[TrackerWithCachedStates]]
+
+TrackersTuple = Tuple[List[TrackerWithCachedStates],
+                      List[TrackerWithCachedStates]]
 
 
 class TrainingDataGenerator(object):
@@ -187,7 +190,7 @@ class TrainingDataGenerator(object):
             return "data generation round {}".format(phase)
 
     def generate(self):
-        # type: () -> List[DialogueStateTracker]
+        # type: () -> List[TrackerWithCachedStates]
 
         self._mark_first_action_in_story_steps_as_unpredictable()
 
@@ -420,9 +423,9 @@ class TrainingDataGenerator(object):
     def _process_step(
             self,
             step,  # type: StoryStep
-            incoming_trackers  # type: List[DialogueStateTracker]
+            incoming_trackers  # type: List[TrackerWithCachedStates]
     ):
-        # type: (...) -> List[DialogueStateTracker]
+        # type: (...) -> List[TrackerWithCachedStates]
         """Processes a steps events with all trackers.
 
         The trackers that reached the steps starting checkpoint will
@@ -456,7 +459,7 @@ class TrainingDataGenerator(object):
         return hash(tuple((frozenset(s) for s in states)))
 
     def _remove_duplicate_trackers(self, trackers):
-        # type: (List[TrackerWStates]) -> TrackersTuple
+        # type: (List[TrackerWithCachedStates]) -> TrackersTuple
         """Removes trackers that create equal featurizations.
 
         From multiple trackers that create equal featurizations
