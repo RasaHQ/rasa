@@ -257,10 +257,10 @@ class StoryGraph(object):
             cid = utils.generate_id(max_chars=GENERATED_HASH_LENGTH)
             prefix = GENERATED_CHECKPOINT_PREFIX + CHECKPOINT_CYCLE_PREFIX
             # need abbreviations otherwise they are not visualized well
-            sink_cid = prefix + "SINK_" + cid
-            connector_cid = prefix + "CONN_" + cid
-            source_cid = prefix + "SRC_" + cid
-            story_end_checkpoints[sink_cid] = source_cid
+            sink_cp_name = prefix + "SINK_" + cid
+            connector_cp_name = prefix + "CONN_" + cid
+            source_cp_name = prefix + "SRC_" + cid
+            story_end_checkpoints[sink_cp_name] = source_cp_name
 
             overlapping_cps = self.overlapping_checkpoint_names(
                     story_steps[s].end_checkpoints,
@@ -270,9 +270,10 @@ class StoryGraph(object):
 
             # change end checkpoints of starts
             start = story_steps[s].create_copy(use_new_id=False)
-            start.end_checkpoints = [cp for cp in start.end_checkpoints
+            start.end_checkpoints = [cp
+                                     for cp in start.end_checkpoints
                                      if cp.name not in overlapping_cps]
-            start.end_checkpoints.append(Checkpoint(sink_cid))
+            start.end_checkpoints.append(Checkpoint(sink_cp_name))
             story_steps[s] = start
 
             needs_connector = False
@@ -283,17 +284,17 @@ class StoryGraph(object):
                     for cp in step.start_checkpoints:
                         if cp.name == original_cp:
                             if k == e:
-                                cid = source_cid
+                                cp_name = source_cp_name
                             else:
-                                cid = connector_cid
+                                cp_name = connector_cp_name
                                 needs_connector = True
 
-                            if not self._is_cid_conds_already_in(
-                                    cid, cp.conditions,
+                            if not self._is_checkpoint_in_list(
+                                    cp_name, cp.conditions,
                                     step.start_checkpoints):
                                 # add checkpoint only if it was not added
                                 additional_ends.append(
-                                        Checkpoint(cid, cp.conditions))
+                                        Checkpoint(cp_name, cp.conditions))
 
                 if additional_ends:
                     updated = step.create_copy(use_new_id=False)
@@ -301,18 +302,21 @@ class StoryGraph(object):
                     story_steps[k] = updated
 
             if needs_connector:
-                start.end_checkpoints.append(Checkpoint(connector_cid))
+                start.end_checkpoints.append(Checkpoint(connector_cp_name))
 
         # the process above may generate unused start checkpoints
         # we need to find them and remove them
         # also there might be generated unused end checkpoints
         unused_cps = self._unused_checkpoints(story_steps.values(),
                                               story_end_checkpoints)
-        unused_overlapping_cps = unused_cps & all_overlapping_cps
-        unused_genr_cps = {cp_name for cp_name in unused_cps
+
+        unused_overlapping_cps = unused_cps.intersection(all_overlapping_cps)
+
+        unused_genr_cps = {cp_name
+                           for cp_name in unused_cps
                            if cp_name.startswith(GENERATED_CHECKPOINT_PREFIX)}
 
-        for k, step in list(story_steps.items()):
+        for k, step in story_steps.items():
             # changed all ends
             updated = step.create_copy(use_new_id=False)
             updated.start_checkpoints = [
@@ -331,10 +335,9 @@ class StoryGraph(object):
                           story_end_checkpoints)
 
     @staticmethod
-    def _is_cid_conds_already_in(cid, conds, cps):
+    def _is_checkpoint_in_list(checkpoint_name, conditions, cps):
         for cp in cps:
-            # TODO do not do dict1 == dict2
-            if cid == cp.name and conds == cp.conditions:
+            if checkpoint_name == cp.name and conditions == cp.conditions:
                 return True
         return False
 
@@ -355,7 +358,7 @@ class StoryGraph(object):
                     end_name = end.name
                 collected_end.add(end_name)
 
-        return collected_end ^ collected_start
+        return collected_end.union(collected_start)
 
     def get(self, step_id):
         # type: (Text) -> Optional[StoryStep]
