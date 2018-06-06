@@ -5,7 +5,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import copy
-import json
 import logging
 import random
 from collections import defaultdict, namedtuple, deque
@@ -21,7 +20,7 @@ from rasa_core.events import (
     ActionReverted, UserUtteranceReverted, Restarted)
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.structures import (
-    StoryGraph, STORY_END, STORY_START, StoryStep,
+    StoryGraph, STORY_START, StoryStep,
     GENERATED_CHECKPOINT_PREFIX)
 
 logger = logging.getLogger(__name__)
@@ -160,6 +159,13 @@ class TrainingDataGenerator(object):
         # TODO move it to config and make it configurable
         self.unique_last_num_states = 5
 
+    @staticmethod
+    def _phase_name(everything_reachable_is_reached, phase):
+        if everything_reachable_is_reached:
+            return "augmentation round {}".format(phase)
+        else:
+            return "data generation round {}".format(phase)
+
     def generate(self):
         # type: () -> List[DialogueStateTracker]
 
@@ -196,10 +202,8 @@ class TrainingDataGenerator(object):
         # if we did not reach any new checkpoints in an iteration, we
         # assume we have reached all and stop.
         while not everything_reachable_is_reached or phase < min_num_aug_phases:
-            if everything_reachable_is_reached:
-                phase_name = "augmentation round {}".format(phase)
-            else:
-                phase_name = "data generation round {}".format(phase)
+            phase_name = self._phase_name(everything_reachable_is_reached,
+                                          phase)
 
             num_active_trackers = self._count_trackers(active_trackers)
 
@@ -224,52 +228,55 @@ class TrainingDataGenerator(object):
                         # it will be processed in next phases
                         unused_checkpoints.add(start.name)
 
-                if incoming_trackers:
-                    # these are the trackers that reached this story
-                    # step and that need to handle all events of the step
+                if not incoming_trackers:
+                    # if there are no trackers, we can skip the rest of the loop
+                    continue
 
-                    if self.config.remove_duplicates:
-                        incoming_trackers, end_trackers = \
-                            self._remove_duplicate_trackers(incoming_trackers)
-                        # append end trackers to finished trackers
-                        finished_trackers.extend(end_trackers)
+                # these are the trackers that reached this story
+                # step and that need to handle all events of the step
 
-                    if everything_reachable_is_reached:
-                        # augmentation round
-                        incoming_trackers = self._subsample_trackers(
-                                incoming_trackers)
+                if self.config.remove_duplicates:
+                    incoming_trackers, end_trackers = \
+                        self._remove_duplicate_trackers(incoming_trackers)
+                    # append end trackers to finished trackers
+                    finished_trackers.extend(end_trackers)
 
-                    # update progress bar
-                    pbar.set_postfix({"# trackers": "{:d}".format(
-                            len(incoming_trackers))})
+                if everything_reachable_is_reached:
+                    # augmentation round
+                    incoming_trackers = self._subsample_trackers(
+                            incoming_trackers)
 
-                    trackers = self._process_step(step, incoming_trackers)
+                # update progress bar
+                pbar.set_postfix({"# trackers": "{:d}".format(
+                        len(incoming_trackers))})
 
-                    # update our tracker dictionary with the trackers
-                    # that handled the events of the step and
-                    # that can now be used for further story steps
-                    # that start with the checkpoint this step ended with
+                trackers = self._process_step(step, incoming_trackers)
 
-                    for end in step.end_checkpoints:
+                # update our tracker dictionary with the trackers
+                # that handled the events of the step and
+                # that can now be used for further story steps
+                # that start with the checkpoint this step ended with
 
-                        end_name = self._find_end_checkpoint_name(end.name)
+                for end in step.end_checkpoints:
 
-                        active_trackers[end_name].extend(trackers)
+                    end_name = self._find_end_checkpoint_name(end.name)
 
-                        if end_name in used_checkpoints:
-                            # add end checkpoint as unused
-                            # if this checkpoint was processed as
-                            # start one before
-                            unused_checkpoints.add(end_name)
+                    active_trackers[end_name].extend(trackers)
 
-                    if not step.end_checkpoints:
-                        story_end_trackers.extend(
-                            self._remove_duplicate_story_end_trackers(
-                                trackers))
+                    if end_name in used_checkpoints:
+                        # add end checkpoint as unused
+                        # if this checkpoint was processed as
+                        # start one before
+                        unused_checkpoints.add(end_name)
 
+                if not step.end_checkpoints:
+                    unique_ends = self._remove_duplicate_story_end_trackers(
+                            trackers)
+                    story_end_trackers.extend(unique_ends)
+
+            num_finished = len(finished_trackers) + len(story_end_trackers)
             logger.debug("Finished phase ({} training samples found)."
-                         "".format(len(finished_trackers) +
-                                   len(story_end_trackers)))
+                         "".format(num_finished))
 
             # prepare next round
             phase += 1
@@ -310,6 +317,7 @@ class TrainingDataGenerator(object):
                 # story end checkpoints
                 # reset used checkpoints
                 used_checkpoints = set()  # type: Set[Text]
+
                 # generate active trackers for augmentation
                 active_trackers = \
                     self._create_start_trackers_for_augmentation(
@@ -434,6 +442,10 @@ class TrainingDataGenerator(object):
 
         return trackers
 
+    @staticmethod
+    def _hash_states(states):
+        return hash(tuple((frozenset(s) for s in states)))
+
     def _remove_duplicate_trackers(self, trackers):
         # type: (List[TrackerWStates]) -> TrackersTuple
         """Removes trackers that create equal featurizations.
@@ -491,8 +503,8 @@ class TrainingDataGenerator(object):
         # otherwise featurization does a lot of unnecessary work
 
         for tracker in trackers:
-            states = self.domain.states_for_tracker_history(tracker)
-            hashed = hash(tuple((frozenset(s) for s in states)))
+            states = tracker.states()
+            hashed = hash(states)
 
             # only continue with trackers that created a
             # hashed_featurization we haven't observed

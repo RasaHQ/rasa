@@ -17,7 +17,7 @@ import six
 import yaml
 from builtins import input, range, str
 from numpy import all, array
-from typing import Text, Any, List, Optional
+from typing import Text, Any, List, Optional, Tuple, Dict, Set
 
 logger = logging.getLogger(__name__)
 
@@ -401,7 +401,14 @@ def wait_for_threads(threads):
                 "Stopping to serve forever.")
 
 
-def extract_args(kwargs, keys_to_extract):
+def extract_args(kwargs,   # type: Dict[Text, Any]
+                 keys_to_extract  # type: Set[Text]
+                 ):
+    # type: (...) -> Tuple[Dict[Text, Any], Dict[Text, Any]]
+    """Go through the kwargs and filter out the specified keys.
+
+    Return both, the filtered kwargs as well as the remaining kwargs."""
+
     remaining = {}
     extracted = {}
     for k, v in kwargs.items():

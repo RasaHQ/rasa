@@ -544,6 +544,13 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         state_features = padding + states[slice_start:]
         return state_features
 
+    def _hash_example(self, states, action):
+        frozen_states = tuple((s if s is None
+                               else frozenset(s.items())
+                               for s in states))
+        frozen_actions = (action,)
+        return hash((frozen_states, frozen_actions))
+
     def training_states_and_actions(
             self,
             trackers,  # type: List[DialogueStateTracker]
@@ -556,7 +563,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
         # from multiple states that create equal featurizations
         # we only need to keep one.
-        hashed_featurizations = set()
+        hashed_examples = set()
 
         pbar = tqdm(trackers, desc="Processed trackers")
         for tracker in pbar:
@@ -570,31 +577,27 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                         # predicted at a stories start
                         sliced_states = self.slice_state_history(
                             states[:idx + 1], self.max_history)
-                        sliced_actions = [event.action_name]
 
                         if self.remove_duplicates:
-                            frozen_states = tuple((s if s is None
-                                                   else frozenset(s.items())
-                                                   for s in sliced_states))
-                            frozen_actions = tuple(sliced_actions)
-                            hashed = hash((frozen_states, frozen_actions))
+                            hashed = self._hash_example(sliced_states,
+                                                        event.action_name)
 
                             # only continue with tracker_states that created a
                             # hashed_featurization we haven't observed
-                            if hashed not in hashed_featurizations:
-                                hashed_featurizations.add(hashed)
+                            if hashed not in hashed_examples:
+                                hashed_examples.add(hashed)
                                 trackers_as_states.append(sliced_states)
-                                trackers_as_actions.append(sliced_actions)
+                                trackers_as_actions.append([event.action_name])
                         else:
                             trackers_as_states.append(sliced_states)
-                            trackers_as_actions.append(sliced_actions)
+                            trackers_as_actions.append([event.action_name])
 
                         pbar.set_postfix({"# actions": "{:d}".format(
                             len(trackers_as_actions))})
                     idx += 1
 
-        logger.debug("Got {} action examples."
-                     "".format(len(trackers_as_actions)))
+        logger.info("Created {} action examples."
+                    "".format(len(trackers_as_actions)))
 
         return trackers_as_states, trackers_as_actions
 
