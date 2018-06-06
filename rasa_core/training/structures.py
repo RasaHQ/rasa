@@ -365,7 +365,7 @@ class StoryGraph(object):
                     end_name = end.name
                 collected_end.add(end_name)
 
-        return collected_end.union(collected_start)
+        return collected_end.symmetric_difference(collected_start)
 
     def get(self, step_id):
         # type: (Text) -> Optional[StoryStep]
