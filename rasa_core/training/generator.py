@@ -17,7 +17,7 @@ from rasa_core import utils
 from rasa_core.channels import UserMessage
 from rasa_core.events import (
     ActionExecuted, UserUttered,
-    ActionReverted, UserUtteranceReverted, Restarted)
+    ActionReverted, UserUtteranceReverted, Restarted, Event)
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.structures import (
     StoryGraph, STORY_START, StoryStep,
@@ -36,8 +36,8 @@ ExtractorConfig = namedtuple("ExtractorConfig", "remove_duplicates "
                                                 "rand")
 
 
-class TrackerWStates(DialogueStateTracker):
-    """A tracker wrapper that caches the featurization of the tracker."""
+class TrackerWithCachedStates(DialogueStateTracker):
+    """A tracker wrapper that caches the state creation of the tracker."""
 
     def __init__(self, sender_id, slots,
                  topics=None,
@@ -45,23 +45,30 @@ class TrackerWStates(DialogueStateTracker):
                  max_event_history=None,
                  domain=None
                  ):
-        super(TrackerWStates, self).__init__(sender_id, slots, topics,
-                                             default_topic, max_event_history)
+        super(TrackerWithCachedStates, self).__init__(
+                sender_id, slots, topics, default_topic, max_event_history)
         self._states = None
         self.domain = domain
 
     def states(self):
+        # type: () -> Tuple[frozenset, ...]
+        """Return the states of the tracker based on the logged events."""
+
+        # if don't have it cached, we use the domain to calculate the states
+        # from the events
         if self._states is None:
             self._states = self._calculate_states()
 
         return tuple(self._states)
 
     def clear_states(self):
+        # type: () -> None
+        """Reset the states."""
         self._states = None
 
     def init_copy(self):
-        # type: () -> TrackerWStates
-        """Creates a new state tracker with the same initial values."""
+        # type: () -> TrackerWithCachedStates
+        """Create a new state tracker with the same initial values."""
         from rasa_core.channels import UserMessage
 
         return type(self)(UserMessage.DEFAULT_SENDER_ID,
@@ -72,15 +79,20 @@ class TrackerWStates(DialogueStateTracker):
                           self.domain)
 
     def _calculate_states(self):
+        # type: () -> deque
+
         generated_states = self.domain.states_for_tracker_history(self)
         return deque((frozenset(s) for s in generated_states))
 
     def copy(self):
-        # type: () -> TrackerWStates
+        # type: () -> TrackerWithCachedStates
         """Creates a duplicate of this tracker.
 
         A new tracker will be created and all events
         will be replayed."""
+
+        # This is an optimization, we could use the original copy, but
+        # the states would be lost and we would need to recalculate them
 
         tracker = self.init_copy()
 
@@ -91,14 +103,27 @@ class TrackerWStates(DialogueStateTracker):
 
         return tracker  # yields the final state
 
+    def _append_current_state(self):
+        # type: () -> None
+
+        state = self.domain.get_active_states(self)
+        self._states.append(frozenset(state))
+
     def update(self, event, skip_states=False):
-        # type: (Event) -> None
+        # type: (Event, bool) -> None
         """Modify the state of the tracker according to an ``Event``. """
 
-        if not skip_states:
-            if self._states is None:
-                self._states = self._calculate_states()
+        # if `skip_states` is `True`, this function behaves exactly like the
+        # normal update of the `DialogueStateTracker`
 
+        if self._states is None and not skip_states:
+            # rest of this function assumes we have the previous state
+            # cached. let's make sure it is there.
+            self._states = self._calculate_states()
+
+        super(TrackerWithCachedStates, self).update(event)
+
+        if not skip_states:
             if isinstance(event, ActionExecuted):
                 pass
             elif isinstance(event, ActionReverted):
@@ -110,12 +135,7 @@ class TrackerWStates(DialogueStateTracker):
             else:
                 self._states.pop()
 
-            self.events.append(event)
-            event.apply_to(self)
-            state = self.domain.get_active_states(self)
-            self._states.append(frozenset(state))
-        else:
-            super(TrackerWStates, self).update(event)
+            self._append_current_state()
 
 
 # define types
@@ -173,7 +193,7 @@ class TrainingDataGenerator(object):
 
         active_trackers = defaultdict(list)  # type: TrackerLookupDict
 
-        init_tracker = TrackerWStates(
+        init_tracker = TrackerWithCachedStates(
                 UserMessage.DEFAULT_SENDER_ID,
                 self.domain.slots,
                 self.domain.topics,
