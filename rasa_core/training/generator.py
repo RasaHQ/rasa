@@ -4,9 +4,10 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import copy
 import logging
 import random
-from collections import defaultdict, namedtuple
+from collections import defaultdict, namedtuple, deque
 
 import typing
 from tqdm import tqdm
@@ -16,7 +17,7 @@ from rasa_core import utils
 from rasa_core.channels import UserMessage
 from rasa_core.events import (
     ActionExecuted, UserUttered,
-    ActionReverted, UserUtteranceReverted)
+    ActionReverted, UserUtteranceReverted, Restarted, Event)
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.training.structures import (
     StoryGraph, STORY_START, StoryStep,
@@ -34,9 +35,115 @@ ExtractorConfig = namedtuple("ExtractorConfig", "remove_duplicates "
                                                 "use_story_concatenation "
                                                 "rand")
 
+
+class TrackerWithCachedStates(DialogueStateTracker):
+    """A tracker wrapper that caches the state creation of the tracker."""
+
+    def __init__(self, sender_id, slots,
+                 topics=None,
+                 default_topic=None,
+                 max_event_history=None,
+                 domain=None
+                 ):
+        super(TrackerWithCachedStates, self).__init__(
+                sender_id, slots, topics, default_topic, max_event_history)
+        self._states = None
+        self.domain = domain
+
+    def states(self):
+        # type: () -> Tuple[frozenset, ...]
+        """Return the states of the tracker based on the logged events."""
+
+        # if don't have it cached, we use the domain to calculate the states
+        # from the events
+        if self._states is None:
+            self._states = self._calculate_states()
+
+        return tuple(self._states)
+
+    def clear_states(self):
+        # type: () -> None
+        """Reset the states."""
+        self._states = None
+
+    def init_copy(self):
+        # type: () -> TrackerWithCachedStates
+        """Create a new state tracker with the same initial values."""
+        from rasa_core.channels import UserMessage
+
+        return type(self)(UserMessage.DEFAULT_SENDER_ID,
+                          self.slots.values(),
+                          self.topics,
+                          self.default_topic,
+                          self._max_event_history,
+                          self.domain)
+
+    def _calculate_states(self):
+        # type: () -> deque
+
+        generated_states = self.domain.states_for_tracker_history(self)
+        return deque((frozenset(s) for s in generated_states))
+
+    def copy(self):
+        # type: () -> TrackerWithCachedStates
+        """Creates a duplicate of this tracker.
+
+        A new tracker will be created and all events
+        will be replayed."""
+
+        # This is an optimization, we could use the original copy, but
+        # the states would be lost and we would need to recalculate them
+
+        tracker = self.init_copy()
+
+        for event in self.events:
+            tracker.update(event, skip_states=True)
+
+        tracker._states = copy.copy(self._states)
+
+        return tracker  # yields the final state
+
+    def _append_current_state(self):
+        # type: () -> None
+
+        state = self.domain.get_active_states(self)
+        self._states.append(frozenset(state))
+
+    def update(self, event, skip_states=False):
+        # type: (Event, bool) -> None
+        """Modify the state of the tracker according to an ``Event``. """
+
+        # if `skip_states` is `True`, this function behaves exactly like the
+        # normal update of the `DialogueStateTracker`
+
+        if self._states is None and not skip_states:
+            # rest of this function assumes we have the previous state
+            # cached. let's make sure it is there.
+            self._states = self._calculate_states()
+
+        super(TrackerWithCachedStates, self).update(event)
+
+        if not skip_states:
+            if isinstance(event, ActionExecuted):
+                pass
+            elif isinstance(event, ActionReverted):
+                self._states.pop()
+            elif isinstance(event, UserUtteranceReverted):
+                self.clear_states()
+            elif isinstance(event, Restarted):
+                self.clear_states()
+            else:
+                self._states.pop()
+
+            self._append_current_state()
+
+
 # define types
-TrackerLookupDict = Dict[Optional[Text], List[DialogueStateTracker]]
-TrackersTuple = Tuple[List[DialogueStateTracker], List[DialogueStateTracker]]
+TrackerLookupDict = Dict[Optional[Text],
+                         List[TrackerWithCachedStates]]
+
+TrackersTuple = Tuple[List[TrackerWithCachedStates],
+                      List[TrackerWithCachedStates]]
 
 
 class TrainingDataGenerator(object):
@@ -83,18 +190,19 @@ class TrainingDataGenerator(object):
             return "data generation round {}".format(phase)
 
     def generate(self):
-        # type: () -> List[DialogueStateTracker]
+        # type: () -> List[TrackerWithCachedStates]
 
         self._mark_first_action_in_story_steps_as_unpredictable()
 
         active_trackers = defaultdict(list)  # type: TrackerLookupDict
 
-        init_tracker = DialogueStateTracker(
+        init_tracker = TrackerWithCachedStates(
                 UserMessage.DEFAULT_SENDER_ID,
                 self.domain.slots,
                 self.domain.topics,
                 self.domain.default_topic,
-                max_event_history=self.config.tracker_limit
+                max_event_history=self.config.tracker_limit,
+                domain=self.domain
         )
         active_trackers[STORY_START].append(init_tracker)
 
@@ -315,9 +423,9 @@ class TrainingDataGenerator(object):
     def _process_step(
             self,
             step,  # type: StoryStep
-            incoming_trackers  # type: List[DialogueStateTracker]
+            incoming_trackers  # type: List[TrackerWithCachedStates]
     ):
-        # type: (...) -> List[DialogueStateTracker]
+        # type: (...) -> List[TrackerWithCachedStates]
         """Processes a steps events with all trackers.
 
         The trackers that reached the steps starting checkpoint will
@@ -325,18 +433,21 @@ class TrainingDataGenerator(object):
         data while processing the story step."""
 
         events = step.explicit_events(self.domain)
-        # need to copy the tracker as multiple story steps
-        # might start with the same checkpoint and all of them
-        # will use the same set of incoming trackers
-        trackers = [tracker.copy() for tracker in
-                    incoming_trackers] if events else []  # small optimization
-        # trackers = incoming_trackers
+
+        if events:  # small optimization
+
+            # need to copy the tracker as multiple story steps
+            # might start with the same checkpoint and all of them
+            # will use the same set of incoming trackers
+            trackers = [tracker.copy() for tracker in incoming_trackers]
+        else:
+            trackers = []
+
         new_trackers = []
         for event in events:
             for tracker in trackers:
                 if isinstance(event, (ActionReverted, UserUtteranceReverted)):
                     new_trackers.append(tracker.copy())
-
                 tracker.update(event)
 
         trackers.extend(new_trackers)
@@ -348,7 +459,7 @@ class TrainingDataGenerator(object):
         return hash(tuple((frozenset(s) for s in states)))
 
     def _remove_duplicate_trackers(self, trackers):
-        # type: (List[DialogueStateTracker]) -> TrackersTuple
+        # type: (List[TrackerWithCachedStates]) -> TrackersTuple
         """Removes trackers that create equal featurizations.
 
         From multiple trackers that create equal featurizations
@@ -364,15 +475,15 @@ class TrainingDataGenerator(object):
         end_trackers = []  # for all steps
 
         for tracker in trackers:
-            states = self.domain.states_for_tracker_history(tracker)
-            hashed = self._hash_states(states)
+            states = tracker.states()
+            hashed = hash(states)
 
             # only continue with trackers that created a
             # hashed_featurization we haven't observed
             if hashed not in step_hashed_featurizations:
                 if self.unique_last_num_states:
                     last_states = states[-self.unique_last_num_states:]
-                    last_hashed = self._hash_states(last_states)
+                    last_hashed = hash(last_states)
 
                     if last_hashed not in step_hashed_featurizations:
                         step_hashed_featurizations.add(last_hashed)
@@ -397,8 +508,8 @@ class TrainingDataGenerator(object):
         # otherwise featurization does a lot of unnecessary work
 
         for tracker in trackers:
-            states = self.domain.states_for_tracker_history(tracker)
-            hashed = self._hash_states(states)
+            states = tracker.states()
+            hashed = hash(states)
 
             # only continue with trackers that created a
             # hashed_featurization we haven't observed
