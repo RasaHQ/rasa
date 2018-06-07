@@ -7,17 +7,6 @@ Language Understanding with Rasa NLU
     that matches the version you have installed.
 
 
-.. button:: 
-   :text: Button Text
-   :link: link/to/stuff.html
-
-.. card:: 
-   :title: Turn Natural Language into Structured Data
-   :subtitle: NLU Quickstart
-   :link: link/to/stuff.html
-   :description: Convert messages into intents and entities and live the actual dream.
-   :image_url: http://core.rasa.com/_images/mood_bot.png
-
 
 Rasa NLU is an open-source tool for intent classification and entity extraction. For example, taking a sentence like
 
@@ -39,21 +28,6 @@ and returning structured data like
 
 
 The intended audience is mainly people developing chatbots and voice apps.
-
-Who Uses Rasa?
-~~~~~~~~~~~~~~
-
-Rasa NLU and Rasa Core together form the `Rasa Stack <https://rasa.com/products/rasa-stack>`_, which is used in production 
-at many Fortune 500 companies and startups,
-and is also used by R&D labs and research groups.
-
-There is a big community of Rasa Developers, with hundreds of external contributors. 
-
-How Does Rasa Compare to Alternatives?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-You can use Rasa as a drop-in replacement for `wit <https://wit.ai>`_ , `LUIS <https://www.luis.ai>`_ , or `Dialogflow <https://dialogflow.com>`_, see here for details.
-
 You can read about the advantages of using open source NLU in this `blog post <https://medium.com/rasa-blog/do-it-yourself-nlp-for-bot-developers-2e2da2817f3d>`_ .
 You can see independent benchmarks comparing Rasa NLU to various closed source tools, `here <link1>`_ and `here <link1>`_. 
 
@@ -76,6 +50,7 @@ You can see independent benchmarks comparing Rasa NLU to various closed source t
    entities
    languages
    evaluation
+   fallback
    faq
 
 .. toctree::

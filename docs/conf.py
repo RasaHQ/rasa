@@ -32,9 +32,11 @@ linkcheck_timeout = 5
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'sphinx.ext.autodoc',
     'sphinx.ext.mathjax',
     'sphinx.ext.doctest',
     'sphinxcontrib.programoutput',
+    'sphinxcontrib.httpdomain',
     'rasabaster.button',
     'rasabaster.card'
 ]
