@@ -396,8 +396,8 @@ class TrainingDataGenerator(object):
             return incoming_trackers
 
     def _find_start_checkpoint_name(self, end_name):
-        """Find start checkpoint name given
-            end checkpoint name of a cycle"""
+        # type: (Text) -> Text
+        """Find start checkpoint name given end checkpoint name of a cycle"""
         return self.story_graph.story_end_checkpoints.get(end_name, end_name)
 
     @staticmethod
@@ -415,6 +415,7 @@ class TrainingDataGenerator(object):
         return next_active_trackers
 
     def _create_start_trackers_for_augmentation(self, story_end_trackers):
+        # type: (List[TrackerWithCachedStates]) -> TrackerLookupDict
         """This is where the augmentation magic happens.
 
             We will reuse all the trackers that reached the
@@ -483,14 +484,10 @@ class TrainingDataGenerator(object):
 
         return trackers
 
-    @staticmethod
-    def _hash_states(states):
-        """Hash tracker states"""
-        return hash(tuple((frozenset(s) for s in states)))
-
     def _remove_duplicate_trackers(self, trackers):
         # type: (List[TrackerWithCachedStates]) -> TrackersTuple
-        """Removes trackers that create equal featurizations.
+        """Removes trackers that create equal featurizations
+            for current story step.
 
         From multiple trackers that create equal featurizations
         we only need to keep one. Because as we continue processing

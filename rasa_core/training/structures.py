@@ -10,7 +10,8 @@ import uuid
 from collections import deque, defaultdict
 
 import typing
-from typing import List, Text, Dict, Optional, Tuple, Any, Set
+from typing import \
+    List, Text, Dict, Optional, Tuple, Any, Set, ValuesView
 
 from rasa_core import utils
 from rasa_core.actions.action import ACTION_LISTEN_NAME
@@ -225,6 +226,9 @@ class StoryGraph(object):
 
     @staticmethod
     def overlapping_checkpoint_names(cps, other_cps):
+        # type: (List[Checkpoint], List[Checkpoint]) -> Set[Text]
+        """Find overlapping checkpoints names"""
+
         return {cp.name for cp in cps} & {cp.name for cp in other_cps}
 
     def with_cycles_removed(self):
@@ -304,6 +308,8 @@ class StoryGraph(object):
             if needs_connector:
                 start.end_checkpoints.append(Checkpoint(connector_cp_name))
 
+        # the process above may generate unused checkpoints
+        # we need to find them and remove them
         self._remove_unused_generated_cps(story_steps,
                                           all_overlapping_cps,
                                           story_end_checkpoints)
@@ -312,14 +318,19 @@ class StoryGraph(object):
                           story_end_checkpoints)
 
     @staticmethod
-    def _checkpoint_difference(cps, cp_to_ignore):
-        return [cp for cp in cps if cp.name not in cp_to_ignore]
+    def _checkpoint_difference(cps, cp_name_to_ignore):
+        # type: (List[Checkpoint], Set[Text]) -> List[Checkpoint]
+        """Finds checkpoints which names are
+            different form names of checkpoints to ignore"""
+
+        return [cp for cp in cps if cp.name not in cp_name_to_ignore]
 
     def _remove_unused_generated_cps(self, story_steps, overlapping_cps,
                                      story_end_checkpoints):
-        # the process above may generate unused start checkpoints
-        # we need to find them and remove them
-        # also there might be generated unused end checkpoints
+        # type: (Dict[Text, StoryStep], Set[Text], Dict[Text, Text]) -> None
+        """Finds unused generated checkpoints
+            and remove them from story steps."""
+
         unused_cps = self._find_unused_checkpoints(story_steps.values(),
                                                    story_end_checkpoints)
 
@@ -343,6 +354,10 @@ class StoryGraph(object):
 
     @staticmethod
     def _is_checkpoint_in_list(checkpoint_name, conditions, cps):
+        # type: (Text, Dict[Text, Any], List[Checkpoint]) -> bool
+        """Checks if checkpoint with name and conditions is
+            already in the list of checkpoints."""
+
         for cp in cps:
             if checkpoint_name == cp.name and conditions == cp.conditions:
                 return True
@@ -350,7 +365,8 @@ class StoryGraph(object):
 
     @staticmethod
     def _find_unused_checkpoints(story_steps, story_end_checkpoints):
-        """Find all unused checkpoints."""
+        # type: (ValuesView[StoryStep], Dict[Text, Text]) -> Set[Text]
+        """Finds all unused checkpoints."""
 
         collected_start = {STORY_END, STORY_START}
         collected_end = {STORY_END, STORY_START}
