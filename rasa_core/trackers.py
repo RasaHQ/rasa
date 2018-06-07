@@ -361,7 +361,7 @@ class DialogueStateTracker(object):
         return deque(evts, self._max_event_history)
 
     def __eq__(self, other):
-        if isinstance(other, type(self)):
+        if isinstance(self, type(other)):
             return (other.events == self.events and
                     self.sender_id == other.sender_id)
         else:

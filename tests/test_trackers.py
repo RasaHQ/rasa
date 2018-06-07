@@ -345,7 +345,7 @@ def test_dump_and_restore_as_json(default_agent, tmpdir_factory):
         restored_tracker = restore.load_tracker_from_json(out_path.strpath,
                                                           default_agent.domain)
 
-        assert restored_tracker == tracker.as_normal_tracker()
+        assert restored_tracker == tracker
 
 
 def test_read_json_dump(default_agent):

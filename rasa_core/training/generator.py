@@ -67,20 +67,6 @@ class TrackerWithCachedStates(DialogueStateTracker):
         """Reset the states."""
         self._states = None
 
-    def as_normal_tracker(self):
-        # type: () -> DialogueStateTracker
-        """Transform this tracker with cached states to a normal tracker."""
-
-        tracker = super(TrackerWithCachedStates, self).init_copy()
-
-        for event in self.events:
-            # this is a `DialogueStateTracker` not a `TrackerWithCachedStates`
-            # therefore, this will call the original update function, not the
-            # one within this class
-            tracker.update(event)
-
-        return tracker
-
     def init_copy(self):
         # type: () -> TrackerWithCachedStates
         """Create a new state tracker with the same initial values."""
