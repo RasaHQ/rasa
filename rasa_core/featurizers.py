@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 import jsonpickle
 import numpy as np
-from typing import Tuple, List, Optional, Dict, Text
+from typing import Tuple, List, Optional, Dict, Text, Any
 from builtins import str
 
 from rasa_core import utils
@@ -277,14 +277,20 @@ class TrackerFeaturizer(object):
         self.state_featurizer = state_featurizer or SingleStateFeaturizer()
         self.use_intent_probabilities = use_intent_probabilities
 
-    def _create_states(self, tracker, domain):
+    def _create_states(self,
+                       tracker,  # type: DialogueStateTracker
+                       domain,  # type: Domain
+                       is_binary_training=False  # type: bool
+                       ):
+        # type: (...) -> List[Dict[Text, float]]
         """Create states: a list of dictionaries.
             If use_intent_probabilities is False (default behaviour),
             pick the most probable intent out of all provided ones and
             set its probability to 1.0, while all the others to 0.0."""
         states = domain.states_for_tracker_history(tracker)
 
-        if not self.use_intent_probabilities:
+        # during training we encounter only 1 or 0
+        if not self.use_intent_probabilities and not is_binary_training:
             bin_states = []
             for state in states:
                 # copy state dict to preserve internal order of keys
@@ -314,9 +320,14 @@ class TrackerFeaturizer(object):
         return states
 
     def _pad_states(self, states):
+        # type: (List[Any]) -> List[Any]
         return states
 
-    def _featurize_states(self, trackers_as_states):
+    def _featurize_states(
+            self,
+            trackers_as_states  # type: List[List[Dict[Text, float]]]
+    ):
+        # type: (...) -> Tuple[np.ndarray, List[int]]
         """Create X"""
         features = []
         true_lengths = []
@@ -341,7 +352,12 @@ class TrackerFeaturizer(object):
 
         return X, true_lengths
 
-    def _featurize_labels(self, trackers_as_actions, domain):
+    def _featurize_labels(
+            self,
+            trackers_as_actions,  # type: List[List[Text]
+            domain  # type: Domain
+    ):
+        # type: (...) -> np.ndarray
         """Create y"""
 
         labels = []
@@ -449,7 +465,9 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
             return None
 
     def _pad_states(self, states):
-        # pad up to max_len
+        # type: (List[Any]) -> List[Any]
+        """Pads states up to max_len"""
+
         if len(states) < self.max_len:
             states += [None] * (self.max_len - len(states))
 
@@ -460,14 +478,14 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
             trackers,  # type: List[DialogueStateTracker]
             domain  # type: Domain
     ):
-        # type: (...) -> Tuple[List[List[Dict]], List[List[Dict]]]
+        # type: (...) -> Tuple[List[List[Dict]], List[List[Text]]]
 
         trackers_as_states = []
         trackers_as_actions = []
 
         pbar = tqdm(trackers, desc="Processed trackers")
         for tracker in pbar:
-            states = self._create_states(tracker, domain)
+            states = self._create_states(tracker, domain, True)
 
             delete_first_state = False
             actions = []
@@ -556,7 +574,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
             trackers,  # type: List[DialogueStateTracker]
             domain  # type: Domain
     ):
-        # type: (...) -> Tuple[List[List[Dict]], List[List[Dict]]]
+        # type: (...) -> Tuple[List[List[Dict]], List[List[Text]]]
 
         trackers_as_states = []
         trackers_as_actions = []
@@ -567,7 +585,7 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
 
         pbar = tqdm(trackers, desc="Processed trackers")
         for tracker in pbar:
-            states = self._create_states(tracker, domain)
+            states = self._create_states(tracker, domain, True)
 
             idx = 0
             for event in tracker.applied_events():
