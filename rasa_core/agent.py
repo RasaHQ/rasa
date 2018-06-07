@@ -78,8 +78,7 @@ class Agent(object):
         # ensures the domain hasn't changed between test and train
         domain.compare_with_specification(path)
         _interpreter = NaturalLanguageInterpreter.create(interpreter)
-        _tracker_store = cls.create_tracker_store(tracker_store,
-                                                  domain)
+        _tracker_store = cls.create_tracker_store(tracker_store, domain)
 
         return cls(domain, ensemble, _interpreter, _tracker_store)
 
@@ -356,13 +355,13 @@ class Agent(object):
             return domain
         else:
             raise ValueError(
-                    "Invalid param `domain`. Expected a path to a domain "
-                    "specification or a domain instance. But got "
-                    "type '{}' with value '{}'".format(type(domain), domain))
+                "Invalid param `domain`. Expected a path to a domain "
+                "specification or a domain instance. But got "
+                "type '{}' with value '{}'".format(type(domain), domain))
 
     @staticmethod
     def create_tracker_store(store, domain):
-        # type: (Optional[TrackerStore], Domain, Optional[Text]) -> TrackerStore
+        # type: (Optional[TrackerStore], Domain) -> TrackerStore
         if store is not None:
             store.domain = domain
             return store

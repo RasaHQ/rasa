@@ -10,15 +10,22 @@ import pika
 logger = logging.getLogger(__name__)
 
 
-class PikaProducer(object):
+class EventBroker(object):
+    def process(self, body):
+        # type: (Text) -> None
+        raise NotImplementedError("Event broker must implement the `process` "
+                                  "method")
+
+
+class PikaProducer(EventBroker):
     def __init__(self, host, username, password, queue='rasa_core_events'):
         self.queue = queue
         self.host = host
         self.credentials = pika.PlainCredentials(username, password)
 
-    def process(self, events):
+    def process(self, event):
         self._open_connection()
-        self._publish(events)
+        self._publish(event)
         self._close()
 
     def _open_connection(self):
@@ -34,9 +41,3 @@ class PikaProducer(object):
 
     def _close(self):
         self.connection.close()
-
-
-class PikaConsumer(object):
-    def consume(self):
-        raise NotImplementedError("Consumer must implement the `consume` "
-                                  "method.")

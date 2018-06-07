@@ -10,6 +10,7 @@ import six.moves.cPickle as pickler
 from typing import Text, Optional
 
 from rasa_core.actions.action import ACTION_LISTEN_NAME
+from rasa_core.broker import EventBroker
 from rasa_core.trackers import DialogueStateTracker, ActionExecuted
 
 logger = logging.getLogger(__name__)
@@ -17,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 class TrackerStore(object):
     def __init__(self, domain, event_broker=None):
+        # type: (Domain, Optional[EventBroker]) -> None
         self.domain = domain
         self.event_broker = event_broker
 
@@ -51,19 +53,16 @@ class TrackerStore(object):
         raise NotImplementedError()
 
     def stream_events(self, tracker):
+        # type: (DialogueStateTracker) -> None
         old_tracker = self.retrieve(tracker.sender_id)
         offset = len(old_tracker.events) if old_tracker else 0
-        new_events = [evt.as_dict() for evt in tracker.events[offset:]]
-
-        # find the timestamp of the oldest event in the list
-        timestamp = new_events[0].get("timestamp")
-
-        body = {
-            "sender_id": tracker.sender_id,
-            "events": new_events,
-            "timestamp": timestamp
-        }
-        self.event_broker.process(json.dumps(body))
+        for evt in tracker.events[offset:]:
+            body = {
+                "sender_id": tracker.sender_id,
+                "name": evt.type_name,
+                "timestamp": evt.timestamp
+            }
+            self.event_broker.process(json.dumps(body))
 
     def keys(self):
         # type: (Text) -> List[Text]
@@ -90,7 +89,7 @@ class InMemoryTrackerStore(TrackerStore):
         serialised = InMemoryTrackerStore.serialise_tracker(tracker)
         self.store[tracker.sender_id] = serialised
         if self.event_broker:
-            self._stream_events(tracker)
+            self.stream_events(tracker)
 
     def retrieve(self, sender_id):
         if sender_id in self.store:
