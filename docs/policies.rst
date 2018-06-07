@@ -120,7 +120,7 @@ The method to featurize trackers is defined here:
 
 
 Keras policy
------------
+------------
 
 You can use whichever machine learning library you like to train your policy.
 One implementation that ships with Rasa is the ``KerasPolicy``,
