@@ -143,7 +143,7 @@ class Dispatcher(object):
         return template_vars
 
     def _fill_template_text(self, template, filled_slots=None, **kwargs):
-        #type: (Text, **Any) -> Dict[Text, Any]
+        # type: (Text, **Any) -> Dict[Text, Any]
         """"Combine slot values and key word arguments to fill templates."""
         # Getting the slot values in the template variables
         template_vars = self._template_variables(filled_slots, kwargs)
