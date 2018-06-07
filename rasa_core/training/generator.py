@@ -51,14 +51,20 @@ class TrackerWithCachedStates(DialogueStateTracker):
         self._states = None
         self.domain = domain
 
-    def states(self):
-        # type: () -> Tuple[frozenset, ...]
+    def past_states(self, domain):
+        # type: (Domain) -> Tuple[frozenset, ...]
         """Return the states of the tracker based on the logged events."""
+
+        # we need to make sure this is the same domain, otherwise things will
+        # go south. but really, the same tracker shouldn't be used across
+        # domains
+        assert domain == self.domain
 
         # if don't have it cached, we use the domain to calculate the states
         # from the events
         if self._states is None:
-            self._states = self._calculate_states()
+            self._states = super(TrackerWithCachedStates, self).past_states(
+                    domain)
 
         return tuple(self._states)
 
@@ -78,12 +84,6 @@ class TrackerWithCachedStates(DialogueStateTracker):
                           self.default_topic,
                           self._max_event_history,
                           self.domain)
-
-    def _calculate_states(self):
-        # type: () -> deque
-
-        generated_states = self.domain.states_for_tracker_history(self)
-        return deque((frozenset(s) for s in generated_states))
 
     def copy(self):
         # type: () -> TrackerWithCachedStates
@@ -108,7 +108,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
         # type: () -> None
 
         state = self.domain.get_active_states(self)
-        self._states.append(frozenset(state))
+        self._states.append(frozenset(state.items()))
 
     def update(self, event, skip_states=False):
         # type: (Event, bool) -> None
@@ -120,7 +120,8 @@ class TrackerWithCachedStates(DialogueStateTracker):
         if self._states is None and not skip_states:
             # rest of this function assumes we have the previous state
             # cached. let's make sure it is there.
-            self._states = self._calculate_states()
+            self._states = super(TrackerWithCachedStates, self).past_states(
+                    self.domain)
 
         super(TrackerWithCachedStates, self).update(event)
 
@@ -128,7 +129,8 @@ class TrackerWithCachedStates(DialogueStateTracker):
             if isinstance(event, ActionExecuted):
                 pass
             elif isinstance(event, ActionReverted):
-                self._states.pop()
+                self._states.pop()   # removes the state after the action
+                self._states.pop()   # removes the state used for the action
             elif isinstance(event, UserUtteranceReverted):
                 self.clear_states()
             elif isinstance(event, Restarted):
@@ -503,7 +505,7 @@ class TrainingDataGenerator(object):
         end_trackers = []  # for all steps
 
         for tracker in trackers:
-            states = tracker.states()
+            states = tracker.past_states(self.domain)
             hashed = hash(states)
 
             # only continue with trackers that created a
@@ -542,7 +544,7 @@ class TrainingDataGenerator(object):
         # otherwise featurization does a lot of unnecessary work
 
         for tracker in trackers:
-            states = tracker.states()
+            states = tracker.past_states(self.domain)
             hashed = hash(states)
 
             # only continue with trackers that created a

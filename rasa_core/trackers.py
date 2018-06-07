@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from rasa_core.actions import Action
+    from rasa_core.domain import Domain
 
 
 class DialogueStateTracker(object):
@@ -112,6 +113,13 @@ class DialogueStateTracker(object):
             "paused": self.is_paused(),
             "events": evts
         }
+
+    def past_states(self, domain):
+        # type: (Domain) -> deque
+        """Generate the past states of this tracker based on the history."""
+
+        generated_states = domain.states_for_tracker_history(self)
+        return deque((frozenset(s.items()) for s in generated_states))
 
     def current_slot_values(self):
         # type: () -> Dict[Text, Any]
