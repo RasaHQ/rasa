@@ -175,7 +175,7 @@ class Agent(object):
     def load_data(self,
                   resource_name,  # type: Text
                   remove_duplicates=True,  # type: bool
-                  unique_last_num_states=None,  # type: Optional[int]
+                  unique_last_num_states='auto',  # type: Optional[int]
                   augmentation_factor=20,  # type: int
                   max_number_of_trackers=None,  # deprecated
                   tracker_limit=None,  # type: Optional[int]
@@ -196,14 +196,15 @@ class Agent(object):
             else:
                 all_max_history_featurizers = False
 
-        if unique_last_num_states is None:
+        if unique_last_num_states == 'auto':
             # for speed up of data generation
             # automatically detect unique_last_num_states
             # if it was not set and
             # if all featurizers are MaxHistoryTrackerFeaturizer
             if all_max_history_featurizers:
                 unique_last_num_states = max_max_history
-        elif unique_last_num_states < max_max_history:
+        elif (unique_last_num_states is not None and
+              unique_last_num_states < max_max_history):
             # possibility of data loss
             logger.warning("unique_last_num_states={} but "
                            "maximum max_history={}."
