@@ -41,7 +41,7 @@ You can then use the loaded interpreter to parse text:
 
     interpreter.parse(u"The text I want to understand")
 
-which returns the same data as the ``/parse`` endpoint of the :ref:`section_http`_.
+which returns the same data as the ``/parse`` endpoint of the :ref:`section_http` .
 
 If multiple models are created, it is reasonable to share components between the different models. E.g.
 the ``'nlp_spacy'`` component, which is used by every pipeline that wants to have access to the spacy word vectors,
@@ -49,7 +49,7 @@ can be cached to avoid storing the large word vectors more than once in main mem
 a ``ComponentBuilder`` should be passed when loading and training models.
 
 Here is a short example on how to create a component builder,
- which can be reused to train and run multiple models.
+which can be reused to train and run multiple models.
 To train a model:
 
 .. testcode::
@@ -81,8 +81,15 @@ The same builder can be used to load a model (can be a totally different one). T
     interpreter_clone = Interpreter.load(model_directory, builder)
 
 
-.. automodule:: rasa_nlu.model
-    :members:
-    :undoc-members:
-    :show-inheritance:
+Interpreter
+^^^^^^^^^^^
+
+.. autoclass:: rasa_nlu.model.Interpreter
+
+
+   .. automethod:: load
+
+
+.. autoclass:: rasa_nlu.components.ComponentBuilder
+
 

@@ -33,6 +33,7 @@ linkcheck_timeout = 5
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.napoleon',
     'sphinx.ext.mathjax',
     'sphinx.ext.doctest',
     'sphinxcontrib.programoutput',
