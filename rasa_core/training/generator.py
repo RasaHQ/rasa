@@ -408,6 +408,8 @@ class TrainingDataGenerator(object):
             return incoming_trackers
 
     def _find_start_checkpoint_name(self, end_name):
+        """Find start checkpoint name given
+            end checkpoint name of a cycle"""
         return self.story_graph.story_end_checkpoints.get(end_name, end_name)
 
     @staticmethod
@@ -495,6 +497,7 @@ class TrainingDataGenerator(object):
 
     @staticmethod
     def _hash_states(states):
+        """Hash tracker states"""
         return hash(tuple((frozenset(s) for s in states)))
 
     def _remove_duplicate_trackers(self, trackers):
@@ -538,7 +541,13 @@ class TrainingDataGenerator(object):
 
         return unique_trackers, end_trackers
 
-    def _remove_duplicate_story_end_trackers(self, trackers):
+    def _remove_duplicate_story_end_trackers(
+            self,
+            trackers  # type: List[TrackerWithCachedStates]
+    ):
+        # type: (...) -> List[TrackerWithCachedStates]
+        """Removes trackers that reached story end and
+            created equal featurizations."""
 
         # collected trackers that created different featurizations
         unique_trackers = []  # for all steps
