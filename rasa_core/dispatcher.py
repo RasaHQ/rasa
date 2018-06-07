@@ -132,8 +132,8 @@ class Dispatcher(object):
         self.utter_response(message)
 
     @staticmethod
-    def _template_variables(filled_slots, **kwargs):
-        # type: (Text) -> List
+    def _template_variables(filled_slots, kwargs):
+        # type: (**Any) -> List
         """Fill in slots in the template variables."""
         if filled_slots is None:
             filled_slots = {}
