@@ -130,21 +130,21 @@ class Component(object):
 
     Components are collected sequentially in a pipeline. Each component
     is called one after another. This holds for
-     initialization, training, persisting and loading the components.
-     If a component comes first in a pipeline, its
-     methods will be called first.
+    initialization, training, persisting and loading the components.
+    If a component comes first in a pipeline, its
+    methods will be called first.
 
     E.g. to process an incoming message, the `process` method of
     each component will be called. During the processing
-     (as well as the training, persisting and initialization)
-     components can pass information to other components.
-     The information is passed to other components by providing
-     attributes to the so called pipeline context. The
-     pipeline context contains all the information of the previous
-     components a component can use to do its own
-     processing. For example, a featurizer component can provide
-     features that are used by another component down
-     the pipeline to do intent classification."""
+    (as well as the training, persisting and initialization)
+    components can pass information to other components.
+    The information is passed to other components by providing
+    attributes to the so called pipeline context. The
+    pipeline context contains all the information of the previous
+    components a component can use to do its own
+    processing. For example, a featurizer component can provide
+    features that are used by another component down
+    the pipeline to do intent classification."""
 
     # Name of the component to be used when integrating it in a
     # pipeline. E.g. `[ComponentA, ComponentB]`
@@ -392,8 +392,17 @@ class ComponentBuilder(object):
                        model_metadata,
                        **context):
         # type: (Text, Text, Metadata, **Any) -> Component
-        """Tries to retrieve a component from the cache, calls
-        `load` to create a new component."""
+        """Tries to retrieve a component from the cache, else calls
+        ``load`` to create a new component.
+
+        Args:
+            component_name (str): the name of the component to load
+            model_dir (str): the directory to read the model from
+            model_metadata (Metadata): the model's :class:`rasa_nlu.models.Metadata`
+
+        Returns:
+            Component: the loaded component.
+        """
         from rasa_nlu import registry
         from rasa_nlu.model import Metadata
 

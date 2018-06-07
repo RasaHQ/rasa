@@ -33,7 +33,7 @@ You can see independent benchmarks comparing Rasa NLU to various closed source t
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Getting Started
    :hidden:
 
@@ -67,7 +67,7 @@ You can see independent benchmarks comparing Rasa NLU to various closed source t
    docker
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :hidden:
    :caption: Developer Documentation
 

@@ -17,3 +17,27 @@ containing a ``SentimentAnalyzer`` class:
 
 Also be sure to read the section on the `:ref:section_component_lifecycle`_.
 
+
+
+Component
+^^^^^^^^^
+
+.. autoclass:: rasa_nlu.components.Component
+
+   .. automethod:: required_packages
+
+   .. automethod:: create
+
+   .. automethod:: provide_context
+
+   .. automethod:: train
+
+   .. automethod:: process
+
+   .. automethod:: persist
+
+   .. automethod:: prepare_partial_processing
+
+   .. automethod:: partially_process
+
+   .. automethod:: can_handle_language

@@ -60,7 +60,14 @@ class Metadata(object):
     @staticmethod
     def load(model_dir):
         # type: (Text) -> 'Metadata'
-        """Loads the metadata from a models directory."""
+        """
+        Loads the metadata from a models directory.
+
+        Args:
+            model_dir (str): the directory where the model is saved.
+        Returns:
+            Metadata: A metadata object describing the model
+        """
         try:
             metadata_file = os.path.join(model_dir, 'metadata.json')
             data = utils.read_json_file(metadata_file)

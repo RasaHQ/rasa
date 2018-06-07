@@ -2,6 +2,10 @@
 
 Pipeline and Component Configuration
 ====================================
+
+.. contents::
+
+
 The process of incoming messages is split into different components. These components are executed one after another
 in a so called processing pipeline. There are components for entity extraction, for intent classification,
 pre-processing and there will be many more in the future.

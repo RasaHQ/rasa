@@ -43,6 +43,9 @@ You can then use the loaded interpreter to parse text:
 
 which returns the same data as the ``/parse`` endpoint of the :ref:`section_http` .
 
+Reducing Memory Use When Loading Multiple Models
+------------------------------------------------
+
 If multiple models are created, it is reasonable to share components between the different models. E.g.
 the ``'nlp_spacy'`` component, which is used by every pipeline that wants to have access to the spacy word vectors,
 can be cached to avoid storing the large word vectors more than once in main memory. To use the caching,
@@ -80,6 +83,21 @@ The same builder can be used to load a model (can be a totally different one). T
     # the clone will share resources with the first model, as long as the same builder is passed!
     interpreter_clone = Interpreter.load(model_directory, builder)
 
+Important Classes
+-----------------
+
+Config
+^^^^^^
+
+.. automodule:: rasa_nlu.config
+
+   .. autofunction:: load
+
+
+.. autoclass:: rasa_nlu.config.RasaNLUModelConfig
+
+   .. automethod:: __init__
+
 
 Interpreter
 ^^^^^^^^^^^
@@ -89,7 +107,24 @@ Interpreter
 
    .. automethod:: load
 
+Metadata
+^^^^^^^^
+
+.. autoclass:: rasa_nlu.model.Metadata
+
+
+   .. automethod:: load
+
+
+
+
+ComponentBuilder
+^^^^^^^^^^^^^^^^
 
 .. autoclass:: rasa_nlu.components.ComponentBuilder
+
+
+   .. automethod:: load_component
+
 
 
