@@ -18,9 +18,15 @@ Changed
 Removed
 -------
 
+[0.9.4] - 2018-06-07
+^^^^^^^^^^^^^^^^^^^^
+
 Fixed
 -----
 - fixed evaluation script
+- fixed story file loading (previously some story files with checkpoints could
+  create wrong training data)
+- improved speed of data loading
 
 [0.9.3] - 2018-05-30
 ^^^^^^^^^^^^^^^^^^^^
