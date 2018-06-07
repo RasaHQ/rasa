@@ -76,8 +76,9 @@ def create_argument_parser():
             '--debug_plots',
             default=False,
             action='store_true',
-            help="flag if to create plot for checkpoints"
-                 "between story blocks")
+            help="If enabled, will create plots showing checkpoints "
+                 "and their connections between story blocks. "
+                 "Filename: `story_blocks_connections.pdf`.")
 
     utils.add_logging_option_arguments(parser)
     return parser
