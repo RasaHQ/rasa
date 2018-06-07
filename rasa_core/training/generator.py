@@ -410,7 +410,7 @@ class TrainingDataGenerator(object):
 
         return next_active_trackers
 
-    def _create_start_trackers_for_augmentation(self, finished_trackers):
+    def _create_start_trackers_for_augmentation(self, story_end_trackers):
         """This is where the augmentation magic happens.
 
             We will reuse all the trackers that reached the
@@ -426,7 +426,7 @@ class TrainingDataGenerator(object):
 
         if self.config.use_story_concatenation:
             ending_trackers = utils.subsample_array(
-                    finished_trackers,
+                    story_end_trackers,
                     self.config.augmentation_factor,
                     rand=self.config.rand
             )
@@ -436,8 +436,12 @@ class TrainingDataGenerator(object):
                 # actions in the next phase the trackers would
                 # contain action listen followed by action listen.
                 # to fix this we are going to "undo" the last action listen
-                t.update(ActionReverted())
-                next_active_trackers[STORY_START].append(t)
+
+                # tracker should be copied,
+                # otherwise original tracker is updated
+                aug_t = t.copy()
+                aug_t.update(ActionReverted())
+                next_active_trackers[STORY_START].append(aug_t)
 
         return next_active_trackers
 
