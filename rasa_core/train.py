@@ -77,8 +77,8 @@ def create_argument_parser():
             default=False,
             action='store_true',
             help="If enabled, will create plots showing checkpoints "
-                 "and their connections between story blocks. "
-                 "Filename: `story_blocks_connections.pdf`.")
+                 "and their connections between story blocks in a  "
+                 "file called `story_blocks_connections.pdf`.")
 
     utils.add_logging_option_arguments(parser)
     return parser
