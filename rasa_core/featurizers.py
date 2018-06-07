@@ -287,7 +287,7 @@ class TrackerFeaturizer(object):
             If use_intent_probabilities is False (default behaviour),
             pick the most probable intent out of all provided ones and
             set its probability to 1.0, while all the others to 0.0."""
-        states = domain.states_for_tracker_history(tracker)
+        states = tracker.past_states(domain)
 
         # during training we encounter only 1 or 0
         if not self.use_intent_probabilities and not is_binary_training:
@@ -297,7 +297,7 @@ class TrackerFeaturizer(object):
                 bin_state = dict(state)
                 best_intent = None
                 best_intent_prob = -1.0
-                for state_name, prob in state.items():
+                for state_name, prob in state:
                     if state_name.startswith('intent_'):
                         if prob > best_intent_prob:
                             # finding the maximum confidence intent
@@ -315,9 +315,9 @@ class TrackerFeaturizer(object):
                     bin_state[best_intent] = 1.0
 
                 bin_states.append(bin_state)
-            states = bin_states
-
-        return states
+            return bin_states
+        else:
+            return [dict(state) for state in states]
 
     def _pad_states(self, states):
         # type: (List[Any]) -> List[Any]
@@ -483,9 +483,12 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         trackers_as_states = []
         trackers_as_actions = []
 
+        logger.info("Creating states and action examples from "
+                    "collected trackers ({})...".format(type(self)))
         pbar = tqdm(trackers, desc="Processed trackers")
         for tracker in pbar:
-            states = self._create_states(tracker, domain, True)
+            states = self._create_states(tracker, domain,
+                                         is_binary_training=True)
 
             delete_first_state = False
             actions = []
@@ -583,6 +586,8 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         # we only need to keep one.
         hashed_examples = set()
 
+        logger.info("Creating states and action examples from "
+                    "collected trackers ({})...".format(type(self)))
         pbar = tqdm(trackers, desc="Processed trackers")
         for tracker in pbar:
             states = self._create_states(tracker, domain, True)
