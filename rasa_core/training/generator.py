@@ -405,8 +405,8 @@ class TrainingDataGenerator(object):
 
         for start_name in unused_checkpoints:
             # process trackers ended with unused checkpoints further
-            next_active_trackers[start_name].extend(
-                    active_trackers.get(start_name, []))
+            next_active_trackers[start_name] = \
+                    active_trackers.get(start_name, [])
 
         return next_active_trackers
 
