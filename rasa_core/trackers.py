@@ -193,7 +193,7 @@ class DialogueStateTracker(object):
         from rasa_core.channels import UserMessage
 
         return DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
-                                  self.slots.values(),
+                                    self.slots.values(),
                                     self.topics,
                                     self.default_topic,
                                     self._max_event_history)
