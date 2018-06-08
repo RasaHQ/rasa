@@ -18,6 +18,7 @@ if typing.TYPE_CHECKING:
     from rasa_core.domain import Domain
 
 
+# TODO: DEPRECATED - remove in version 0.10
 class AugmentedMemoizationPolicy(MemoizationPolicy):
     """The policy that remembers examples from training stories
         for up to `max_history` turns.

@@ -19,7 +19,7 @@ from rasa_core.policies.policy import Policy
 from rasa_core import utils
 from rasa_core.featurizers import \
     TrackerFeaturizer, MaxHistoryTrackerFeaturizer
-from rasa_core.events import ActionExecuted, SlotSet
+from rasa_core.events import ActionExecuted, SlotSet, UserUttered
 
 logger = logging.getLogger(__name__)
 
@@ -34,13 +34,13 @@ class MemoizationPolicy(Policy):
 
         Since `slots` that are set some time in the past are
         preserved in all future feature vectors until they are set
-        to None, this policy implicitly remembers and most importantly
-        recalls examples in the context of the current dialogue
+        to None, this policy may implicitly remember
+        examples in the context of the current dialogue
         longer than `max_history`.
 
-        If it is needed to recall turns from training dialogues where
-        some slots might not be set during prediction time, and there are
-        training stories for this, use AugmentedMemoizationPolicy.
+        In order to recall examples from training stories,
+        we use the trick similar to Back to the Future movie:
+        send a tracker to the past to change the future.
     """
 
     ENABLE_FEATURE_STRING_COMPRESSION = True
@@ -166,31 +166,29 @@ class MemoizationPolicy(Policy):
                   domain, online=True)
 
     def _back_to_the_future_again(self, tracker):
-        """Recursively send marty to the past to get
+        """Recursively send Marty to the past to get
             the new featurization for present"""
 
         idx_of_first_action = None
-        there_is_a_slot = False
-        idx_of_last_evt = len(tracker.applied_events()) - 1
-        print('----->', idx_of_last_evt)
-        for e_i, event in enumerate(tracker.applied_events()):
-            if isinstance(event, SlotSet):
-                there_is_a_slot = True
+        idx_of_second_action = None
 
-            if isinstance(event, ActionExecuted) and there_is_a_slot:
-                print('--->', e_i)
-                if e_i == idx_of_last_evt:
-                    # if arrived at the end of the tracker,
-                    # return None since there is nothing more
-                    # to forget
-                    return None
-                idx_of_first_action = e_i
-                break
-        if not there_is_a_slot or idx_of_first_action is None:
+        # we need to find second executed action and make it the first
+        for e_i, event in enumerate(tracker.applied_events()):
+
+            # find second ActionExecuted
+            if isinstance(event, ActionExecuted):
+                if idx_of_first_action is None:
+                    idx_of_first_action = e_i
+                else:
+                    idx_of_second_action = e_i
+                    break
+
+        if idx_of_second_action is None:
             return None
 
-        # need to go to event next to the first action
-        events = tracker.applied_events()[idx_of_first_action+1:]
+        events = tracker.applied_events()[idx_of_second_action:]
+        if not events:
+            return None
 
         mcfly_tracker = tracker.init_copy()
         for e in events:
@@ -198,22 +196,26 @@ class MemoizationPolicy(Policy):
 
         return mcfly_tracker
 
-    def _recall_using_delorean(self, tracker, domain):
+    def _recall_using_delorean(self, old_states, tracker, domain):
         # correctly forgetting slots
 
         logger.debug("Launch DeLorean...")
-        mcfly_tracker = tracker
+        mcfly_tracker = self._back_to_the_future_again(tracker)
         while mcfly_tracker is not None:
-            mcfly_tracker = self._back_to_the_future_again(mcfly_tracker)
-
             tracker_as_states = self.featurizer.prediction_states(
                     [mcfly_tracker], domain)
+            states = tracker_as_states[0]
 
-            for states in tracker_as_states:
+            if old_states != states:
+                # check if we like new future
                 logger.debug("Current tracker state {}".format(states))
                 memorised = self._recall_states(states)
                 if memorised is not None:
                     return memorised
+                old_states = states
+
+            # go back again
+            mcfly_tracker = self._back_to_the_future_again(mcfly_tracker)
 
         # No match found
         return None
@@ -238,7 +240,7 @@ class MemoizationPolicy(Policy):
         recalled = self._recall_states(states)
         if recalled is None:
             # let's try a different method to recall that tracker
-            return self._recall_using_delorean(tracker, domain)
+            return self._recall_using_delorean(states, tracker, domain)
         else:
             return recalled
 
