@@ -209,7 +209,6 @@ class MemoizationPolicy(Policy):
                 if memorised is not None:
                     return memorised
 
-
         # No match found
         return None
 
