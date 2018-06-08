@@ -24,6 +24,12 @@ from rasa_core.tracker_store import TrackerStore
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.version import __version__
 
+from typing import Union
+import typing
+
+if typing.TYPE_CHECKING:
+    from rasa_core.interpreter import NaturalLanguageInterpreter as NLI
+
 logger = logging.getLogger(__name__)
 
 
@@ -129,7 +135,7 @@ def requires_auth(token=None):
 
 def _create_agent(
         model_directory,  # type: Text
-        interpreter,  # type: Union[Text, NaturalLanguageInterpreter]
+        interpreter,  # type: Union[Text,NLI,None]
         action_factory=None,  # type: Optional[Text]
         tracker_store=None  # type: Optional[TrackerStore]
 ):
@@ -146,25 +152,24 @@ def _create_agent(
         return None
 
 
-def create_app(model_directory,
-               interpreter=None,
-               loglevel="INFO",
-               logfile="rasa_core.log",
-               cors_origins=None,
-               action_factory=None,
-               auth_token=None,
-               tracker_store=None
+def create_app(model_directory,  # type: Text
+               interpreter=None,  # type: Union[Text, NLI, None]
+               loglevel="INFO",  # type: Optional[Text]
+               logfile="rasa_core.log",  # type: Optional[Text]
+               cors_origins=None,  # type: Optional[List[Text]]
+               action_factory=None,  # type: Optional[Text]
+               auth_token=None,  # type: Optional[Text]
+               tracker_store=None  # type: Optional[TrackerStore]
                ):
     """Class representing a Rasa Core HTTP server."""
 
     app = Flask(__name__)
     CORS(app, resources={r"/*": {"origins": "*"}})
-
+    # Setting up logfile
     utils.configure_file_logging(loglevel, logfile)
 
     if not cors_origins:
         cors_origins = []
-
     model_directory = model_directory
 
     interpreter = interpreter
@@ -190,6 +195,15 @@ def create_app(model_directory,
         """Check if the server is running and responds with the version."""
         return "hello from Rasa Core: " + __version__
 
+    @app.route("/version",
+               methods=['GET', 'OPTIONS'])
+    @cross_origin(origins=cors_origins)
+    def version():
+        """respond with the version number of the installed rasa core."""
+
+        return jsonify({'version': __version__})
+
+    # <sender_id> can be be 'default' if there's only 1 client
     @app.route("/conversations/<sender_id>/continue",
                methods=['POST', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
@@ -228,6 +242,7 @@ def create_app(model_directory,
     @app.route("/conversations/<sender_id>/tracker/events",
                methods=['POST', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
+    @requires_auth(auth_token)
     @ensure_loaded_agent(agent)
     def append_events(sender_id):
         """Append a list of events to the state of a conversation"""
@@ -243,6 +258,7 @@ def create_app(model_directory,
     @app.route("/conversations",
                methods=['GET', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
+    @requires_auth(auth_token)
     @ensure_loaded_agent(agent)
     def list_trackers():
         return jsonify(list(agent().tracker_store.keys()))
@@ -250,6 +266,7 @@ def create_app(model_directory,
     @app.route("/conversations/<sender_id>/tracker",
                methods=['GET', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
+    @requires_auth(auth_token)
     @ensure_loaded_agent(agent)
     def retrieve_tracker(sender_id):
         """Get a dump of a conversations tracker including its events."""
@@ -273,6 +290,7 @@ def create_app(model_directory,
     @app.route("/conversations/<sender_id>/tracker",
                methods=['PUT', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
+    @requires_auth(auth_token)
     @ensure_loaded_agent(agent)
     def update_tracker(sender_id):
         """Use a list of events to set a conversations tracker to a state."""
@@ -306,8 +324,10 @@ def create_app(model_directory,
                     mimetype="application/json")
 
         try:
+            # Fetches the predicted action in a json format
             response = agent().start_message_handling(message, sender_id)
             return jsonify(response)
+
         except Exception as e:
             logger.exception("Caught an exception during parse.")
             return Response(jsonify(error="Server failure. Error: {}"
@@ -334,7 +354,9 @@ def create_app(model_directory,
                             mimetype="application/json")
 
         try:
+            # Set the output channel
             out = CollectingOutputChannel()
+            # Fetches the appropriate bot response in a json format
             responses = agent().handle_message(message,
                                                output_channel=out,
                                                sender_id=sender_id)
@@ -348,6 +370,7 @@ def create_app(model_directory,
                             content_type="application/json")
 
     @app.route("/load", methods=['POST', 'OPTIONS'])
+    @requires_auth(auth_token)
     @cross_origin(origins=cors_origins)
     def load_model():
         """Loads a zipped model, replacing the existing one."""
@@ -377,14 +400,6 @@ def create_app(model_directory,
         logger.debug("Finished loading new agent.")
         return jsonify({'success': 1})
 
-    @app.route("/version",
-               methods=['GET', 'OPTIONS'])
-    @cross_origin(origins=cors_origins)
-    def version():
-        """respond with the version number of the installed rasa core."""
-
-        return jsonify({'version': __version__})
-
     return app
 
 
@@ -393,8 +408,10 @@ if __name__ == '__main__':
     arg_parser = create_argument_parser()
     cmdline_args = arg_parser.parse_args()
 
+    # Setting up the color scheme of logger
     utils.configure_colored_logging(cmdline_args.loglevel)
 
+    # Setting up the rasa_core application framework
     app = create_app(cmdline_args.core,
                      cmdline_args.nlu,
                      cmdline_args.loglevel,
@@ -404,6 +421,8 @@ if __name__ == '__main__':
 
     logger.info("Started http server on port %s" % cmdline_args.port)
 
+    # Running the server at 'this' address with the
+    # rasa_core application framework
     http_server = WSGIServer(('0.0.0.0', cmdline_args.port), app)
     logger.info("Up and running")
     try:

@@ -19,7 +19,8 @@ from rasa_core.events import (
     ActionExecuted, UserUttered, Event, SlotSet)
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.training.structures import (
-    Checkpoint, STORY_START, StoryStep)
+    Checkpoint, STORY_START, StoryStep,
+    GENERATED_CHECKPOINT_PREFIX, GENERATED_HASH_LENGTH)
 
 logger = logging.getLogger(__name__)
 
@@ -80,8 +81,9 @@ class StoryStepBuilder(object):
             # user can use the express the same thing
             # we need to copy the blocks and create one
             # copy for each possible message
-            generated_checkpoint = utils.generate_id("GENERATED_M_",
-                                                     max_chars=5)
+            prefix = GENERATED_CHECKPOINT_PREFIX + "OR_"
+            generated_checkpoint = utils.generate_id(prefix,
+                                                     GENERATED_HASH_LENGTH)
             updated_steps = []
             for t in self.current_steps:
                 for m in messages:
@@ -225,7 +227,7 @@ class StoryFileReader(object):
                         "-"):  # reached a slot, event, or executed action
                     event_name, parameters = self._parse_event_line(line[1:])
                     self.add_event(event_name, parameters)
-                elif line.startswith("*"):  # reached a user messageasked_hsn
+                elif line.startswith("*"):  # reached a user message
                     user_messages = [el.strip() for el in
                                      line[1:].split(" OR ")]
                     self.add_user_messages(user_messages, line_num)

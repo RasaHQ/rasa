@@ -17,9 +17,26 @@ Changed
 
 Removed
 -------
+- removed support for topics
 
 Fixed
 -----
+- fixed evaluation script
+
+[0.9.3] - 2018-05-30
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- added token auth to all endpoints of the core server
+
+
+[0.9.2] - 2018-05-30
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fix handling of max_history parameter in AugmentedMemoizationPolicy
 
 [0.9.1] - 2018-05-29
 ^^^^^^^^^^^^^^^^^^^^

@@ -27,9 +27,7 @@ class TrackerStore(object):
 
     def init_tracker(self, sender_id):
         return DialogueStateTracker(sender_id,
-                                    self.domain.slots,
-                                    self.domain.topics,
-                                    self.domain.default_topic)
+                                    self.domain.slots)
 
     def create_tracker(self, sender_id, append_action_listen=True):
         """Creates a new tracker for the sender_id.

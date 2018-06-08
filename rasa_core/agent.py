@@ -32,8 +32,9 @@ if typing.TYPE_CHECKING:
 class Agent(object):
     """Public interface for common things to do.
 
-     This includes e.g. train an assistant, or handle messages
-     with an assistant."""
+     This includes e.g. train an assistant (online or offline mode),
+     handle messages with an assistant, load a dialogue model,
+     get the next action, handle channel or toggle memoization"""
 
     def __init__(
             self,
@@ -42,6 +43,7 @@ class Agent(object):
             interpreter=None,  # type: Union[NLI, Text, None]
             tracker_store=None  # type: Optional[TrackerStore]
     ):
+        # Initializing variables with the passed parameters.
         self.domain = self._create_domain(domain)
         self.policy_ensemble = self._create_ensemble(policies)
         self.interpreter = NaturalLanguageInterpreter.create(interpreter)
@@ -108,7 +110,8 @@ class Agent(object):
             [u'how can I help you?']
 
         """
-
+        # Creates a new processor for the agent and handles
+        # the single message
         processor = self._create_processor(message_preprocessor)
         return processor.handle_message(
                 UserMessage(text_message, output_channel, sender_id))
@@ -121,6 +124,8 @@ class Agent(object):
         # type: (...) -> Dict[Text, Any]
         """Start to process a messages, returning the next action to take. """
 
+        # Creates a new processor for the agent and starts the
+        # message handling
         processor = self._create_processor()
         return processor.start_message_handling(
                 UserMessage(text_message, None, sender_id))
@@ -136,6 +141,8 @@ class Agent(object):
 
         Predicts the next action to take by the caller"""
 
+        # Creates a new processor for the agent and countinues
+        # message handling
         processor = self._create_processor()
         return processor.continue_message_handling(sender_id,
                                                    executed_action,
@@ -175,17 +182,49 @@ class Agent(object):
     def load_data(self,
                   resource_name,  # type: Text
                   remove_duplicates=True,  # type: bool
+                  unique_last_num_states=None,  # type: Optional[int]
                   augmentation_factor=20,  # type: int
-                  max_number_of_trackers=2000,  # type: Optional[int]
+                  max_number_of_trackers=None,  # deprecated
                   tracker_limit=None,  # type: Optional[int]
-                  use_story_concatenation=True  # type: bool
+                  use_story_concatenation=True,  # type: bool
+                  debug_plots=False  # type: bool
                   ):
         # type: (...) -> List[DialogueStateTracker]
         """Load training data from a resource."""
 
-        return training.load_data(resource_name, self.domain, remove_duplicates,
+        # find maximum max_history
+        # and if all featurizers are MaxHistoryTrackerFeaturizer
+        max_max_history = 0
+        all_max_history_featurizers = True
+        for policy in self.policy_ensemble.policies:
+            if hasattr(policy.featurizer, 'max_history'):
+                max_max_history = max(policy.featurizer.max_history,
+                                      max_max_history)
+            else:
+                all_max_history_featurizers = False
+
+        if unique_last_num_states is None:
+            # for speed up of data generation
+            # automatically detect unique_last_num_states
+            # if it was not set and
+            # if all featurizers are MaxHistoryTrackerFeaturizer
+            if all_max_history_featurizers:
+                unique_last_num_states = max_max_history
+        elif unique_last_num_states < max_max_history:
+            # possibility of data loss
+            logger.warning("unique_last_num_states={} but "
+                           "maximum max_history={}."
+                           "Possibility of data loss. "
+                           "It is recommended to set "
+                           "unique_last_num_states to "
+                           "at least maximum max_history."
+                           "".format(unique_last_num_states, max_max_history))
+
+        return training.load_data(resource_name, self.domain,
+                                  remove_duplicates, unique_last_num_states,
                                   augmentation_factor, max_number_of_trackers,
-                                  tracker_limit, use_story_concatenation)
+                                  tracker_limit, use_story_concatenation,
+                                  debug_plots)
 
     def train(self,
               training_trackers,  # type: List[DialogueStateTracker]
@@ -331,7 +370,8 @@ class Agent(object):
     def _create_processor(self, preprocessor=None):
         # type: (Optional[Callable[[Text], Text]]) -> MessageProcessor
         """Instantiates a processor based on the set state of the agent."""
-
+        # Checks that the interpreter and tracker store are set and
+        # creates a processor
         self._ensure_agent_is_prepared()
         return MessageProcessor(
                 self.interpreter, self.policy_ensemble, self.domain,
@@ -362,9 +402,9 @@ class Agent(object):
 
     @staticmethod
     def _create_interpreter(
-            interp  # type: Union[Text, NaturalLanguageInterpreter, None]
+            interp  # type: Union[Text, NLI, None]
     ):
-        # type: (...) -> NaturalLanguageInterpreter
+        # type: (...) -> NLI
         return NaturalLanguageInterpreter.create(interp)
 
     @staticmethod
