@@ -589,7 +589,8 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         hashed_examples = set()
 
         logger.info("Creating states and action examples from "
-                    "collected trackers ({})...".format(type(self)))
+                    "collected trackers (by {})..."
+                    "".format(type(self).__name__))
         pbar = tqdm(trackers, desc="Processed trackers")
         for tracker in pbar:
             states = self._create_states(tracker, domain, True)
