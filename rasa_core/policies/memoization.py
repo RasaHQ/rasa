@@ -48,8 +48,8 @@ class MemoizationPolicy(Policy):
 
     USE_NLU_CONFIDENCE_AS_SCORE = False
 
-    @classmethod
-    def _standard_featurizer(cls, max_history=None):
+    @staticmethod
+    def _standard_featurizer(max_history=None):
         # Memoization policy always uses MaxHistoryTrackerFeaturizer
         # without state_featurizer
         return MaxHistoryTrackerFeaturizer(state_featurizer=None,
