@@ -1,6 +1,6 @@
 
-The Rasa dialogue engine
-========================
+The Rasa Core dialogue engine
+=============================
 
 .. note::
    This is the documentation for version |release| of Rasa Core. Make sure you select
@@ -41,6 +41,7 @@ Welcome to the Rasa Documentation!
 
 .. toctree::
    :maxdepth: 1
+   :hidden:
    :caption: Getting Started
 
    motivation
@@ -49,6 +50,7 @@ Welcome to the Rasa Documentation!
 
 .. toctree::
    :maxdepth: 1
+   :hidden:
    :caption: Tutorials
 
    tutorial_basics
@@ -58,6 +60,7 @@ Welcome to the Rasa Documentation!
 
 .. toctree::
    :maxdepth: 1
+   :hidden:
    :caption: Deep Dives
 
    domains
@@ -70,6 +73,7 @@ Welcome to the Rasa Documentation!
 
 .. toctree::
    :maxdepth: 1
+   :hidden:
    :caption: Python API
 
    api/agent
@@ -78,6 +82,7 @@ Welcome to the Rasa Documentation!
 
 .. toctree::
    :maxdepth: 1
+   :hidden:
    :caption: Developer Documentation
 
    featurisation

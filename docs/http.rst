@@ -10,6 +10,8 @@ HTTP server
     execution! See :ref:`tutorial_basics` for an introduction.
 
 
+.. contents::
+
 The HTTP api exists to make it easy for non-python projects to use Rasa Core.
 
 Overview
