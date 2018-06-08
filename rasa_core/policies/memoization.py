@@ -19,6 +19,7 @@ from rasa_core.policies.policy import Policy
 from rasa_core import utils
 from rasa_core.featurizers import \
     TrackerFeaturizer, MaxHistoryTrackerFeaturizer
+from rasa_core.events import ActionExecuted
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +83,7 @@ class MemoizationPolicy(Policy):
         """Helper method to preprocess tracker's states.
             E.g., to a create list of states with deleted history
             for augmented Memoization"""
+        # TODO: DEPRECATED - remove in version 0.10
         return [states]
 
     def _add(self, trackers_as_states, trackers_as_actions,
@@ -164,6 +166,54 @@ class MemoizationPolicy(Policy):
         self._add(trackers_as_states, trackers_as_actions,
                   domain, online=True)
 
+    def _back_to_the_future_again(self, tracker):
+        """Recursively send marty to the past to get
+            the new featurization for present"""
+
+        idx_of_first_action = 0
+        idx_of_last_evt = len(tracker.applied_events()) - 1
+
+        for e_i, event in enumerate(tracker.applied_events()):
+
+            if isinstance(event, ActionExecuted):
+                if e_i == idx_of_last_evt:
+                    # if arrived at the end of the tracker,
+                    # return None since there is nothing more
+                    # to forget
+                    return None
+                idx_of_first_action = e_i
+                break
+
+        # need to go to event next to the first action
+        events = tracker.applied_events()[idx_of_first_action+1:]
+
+        mcfly_tracker = tracker.init_copy()
+        for e in events:
+            mcfly_tracker.update(e)
+
+        return mcfly_tracker
+
+    def _recall_using_delorean(self, tracker, domain):
+        # correctly forgetting slots
+
+        logger.debug("Launch DeLorean...")
+        mcfly_tracker = tracker
+        while mcfly_tracker is not None:
+            mcfly_tracker = self._back_to_the_future_again(mcfly_tracker)
+
+            tracker_as_states = self.featurizer.prediction_states(
+                    [mcfly_tracker], domain)
+
+            for states in tracker_as_states:
+                logger.debug("Current tracker state {}".format(states))
+                memorised = self._recall_states(states)
+                if memorised is not None:
+                    return memorised
+
+
+        # No match found
+        return None
+
     def _recall_states(self, states):
         # type: (List[Dict[Text, float]]) -> Optional[int]
 
@@ -181,7 +231,12 @@ class MemoizationPolicy(Policy):
                ):
         # type: (...) -> Optional[int]
 
-        return self._recall_states(states)
+        recalled = self._recall_states(states)
+        if recalled is None:
+            # let's try a different method to recall that tracker
+            return self._recall_using_delorean(tracker, domain)
+        else:
+            return recalled
 
     def predict_action_probabilities(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> List[float]
