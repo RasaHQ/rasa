@@ -40,6 +40,10 @@ class FallbackPolicy(Policy):
           name of the action to execute as a fallback.
     """
 
+    @classmethod
+    def _standard_featurizer(cls):
+        return None
+
     def __init__(self,
                  nlu_threshold=0.3,  # type: float
                  core_threshold=0.3,  # type: float
@@ -47,13 +51,11 @@ class FallbackPolicy(Policy):
                  ):
         # type: (...) -> None
 
+        super(FallbackPolicy, self).__init__()
+
         self.nlu_threshold = nlu_threshold
         self.core_threshold = core_threshold
         self.fallback_action_name = fallback_action_name
-
-    @property
-    def featurizer(self):
-        return None
 
     def train(self,
               training_trackers,  # type: List[DialogueStateTracker]
