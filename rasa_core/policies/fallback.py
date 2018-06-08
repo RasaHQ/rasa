@@ -46,7 +46,6 @@ class FallbackPolicy(Policy):
                  fallback_action_name="action_listen"  # type: Text
                  ):
         # type: (...) -> None
-        super(FallbackPolicy, self).__init__()
 
         self.nlu_threshold = nlu_threshold
         self.core_threshold = core_threshold
