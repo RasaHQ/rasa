@@ -172,7 +172,7 @@ class MemoizationPolicy(Policy):
         idx_of_first_action = None
         idx_of_second_action = None
 
-        # we need to find second executed action and make it the first
+        # we need to find second executed action
         for e_i, event in enumerate(tracker.applied_events()):
 
             # find second ActionExecuted
@@ -185,7 +185,7 @@ class MemoizationPolicy(Policy):
 
         if idx_of_second_action is None:
             return None
-
+        # make second ActionExecuted the first one
         events = tracker.applied_events()[idx_of_second_action:]
         if not events:
             return None
@@ -207,7 +207,7 @@ class MemoizationPolicy(Policy):
             states = tracker_as_states[0]
 
             if old_states != states:
-                # check if we like new future
+                # check if we like new futures
                 logger.debug("Current tracker state {}".format(states))
                 memorised = self._recall_states(states)
                 if memorised is not None:
