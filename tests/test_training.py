@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.train import train_dialogue_model
+from rasa_core.agent import Agent
 
 from rasa_core.training.dsl import StoryFileReader
 from rasa_core.training.visualization import visualize_stories
@@ -51,3 +52,31 @@ def test_training_script(tmpdir):
                          nlu_model_path=None,
                          kwargs={})
     assert True
+
+
+def test_training_script_without_max_history_set(tmpdir):
+    train_dialogue_model(DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
+                         tmpdir.strpath,
+                         use_online_learning=False,
+                         nlu_model_path=None,
+                         max_history=None,
+                         kwargs={})
+    agent = Agent.load(tmpdir.strpath)
+    for policy in agent.policy_ensemble.policies:
+        if hasattr(policy.featurizer, 'max_history'):
+            assert policy.featurizer.max_history == \
+                   policy.featurizer.MAX_HISTORY_DEFAULT
+
+
+def test_training_script_with_max_history_set(tmpdir):
+    max_history = 3
+    train_dialogue_model(DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE,
+                         tmpdir.strpath,
+                         use_online_learning=False,
+                         nlu_model_path=None,
+                         max_history=max_history,
+                         kwargs={})
+    agent = Agent.load(tmpdir.strpath)
+    for policy in agent.policy_ensemble.policies:
+        if hasattr(policy.featurizer, 'max_history'):
+            assert policy.featurizer.max_history == max_history

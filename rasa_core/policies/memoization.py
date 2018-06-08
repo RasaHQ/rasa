@@ -51,7 +51,6 @@ class MemoizationPolicy(Policy):
 
     @classmethod
     def _standard_featurizer(cls, max_history=None):
-        max_history = max_history or cls.MAX_HISTORY_DEFAULT
         # Memoization policy always uses MaxHistoryTrackerFeaturizer
         # without state_featurizer
         return MaxHistoryTrackerFeaturizer(state_featurizer=None,

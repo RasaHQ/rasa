@@ -12,6 +12,8 @@ from rasa_core import utils
 from rasa_core.agent import Agent
 from rasa_core.channels.console import ConsoleInputChannel
 from rasa_core.interpreter import RasaNLUInterpreter, RegexInterpreter
+from rasa_core.featurizers import \
+    MaxHistoryTrackerFeaturizer, BinarySingleStateFeaturizer
 from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.memoization import MemoizationPolicy
 
@@ -94,7 +96,8 @@ def train_dialogue_model(domain_file, stories_file, output_path,
 
     agent = Agent(domain_file, policies=[
         MemoizationPolicy(max_history=max_history),
-        KerasPolicy()])
+        KerasPolicy(MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
+                                                max_history=max_history))])
 
     data_load_args, kwargs = utils.extract_args(kwargs,
                                                 {"use_story_concatenation",
