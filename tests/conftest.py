@@ -86,5 +86,5 @@ def trained_moodbot_path():
     train.train_dialogue_model("examples/moodbot/domain.yml",
                                "examples/moodbot/data/stories.md",
                                model_path,
-                               False, None, {})
+                               False, None, None, {})
     return model_path

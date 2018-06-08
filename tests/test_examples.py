@@ -32,7 +32,7 @@ def test_remote_example():
     train.train_dialogue_model("examples/remotebot/concert_domain_remote.yml",
                                "examples/remotebot/data/stories.md",
                                "examples/remotebot/models/dialogue",
-                               False, None, {})
+                               False, None, None, {})
     agent = run.main("examples/remotebot/models/dialogue")
 
     response = agent.start_message_handling("/search_venues")
