@@ -3,6 +3,7 @@
 HTTP API
 ========
 
+.. contents::
 
 Endpoints
 ---------

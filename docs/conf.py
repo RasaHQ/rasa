@@ -134,6 +134,7 @@ html_theme_options = {
     'github_user': 'RasaHQ',
     'github_repo': 'rasa_docs',
     'fixed_sidebar': True,
+    'product': "NLU"
 }
 #html_theme_options = {}
 

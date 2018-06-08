@@ -134,7 +134,7 @@ class Component(object):
     If a component comes first in a pipeline, its
     methods will be called first.
 
-    E.g. to process an incoming message, the `process` method of
+    E.g. to process an incoming message, the ``process`` method of
     each component will be called. During the processing
     (as well as the training, persisting and initialization)
     components can pass information to other components.
@@ -147,8 +147,8 @@ class Component(object):
     the pipeline to do intent classification."""
 
     # Name of the component to be used when integrating it in a
-    # pipeline. E.g. `[ComponentA, ComponentB]`
-    # will be a proper pipeline definition where `ComponentA`
+    # pipeline. E.g. ``[ComponentA, ComponentB]``
+    # will be a proper pipeline definition where ``ComponentA``
     # is the name of the first component of the pipeline.
     name = ""
 
@@ -204,7 +204,7 @@ class Component(object):
     def required_packages(cls):
         # type: () -> List[Text]
         """Specify which python packages need to be installed to use this
-        component, e.g. `["spacy"]`.
+        component, e.g. ``["spacy"]``.
 
         This list of requirements allows us to fail early during training
         if a required package is not installed."""
@@ -224,7 +224,7 @@ class Component(object):
         calling `persist`. When the pipeline gets loaded again,
         this component needs to be able to restore itself.
         Components can rely on any context attributes that are
-        created by `pipeline_init` calls to components previous
+        created by :meth:`components.Component.pipeline_init` calls to components previous
         to this one."""
         if cached_component:
             return cached_component
@@ -269,8 +269,10 @@ class Component(object):
         This is the components chance to train itself provided
         with the training data. The component can rely on
         any context attribute to be present, that gets created
-        by a call to `pipeline_init` of ANY component and
-        on any context attributes created by a call to `train`
+        by a call to :meth:`components.Component.pipeline_init` 
+        of ANY component and
+        on any context attributes created by a call to 
+        :meth:`components.Component.train`
         of components previous to this one."""
         pass
 
@@ -281,8 +283,10 @@ class Component(object):
         This is the components chance to process an incoming
         message. The component can rely on
         any context attribute to be present, that gets created
-        by a call to `pipeline_init` of ANY component and
-        on any context attributes created by a call to `process`
+        by a call to :meth:`components.Component.pipeline_init` 
+        of ANY component and
+        on any context attributes created by a call to 
+        :meth:`components.Component.process`
         of components previous to this one."""
         pass
 
