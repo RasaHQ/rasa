@@ -87,7 +87,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
         return mcfly_trackers
 
-    def _recall_using_delorean(self, states, tracker, domain):
+    def _recall_using_delorean(self, old_states, tracker, domain):
         # correctly forgetting slots
 
         logger.debug("Launch DeLorean...")
@@ -104,17 +104,3 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
         # No match found
         return None
-
-    def recall(self,
-               states,  # type: List[Dict[Text, float]]
-               tracker,  # type: DialogueStateTracker
-               domain  # type: Domain
-               ):
-        # type: (...) -> Optional[int]
-
-        recalled = self._recall_states(states)
-        if recalled is None:
-            # let's try a different method to recall that tracker
-            return self._recall_using_delorean(tracker, domain)
-        else:
-            return recalled
