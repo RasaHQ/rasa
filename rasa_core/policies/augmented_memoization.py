@@ -87,7 +87,7 @@ class AugmentedMemoizationPolicy(MemoizationPolicy):
 
         return mcfly_trackers
 
-    def _recall_using_delorean(self, tracker, domain):
+    def _recall_using_delorean(self, states, tracker, domain):
         # correctly forgetting slots
 
         logger.debug("Launch DeLorean...")

@@ -165,7 +165,8 @@ class MemoizationPolicy(Policy):
         self._add(trackers_as_states, trackers_as_actions,
                   domain, online=True)
 
-    def _back_to_the_future_again(self, tracker):
+    @staticmethod
+    def _back_to_the_future_again(tracker):
         """Recursively send Marty to the past to get
             the new featurization for present"""
 
@@ -174,7 +175,6 @@ class MemoizationPolicy(Policy):
 
         # we need to find second executed action
         for e_i, event in enumerate(tracker.applied_events()):
-
             # find second ActionExecuted
             if isinstance(event, ActionExecuted):
                 if idx_of_first_action is None:
