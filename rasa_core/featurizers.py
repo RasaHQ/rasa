@@ -18,7 +18,6 @@ from rasa_core import utils
 from rasa_core.events import ActionExecuted
 from rasa_core.training.data import DialogueTrainingData
 
-from rasa_core.policies.policy import Policy
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.domain import PREV_PREFIX
 
@@ -540,13 +539,15 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
     for prediction.
     Training data is padded up to the max_history with -1"""
 
+    MAX_HISTORY_DEFAULT = 5
+
     def __init__(self, state_featurizer=None, max_history=None,
                  remove_duplicates=True, use_intent_probabilities=False):
         # type: (Optional(SingleStateFeaturizer), int, bool, bool) -> None
         super(MaxHistoryTrackerFeaturizer, self).__init__(
                 state_featurizer, use_intent_probabilities
         )
-        self.max_history = max_history or Policy.MAX_HISTORY_DEFAULT
+        self.max_history = max_history or self.MAX_HISTORY_DEFAULT
         self.remove_duplicates = remove_duplicates
 
     @staticmethod

@@ -39,7 +39,6 @@ class FallbackPolicy(Policy):
         :param Text fallback_action_name:
           name of the action to execute as a fallback.
     """
-    MAX_HISTORY_DEFAULT = None
 
     def __init__(self,
                  nlu_threshold=0.3,  # type: float
