@@ -19,7 +19,7 @@ from rasa_core.policies.policy import Policy
 from rasa_core import utils
 from rasa_core.featurizers import \
     TrackerFeaturizer, MaxHistoryTrackerFeaturizer
-from rasa_core.events import ActionExecuted
+from rasa_core.events import ActionExecuted, SlotSet
 
 logger = logging.getLogger(__name__)
 
@@ -169,12 +169,16 @@ class MemoizationPolicy(Policy):
         """Recursively send marty to the past to get
             the new featurization for present"""
 
-        idx_of_first_action = 0
+        idx_of_first_action = None
+        there_is_a_slot = False
         idx_of_last_evt = len(tracker.applied_events()) - 1
-
+        print('----->', idx_of_last_evt)
         for e_i, event in enumerate(tracker.applied_events()):
+            if isinstance(event, SlotSet):
+                there_is_a_slot = True
 
-            if isinstance(event, ActionExecuted):
+            if isinstance(event, ActionExecuted) and there_is_a_slot:
+                print('--->', e_i)
                 if e_i == idx_of_last_evt:
                     # if arrived at the end of the tracker,
                     # return None since there is nothing more
@@ -182,6 +186,8 @@ class MemoizationPolicy(Policy):
                     return None
                 idx_of_first_action = e_i
                 break
+        if not there_is_a_slot or idx_of_first_action is None:
+            return None
 
         # need to go to event next to the first action
         events = tracker.applied_events()[idx_of_first_action+1:]
