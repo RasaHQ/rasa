@@ -132,7 +132,7 @@ html_theme = "rasabaster"
 html_theme_options = {
     'description': "Rasa",
     'github_user': 'RasaHQ',
-    'github_repo': 'rasa_docs',
+    'github_repo': 'rasa_nlu',
     'fixed_sidebar': True,
     'product': "NLU"
 }
