@@ -28,23 +28,3 @@ class Dialogue(object):
         # This function returns the dialogue and turns.
         return "Dialogue with name '{}' and turns:\n{}".format(
                 self.name, "\n\n".join(["\t{}".format(t) for t in self.events]))
-
-
-class Topic(object):
-    """topic of conversation"""
-
-    def __init__(self, name):
-        # type: Text -> None
-
-        # The parameter name sets the topic of conversation
-        # Passing None leads to 'DefaultTopic'.
-        # Similarly, passing 'question' makes a 'QuestionTopic'
-        self.name = name
-
-
-# The default topic will not carry a name nor will it overwrite the topic of
-# a dialog e.g. if an action of this default topic is executed, the previous
-# topic is kept active
-DefaultTopic = Topic(None)
-
-QuestionTopic = Topic("question")
