@@ -83,8 +83,13 @@ def default_processor(default_domain):
 @pytest.fixture(scope="session")
 def trained_moodbot_path():
     model_path = "examples/moodbot/models/dialogue"
-    train.train_dialogue_model("examples/moodbot/domain.yml",
-                               "examples/moodbot/data/stories.md",
-                               model_path,
-                               False, None, None, {})
+    train.train_dialogue_model(
+            domain_file="examples/moodbot/domain.yml",
+            stories_file="examples/moodbot/data/stories.md",
+            output_path=model_path,
+            use_online_learning=False,
+            nlu_model_path=None,
+            max_history=None,
+            kwargs=None
+    )
     return model_path
