@@ -40,8 +40,8 @@ class FallbackPolicy(Policy):
           name of the action to execute as a fallback.
     """
 
-    @classmethod
-    def _standard_featurizer(cls):
+    @staticmethod
+    def _standard_featurizer():
         return None
 
     def __init__(self,
