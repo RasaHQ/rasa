@@ -51,6 +51,10 @@ class FallbackPolicy(Policy):
         self.core_threshold = core_threshold
         self.fallback_action_name = fallback_action_name
 
+    @property
+    def featurizer(self):
+        return None
+
     def train(self,
               training_trackers,  # type: List[DialogueStateTracker]
               domain,  # type: Domain
