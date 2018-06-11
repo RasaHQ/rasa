@@ -1,7 +1,7 @@
 .. _tutorial_basics:
 
-Building a Simple Bot
-=====================
+Quickstart
+==========
 
 
 .. note::
