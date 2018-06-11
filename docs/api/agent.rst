@@ -12,7 +12,7 @@ access most of Rasa Core's functionality using a simple API.
 
 Here we go:
 
-.. automodule:: rasa_core.agent
+.. autoclass:: rasa_core.agent.Agent
     :members:
-    :undoc-members:
-    :show-inheritance:
+
+

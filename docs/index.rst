@@ -10,16 +10,21 @@ The Rasa Core dialogue engine
 Welcome to the Rasa Documentation!
 ----------------------------------
 
-*What am I looking at?*
+.. chat-bubble::
+   :text: What am I looking at?
+   :sender: user
 
-    Rasa is a framework for building conversational software:
-    Messenger/Slack bots, Alexa skills, etc. We'll abbreviate this as a **bot**
-    in this documentation. You can
 
-    - implement the actions your bot can take in python code (recommended),
-    - or use Rasa Core as a webservice (experimental, see :ref:`section_http`).
+.. chat-bubble::
+   :text: Rasa is a framework for building conversational software:
+      Messenger/Slack bots, Alexa skills, etc. We'll abbreviate this as a **bot**
+      in this documentation. 
+      Go `here <https://colab.research.google.com/github/RasaHQ/rasa_core/blob/master/getting_started.ipynb>`_ 
+      to try it out without having to install anything.
+   :sender: bot
 
-    Go `here <https://colab.research.google.com/github/RasaHQ/rasa_core/blob/master/getting_started.ipynb>`_ to try it out right away.
+
+
 
 *What's cool about it?*
 
@@ -30,6 +35,7 @@ Welcome to the Rasa Documentation!
 
     In the beginning of a project, it's indeed easier to just hard code some logic.
     Rasa helps you when you want to go past that and create a bot that can handle more complexity.
+    This `blog post <https://medium.com/rasa-blog/a-new-approach-to-conversational-software-2e64a5d05f2a>`_ explains the philosophy behind Rasa Core.
 
 *Can I see it in action?*
 
@@ -44,50 +50,45 @@ Welcome to the Rasa Documentation!
    :hidden:
    :caption: Getting Started
 
-   motivation
-   no_python
    installation
-
-.. toctree::
-   :maxdepth: 1
-   :hidden:
-   :caption: Tutorials
-
    tutorial_basics
-   tutorial_supervised
-   tutorial_interactive_learning
-   tutorial_remote
+
 
 .. toctree::
    :maxdepth: 1
    :hidden:
-   :caption: Deep Dives
+   :caption: User Guide
+
+   connectors
+   customactions
+   slots
+   debugging
+   formfilling
+   fallbacks
+   evaluation
+   faq
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+   :caption: API Reference
 
    domains
    stories
-   patterns
-   plumbing
+   slots
+   server
    http
-   connectors
-   scheduling
-
-.. toctree::
-   :maxdepth: 1
-   :hidden:
-   :caption: Python API
-
    api/agent
    api/events
    api/tracker
+   api/interpreter
+   api/policy
+   api/featurizer
 
 .. toctree::
    :maxdepth: 1
    :hidden:
    :caption: Developer Documentation
 
-   featurisation
-   interpreters
-   policies
-   state
    migrations
    changelog

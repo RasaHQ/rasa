@@ -1,7 +1,7 @@
 .. _connectors:
 
-Connecting to messaging & voice platforms
-=========================================
+Chat & Voice platforms
+======================
 
 Here's how to connect your conversational AI to the outside world.
 
@@ -28,7 +28,6 @@ If you want to connect to facebook using the run script, e.g. using
 you need to supply a ``fb_credentials.yml`` with the following content:
 
 .. literalinclude:: ../examples/moodbot/fb_credentials.yml
-   :linenos:
 
 
 Directly using python
@@ -42,7 +41,6 @@ Code to create a Messenger-compatible webserver looks like this:
 
 
 .. code-block:: python
-    :linenos:
 
     from rasa_core.channels import HttpInputChannel
     from rasa_core.channels.facebook import FacebookInput
@@ -94,7 +92,6 @@ If you want to connect to the slack input channel using the run script, e.g. usi
 you need to supply a ``slack_credentials.yml`` with the following content:
 
 .. literalinclude:: ../examples/moodbot/slack_credentials.yml
-   :linenos:
 
 
 Directly using python
@@ -108,7 +105,6 @@ Code to create a Messenger-compatible webserver looks like this:
 
 
 .. code-block:: python
-    :linenos:
 
     from rasa_core.channels import HttpInputChannel
     from rasa_core.channels.slack import SlackInput
@@ -165,7 +161,6 @@ If you want to connect to the mattermost input channel using the run script, e.g
 you need to supply a ``mattermost_credentials.yml`` with the following content:
 
 .. literalinclude:: ../examples/moodbot/mattermost_credentials.yml
-  :linenos:
 
 
 Directly using python
@@ -179,7 +174,6 @@ Code to create a Mattermost-compatible webserver looks like this:
 
 
 .. code-block:: python
-   :linenos:
 
    from rasa_core.channels import HttpInputChannel
    from rasa_core.channels.slack import MattermostInput
@@ -235,7 +229,6 @@ If you want to connect to telegram using the run script, e.g. using
 you need to supply a ``telegram_credentials.yml`` with the following content:
 
 .. literalinclude:: ../examples/moodbot/telegram_credentials.yml
-    :linenos:
 
 
 Directly using python
@@ -248,7 +241,6 @@ from your webserver creation logic.
 Code to create a Messenger-compatible webserver looks like this:
 
 .. code-block:: python
-    :linenos:
 
     from rasa_core.channels import HttpInputChannel
     from rasa_core.channels.telegram import TelegramInput
@@ -300,7 +292,6 @@ If you want to connect to the twilio input channel using the run script, e.g. us
 you need to supply a ``twilio_credentials.yml`` with the following content:
 
 .. literalinclude:: ../examples/moodbot/twilio_credentials.yml
-    :linenos:
 
 
 Directly using python
@@ -313,7 +304,6 @@ from your webserver creation logic.
 Code to create a Twilio-compatible webserver looks like this:
 
 .. code-block:: python
-    :linenos:
 
     from rasa_core.channels import HttpInputChannel
     from rasa_core.channels.twilio import TwilioInput
@@ -348,7 +338,8 @@ listen for messages on ``/app/webhook``.
 .. _ngrok:
 
 Using Ngrok For Local Testing
-=========================================
+-----------------------------
+
 You can use https://ngrok.com/ to create a local webhook from your machine that is Publicly available on the internet so you can use it with applications like Slack, Facebook, etc.
 
 The command to run a ngrok instance for port 5002 for example would be:
