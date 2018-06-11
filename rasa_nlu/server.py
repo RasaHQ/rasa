@@ -322,9 +322,11 @@ class RasaNLU(object):
 
         try:
             request.setResponseCode(200)
+
             response = yield self.data_router.start_train_process(
                     data_file, project,
                     RasaNLUModelConfig(model_config), model_name)
+
             returnValue(json_to_string({'info': 'new model trained: {}'
                                                 ''.format(response)}))
         except AlreadyTrainingError as e:
