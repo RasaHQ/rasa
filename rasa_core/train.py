@@ -93,8 +93,8 @@ def train_dialogue_model(domain_file, stories_file, output_path,
                          use_online_learning=False,
                          nlu_model_path=None,
                          max_history=None,
-                         kwargs=None,
-                         dump_flattened_stories=False):
+                         dump_flattened_stories=False,
+                         kwargs=None):
     if not kwargs:
         kwargs = {}
 
@@ -139,8 +139,7 @@ if __name__ == '__main__':
         "batch_size": cmdline_args.batch_size,
         "validation_split": cmdline_args.validation_split,
         "augmentation_factor": cmdline_args.augmentation,
-        "debug_plots": cmdline_args.debug_plots,
-        "dump_stories": cmdline_args.dump_stories
+        "debug_plots": cmdline_args.debug_plots
     }
 
     train_dialogue_model(cmdline_args.domain,
@@ -149,4 +148,5 @@ if __name__ == '__main__':
                          cmdline_args.online,
                          cmdline_args.nlu,
                          cmdline_args.history,
+                         cmdline_args.dump_stories,
                          additional_arguments)
