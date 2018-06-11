@@ -561,11 +561,11 @@ for detailed description of the configuration parameters</p>
 an algorithm will not encounter an unknown word (a word that were not seen during training).
 In order to teach an algorithm how to treat unknown words, some words in training data can be substituted by generic word <code class="docutils literal"><span class="pre">OOV_token</span></code>.
 In this case during prediction all unknown words will be treated as this generic word <code class="docutils literal"><span class="pre">OOV_token</span></code>.</p>
-<p>For example, one might create separate intent <code class="docutils literal"><span class="pre">outofscope</span></code> in the training data containing messages of different number of <code class="docutils literal"><span class="pre">OOV_token``s</span> <span class="pre">and</span>
-<span class="pre">maybe</span> <span class="pre">some</span> <span class="pre">additional</span> <span class="pre">general</span> <span class="pre">words.</span> <span class="pre">Then</span> <span class="pre">an</span> <span class="pre">algorithm</span> <span class="pre">will</span> <span class="pre">likely</span> <span class="pre">classify</span> <span class="pre">a</span> <span class="pre">message</span> <span class="pre">with</span> <span class="pre">unknown</span> <span class="pre">words</span> <span class="pre">as</span> <span class="pre">this</span> <span class="pre">intent</span> <span class="pre">``outofscope</span></code>.</p>
+<p>For example, one might create separate intent <code class="docutils literal"><span class="pre">outofscope</span></code> in the training data containing messages of different number of <code class="docutils literal"><span class="pre">OOV_token</span></code> s and
+maybe some additional general words. Then an algorithm will likely classify a message with unknown words as this intent <code class="docutils literal"><span class="pre">outofscope</span></code>.</p>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">This featurizer creates bag-of-words representation by <strong>counting</strong> words, so a number of <a href="#id2"><span class="problematic" id="id3">``</span></a>OOV_token``s might be important.</p>
+<p class="last">This featurizer creates bag-of-words representation by <strong>counting</strong> words, so a number of <code class="docutils literal"><span class="pre">OOV_token</span></code> s might be important.</p>
 </div>
 <ul class="simple">
 <li><code class="docutils literal"><span class="pre">OOV_token</span></code> set a keyword for unseen words; if training data contains <code class="docutils literal"><span class="pre">OOV_token</span></code> as words in some messages,

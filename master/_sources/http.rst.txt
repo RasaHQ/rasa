@@ -103,6 +103,10 @@ to start the training:
 
     $ curl -XPOST -H "Content-Type: application/x-yml" localhost:5000/train?project=my_project \
         -d @sample_configs/config_train_server_md.yml
+        
+.. note::
+
+    The request should always be sent as application/x-yml regardless of wether you use json or md for the data format. Do not send json as application/json for example.
 
 .. note::
 

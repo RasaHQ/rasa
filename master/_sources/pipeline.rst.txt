@@ -285,11 +285,11 @@ intent_featurizer_count_vectors
         In order to teach an algorithm how to treat unknown words, some words in training data can be substituted by generic word ``OOV_token``.
         In this case during prediction all unknown words will be treated as this generic word ``OOV_token``.
 
-        For example, one might create separate intent ``outofscope`` in the training data containing messages of different number of ``OOV_token``s and
+        For example, one might create separate intent ``outofscope`` in the training data containing messages of different number of ``OOV_token`` s and
         maybe some additional general words. Then an algorithm will likely classify a message with unknown words as this intent ``outofscope``.
 
         .. note::
-            This featurizer creates bag-of-words representation by **counting** words, so a number of ``OOV_token``s might be important.
+            This featurizer creates bag-of-words representation by **counting** words, so a number of ``OOV_token`` s might be important.
 
         - ``OOV_token`` set a keyword for unseen words; if training data contains ``OOV_token`` as words in some messages,
           during prediction the words that were not seen during training will be substituted with provided ``OOV_token``;
