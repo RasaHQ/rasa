@@ -281,9 +281,29 @@ class RasaNLU(object):
         request.setHeader('Content-Type', 'application/json')
         return json_to_string(self.data_router.get_status())
 
+    def extract_json(self, content):
+        # test if json has config structure
+        json_config = simplejson.loads(content).get("data")
+
+        # if it does then this results in correct format.
+        if json_config:
+
+            model_config = simplejson.loads(content)
+            data = json_config
+
+        # otherwise use defaults.
+        else:
+
+            model_config = self.default_model_config
+            data = content
+
+        return model_config, data
+
     def extract_data_and_config(self, request):
 
         request_content = request.content.read().decode('utf-8', 'strict')
+
+
 
         if is_yaml_request(request):
             # assumes the user submitted a model configuration with a data
@@ -297,21 +317,10 @@ class RasaNLU(object):
             # this will use the default model config the server
             # was started with
 
-            # test if json has config structure
-            json_config = simplejson.loads(request_content).get("data")
+            model_config, data = self.extract_json(request_content)
 
-            # if it does then this results in correct format.
-            if json_config:
-
-                model_config = simplejson.loads(request_content)
-                data = json_config
-
-            # otherwise use defaults.
-            else:
-
-                model_config = self.default_model_config
-                data = request_content
         else:
+
             raise Exception("Content-Type must be yml or json")
 
         return model_config, data
