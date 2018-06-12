@@ -162,14 +162,7 @@ def dump_to_data_file(data):
     return utils.create_temporary_file(data_string, "_training_data")
 
 
-def is_yaml_request(request):
-    return "yml" in next(
-            iter(request.requestHeaders.getRawHeaders("Content-Type", [])), "")
 
-
-def is_json_request(request):
-    return "json" in next(
-            iter(request.requestHeaders.getRawHeaders("Content-Type", [])), "")
 
 
 class RasaNLU(object):
@@ -303,15 +296,16 @@ class RasaNLU(object):
     def extract_data_and_config(self, request):
 
         request_content = request.content.read().decode('utf-8', 'strict')
+        content_type = self.get_request_content_type(request)
 
-        if is_yaml_request(request):
+        if 'yml' in content_type:
             # assumes the user submitted a model configuration with a data
             # parameter attached to it
 
             model_config = utils.read_yaml(request_content)
             data = model_config.get("data")
 
-        elif is_json_request(request):
+        elif 'json' in content_type:
             # If the caller just provided training data without config
             # this will use the default model config the server
             # was started with
@@ -324,11 +318,20 @@ class RasaNLU(object):
 
         return model_config, data
 
+    def get_request_content_type(self, request):
+        content_type = request.requestHeaders.getRawHeaders("Content-Type", [])
+
+        if len(content_type>1):
+            raise Exception("Only one content type is valid")
+        else:
+            return content_type
+
     @app.route("/train", methods=['POST', 'OPTIONS'])
     @requires_auth
     @check_cors
     @inlineCallbacks
     def train(self, request):
+
         # if not set will use the default project name, e.g. "default"
         project = parameter_or_default(request, "project", default=None)
         # if set will not generate a model name but use the passed one
