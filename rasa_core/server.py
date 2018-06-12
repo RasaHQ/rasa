@@ -15,7 +15,7 @@ from flask_cors import CORS, cross_origin
 from typing import Union, Text, Optional
 
 from rasa_core import events, utils
-from rasa_core.actions.action import ActionEndpointConfig
+from rasa_core.actions.action import EndpointConfig
 from rasa_core.agent import Agent
 from rasa_core.channels import CollectingOutputChannel
 from rasa_core.channels import channel
@@ -86,7 +86,7 @@ def requires_auth(token=None):
 def _create_agent(
         model_directory,  # type: Text
         interpreter,  # type: Union[Text, NaturalLanguageInterpreter, None]
-        action_endpoint=None,  # type: Optional[ActionEndpointConfig]
+        action_endpoint=None,  # type: Optional[EndpointConfig]
         tracker_store=None,  # type: Optional[TrackerStore]
         nlg_config=None
 ):

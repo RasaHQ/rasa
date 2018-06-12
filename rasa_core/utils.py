@@ -364,7 +364,7 @@ def bool_arg(name, default=True):
     return request.args.get(name, str(default)).lower() == 'true'
 
 
-def extract_args(kwargs,   # type: Dict[Text, Any]
+def extract_args(kwargs,  # type: Dict[Text, Any]
                  keys_to_extract  # type: Set[Text]
                  ):
     # type: (...) -> Tuple[Dict[Text, Any], Dict[Text, Any]]
@@ -392,3 +392,37 @@ def arguments_of(func):
     except AttributeError:
         # python 2.x is used
         return inspect.getargspec(func).args
+
+
+def concat_url(base, subpath):
+    if subpath:
+        url = base
+        if not base.endswith("/"):
+            url += "/"
+        if subpath.startswith("/"):
+            subpath = subpath[1:]
+        return url + subpath
+    else:
+        return base
+
+
+def post_json_to_endpoint(json_data, endpoint, subpath=None):
+    from requests.auth import HTTPBasicAuth
+    import requests
+
+    headers = endpoint.headers.copy()
+    headers["Content-Type"] = "application/json"
+
+    if endpoint.basic_auth:
+        auth = HTTPBasicAuth(endpoint.basic_auth["username"],
+                             endpoint.basic_auth["password"])
+    else:
+        auth = None
+
+    url = concat_url(endpoint.url, subpath)
+
+    return requests.post(url,
+                         headers=headers,
+                         params=endpoint.params,
+                         auth=auth,
+                         json=json_data)

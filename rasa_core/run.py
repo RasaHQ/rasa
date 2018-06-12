@@ -11,7 +11,7 @@ from builtins import str
 from gevent.pywsgi import WSGIServer
 
 from rasa_core import utils, server
-from rasa_core.actions.action import ActionEndpointConfig
+from rasa_core.actions.action import EndpointConfig
 from rasa_core.channels import RestInput, console
 from rasa_core.channels.facebook import FacebookInput
 from rasa_core.channels.mattermost import MattermostInput
@@ -63,10 +63,6 @@ def create_argument_parser():
             '--credentials',
             default=None,
             help="authentication credentials for the connector as a yml file")
-    parser.add_argument(
-            '--action_endpoint_url',
-            default=None,
-            help="url of the action endpoint")
     parser.add_argument(
             '-c', '--connector',
             default="cmdline",
@@ -167,7 +163,7 @@ def start_cmdline_io(server_url, on_finish):
 def start_server(model_directory, nlu_model=None, channel=None, port=None,
                  credentials_file=None, cors=None):
     server_config = {
-        "action_callback": ActionEndpointConfig(
+        "action_callback": EndpointConfig(
                 url="http://localhost:5055/webhook"),
         "nlg": {"type": "template"}
     }

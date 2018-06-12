@@ -12,7 +12,7 @@ from six import string_types
 from typing import Text, List, Optional, Callable, Any, Dict, Union
 
 from rasa_core import training
-from rasa_core.actions.action import ActionEndpointConfig
+from rasa_core.actions.action import EndpointConfig
 from rasa_core.channels import UserMessage, InputChannel, OutputChannel
 from rasa_core.domain import TemplateDomain, Domain, check_domain_sanity
 from rasa_core.interpreter import NaturalLanguageInterpreter
@@ -58,7 +58,7 @@ class Agent(object):
              path,  # type: Text
              interpreter=None,  # type: Union[NLI, Text, None]
              tracker_store=None,  # type: Optional[TrackerStore]
-             action_endpoint=None,  # type: Optional[ActionEndpointConfig]
+             action_endpoint=None,  # type: Optional[EndpointConfig]
              nlg_config=None
              ):
         # type: (Text, Any, Optional[TrackerStore]) -> Agent
@@ -135,7 +135,9 @@ class Agent(object):
         if isinstance(text_message, string_types):
             text_message = {"text": text_message}
 
-        msg = UserMessage(text_message, output_channel, sender_id)
+        msg = UserMessage(text_message.get("text"),
+                          output_channel,
+                          sender_id)
 
         return self.handle_message(msg, message_preprocessor)
 

@@ -10,7 +10,7 @@ import typing
 from requests.auth import HTTPBasicAuth
 from typing import List, Text
 
-from rasa_core import events
+from rasa_core import events, utils
 
 if typing.TYPE_CHECKING:
     from rasa_core.trackers import DialogueStateTracker
@@ -37,7 +37,7 @@ def ensure_action_name_uniqueness(actions):
 
 
 def actions_from_names(action_names, action_endpoint):
-    # type: (List[Text], ActionEndpointConfig) -> List[Action]
+    # type: (List[Text], EndpointConfig) -> List[Action]
     """Converts the names of actions into class instances."""
 
     actions = []
@@ -127,17 +127,25 @@ class ActionRestart(Action):
         return [Restarted()]
 
 
-class ActionEndpointConfig(object):
+class EndpointConfig(object):
     def __init__(self, url, params=None, headers=None, basic_auth=None):
         self.url = url
         self.params = params if params else {}
         self.headers = headers if headers else {}
         self.basic_auth = basic_auth
 
+    @classmethod
+    def from_dict(cls, data):
+        return EndpointConfig(
+                data.get("url"),
+                data.get("params"),
+                data.get("headers"),
+                data.get("basic_auth"))
+
 
 class RemoteAction(Action):
     def __init__(self, name, action_endpoint):
-        # type: (Text, ActionEndpointConfig) -> None
+        # type: (Text, EndpointConfig) -> None
 
         self._name = name
         self.action_endpoint = action_endpoint
@@ -186,21 +194,7 @@ class RemoteAction(Action):
     def run(self, dispatcher, tracker, domain):
         json = self._action_call_format(tracker, domain)
 
-        headers = self.action_endpoint.headers.copy()
-        headers["Content-Type"] = "application/json"
-
-        if self.action_endpoint.basic_auth:
-            auth = HTTPBasicAuth(self.action_endpoint.basic_auth["username"],
-                                 self.action_endpoint.basic_auth["password"])
-        else:
-            auth = None
-
-        response = requests.post(self.action_endpoint.url,
-                                 headers=headers,
-                                 params=self.action_endpoint.params,
-                                 auth=auth,
-                                 json=json)
-
+        response = utils.post_json_to_endpoint(json, self.action_endpoint)
         response.raise_for_status()
 
         response_data = response.json()

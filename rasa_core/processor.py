@@ -232,15 +232,7 @@ class MessageProcessor(object):
     def _run_action(self, action, tracker, dispatcher):
         # events and return values are used to update
         # the tracker state after an action has been taken
-        try:
-            events = action.run(dispatcher, tracker, self.domain)
-        except Exception as e:
-            logger.error("Encountered an exception while running action '{}'. "
-                         "Bot will continue, but the actions events are lost. "
-                         "Make sure to fix the exception in your custom "
-                         "code.".format(action.name()), )
-            logger.error(e, exc_info=True)
-            events = []
+        events = action.run(dispatcher, tracker, self.domain)
         self.log_bot_utterances_on_tracker(tracker, dispatcher)
         self._log_action_on_tracker(tracker, action.name(), events)
         self._schedule_reminders(events, dispatcher)

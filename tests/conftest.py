@@ -53,6 +53,13 @@ def default_agent(default_domain):
     return agent
 
 
+@pytest.fixture(scope="session")
+def default_agent_path(default_agent, tmpdir_factory):
+    path = tmpdir_factory.mktemp("agent").strpath
+    default_agent.persist(path)
+    return path
+
+
 @pytest.fixture
 def default_nlg(default_domain):
     return TemplatedNaturalLanguageGenerator(default_domain.templates)
