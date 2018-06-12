@@ -308,7 +308,8 @@ class RasaNLU(object):
 
         else:
 
-            raise Exception("Content-Type must be 'application/x-yml' or 'application/json'")
+            raise Exception("Content-Type must be 'application/x-yml' "
+                            "or 'application/json'")
 
         return model_config, data
 
