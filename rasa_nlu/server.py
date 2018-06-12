@@ -303,23 +303,20 @@ class RasaNLU(object):
             data = model_config.get("data")
 
         elif 'json' in content_type:
-            # If the caller just provided training data without config
-            # this will use the default model config the server
-            # was started with
 
             model_config, data = self.extract_json(request_content)
 
         else:
 
-            raise Exception("Content-Type must be yml or json")
+            raise Exception("Content-Type must be 'application/x-yml' or 'application/json'")
 
         return model_config, data
 
     def get_request_content_type(self, request):
         content_type = request.requestHeaders.getRawHeaders("Content-Type", [])
 
-        if len(content_type) > 1:
-            raise Exception("Only one content type is valid")
+        if len(content_type) is not 1:
+            raise Exception("The request must have exactly one content type")
         else:
             return content_type[0]
 
