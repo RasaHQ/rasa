@@ -161,6 +161,7 @@ def dump_to_data_file(data):
 
     return utils.create_temporary_file(data_string, "_training_data")
 
+
 class RasaNLU(object):
     """Class representing Rasa NLU http server"""
 
@@ -317,10 +318,10 @@ class RasaNLU(object):
     def get_request_content_type(self, request):
         content_type = request.requestHeaders.getRawHeaders("Content-Type", [])
 
-        if len(content_type > 1):
+        if len(content_type) > 1:
             raise Exception("Only one content type is valid")
         else:
-            return content_type
+            return content_type[0]
 
     @app.route("/train", methods=['POST', 'OPTIONS'])
     @requires_auth
