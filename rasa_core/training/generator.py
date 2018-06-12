@@ -41,13 +41,11 @@ class TrackerWithCachedStates(DialogueStateTracker):
     """A tracker wrapper that caches the state creation of the tracker."""
 
     def __init__(self, sender_id, slots,
-                 topics=None,
-                 default_topic=None,
                  max_event_history=None,
                  domain=None
                  ):
         super(TrackerWithCachedStates, self).__init__(
-                sender_id, slots, topics, default_topic, max_event_history)
+                sender_id, slots, max_event_history)
         self._states = None
         self.domain = domain
 
@@ -80,8 +78,6 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
         return type(self)(UserMessage.DEFAULT_SENDER_ID,
                           self.slots.values(),
-                          self.topics,
-                          self.default_topic,
                           self._max_event_history,
                           self.domain)
 
@@ -220,8 +216,6 @@ class TrainingDataGenerator(object):
         init_tracker = TrackerWithCachedStates(
                 UserMessage.DEFAULT_SENDER_ID,
                 self.domain.slots,
-                self.domain.topics,
-                self.domain.default_topic,
                 max_event_history=self.config.tracker_limit,
                 domain=self.domain
         )

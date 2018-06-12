@@ -228,55 +228,6 @@ def print_color(text, color):
     print(wrap_with_color(text, color))
 
 
-class TopicStack(object):
-    def __init__(self, topics, iterable, default):
-        self.topics = topics
-        self.iterable = iterable
-        self.topic_names = [t.name for t in topics]
-        self.default = default
-        self.dq = deque(iterable, len(topics))
-
-    @property
-    def top(self):
-        if len(self.dq) < 1:
-            return self.default
-        return self.dq[-1]
-
-    def __iter__(self):
-        return self.dq.__iter__()
-
-    def next(self):
-        return self.dq.next()
-
-    def __len__(self):
-        return len(self.dq)
-
-    def push(self, x):
-        from rasa_core.conversation import Topic
-
-        if isinstance(x, six.string_types):
-            if x not in self.topic_names:
-                raise ValueError(
-                        "Unknown topic name: '{}', known topics in this domain "
-                        "are: {}".format(x, self.topic_names))
-            else:
-                x = self.topics[self.topic_names.index(x)]
-
-        elif not isinstance(x, Topic) or x not in self.topics:
-            raise ValueError(
-                    "Instance of type '{}' can not be used on the topic stack, "
-                    "not a valid topic!".format(type(x).__name__))
-
-        while self.dq.count(x) > 0:
-            self.dq.remove(x)
-        self.dq.append(x)
-
-    def pop(self):
-        if len(self.dq) < 1:
-            return None
-        return self.dq.pop()
-
-
 class HashableNDArray(object):
     """Hashable wrapper for ndarray objects.
 
