@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 
 
 class NaturalLanguageGenerator(object):
-    def generate(self, template_name, filled_slots=None, **kwargs):
+    def generate(self, template_name, tracker, output_channel, **kwargs):
         pass
 
     @staticmethod
@@ -20,4 +20,4 @@ class NaturalLanguageGenerator(object):
 
                 return TemplatedNaturalLanguageGenerator(domain.templates)
         else:
-            return None  # TODO: default generator
+            return None  # TODO: TB - default generator

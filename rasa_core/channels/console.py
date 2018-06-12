@@ -15,15 +15,15 @@ from rasa_core.constants import DEFAULT_SERVER_URL
 from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
 
 
-def _is_msg_limit_reached(num_messages, limit):
+def is_msg_limit_reached(num_messages, limit):
     return limit is not None and num_messages >= limit
 
 
-def _print_bot_output(message, color=utils.bcolors.OKBLUE):
-    utils.print_color(message, color)
+def print_bot_output(message, color=utils.bcolors.OKBLUE):
+    utils.print_color(message.get("text"), color)
 
 
-def _get_cmd_input():
+def get_cmd_input():
     text = input().strip()
     if six.PY2:
         # in python 2 input doesn't return unicode values
@@ -32,7 +32,7 @@ def _get_cmd_input():
         return text
 
 
-def __send_message_receive_block(server_url, auth_token, sender_id, message):
+def send_message_receive_block(server_url, auth_token, sender_id, message):
     payload = {
         "sender": sender_id,
         "message": message
@@ -42,12 +42,10 @@ def __send_message_receive_block(server_url, auth_token, sender_id, message):
             server_url, auth_token),
             json=payload)
     response.raise_for_status()
-    bot_messages = [r["text"] for r in response.json() if "text" in r]
-
-    return bot_messages
+    return response.json()
 
 
-def __send_message_receive_stream(server_url, auth_token, sender_id, message):
+def send_message_receive_stream(server_url, auth_token, sender_id, message):
     payload = {
         "sender": sender_id,
         "message": message
@@ -65,16 +63,15 @@ def __send_message_receive_stream(server_url, auth_token, sender_id, message):
 
         for line in r.iter_lines(decode_unicode=True):
             if line:
-                decoded = json.loads(line)
-                if "text" in decoded:
-                    yield decoded["text"]
+                yield json.loads(line)
 
 
 def record_messages(server_url=DEFAULT_SERVER_URL,
                     auth_token=None,
                     sender_id=UserMessage.DEFAULT_SENDER_ID,
                     max_message_limit=None,
-                    use_response_stream=True):
+                    use_response_stream=True,
+                    on_finish=None):
     """Read messages from the command line and print bot responses."""
 
     auth_token = auth_token if auth_token else ""
@@ -86,21 +83,24 @@ def record_messages(server_url=DEFAULT_SERVER_URL,
                       utils.bcolors.OKGREEN)
 
     num_messages = 0
-    while not _is_msg_limit_reached(num_messages, max_message_limit):
-        text = _get_cmd_input()
+    while not is_msg_limit_reached(num_messages, max_message_limit):
+        text = get_cmd_input()
         if text == exit_text:
-            return
+            break
 
         if use_response_stream:
-            bot_responses = __send_message_receive_stream(server_url,
-                                                          auth_token,
-                                                          sender_id, text)
+            bot_responses = send_message_receive_stream(server_url,
+                                                        auth_token,
+                                                        sender_id, text)
         else:
-            bot_responses = __send_message_receive_block(server_url,
-                                                         auth_token,
-                                                         sender_id, text)
+            bot_responses = send_message_receive_block(server_url,
+                                                       auth_token,
+                                                       sender_id, text)
 
         for response in bot_responses:
-            _print_bot_output(response)
+            print_bot_output(response)
 
         num_messages += 1
+
+    if on_finish:
+        on_finish()

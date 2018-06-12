@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import logging
 
 import requests
+from rasa_core.trackers import DialogueStateTracker
 from typing import Text, Any, Dict
 
 from rasa_core.nlg.generator import NaturalLanguageGenerator
@@ -18,18 +19,21 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
         self.url = url
 
     @staticmethod
-    def _nlg_api_format(template_name, filled_slots, kwargs):
+    def _nlg_api_format(template_name, tracker, output_channel, kwargs):
+        filled_slots = tracker.current_slot_values()
         return {
             "template": template_name,
             "slots": filled_slots,
-            "arguments": kwargs
+            "arguments": kwargs,
+            "channel": output_channel
         }
 
-    def generate(self, template_name, filled_slots=None, **kwargs):
-        # type: (Text, **Any) -> Dict[Text, Any]
+    def generate(self, template_name, tracker, output_channel, **kwargs):
+        # type: (Text, DialogueStateTracker, Text, **Any) -> Dict[Text, Any]
         """Retrieve a named template from the domain."""
 
-        body = self._nlg_api_format(template_name, filled_slots, **kwargs)
+        body = self._nlg_api_format(template_name, tracker, output_channel,
+                                    **kwargs)
 
         response = requests.post(self.url, json=body)
 
@@ -42,5 +46,5 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
 
     @staticmethod
     def validate_response(content):
-        # TODO: do some validation with the response we get from the endpoint
+        # TODO: TB - do some validation with the response we get
         return True

@@ -6,12 +6,16 @@ from __future__ import unicode_literals
 import logging
 from collections import namedtuple
 
+import typing
 from typing import Text, List, Dict, Any, Optional
 
 from rasa_core.channels import OutputChannel
 from rasa_core.nlg.generator import NaturalLanguageGenerator
 
 logger = logging.getLogger(__name__)
+
+if typing.TYPE_CHECKING:
+    from rasa_core.trackers import DialogueStateTracker
 
 
 class Element(dict):
@@ -52,7 +56,6 @@ class Dispatcher(object):
 
         if message.get("elements"):
             self.utter_custom_message(message.get("elements"))
-
         elif message.get("buttons"):
             self.utter_button_message(message.get("text"),
                                       message.get("buttons"))
@@ -104,15 +107,18 @@ class Dispatcher(object):
         self.output_channel.send_image_url(self.sender_id, attachment)
 
     # TODO: deprecate this function
-    def utter_button_template(self, template, buttons,
-                              filled_slots=None,
-                              silent_fail=False,
-                              **kwargs):
-        # type: (Text, List[Dict[Text, Any]], **Any) -> None
+    def utter_button_template(self,
+                              template,  #type: Text
+                              buttons,  # type: List[Dict[Text, Any]]
+                              tracker,  # type: DialogueStateTracker
+                              silent_fail=False,  # type: bool
+                              **kwargs  # type: **Any
+                              ):
+        # type: (...) -> None
         """Sends a message template with buttons to the output channel."""
 
         message = self._generate_response(template,
-                                          filled_slots,
+                                          tracker,
                                           silent_fail,
                                           **kwargs)
         if not message:
@@ -126,7 +132,7 @@ class Dispatcher(object):
 
     def utter_template(self,
                        template,  # type: Text
-                       filled_slots=None,  # type: Optional[Dict[Text, Text]]
+                       tracker,  # type: DialogueStateTracker
                        silent_fail=False,  # type: bool
                        **kwargs  # type: ** Any
                        ):
@@ -134,7 +140,7 @@ class Dispatcher(object):
         """"Send a message to the client based on a template."""
 
         message = self._generate_response(template,
-                                          filled_slots,
+                                          tracker,
                                           silent_fail,
                                           **kwargs)
 
@@ -146,14 +152,16 @@ class Dispatcher(object):
     def _generate_response(
             self,
             template,  # type: Text
-            filled_slots=None,  # type: Optional[Dict[Text, Text]]
+            tracker,  # type: DialogueStateTracker
             silent_fail=False,  # type: bool
             **kwargs  # type: ** Any
     ):
         # type: (...) -> Dict[Text, Any]
         """"Generate a response."""
 
-        message = self.nlg.generate(template, filled_slots, **kwargs)
+        message = self.nlg.generate(template, tracker,
+                                    self.output_channel.name(),
+                                    **kwargs)
 
         if message is None and not silent_fail:
             raise ValueError("Couldn't create message for template '{}'."

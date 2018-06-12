@@ -10,7 +10,6 @@ import pytest
 
 from rasa_core import train
 from rasa_core.agent import Agent
-from rasa_core.channels.console import ConsoleOutputChannel
 from rasa_core.channels import CollectingOutputChannel
 from rasa_core.dispatcher import Dispatcher
 from rasa_core.domain import TemplateDomain
@@ -53,15 +52,10 @@ def default_agent(default_domain):
     agent.train(training_data)
     return agent
 
+
 @pytest.fixture
 def default_nlg(default_domain):
     return TemplatedNaturalLanguageGenerator(default_domain.templates)
-
-
-@pytest.fixture
-def default_dispatcher_cmd(default_nlg):
-    bot = ConsoleOutputChannel()
-    return Dispatcher("my-sender", bot, default_nlg)
 
 
 @pytest.fixture

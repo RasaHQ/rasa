@@ -6,50 +6,35 @@ from __future__ import unicode_literals
 import io
 import re
 
-from typing import Optional, Text
+from rasa_core.channels import UserMessage, console
+from rasa_core.constants import DEFAULT_SERVER_URL
 
 
-# TODO: TB - rethink, should read from file and post to simple web channel
+def replay_messages(filename,
+                    server_url=DEFAULT_SERVER_URL,
+                    auth_token=None,
+                    sender_id=UserMessage.DEFAULT_SENDER_ID,
+                    max_message_limit=None,
+                    message_line_pattern=".*",
+                    output_channel=None):
+    """Read messages from the command line and print bot responses."""
 
-# class FileInputChannel(InputChannel):
-#     """Input channel that reads the user messages from a specified file.
-#
-#     If there are lines in the file that should not be used as user messages,
-#     or if the user messages are surrounded by other symbols that should not be
-#     part of the user message, you can use a regular expression to only match
-#     the user message. The `message_line_pattern` needs to be passed in as a
-#     string. The default is `.*` hence, considering the whole line as the user
-#     message. Either the whole message (if no capturing group is present) or the
-#     first capturing group will be used as the user message."""
-#
-#     def __init__(self,
-#                  filename,
-#                  output_channel=None,
-#                  message_line_pattern=".*",
-#                  max_messages=None):
-#         # type: (Text, OutputChannel, Text, Optional[int]) -> None
-#         from rasa_core.channels.console import ConsoleOutputChannel
-#
-#         self.message_filter = re.compile(message_line_pattern)
-#         self.filename = filename
-#         self.max_messages = max_messages
-#         if output_channel:
-#             self.output_channel = output_channel
-#         else:
-#             self.output_channel = ConsoleOutputChannel()
-#
-#     def _record_messages(self, on_message):
-#         with io.open(self.filename, 'r') as f:
-#             for i, line in enumerate(f):
-#                 m = self.message_filter.match(line)
-#                 if m is not None:
-#                     message = m.group(1 if m.lastindex else 0)
-#                     on_message(UserMessage(message, self.output_channel))
-#                 if self.max_messages is not None and i >= self.max_messages:
-#                     break
-#
-#     def start_async_listening(self, message_queue):
-#         self._record_messages(message_queue.enqueue)
-#
-#     def start_sync_listening(self, message_handler):
-#         self._record_messages(message_handler)
+    auth_token = auth_token if auth_token else ""
+
+    message_filter = re.compile(message_line_pattern)
+
+    with io.open(filename, 'r') as f:
+        for num_messages, line in enumerate(f):
+            m = message_filter.match(line)
+            if m is not None:
+                message = m.group(1 if m.lastindex else 0)
+                bot_responses = console.send_message_receive_stream(
+                        server_url,
+                        auth_token,
+                        sender_id,
+                        message)
+                for response in bot_responses:
+                    output_channel.send_response(response)
+
+            if console.is_msg_limit_reached(num_messages, max_message_limit):
+                break

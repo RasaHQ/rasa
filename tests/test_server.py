@@ -26,7 +26,7 @@ from rasa_core.events import (
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.policies.augmented_memoization import \
     AugmentedMemoizationPolicy
-from rasa_core.remote import RasaCoreClient, RemoteAgent
+from rasa_core.remote import RasaCoreClient
 from tests.conftest import DEFAULT_STORIES_FILE
 
 # a couple of event instances that we can use for testing
@@ -222,37 +222,6 @@ def test_list_conversations(app):
 
     assert len(content) > 0
     assert "myid" in content
-
-
-def test_remote_client(http_app, default_agent, tmpdir):
-    model_path = tmpdir.join("persisted_model").strpath
-
-    default_agent.persist(model_path)
-
-    remote_agent = RemoteAgent.load(model_path,
-                                    http_app)
-
-    message = UserMessage("""/greet{"name":"Rasa"}""",
-                          output_channel=CollectingOutputChannel())
-
-    remote_agent.process_message(message)
-
-    tracker = remote_agent.core_client.tracker_json("default")
-
-    assert len(tracker.get("events")) == 6
-
-    # listen
-    assert tracker["events"][0]["name"] == "action_listen"
-    # this should be the utterance
-    assert tracker["events"][1]["text"] == """/greet{"name":"Rasa"}"""
-    # set slot event
-    assert tracker["events"][2]["value"] == "Rasa"
-    # utter action
-    assert tracker["events"][3]["name"] == "utter_greet"
-    # this should be the bot utterance
-    assert tracker["events"][4]["text"] == "hey there Rasa!"
-    # listen
-    assert tracker["events"][5]["name"] == "action_listen"
 
 
 def test_remote_status(http_app):

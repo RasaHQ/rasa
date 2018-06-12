@@ -3,7 +3,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from rasa_core.channels.console import ConsoleOutputChannel
 from rasa_core.channels import CollectingOutputChannel
 from rasa_core.dispatcher import Button, Element, Dispatcher
 from rasa_core.domain import TemplateDomain

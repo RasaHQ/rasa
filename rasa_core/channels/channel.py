@@ -52,8 +52,13 @@ def register_blueprints(input_channels, app, on_new_message, route):
 
 class InputChannel(object):
 
+    @classmethod
+    def name(cls):
+        raise NotImplementedError("Every input channel needs a name to "
+                                  "identify it.")
+
     def url_prefix(self):
-        return type(self).__name__
+        return self.name()
 
     def blueprint(self, on_new_message):
         # type: (Callable[[UserMessage], None])-> None
@@ -70,6 +75,30 @@ class OutputChannel(object):
 
     Provides sane implementation of the send methods
     for text only output channels."""
+
+    @classmethod
+    def name(cls):
+        raise NotImplementedError("Every output channel needs a name to "
+                                  "identify it.")
+
+    def send_response(self, recipient_id, message):
+        # type: (Text, Dict[Text, Any]) -> None
+        """Send a message to the client."""
+
+        if message.get("elements"):
+            self.send_custom_message(recipient_id, message.get("elements"))
+
+        elif message.get("buttons"):
+            self.send_text_with_buttons(recipient_id,
+                                        message.get("text"),
+                                        message.get("buttons"))
+        else:
+            self.send_text_message(recipient_id,
+                                   message.get("text"))
+
+        # if there is an image we handle it separately as an attachment
+        if message.get("image"):
+            self.send_image_url(recipient_id, message.get("image"))
 
     def send_text_message(self, recipient_id, message):
         # type: (Text, Text) -> None
@@ -117,6 +146,10 @@ class CollectingOutputChannel(OutputChannel):
     def __init__(self):
         self.messages = []
 
+    @classmethod
+    def name(cls):
+        return "collector"
+
     def latest_output(self):
         if self.messages:
             return self.messages[-1]
@@ -137,6 +170,10 @@ class QueueOutputChannel(OutputChannel):
     """Output channel that collects send messages in a list
 
     (doesn't send them anywhere, just collects them)."""
+
+    @classmethod
+    def name(cls):
+        return "queue"
 
     def __init__(self, message_queue=None):
         # type: (Queue) -> None
@@ -159,7 +196,8 @@ class RestInput(InputChannel):
     frontend. You can customize this to send messages to Rasa Core and
     retrieve responses from the agent."""
 
-    def url_prefix(self):
+    @classmethod
+    def name(cls):
         return "rest"
 
     @staticmethod

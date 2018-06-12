@@ -12,6 +12,11 @@ import random
 
 logger = logging.getLogger(__name__)
 
+# this slot is used to store information needed
+# to do the form handling, needs to be part
+# of the domain
+FORM_SLOT_NAME = "requested_slot"
+
 
 class FormField(object):
 
@@ -45,6 +50,7 @@ class BooleanFormField(FormField):
     The interpreter should map positive and negative answers to
     the intents ``affirm_intent`` and ``deny_intent``.
     """
+
     def __init__(self, slot_name, affirm_intent, deny_intent):
         self.slot_name = slot_name
         self.affirm_intent = affirm_intent
@@ -76,7 +82,6 @@ class FreeTextFormField(FormField):
 
 
 class FormAction(Action):
-
     RANDOMIZE = True
 
     @staticmethod
@@ -88,7 +93,7 @@ class FormAction(Action):
         return existing_val is None
 
     def get_other_slots(self, tracker):
-        requested_slot = tracker.get_slot("requested_slot")
+        requested_slot = tracker.get_slot(FORM_SLOT_NAME)
 
         requested_entity = None
         for f in self.required_fields():
@@ -99,15 +104,15 @@ class FormAction(Action):
         extracted_entities = {requested_entity}
 
         for f in self.required_fields():
-            if isinstance(f, EntityFormField) and \
-                not f.slot_name == requested_slot and \
-                not f.entity_name in extracted_entities:
+            if (isinstance(f, EntityFormField)
+                    and f.slot_name != requested_slot
+                    and f.entity_name not in extracted_entities):
                 slot_events.extend(f.extract(tracker))
                 extracted_entities.add(f.entity_name)
         return slot_events
 
     def get_requested_slot(self, tracker):
-        requested_slot = tracker.get_slot("requested_slot")
+        requested_slot = tracker.get_slot(FORM_SLOT_NAME)
 
         required = self.required_fields()
 
@@ -117,17 +122,21 @@ class FormAction(Action):
         if requested_slot is None:
             return []
         else:
-            fields = [f for f in required if f.slot_name == requested_slot]
+            fields = [f
+                      for f in required
+                      if f.slot_name == requested_slot]
+
             if len(fields) == 1:
                 return fields[0].extract(tracker)
             else:
-                logger.debug("unable to extract value "
+                logger.debug("Unable to extract value "
                              "for requested slot: {}".format(requested_slot))
                 return []
 
     def run(self, dispatcher, tracker, domain):
 
-        events = self.get_requested_slot(tracker) + self.get_other_slots(tracker)
+        events = (self.get_requested_slot(tracker) +
+                  self.get_other_slots(tracker))
 
         temp_tracker = tracker.copy()
         for e in events:
@@ -135,17 +144,19 @@ class FormAction(Action):
 
         for field in self.required_fields():
             if self.should_request_slot(temp_tracker, field.slot_name):
-                dispatcher.utter_template(
-                    "utter_ask_{}".format(field.slot_name),
-                    filled_slots=temp_tracker.current_slot_values()
-                )
 
-                events.append(SlotSet("requested_slot", field.slot_name))
+                dispatcher.utter_template(
+                        "utter_ask_{}".format(field.slot_name),
+                        tracker)
+
+                events.append(SlotSet(FORM_SLOT_NAME, field.slot_name))
                 return events
 
+        # there is nothing more to request, so we can submit
         events_from_submit = self.submit(dispatcher, temp_tracker, domain) or []
 
         return events + events_from_submit
 
     def submit(self, dispatcher, tracker, domain):
-        raise NotImplementedError("a form action must implement a submit method")
+        raise NotImplementedError(
+            "a form action must implement a submit method")

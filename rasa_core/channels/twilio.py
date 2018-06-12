@@ -25,6 +25,10 @@ class TwilioOutput(Client, OutputChannel):
         self.send_retry = 0
         self.max_retry = 5
 
+    @classmethod
+    def name(cls):
+        return "twilio"
+
     def send_text_message(self, recipient_number, text):
         """Sends text message"""
         from twilio.base.exceptions import TwilioRestException
@@ -58,6 +62,10 @@ class TwilioInput(InputChannel):
         self.auth_token = auth_token
         self.twilio_number = twilio_number
         self.debug_mode = debug_mode
+
+    @classmethod
+    def name(cls):
+        return "twilio"
 
     def blueprint(self, on_new_message):
         twilio_webhook = Blueprint('twilio_webhook', __name__)

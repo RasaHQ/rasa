@@ -3,7 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from rasa_core.channels.console import ConsoleInputChannel
+from rasa_core.channels import console
 
 
 def test_console_input():
@@ -21,8 +21,8 @@ def test_console_input():
     def on_message(message):
         recorded.append(message)
 
-    channel = ConsoleInputChannel()
-    channel._record_messages(on_message, max_message_limit=3)
+    channel = console.record_messages(max_message_limit=3)
+    channel._record_messages(on_message, )
     assert [r.text for r in recorded] == ["Test Input",
                                           "Test Input",
                                           "Test Input"]

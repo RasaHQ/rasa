@@ -24,8 +24,10 @@ class MattermostBot(MattermostAPI, OutputChannel):
         self.bot_channel = bot_channel
         super(MattermostBot, self).__init__(url, team)
         super(MattermostBot, self).login(user, pw)
-        
 
+    @classmethod
+    def name(cls):
+        return "mattermost"
 
     def send_text_message(self, recipient_id, message):
         super(MattermostBot, self).post_channel(self.bot_channel, message)
@@ -51,6 +53,10 @@ class MattermostInput(InputChannel):
         self.team = team
         self.user = user
         self.pw = pw
+
+    @classmethod
+    def name(cls):
+        return "mattermost"
 
     def blueprint(self, on_new_message):
         mattermost_webhook = Blueprint('mattermost_webhook', __name__)

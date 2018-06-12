@@ -396,6 +396,10 @@ class TemplateDomain(Domain):
 
         cls.validate_domain_yaml(filename)
         data = read_yaml_file(filename)
+        return cls.from_dict(data, action_endpoint)
+
+    @classmethod
+    def from_dict(cls, data, action_endpoint=None):
         utter_templates = cls.collect_templates(data.get("templates", {}))
         slots = cls.collect_slots(data.get("slots", {}))
         additional_arguments = data.get("config", {})
@@ -491,14 +495,12 @@ class TemplateDomain(Domain):
     def _slot_definitions(self):
         return {slot.name: slot.persistence_info() for slot in self.slots}
 
-    def persist(self, filename):
-        import yaml
-
+    def as_dict(self):
         additional_config = {
             "store_entities_as_slots": self.store_entities_as_slots}
         action_names = self.action_names[len(Domain.DEFAULT_ACTIONS):]
 
-        domain_data = {
+        return {
             "config": additional_config,
             "intents": self.intents,
             "entities": self.entities,
@@ -506,6 +508,11 @@ class TemplateDomain(Domain):
             "templates": self.templates,
             "actions": action_names,  # class names of the actions
         }
+
+    def persist(self, filename):
+        import yaml
+
+        domain_data = self.as_dict()
 
         with io.open(filename, 'w', encoding="utf-8") as yaml_file:
             yaml.safe_dump(domain_data, yaml_file,

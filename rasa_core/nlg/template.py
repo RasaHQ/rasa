@@ -7,6 +7,7 @@ import copy
 import logging
 
 import numpy as np
+from rasa_core.trackers import DialogueStateTracker
 from typing import Text, Any, Dict
 
 from rasa_core.nlg.generator import NaturalLanguageGenerator
@@ -18,17 +19,20 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
     def __init__(self, templates):
         self.templates = templates
 
-    def _random_template_for(self, utter_action):
+    def _random_template_for(self, utter_action, output_channel):
+        # TODO: TB - make use of the additional information about the channel
         if utter_action in self.templates:
             return np.random.choice(self.templates[utter_action])
         else:
             return None
 
-    def generate(self, template_name, filled_slots=None, **kwargs):
-        # type: (Text, **Any) -> Dict[Text, Any]
+    def generate(self, template_name, tracker, output_channel, **kwargs):
+        # type: (Text, DialogueStateTracker, Text, **Any) -> Dict[Text, Any]
         """Retrieve a named template from the domain."""
 
-        r = copy.deepcopy(self._random_template_for(template_name))
+        filled_slots = tracker.current_slot_values()
+        r = copy.deepcopy(self._random_template_for(template_name,
+                                                    output_channel))
         if r is not None:
             return self._fill_template_text(r, filled_slots, **kwargs)
         else:

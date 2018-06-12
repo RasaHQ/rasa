@@ -7,6 +7,7 @@ import logging
 import typing
 
 from builtins import object
+from rasa_core import utils
 from typing import \
     Any, List, Optional, Text, Dict, Callable
 
@@ -50,12 +51,7 @@ class Policy(object):
     def _get_valid_params(func, **kwargs):
         # type: (Callable, **Any) -> Dict
         # filter out kwargs that cannot be passed to func
-        try:
-            # python 3.x is used
-            valid_keys = inspect.signature(func).parameters.keys()
-        except AttributeError:
-            # python 2.x is used
-            valid_keys = inspect.getargspec(func).args
+        valid_keys = utils.arguments_of(func)
 
         params = {key: kwargs.get(key)
                   for key in valid_keys if kwargs.get(key)}

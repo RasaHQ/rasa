@@ -14,7 +14,6 @@ from flask import Flask, request, abort, Response, jsonify
 from flask_cors import CORS, cross_origin
 from typing import Union, Text, Optional
 
-from rasa_core import run
 from rasa_core import events, utils
 from rasa_core.actions.action import ActionEndpointConfig
 from rasa_core.agent import Agent
@@ -216,7 +215,7 @@ def create_app(model_directory, # type: Text
         request_params = request.get_json(force=True)
         tracker = DialogueStateTracker.from_dict(sender_id,
                                                  request_params,
-                                                 agent().domain)
+                                                 agent().domain.slos)
         agent().tracker_store.save(tracker)
 
         # will override an existing tracker with the same id!
@@ -293,6 +292,7 @@ def create_app(model_directory, # type: Text
 
 
 if __name__ == '__main__':
+    from rasa_core import run
     # Running as standalone python application
     arg_parser = run.create_argument_parser()
     cmdline_args = arg_parser.parse_args()

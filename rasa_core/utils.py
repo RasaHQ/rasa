@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import errno
+import inspect
 import json
 import logging
 import os, io
@@ -380,3 +381,14 @@ def extract_args(kwargs,   # type: Dict[Text, Any]
             remaining[k] = v
 
     return extracted, remaining
+
+
+def arguments_of(func):
+    """Return the parameters of the function `func` as a list of their names."""
+
+    try:
+        # python 3.x is used
+        return inspect.signature(func).parameters.keys()
+    except AttributeError:
+        # python 2.x is used
+        return inspect.getargspec(func).args

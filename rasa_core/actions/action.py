@@ -4,12 +4,13 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
-from collections import namedtuple
 
 import requests
 import typing
 from requests.auth import HTTPBasicAuth
 from typing import List, Text
+
+from rasa_core import events
 
 if typing.TYPE_CHECKING:
     from rasa_core.trackers import DialogueStateTracker
@@ -87,7 +88,7 @@ class UtterAction(Action):
         """Simple run implementation uttering a (hopefully defined) template."""
 
         dispatcher.utter_template(self.name(),
-                                  filled_slots=tracker.current_slot_values())
+                                  tracker)
         return []
 
     def name(self):
@@ -122,13 +123,16 @@ class ActionRestart(Action):
         from rasa_core.events import Restarted
 
         # only utter the template if it is available
-        dispatcher.utter_template("utter_restart", silent_fail=True)
+        dispatcher.utter_template("utter_restart", tracker, silent_fail=True)
         return [Restarted()]
 
 
-ActionEndpointConfig = namedtuple('ActionEndpointConfig', ["url",
-                                                           "headers",
-                                                           "basic_auth"])
+class ActionEndpointConfig(object):
+    def __init__(self, url, params=None, headers=None, basic_auth=None):
+        self.url = url
+        self.params = params if params else {}
+        self.headers = headers if headers else {}
+        self.basic_auth = basic_auth
 
 
 class RemoteAction(Action):
@@ -138,26 +142,51 @@ class RemoteAction(Action):
         self._name = name
         self.action_endpoint = action_endpoint
 
-    def _action_call_format(self, tracker):
+    def _action_call_format(self, tracker, domain):
         tracker_state = tracker.current_state(
                 should_include_events=True,
                 only_events_after_latest_restart=True)
 
         return {
             "next_action": self._name,
-            "tracker": tracker_state
+            "sender_id": tracker.sender_id,
+            "tracker": tracker_state,
+            "domain": domain.as_dict()
         }
 
     def _validate_action_result(self, result):
+        # TODO: TB - make sure the json is valid
         return True
 
-    def run(self, dispatcher, tracker, domain):
-        json = self._action_call_format(tracker)
+    def _validate_events(self, evts):
+        # TODO: TB - make sure no invalid events are logged
+        # e.g. setting of non existent slots
+        return True
 
-        if self.action_endpoint.headers:
-            headers = self.action_endpoint.headers.copy()
-        else:
-            headers = {}
+    def _handle_responses(self, responses, dispatcher, tracker):
+        for response in responses:
+            if "template" in response:
+                draft = dispatcher.nlg.generate(
+                        response["template"],
+                        tracker,
+                        dispatcher.output_channel.name())
+                del response["template"]
+            else:
+                draft = {}
+
+            if "buttons" in response:
+                if "buttons" not in draft:
+                    draft["buttons"] = []
+                draft["buttons"].extend(response["buttons"])
+                del response["buttons"]
+
+            draft.update(response)
+            dispatcher.utter_response(draft)
+
+    def run(self, dispatcher, tracker, domain):
+        json = self._action_call_format(tracker, domain)
+
+        headers = self.action_endpoint.headers.copy()
         headers["Content-Type"] = "application/json"
 
         if self.action_endpoint.basic_auth:
@@ -168,14 +197,26 @@ class RemoteAction(Action):
 
         response = requests.post(self.action_endpoint.url,
                                  headers=headers,
+                                 params=self.action_endpoint.params,
                                  auth=auth,
                                  json=json)
 
         response.raise_for_status()
 
-        self._validate_action_result(response.json())
+        response_data = response.json()
 
-        return []
+        self._validate_action_result(response_data)
+
+        events_json = response_data.get("events", [])
+        responses = response_data.get("responses", [])
+
+        self._handle_responses(responses, dispatcher, tracker)
+
+        evts = events.deserialise_events(events_json)
+
+        self._validate_events(evts)
+
+        return evts
 
     def name(self):
         return self._name

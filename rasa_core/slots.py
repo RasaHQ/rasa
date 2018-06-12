@@ -39,7 +39,14 @@ class Slot(object):
 
     def as_feature(self):
         raise NotImplementedError("Each slot type needs to specify how its "
-                                  "value can be converted to a feature.")
+                                  "value can be converted to a feature. Slot "
+                                  "'{}' is a generic slot that can not be used "
+                                  "for predictions. Make sure you add this "
+                                  "slot to your domain definition, specifying "
+                                  "the type of the slot. If you implemented "
+                                  "a custom slot type class, make sure to "
+                                  "implement `.as_feature()`."
+                                  "".format(self.name))
 
     def reset(self):
         self.value = self.initial_value

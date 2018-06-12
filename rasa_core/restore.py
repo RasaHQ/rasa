@@ -14,8 +14,7 @@ from typing import Text, Optional, List, Tuple
 from rasa_core import utils, evaluate
 from rasa_core.actions.action import ACTION_LISTEN_NAME
 from rasa_core.agent import Agent
-from rasa_core.channels import UserMessage
-from rasa_core.channels.console import ConsoleInputChannel, ConsoleOutputChannel
+from rasa_core.channels import UserMessage, CollectingOutputChannel, console
 from rasa_core.events import UserUttered, ActionExecuted
 from rasa_core.trackers import DialogueStateTracker
 
@@ -80,8 +79,12 @@ def replay_events(tracker, agent):
 
             actions_between_utterances = []
             print(utils.wrap_with_color(event.text, utils.bcolors.OKGREEN))
+            out = CollectingOutputChannel()
             agent.handle_message(event.text, sender_id=tracker.sender_id,
-                                 output_channel=ConsoleOutputChannel())
+                                 output_channel=out)
+            for m in out.messages:
+                console._print_bot_output(m)
+
             tracker = agent.tracker_store.retrieve(tracker.sender_id)
             last_prediction = evaluate.actions_since_last_utterance(tracker)
 
@@ -100,7 +103,7 @@ def load_tracker_from_json(tracker_dump, domain):
     sender_id = tracker_json.get("sender_id", UserMessage.DEFAULT_SENDER_ID)
     return DialogueStateTracker.from_dict(sender_id,
                                           tracker_json.get("events", []),
-                                          domain)
+                                          domain.slots)
 
 
 def recreate_agent(model_directory,  # type: Text

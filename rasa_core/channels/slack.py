@@ -25,6 +25,10 @@ class SlackBot(SlackClient, OutputChannel):
         self.slack_channel = slack_channel
         super(SlackBot, self).__init__(token)
 
+    @classmethod
+    def name(cls):
+        return "slack"
+
     def send_text_message(self, recipient_id, message):
         recipient = self.slack_channel or recipient_id
         super(SlackBot, self).api_call("chat.postMessage",
@@ -86,6 +90,10 @@ class SlackInput(InputChannel):
         """
         self.slack_token = slack_token
         self.slack_channel = slack_channel
+
+    @classmethod
+    def name(cls):
+        return "slack"
 
     @staticmethod
     def _is_user_message(slack_event):

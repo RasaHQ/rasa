@@ -111,6 +111,10 @@ class MessengerBot(OutputChannel):
         self.messenger_client = messenger_client
         super(MessengerBot, self).__init__()
 
+    @classmethod
+    def name(cls):
+        return "facebook"
+
     def send(self, recipient_id, element):
         # type: (Text, Any) -> None
         """Sends a message to the recipient using the messenger client."""
@@ -218,6 +222,10 @@ class FacebookInput(InputChannel):
         self.fb_verify = fb_verify
         self.fb_secret = fb_secret
         self.fb_access_token = fb_access_token
+
+    @classmethod
+    def name(cls):
+        return "facebook"
 
     def blueprint(self, on_new_message):
 

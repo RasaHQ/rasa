@@ -4,12 +4,10 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from rasa_core.events import (
-    ActionExecuted,
-    BotUttered,
     SlotSet,
     UserUttered
 )
-from rasa_core.actions.forms import (
+from rasa_sdk.forms import (
     BooleanFormField,
     EntityFormField,
     FormAction,
