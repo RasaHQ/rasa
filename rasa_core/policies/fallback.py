@@ -39,7 +39,10 @@ class FallbackPolicy(Policy):
         :param Text fallback_action_name:
           name of the action to execute as a fallback.
     """
-    MAX_HISTORY_DEFAULT = None
+
+    @staticmethod
+    def _standard_featurizer():
+        return None
 
     def __init__(self,
                  nlu_threshold=0.3,  # type: float
@@ -47,6 +50,7 @@ class FallbackPolicy(Policy):
                  fallback_action_name="action_listen"  # type: Text
                  ):
         # type: (...) -> None
+
         super(FallbackPolicy, self).__init__()
 
         self.nlu_threshold = nlu_threshold
