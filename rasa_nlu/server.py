@@ -166,6 +166,10 @@ def is_yaml_request(request):
     return "yml" in next(
             iter(request.requestHeaders.getRawHeaders("Content-Type", [])), "")
 
+def is_json_request(request):
+    return "json" in next(
+            iter(request.requestHeaders.getRawHeaders("Content-Type", [])), "")
+
 
 class RasaNLU(object):
     """Class representing Rasa NLU http server"""
@@ -277,15 +281,7 @@ class RasaNLU(object):
         request.setHeader('Content-Type', 'application/json')
         return json_to_string(self.data_router.get_status())
 
-    @app.route("/train", methods=['POST', 'OPTIONS'])
-    @requires_auth
-    @check_cors
-    @inlineCallbacks
-    def train(self, request):
-        # if not set will use the default project name, e.g. "default"
-        project = parameter_or_default(request, "project", default=None)
-        # if set will not generate a model name but use the passed one
-        model_name = parameter_or_default(request, "model", default=None)
+    def extract_data_and_config(self, request):
 
         request_content = request.content.read().decode('utf-8', 'strict')
 
@@ -296,7 +292,7 @@ class RasaNLU(object):
             model_config = utils.read_yaml(request_content)
             data = model_config.get("data")
 
-        else:
+        elif is_json_request(request):
             # If the caller just provided training data without config
             # this will use the default model config the server
             # was started with
@@ -315,6 +311,26 @@ class RasaNLU(object):
 
                 model_config = self.default_model_config
                 data = request_content
+        else:
+            raise Exception("Content-Type must be yml or json")
+
+        return model_config, data
+
+    @app.route("/train", methods=['POST', 'OPTIONS'])
+    @requires_auth
+    @check_cors
+    @inlineCallbacks
+    def train(self, request):
+        # if not set will use the default project name, e.g. "default"
+        project = parameter_or_default(request, "project", default=None)
+        # if set will not generate a model name but use the passed one
+        model_name = parameter_or_default(request, "model", default=None)
+
+        try:
+            model_config, data = self.extract_data_and_config(request)
+        except Exception as e:
+            request.setResponseCode(400)
+            returnValue(json_to_string({"error": "{}".format(e)}))
 
         data_file = dump_to_data_file(data)
 
@@ -387,7 +403,7 @@ class RasaNLU(object):
 
 if __name__ == '__main__':
     # Running as standalone python application
-    cmdline_args = create_argument_parser().parse_args()
+    cmdline_args = create_argument_parser().parse_args(['--path', '/Users/coryhurst/Documents/Git_Stuff/Samtecspg2/local-storage'])
 
     utils.configure_colored_logging(cmdline_args.loglevel)
     pre_load = cmdline_args.pre_load
