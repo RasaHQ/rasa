@@ -166,6 +166,7 @@ def is_yaml_request(request):
     return "yml" in next(
             iter(request.requestHeaders.getRawHeaders("Content-Type", [])), "")
 
+
 def is_json_request(request):
     return "json" in next(
             iter(request.requestHeaders.getRawHeaders("Content-Type", [])), "")
@@ -303,8 +304,6 @@ class RasaNLU(object):
 
         request_content = request.content.read().decode('utf-8', 'strict')
 
-
-
         if is_yaml_request(request):
             # assumes the user submitted a model configuration with a data
             # parameter attached to it
@@ -412,7 +411,7 @@ class RasaNLU(object):
 
 if __name__ == '__main__':
     # Running as standalone python application
-    cmdline_args = create_argument_parser().parse_args(['--path', '/Users/coryhurst/Documents/Git_Stuff/Samtecspg2/local-storage'])
+    cmdline_args = create_argument_parser().parse_args()
 
     utils.configure_colored_logging(cmdline_args.loglevel)
     pre_load = cmdline_args.pre_load
