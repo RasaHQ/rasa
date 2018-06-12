@@ -3,9 +3,11 @@
 HTTP API
 ========
 
-.. contents::
+.. routingtable::
+
 
 .. http:post:: /conversations/(str:sender_id)/parse
+   :synopsis: Returns posts by the specified tag for the user
 
    Notify the dialogue engine that the user posted a new message. You must
    ``POST`` data in this format ``'{"query":"<your text to parse>"}'``,

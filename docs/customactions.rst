@@ -3,41 +3,22 @@
 Custom Actions
 ==============
 
-
-The only part where you need to write python is when you want to define custom actions. 
-There's an excellent python library called `requests <http://docs.python-requests.org/en/master/>`_, which makes HTTP programming painless.
-If Rasa just needs to interact with your other services over HTTP, your actions will all look 
-something like this:
-
-
-.. doctest::
-
-   from rasa_core.actions import Action
-   import requests
-
-   class ApiAction(Action):
-       def name(self):
-           return "my_api_action"
-
-       def run(self, dispatcher, tracker, domain):
-           data = requests.get(url).json
-           return [SlotSet("api_result", data)]
-
-.. _custom_actions:
-
-Defining Custom Actions
------------------------
-
-
-The easiest are ``UtterActions``, which just send a message to the user. You define them by adding an entry to the
-action list that is named after the utterance. E.g. if there should be an action that utters the template called
-``utter_greet`` you need to add ``utter_greet`` to the list of defined actions. In the above example yaml you can see that
-all three of the defined actions are just named after utter templates and hence just respond with a message to
-the user.
+There are two kinds of actions in Rasa Core. 
+The simplest are ``UtterActions``, which just send a message to the user.
+You define them by adding an entry to the action list in your :class:`rasa_core.domain.Domain`.
+There also needs to be a matching utterance. For example, if there's an action ``utter_greet``
+then there should also be an utterance template called ``utter_greet`` in your domain.
 
 **What about more complicated actions?**
-To continue with the restaurant example, if the user says "show me a Mexican restaurant",
-your bot would execute the action ``ActionCheckRestaurants``, which might look like this:
+In general, an action can run any code you like. Custom actions can turn on the lights,
+add an event to a calendar, check a user's bank balance, or anything else you can imagine.
+
+
+Custom Actions Written in Python
+--------------------------------
+
+In a restaurant bot, if the user says "show me a Mexican restaurant",
+your bot could execute the action ``ActionCheckRestaurants``, which might look like this:
 
 
 .. testcode::
@@ -60,6 +41,16 @@ your bot would execute the action ``ActionCheckRestaurants``, which might look l
          return [SlotSet("matches", result if result is not None else [])]
 
 
-Note that actions **do not mutate the tracker directly**.
-Instead, an action can return ``events`` which are logged by the tracker and used to modify its 
-own state.
+The ``Action.run`` method
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The action's ``run`` method receives three arguments.
+
+.. automethod:: rasa_core.actions.Action.run
+
+
+Actions Written in Other Languages
+----------------------------------
+
+You can in fact write your custom actions in any language you like. 
+You will have to set up a web server that listens.

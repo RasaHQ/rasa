@@ -1,7 +1,7 @@
-.. _plumbing:
+.. _architecture:
 
-Plumbing - How it all fits together
-===================================
+High-Level Architecture
+=======================
 
 
 This diagram shows the basic steps of how a Rasa Core app responds to a message:
@@ -20,10 +20,7 @@ The steps are:
 6. A response is sent to the user
 
 
-.. note:: Messages can be text typed by a human, but can equally well be a button payload, or a message that's already been interpreted (as you would get from an Amazon Echo). See the section on :ref:`interpreters` for details.
+.. note:: Messages can be text typed by a human, or structured input like a button press.
 
-The steps above are carried out by the ``MessageProcessor``, which receives
-the messages and processes them as they arrive.
 
-Feel free to check out the :doc:`tutorial_basics` and
-:doc:`tutorial_interactive_learning` to see a bot in action!
+The process is handled by the :class:`rasa_core.agent.Agent` class.

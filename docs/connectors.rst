@@ -6,18 +6,21 @@ Chat & Voice platforms
 Here's how to connect your conversational AI to the outside world.
 
 Input channels are defined in the ``rasa_core.channels`` module.
-Currently, there is an implementation for the command line as well as
-connection to facebook, slack, telegram, mattermost and twilio.
+Currently, there is code for connecting to
+facebook, slack, telegram, mattermost and twilio. If the connection
+you want is missing, this is a great place to start contributing!
 
-You need an external webhook to use any of these channels.  If you're testing the connection locally, you can set up a temporary webhook using ngrok_
+If you're testing on your local machine (e.g. not a server), you 
+will need to use ngrok_. This gives your machine a domain name
+and so that facebook, slack, etc. know where to send messages.
 
 .. _facebook_connector:
 
 Facebook Messenger Setup
 ------------------------
 
-Using run script
-^^^^^^^^^^^^^^^^
+Using the run script
+^^^^^^^^^^^^^^^^^^^^
 If you want to connect to facebook using the run script, e.g. using
 
 .. code-block:: bash

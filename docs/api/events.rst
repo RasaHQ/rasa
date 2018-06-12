@@ -52,8 +52,6 @@ ReminderScheduled
 
 .. autoclass:: rasa_core.events.ReminderScheduled
 
-.. literalinclude:: ../../rasa_core/events/__init__.py
-   :pyobject: ReminderScheduled.apply_to
 
 ConversationPaused
 ^^^^^^^^^^^^^^^^^^

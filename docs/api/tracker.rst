@@ -8,14 +8,9 @@ conversation are received and updated after actions have been executed
 
 .. autoclass:: rasa_core.trackers.DialogueStateTracker
 
-   .. autoattribute:: DialogueStateTracker.latest_message
-
    .. automethod:: DialogueStateTracker.current_state
-
+   .. autoattribute:: latest_message
    .. automethod:: DialogueStateTracker.current_slot_values
-
    .. automethod:: DialogueStateTracker.get_slot    
-
    .. automethod:: DialogueStateTracker.get_latest_entity_values
-
    .. automethod:: DialogueStateTracker.copy

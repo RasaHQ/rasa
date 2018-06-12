@@ -42,7 +42,7 @@ Welcome to the Rasa Documentation!
     We thought you'd never ask!
     You can build a full example without installing anything on `colab <https://colab.research.google.com/github/RasaHQ/rasa_core/blob/master/getting_started.ipynb>`_.
     If you want to run stuff on your machine, follow the :ref:`installation`
-    and check out :ref:`tutorial_basics` afterwards!
+    and check out :ref:`quickstart` afterwards!
 
 
 .. toctree::
@@ -51,7 +51,7 @@ Welcome to the Rasa Documentation!
    :caption: Getting Started
 
    installation
-   tutorial_basics
+   quickstart
 
 
 .. toctree::
@@ -73,9 +73,10 @@ Welcome to the Rasa Documentation!
    :hidden:
    :caption: API Reference
 
+   architecture
    domains
    stories
-   slots
+   api/slots_api
    server
    http
    api/agent
