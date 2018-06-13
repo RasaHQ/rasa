@@ -4,8 +4,6 @@ pipeline:
 - name: "nlp_spacy"
   model: "en"
 - name: "ner_spacy"
-- name: "ner_ngrams"
-  max_number_of_ngrams: 7
 - name: "ner_duckling_http"
   url: "http://duckling:8000"
   dimensions:
