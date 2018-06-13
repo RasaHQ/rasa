@@ -65,8 +65,8 @@ Welcome to the Rasa Documentation!
    debugging
    formfilling
    fallbacks
+   policies
    evaluation
-   faq
 
 .. toctree::
    :maxdepth: 1

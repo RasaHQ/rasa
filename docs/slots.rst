@@ -36,7 +36,17 @@ The policy just sees a ``1`` or ``0`` depending on whether it is set.
 How Slots Get Set
 -----------------
 
-There are two ways that slots may be set:
+You can provide an initial value for a slot in your domain file:
+
+.. code-block:: markdown
+
+    slots:
+      name:
+        type: text
+        initial_value: "human"
+
+
+There are two ways that slots are set during a conversation:
 
 Slots Set from NLU
 ~~~~~~~~~~~~~~~~~~
@@ -45,6 +55,7 @@ If your NLU model picks up an entity, and your domain contains a slot with the s
 the slot will be set automatically. For example:
        
 .. code-block:: markdown
+
    # story_01
    * greet{"name": "Ali"}
      - slot{"name": "Ali"}
@@ -60,27 +71,123 @@ Slots Set by Actions
 The second option is to set slots by returning events in :ref:`custom_actions`.
 In this case, your stories need to include the slots.
 For example, you have a custom action to fetch a user's profile, and 
-you have a ``categorical`` slot called ``account_type``:
+you have a ``categorical`` slot called ``account_type``. 
+When the ``fetch_profile`` action is run, it returns a :class:`rasa_core.events.SlotSet`
+event. 
 
-.. code_block:: yaml
+.. code-block:: yaml
 
-         slots:
-            account_type:
-               type: categorical
-               values:
-               - premium
-               - basic
+   slots:
+      account_type:
+         type: categorical
+         values:
+         - premium
+         - basic
+
+.. code-block:: python
+
+   from rasa_core.actions import Action
+   import requests
+
+   class FetchProfileAction(Action):
+       def name(self):
+           return "fetch_profile"
+
+       def run(self, dispatcher, tracker, domain):
+           url = "http://myprofileurl.com"
+           data = requests.get(url).json
+           return [SlotSet("account_type", data["account_type"])]
+
 
 .. code-block:: markdown
-   # story_02
+
+   # story_01
    * greet
      - action_fetch_profile
      - slot{"account_type" : "premium"}
      - utter_welcome_premium
 
+   # story_02
+   * greet
+     - action_fetch_profile
+     - slot{"account_type" : "basic"}
+     - utter_welcome_basic
 
-Slot Types
-----------
+
+In this case you **do** have to include the ``- slot{}`` part in your stories.
+Rasa Core will learn to use this information to decide on the correct action to 
+take (in this case, ``utter_welcome_premuim`` or ``utter_welcome_basic``).
+
+.. note::
+   It is **very easy** to forget about slots if you are writing
+   stories by hand. We strongly recommend that you build up these
+   stories using :ref:`interactive_learning` rather than writing them.
+
+
+Setting Slots when a Conversation Starts
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TODO
+
+Custom Slot Types
+-----------------
+
+Maybe your restaurant booking system can only handle bookings for up to 6 people.
+In this case you want the *value* of the slot to influence the 
+next selected action (and not just whether it's been specified).
+You can do this by defining a custom slot class. 
+
+In the code below, we define a slot class called ``NumberOfPeopleSlot``.
+The featurization defines how the value of this slot gets converted to a vector
+to our machine learning model can deal with.
+Our slot has three possible "values", which we can represent with a vector of length ``2``.
+
++---------------+------------------------------------------+
+| ``(0,0)``   | not yet set                                |
++---------------+------------------------------------------+
+| ``(1,0)``   | between 1 and 6                            |
++---------------+------------------------------------------+
+| ``(0,1)``   | more than 6                                |
++---------------+------------------------------------------+
+
+
+.. testcode::
+
+   from rasa_core.slots import Slot
+   
+   class NumberOfPeopleSlot(Slot):
+     
+       def feature_dimensionality(self):
+           return 2
+    
+       def as_feature(self):
+           r = [0.0] * self.feature_dimensionality()
+           if self.value:
+               if self.value <= 6:
+                   r[0] = 1.0
+               else:
+                   r[1] = 1.0
+       return r
+
+Now we also need some training stories, so that Rasa Core
+can learn from these how to handle the different situations.
+
+
+.. code-block:: md
+
+   # story1
+   ...
+   * inform{"people": "3"}
+   - action_book_table
+   ...
+   # story2
+   * inform{"people": "9"}
+   - action_explain_table_limit
+   
+
+
+Pre-defined Slot Types
+----------------------
 
 Here are all of the predefined slot classes and what they're useful for:
 
@@ -183,12 +290,9 @@ Here are all of the predefined slot classes and what they're useful for:
        action the bot should run.
 
 
-.. option:: data
+An Example
+----------
 
-   :Use For:  Base class for creating own slots
-   :Example:
-      .. warning:: This type should not be used directly, but rather be subclassed.
+Here is an example story showing a few different slot types:
 
-   :Description:
-      User has to subclass this and define the ``as_feature`` method containing
-      any custom logic.
+TODO

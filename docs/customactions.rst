@@ -41,9 +41,6 @@ your bot could execute the action ``ActionCheckRestaurants``, which might look l
          return [SlotSet("matches", result if result is not None else [])]
 
 
-The ``Action.run`` method
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
 The action's ``run`` method receives three arguments.
 
 .. automethod:: rasa_core.actions.Action.run

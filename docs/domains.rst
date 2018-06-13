@@ -3,67 +3,54 @@
 Domain Format
 =============
 
-The ``Domain`` defines the universe in which your bot operates. It specifies exactly:
+The ``Domain`` defines the universe in which your bot operates.
+It specifies the ``intents``, ``entities``, ``slots``, and ``actions``
+your bot should know about. 
+Optionally, it can also include ``templates`` for the things your bot can say.
 
-* which ``intents`` you are expecting to respond to
-* which ``slots`` you wish to track
-* which ``actions`` your bot can take
 
-For example, the ``DefaultDomain`` has the following yaml definition:
+As an example, the ``DefaultDomain`` has the following yaml definition:
 
 .. literalinclude:: ../data/test_domains/default_with_slots.yml
    :language: yaml
 
 **What does this mean?**
 
-An ``intent`` is a string like ``"greet"`` or ``"restaurant_search"``.
-It describes what your user *probably meant to say*. 
-For example, "show me Mexican restaurants", and "I want to have lunch"
-could both be described as a ``restaurant_search`` intent. 
+Your NLU model will define the ``intents`` and ``entities`` that you need to include
+in the domain.
 
-``slots`` are the things you want to keep track of during a conversation.
-For example, in the messages above you would want to store "Mexican" as a cuisine type.
-The tracker has an attribute like ``tracker.get_slot("cuisine")`` which will return ``"Mexican"``
+``slots`` are the things you want to keep track of during a conversation, see :ref:`slots` .
 
 ``actions`` are the things your bot can actually do.
-They are invoked by calling the ``action.run()`` method.
 For example, an ``action`` can:
 
 * respond to a user
 * make an external API call
 * query a database
 
-.. note::
+see :ref:`customactions`
 
-  For more information about the utter template format (e.g. the use of
-  variables like ``{name}`` or buttons) take a look at :ref:`utter_templates`.
-
+For a more complete example domain, check the :doc:`quickstart`.
 
 
-Putting it all together
------------------------
+Custom Actions and Slots
+^^^^^^^^^^^^^^^^^^^^^^^^
 
-Let's add just this one new action to a custom domain (assuming we stored the
-action in a module called ``restaurant.actions``):
+To reference custom actions and slots in your domain,
+you need to reference them by their module path. 
+For example, if you have a module called ``my_actions`` containing
+a class ``MyAwesomeAction``, and module ``my_slots`` containing ``MyAwesomeSlot``,
+you would add these lines to the domain file:
 
 .. code-block:: yaml
 
-    actions:
-      - utter_default
-      - utter_greet
-      - utter_goodbye
-      - restaurant.actions.ActionCheckRestaurants   # custom action
+   actions:
+     - my_actions.MyAwesomeAction
+     ...
 
-If we want to use our new action for a specific story, we only have to add the canonical name of the action to a story. 
-In our case we would have to add ``- action_check_restaurants`` to a story in our ``stories.md``.
+   slots:
+     - my_slots.MyAwesomeSlot
 
-We only show the changed action list here, you also need to include the other
-parts from the original domain! The point of this is just to show how the pieces
-fit together. As you can see, in the ``actions`` section
-of your domain, you can list utter actions (which respond an utter template to the user) as well as custom
-actions using their module path.
-
-For an example you can run, check the :doc:`tutorial_basics`.
 
 .. _utter_templates:
 
@@ -72,7 +59,7 @@ Utterance templates
 
 Utterance templates are messages the bot will send back to the user. Either
 automatically by an action with the same name as the utterance (e.g. in the
-above example the `utter_default` template and action) or by an action with
+above example the ``utter_default`` template and action) or by an action with
 custom code.
 
 Images and Buttons
@@ -146,8 +133,8 @@ values for the fields by passing them as key word arguments to ``utter_template`
 Variations
 ----------
 
-If you want to randomly vary the response send to the user, you can list
-multiple responses and the bot will randomly pick one of them, e.g.:
+If you want to randomly vary the response sent to the user, you can list
+multiple responses and Rasa will randomly pick one of them, e.g.:
 
 .. code-block:: yaml
 
