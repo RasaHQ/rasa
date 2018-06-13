@@ -21,7 +21,7 @@ from rasa_nlu.config import RasaNLUModelConfig
 from rasa_nlu.evaluate import get_evaluation_metrics, clean_intent_labels
 from rasa_nlu.model import InvalidProjectError
 from rasa_nlu.project import Project
-from rasa_nlu.train import do_train_in_worker
+from rasa_nlu.train import do_train_in_worker, TrainingException
 from rasa_nlu.training_data.loading import load_data
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
@@ -318,7 +318,7 @@ class DataRouter(object):
         def training_errback(failure):
             logger.warn(failure)
             target_project = self.project_store.get(
-                    failure.value.failed_target_project)
+                failure.value.failed_target_project)
             if target_project:
                 target_project.status = 0
             return failure
@@ -326,13 +326,24 @@ class DataRouter(object):
         logger.debug("New training queued")
 
         if self._tf_in_pipeline(train_config):
-            return do_train_in_worker(
-                train_config,
-                data_file,
-                path=self.project_dir,
-                project=project,
-                fixed_model_name=model_name,
-                storage=self.remote_storage)
+            try:
+                model_path = do_train_in_worker(
+                    train_config,
+                    data_file,
+                    path=self.project_dir,
+                    project=project,
+                    fixed_model_name=model_name,
+                    storage=self.remote_storage)
+                model_dir = os.path.basename(os.path.normpath(model_path))
+                self.project_store[project].update(model_dir)
+                return model_dir
+            except TrainingException as e:
+                logger.warn(e)
+                target_project = self.project_store.get(
+                    e.failed_target_project)
+                if target_project:
+                    target_project.status = 0
+                raise e
 
         result = self.pool.submit(do_train_in_worker,
                                   train_config,
