@@ -26,12 +26,10 @@ logger = logging.getLogger(__name__)
 
 class Policy(object):
     SUPPORTS_ONLINE_TRAINING = False
-    MAX_HISTORY_DEFAULT = 5
 
-    @classmethod
-    def _standard_featurizer(cls):
-        return MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
-                                           cls.MAX_HISTORY_DEFAULT)
+    @staticmethod
+    def _standard_featurizer():
+        return MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer())
 
     @classmethod
     def _create_featurizer(cls, featurizer=None):

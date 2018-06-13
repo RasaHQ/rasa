@@ -29,10 +29,15 @@ def test_remote_example():
     from rasa_core import train, run
     from rasa_core.events import SlotSet
 
-    train.train_dialogue_model("examples/remotebot/concert_domain_remote.yml",
-                               "examples/remotebot/data/stories.md",
-                               "examples/remotebot/models/dialogue",
-                               False, None, {})
+    train.train_dialogue_model(
+            domain_file="examples/remotebot/concert_domain_remote.yml",
+            stories_file="examples/remotebot/data/stories.md",
+            output_path="examples/remotebot/models/dialogue",
+            use_online_learning=False,
+            nlu_model_path=None,
+            max_history=None,
+            kwargs=None
+    )
     agent = run.main("examples/remotebot/models/dialogue")
 
     response = agent.start_message_handling("/search_venues")
