@@ -7,8 +7,8 @@ services:
     ports:
     - "5000:5000"
     volumes:
-    - "/rasa-app-data/projects:/app/projects"
-    - "/rasa-app-data/logs:/app/logs"
+    - "./rasa-app-data/projects:/app/projects"
+    - "./rasa-app-data/logs:/app/logs"
   duckling:
     image: rasa/duckling:latest
     networks: ['rasa-network']
