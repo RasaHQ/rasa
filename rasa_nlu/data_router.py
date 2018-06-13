@@ -210,6 +210,11 @@ class DataRouter(object):
         else:
             raise ValueError("unknown mode : {0}".format(mode))
 
+    @staticmethod
+    def _tf_in_pipeline(model_config):
+        # type: (RasaNLUModelConfig) -> bool
+        return "intent_classifier_tensorflow_embedding" in model_config.component_names
+
     def extract(self, data):
         return self.emulator.normalise_request_json(data)
 
@@ -319,6 +324,15 @@ class DataRouter(object):
             return failure
 
         logger.debug("New training queued")
+
+        if self._tf_in_pipeline(train_config):
+            return do_train_in_worker(
+                train_config,
+                data_file,
+                path=self.project_dir,
+                project=project,
+                fixed_model_name=model_name,
+                storage=self.remote_storage)
 
         result = self.pool.submit(do_train_in_worker,
                                   train_config,
