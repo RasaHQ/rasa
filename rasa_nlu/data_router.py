@@ -313,9 +313,9 @@ class DataRouter(object):
             self.project_store[project].update(model_dir)
             self._current_training_processes -= 1
             self.project_store[project].current_training_processes -= 1
-            if (self.project_store[project].status == 1
-                and self.project_store[project].current_training_processes
-                    == 0):
+            if (self.project_store[project].status == 1 and
+                self.project_store[project].current_training_processes ==
+                0):
                 self.project_store[project].status = 0
             return model_dir
 
@@ -325,9 +325,9 @@ class DataRouter(object):
                     failure.value.failed_target_project)
             self._current_training_processes -= 1
             self.project_store[project].current_training_processes -= 1
-            if (target_project
-                and self.project_store[project].current_training_processes
-                    == 0):
+            if (target_project and
+                self.project_store[project].current_training_processes ==
+                0):
                 target_project.status = 0
             return failure
 
