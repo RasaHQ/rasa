@@ -41,8 +41,6 @@ logger = logging.getLogger(__name__)
 class EmbeddingPolicy(Policy):
     SUPPORTS_ONLINE_TRAINING = True
 
-    NUM_ATTENTION_TYPES = 1
-
     @classmethod
     def _standard_featurizer(cls):
         return FullDialogueTrackerFeaturizer(
@@ -76,10 +74,11 @@ class EmbeddingPolicy(Policy):
         "droprate_out": 0.1,
 
         # attention parameters
-        "use_attention": False,  # flag to use attention
         "sparse_attention": False,  # flag to use sparsemax for probs
         "attn_shift_range": 5,  # if None, mean dialogue length / 2
         "skip_cells": False,  # flag to add gate to skip rnn time step
+        "attn_before_rnn": True,
+        "attn_after_rnn": True,
 
         # visualization of accuracy
         "calc_acc_ones_in_epochs": 50,  # small values affect performance
@@ -171,10 +170,20 @@ class EmbeddingPolicy(Policy):
         self.droprate['out'] = config['droprate_out']
 
     def _load_attn_params(self, config):
-        self.use_attention = config['use_attention']
         self.sparse_attention = config['sparse_attention']
         self.skip_cells = config['skip_cells']
         self.attn_shift_range = config['attn_shift_range']
+        self.attn_after_rnn = config['attn_after_rnn']
+        self.attn_before_rnn = config['attn_before_rnn']
+        if not self.attn_after_rnn and not self.attn_before_rnn:
+            self.use_attention = False
+            self.num_attentions = 0
+        elif self.attn_after_rnn and self.attn_before_rnn:
+            self.use_attention = True
+            self.num_attentions = 2
+        else:
+            self.use_attention = True
+            self.num_attentions = 1
 
     def _load_visual_params(self, config):
         self.calc_acc_ones_in_epochs = config['calc_acc_ones_in_epochs']
@@ -219,7 +228,11 @@ class EmbeddingPolicy(Policy):
             user_embed=None,  # type: Optional[tf.Tensor]
             bot_embed=None,  # type: Optional[tf.Tensor]
             slot_embed=None,  # type: Optional[tf.Tensor]
-            dial_embed=None  # type: Optional[tf.Tensor]
+            dial_embed=None,  # type: Optional[tf.Tensor]
+            skip_gate=None,
+            copy_gate=None,
+            attn_prev_act_embed=None,
+            rnn_embed=None
     ):
         # type: (...) -> None
         self._check_tensorflow()
@@ -264,6 +277,11 @@ class EmbeddingPolicy(Policy):
         self.bot_embed = bot_embed
         self.slot_embed = slot_embed
         self.dial_embed = dial_embed
+
+        self.skip_gate = skip_gate
+        self.copy_gate = copy_gate
+        self.attn_prev_act_embed = attn_prev_act_embed
+        self.rnn_embed = rnn_embed
 
         # for continue training
         self.train_op = None
@@ -372,6 +390,16 @@ class EmbeddingPolicy(Policy):
         fbias = np.log((self.characteristic_time - 2) *
                        np.random.random(self.rnn_size) + 1)
 
+        # reg = tf.contrib.layers.l2_regularizer(self.C2)
+        if self.attn_after_rnn:
+            out_layer = tf.layers.Dense(
+                    units=self.embed_dim,
+                    # kernel_regularizer=reg,
+                    name='embed_layer_out'
+            )
+        else:
+            out_layer = None
+
         keep_prob = 1.0 - (self.droprate['rnn'] *
                            tf.cast(self.is_training, tf.float32))
         cell = ChronoLayerNormBasicLSTMCell(
@@ -379,7 +407,8 @@ class EmbeddingPolicy(Policy):
                 layer_norm=False,
                 dropout_keep_prob=keep_prob,
                 forget_bias=fbias,
-                input_bias=-fbias
+                input_bias=-fbias,
+                out_layer=out_layer
         )
         return cell
 
@@ -387,23 +416,49 @@ class EmbeddingPolicy(Policy):
                           real_length):
         """Wrap cell in attention wrapper with given memory"""
 
-        emb_mem = tf.concat([emb_utter, emb_prev_act], -1)
-        num_mem_units = int(emb_mem.shape[-1])
-        attn_mech = tf.contrib.seq2seq.BahdanauAttention(
-                num_units=num_mem_units, memory=emb_mem,
+        num_mem_units = None
+        if self.attn_before_rnn:
+            emb_mem = tf.concat([emb_utter, emb_prev_act], -1)
+            num_mem_units = int(emb_mem.shape[-1])
+            attn_mech = tf.contrib.seq2seq.BahdanauAttention(
+                    num_units=num_mem_units, memory=emb_mem,
+                    memory_sequence_length=real_length,
+                    normalize=True,
+                    probability_fn=tf.identity,
+                    # we only attend to memory up to a current time
+                    score_mask_value=0,  # it does not affect alignments
+            )
+        else:
+            attn_mech = None
+
+        out_layer = None
+        if self.attn_after_rnn:
+            num_prev_act_units = int(emb_prev_act.shape[-1])
+            attn_prev_act = tf.contrib.seq2seq.BahdanauAttention(
+                num_units=num_prev_act_units, memory=emb_prev_act,
                 memory_sequence_length=real_length,
                 normalize=True,
                 probability_fn=tf.identity,
                 # we only attend to memory up to a current time
                 score_mask_value=0,  # it does not affect alignments
-        )
+            )
+            if attn_mech is not None:
+                attn_mech = [attn_mech, attn_prev_act]
+            else:
+                attn_mech = attn_prev_act
 
         num_utter_units = int(emb_utter.shape[-1])
 
         def cell_input_fn(inputs, attention):
-            res = tf.concat([attention,
-                             inputs[:, num_utter_units:]], -1)
+            if num_mem_units is not None:
+                res = tf.concat([attention[:, :num_mem_units],
+                                 inputs[:, num_utter_units:]], -1)
+            else:
+                res = inputs
             return res
+
+        def attn_to_copy_fn(attention):
+            return attention[:, num_mem_units:]
 
         attn_cell = TimeAttentionWrapper(
                 cell, attn_mech,
@@ -411,17 +466,20 @@ class EmbeddingPolicy(Policy):
                 sparse_attention=self.sparse_attention,
                 skip_cells=self.skip_cells,
                 cell_input_fn=cell_input_fn,
-                output_attention=False,
+                attn_to_copy_fn=attn_to_copy_fn,
+                output_attention=True,
                 alignment_history=True
         )
         return attn_cell
 
-    def _create_rnn(self, emb_utter, emb_slots, emb_prev_act, real_length):
-        """Create rnn"""
+    def _create_tf_dial_embed(self, emb_utter, emb_slots, emb_prev_act, mask):
+        """Create rnn embedding"""
 
         cell_input = tf.concat([emb_utter, emb_slots], -1)
 
         cell = self._create_rnn_cell()
+
+        real_length = tf.cast(tf.reduce_sum(mask, 1), tf.int32)
 
         if self.use_attention:
             cell = self._create_attn_cell(cell, emb_utter, emb_prev_act,
@@ -434,10 +492,35 @@ class EmbeddingPolicy(Policy):
                 scope='rnn_decoder_{}'.format(0)
         )
 
+        if self.attn_after_rnn:
+            emb_dial = cell_output[:, :, :self.embed_dim]
+            self.rnn_embed = cell_output[:, :, self.embed_dim:
+                                               self.embed_dim +
+                                               self.embed_dim]
+            self.attn_prev_act_embed = cell_output[:, :, (self.embed_dim +
+                                                          self.embed_dim +
+                                                          self.embed_dim +
+                                                          self.embed_dim):-2]
+
+            self.copy_gate = cell_output[:, :, -2:-1]
+            self.skip_gate = cell_output[:, :, -1:]
+
+            # cell_output = cell_output[:, :, :self.rnn_size]
+
+            # emb_dial = self._create_embed(cell_output, name='out')
+            # self.rnn_embed = emb_dial
+            # emb_dial = (copy_gate * attn_emb_prev_act +
+            #             (1 - copy_gate) * emb_dial)
+            # self.copy_gate = copy_gate
+            # self.attn_prev_act_embed = attn_emb_prev_act
+
+        else:
+            emb_dial = self._create_embed(cell_output, name='out')
+
         # extract alignments history
         self.alignment_history = []
         if self.use_attention:
-            if self.NUM_ATTENTION_TYPES == 1:
+            if self.num_attentions == 1:
                 alignment_history = [final_state.alignment_history]
             else:
                 alignment_history = final_state.alignment_history
@@ -447,21 +530,6 @@ class EmbeddingPolicy(Policy):
                 alignments = tf.transpose(alignments.stack(), [1, 0, 2])
                 self.alignment_history.append(alignments)
 
-        return cell_output
-
-    def _create_tf_dial_embed(self, emb_utter, emb_slots,
-                              emb_prev_act, mask):
-        """Create tf graph for training"""
-
-        # create rnn
-        real_length = tf.cast(tf.reduce_sum(mask, 1), tf.int32)
-        cell_output = self._create_rnn(emb_utter, emb_slots, emb_prev_act,
-                                       real_length)
-
-        cell_output = tf.layers.dropout(cell_output,
-                                        rate=self.droprate['out'],
-                                        training=self.is_training)
-        emb_dial = self._create_embed(cell_output, name='out')
         return emb_dial
 
     def _tf_sim(self, emb_dial, emb_act, mask):
@@ -641,6 +709,8 @@ class EmbeddingPolicy(Policy):
         # type: (...) -> None
         """Trains the policy on given training trackers."""
         logger.debug('Started training embedding policy.')
+        tf.reset_default_graph()
+
         # self.domain = domain
         if kwargs:
             logger.debug("Config is updated with {}".format(kwargs))
@@ -840,6 +910,19 @@ class EmbeddingPolicy(Policy):
             self.graph.add_to_collection('dial_embed',
                                          self.dial_embed)
 
+            self.graph.clear_collection('skip_gate')
+            self.graph.add_to_collection('skip_gate',
+                                         self.skip_gate)
+            self.graph.clear_collection('copy_gate')
+            self.graph.add_to_collection('copy_gate',
+                                         self.copy_gate)
+            self.graph.clear_collection('attn_prev_act_embed')
+            self.graph.add_to_collection('attn_prev_act_embed',
+                                         self.attn_prev_act_embed)
+            self.graph.clear_collection('rnn_embed')
+            self.graph.add_to_collection('rnn_embed',
+                                         self.rnn_embed)
+
             saver = tf.train.Saver()
             saver.save(self.session, checkpoint)
 
@@ -847,6 +930,10 @@ class EmbeddingPolicy(Policy):
                 path,
                 file_name + ".encoded_all_actions.pkl"), 'wb') as f:
             pickle.dump(self.encoded_all_actions, f)
+        with io.open(os.path.join(
+                path,
+                file_name + ".num_attentions.pkl"), 'wb') as f:
+            pickle.dump(self.num_attentions, f)
 
     @classmethod
     def load(cls, path):
@@ -878,9 +965,14 @@ class EmbeddingPolicy(Policy):
 
                     # attention probability distribution is
                     # a list of tensors for each attention type
-                    # of length cls.NUM_ATTENTION_TYPES
+                    # of length num_attentions
+
+                    with io.open(os.path.join(
+                            path,
+                            file_name + ".num_attentions.pkl"), 'rb') as f:
+                        num_attentions = pickle.load(f)
                     alignment_history = []
-                    for i in range(cls.NUM_ATTENTION_TYPES):
+                    for i in range(num_attentions):
                         alignments = tf.get_collection('alignment_history_{}'
                                                        ''.format(i))
                         alignment_history.extend(alignments)
@@ -889,6 +981,11 @@ class EmbeddingPolicy(Policy):
                     bot_embed = tf.get_collection('bot_embed')[0]
                     slot_embed = tf.get_collection('slot_embed')[0]
                     dial_embed = tf.get_collection('dial_embed')[0]
+
+                    skip_gate = tf.get_collection('skip_gate')[0]
+                    copy_gate = tf.get_collection('copy_gate')[0]
+                    attn_prev_act_embed = tf.get_collection('attn_prev_act_embed')[0]
+                    rnn_embed = tf.get_collection('rnn_embed')[0]
 
                 with io.open(os.path.join(
                         path,
@@ -908,7 +1005,11 @@ class EmbeddingPolicy(Policy):
                            user_embed=user_embed,
                            bot_embed=bot_embed,
                            slot_embed=slot_embed,
-                           dial_embed=dial_embed)
+                           dial_embed=dial_embed,
+                           skip_gate=skip_gate,
+                           copy_gate=copy_gate,
+                           attn_prev_act_embed=attn_prev_act_embed,
+                           rnn_embed=rnn_embed)
             else:
                 return cls(featurizer=featurizer)
 
@@ -1074,6 +1175,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                  attention_layer_size=None,
                  alignment_history=False,
                  cell_input_fn=None,
+                 attn_to_copy_fn=None,
                  output_attention=False,
                  initial_cell_state=None,
                  name=None):
@@ -1087,15 +1189,28 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                 initial_cell_state,
                 name
         )
-        self.timed_ntms = [TimedNTM(attn_shift_range, sparse_attention)]
+        self._timed_ntms = [TimedNTM(attn_shift_range, sparse_attention)]
         if self._is_multi:
             for _ in range(len(attention_mechanism)):
-                self.timed_ntms.append(TimedNTM(attn_shift_range,
-                                                sparse_attention))
+                self._timed_ntms.append(TimedNTM(attn_shift_range,
+                                                 sparse_attention))
         if skip_cells:
-            self.skip_gate = tf.layers.Dense(1, tf.sigmoid)
+            self._skip_gate = tf.layers.Dense(1, tf.sigmoid, bias_initializer=tf.constant_initializer(-1))
         else:
-            self.skip_gate = None
+            self._skip_gate = None
+
+        if attn_to_copy_fn is not None:
+            self._attn_to_copy_fn = attn_to_copy_fn
+            self._copy_gate = tf.layers.Dense(1, tf.sigmoid, bias_initializer=tf.constant_initializer(-4))
+        else:
+            self._copy_gate = None
+
+    @property
+    def output_size(self):
+        if self._output_attention:
+            return self._attention_layer_size + 2 * self._cell.output_size + 1 + 1
+        else:
+            return self._cell.output_size
 
     def call(self, inputs, state):
         """Perform a step of attention-wrapped RNN.
@@ -1136,16 +1251,17 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
 
         # Step 1: Calculate attention based on
         #          the previous output and current input
+        cell_state = state.cell_state
         if isinstance(state.cell_state, tf.contrib.rnn.LSTMStateTuple):
             # the hidden state c is not included, in hope that algorithm
             # would learn correct attention
             # regardless of the hidden state c of lstm memory
-            out_for_attn = tf.concat([state.cell_state.h, inputs], 1)
+            prev_out_for_attn = tf.concat([cell_state.h, inputs], 1)
         else:
-            out_for_attn = tf.concat([state.cell_state, inputs], 1)
+            prev_out_for_attn = tf.concat([cell_state, inputs], 1)
 
         cell_batch_size = (
-                out_for_attn.shape[0].value or tf.shape(out_for_attn)[0])
+                prev_out_for_attn.shape[0].value or tf.shape(prev_out_for_attn)[0])
         error_message = (
                 "When applying AttentionWrapper %s: " % self.name +
                 "Non-matching batch sizes between the memory "
@@ -1155,8 +1271,8 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                 "multiple=beam_width.")
         with tf.control_dependencies(
                 self._batch_size_checks(cell_batch_size, error_message)):
-            out_for_attn = tf.identity(
-                out_for_attn, name="checked_out_for_attn")
+            prev_out_for_attn = tf.identity(
+                prev_out_for_attn, name="checked_prev_out_for_attn")
 
         if self._is_multi:
             previous_attention_state = state.attention_state
@@ -1171,9 +1287,9 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         maybe_all_histories = []
         for i, attention_mechanism in enumerate(self._attention_mechanisms):
             attention, alignments, next_attention_state = _compute_time_attention(
-                attention_mechanism, out_for_attn, previous_attention_state[i],
+                attention_mechanism, prev_out_for_attn, previous_attention_state[i],
                 # time is added to calculate time attention
-                state.time, self.timed_ntms[i],
+                state.time, self._timed_ntms[i],
                 self._attention_layers[i] if self._attention_layers else None)
 
             alignment_history = previous_alignment_history[i].write(
@@ -1189,21 +1305,37 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         # Step 6: Calculate the true inputs to the cell based on the
         #          calculated attention value.
         cell_inputs = self._cell_input_fn(inputs, attention)
-        cell_state = state.cell_state
+        # cell_state = state.cell_state
         cell_output, next_cell_state = self._cell(cell_inputs, cell_state)
+        h_old = cell_output
+        c_g = None
+        if self._copy_gate is not None:
+            c_g = self._copy_gate(prev_out_for_attn)
 
-        if self.skip_gate is not None:
-            c_g = self.skip_gate(cell_output)
+            attn_emb_prev_act = self._attn_to_copy_fn(attention)
+            # attn_emb_prev_act = attention[:, (self._cell.output_size +
+            #                                   self._cell.output_size):]
+
+            cell_output = (c_g * attn_emb_prev_act +
+                           (1 - c_g) * cell_output)
+            if isinstance(cell_state, tf.contrib.rnn.LSTMStateTuple):
+                next_cell_state = tf.contrib.rnn.LSTMStateTuple(next_cell_state.c, cell_output)
+            else:
+                next_cell_state = cell_output
+
+        s_g = None
+        if self._skip_gate is not None:
+            s_g = self._skip_gate(cell_output)
             if isinstance(cell_state, tf.contrib.rnn.LSTMStateTuple):
                 # in case of lstm only skip hidden state c
                 old_c = cell_state.c
                 c, h = next_cell_state
-                new_c = c_g * c + (1 - c_g) * old_c
+                new_c = s_g * old_c + (1 - s_g) * c
                 next_cell_state = tf.contrib.rnn.LSTMStateTuple(new_c, h)
             else:
                 old_c = cell_state
                 c = next_cell_state
-                next_cell_state = c_g * c + (1 - c_g) * old_c
+                next_cell_state = s_g * old_c + (1 - s_g) * c
 
         next_state = tf.contrib.seq2seq.AttentionWrapperState(
             time=state.time + 1,
@@ -1214,9 +1346,11 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             alignment_history=self._item_or_tuple(maybe_all_histories))
 
         if self._output_attention:
-            # does not make too much sense now
-            # because rnn cell is called after attention
-            return attention, next_state
+            # concatenate rnn cell output and attention
+            # c_g = self._copy_gate(prev_out_for_attn)
+            if s_g is None:
+                s_g = tf.zeros_like(c_g)
+            return tf.concat([cell_output, h_old, attention, c_g, s_g], 1), next_state
         else:
             return cell_output, next_state
 
@@ -1231,6 +1365,7 @@ class ChronoLayerNormBasicLSTMCell(tf.contrib.rnn.LayerNormBasicLSTMCell):
                  num_units,
                  forget_bias=1.0,
                  input_bias=0.0,
+                 out_layer=None,
                  input_size=None,
                  activation=tf.tanh,
                  layer_norm=True,
@@ -1252,6 +1387,18 @@ class ChronoLayerNormBasicLSTMCell(tf.contrib.rnn.LayerNormBasicLSTMCell):
                 reuse=reuse
         )
         self._input_bias = input_bias
+        self._out_layer = out_layer
+
+    @property
+    def output_size(self):
+        if self._out_layer is not None:
+            return self._out_layer.units
+        else:
+            return self._num_units
+
+    @property
+    def state_size(self):
+        return tf.contrib.rnn.LSTMStateTuple(self._num_units, self.output_size)
 
     def call(self, inputs, state):
         """LSTM cell with layer normalization and recurrent dropout."""
@@ -1277,6 +1424,14 @@ class ChronoLayerNormBasicLSTMCell(tf.contrib.rnn.LayerNormBasicLSTMCell):
         if self._layer_norm:
             new_c = self._norm(new_c, "state", dtype=dtype)
         new_h = self._activation(new_c) * tf.sigmoid(o)
+
+        # added dropout to the output
+        if (not isinstance(self._keep_prob, float)) or self._keep_prob < 1:
+            new_h = tf.nn.dropout(new_h, self._keep_prob, seed=self._seed)
+
+        # add postprocessing of the output
+        if self._out_layer is not None:
+            new_h = self._out_layer(new_h)
 
         new_state = tf.contrib.rnn.LSTMStateTuple(new_c, new_h)
         return new_h, new_state
