@@ -539,27 +539,40 @@ class EmbeddingPolicy(Policy):
                              "should be 'cosine' or 'inner'"
                              "".format(self.similarity_type))
 
-    def _tf_loss(self, sim, sim_act, mask):
+    def _tf_loss(self, sim, sim_act, mask, emb_dial, emb_act):
         """Define loss"""
+
+        sim_loss = self.mu_pos - sim[:, :, 0]
+
+        if self.attn_after_rnn:
+            emb_dial_norm = tf.norm(emb_dial, axis=-1)
+            emb_act_norm = tf.norm(emb_act[:, :, 0, :], axis=-1)
+
+            # by dividing by 2, we make this loss the least important
+            norm_loss = tf.square(emb_dial_norm -
+                                  emb_act_norm) * self.C_emb * 0.5
+            # norm_loss = tf.reduce_sum(emb_dial * emb_act[:, :, 0, :],
+            #                           -1) * self.C_emb
+            # norm_loss = (tf.square(emb_dial_norm - 1) +
+            #              tf.square(emb_act_norm - 1)) * self.C_emb
+            loss = tf.where(sim_loss > 0, sim_loss, norm_loss)
+        else:
+            loss = tf.maximum(0., sim_loss)
 
         if self.use_max_sim_neg:
             max_sim_neg = tf.reduce_max(sim[:, :, 1:], -1)
-            loss = (tf.maximum(0., self.mu_pos - sim[:, :, 0]) +
-                    tf.maximum(0., self.mu_neg + max_sim_neg)) * mask
-
+            loss += tf.maximum(0., self.mu_neg + max_sim_neg)
         else:
-            # create an array for mu
-            mu = self.mu_neg * np.ones(self.num_neg + 1)
-            mu[0] = self.mu_pos
-            mu = mu[np.newaxis, np.newaxis, :]
+            max_margin = tf.maximum(0., self.mu_neg + sim[:, :, 1:])
+            loss += tf.reduce_sum(max_margin, -1)
 
-            factors = tf.concat([-1 * tf.ones([1, 1, 1]),
-                                 tf.ones([1, 1, tf.shape(sim)[-1] - 1])],
-                                axis=-1)
+        # emb_dial_norm = tf.norm(emb_dial, axis=-1)
+        # emb_act_norm = tf.norm(emb_act[:, :, 0, :], axis=-1)
+        # norm_loss = (tf.square(emb_dial_norm - 1) +
+        #              tf.square(emb_act_norm - 1)) * self.C2
+        # loss += norm_loss
 
-            max_margin = tf.maximum(0., mu + factors * sim)
-
-            loss = tf.reduce_sum(max_margin, -1) * mask
+        loss *= mask
 
         # penalize max similarity between intent embeddings
         loss_act = tf.maximum(0., tf.reduce_max(sim_act, -1))
@@ -712,7 +725,7 @@ class EmbeddingPolicy(Policy):
                                                     domain,
                                                     **kwargs)
         # assume that characteristic time is the mean length of the dialogues
-        self.characteristic_time = np.max(training_data.true_length)
+        self.characteristic_time = np.mean(training_data.true_length)
         if self.attn_shift_range is None:
             self.attn_shift_range = int(self.characteristic_time / 2)
 
@@ -770,7 +783,9 @@ class EmbeddingPolicy(Policy):
                                                          emb_prev_act, mask)
 
             self.sim_op, sim_act = self._tf_sim(self.dial_embed, self.bot_embed, mask)
-            loss = self._tf_loss(self.sim_op, sim_act, mask)
+
+            loss = self._tf_loss(self.sim_op, sim_act, mask,
+                                 self.dial_embed, self.bot_embed)
 
             self.train_op = tf.train.AdamOptimizer(
                     learning_rate=0.001, epsilon=1e-16).minimize(loss)
