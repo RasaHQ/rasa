@@ -425,6 +425,7 @@ class EmbeddingPolicy(Policy):
         else:
             attn_mech = None
 
+        attn_to_copy_fn = None
         if self.attn_after_rnn:
             num_prev_act_units = int(emb_prev_act.shape[-1])
             attn_prev_act = tf.contrib.seq2seq.BahdanauAttention(
@@ -440,6 +441,9 @@ class EmbeddingPolicy(Policy):
             else:
                 attn_mech = attn_prev_act
 
+            def attn_to_copy_fn(attention):
+                return attention[:, num_mem_units:]
+
         num_utter_units = int(emb_utter.shape[-1])
 
         def cell_input_fn(inputs, attention):
@@ -449,9 +453,6 @@ class EmbeddingPolicy(Policy):
             else:
                 res = inputs
             return res
-
-        def attn_to_copy_fn(attention):
-            return attention[:, num_mem_units:]
 
         attn_cell = TimeAttentionWrapper(
                 cell, attn_mech,
@@ -484,22 +485,25 @@ class EmbeddingPolicy(Policy):
                 scope='rnn_decoder_{}'.format(0)
         )
 
+        # if output_attention=True,
+        self.rnn_embed = cell_output[:, :, self.embed_dim:
+                                           self.embed_dim +
+                                           self.embed_dim]
+        if self.attn_before_rnn:
+            self.attn_prev_act_embed = cell_output[:, :, (self.embed_dim +
+                                                          self.embed_dim +
+                                                          self.embed_dim +
+                                                          self.embed_dim):-1]
+        else:
+            self.attn_prev_act_embed = cell_output[:, :, (self.embed_dim +
+                                                          self.embed_dim):-1]
+
+        self.copy_gate = cell_output[:, :, -1:]
+
+        cell_output = cell_output[:, :, :self.embed_dim]
+
         if self.attn_after_rnn:
-            emb_dial = cell_output[:, :, :self.embed_dim]
-            self.rnn_embed = cell_output[:, :, self.embed_dim:
-                                               self.embed_dim +
-                                               self.embed_dim]
-            if self.attn_before_rnn:
-                self.attn_prev_act_embed = cell_output[:, :, (self.embed_dim +
-                                                              self.embed_dim +
-                                                              self.embed_dim +
-                                                              self.embed_dim):-1]
-            else:
-                self.attn_prev_act_embed = cell_output[:, :, (self.embed_dim +
-                                                              self.embed_dim):-1]
-
-            self.copy_gate = cell_output[:, :, -1:]
-
+            emb_dial = cell_output
         else:
             emb_dial = self._create_embed(cell_output, name='out')
 
@@ -548,9 +552,8 @@ class EmbeddingPolicy(Policy):
             emb_dial_norm = tf.norm(emb_dial, axis=-1)
             emb_act_norm = tf.norm(emb_act[:, :, 0, :], axis=-1)
 
-            # by dividing by 2, we make this loss the least important
-            norm_loss = tf.square(emb_dial_norm -
-                                  emb_act_norm) * self.C_emb * 0.5
+            norm_loss = 0.5 * tf.square(emb_dial_norm -
+                                        emb_act_norm) * self.C_emb
             # norm_loss = tf.reduce_sum(emb_dial * emb_act[:, :, 0, :],
             #                           -1) * self.C_emb
             # norm_loss = (tf.square(emb_dial_norm - 1) +
@@ -1316,7 +1319,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         cell_output, next_cell_state = self._cell(cell_inputs, cell_state)
 
         h_old = cell_output
-        c_g = None
+        c_g = tf.zeros_like(prev_out_for_attn[:, 0:1])
         if self._copy_gate is not None:
             c_g = self._copy_gate(prev_out_for_attn)
             attn_emb_prev_act = self._attn_to_copy_fn(attention)
