@@ -294,7 +294,7 @@ def fix_yaml_loader():
     else:
         yaml.reader.Reader.NON_PRINTABLE = re.compile(
                 '[^\x09\x0A\x0D\x20-\x7E\x85\xA0-\uD7FF\ud83d\uE000-\uFFFD'
-                '\u00010000-\u0010FFFF]')
+                '\U00010000-\U0010FFFF]')
 
     yaml.Loader.add_constructor(u'tag:yaml.org,2002:str',
                                 construct_yaml_str)
