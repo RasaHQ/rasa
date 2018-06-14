@@ -1,0 +1,35 @@
+{
+  "py/object": "rasa_core.conversation.Dialogue",
+  "events": [
+    {
+      "py/object": "rasa_core.events.ActionExecuted",
+      "action_name": "action_listen",
+      "unpredictable": false
+    },
+    {
+      "py/object": "rasa_core.events.UserUttered",
+      "entities": [],
+      "intent": {
+        "name": "greet",
+        "confidence": 1.0
+      },
+      "parse_data": {
+        "intent": {
+          "name": "greet",
+          "confidence": 1.0
+        },
+        "text": "hi",
+        "intent_ranking": [{"confidence": 0.8292342224477928, "name": "greet"},
+                           {"confidence": 0.1707, "name": "affirm"}],
+        "entities": []
+      },
+      "text": "hi"
+    },
+    {
+      "py/object": "rasa_core.events.ActionExecuted",
+      "action_name": "utter_greet",
+      "unpredictable": false
+    }
+  ],
+  "name": "nlu dialogue"
+}

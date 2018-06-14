@@ -27,9 +27,7 @@ class TrackerStore(object):
 
     def init_tracker(self, sender_id):
         return DialogueStateTracker(sender_id,
-                                    self.domain.slots,
-                                    self.domain.topics,
-                                    self.domain.default_topic)
+                                    self.domain.slots)
 
     def create_tracker(self, sender_id, append_action_listen=True):
         """Creates a new tracker for the sender_id.
@@ -47,6 +45,10 @@ class TrackerStore(object):
 
     def retrieve(self, sender_id):
         # type: (Text) -> Optional[DialogueStateTracker]
+        raise NotImplementedError()
+
+    def keys(self):
+        # type: (Text) -> List[Text]
         raise NotImplementedError()
 
     @staticmethod
@@ -81,23 +83,25 @@ class InMemoryTrackerStore(TrackerStore):
                          'id \'{}\'.'.format(sender_id))
             return None
 
+    def keys(self):
+        return self.store.keys()
+
 
 class RedisTrackerStore(TrackerStore):
 
-    def __init__(self, domain, mock=False, host='localhost',
+    def keys(self):
+        pass
+
+    def __init__(self, domain, host='localhost',
                  port=6379, db=0, password=None):
 
-        if mock:
-            import fakeredis
-            self.red = fakeredis.FakeStrictRedis()
-        else:  # pragma: no cover
-            import redis
-            self.red = redis.StrictRedis(host=host, port=port, db=db,
-                                         password=password)
+        import redis
+        self.red = redis.StrictRedis(host=host, port=port, db=db,
+                                     password=password)
         super(RedisTrackerStore, self).__init__(domain)
 
     def save(self, tracker, timeout=None):
-        serialised_tracker = RedisTrackerStore.serialise_tracker(tracker)
+        serialised_tracker = self.serialise_tracker(tracker)
         self.red.set(tracker.sender_id, serialised_tracker, ex=timeout)
 
     def retrieve(self, sender_id):

@@ -5,6 +5,66 @@ Migration Guide
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+0.8.x to 0.9.0
+--------------
+
+.. warning::
+
+  This is a release **breaking backwards compatibility**.
+  Unfortunately, it is not possible to load
+  previously trained models (as the stored file formats have changed as
+  well as the configuration and metadata). Please make sure to retrain
+  a model before trying to use it with this improved version.
+
+- loading data should be done either using
+
+  .. code-block:: python
+
+      from rasa_core import training
+
+      training_data = training.load_data(...)
+
+  or using an agent instance:
+
+  .. code-block:: python
+
+      training_data = agent.load_data(...)
+      agent.train(training_data, ...)
+
+  It is deprecated to pass the training data file directly to ``agent.train``.
+  Instead, the data should be loaded in one of the above ways and then passed
+  to train.
+
+- ``ScoringPolicy`` got removed and replaced by ``AugmentedMemoizationPolicy``
+  which is similar, but is able to match more states to states it has seen
+  during trainer (e.g. it is able to handle slots better)
+
+- if you use custom featurizers, you need to
+  **pass them directly to the policy** that should use them.
+  This allows the policies to use different featurizers. Passing a featurizer
+  is **optional**. Accordingly, the ``max_history`` parameter moved to that
+  featurizer:
+
+  .. code-block:: python
+
+      from rasa_core.featurizers import (MaxHistoryTrackerFeaturizer,
+                                         BinarySingleStateFeaturizer)
+
+      featurizer = MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
+                                               max_history=5)
+
+      agent = Agent(domain_file,
+                    policies=[MemoizationPolicy(max_history=5),
+                              KerasPolicy(featurizer)])
+
+  If no featurizer is passed during policy creation, the policies default
+  featurizer will be used. The `MemoizationPolicy` allows passing in the
+  `max_history` parameter directly, without creating a featurizer.
+
+- the ListSlot now stores a list of entities (with the same name)
+  present in an utterance
+
+
 0.7.x to 0.8.0
 --------------
 

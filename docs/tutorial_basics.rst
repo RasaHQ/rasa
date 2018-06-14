@@ -27,32 +27,51 @@ We will create a very simple bot that checks our current mood and tries to
 cheer us up if we are feeling sad. It will query our mood and based on our
 reply will respond with a funny image or a message.
 
-Let's start by creating a project folder:
+We created a `starter pack <https://github.com/RasaHQ/starter-pack>`_ to help
+you get started with this tutorial (or any bot you're building), so the first
+step is to clone this:
 
 .. code-block:: bash
 
-   mkdir moodbot && cd moodbot
+   git clone https://github.com/RasaHQ/starter-pack.git && cd starter-pack
 
-We need to create two data files (dialogue stories and NLU examples),
-as well as two configuration files (dialogue domain and NLU config). The
-final structure should look like this:
+The files that are important for this tutorial are described below:
 
 .. code-block:: text
 
-   moodbot/
+   starter-pack/
    ├── data/
    │   ├── stories.md            # dialogue training data
-   │   └── nlu.md                # nlu training data
+   │   └── nlu_data.md           # nlu training data
    ├── domain.yml                # dialogue configuration
-   └── nlu_model_config.json     # nlu configuration
+   └── nlu_config.yml            # nlu configuration
 
-Let's go through each of them!
+Let's go through each of them! Just copy the example code below into each of
+the relevant files as you go along.
+
+Setup
+^^^^^
+
+For this tutorial to work, you need to have ``rasa_core`` installed,
+``rasa_nlu``, as well as ``spaCy``:
+
+.. code-block:: bash
+
+    pip install rasa_nlu[spacy]
+    pip install rasa_core
+
+You'll also need the english language model:
+
+.. code-block:: bash
+
+    python -m spacy download en_core_web_md
+    python -m spacy link en_core_web_md en
 
 1. Define a Domain
 ^^^^^^^^^^^^^^^^^^
 
-The first thing we need is a ``Domain``. 
-The domain defines the universe your bot lives in. 
+The first thing we need is a ``Domain``.
+The domain defines the universe your bot lives in.
 
 Here is an example domain for our moodbot, ``domain.yml``:
 
@@ -106,40 +125,41 @@ Language Understanding (NLU) and transforms the message into structured output.
 In this example we are going to use Rasa NLU for this purpose.
 
 In Rasa NLU, we need to define the user messages our bot should be able to
-handle in the `Rasa NLU training data format <https://nlu.rasa.ai/dataformat.html>`_.
+handle in the `Rasa NLU training data format <https://nlu.rasa.com/dataformat.html>`_.
 In this tutorial we are going to use Markdown Format for NLU training data.
-Let's create some intent examples in ``data/nlu.md``:
+Let's create some intent examples in ``data/nlu_data.md``:
 
 .. literalinclude:: ../examples/moodbot/data/nlu.md
     :linenos:
     :language: md
 
 
-Furthermore, we need a configuration file, ``nlu_model_config.json``, for the
+Furthermore, we need a configuration file, ``nlu_config.yml``, for the
 NLU model:
 
-.. literalinclude:: ../examples/moodbot/nlu_model_config.json
+.. literalinclude:: ../examples/moodbot/nlu_model_config.yml
     :linenos:
 
 We can now train an NLU model using our examples (make sure to
-`install Rasa NLU <http://nlu.rasa.ai/installation.html#setting-up-rasa-nlu>`_
+`install Rasa NLU <http://nlu.rasa.com/installation.html#setting-up-rasa-nlu>`_
 first, as well as
-`spaCy <http://nlu.rasa.ai/installation.html#best-for-most-spacy-sklearn>`_).
+`spaCy <http://nlu.rasa.com/installation.html#best-for-most-spacy-sklearn>`_).
 
 Let's run
 
 .. code-block:: bash
 
-   python -m rasa_nlu.train -c nlu_model_config.json --fixed_model_name current
+   python -m rasa_nlu.train -c nlu_config.yml --data data/nlu_data.md -o models
+   --fixed_model_name nlu --project current --verbose
 
-to train our NLU model. A new directory ``models/nlu/default/current`` should have been
-created containing the NLU model. Note that ``default`` stands for project name, since we did not
-specify it explicitly in ``nlu_model_config.json``.
+to train our NLU model. A new directory ``models/current/nlu`` should have been
+created containing the NLU model. Note that ``current`` stands for project name,
+since this is specified in the train command.
 
 .. note::
 
    To gather more insights about the above configuration and Rasa NLU features
-   head over to the `Rasa NLU documentation <https://nlu.rasa.ai>`_.
+   head over to the `Rasa NLU documentation <https://nlu.rasa.com>`_.
 
 3. Define stories
 ^^^^^^^^^^^^^^^^^
@@ -158,9 +178,9 @@ you can mix them):
 
 For this example, we are going to create the stories by writing them directly
 to ``stories.md``.
-Stories begin with ``##`` and a string as an identifier. User actions start
-with an asterisk, and bot actions are specified by lines beginning with a
-dash. The end of a story is denoted by a newline. See :ref:`stories` for
+Stories begin with ``##`` and a string as an identifier. User intents start
+with an asterisk ``*``, and bot actions are specified by lines beginning with a
+dash ``-``. The end of a story is denoted by a newline. See :ref:`stories` for
 more information about the data format.
 
 Enough talking, let's head over to our stories:
@@ -183,16 +203,19 @@ To train the dialogue model, run:
 
 .. code-block:: bash
 
-   python -m rasa_core.train -s data/stories.md -d domain.yml -o models/dialogue --epochs 300
+   python -m rasa_core.train -d domain.yml -s data/stories.md -o models/current/dialogue --epochs 200
 
-This will train the dialogue model for ``300`` epochs and store it
-into ``models/dialogue``. Now we can use that trained dialogue model
-and the previously created NLU model to run our bot. 
+This will train the dialogue model for ``200`` epochs and store it
+into ``models/current/dialogue``. Where ``1`` epoch corresponds to one pass of
+the algorithm through all the training examples, which in this case are the stories.
+
+Now we can use that trained dialogue model
+and the previously created NLU model to run our bot.
 Here we'll just talk to the bot on the command line:
 
 .. code-block:: bash
 
-   python -m rasa_core.run -d models/dialogue -u models/nlu/default/current
+   python -m rasa_core.run -d models/current/dialogue -u models/current/nlu
 
 And there we have it! A minimal bot containing all the important pieces of
 Rasa Core.
@@ -203,6 +226,8 @@ Rasa Core.
 
     Button emulation does not work in console output, you need to type words like "great" or "sad"
     instead of numbers 1 or 2.
+
+In order to restart the bot type ``/restart`` into the command line.
 
 Bonus: Handle messages from Facebook
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -227,5 +252,5 @@ After setting that up, we can now run the bot using
 
 and it will now handle messages users send to the Facebook page.
 
-.. raw:: html 
+.. raw:: html
    :file: poll.html

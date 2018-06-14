@@ -3,40 +3,41 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import sys
-
 import os
+import sys
 
 from rasa_core.channels.file import FileInputChannel
 from rasa_core.interpreter import RegexInterpreter
 
 
-def test_moodbot_example():
-    from rasa_core import train, run
+def test_moodbot_example(trained_moodbot_path):
+    from rasa_core import run
 
-    train.train_dialogue_model("examples/moodbot/domain.yml",
-                               "examples/moodbot/data/stories.md",
-                               "examples/moodbot/models/dialogue",
-                               False, None, {})
-    agent = run.main("examples/moodbot/models/dialogue")
+    agent = run.main(trained_moodbot_path)
 
     responses = agent.handle_message("/greet")
-    assert responses[0] == 'Hey! How are you?'
+    assert responses[0]['text'] == 'Hey! How are you?'
 
     responses.extend(agent.handle_message("/mood_unhappy"))
-    assert responses[-1] in {"Did that help you?"}
+    assert responses[-1]['text'] in {"Did that help you?"}
 
     # (there is a 'I am on it' message in the middle we are not checking)
-    assert len(responses) == 6
+    assert len(responses) == 4
 
 
 def test_remote_example():
     from rasa_core import train, run
+    from rasa_core.events import SlotSet
 
-    train.train_dialogue_model("examples/remotebot/concert_domain_remote.yml",
-                               "examples/remotebot/data/stories.md",
-                               "examples/remotebot/models/dialogue",
-                               False, None, {})
+    train.train_dialogue_model(
+            domain_file="examples/remotebot/concert_domain_remote.yml",
+            stories_file="examples/remotebot/data/stories.md",
+            output_path="examples/remotebot/models/dialogue",
+            use_online_learning=False,
+            nlu_model_path=None,
+            max_history=None,
+            kwargs=None
+    )
     agent = run.main("examples/remotebot/models/dialogue")
 
     response = agent.start_message_handling("/search_venues")
@@ -60,8 +61,10 @@ def test_remote_example():
     del result['latest_event_time']
     assert reference == result
 
-    next_response = agent.continue_message_handling("default", "search_venues",
-                                                    [])
+    venues = [{"name": "Big Arena", "reviews": 4.5}]
+    next_response = agent.continue_message_handling(
+        "default", "search_venues", [SlotSet("venues", venues)]
+    )
     assert next_response.get("next_action") == "action_listen"
 
 
@@ -70,12 +73,13 @@ def test_restaurantbot_example():
     from bot import train_dialogue
 
     p = "examples/restaurantbot/"
+    stories = os.path.join("data", "test_stories", "stories_babi_small.md")
     agent = train_dialogue(os.path.join(p, "restaurant_domain.yml"),
                            os.path.join(p, "models", "dialogue"),
-                           os.path.join(p, "data", "babi_stories.md"))
+                           stories)
 
     responses = agent.handle_message("/greet")
-    assert responses[0] == 'how can I help you?'
+    assert responses[0]['text'] == 'how can I help you?'
 
 
 def test_concerts_online_example():
@@ -95,6 +99,6 @@ def test_concerts_online_example():
     agent = run_concertbot_online(input_channel, RegexInterpreter(),
                                   domain_file, training_file)
     responses = agent.handle_message("/greet")
-    assert responses[-1] in {"hey there!",
-                             "how can I help you?",
-                             "default message"}
+    assert responses[-1]['text'] in {"hey there!",
+                                     "how can I help you?",
+                                     "default message"}

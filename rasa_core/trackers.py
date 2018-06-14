@@ -15,14 +15,16 @@ from typing import List
 
 from rasa_core import utils
 from rasa_core import events
-from rasa_core.conversation import Dialogue, Topic
-from rasa_core.events import UserUttered, TopicSet, ActionExecuted, \
-    Event, SlotSet, Restarted, ActionReverted, UserUtteranceReverted, BotUttered
+from rasa_core.conversation import Dialogue
+from rasa_core.events import UserUttered, ActionExecuted, \
+    Event, SlotSet, Restarted, ActionReverted, UserUtteranceReverted, \
+    BotUttered, TopicSet
 
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from rasa_core.actions import Action
+    from rasa_core.domain import Domain
 
 
 class DialogueStateTracker(object):
@@ -30,16 +32,19 @@ class DialogueStateTracker(object):
 
     @classmethod
     def from_dict(cls, sender_id, dump_as_dict, domain):
-        evts = events.deserialise_events(dump_as_dict, domain)
-        tracker = cls(sender_id, domain.slots, domain.topics,
-                      domain.default_topic)
+        # type: (Text, List[Dict[Text, Any]]) -> DialogueStateTracker
+        """Create a tracker from dump.
+
+        The dump should be an array of dumped events. When restoring
+        the tracker, these events will be replayed to recreate the state."""
+
+        evts = events.deserialise_events(dump_as_dict)
+        tracker = cls(sender_id, domain.slots)
         for e in evts:
             tracker.update(e)
         return tracker
 
     def __init__(self, sender_id, slots,
-                 topics=None,
-                 default_topic=None,
                  max_event_history=None):
         """Initialize the tracker.
 
@@ -53,10 +58,6 @@ class DialogueStateTracker(object):
         self.events = self._create_events([])
         # id of the source of the messages
         self.sender_id = sender_id
-        # available topics in the domain
-        self.topics = topics if topics is not None else []
-        # default topic of the domain
-        self.default_topic = default_topic
         # slots that can be filled in this domain
         self.slots = {slot.name: copy.deepcopy(slot) for slot in slots}
 
@@ -69,8 +70,6 @@ class DialogueStateTracker(object):
         self._paused = None
         # A deterministically scheduled action to be executed next
         self.follow_up_action = None
-        # topic tracking
-        self._topic_stack = None
         self.latest_action_name = None
         self.latest_message = None
         self.latest_bot_utterance = None
@@ -83,7 +82,7 @@ class DialogueStateTracker(object):
                       should_include_events=False,
                       only_events_after_latest_restart=False):
         # type: (bool, bool) -> Dict[Text, Any]
-        """Returns the current tracker state as an object."""
+        """Return the current tracker state as an object."""
 
         if should_include_events:
             if only_events_after_latest_restart:
@@ -107,7 +106,15 @@ class DialogueStateTracker(object):
             "events": evts
         }
 
+    def past_states(self, domain):
+        # type: (Domain) -> deque
+        """Generate the past states of this tracker based on the history."""
+
+        generated_states = domain.states_for_tracker_history(self)
+        return deque((frozenset(s.items()) for s in generated_states))
+
     def current_slot_values(self):
+        # type: () -> Dict[Text, Any]
         """Return the currently set values of the slots"""
         return {key: slot.value for key, slot in self.slots.items()}
 
@@ -135,10 +142,15 @@ class DialogueStateTracker(object):
 
     def is_paused(self):
         # type: () -> bool
-        """States whether the tracker is currently paused."""
+        """State whether the tracker is currently paused."""
         return self._paused
 
     def idx_after_latest_restart(self):
+        # type: () -> int
+        """Return the idx of the most recent restart in the list of events.
+
+        If the conversation has not been restarted, ``0`` is returned."""
+
         idx = 0
         for i, event in enumerate(self.events):
             if isinstance(event, Restarted):
@@ -146,50 +158,36 @@ class DialogueStateTracker(object):
         return idx
 
     def events_after_latest_restart(self):
+        # type: () -> List[Event]
+        """Return a list of events after the most recent restart."""
         return list(self.events)[self.idx_after_latest_restart():]
 
-    @property
-    def previous_topic(self):
-        # type: () -> Optional[Text]
-        """Retrieves the topic that was set before the current one."""
-
-        for event in reversed(self.events_after_latest_restart()):
-            if isinstance(event, TopicSet):
-                return event.topic
-        return None
-
-    @property
-    def topic(self):
-        # type: () -> Topic
-        """Retrieves current topic, or default if no topic has been set yet."""
-
-        return self._topic_stack.top
-
-    def _init_copy(self):
+    def init_copy(self):
+        # type: () -> DialogueStateTracker
         """Creates a new state tracker with the same initial values."""
         from rasa_core.channels import UserMessage
 
         return DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
                                     self.slots.values(),
-                                    self.topics,
-                                    self.default_topic)
+                                    self._max_event_history)
 
-    def generate_all_prior_states(self):
+    def generate_all_prior_trackers(self):
         # type: () -> Generator[DialogueStateTracker, None, None]
-        """Returns a generator of the previous states of this tracker.
+        """Returns a generator of the previous trackers of this tracker.
 
-        The resulting array is representing the state before each action."""
+        The resulting array is representing
+        the trackers before each action."""
 
-        tracker = self._init_copy()
+        tracker = self.init_copy()
 
-        for event in self._applied_events():
+        for event in self.applied_events():
             if isinstance(event, ActionExecuted):
                 yield tracker
             tracker.update(event)
 
         yield tracker  # yields the final state
 
-    def _applied_events(self):
+    def applied_events(self):
         # type: () -> List[Event]
         """Returns all actions that should be applied - w/o reverted events."""
         def undo_till_previous(event_type, done_events):
@@ -213,6 +211,9 @@ class DialogueStateTracker(object):
                 # listen action).
                 undo_till_previous(UserUttered, applied_events)
                 undo_till_previous(ActionExecuted, applied_events)
+            elif isinstance(event, TopicSet):
+                logger.warn("Topics are deprecated, therefore the TopicSet "
+                            "event will be ignored")
             else:
                 applied_events.append(event)
         return applied_events
@@ -221,7 +222,7 @@ class DialogueStateTracker(object):
         # type: () -> None
         """Update the tracker based on a list of events."""
 
-        applied_events = self._applied_events()
+        applied_events = self.applied_events()
         for event in applied_events:
             event.apply_to(self)
 
@@ -241,6 +242,10 @@ class DialogueStateTracker(object):
         self.events.extend(dialogue.events)
         self.replay_events()
 
+    def copy(self):
+        """Creates a duplicate of this tracker"""
+        return self.travel_back_in_time(float("inf"))
+
     def travel_back_in_time(self, target_time):
         # type: (float) -> DialogueStateTracker
         """Creates a new tracker with a state at a specific timestamp.
@@ -249,7 +254,7 @@ class DialogueStateTracker(object):
         passed time stamp will be replayed. Events that occur exactly
         at the target time will be included."""
 
-        tracker = self._init_copy()
+        tracker = self.init_copy()
 
         for event in self.events:
             if event.timestamp <= target_time:
@@ -280,17 +285,21 @@ class DialogueStateTracker(object):
         event.apply_to(self)
 
     def export_stories(self):
-        from rasa_core.training.structures import StoryStep, Story
+        # type: () -> Text
+        """Dump the tracker as a story in the Rasa Core story format.
 
-        story_step = StoryStep()
-        for event in self._applied_events():
-            story_step.add_event(event)
-        story = Story([story_step])
+        Returns the dumped tracker as a string."""
+        from rasa_core.training.structures import Story
+
+        story = Story.from_events(self.applied_events())
         return story.as_story_string(flat=True)
 
     def export_stories_to_file(self, export_path="debug.md"):
+        # type: (Text) -> None
+        """Dump the tracker as a story to a file."""
+
         with io.open(export_path, 'a') as f:
-            f.write(self.export_stories())
+            f.write(self.export_stories() + "\n")
 
     ###
     # Internal methods for the modification of the trackers state. Should
@@ -307,14 +316,18 @@ class DialogueStateTracker(object):
         self.latest_message = UserUttered.empty()
         self.latest_bot_utterance = BotUttered.empty()
         self.follow_up_action = None
-        self._topic_stack = utils.TopicStack(self.topics, [],
-                                             self.default_topic)
 
     def _reset_slots(self):
+        # type: () -> None
+        """Set all the slots to their initial value."""
+
         for slot in self.slots.values():
             slot.reset()
 
     def _set_slot(self, key, value):
+        # type: (Text, Any) -> None
+        """Set the value of a slot if that slot exists."""
+
         if key in self.slots:
             self.slots[key].value = value
         else:
@@ -330,10 +343,8 @@ class DialogueStateTracker(object):
         return deque(evts, self._max_event_history)
 
     def __eq__(self, other):
-        if isinstance(other, type(self)):
-            other_encoded = jsonpickle.encode(other.as_dialogue())
-            encoded = jsonpickle.encode(self.as_dialogue())
-            return (other_encoded == encoded and
+        if isinstance(self, type(other)):
+            return (other.events == self.events and
                     self.sender_id == other.sender_id)
         else:
             return False
@@ -354,6 +365,12 @@ class DialogueStateTracker(object):
         self.follow_up_action = None
 
     def _merge_slots(self, entities=None):
+        # type: (Optional[List[Dict[Text, Any]]]) -> List[SlotSet]
+        """Take a list of entities and create tracker slot set events.
+
+        If an entity type matches a slots name, the entities value is set
+        as the slots value by creating a ``SlotSet`` event."""
+
         entities = entities if entities else self.latest_message.entities
         new_slots = [SlotSet(e["entity"], e["value"]) for e in entities if
                      e["entity"] in self.slots.keys()]

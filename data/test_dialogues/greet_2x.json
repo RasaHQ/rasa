@@ -8,6 +8,14 @@
         "name": "greet",
         "confidence": 1.0
       },
+      "parse_data": {
+        "intent": {
+          "name": "greet",
+          "confidence": 1.0
+        },
+        "text": "/greet",
+        "entities": []
+      },
       "text": "/greet"
     },
     {
@@ -21,6 +29,14 @@
       "intent": {
         "name": "greet",
         "confidence": 1.0
+      },
+      "parse_data": {
+        "intent": {
+          "name": "greet",
+          "confidence": 1.0
+        },
+        "text": "/greet",
+        "entities": []
       },
       "text": "/greet"
     },

@@ -4,18 +4,29 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import errno
+import io
 import json
 import logging
-import os, io
-import ruamel.yaml
-from collections import deque
+import os
+import sys
 from hashlib import sha1
 from random import Random
+from threading import Thread
 
-import six
+import ruamel.yaml
 from builtins import input, range, str
 from numpy import all, array
-from typing import Text, Any, List, Optional
+from typing import Text, Any, List, Optional, Tuple, Dict, Set
+
+logger = logging.getLogger(__name__)
+
+
+def configure_file_logging(loglevel, logfile):
+    if logfile:
+        fh = logging.FileHandler(logfile)
+        fh.setLevel(loglevel)
+        logging.getLogger('').addHandler(fh)
+    logging.captureWarnings(True)
 
 
 def add_logging_option_arguments(parser):
@@ -87,7 +98,7 @@ def dump_obj_as_str_to_file(filename, text):
 
 
 def subsample_array(arr, max_values, can_modify_incoming_array=True, rand=None):
-    # type: (List[Any], bool, Optional[Random]) -> List[Any]
+    # type: (List[Any], int, bool, Optional[Random]) -> List[Any]
     """Shuffles the array and returns `max_values` number of elements."""
     import random
 
@@ -156,9 +167,13 @@ def str_range_list(start, end):
     return [str(e) for e in range(start, end)]
 
 
-def generate_id(prefix=""):
+def generate_id(prefix="", max_chars=None):
     import uuid
-    return "{}{}".format(prefix, uuid.uuid4().hex)
+    gid = uuid.uuid4().hex
+    if max_chars:
+        gid = gid[:max_chars]
+
+    return "{}{}".format(prefix, gid)
 
 
 def configure_colored_logging(loglevel):
@@ -210,55 +225,6 @@ def wrap_with_color(text, color):
 
 def print_color(text, color):
     print(wrap_with_color(text, color))
-
-
-class TopicStack(object):
-    def __init__(self, topics, iterable, default):
-        self.topics = topics
-        self.iterable = iterable
-        self.topic_names = [t.name for t in topics]
-        self.default = default
-        self.dq = deque(iterable, len(topics))
-
-    @property
-    def top(self):
-        if len(self.dq) < 1:
-            return self.default
-        return self.dq[-1]
-
-    def __iter__(self):
-        return self.dq.__iter__()
-
-    def next(self):
-        return self.dq.next()
-
-    def __len__(self):
-        return len(self.dq)
-
-    def push(self, x):
-        from rasa_core.conversation import Topic
-
-        if isinstance(x, six.string_types):
-            if x not in self.topic_names:
-                raise ValueError(
-                        "Unknown topic name: '{}', known topics in this domain "
-                        "are: {}".format(x, self.topic_names))
-            else:
-                x = self.topics[self.topic_names.index(x)]
-
-        elif not isinstance(x, Topic) or x not in self.topics:
-            raise ValueError(
-                    "Instance of type '{}' can not be used on the topic stack, "
-                    "not a valid topic!".format(type(x).__name__))
-
-        while self.dq.count(x) > 0:
-            self.dq.remove(x)
-        self.dq.append(x)
-
-    def pop(self):
-        if len(self.dq) < 1:
-            return None
-        return self.dq.pop()
 
 
 class HashableNDArray(object):
@@ -360,3 +326,71 @@ def read_file(filename, encoding="utf-8"):
 def is_training_data_empty(X):
     """Check if the training matrix does contain training samples."""
     return X.shape[0] == 0
+
+
+def zip_folder(folder):
+    """Create an archive from a folder."""
+    import tempfile
+    import shutil
+
+    zipped_path = tempfile.NamedTemporaryFile(delete=False)
+    zipped_path.close()
+
+    # WARN: not thread save!
+    return shutil.make_archive(zipped_path.name, str("zip"), folder)
+
+
+def cap_length(s, char_limit=20, append_ellipsis=True):
+    """Makes sure the string doesn't exceed the passed char limit.
+
+    Appends an ellipsis if the string is to long."""
+
+    if len(s) > char_limit:
+        if append_ellipsis:
+            return s[:char_limit - 3] + "..."
+        else:
+            return s[:char_limit]
+    else:
+        return s
+
+
+def wait_for_threads(threads):
+    # type: (List[Thread]) -> None
+    """Block until all child threads have been terminated."""
+
+    while len(threads) > 0:
+        try:
+            # Join all threads using a timeout so it doesn't block
+            # Filter out threads which have been joined or are None
+            [t.join(1000) for t in threads]
+            threads = [t for t in threads if t.isAlive()]
+        except KeyboardInterrupt:
+            logger.info("Ctrl-c received! Sending kill to threads...")
+            # It would be better at this point to properly shutdown every
+            # thread (e.g. by setting a flag on it) Unfortunately, there
+            # are IO operations that are blocking without a timeout
+            # (e.g. sys.read) so threads that are waiting for one of
+            # these calls can't check the set flag. Hence, we go the easy
+            # route for now
+            sys.exit(0)
+    logger.info("Finished waiting for input threads to terminate. "
+                "Stopping to serve forever.")
+
+
+def extract_args(kwargs,   # type: Dict[Text, Any]
+                 keys_to_extract  # type: Set[Text]
+                 ):
+    # type: (...) -> Tuple[Dict[Text, Any], Dict[Text, Any]]
+    """Go through the kwargs and filter out the specified keys.
+
+    Return both, the filtered kwargs as well as the remaining kwargs."""
+
+    remaining = {}
+    extracted = {}
+    for k, v in kwargs.items():
+        if k in keys_to_extract:
+            extracted[k] = v
+        else:
+            remaining[k] = v
+
+    return extracted, remaining

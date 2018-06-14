@@ -38,7 +38,7 @@ For example, an ``action`` can:
 
 .. note::
 
-  For mor information about the utter template format (e.g. the use of
+  For more information about the utter template format (e.g. the use of
   variables like ``{name}`` or buttons) take a look at :ref:`utter_templates`.
 
 .. _custom_actions:
@@ -97,6 +97,8 @@ action in a module called ``restaurant.actions``):
       - utter_goodbye
       - restaurant.actions.ActionCheckRestaurants   # custom action
 
+If we want to use our new action for a specific story, we only have to add the canonical name of the action to a story. 
+In our case we would have to add ``- action_check_restaurants`` to a story in our ``stories.md``.
 
 We only show the changed action list here, you also need to include the other
 parts from the original domain! The point of this is just to show how the pieces

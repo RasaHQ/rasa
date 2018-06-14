@@ -3,6 +3,13 @@ intents:
  - greet
  - default
  - goodbye
+ - affirm
+ - thank_you
+ - change_bank_details
+ - simple
+ - hello
+ - why
+ - next_intent
 
 entities:
  - name

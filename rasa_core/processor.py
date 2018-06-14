@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import json
 import logging
 import warnings
 from types import LambdaType
@@ -85,8 +86,7 @@ class MessageProcessor(object):
         self._save_tracker(tracker)
 
         if isinstance(message.output_channel, CollectingOutputChannel):
-            return [outgoing_message
-                    for _, outgoing_message in message.output_channel.messages]
+            return message.output_channel.messages
         else:
             return None
 
@@ -272,8 +272,6 @@ class MessageProcessor(object):
                 # call a registered callback
                 self.on_circuit_break(tracker, dispatcher)
 
-        logger.debug("Current topic: {}".format(tracker.topic.name))
-
     @staticmethod
     def should_predict_another_action(action_name, events):
         is_listen_action = action_name == ACTION_LISTEN_NAME
@@ -327,14 +325,15 @@ class MessageProcessor(object):
                 if s and s.has_features():
                     logger.warn("Action '{0}' set a slot type '{1}' that "
                                 "it never set during the training. This "
-                                "can throw of the prediction. Make sure to"
+                                "can throw of the prediction. Make sure to "
                                 "include training examples in your stories "
-                                "for the different types of slots this"
+                                "for the different types of slots this "
                                 "action can return. Remember: you need to "
                                 "set the slots manually in the stories by "
-                                "adding '- slot{{\"{1}\": \"{2}\"}}' "
+                                "adding '- slot{{\"{1}\": {2}}}' "
                                 "after the action."
-                                "".format(action_name, e.key, e.value))
+                                "".format(action_name, e.key,
+                                          json.dumps(e.value)))
 
     @staticmethod
     def log_bot_utterances_on_tracker(tracker, dispatcher):

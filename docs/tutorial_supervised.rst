@@ -114,18 +114,21 @@ NLU model
 ---------
 
 To train our Rasa NLU model, we need a configuration file, which you can
-find in ``nlu_model_config.json``:
+find in ``nlu_model_config.yml``:
 
-.. literalinclude:: ../examples/restaurantbot/nlu_model_config.json
+.. literalinclude:: ../examples/restaurantbot/nlu_model_config.yml
    :linenos:
 
-And training data ``franken_data.json`` (see <https://nlu.rasa.ai/dataformat.html>`_ for details).
+And training data ``franken_data.json`` (see
+`NLU Dataformat <https://nlu.rasa.com/dataformat.html>`_ for details
+about the training data format).
 
 We can train the NLU model using
 
 .. code-block:: bash
 
-   python -m rasa_nlu.train -c nlu_model_config.json --fixed_model_name current
+   python -m rasa_nlu.train -c nlu_model_config.yml --fixed_model_name current \
+          --data ./data/franken_data.json --path ./models/nlu
 
 or using python code
 
@@ -151,9 +154,9 @@ For this bot, we came up with our own policy.
 This policy extends the Keras policy modifying the ML architecture of the
 underlying neural network.
 Check out the
-``RestaurantPolicy`` class in ``bot.py`` for the gory details:
+``RestaurantPolicy`` class in ``policy.py`` for the glory details:
 
-.. literalinclude:: ../examples/restaurantbot/bot.py
+.. literalinclude:: ../examples/restaurantbot/policy.py
    :linenos:
    :pyobject: RestaurantPolicy
 

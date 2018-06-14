@@ -120,7 +120,8 @@ class MessengerBot(OutputChannel):
         # send messages but instead expects the incoming sender to be present
         # which we don't have as it is stored in the input channel.
         self.messenger_client.send(element.to_dict(),
-                                   {"sender": {"id": recipient_id}})
+                                   {"sender": {"id": recipient_id}},
+                                   'RESPONSE')
 
     def send_text_message(self, recipient_id, message):
         # type: (Text, Text) -> None
@@ -162,7 +163,8 @@ class MessengerBot(OutputChannel):
                 }
             }
             self.messenger_client.send(payload,
-                                       {"sender": {"id": recipient_id}})
+                                       {"sender": {"id": recipient_id}},
+                                       'RESPONSE')
 
     def send_custom_message(self, recipient_id, elements):
         # type: (Text, List[Dict[Text, Any]]) -> None
@@ -181,7 +183,8 @@ class MessengerBot(OutputChannel):
             }
         }
         self.messenger_client.send(payload,
-                                   self._recipient_json(recipient_id))
+                                   self._recipient_json(recipient_id),
+                                   'RESPONSE')
 
     @staticmethod
     def _add_postback_info(buttons):

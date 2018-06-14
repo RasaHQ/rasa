@@ -6,15 +6,14 @@ from __future__ import unicode_literals
 import datetime
 import json
 import logging
-import uuid
 import time
+import uuid
 
 import jsonpickle
 import typing
 from builtins import str
 from typing import List, Dict, Text, Any
 
-import rasa_core
 from rasa_core import utils
 
 if typing.TYPE_CHECKING:
@@ -23,22 +22,29 @@ if typing.TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def deserialise_events(serialized_events, domain):
-    # type: (List[Dict[Text, Any]], rasa_core.domain.Domain) -> List[Event]
+def deserialise_events(serialized_events):
+    # type: (List[Dict[Text, Any]]) -> List[Event]
     """Convert a list of dictionaries to a list of corresponding events.
 
     Example format:
         [{"event": "set_slot", "value": 5, "name": "my_slot"}]
     """
 
-    deserialized = []
-    for e in serialized_events:
-        etype = e.get("event")
-        if etype is not None:
-            copied = e.copy()
-            del copied["event"]
-            deserialized.append(Event.from_parameters(etype, copied, domain))
-    return deserialized
+    return [Event.from_parameters(e)
+            for e in serialized_events
+            if "event" in e]
+
+
+def first_key(d, default_key):
+    if len(d) > 1:
+        for k, v in d.items():
+            if k != default_key:
+                # we return the first key that is not the default key
+                return k
+    elif len(d) == 1:
+        return list(d.keys())[0]
+    else:
+        return None
 
 
 # noinspection PyProtectedMember
@@ -66,17 +72,23 @@ class Event(object):
         raise NotImplementedError
 
     @staticmethod
-    def from_story_string(event_name, parameters, domain, default=None):
+    def from_story_string(event_name, parameters, default=None):
         event = Event.resolve_by_type(event_name, default)
-        return event._from_story_string(event_name, parameters, domain)
+        return event._from_story_string(parameters)
 
     @staticmethod
-    def from_parameters(event_name, parameters, domain, default=None):
-        event = Event.resolve_by_type(event_name, default)
-        return event._from_parameters(event_name, parameters, domain)
+    def from_parameters(parameters, default=None):
+        event_name = parameters.get("event")
+        if event_name is not None:
+            copied = parameters.copy()
+            del copied["event"]
+            event = Event.resolve_by_type(event_name, default)
+            return event._from_parameters(parameters)
+        else:
+            return None
 
     @classmethod
-    def _from_story_string(cls, event_name, parameters, domain):
+    def _from_story_string(cls, parameters):
         """Called to convert a parsed story line into an event."""
         return cls(parameters.get("timestamp"))
 
@@ -87,7 +99,7 @@ class Event(object):
         }
 
     @classmethod
-    def _from_parameters(cls, event_name, parameters, domain):
+    def _from_parameters(cls, parameters):
         """Called to convert a dictionary of parameters to an event.
 
         By default uses the same implementation as the story line
@@ -95,7 +107,7 @@ class Event(object):
         decide to handle parameters differently if the parsed parameters
         don't origin from a story file."""
 
-        return cls._from_story_string(event_name, parameters, domain)
+        return cls._from_story_string(parameters)
 
     @staticmethod
     def resolve_by_type(type_name, default=None):
@@ -178,7 +190,7 @@ class UserUttered(Event):
         return d
 
     @classmethod
-    def _from_story_string(cls, event_name, parameters, domain):
+    def _from_story_string(cls, parameters):
         try:
             return cls._from_parse_data(parameters.get("text"),
                                         parameters.get("parse_data"),
@@ -256,7 +268,7 @@ class BotUttered(Event):
         return d
 
     @classmethod
-    def _from_parameters(cls, event_name, parameters, domain):
+    def _from_parameters(cls, parameters):
         try:
             return BotUttered(parameters.get("text"),
                               parameters.get("data"),
@@ -265,6 +277,7 @@ class BotUttered(Event):
             raise ValueError("Failed to parse bot uttered event. {}".format(e))
 
 
+# TODO: DEPRECATED - remove in version 0.10.0
 # noinspection PyProtectedMember
 class TopicSet(Event):
     """The topic of conversation has changed.
@@ -293,9 +306,13 @@ class TopicSet(Event):
         return "{name}[{props}]".format(name=self.type_name, props=self.topic)
 
     @classmethod
-    def _from_story_string(cls, event_name, parameters, domain):
-        topic = list(parameters.keys())[0] if parameters else ""
-        return TopicSet(topic)
+    def _from_story_string(cls, parameters):
+        topic = first_key(parameters, default_key="name")
+
+        if topic is not None:
+            return TopicSet(topic)
+        else:
+            return None
 
     def as_dict(self):
         d = super(TopicSet, self).as_dict()
@@ -303,7 +320,7 @@ class TopicSet(Event):
         return d
 
     @classmethod
-    def _from_parameters(cls, event_name, parameters, domain):
+    def _from_parameters(cls, parameters):
         try:
             return TopicSet(parameters.get("topic"),
                             parameters.get("timestamp"))
@@ -311,7 +328,7 @@ class TopicSet(Event):
             raise ValueError("Failed to parse set topic event. {}".format(e))
 
     def apply_to(self, tracker):
-        tracker._topic_stack.push(self.topic)
+        pass
 
 
 # noinspection PyProtectedMember
@@ -345,10 +362,13 @@ class SlotSet(Event):
         return "{name}{props}".format(name=self.type_name, props=props)
 
     @classmethod
-    def _from_story_string(cls, event_name, parameters, domain):
-        slot_key = list(parameters.keys())[0] if parameters else None
-        if slot_key:
-            return SlotSet(slot_key, parameters[slot_key])
+    def _from_story_string(cls, parameters):
+        slots = []
+        for slot_key, slot_val in parameters.items():
+            slots.append(SlotSet(slot_key, slot_val))
+
+        if slots:
+            return slots
         else:
             return None
 
@@ -361,7 +381,7 @@ class SlotSet(Event):
         return d
 
     @classmethod
-    def _from_parameters(cls, event_name, parameters, domain):
+    def _from_parameters(cls, parameters):
         try:
             return SlotSet(parameters.get("name"),
                            parameters.get("value"),
@@ -515,7 +535,7 @@ class ReminderScheduled(Event):
         return datetime.datetime.strptime(date_time[:19], '%Y-%m-%dT%H:%M:%S')
 
     @classmethod
-    def _from_story_string(cls, event_name, parameters, domain):
+    def _from_story_string(cls, parameters):
         logger.info("Reminders will be ignored during training, "
                     "which should be ok.")
         trigger_date_time = cls._parse_trigger_time(parameters.get("date_time"))
@@ -561,7 +581,7 @@ class StoryExported(Event):
     type_name = "export"
 
     def __init__(self, path=None, timestamp=None):
-        self.path = path if path else "stories.md"
+        self.path = path
         super(StoryExported, self).__init__(timestamp)
 
     def __hash__(self):
@@ -578,8 +598,8 @@ class StoryExported(Event):
 
     def apply_to(self, tracker):
         # type: (DialogueStateTracker) -> None
-
-        tracker.export_stories_to_file(self.path)
+        if self.path:
+            tracker.export_stories_to_file(self.path)
 
 
 # noinspection PyProtectedMember
@@ -662,14 +682,7 @@ class ActionExecuted(Event):
         return self.action_name
 
     @classmethod
-    def _from_story_string(cls, event_name, parameters, domain):
-        if event_name in domain.action_names:
-            return ActionExecuted(event_name, parameters.get("timestamp"))
-        else:
-            return None
-
-    @classmethod
-    def _from_parameters(cls, event_name, parameters, domain):
+    def _from_story_string(cls, parameters):
         return ActionExecuted(parameters.get("name"),
                               parameters.get("timestamp"))
 
@@ -682,3 +695,61 @@ class ActionExecuted(Event):
         # type: (DialogueStateTracker) -> None
 
         tracker.latest_action_name = self.action_name
+
+
+class AgentUttered(Event):
+    """The agent has said something to the user.
+
+    This class is not used in the story training as it is contained in the
+    ``ActionExecuted`` class. An entry is made in the ``Tracker``."""
+
+    type_name = "agent"
+
+    def __init__(self, text=None, data=None, timestamp=None):
+        self.text = text
+        self.data = data
+        super(AgentUttered, self).__init__(timestamp)
+
+    def __hash__(self):
+        return hash((self.text, jsonpickle.encode(self.data)))
+
+    def __eq__(self, other):
+        if not isinstance(other, AgentUttered):
+            return False
+        else:
+            return (self.text, jsonpickle.encode(self.data)) == \
+                   (other.text, jsonpickle.encode(other.data))
+
+    def __str__(self):
+        return "AgentUttered(text: {}, data: {})".format(
+                self.text, json.dumps(self.data, indent=2))
+
+    def apply_to(self, tracker):
+        # type: (DialogueStateTracker) -> None
+
+        pass
+
+    def as_story_string(self):
+        return None
+
+    def as_dict(self):
+        d = super(AgentUttered, self).as_dict()
+        d.update({
+            "text": self.text,
+            "data": self.data,
+        })
+        return d
+
+    @staticmethod
+    def empty():
+        return AgentUttered()
+
+    @classmethod
+    def _from_parameters(cls, parameters):
+        try:
+            return AgentUttered(parameters.get("text"),
+                                parameters.get("data"),
+                                parameters.get("timestamp"))
+        except KeyError as e:
+            raise ValueError("Failed to parse agent uttered event. "
+                             "{}".format(e))

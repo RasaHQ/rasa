@@ -26,7 +26,8 @@ def create_argument_parser():
     parser.add_argument('-s', '--stories',
                         required=True,
                         type=str,
-                        help="story file")
+                        help="story file or folder containing the stories"
+                             "to visualize")
     parser.add_argument('-d', '--domain',
                         required=True,
                         type=str,
@@ -61,7 +62,7 @@ if __name__ == '__main__':
     # messages in the stories should be replaced with actual
     # messages (e.g. `hello`)
     if args.nlu_data is not None:
-        from rasa_nlu.converters import load_data
+        from rasa_nlu.training_data import load_data
 
         nlu_data = load_data(args.nlu_data)
     else:

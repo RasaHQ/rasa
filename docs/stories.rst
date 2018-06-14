@@ -16,8 +16,8 @@ Here's an example from the bAbi data:
    ## story_07715946                     <!-- name of the story - just for debugging -->
    * greet
       - action_ask_howcanhelp
-   * inform{"location": "rome", "price": "cheap"}
-      - action_on_it                     <!-- user utterance, in format _intent[entities] -->
+   * inform{"location": "rome", "price": "cheap"}  <!-- user utterance, in format intent{entities} -->
+      - action_on_it                     
       - action_ask_cuisine
    * inform{"cuisine": "spanish"}
       - action_ask_numpeople             <!-- action of the bot to execute -->
@@ -47,6 +47,13 @@ You can use ``> checkpoints`` to modularize and simplify your training data:
     > check_asked_question
     * deny
       - action_handle_denial
+
+.. note::
+
+   You can also **spread your stories across multiple files** and specify the
+   folder containing the files for most of the scripts (e.g. training,
+   visualization). The stories will be treated as if they would have
+   been part of one large file.
 
 .. _story-visualization:
 

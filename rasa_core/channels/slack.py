@@ -8,6 +8,7 @@ import logging
 
 from flask import Blueprint, request, jsonify, make_response
 from slackclient import SlackClient
+from typing import Text, Optional
 
 from rasa_core.channels.channel import UserMessage, OutputChannel
 from rasa_core.channels.rest import HttpInputComponent
@@ -18,19 +19,24 @@ logger = logging.getLogger(__name__)
 class SlackBot(SlackClient, OutputChannel):
     """A Slack communication channel"""
 
-    def __init__(self, token):
+    def __init__(self, token, slack_channel=None):
+        # type: (Text, Optional[Text]) -> None
+
+        self.slack_channel = slack_channel
         super(SlackBot, self).__init__(token)
 
     def send_text_message(self, recipient_id, message):
+        recipient = self.slack_channel or recipient_id
         super(SlackBot, self).api_call("chat.postMessage",
-                                       channel=recipient_id,
+                                       channel=recipient,
                                        as_user=True, text=message)
 
     def send_image_url(self, recipient_id, image_url, message=""):
         image_attachment = [{"image_url": image_url,
                              "text": message}]
+        recipient = self.slack_channel or recipient_id
         super(SlackBot, self).api_call("chat.postMessage",
-                                       channel=recipient_id,
+                                       channel=recipient,
                                        as_user=True,
                                        attachments=image_attachment)
 
@@ -40,10 +46,12 @@ class SlackBot(SlackClient, OutputChannel):
                  "type": "button"} for b in buttons]
 
     def send_text_with_buttons(self, recipient_id, message, buttons, **kwargs):
+        recipient = self.slack_channel or recipient_id
+
         if len(buttons) > 5:
             logger.warn("Slack API currently allows only up to 5 buttons. "
                         "If you add more, all will be ignored.")
-            return self.send_text_message(recipient_id, message)
+            return self.send_text_message(recipient, message)
 
         button_attachment = [{"fallback": message,
                               "callback_id": message.replace(' ', '_')[:20],
@@ -51,7 +59,7 @@ class SlackBot(SlackClient, OutputChannel):
                                   buttons)}]
 
         super(SlackBot, self).api_call("chat.postMessage",
-                                       channel=recipient_id,
+                                       channel=recipient,
                                        as_user=True,
                                        text=message,
                                        attachments=button_attachment)
@@ -60,8 +68,8 @@ class SlackBot(SlackClient, OutputChannel):
 class SlackInput(HttpInputComponent):
     """Slack input channel implementation. Based on the HTTPInputChannel."""
 
-    def __init__(self, slack_token, slack_channel):
-        # type: (Text, Text) -> None
+    def __init__(self, slack_token, slack_channel=None):
+        # type: (Text, Optional[Text]) -> None
         """Create a Slack input channel.
 
         Needs a couple of settings to properly authenticate and validate
@@ -74,6 +82,7 @@ class SlackInput(HttpInputComponent):
         :param slack_channel: the string identifier for a channel to which
             the bot posts, or channel name
             (e.g. 'C1234ABC', 'bot-test' or '#bot-test')
+            If unset, messages will be sent back to the user they came from.
         """
         self.slack_token = slack_token
         self.slack_channel = slack_channel
