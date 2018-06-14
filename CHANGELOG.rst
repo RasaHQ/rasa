@@ -18,6 +18,14 @@ Changed
 Removed
 -------
 
+[0.9.5] - 2018-06-14
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- handling of max history configuration in policies
+- fixed instantiation issues of fallback policy
+
 [0.9.4] - 2018-06-07
 ^^^^^^^^^^^^^^^^^^^^
 
