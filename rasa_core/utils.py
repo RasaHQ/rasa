@@ -14,6 +14,7 @@ from random import Random
 from threading import Thread
 
 import ruamel.yaml
+import six
 from builtins import input, range, str
 from numpy import all, array
 from typing import Text, Any, List, Optional, Tuple, Dict, Set
@@ -288,9 +289,15 @@ def fix_yaml_loader():
 
 def read_yaml_file(filename):
     """Read contents of `filename` interpreting them as yaml."""
-    #fix_yaml_loader()
-    yaml_parser = ruamel.yaml.YAML(typ="safe")
-    return yaml_parser.load(read_file(filename))
+
+    if six.PY2:
+        fix_yaml_loader()
+    else:
+        yaml_parser = ruamel.yaml.YAML(typ="safe")
+        yaml_parser.allow_unicode = True
+        yaml_parser.unicode_supplementary = True
+
+        return yaml_parser.load(read_file(filename))
 
 
 def fix_yaml_writer():
@@ -301,20 +308,22 @@ def fix_yaml_writer():
 
     ruamel.yaml.representer.Representer.add_representer(unicode,
                                                         my_unicode_repr)
-    # ruamel.yaml.add_representer(unicode, my_unicode_repr)
+    ruamel.yaml.add_representer(unicode, my_unicode_repr)
 
 
 def dump_obj_as_yaml_to_file(filename, obj):
     """Writes data (python dict) to the filename in yaml repr."""
 
-    fix_yaml_writer()
+    if six.PY2:
+        fix_yaml_writer()
+    else:
+        yaml_writer = ruamel.yaml.YAML(pure=True, typ="safe")
+        yaml_writer.unicode_supplementary = True
+        yaml_writer.default_flow_style = False
+        yaml_writer.allow_unicode = True
 
-    yaml_writer = ruamel.yaml.YAML(typ="safe")
-
-    with io.open(filename, 'w', encoding="utf-8") as yaml_file:
-        ruamel.yaml.safe_dump(obj, yaml_file,
-                              allow_unicode=True,
-                              default_flow_style=False)
+        with io.open(filename, 'w', encoding="utf-8") as yaml_file:
+            yaml_writer.dump(obj, yaml_file)
 
 
 def read_file(filename, encoding="utf-8"):
