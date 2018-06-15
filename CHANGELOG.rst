@@ -11,6 +11,8 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+- options to prevent slack from making re-deliver message upon meeting failure condition.
+  the default is to ignore ``http_timeout``.
 
 Changed
 -------
