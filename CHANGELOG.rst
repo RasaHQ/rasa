@@ -14,6 +14,8 @@ Added
 
 Changed
 -------
+- changed the logic inside AugmentedMemoizationPolicy to recall actions only if they are the same in training stories
+- moved AugmentedMemoizationPolicy to memoization.py
 
 Removed
 -------
