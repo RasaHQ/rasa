@@ -225,6 +225,7 @@ class EmbeddingPolicy(Policy):
             bot_embed=None,  # type: Optional[tf.Tensor]
             slot_embed=None,  # type: Optional[tf.Tensor]
             dial_embed=None,  # type: Optional[tf.Tensor]
+            skip_gate=None,
             copy_gate=None,
             attn_prev_act_embed=None,
             rnn_embed=None
@@ -273,6 +274,7 @@ class EmbeddingPolicy(Policy):
         self.slot_embed = slot_embed
         self.dial_embed = dial_embed
 
+        self.skip_gate = skip_gate
         self.copy_gate = copy_gate
         self.attn_prev_act_embed = attn_prev_act_embed
         self.rnn_embed = rnn_embed
@@ -493,11 +495,12 @@ class EmbeddingPolicy(Policy):
             self.attn_prev_act_embed = cell_output[:, :, (self.embed_dim +
                                                           self.embed_dim +
                                                           self.embed_dim +
-                                                          self.embed_dim):-1]
+                                                          self.embed_dim):-2]
         else:
             self.attn_prev_act_embed = cell_output[:, :, (self.embed_dim +
-                                                          self.embed_dim):-1]
+                                                          self.embed_dim):-2]
 
+        self.skip_gate = cell_output[:, :, -2:-1]
         self.copy_gate = cell_output[:, :, -1:]
 
         cell_output = cell_output[:, :, :self.embed_dim]
@@ -924,6 +927,9 @@ class EmbeddingPolicy(Policy):
             self.graph.add_to_collection('dial_embed',
                                          self.dial_embed)
 
+            self.graph.clear_collection('skip_gate')
+            self.graph.add_to_collection('skip_gate',
+                                         self.skip_gate)
             self.graph.clear_collection('copy_gate')
             self.graph.add_to_collection('copy_gate',
                                          self.copy_gate)
@@ -993,6 +999,7 @@ class EmbeddingPolicy(Policy):
                     slot_embed = tf.get_collection('slot_embed')[0]
                     dial_embed = tf.get_collection('dial_embed')[0]
 
+                    skip_gate = tf.get_collection('skip_gate')[0]
                     copy_gate = tf.get_collection('copy_gate')[0]
                     attn_prev_act_embed = tf.get_collection('attn_prev_act_embed')[0]
                     rnn_embed = tf.get_collection('rnn_embed')[0]
@@ -1016,6 +1023,7 @@ class EmbeddingPolicy(Policy):
                            bot_embed=bot_embed,
                            slot_embed=slot_embed,
                            dial_embed=dial_embed,
+                           skip_gate=skip_gate,
                            copy_gate=copy_gate,
                            attn_prev_act_embed=attn_prev_act_embed,
                            rnn_embed=rnn_embed)
@@ -1214,10 +1222,17 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         else:
             self._copy_gate = None
 
+        self._skip_gate = tf.layers.Dense(
+            1, tf.sigmoid,
+            # -4 is arbitrary, but we need
+            # copy_gate to be zero at the beginning
+            bias_initializer=tf.constant_initializer(-1)
+        )
+
     @property
     def output_size(self):
         if self._output_attention:
-            return self._attention_layer_size + 2 * self._cell.output_size + 1
+            return self._attention_layer_size + 2 * self._cell.output_size + 2
         else:
             return self._cell.output_size
 
@@ -1261,6 +1276,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         # Step 1: Calculate attention based on
         #          the previous output and current input
         cell_state = state.cell_state
+
         if isinstance(state.cell_state, tf.contrib.rnn.LSTMStateTuple):
             # the hidden state c is not included, in hope that algorithm
             # would learn correct attention
@@ -1320,7 +1336,13 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         # Step 6: Calculate the true inputs to the cell based on the
         #          calculated attention value.
         cell_inputs = self._cell_input_fn(inputs, attention)
-        # cell_state = state.cell_state
+
+        # old_pre_c = cell_state.c
+        s_g = tf.zeros_like(prev_out_for_attn[:, 0:1])
+        # s_g = self._skip_gate(cell_inputs)
+        # new_pre_c = (1 - s_g) * old_pre_c
+        # cell_state = tf.contrib.rnn.LSTMStateTuple(new_pre_c, cell_state.h)
+
         cell_output, next_cell_state = self._cell(cell_inputs, cell_state)
 
         h_old = cell_output
@@ -1331,10 +1353,10 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             cell_output = (c_g * attn_emb_prev_act +
                            (1 - c_g) * cell_output)
 
-            new_c = c_g * cell_state.c + (1 - c_g) * next_cell_state.c
+            # new_c = s_g * old_pre_c + (1 - s_g) * next_cell_state.c
             if isinstance(cell_state, tf.contrib.rnn.LSTMStateTuple):
                 next_cell_state = tf.contrib.rnn.LSTMStateTuple(
-                        new_c, cell_output)
+                        next_cell_state.c, cell_output)
             else:
                 next_cell_state = cell_output
 
@@ -1349,7 +1371,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         if self._output_attention:
             # concatenate rnn cell output and attention
             # c_g = self._copy_gate(prev_out_for_attn)
-            return tf.concat([cell_output, h_old, attention, c_g], 1), next_state
+            return tf.concat([cell_output, h_old, attention, s_g, c_g], 1), next_state
         else:
             return cell_output, next_state
 
