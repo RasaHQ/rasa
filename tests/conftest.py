@@ -16,9 +16,8 @@ from rasa_core.dispatcher import Dispatcher
 from rasa_core.domain import TemplateDomain
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.policies.ensemble import SimplePolicyEnsemble
-from rasa_core.policies.memoization import MemoizationPolicy
-from rasa_core.policies.augmented_memoization import \
-    AugmentedMemoizationPolicy
+from rasa_core.policies.memoization import \
+    MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa_core.processor import MessageProcessor
 from rasa_core.slots import Slot
 from rasa_core.tracker_store import InMemoryTrackerStore
