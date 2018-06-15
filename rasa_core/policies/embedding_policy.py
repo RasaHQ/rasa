@@ -549,6 +549,10 @@ class EmbeddingPolicy(Policy):
         sim_loss = self.mu_pos - sim[:, :, 0]
 
         if self.attn_after_rnn:
+            # norm_loss = 0.5 * tf.reduce_mean(tf.square(emb_dial -
+            #                                            emb_act[:, :, 0, :]),
+            #                                  -1) * self.C_emb
+
             emb_dial_norm = tf.norm(emb_dial, axis=-1)
             emb_act_norm = tf.norm(emb_act[:, :, 0, :], axis=-1)
 
@@ -558,6 +562,7 @@ class EmbeddingPolicy(Policy):
             #                           -1) * self.C_emb
             # norm_loss = (tf.square(emb_dial_norm - 1) +
             #              tf.square(emb_act_norm - 1)) * self.C_emb
+
             loss = tf.where(sim_loss > 0, sim_loss, norm_loss)
         else:
             loss = tf.maximum(0., sim_loss)
