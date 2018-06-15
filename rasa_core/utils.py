@@ -4,17 +4,16 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import errno
+import io
 import json
 import logging
-import os, io
+import os
 import sys
-from collections import deque
 from hashlib import sha1
 from random import Random
 from threading import Thread
 
 import six
-import yaml
 from builtins import input, range, str
 from numpy import all, array
 from typing import Text, Any, List, Optional, Tuple, Dict, Set
@@ -228,55 +227,6 @@ def print_color(text, color):
     print(wrap_with_color(text, color))
 
 
-class TopicStack(object):
-    def __init__(self, topics, iterable, default):
-        self.topics = topics
-        self.iterable = iterable
-        self.topic_names = [t.name for t in topics]
-        self.default = default
-        self.dq = deque(iterable, len(topics))
-
-    @property
-    def top(self):
-        if len(self.dq) < 1:
-            return self.default
-        return self.dq[-1]
-
-    def __iter__(self):
-        return self.dq.__iter__()
-
-    def next(self):
-        return self.dq.next()
-
-    def __len__(self):
-        return len(self.dq)
-
-    def push(self, x):
-        from rasa_core.conversation import Topic
-
-        if isinstance(x, six.string_types):
-            if x not in self.topic_names:
-                raise ValueError(
-                        "Unknown topic name: '{}', known topics in this domain "
-                        "are: {}".format(x, self.topic_names))
-            else:
-                x = self.topics[self.topic_names.index(x)]
-
-        elif not isinstance(x, Topic) or x not in self.topics:
-            raise ValueError(
-                    "Instance of type '{}' can not be used on the topic stack, "
-                    "not a valid topic!".format(type(x).__name__))
-
-        while self.dq.count(x) > 0:
-            self.dq.remove(x)
-        self.dq.append(x)
-
-    def pop(self):
-        if len(self.dq) < 1:
-            return None
-        return self.dq.pop()
-
-
 class HashableNDArray(object):
     """Hashable wrapper for ndarray objects.
 
@@ -325,20 +275,71 @@ class HashableNDArray(object):
 
 def fix_yaml_loader():
     """Ensure that any string read by yaml is represented as unicode."""
-    from yaml import Loader, SafeLoader
+    import yaml
+    import re
 
     def construct_yaml_str(self, node):
         # Override the default string handling function
         # to always return unicode objects
         return self.construct_scalar(node)
 
-    Loader.add_constructor(u'tag:yaml.org,2002:str', construct_yaml_str)
-    SafeLoader.add_constructor(u'tag:yaml.org,2002:str', construct_yaml_str)
+    # this will allow the reader to process emojis under py2
+    # need to differentiate between narrow build (e.g. osx, windows) and
+    # linux build. in the narrow build, emojis are 2 char strings using a
+    # surrogate
+    if sys.maxunicode == 0xffff:
+        yaml.reader.Reader.NON_PRINTABLE = re.compile(
+                '[^\x09\x0A\x0D\x20-\x7E\x85\xA0-\uD7FF\ud83d\uE000-\uFFFD'
+                '\ude00-\ude50]')
+    else:
+        yaml.reader.Reader.NON_PRINTABLE = re.compile(
+                '[^\x09\x0A\x0D\x20-\x7E\x85\xA0-\uD7FF\ud83d\uE000-\uFFFD'
+                '\U00010000-\U0010FFFF]')
+
+    yaml.Loader.add_constructor(u'tag:yaml.org,2002:str',
+                                construct_yaml_str)
+    yaml.SafeLoader.add_constructor(u'tag:yaml.org,2002:str',
+                                    construct_yaml_str)
 
 
 def read_yaml_file(filename):
-    fix_yaml_loader()
-    return yaml.load(read_file(filename, "utf-8"))
+    """Read contents of `filename` interpreting them as yaml."""
+
+    if six.PY2:
+        import yaml
+
+        fix_yaml_loader()
+        return yaml.load(read_file(filename, "utf-8"))
+    else:
+        import ruamel.yaml
+
+        yaml_parser = ruamel.yaml.YAML(typ="safe")
+        yaml_parser.allow_unicode = True
+        yaml_parser.unicode_supplementary = True
+
+        return yaml_parser.load(read_file(filename))
+
+
+def dump_obj_as_yaml_to_file(filename, obj):
+    """Writes data (python dict) to the filename in yaml repr."""
+
+    if six.PY2:
+        import yaml
+
+        with io.open(filename, 'w', encoding="utf-8") as yaml_file:
+            yaml.safe_dump(obj, yaml_file,
+                           default_flow_style=False,
+                           allow_unicode=True)
+    else:
+        import ruamel.yaml
+
+        yaml_writer = ruamel.yaml.YAML(pure=True, typ="safe")
+        yaml_writer.unicode_supplementary = True
+        yaml_writer.default_flow_style = False
+        yaml_writer.allow_unicode = True
+
+        with io.open(filename, 'w', encoding="utf-8") as yaml_file:
+            yaml_writer.dump(obj, yaml_file)
 
 
 def read_file(filename, encoding="utf-8"):
@@ -401,7 +402,7 @@ def wait_for_threads(threads):
                 "Stopping to serve forever.")
 
 
-def extract_args(kwargs,   # type: Dict[Text, Any]
+def extract_args(kwargs,  # type: Dict[Text, Any]
                  keys_to_extract  # type: Set[Text]
                  ):
     # type: (...) -> Tuple[Dict[Text, Any], Dict[Text, Any]]

@@ -41,18 +41,16 @@ class TrackerWithCachedStates(DialogueStateTracker):
     """A tracker wrapper that caches the state creation of the tracker."""
 
     def __init__(self, sender_id, slots,
-                 topics=None,
-                 default_topic=None,
                  max_event_history=None,
                  domain=None
                  ):
         super(TrackerWithCachedStates, self).__init__(
-                sender_id, slots, topics, default_topic, max_event_history)
+                sender_id, slots, max_event_history)
         self._states = None
         self.domain = domain
 
     def past_states(self, domain):
-        # type: (Domain) -> Tuple[frozenset, ...]
+        # type: (Domain) -> deque
         """Return the states of the tracker based on the logged events."""
 
         # we need to make sure this is the same domain, otherwise things will
@@ -66,7 +64,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
             self._states = super(TrackerWithCachedStates, self).past_states(
                     domain)
 
-        return tuple(self._states)
+        return self._states
 
     def clear_states(self):
         # type: () -> None
@@ -80,8 +78,6 @@ class TrackerWithCachedStates(DialogueStateTracker):
 
         return type(self)(UserMessage.DEFAULT_SENDER_ID,
                           self.slots.values(),
-                          self.topics,
-                          self.default_topic,
                           self._max_event_history,
                           self.domain)
 
@@ -220,8 +216,6 @@ class TrainingDataGenerator(object):
         init_tracker = TrackerWithCachedStates(
                 UserMessage.DEFAULT_SENDER_ID,
                 self.domain.slots,
-                self.domain.topics,
-                self.domain.default_topic,
                 max_event_history=self.config.tracker_limit,
                 domain=self.domain
         )
@@ -502,7 +496,7 @@ class TrainingDataGenerator(object):
         end_trackers = []  # for all steps
 
         for tracker in trackers:
-            states = tracker.past_states(self.domain)
+            states = tuple(tracker.past_states(self.domain))
             hashed = hash(states)
 
             # only continue with trackers that created a
@@ -541,7 +535,7 @@ class TrainingDataGenerator(object):
         # otherwise featurization does a lot of unnecessary work
 
         for tracker in trackers:
-            states = tracker.past_states(self.domain)
+            states = tuple(tracker.past_states(self.domain))
             hashed = hash(states)
 
             # only continue with trackers that created a

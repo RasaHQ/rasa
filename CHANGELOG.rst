@@ -17,6 +17,7 @@ Changed
 
 Removed
 -------
+- removed support for topics
 
 [0.9.4] - 2018-06-07
 ^^^^^^^^^^^^^^^^^^^^
