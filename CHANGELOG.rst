@@ -14,14 +14,22 @@ Added
 
 Changed
 -------
+- changed the logic inside AugmentedMemoizationPolicy to recall actions only if they are the same in training stories
+- moved AugmentedMemoizationPolicy to memoization.py
 
 Removed
 -------
 - removed support for topics
 
+[0.9.4] - 2018-06-07
+^^^^^^^^^^^^^^^^^^^^
+
 Fixed
 -----
 - fixed evaluation script
+- fixed story file loading (previously some story files with checkpoints could
+  create wrong training data)
+- improved speed of data loading
 
 [0.9.3] - 2018-05-30
 ^^^^^^^^^^^^^^^^^^^^

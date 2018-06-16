@@ -4,17 +4,16 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import errno
+import io
 import json
 import logging
-import os, io
+import os
 import sys
-from collections import deque
 from hashlib import sha1
 from random import Random
 from threading import Thread
 
 import six
-import yaml
 from builtins import input, range, str
 from numpy import all, array
 from typing import Text, Any, List, Optional, Tuple, Dict, Set
@@ -276,20 +275,71 @@ class HashableNDArray(object):
 
 def fix_yaml_loader():
     """Ensure that any string read by yaml is represented as unicode."""
-    from yaml import Loader, SafeLoader
+    import yaml
+    import re
 
     def construct_yaml_str(self, node):
         # Override the default string handling function
         # to always return unicode objects
         return self.construct_scalar(node)
 
-    Loader.add_constructor(u'tag:yaml.org,2002:str', construct_yaml_str)
-    SafeLoader.add_constructor(u'tag:yaml.org,2002:str', construct_yaml_str)
+    # this will allow the reader to process emojis under py2
+    # need to differentiate between narrow build (e.g. osx, windows) and
+    # linux build. in the narrow build, emojis are 2 char strings using a
+    # surrogate
+    if sys.maxunicode == 0xffff:
+        yaml.reader.Reader.NON_PRINTABLE = re.compile(
+                '[^\x09\x0A\x0D\x20-\x7E\x85\xA0-\uD7FF\ud83d\uE000-\uFFFD'
+                '\ude00-\ude50]')
+    else:
+        yaml.reader.Reader.NON_PRINTABLE = re.compile(
+                '[^\x09\x0A\x0D\x20-\x7E\x85\xA0-\uD7FF\ud83d\uE000-\uFFFD'
+                '\U00010000-\U0010FFFF]')
+
+    yaml.Loader.add_constructor(u'tag:yaml.org,2002:str',
+                                construct_yaml_str)
+    yaml.SafeLoader.add_constructor(u'tag:yaml.org,2002:str',
+                                    construct_yaml_str)
 
 
 def read_yaml_file(filename):
-    fix_yaml_loader()
-    return yaml.load(read_file(filename, "utf-8"))
+    """Read contents of `filename` interpreting them as yaml."""
+
+    if six.PY2:
+        import yaml
+
+        fix_yaml_loader()
+        return yaml.load(read_file(filename, "utf-8"))
+    else:
+        import ruamel.yaml
+
+        yaml_parser = ruamel.yaml.YAML(typ="safe")
+        yaml_parser.allow_unicode = True
+        yaml_parser.unicode_supplementary = True
+
+        return yaml_parser.load(read_file(filename))
+
+
+def dump_obj_as_yaml_to_file(filename, obj):
+    """Writes data (python dict) to the filename in yaml repr."""
+
+    if six.PY2:
+        import yaml
+
+        with io.open(filename, 'w', encoding="utf-8") as yaml_file:
+            yaml.safe_dump(obj, yaml_file,
+                           default_flow_style=False,
+                           allow_unicode=True)
+    else:
+        import ruamel.yaml
+
+        yaml_writer = ruamel.yaml.YAML(pure=True, typ="safe")
+        yaml_writer.unicode_supplementary = True
+        yaml_writer.default_flow_style = False
+        yaml_writer.allow_unicode = True
+
+        with io.open(filename, 'w', encoding="utf-8") as yaml_file:
+            yaml_writer.dump(obj, yaml_file)
 
 
 def read_file(filename, encoding="utf-8"):
@@ -352,7 +402,7 @@ def wait_for_threads(threads):
                 "Stopping to serve forever.")
 
 
-def extract_args(kwargs,   # type: Dict[Text, Any]
+def extract_args(kwargs,  # type: Dict[Text, Any]
                  keys_to_extract  # type: Set[Text]
                  ):
     # type: (...) -> Tuple[Dict[Text, Any], Dict[Text, Any]]

@@ -323,13 +323,13 @@ class Agent(object):
                          "all old model files. Some files might be "
                          "overwritten.".format(model_path))
 
-    def persist(self, model_path):
+    def persist(self, model_path, dump_flattened_stories=False):
         # type: (Text) -> None
         """Persists this agent into a directory for later loading and usage."""
 
         self._clear_model_directory(model_path)
 
-        self.policy_ensemble.persist(model_path)
+        self.policy_ensemble.persist(model_path, dump_flattened_stories)
         self.domain.persist(os.path.join(model_path, "domain.yml"))
         self.domain.persist_specification(model_path)
 
