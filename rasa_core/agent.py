@@ -6,8 +6,12 @@ from __future__ import unicode_literals
 import logging
 import os
 import shutil
+import time
+from threading import Thread
 
+import requests
 import typing
+import zipfile
 from six import string_types
 from typing import Text, List, Optional, Callable, Any, Dict, Union
 
@@ -22,6 +26,7 @@ from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.processor import MessageProcessor
 from rasa_core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa_core.trackers import DialogueStateTracker
+from rasa_nlu.utils import is_url, create_temporary_file
 
 logger = logging.getLogger(__name__)
 
@@ -41,23 +46,36 @@ class Agent(object):
             domain,  # type: Union[Text, Domain]
             policies=None,  # type: Union[PolicyEnsemble, List[Policy], None]
             interpreter=None,  # type: Union[NLI, Text, None]
-            tracker_store=None  # type: Optional[TrackerStore]
+            tracker_store=None,  # type: Optional[TrackerStore]
+            model_server=None,  # type: Optional[Text]
+            path=None,  # type: Optional[Text]
+            action_factory=None,  # type: Optional[Text]
+            model_hash=None  # type: Optional[Text]
     ):
         # Initializing variables with the passed parameters.
         self.domain = self._create_domain(domain)
         self.policy_ensemble = self._create_ensemble(policies)
         self.interpreter = NaturalLanguageInterpreter.create(interpreter)
         self.tracker_store = self.create_tracker_store(
-                tracker_store, self.domain)
+            tracker_store, self.domain)
+        self.path = path
+        self.model_hash = model_hash
+        self.model_server = model_server
+        self.action_factory = action_factory
+        if model_server:
+            if path is None:
+                raise ValueError("No path specified for saving the model.")
+            self.start_model_pulling_in_worker(wait=60)
 
     @classmethod
     def load(cls,
              path,  # type: Text
              interpreter=None,  # type: Union[NLI, Text, None]
              tracker_store=None,  # type: Optional[TrackerStore]
-             action_factory=None  # type: Optional[Text]
+             action_factory=None,  # type: Optional[Text]
+             model_server=None  # type: Optional[Text]
              ):
-        # type: (Text, Any, Optional[TrackerStore]) -> Agent
+        # type: (...) -> Agent
         """Load a persisted model from the passed path."""
 
         if path is None:
@@ -72,20 +90,37 @@ class Agent(object):
                              "a model, use `agent.load_data(...)` "
                              "instead.".format(path))
 
-        ensemble = PolicyEnsemble.load(path)
-        domain = TemplateDomain.load(os.path.join(path, "domain.yml"),
-                                     action_factory)
+        if model_server:
+            domain, ensemble, _hash = cls._load_model_from_server(
+                model_server=model_server,
+                action_factory=action_factory,
+                model_directory=path,
+                init=True
+            )
+        else:
+            domain = TemplateDomain.load(os.path.join(path, "domain.yml"),
+                                         action_factory)
+            ensemble = PolicyEnsemble.load(path)
+            _hash = None
         # ensures the domain hasn't changed between test and train
         domain.compare_with_specification(path)
         _interpreter = NaturalLanguageInterpreter.create(interpreter)
         _tracker_store = cls.create_tracker_store(tracker_store, domain)
 
-        return cls(domain, ensemble, _interpreter, _tracker_store)
+        return cls(domain=domain,
+                   ensemble=ensemble,
+                   interpreter=_interpreter,
+                   tracker_store=_tracker_store,
+                   model_server=model_server,
+                   path=path,
+                   action_factory=action_factory,
+                   model_hash=_hash)
 
     def handle_message(
             self,
             text_message,  # type: Text
-            message_preprocessor=None,  # type: Optional[Callable[[Text], Text]]
+            message_preprocessor=None,
+            # type: Optional[Callable[[Text], Text]]
             output_channel=None,  # type: Optional[OutputChannel]
             sender_id=UserMessage.DEFAULT_SENDER_ID  # type: Optional[Text]
     ):
@@ -114,11 +149,11 @@ class Agent(object):
         # the single message
         processor = self._create_processor(message_preprocessor)
         return processor.handle_message(
-                UserMessage(text_message, output_channel, sender_id))
+            UserMessage(text_message, output_channel, sender_id))
 
     def start_message_handling(
             self,
-            text_message,   # type: Text
+            text_message,  # type: Text
             sender_id=UserMessage.DEFAULT_SENDER_ID  # type: Optional[Text]
     ):
         # type: (...) -> Dict[Text, Any]
@@ -128,13 +163,13 @@ class Agent(object):
         # message handling
         processor = self._create_processor()
         return processor.start_message_handling(
-                UserMessage(text_message, None, sender_id))
+            UserMessage(text_message, None, sender_id))
 
     def continue_message_handling(
             self,
             sender_id,  # type: Text
-            executed_action,   # type: Text
-            events   # type: List[Event]
+            executed_action,  # type: Text
+            events  # type: List[Event]
     ):
         # type: (...) -> Dict[Text, Any]
         """Continue to process a messages.
@@ -151,7 +186,7 @@ class Agent(object):
     def handle_channel(
             self,
             input_channel,  # type: InputChannel
-            message_preprocessor=None   # type: Optional[Callable[[Text], Text]]
+            message_preprocessor=None  # type: Optional[Callable[[Text], Text]]
     ):
         # type: (...) -> None
         """Handle messages coming from the channel."""
@@ -161,7 +196,7 @@ class Agent(object):
 
     def toggle_memoization(
             self,
-            activate   # type: bool
+            activate  # type: bool
     ):
         # type: (...) -> None
         """Toggles the memoization on and off.
@@ -274,8 +309,8 @@ class Agent(object):
 
         if not self.interpreter:
             raise ValueError(
-                    "When using online learning, you need to specify "
-                    "an interpreter for the agent to use.")
+                "When using online learning, you need to specify "
+                "an interpreter for the agent to use.")
 
         # TODO: DEPRECATED - remove in version 0.10
         if isinstance(training_trackers, string_types):
@@ -374,8 +409,8 @@ class Agent(object):
         # creates a processor
         self._ensure_agent_is_prepared()
         return MessageProcessor(
-                self.interpreter, self.policy_ensemble, self.domain,
-                self.tracker_store, message_preprocessor=preprocessor)
+            self.interpreter, self.policy_ensemble, self.domain,
+            self.tracker_store, message_preprocessor=preprocessor)
 
     @staticmethod
     def _create_domain(domain):
@@ -387,9 +422,9 @@ class Agent(object):
             return domain
         else:
             raise ValueError(
-                    "Invalid param `domain`. Expected a path to a domain "
-                    "specification or a domain instance. But got "
-                    "type '{}' with value '{}'".format(type(domain), domain))
+                "Invalid param `domain`. Expected a path to a domain "
+                "specification or a domain instance. But got "
+                "type '{}' with value '{}'".format(type(domain), domain))
 
     @staticmethod
     def create_tracker_store(store, domain):
@@ -419,6 +454,76 @@ class Agent(object):
         else:
             passed_type = type(policies).__name__
             raise ValueError(
-                    "Invalid param `policies`. Passed object is "
-                    "of type '{}', but should be policy, an array of "
-                    "policies, or a policy ensemble".format(passed_type))
+                "Invalid param `policies`. Passed object is "
+                "of type '{}', but should be policy, an array of "
+                "policies, or a policy ensemble".format(passed_type))
+
+    def _load_model_from_server(self,
+                                model_server,  # type: Text
+                                action_factory,  # type: Text
+                                model_directory,  # type: Text
+                                init=False  # type: bool
+                                ):
+        # type: (...) -> Optional[(Domain, PolicyEnsemble, Text)]
+        """Load a zipped Rasa Core model from a URL."""
+
+        if not is_url(model_server):
+            raise requests.exceptions.InvalidURL(model_server)
+        try:
+            head = requests.head(model_server)
+            head.raise_for_status()
+            new_hash = head.headers.get("model_hash")
+            if init:
+                self._pull_model(model_server, model_directory)
+                domain_path = os.path.join(os.path.basename(model_directory),
+                                           "domain.yml")
+                domain = TemplateDomain.load(domain_path, action_factory)
+                policy_ensemble = PolicyEnsemble.load(model_directory)
+                return domain, policy_ensemble, new_hash
+            elif new_hash != self.model_hash:
+                self.model_hash = new_hash
+                self._pull_model(model_server, model_directory)
+                domain_path = os.path.join(os.path.basename(model_directory),
+                                           "domain.yml")
+                self.domain = TemplateDomain.load(domain_path, action_factory)
+                self.policy_ensemble = PolicyEnsemble.load(model_directory)
+            else:
+                logger.debug("No new model found at "
+                             "URL {}".format(model_server))
+        except Exception as e:
+            logger.warning("Could not retrieve model from server "
+                           "URL:\n{}".format(e))
+
+    @staticmethod
+    def _pull_model(model_server, model_directory):
+        # type: (Text, Text) -> None
+        response = requests.get(model_server)
+        response.raise_for_status()
+        temp_data_file = create_temporary_file(response.content,
+                                               suffix='.zip')
+
+        logger.debug("Downloaded model to {}".format(temp_data_file))
+
+        zip_ref = zipfile.ZipFile(temp_data_file, 'r')
+        zip_ref.extractall(model_directory)
+        zip_ref.close()
+        logger.debug(
+            "Unzipped model to {}".format(os.path.abspateh(model_directory)))
+
+    def _run_model_pulling_worker(self, wait):
+        while True:
+            self._load_model_from_server(
+                model_server=self.model_server,
+                action_factory=self.action_factory,
+                model_directory=self.path,
+                init=False
+            )
+            time.sleep(wait)
+
+    def start_model_pulling_in_worker(self, wait):
+        # type: (int) -> None
+
+        worker = Thread(target=self._run_model_pulling_worker,
+                        args=(wait,))
+        worker.setDaemon(True)
+        worker.start()

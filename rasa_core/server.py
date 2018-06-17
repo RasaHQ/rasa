@@ -10,22 +10,20 @@ import tempfile
 import zipfile
 from functools import wraps
 
+import typing
 from builtins import str
 from flask import Flask, request, abort, Response, jsonify
 from flask_cors import CORS, cross_origin
 from gevent.pywsgi import WSGIServer
-from typing import Union, Text, Optional
+from typing import Text, Optional
+from typing import Union
 
 from rasa_core import utils, events
 from rasa_core.agent import Agent
 from rasa_core.channels.direct import CollectingOutputChannel
-from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.tracker_store import TrackerStore
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.version import __version__
-
-from typing import Union
-import typing
 
 if typing.TYPE_CHECKING:
     from rasa_core.interpreter import NaturalLanguageInterpreter as NLI
@@ -42,7 +40,11 @@ def create_argument_parser():
             '-d', '--core',
             required=True,
             type=str,
-            help="core model to run with the server")
+            help="core model directory to run with the server")
+    parser.add_argument(
+            '-m', '--model_server',
+            type=str,
+            help="URL from which to pull a Core model")
     parser.add_argument(
             '-u', '--nlu',
             type=str,
@@ -137,14 +139,16 @@ def _create_agent(
         model_directory,  # type: Text
         interpreter,  # type: Union[Text,NLI,None]
         action_factory=None,  # type: Optional[Text]
-        tracker_store=None  # type: Optional[TrackerStore]
+        tracker_store=None,  # type: Optional[TrackerStore]
+        model_server=None  # type: Optional[Text]
 ):
     # type: (...) -> Optional[Agent]
     try:
 
         return Agent.load(model_directory, interpreter,
                           tracker_store=tracker_store,
-                          action_factory=action_factory)
+                          action_factory=action_factory,
+                          model_server=model_server)
     except Exception as e:
         logger.warn("Failed to load any agent model. Running "
                     "Rasa Core server with out loaded model now. {}"
@@ -152,14 +156,15 @@ def _create_agent(
         return None
 
 
-def create_app(model_directory,  # type: Text
+def create_app(model_directory=None,  # type: Text
                interpreter=None,  # type: Union[Text, NLI, None]
                loglevel="INFO",  # type: Optional[Text]
                logfile="rasa_core.log",  # type: Optional[Text]
                cors_origins=None,  # type: Optional[List[Text]]
                action_factory=None,  # type: Optional[Text]
                auth_token=None,  # type: Optional[Text]
-               tracker_store=None  # type: Optional[TrackerStore]
+               tracker_store=None,  # type: Optional[TrackerStore]
+               model_server=None  # type: Optional[Text]
                ):
     """Class representing a Rasa Core HTTP server."""
 
@@ -180,7 +185,8 @@ def create_app(model_directory,  # type: Text
 
     # this needs to be an array, so we can modify it in the nested functions...
     _agent = [_create_agent(model_directory, interpreter,
-                            action_factory, tracker_store)]
+                            action_factory, tracker_store,
+                            model_server)]
 
     def agent():
         if _agent and _agent[0]:
@@ -417,7 +423,8 @@ if __name__ == '__main__':
                      cmdline_args.loglevel,
                      cmdline_args.log_file,
                      cmdline_args.cors,
-                     auth_token=cmdline_args.auth_token)
+                     auth_token=cmdline_args.auth_token,
+                     model_server=cmdline_args.model_server)
 
     logger.info("Started http server on port %s" % cmdline_args.port)
 
