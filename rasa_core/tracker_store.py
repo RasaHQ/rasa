@@ -10,7 +10,7 @@ import six.moves.cPickle as pickler
 from typing import Text, Optional
 
 from rasa_core.actions.action import ACTION_LISTEN_NAME
-from rasa_core.broker import EventBroker
+from rasa_core.broker import EventChannel
 from rasa_core.trackers import DialogueStateTracker, ActionExecuted
 
 logger = logging.getLogger(__name__)
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 class TrackerStore(object):
     def __init__(self, domain, event_broker=None):
-        # type: (Domain, Optional[EventBroker]) -> None
+        # type: (Domain, Optional[EventChannel]) -> None
         self.domain = domain
         self.event_broker = event_broker
 
@@ -54,13 +54,12 @@ class TrackerStore(object):
         # type: (DialogueStateTracker) -> None
         old_tracker = self.retrieve(tracker.sender_id)
         offset = len(old_tracker.events) if old_tracker else 0
-        for evt in tracker.events[offset:]:
+        for evt in tracker.events[offset:]: # type:
             body = {
                 "sender_id": tracker.sender_id,
-                "name": evt.type_name,
-                "timestamp": evt.timestamp
             }
-            self.event_broker.process(json.dumps(body))
+            body.update(evt.as_dict())
+            self.event_broker.publish(json.dumps(body))
 
     def keys(self):
         # type: (Text) -> List[Text]

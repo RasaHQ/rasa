@@ -19,7 +19,7 @@ The event broker emits events into the event queue. It becomes part of the
     pika_broker = PikaProducer('localhost',
                                 'username',
                                 'password',
-                                queue='my_events')
+                                queue='rasa_core_events')
 
     tracker_store = InMemoryTrackerStore(db=db, event_broker=pika_broker)
 
@@ -32,7 +32,9 @@ tracker looks like this:
     {
         "sender_id": "default",
         "timestamp": 1528402837.617099,
-        "event": "bot"
+        "event": "bot",
+        "text": "what your bot said",
+        "data": "some data"
     }
 
 The ``event`` field takes the event's ``type_name`` (for more on event
@@ -47,28 +49,28 @@ example:
     import json
     import pika
 
-    class MyConsumer(object):
 
-        def __init__(self, host, username, password, queue='my_events'):
-            credentials = pika.PlainCredentials(username, password)
-            connection = pika.BlockingConnection(pika.ConnectionParameters(host, credentials=credentials))
-            self.queue = queue
-            self.channel = connection.channel()
-
-        def consume(self):
-            self.channel.basic_consume(self._callback,
-                                       queue=self.queue,
-                                       no_ack=True)
-            self.channel.start_consuming()
-
-        def _callback(self, ch, method, properties, body):
+    def _callback(self, ch, method, properties, body):
             # Do something useful with your incoming message body here, e.g.
             # saving it to a database
             print('Received event {}'.format(json.loads(body)))
 
     if __name__ == '__main__':
-        consumer = MyConsumer('localhost', 'username', 'password')
-        consumer.consume()
+
+        # RabbitMQ credentials with username and password
+        credentials = pika.PlainCredentials('username', 'password')
+
+        # pika connection to the RabbitMQ host - typically 'rabbit' in a
+        # docker environment, or 'localhost' in a local environment
+        connection = pika.BlockingConnection(
+            pika.ConnectionParameters('rabbit', credentials=credentials))
+
+        # start consumption of channel
+        channel = connection.channel()
+        channel.basic_consume(_callback,
+                              queue='rasa_core_events',
+                              no_ack=True)
+        channel.start_consuming()
 
 
 

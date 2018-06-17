@@ -10,20 +10,22 @@ import pika
 logger = logging.getLogger(__name__)
 
 
-class EventBroker(object):
-    def process(self, body):
+class EventChannel(object):
+    def publish(self, event):
         # type: (Text) -> None
-        raise NotImplementedError("Event broker must implement the `process` "
+        """Publishes a json-formatted Rasa Core event into an event queue."""
+
+        raise NotImplementedError("Event broker must implement the `publish` "
                                   "method")
 
 
-class PikaProducer(EventBroker):
+class PikaProducer(EventChannel):
     def __init__(self, host, username, password, queue='rasa_core_events'):
         self.queue = queue
         self.host = host
         self.credentials = pika.PlainCredentials(username, password)
 
-    def process(self, event):
+    def publish(self, event):
         self._open_connection()
         self._publish(event)
         self._close()
