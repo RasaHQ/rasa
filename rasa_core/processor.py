@@ -272,8 +272,6 @@ class MessageProcessor(object):
                 # call a registered callback
                 self.on_circuit_break(tracker, dispatcher)
 
-        logger.debug("Current topic: {}".format(tracker.topic.name))
-
     @staticmethod
     def should_predict_another_action(action_name, events):
         is_listen_action = action_name == ACTION_LISTEN_NAME

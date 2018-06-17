@@ -16,9 +16,8 @@ from rasa_core.dispatcher import Dispatcher
 from rasa_core.domain import TemplateDomain
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.policies.ensemble import SimplePolicyEnsemble
-from rasa_core.policies.memoization import MemoizationPolicy
-from rasa_core.policies.augmented_memoization import \
-    AugmentedMemoizationPolicy
+from rasa_core.policies.memoization import \
+    MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa_core.processor import MessageProcessor
 from rasa_core.slots import Slot
 from rasa_core.tracker_store import InMemoryTrackerStore
@@ -83,8 +82,13 @@ def default_processor(default_domain):
 @pytest.fixture(scope="session")
 def trained_moodbot_path():
     model_path = "examples/moodbot/models/dialogue"
-    train.train_dialogue_model("examples/moodbot/domain.yml",
-                               "examples/moodbot/data/stories.md",
-                               model_path,
-                               False, None, {})
+    train.train_dialogue_model(
+            domain_file="examples/moodbot/domain.yml",
+            stories_file="examples/moodbot/data/stories.md",
+            output_path=model_path,
+            use_online_learning=False,
+            nlu_model_path=None,
+            max_history=None,
+            kwargs=None
+    )
     return model_path

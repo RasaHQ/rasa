@@ -15,9 +15,8 @@ import pytest
 from rasa_core.channels import UserMessage
 from rasa_core.domain import TemplateDomain
 from rasa_core.policies.keras_policy import KerasPolicy
-from rasa_core.policies.memoization import MemoizationPolicy
-from rasa_core.policies.augmented_memoization import \
-    AugmentedMemoizationPolicy
+from rasa_core.policies.memoization import \
+    MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa_core.policies.sklearn_policy import SklearnPolicy
 from rasa_core.policies.fallback import FallbackPolicy
 from rasa_core.trackers import DialogueStateTracker
@@ -81,9 +80,7 @@ class PolicyTestCollection(object):
 
     def test_prediction_on_empty_tracker(self, trained_policy, default_domain):
         tracker = DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
-                                       default_domain.slots,
-                                       default_domain.topics,
-                                       default_domain.default_topic)
+                                       default_domain.slots)
         probabilities = trained_policy.predict_action_probabilities(
             tracker, default_domain)
         assert len(probabilities) == default_domain.num_actions
@@ -204,9 +201,7 @@ class TestSklearnPolicy(PolicyTestCollection):
     @pytest.fixture
     def tracker(self, default_domain):
         return DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
-                                    default_domain.slots,
-                                    default_domain.topics,
-                                    default_domain.default_topic)
+                                    default_domain.slots)
 
     @pytest.fixture(scope='module')
     def trackers(self, default_domain):
@@ -262,9 +257,7 @@ class TestSklearnPolicy(PolicyTestCollection):
         new_trackers = []
         for tr in trackers:
             new_tracker = DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
-                                               default_domain.slots,
-                                               default_domain.topics,
-                                               default_domain.default_topic)
+                                               default_domain.slots)
             for e in tr.applied_events():
                 if isinstance(e, ActionExecuted):
                     new_action = default_domain.action_for_index(

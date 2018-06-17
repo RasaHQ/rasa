@@ -19,7 +19,8 @@ from rasa_core.events import (
     ActionExecuted, UserUttered, Event, SlotSet)
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.training.structures import (
-    Checkpoint, STORY_START, StoryStep)
+    Checkpoint, STORY_START, StoryStep,
+    GENERATED_CHECKPOINT_PREFIX, GENERATED_HASH_LENGTH)
 
 logger = logging.getLogger(__name__)
 
@@ -45,9 +46,9 @@ class StoryStepBuilder(object):
             self.start_checkpoints.append(Checkpoint(name, conditions))
         else:
             if conditions:
-                logger.warn("End or intermediate checkpoints "
-                            "do not support conditions! "
-                            "(checkpoint: {})".format(name))
+                logger.warning("End or intermediate checkpoints "
+                               "do not support conditions! "
+                               "(checkpoint: {})".format(name))
             additional_steps = []
             for t in self.current_steps:
                 if t.end_checkpoints:
@@ -80,8 +81,9 @@ class StoryStepBuilder(object):
             # user can use the express the same thing
             # we need to copy the blocks and create one
             # copy for each possible message
-            generated_checkpoint = utils.generate_id("GENERATED_M_",
-                                                     max_chars=5)
+            prefix = GENERATED_CHECKPOINT_PREFIX + "OR_"
+            generated_checkpoint = utils.generate_id(prefix,
+                                                     GENERATED_HASH_LENGTH)
             updated_steps = []
             for t in self.current_steps:
                 for m in messages:
@@ -230,8 +232,10 @@ class StoryFileReader(object):
                                      line[1:].split(" OR ")]
                     self.add_user_messages(user_messages, line_num)
                 else:  # reached an unknown type of line
-                    logger.warn("Skipping line {}. No valid command found. "
-                                "Line Content: '{}'".format(line_num, line))
+                    logger.warning("Skipping line {}. "
+                                   "No valid command found. "
+                                   "Line Content: '{}'"
+                                   "".format(line_num, line))
             except Exception as e:
                 msg = "Error in line {}: {}".format(line_num, e.message)
                 logger.error(msg, exc_info=1)
@@ -292,15 +296,17 @@ class StoryFileReader(object):
                                                 parameters)
             if m.startswith("_"):
                 c = utterance.as_story_string()
-                logger.warn("Stating user intents with a leading '_' is "
-                            "deprecated. The new format is "
-                            "'* {}'. Please update "
-                            "your example '{}' to the new format.".format(c, m))
+                logger.warning("Stating user intents with a leading '_' is "
+                               "deprecated. The new format is "
+                               "'* {}'. Please update "
+                               "your example '{}' to the new format."
+                               "".format(c, m))
             intent_name = utterance.intent.get("name")
             if intent_name not in self.domain.intents:
-                logger.warn("Found unknown intent '{}' on line {}. Please, "
-                            "make sure that all intents are listed in your "
-                            "domain yaml.".format(intent_name, line_num))
+                logger.warning("Found unknown intent '{}' on line {}. "
+                               "Please, make sure that all intents are "
+                               "listed in your domain yaml."
+                               "".format(intent_name, line_num))
             parsed_messages.append(utterance)
         self.current_step_builder.add_user_messages(parsed_messages)
 

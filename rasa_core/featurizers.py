@@ -7,10 +7,11 @@ import io
 import logging
 import os
 import typing
+from tqdm import tqdm
 
 import jsonpickle
 import numpy as np
-from typing import Tuple, List, Optional, Dict, Text
+from typing import Tuple, List, Optional, Dict, Text, Any
 from builtins import str
 
 from rasa_core import utils
@@ -276,21 +277,27 @@ class TrackerFeaturizer(object):
         self.state_featurizer = state_featurizer or SingleStateFeaturizer()
         self.use_intent_probabilities = use_intent_probabilities
 
-    def _create_states(self, tracker, domain):
+    def _create_states(self,
+                       tracker,  # type: DialogueStateTracker
+                       domain,  # type: Domain
+                       is_binary_training=False  # type: bool
+                       ):
+        # type: (...) -> List[Dict[Text, float]]
         """Create states: a list of dictionaries.
             If use_intent_probabilities is False (default behaviour),
             pick the most probable intent out of all provided ones and
             set its probability to 1.0, while all the others to 0.0."""
-        states = domain.states_for_tracker_history(tracker)
+        states = tracker.past_states(domain)
 
-        if not self.use_intent_probabilities:
+        # during training we encounter only 1 or 0
+        if not self.use_intent_probabilities and not is_binary_training:
             bin_states = []
             for state in states:
                 # copy state dict to preserve internal order of keys
                 bin_state = dict(state)
                 best_intent = None
                 best_intent_prob = -1.0
-                for state_name, prob in state.items():
+                for state_name, prob in state:
                     if state_name.startswith('intent_'):
                         if prob > best_intent_prob:
                             # finding the maximum confidence intent
@@ -308,14 +315,19 @@ class TrackerFeaturizer(object):
                     bin_state[best_intent] = 1.0
 
                 bin_states.append(bin_state)
-            states = bin_states
-
-        return states
+            return bin_states
+        else:
+            return [dict(state) for state in states]
 
     def _pad_states(self, states):
+        # type: (List[Any]) -> List[Any]
         return states
 
-    def _featurize_states(self, trackers_as_states):
+    def _featurize_states(
+            self,
+            trackers_as_states  # type: List[List[Dict[Text, float]]]
+    ):
+        # type: (...) -> Tuple[np.ndarray, List[int]]
         """Create X"""
         features = []
         true_lengths = []
@@ -340,7 +352,12 @@ class TrackerFeaturizer(object):
 
         return X, true_lengths
 
-    def _featurize_labels(self, trackers_as_actions, domain):
+    def _featurize_labels(
+            self,
+            trackers_as_actions,  # type: List[List[Text]
+            domain  # type: Domain
+    ):
+        # type: (...) -> np.ndarray
         """Create y"""
 
         labels = []
@@ -448,7 +465,9 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
             return None
 
     def _pad_states(self, states):
-        # pad up to max_len
+        # type: (List[Any]) -> List[Any]
+        """Pads states up to max_len"""
+
         if len(states) < self.max_len:
             states += [None] * (self.max_len - len(states))
 
@@ -459,14 +478,18 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
             trackers,  # type: List[DialogueStateTracker]
             domain  # type: Domain
     ):
-        # type: (...) -> Tuple[List[List[Dict]], List[List[Dict]]]
+        # type: (...) -> Tuple[List[List[Dict]], List[List[Text]]]
 
         trackers_as_states = []
         trackers_as_actions = []
 
-        for tracker in trackers:
-
-            states = self._create_states(tracker, domain)
+        logger.info("Creating states and action examples from "
+                    "collected trackers (by {})..."
+                    "".format(type(self).__name__))
+        pbar = tqdm(trackers, desc="Processed trackers")
+        for tracker in pbar:
+            states = self._create_states(tracker, domain,
+                                         is_binary_training=True)
 
             delete_first_state = False
             actions = []
@@ -517,13 +540,15 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
     for prediction.
     Training data is padded up to the max_history with -1"""
 
-    def __init__(self, state_featurizer=None, max_history=5,
+    MAX_HISTORY_DEFAULT = 5
+
+    def __init__(self, state_featurizer=None, max_history=None,
                  remove_duplicates=True, use_intent_probabilities=False):
         # type: (Optional(SingleStateFeaturizer), int, bool, bool) -> None
         super(MaxHistoryTrackerFeaturizer, self).__init__(
                 state_featurizer, use_intent_probabilities
         )
-        self.max_history = max_history
+        self.max_history = max_history or self.MAX_HISTORY_DEFAULT
         self.remove_duplicates = remove_duplicates
 
     @staticmethod
@@ -543,18 +568,33 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         state_features = padding + states[slice_start:]
         return state_features
 
+    def _hash_example(self, states, action):
+        frozen_states = tuple((s if s is None
+                               else frozenset(s.items())
+                               for s in states))
+        frozen_actions = (action,)
+        return hash((frozen_states, frozen_actions))
+
     def training_states_and_actions(
             self,
             trackers,  # type: List[DialogueStateTracker]
             domain  # type: Domain
     ):
-        # type: (...) -> Tuple[List[List[Dict]], List[List[Dict]]]
+        # type: (...) -> Tuple[List[List[Dict]], List[List[Text]]]
 
         trackers_as_states = []
         trackers_as_actions = []
 
-        for tracker in trackers:
-            states = self._create_states(tracker, domain)
+        # from multiple states that create equal featurizations
+        # we only need to keep one.
+        hashed_examples = set()
+
+        logger.info("Creating states and action examples from "
+                    "collected trackers (by {})..."
+                    "".format(type(self).__name__))
+        pbar = tqdm(trackers, desc="Processed trackers")
+        for tracker in pbar:
+            states = self._create_states(tracker, domain, True)
 
             idx = 0
             for event in tracker.applied_events():
@@ -564,19 +604,27 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                         # predicted at a stories start
                         sliced_states = self.slice_state_history(
                             states[:idx + 1], self.max_history)
-                        trackers_as_states.append(sliced_states)
-                        trackers_as_actions.append([event.action_name])
+
+                        if self.remove_duplicates:
+                            hashed = self._hash_example(sliced_states,
+                                                        event.action_name)
+
+                            # only continue with tracker_states that created a
+                            # hashed_featurization we haven't observed
+                            if hashed not in hashed_examples:
+                                hashed_examples.add(hashed)
+                                trackers_as_states.append(sliced_states)
+                                trackers_as_actions.append([event.action_name])
+                        else:
+                            trackers_as_states.append(sliced_states)
+                            trackers_as_actions.append([event.action_name])
+
+                        pbar.set_postfix({"# actions": "{:d}".format(
+                            len(trackers_as_actions))})
                     idx += 1
 
-        if self.remove_duplicates:
-            logger.debug("Got {} action examples."
-                         "".format(len(trackers_as_actions)))
-            (trackers_as_states,
-             trackers_as_actions) = self._remove_duplicate_states(
-                                        trackers_as_states,
-                                        trackers_as_actions)
-            logger.debug("Deduplicated to {} unique action examples."
-                         "".format(len(trackers_as_actions)))
+        logger.info("Created {} action examples."
+                    "".format(len(trackers_as_actions)))
 
         return trackers_as_states, trackers_as_actions
 
@@ -593,38 +641,3 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
                               for states in trackers_as_states]
 
         return trackers_as_states
-
-    @staticmethod
-    def _remove_duplicate_states(
-            trackers_as_states,  # type: List[List[Dict[Text, float]]]
-            trackers_as_actions,  # type: List[List[Text]]
-    ):
-        # type: (...) -> Tuple[List[List[Dict]], List[List[Dict]]]
-        """Removes states that create equal featurizations.
-
-        From multiple states that create equal featurizations
-        we only need to keep one."""
-
-        hashed_featurizations = set()
-
-        # collected trackers_as_states that created different featurizations
-        unique_trackers_as_states = []
-        unique_trackers_as_actions = []
-
-        for (tracker_states,
-             tracker_actions) in zip(trackers_as_states,
-                                     trackers_as_actions):
-
-            frozen_states = tuple((s if s is None else frozenset(s.items())
-                                   for s in tracker_states))
-            frozen_actions = tuple(tracker_actions)
-            hashed = hash((frozen_states, frozen_actions))
-
-            # only continue with tracker_states that created a
-            # hashed_featurization we haven't observed
-            if hashed not in hashed_featurizations:
-                hashed_featurizations.add(hashed)
-                unique_trackers_as_states.append(tracker_states)
-                unique_trackers_as_actions.append(tracker_actions)
-
-        return unique_trackers_as_states, unique_trackers_as_actions

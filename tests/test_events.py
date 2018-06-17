@@ -9,7 +9,7 @@ import copy
 import pytest
 
 from rasa_core.events import (
-    Event, UserUttered, TopicSet, SlotSet, Restarted,
+    Event, UserUttered, SlotSet, Restarted,
     ActionExecuted, AllSlotsReset,
     ReminderScheduled, ConversationResumed, ConversationPaused,
     StoryExported, ActionReverted, BotUttered)
@@ -18,9 +18,6 @@ from rasa_core.events import (
 @pytest.mark.parametrize("one_event,another_event", [
     (UserUttered("/greet", {"name": "greet", "confidence": 1.0}, []),
      UserUttered("/goodbye", {"name": "goodbye", "confidence": 1.0}, [])),
-
-    (TopicSet("my_topic"),
-     TopicSet("my_other_topic")),
 
     (SlotSet("my_slot", "value"),
      SlotSet("my__other_slot", "value")),
@@ -74,8 +71,6 @@ def test_event_has_proper_implementation(one_event, another_event):
 
 @pytest.mark.parametrize("one_event", [
     UserUttered("/greet", {"name": "greet", "confidence": 1.0}, []),
-
-    TopicSet("my_topic"),
 
     SlotSet("name", "rasa"),
 

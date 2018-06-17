@@ -10,7 +10,8 @@ import uuid
 from collections import deque, defaultdict
 
 import typing
-from typing import List, Text, Dict, Optional, Tuple, Any, Set
+from typing import \
+    List, Text, Dict, Optional, Tuple, Any, Set, ValuesView
 
 from rasa_core import utils
 from rasa_core.actions.action import ACTION_LISTEN_NAME
@@ -28,7 +29,9 @@ STORY_START = "STORY_START"
 # Checkpoint id used to identify story end blocks
 STORY_END = None
 
-GENERATED_CHECKPOINT_PREFIX = "CYCLE_"
+# need abbreviations otherwise they are not visualized well
+GENERATED_CHECKPOINT_PREFIX = "GENR_"
+CHECKPOINT_CYCLE_PREFIX = "CYCL_"
 
 GENERATED_HASH_LENGTH = 5
 
@@ -197,7 +200,7 @@ class Story(object):
 
 class StoryGraph(object):
     def __init__(self, story_steps, story_end_checkpoints=None):
-        # type: (List[StoryStep]) -> None
+        # type: (List[StoryStep], Optional[Dict[Text, Text]]) -> None
         self.story_steps = story_steps
         self.step_lookup = {s.id: s for s in self.story_steps}
         ordered_ids, cyclic_edges = StoryGraph.order_steps(story_steps)
@@ -223,6 +226,9 @@ class StoryGraph(object):
 
     @staticmethod
     def overlapping_checkpoint_names(cps, other_cps):
+        # type: (List[Checkpoint], List[Checkpoint]) -> Set[Text]
+        """Find overlapping checkpoints names"""
+
         return {cp.name for cp in cps} & {cp.name for cp in other_cps}
 
     def with_cycles_removed(self):
@@ -247,23 +253,31 @@ class StoryGraph(object):
         # the logic is a lot easier if we only need to make sure the change is
         # consistent if we only change one compared to changing all of them.
 
+        # collect all overlapping checkpoints
+        # we will remove unused start ones
+        all_overlapping_cps = set()
+
         for s, e in cyclic_edge_ids:
             cid = utils.generate_id(max_chars=GENERATED_HASH_LENGTH)
-            sink_cid = GENERATED_CHECKPOINT_PREFIX + "SINK_" + cid
-            connector_cid = GENERATED_CHECKPOINT_PREFIX + "CONNECT_" + cid
-            source_cid = GENERATED_CHECKPOINT_PREFIX + "SOURCE_" + cid
-            story_end_checkpoints[sink_cid] = source_cid
+            prefix = GENERATED_CHECKPOINT_PREFIX + CHECKPOINT_CYCLE_PREFIX
+            # need abbreviations otherwise they are not visualized well
+            sink_cp_name = prefix + "SINK_" + cid
+            connector_cp_name = prefix + "CONN_" + cid
+            source_cp_name = prefix + "SRC_" + cid
+            story_end_checkpoints[sink_cp_name] = source_cp_name
 
             overlapping_cps = self.overlapping_checkpoint_names(
                     story_steps[s].end_checkpoints,
                     story_steps[e].start_checkpoints)
 
-            # changed all starts
+            all_overlapping_cps.update(overlapping_cps)
+
+            # change end checkpoints of starts
             start = story_steps[s].create_copy(use_new_id=False)
             start.end_checkpoints = [cp
                                      for cp in start.end_checkpoints
                                      if cp.name not in overlapping_cps]
-            start.end_checkpoints.append(Checkpoint(sink_cid))
+            start.end_checkpoints.append(Checkpoint(sink_cp_name))
             story_steps[s] = start
 
             needs_connector = False
@@ -274,23 +288,97 @@ class StoryGraph(object):
                     for cp in step.start_checkpoints:
                         if cp.name == original_cp:
                             if k == e:
-                                cid = source_cid
+                                cp_name = source_cp_name
                             else:
-                                cid = connector_cid
+                                cp_name = connector_cp_name
                                 needs_connector = True
 
-                            additional_ends.append(Checkpoint(cid,
-                                                              cp.conditions))
+                            if not self._is_checkpoint_in_list(
+                                    cp_name, cp.conditions,
+                                    step.start_checkpoints):
+                                # add checkpoint only if it was not added
+                                additional_ends.append(
+                                        Checkpoint(cp_name, cp.conditions))
+
                 if additional_ends:
                     updated = step.create_copy(use_new_id=False)
                     updated.start_checkpoints.extend(additional_ends)
                     story_steps[k] = updated
 
             if needs_connector:
-                start.end_checkpoints.append(Checkpoint(connector_cid))
+                start.end_checkpoints.append(Checkpoint(connector_cp_name))
 
-        return StoryGraph(story_steps.values(),
+        # the process above may generate unused checkpoints
+        # we need to find them and remove them
+        self._remove_unused_generated_cps(story_steps,
+                                          all_overlapping_cps,
+                                          story_end_checkpoints)
+
+        return StoryGraph(list(story_steps.values()),
                           story_end_checkpoints)
+
+    @staticmethod
+    def _checkpoint_difference(cps, cp_name_to_ignore):
+        # type: (List[Checkpoint], Set[Text]) -> List[Checkpoint]
+        """Finds checkpoints which names are
+            different form names of checkpoints to ignore"""
+
+        return [cp for cp in cps if cp.name not in cp_name_to_ignore]
+
+    def _remove_unused_generated_cps(self, story_steps, overlapping_cps,
+                                     story_end_checkpoints):
+        # type: (Dict[Text, StoryStep], Set[Text], Dict[Text, Text]) -> None
+        """Finds unused generated checkpoints
+            and remove them from story steps."""
+
+        unused_cps = self._find_unused_checkpoints(story_steps.values(),
+                                                   story_end_checkpoints)
+
+        unused_overlapping_cps = unused_cps.intersection(overlapping_cps)
+
+        unused_genr_cps = {cp_name
+                           for cp_name in unused_cps
+                           if cp_name.startswith(GENERATED_CHECKPOINT_PREFIX)}
+
+        for k, step in story_steps.items():
+            # changed all ends
+            updated = step.create_copy(use_new_id=False)
+            updated.start_checkpoints = self._checkpoint_difference(
+                    updated.start_checkpoints, unused_overlapping_cps)
+
+            # remove generated unused end checkpoints
+            updated.end_checkpoints = self._checkpoint_difference(
+                    updated.end_checkpoints, unused_genr_cps)
+
+            story_steps[k] = updated
+
+    @staticmethod
+    def _is_checkpoint_in_list(checkpoint_name, conditions, cps):
+        # type: (Text, Dict[Text, Any], List[Checkpoint]) -> bool
+        """Checks if checkpoint with name and conditions is
+            already in the list of checkpoints."""
+
+        for cp in cps:
+            if checkpoint_name == cp.name and conditions == cp.conditions:
+                return True
+        return False
+
+    @staticmethod
+    def _find_unused_checkpoints(story_steps, story_end_checkpoints):
+        # type: (ValuesView[StoryStep], Dict[Text, Text]) -> Set[Text]
+        """Finds all unused checkpoints."""
+
+        collected_start = {STORY_END, STORY_START}
+        collected_end = {STORY_END, STORY_START}
+
+        for step in story_steps:
+            for start in step.start_checkpoints:
+                collected_start.add(start.name)
+            for end in step.end_checkpoints:
+                start_name = story_end_checkpoints.get(end.name, end.name)
+                collected_end.add(start_name)
+
+        return collected_end.symmetric_difference(collected_start)
 
     def get(self, step_id):
         # type: (Text) -> Optional[StoryStep]

@@ -22,10 +22,9 @@ from rasa_core.agent import Agent
 from rasa_core.channels import UserMessage
 from rasa_core.channels.direct import CollectingOutputChannel
 from rasa_core.events import (
-    UserUttered, BotUttered, SlotSet, TopicSet, Event, ActionExecuted)
+    UserUttered, BotUttered, SlotSet, Event, ActionExecuted)
 from rasa_core.interpreter import RegexInterpreter
-from rasa_core.policies.augmented_memoization import \
-    AugmentedMemoizationPolicy
+from rasa_core.policies.memoization import AugmentedMemoizationPolicy
 from rasa_core.remote import RasaCoreClient, RemoteAgent
 from tests.conftest import DEFAULT_STORIES_FILE
 
@@ -39,7 +38,6 @@ test_events = [
                                "entities": []}
                            }),
     BotUttered("Welcome!", {"test": True}),
-    TopicSet("question"),
     SlotSet("cuisine", 34),
     SlotSet("cuisine", "34"),
     SlotSet("location", None),
@@ -60,7 +58,7 @@ def http_app(request, core_server):
 def core_server(tmpdir_factory):
     model_path = tmpdir_factory.mktemp("model").strpath
 
-    agent = Agent("data/test_domains/default_with_topic.yml",
+    agent = Agent("data/test_domains/default.yml",
                   policies=[AugmentedMemoizationPolicy(max_history=3)])
 
     training_data = agent.load_data(DEFAULT_STORIES_FILE)
