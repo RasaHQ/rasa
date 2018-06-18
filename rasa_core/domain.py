@@ -395,7 +395,7 @@ class TemplateDomain(Domain):
                     "File not found!".format(os.path.abspath(filename)))
 
         cls.validate_domain_yaml(filename)
-        data = read_yaml_file(filename)
+        data = utils.read_yaml_file(filename)
         return cls.from_dict(data, action_endpoint)
 
     @classmethod

@@ -64,6 +64,10 @@ def create_argument_parser():
             default=None,
             help="authentication credentials for the connector as a yml file")
     parser.add_argument(
+            '--endpoints',
+            default=None,
+            help="Configuration file for the connectors as a yml file")
+    parser.add_argument(
             '-c', '--connector',
             default="cmdline",
             choices=["facebook", "slack", "telegram", "mattermost", "cmdline",
@@ -160,15 +164,23 @@ def start_cmdline_io(server_url, on_finish):
     p.start()
 
 
-def start_server(model_directory, nlu_model=None, channel=None, port=None,
-                 credentials_file=None, cors=None):
-    server_config = {
-        "action_callback": EndpointConfig(
-                url="http://localhost:5055/webhook"),
-        "nlg": {"type": "template"}
-    }
+def read_endpoint_config(filename, endpoint_type):
+    if not filename:
+        return None
 
-    action_endpoint = server_config.get("action_callback")
+    content = utils.read_yaml_file(filename)
+    if endpoint_type in content:
+        return EndpointConfig.from_dict(content[endpoint_type])
+    else:
+        return None
+
+
+def start_server(model_directory, nlu_model=None, channel=None, port=None,
+                 credentials_file=None, cors=None, endpoints=None):
+
+    action_endpoint = read_endpoint_config(endpoints, "action_endpoint")
+
+    nlg_endpoint = read_endpoint_config(endpoints, "nlg_endpoint")
 
     input_channel = create_http_input_channel(channel, credentials_file)
     app = server.create_app(model_directory,
@@ -177,7 +189,7 @@ def start_server(model_directory, nlu_model=None, channel=None, port=None,
                             cors,
                             auth_token=cmdline_args.auth_token,
                             action_endpoint=action_endpoint,
-                            nlg_config=server_config.get("nlg"))
+                            nlg_config=nlg_endpoint)
 
     http_server = WSGIServer(('0.0.0.0', cmdline_args.port), app)
     logger.info("Rasa Core server is up and running on "
@@ -212,4 +224,5 @@ if __name__ == '__main__':
                  cmdline_args.connector,
                  cmdline_args.port,
                  cmdline_args.credentials,
-                 cmdline_args.cors)
+                 cmdline_args.cors,
+                 cmdline_args.endpoints)

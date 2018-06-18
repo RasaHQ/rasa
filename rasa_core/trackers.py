@@ -85,6 +85,7 @@ class DialogueStateTracker(object):
         """Return the current tracker state as an object."""
 
         if should_include_events:
+            # TODO: TB - figure out if this condition is a BUG
             if only_events_after_latest_restart:
                 es = self.events
             else:

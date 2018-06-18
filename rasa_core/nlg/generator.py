@@ -14,18 +14,13 @@ class NaturalLanguageGenerator(object):
     def create(obj, domain):
         if isinstance(obj, NaturalLanguageGenerator):
             return obj
-        elif isinstance(obj, dict):
-            # TODO: TB - check if we should really do it this way
-            if obj.get("type") == "template":
-                from rasa_core.nlg.template import \
-                    TemplatedNaturalLanguageGenerator
-
-                return TemplatedNaturalLanguageGenerator(domain.templates)
-            elif obj.get("type") == "http":
-                from rasa_core.nlg.callback import \
-                    CallbackNaturalLanguageGenerator
-
-                endpoint = EndpointConfig.from_dict(obj)
-                return CallbackNaturalLanguageGenerator(endpoint)
+        elif isinstance(obj, EndpointConfig):
+            from rasa_core.nlg.callback import \
+                CallbackNaturalLanguageGenerator
+            return CallbackNaturalLanguageGenerator(obj)
+        elif obj is None:
+            from rasa_core.nlg.template import \
+                TemplatedNaturalLanguageGenerator
+            return TemplatedNaturalLanguageGenerator(domain.templates)
         else:
-            return None  # TODO: TB - default generator
+            raise Exception("Invalid nlg")

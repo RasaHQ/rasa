@@ -9,6 +9,7 @@ import pytest
 from flask import Flask, request, jsonify
 from pytest_localserver.http import WSGIServer
 
+from rasa_core.actions.action import EndpointConfig
 from rasa_core.agent import Agent
 
 
@@ -40,12 +41,11 @@ def http_nlg(request):
 def test_nlg(http_nlg, default_agent_path):
     sender = str(uuid.uuid1())
 
-    nlg_endpoint = {
-        "type": "http",
+    nlg_endpoint = EndpointConfig.from_dict({
         "url": http_nlg
-    }
+    })
     agent = Agent.load(default_agent_path, None,
-                       nlg_config=nlg_endpoint)
+                       generator=nlg_endpoint)
 
     response = agent.handle_text("/greet", sender_id=sender)
     assert len(response) == 1

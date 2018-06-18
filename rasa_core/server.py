@@ -88,7 +88,7 @@ def _create_agent(
         interpreter,  # type: Union[Text, NaturalLanguageInterpreter, None]
         action_endpoint=None,  # type: Optional[EndpointConfig]
         tracker_store=None,  # type: Optional[TrackerStore]
-        nlg_config=None
+        nlg_endpoint=None
 ):
     # type: (...) -> Optional[Agent]
     try:
@@ -96,7 +96,7 @@ def _create_agent(
         return Agent.load(model_directory, interpreter,
                           tracker_store=tracker_store,
                           action_endpoint=action_endpoint,
-                          nlg_config=nlg_config)
+                          nlg_endpoint=nlg_endpoint)
     except Exception as e:
         logger.warn("Failed to load any agent model. Running "
                     "Rasa Core server with out loaded model now. {}"
@@ -111,7 +111,7 @@ def create_app(model_directory, # type: Text
                auth_token=None,  # type: Optional[Text]
                tracker_store=None,  # type: Optional[TrackerStore]
                action_endpoint=None,
-               nlg_config=None
+               nlg_endpoint=None
                ):
     """Class representing a Rasa Core HTTP server."""
 
@@ -123,7 +123,7 @@ def create_app(model_directory, # type: Text
 
     # this needs to be an array, so we can modify it in the nested functions...
     _agent = [_create_agent(model_directory, interpreter, action_endpoint,
-                            tracker_store, nlg_config)]
+                            tracker_store, nlg_endpoint)]
 
     def agent():
         if _agent and _agent[0]:

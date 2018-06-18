@@ -76,14 +76,6 @@ def module_path_from_instance(inst):
     return inst.__module__ + "." + inst.__class__.__name__
 
 
-def all_subclasses(cls):
-    # type: (Any) -> List[Any]
-    """Returns all known (imported) subclasses of a class."""
-
-    return cls.__subclasses__() + [g for s in cls.__subclasses__()
-                                   for g in all_subclasses(s)]
-
-
 def dump_obj_as_json_to_file(filename, obj):
     # type: (Text, Any) -> None
     """Dump an object as a json string to a file."""

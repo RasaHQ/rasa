@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from rasa_core.interpreter import NaturalLanguageInterpreter as NLI
+    from rasa_core.nlg import NaturalLanguageGenerator as NLG
 
 
 class Agent(object):
@@ -42,7 +43,7 @@ class Agent(object):
             domain,  # type: Union[Text, Domain]
             policies=None,  # type: Union[PolicyEnsemble, List[Policy], None]
             interpreter=None,  # type: Union[NLI, Text, None]
-            generator=None,  # type: Union[NLG, Text, None]
+            generator=None,  # type: Union[EndpointConfig, NLG]
             tracker_store=None  # type: Optional[TrackerStore]
     ):
         # Initializing variables with the passed parameters.
@@ -59,9 +60,9 @@ class Agent(object):
              interpreter=None,  # type: Union[NLI, Text, None]
              tracker_store=None,  # type: Optional[TrackerStore]
              action_endpoint=None,  # type: Optional[EndpointConfig]
-             nlg_config=None
+             generator=None  # type: Union[EndpointConfig, NLG]
              ):
-        # type: (Text, Any, Optional[TrackerStore]) -> Agent
+        # type: (...) -> Agent
         """Load a persisted model from the passed path."""
 
         if path is None:
@@ -82,7 +83,7 @@ class Agent(object):
         # ensures the domain hasn't changed between test and train
         domain.compare_with_specification(path)
 
-        return cls(domain, ensemble, interpreter, nlg_config, tracker_store)
+        return cls(domain, ensemble, interpreter, generator, tracker_store)
 
     def handle_message(
             self,
