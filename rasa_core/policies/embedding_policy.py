@@ -337,6 +337,7 @@ class EmbeddingPolicy(Policy):
         reg = tf.contrib.layers.l2_regularizer(self.C2)
         emb_x = tf.layers.dense(inputs=x,
                                 units=self.embed_dim,
+                                activation=None,
                                 kernel_regularizer=reg,
                                 name='embed_layer_{}'.format(name),
                                 reuse=tf.AUTO_REUSE)
@@ -390,6 +391,7 @@ class EmbeddingPolicy(Policy):
         if self.attn_after_rnn:
             out_layer = tf.layers.Dense(
                     units=self.embed_dim,
+                    activation=None,
                     # kernel_regularizer=reg,
                     name='embed_layer_out'
             )
