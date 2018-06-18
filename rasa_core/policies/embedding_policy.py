@@ -488,27 +488,29 @@ class EmbeddingPolicy(Policy):
         )
 
         # if output_attention=True,
-        self.rnn_embed = cell_output[:, :, self.embed_dim:
-                                           self.embed_dim +
-                                           self.embed_dim]
-        if self.attn_before_rnn:
-            self.attn_prev_act_embed = cell_output[:, :, (self.embed_dim +
-                                                          self.embed_dim +
-                                                          self.embed_dim +
-                                                          self.embed_dim):-2]
-        else:
-            self.attn_prev_act_embed = cell_output[:, :, (self.embed_dim +
-                                                          self.embed_dim):-2]
-
         self.skip_gate = cell_output[:, :, -2:-1]
         self.copy_gate = cell_output[:, :, -1:]
 
-        cell_output = cell_output[:, :, :self.embed_dim]
-
         if self.attn_after_rnn:
+            # if output_attention=True,
+            self.rnn_embed = cell_output[:, :, self.embed_dim:
+                                               (self.embed_dim +
+                                                self.embed_dim)]
+            self.attn_prev_act_embed = cell_output[:, :, (self.embed_dim +
+                                                          self.embed_dim +
+                                                          self.embed_dim +
+                                                          self.embed_dim):-2]
+            cell_output = cell_output[:, :, :self.embed_dim]
             emb_dial = cell_output
         else:
+            # if output_attention=True,
+            self.attn_prev_act_embed = cell_output[:, :, (self.rnn_size +
+                                                          self.rnn_size +
+                                                          self.embed_dim):-2]
+
+            cell_output = cell_output[:, :, :self.rnn_size]
             emb_dial = self._create_embed(cell_output, name='out')
+            self.rnn_embed = emb_dial
 
         # extract alignments history
         self.alignment_history = []
@@ -1222,12 +1224,12 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         else:
             self._copy_gate = None
 
-        self._skip_gate = tf.layers.Dense(
-            1, tf.sigmoid,
-            # -4 is arbitrary, but we need
-            # copy_gate to be zero at the beginning
-            bias_initializer=tf.constant_initializer(-1)
-        )
+        # self._skip_gate = tf.layers.Dense(
+        #     1, tf.sigmoid,
+        #     # -4 is arbitrary, but we need
+        #     # copy_gate to be zero at the beginning
+        #     bias_initializer=tf.constant_initializer(-1)
+        # )
 
     @property
     def output_size(self):
@@ -1446,7 +1448,7 @@ class ChronoLayerNormBasicLSTMCell(tf.contrib.rnn.LayerNormBasicLSTMCell):
             new_c = self._norm(new_c, "state", dtype=dtype)
         new_h = self._activation(new_c) * tf.sigmoid(o)
 
-        # added dropout to the output
+        # added dropout to the hidden state h
         if (not isinstance(self._keep_prob, float)) or self._keep_prob < 1:
             new_h = tf.nn.dropout(new_h, self._keep_prob, seed=self._seed)
 
