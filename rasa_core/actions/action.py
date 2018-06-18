@@ -9,7 +9,7 @@ import os
 import requests
 import typing
 from requests.auth import HTTPBasicAuth
-from typing import List, Text
+from typing import List, Text, Optional
 
 from rasa_core import events, utils
 
@@ -38,7 +38,7 @@ def ensure_action_name_uniqueness(actions):
 
 
 def actions_from_names(action_names, action_endpoint):
-    # type: (List[Text], EndpointConfig) -> List[Action]
+    # type: (List[Text], Optional[EndpointConfig]) -> List[Action]
     """Converts the names of actions into class instances."""
 
     actions = []
@@ -146,7 +146,7 @@ class EndpointConfig(object):
 
 class RemoteAction(Action):
     def __init__(self, name, action_endpoint):
-        # type: (Text, EndpointConfig) -> None
+        # type: (Text, Optional[EndpointConfig]) -> None
 
         self._name = name
         self.action_endpoint = action_endpoint

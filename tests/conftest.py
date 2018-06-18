@@ -72,7 +72,12 @@ def default_dispatcher_collecting(default_nlg):
 
 
 @pytest.fixture
-def default_processor(default_domain):
+def default_nlg(default_domain):
+    return TemplatedNaturalLanguageGenerator(default_domain.templates)
+
+
+@pytest.fixture
+def default_processor(default_domain, default_nlg):
     agent = Agent(default_domain,
                   SimplePolicyEnsemble([AugmentedMemoizationPolicy()]),
                   interpreter=RegexInterpreter())
@@ -83,7 +88,8 @@ def default_processor(default_domain):
     return MessageProcessor(agent.interpreter,
                             agent.policy_ensemble,
                             default_domain,
-                            tracker_store)
+                            tracker_store,
+                            default_nlg)
 
 
 @pytest.fixture(scope="session")

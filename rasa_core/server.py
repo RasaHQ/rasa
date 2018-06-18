@@ -12,12 +12,12 @@ from functools import wraps
 from builtins import str
 from flask import Flask, request, abort, Response, jsonify
 from flask_cors import CORS, cross_origin
-from typing import Union, Text, Optional
+from typing import Union, Text, Optional, List
 
 from rasa_core import events, utils
 from rasa_core.actions.action import EndpointConfig
 from rasa_core.agent import Agent
-from rasa_core.channels import CollectingOutputChannel
+from rasa_core.channels import CollectingOutputChannel, InputChannel
 from rasa_core.channels import channel
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.tracker_store import TrackerStore
@@ -106,7 +106,7 @@ def _create_agent(
 
 def create_app(model_directory, # type: Text
                interpreter=None, # type: Union[Text, NLI, None]
-               input_channels=None,
+               input_channels=None,  # type: Optional[List[InputChannel]]
                cors_origins=None, # type: Optional[List[Text]]
                auth_token=None,  # type: Optional[Text]
                tracker_store=None,  # type: Optional[TrackerStore]
@@ -286,8 +286,9 @@ def create_app(model_directory, # type: Text
         logger.debug("Finished loading new agent.")
         return jsonify({'success': 1})
 
-    channel.register_blueprints(input_channels, app, handle_message,
-                                route="/webhooks/")
+    if input_channels:
+        channel.register_blueprints(input_channels, app, handle_message,
+                                    route="/webhooks/")
     return app
 
 
