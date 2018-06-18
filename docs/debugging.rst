@@ -24,27 +24,36 @@ For example:
 .. code-block:: bash
    :linenos:
 
-   Bot loaded. Type a message and press enter: 
-   hello
-   rasa_core.tracker_store - Creating a new tracker for id 'default'.
-   rasa_core.processor - Received user message 'hello' with intent '{'confidence': 0.9725276231765747, 'name': 'greet'}' and entities '[]'
-   rasa_core.processor - Logged UserUtterance - tracker now has 2 events
-   rasa_core.processor - Current slot values: 
+    Bot loaded. Type a message and press enter: 
+    /greet
+    rasa_core.tracker_store - Creating a new tracker for id 'default'.
+    rasa_core.processor - Received user message '/greet' with intent '{'confidence': 1.0, 'name': 'greet'}' and entities '[]'
+    rasa_core.processor - Logged UserUtterance - tracker now has 2 events
+    rasa_core.processor - Current slot values: 
 
-   rasa_core.policies.memoization - Current tracker state [...]
-   rasa_core.policies.ensemble - Predicted next action 'utter_greet' with prob 0.92.
+    rasa_core.policies.memoization - Current tracker state [None, {}, {'prev_action_listen': 1.0, 'intent_greet': 1.0}]
+    rasa_core.policies.memoization - There is a memorised next action '2'
+    rasa_core.policies.ensemble - Predicted next action using policy_0_MemoizationPolicy
+    rasa_core.policies.ensemble - Predicted next action 'utter_greet' with prob 1.00.
+    Hey! How are you?
 
 
-Line number 4 tells us the result of NLU parsing the message 'hello'.
+Line number ``4`` tells us the result of NLU parsing the message 'hello'.
 If NLU makes a mistake, your Core model won't know how to behave. A common
 source of errors is that your NLU model didn't accurately pick the intent,
 or made a mistake when extracting entities. If this is the case, you probably
 want to go and improve your NLU model.
 
-If any slots are set, those will show up in line 6, and in line 8 
-we see which action was predicted and with which probability. 
+If any slots are set, those will show up in line ``6``.
+and in lines ``9-11`` we can see which policy was used to predict the next action.
+If this exact story was already in the training data and the :class:`MemoizationPolicy`
+is part of the ensemble, this will be used to predict the next action with probability 1.
 
 If all the slot and NLU information is correct but the wrong action is still predicted,
+you should check which policy was used to make the prediction. 
+If the prediction came from the :class:`MemoizationPolicy`, then there is an error in
+your stories. If a probabilistic policy like the :class:`KerasPolicy` was used,
+then your model just made a prediction that wasn't right. In that case 
 it is a good idea to run the bot with interactive learning switched on so you can
 create the relevant stories to add to your training data.
 

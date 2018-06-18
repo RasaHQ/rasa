@@ -38,7 +38,7 @@ How Slots Get Set
 
 You can provide an initial value for a slot in your domain file:
 
-.. code-block:: markdown
+.. code-block:: md
 
     slots:
       name:
@@ -54,7 +54,7 @@ Slots Set from NLU
 If your NLU model picks up an entity, and your domain contains a slot with the same name, 
 the slot will be set automatically. For example:
        
-.. code-block:: markdown
+.. code-block:: md
 
    # story_01
    * greet{"name": "Ali"}
@@ -99,7 +99,7 @@ event.
            return [SlotSet("account_type", data["account_type"])]
 
 
-.. code-block:: markdown
+.. code-block:: md
 
    # story_01
    * greet

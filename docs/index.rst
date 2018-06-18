@@ -7,9 +7,6 @@ The Rasa Core dialogue engine
    the appropriate version of the documentation for your local installation!
 
 
-Welcome to the Rasa Documentation!
-----------------------------------
-
 .. chat-bubble::
    :text: What am I looking at?
    :sender: user
@@ -19,30 +16,41 @@ Welcome to the Rasa Documentation!
    :text: Rasa is a framework for building conversational software:
       Messenger/Slack bots, Alexa skills, etc. We'll abbreviate this as a **bot**
       in this documentation. 
-      Go `here <https://colab.research.google.com/github/RasaHQ/rasa_core/blob/master/getting_started.ipynb>`_ 
-      to try it out without having to install anything.
+   :sender: bot
+
+.. chat-bubble::
+   :text: What's cool about it?
+   :sender: user
+
+.. chat-bubble::
+   :text: Rather than a bunch of if/else statements, the logic of your bot is
+      based on a probabilistic model trained on example conversations.
+   :sender: bot
+
+.. chat-bubble::
+   :text: That sounds harder than writing a few if statements
+   :sender: user
+
+
+.. chat-bubble::
+   :text: In the beginning of a project, it seems easier to just hard code some logic.
+      Rasa helps you when you want to go past that and create a bot that can handle more complexity.
+      This `blog post <https://medium.com/rasa-blog/a-new-approach-to-conversational-software-2e64a5d05f2a>`_ explains the philosophy behind Rasa Core.
    :sender: bot
 
 
+.. chat-bubble::
+   :text: Can I see it in action?
+   :sender: user
+    
+.. chat-bubble::
+   :text: We thought you'd never ask!
+      You can build a full example without installing anything on `colab <https://colab.research.google.com/github/RasaHQ/rasa_core/blob/master/getting_started.ipynb>`_.
+      If you want to run stuff on your machine, follow the :ref:`installation`
+      and check out :ref:`quickstart` afterwards!
+   :sender: bot
 
-
-*What's cool about it?*
-
-    Rather than a bunch of ``if/else`` statements, the logic of your bot is
-    based on a probabilistic model trained on example conversations.
-
-*That sounds harder than writing a few if statements*
-
-    In the beginning of a project, it's indeed easier to just hard code some logic.
-    Rasa helps you when you want to go past that and create a bot that can handle more complexity.
-    This `blog post <https://medium.com/rasa-blog/a-new-approach-to-conversational-software-2e64a5d05f2a>`_ explains the philosophy behind Rasa Core.
-
-*Can I see it in action?*
-
-    We thought you'd never ask!
-    You can build a full example without installing anything on `colab <https://colab.research.google.com/github/RasaHQ/rasa_core/blob/master/getting_started.ipynb>`_.
-    If you want to run stuff on your machine, follow the :ref:`installation`
-    and check out :ref:`quickstart` afterwards!
+    
 
 
 .. toctree::
