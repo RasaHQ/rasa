@@ -189,7 +189,7 @@ def start_server(model_directory, nlu_model=None, channel=None, port=None,
                             cors,
                             auth_token=cmdline_args.auth_token,
                             action_endpoint=action_endpoint,
-                            nlg_config=nlg_endpoint)
+                            nlg_endpoint=nlg_endpoint)
 
     http_server = WSGIServer(('0.0.0.0', cmdline_args.port), app)
     logger.info("Rasa Core server is up and running on "

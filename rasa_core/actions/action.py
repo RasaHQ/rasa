@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
+import os
 
 import requests
 import typing
@@ -194,7 +195,16 @@ class RemoteAction(Action):
     def run(self, dispatcher, tracker, domain):
         json = self._action_call_format(tracker, domain)
 
+        if not self.action_endpoint:
+            # TODO: TB - add link to endpoint docs
+            raise Exception("The model predicted the custom action '{}' "
+                            "but you didn't configure an endpoint to "
+                            "run this custom action. Please take a look at "
+                            "the docs and set an endpoint configuration."
+                            "".format(self.name()))
+
         response = utils.post_json_to_endpoint(json, self.action_endpoint)
+        # TODO: TB - properly handling failing status codes
         response.raise_for_status()
 
         response_data = response.json()

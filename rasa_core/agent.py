@@ -50,7 +50,7 @@ class Agent(object):
         self.domain = self._create_domain(domain)
         self.policy_ensemble = self._create_ensemble(policies)
         self.interpreter = NaturalLanguageInterpreter.create(interpreter)
-        self.nlg = NaturalLanguageGenerator.create(generator, domain)
+        self.nlg = NaturalLanguageGenerator.create(generator, self.domain)
         self.tracker_store = self.create_tracker_store(
                 tracker_store, self.domain)
 

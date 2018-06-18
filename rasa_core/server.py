@@ -96,11 +96,11 @@ def _create_agent(
         return Agent.load(model_directory, interpreter,
                           tracker_store=tracker_store,
                           action_endpoint=action_endpoint,
-                          nlg_endpoint=nlg_endpoint)
+                          generator=nlg_endpoint)
     except Exception as e:
-        logger.warn("Failed to load any agent model. Running "
-                    "Rasa Core server with out loaded model now. {}"
-                    "".format(e))
+        logger.error("Failed to load any agent model. Running "
+                     "Rasa Core server with out loaded model now. {}"
+                     "".format(e))
         return None
 
 

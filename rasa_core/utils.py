@@ -402,6 +402,9 @@ def post_json_to_endpoint(json_data, endpoint, subpath=None):
     from requests.auth import HTTPBasicAuth
     import requests
 
+    if not endpoint:
+        raise Exception("Missing endpoint configuration.")
+
     headers = endpoint.headers.copy()
     headers["Content-Type"] = "application/json"
 
@@ -418,3 +421,11 @@ def post_json_to_endpoint(json_data, endpoint, subpath=None):
                          params=endpoint.params,
                          auth=auth,
                          json=json_data)
+
+
+def all_subclasses(cls):
+    # type: (Any) -> List[Any]
+    """Returns all known (imported) subclasses of a class."""
+
+    return cls.__subclasses__() + [g for s in cls.__subclasses__()
+                                   for g in all_subclasses(s)]
