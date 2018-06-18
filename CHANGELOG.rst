@@ -18,6 +18,13 @@ Changed
 Removed
 -------
 
+[0.9.6] - 2018-06-18
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed fallback policy data generation
+
 [0.9.5] - 2018-06-14
 ^^^^^^^^^^^^^^^^^^^^
 
