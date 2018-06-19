@@ -5,6 +5,8 @@ Chat & Voice platforms
 
 Here's how to connect your conversational AI to the outside world.
 
+.. contents::
+
 Input channels are defined in the ``rasa_core.channels`` module.
 Currently, there is code for connecting to
 facebook, slack, telegram, mattermost and twilio. If the connection
@@ -354,3 +356,18 @@ The command to run a ngrok instance for port 5002 for example would be:
 **Ngrok is only needed if you don't have a public IP and are testing locally**
 
 This will then give a output showing a https address that you need to supply for the interactive components request URL and for the incoming webhook and the address should be whatever ngrok supplies you with /webhook added to the end.  This basically takes the code running on your local machine and punches it through the internet at the ngrok address supplied.
+
+
+Custom Channels
+---------------
+
+You can also implement your own, custom channel. 
+You can use the ``rasa_core.channels.custom.CustomInput`` class as a template.
+The most important methods to define are ``CustomInput.receive`` and ``CustomOutput.send_text_message``.
+These specify how Rasa Core will read incoming messages form the requests sent by your app, and the format
+to use when sending messages back to the user. 
+
+To use a custom channel, modify they ``rasa_core.run`` script, either adding your channel to the 
+``_create_external_channel`` function or directly overriding the ``input_channel`` variable defined in the 
+``main`` function.
+

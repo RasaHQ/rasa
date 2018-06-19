@@ -43,7 +43,7 @@ e.g. ``utter_ask_cuisine``, ``utter_ask_numpeople``, etc.
 
 
 .. note::
-    You don't *have* to use ``FormAction`` s to do slot filling! It just means you need 
+    You don't *have* to use a ``FormAction`` to do slot filling! It just means you need 
     fewer stories to get the initial flow working. 
 
 A form action has a set of required fields, which you define for the class:
@@ -83,16 +83,26 @@ Some important things to consider:
 - Any slots that are already set won't be asked for. E.g. if someone says "I'd like a Chinese restaurant for 8 people" the ``submit`` function should get called right away.
 
 
-Validation and Free-text Input
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Form Fields and Free-text Input
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The pre-defined ``FormField`` types are:
+
+- ``EntityFormField(entity_name, slot_name)``, which will
+  look for an entity called ``entity_name`` to fill a slot ``slot_name``.
+- ``BooleanFormField(slot_name, affirm_intent, deny_intent)``, which looks for the intents ``affirm_intent``
+  and ``deny_intent`` to fill a boolean slot called ``slot_name``.
+- ``FreeTextFormField(slot_name)``, which will use the next user utterance to fill the text slot ``slot_name``.
 
 For any subclass of  ``FormField``, its ``validate()`` method will be called before setting it 
 as a slot. By default this just checks that the value isn't ``None``, but if you want to check 
 the value against a DB, or check a pattern is matched, you can do so by defining your own class
 like ``MyCustomFormField`` and overriding the ``validate()`` method.
 
-There is also a ``FreeTextFormField`` class which will just extract the user message as a value.
-However, there is no way to write a 'wildcard' intent in Rasa Core stories as of now. Typically
-your NLU model will assign this free-text input to 2-3 different intents. 
-It's easiest to add stories for each of these. 
+.. warning:: 
+
+   The ``FreeTextFormField`` class will just extract the user message as a value.
+   However, there is currently no way to write a 'wildcard' intent in Rasa Core stories as of now. 
+   Typically your NLU model will assign this free-text input to 2-3 different intents. 
+   It's easiest to add stories for each of these. 
 

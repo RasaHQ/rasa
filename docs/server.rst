@@ -7,7 +7,7 @@ Server Configuration
 
     Before you can use the server, you need to define a domain, create training
     data, and train a model. You can then use the trained model for remote code
-    execution! See :ref:`tutorial_basics` for an introduction.
+    execution! See the :ref:`quickstart` for an introduction.
 
 
 
@@ -21,7 +21,7 @@ the framework that you executed them and tell the model about any update of the
 internal dialogue state for that user. All of these interactions are done using
 a HTTP REST interface.
 
-You can also use a single, simpler endpoint called `/respond`, which just returns
+You can also use a single, simpler endpoint called ``/respond``, which just returns
 all of the messages your bot should send back to the user. In general, this only
 works if all of your actions are simple utterances (messages sent to the user).
 It can make use of custom actions, but then these *have* to be implemented in 
@@ -56,15 +56,15 @@ models with
 
 The different parameters are:
 
-- ``-d``, which is the path to the Rasa Core model.
-- ``-u``, which is the path to the Rasa NLU model.
-- ``-o``, which is the path to the log file.
+- ``-d``, path to the Rasa Core model.
+- ``-u``, path to the Rasa NLU model.
+- ``-o``, path to the log file.
 
 .. _http_start_conversation:
 
 Starting a conversation
 -----------------------
-You need to do a ``POST`` to the ``/conversation/<sender_id>/parse`` endpoint.
+To start a conversation, send a ``POST`` request to the ``/conversation/<sender_id>/parse`` endpoint.
 ``<sender_id>`` is the conversation id (e.g. ``default`` if you just have one
 user, or the facebook user id or any other identifier).
 
@@ -184,7 +184,7 @@ We recommend to not expose the Rasa Core server to the outside world but
 rather connect to it from your backend over a private connection (e.g.
 between docker containers).
 
-Nevertheless, there is build in token authentication. If you specify a token
+Nevertheless, there is built in token authentication. If you specify a token
 when starting the server, that token needs to be passed with every request:
 
 .. code-block:: bash

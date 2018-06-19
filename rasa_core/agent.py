@@ -30,11 +30,11 @@ if typing.TYPE_CHECKING:
 
 
 class Agent(object):
-    """Public interface for common things to do.
+    """The Agent class provides a convenient interface for the most important
+     Rasa Core functionality.
 
-     This includes e.g. train an assistant (online or offline mode),
-     handle messages with an assistant, load a dialogue model,
-     get the next action, handle channel or toggle memoization"""
+     This includes training, handling messages, loading a dialogue model,
+     getting the next action, and handling a channel."""
 
     def __init__(
             self,
@@ -96,9 +96,9 @@ class Agent(object):
         function first and the return value is then used as the
         input for the dialogue engine.
 
-        The return value of this function depends on the `output_channel`. If
-        the output channel is not set, set to `None`, or set
-        to `CollectingOutputChannel` this function will return the messages
+        The return value of this function depends on the ``output_channel``. If
+        the output channel is not set, set to ``None``, or set
+        to ``CollectingOutputChannel`` this function will return the messages
         the bot wants to respond.
 
         :Example:
@@ -122,7 +122,7 @@ class Agent(object):
             sender_id=UserMessage.DEFAULT_SENDER_ID  # type: Optional[Text]
     ):
         # type: (...) -> Dict[Text, Any]
-        """Start to process a messages, returning the next action to take. """
+        """Start to process messages, returning the next action to take. """
 
         # Creates a new processor for the agent and starts the
         # message handling
@@ -167,10 +167,10 @@ class Agent(object):
         """Toggles the memoization on and off.
 
         If a memoization policy is present in the ensemble, this will toggle
-        the prediction of that policy. When set to `false` the Memoization
+        the prediction of that policy. When set to ``False`` the Memoization
         policies present in the policy ensemble will not make any predictions.
         Hence, the prediction result from the ensemble always needs to come
-        from a different policy (e.g. `KerasPolicy`). Useful to test prediction
+        from a different policy (e.g. ``KerasPolicy``). Useful to test prediction
         capabilities of an ensemble when ignoring memorized turns from the
         training data."""
 
