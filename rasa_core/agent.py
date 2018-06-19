@@ -62,10 +62,10 @@ class Agent(object):
         self.model_hash = model_hash
         self.model_server = model_server
         self.action_factory = action_factory
-        if model_server:
+        if model_server is not None:
             if path is None:
-                raise ValueError("No path specified for saving the model.")
-            self.start_model_pulling_in_worker(wait=60)
+                raise ValueError("No path specified for saving core models.")
+            self.start_model_pulling_in_worker(wait=10)
 
     @classmethod
     def load(cls,
@@ -91,11 +91,11 @@ class Agent(object):
                              "instead.".format(path))
 
         if model_server:
-            domain, ensemble, _hash = cls._load_model_from_server(
+            print(model_server, action_factory, path)
+            domain, ensemble, _hash = cls.init_model_from_server(
                 model_server=model_server,
                 action_factory=action_factory,
-                model_directory=path,
-                init=True
+                model_directory=path
             )
         else:
             domain = TemplateDomain.load(os.path.join(path, "domain.yml"),
@@ -458,29 +458,51 @@ class Agent(object):
                 "of type '{}', but should be policy, an array of "
                 "policies, or a policy ensemble".format(passed_type))
 
-    def _load_model_from_server(self,
-                                model_server,  # type: Text
-                                action_factory,  # type: Text
-                                model_directory,  # type: Text
-                                init=False  # type: bool
-                                ):
+    @staticmethod
+    def _get_model_hash(model_server, header='model_hash'):
+        # type: (Text, Text) -> Optional[Text]
+        head = requests.head(model_server)
+        head.raise_for_status()
+        return head.headers.get(header)
+
+    @staticmethod
+    def init_model_from_server(model_server,  # type: Text
+                               action_factory,  # type: Text
+                               model_directory  # type: Text
+                               ):
         # type: (...) -> Optional[(Domain, PolicyEnsemble, Text)]
-        """Load a zipped Rasa Core model from a URL."""
+        """Initialises a Rasa Core model from a URL."""
 
         if not is_url(model_server):
             raise requests.exceptions.InvalidURL(model_server)
         try:
-            head = requests.head(model_server)
-            head.raise_for_status()
-            new_hash = head.headers.get("model_hash")
-            if init:
-                self._pull_model(model_server, model_directory)
-                domain_path = os.path.join(os.path.basename(model_directory),
-                                           "domain.yml")
-                domain = TemplateDomain.load(domain_path, action_factory)
-                policy_ensemble = PolicyEnsemble.load(model_directory)
-                return domain, policy_ensemble, new_hash
-            elif new_hash != self.model_hash:
+            print('going to pull model')
+            new_hash = Agent._get_model_hash(model_server)
+            print('going to pull model')
+            Agent._pull_model(model_server, model_directory)
+            domain_path = os.path.join(os.path.basename(model_directory),
+                                       "domain.yml")
+            domain = TemplateDomain.load(domain_path, action_factory)
+            policy_ensemble = PolicyEnsemble.load(model_directory)
+            return domain, policy_ensemble, new_hash
+        except Exception as e:
+            print("Could not retrieve model from server "
+                  "URL {}:\n{}".format(model_server, e))
+            raise e
+
+    def _update_model_from_server(self,
+                                  model_server,  # type: Text
+                                  action_factory,  # type: Text
+                                  model_directory  # type: Text
+                                  ):
+        # type: (...) -> Optional[(Domain, PolicyEnsemble, Text)]
+        """Loads a zipped Rasa Core model from a URL."""
+
+        if not is_url(model_server):
+            raise requests.exceptions.InvalidURL(model_server)
+        try:
+            new_hash = Agent._get_model_hash(model_server)
+            if new_hash != self.model_hash:
                 self.model_hash = new_hash
                 self._pull_model(model_server, model_directory)
                 domain_path = os.path.join(os.path.basename(model_directory),
@@ -488,11 +510,11 @@ class Agent(object):
                 self.domain = TemplateDomain.load(domain_path, action_factory)
                 self.policy_ensemble = PolicyEnsemble.load(model_directory)
             else:
-                logger.debug("No new model found at "
-                             "URL {}".format(model_server))
+                print("No new model found at "
+                      "URL {}".format(model_server))
         except Exception as e:
-            logger.warning("Could not retrieve model from server "
-                           "URL:\n{}".format(e))
+            print("Could not retrieve model from server "
+                  "URL:\n{}".format(e))
 
     @staticmethod
     def _pull_model(model_server, model_directory):
@@ -512,17 +534,17 @@ class Agent(object):
 
     def _run_model_pulling_worker(self, wait):
         while True:
-            self._load_model_from_server(
+            print('pulling model')
+            self._update_model_from_server(
                 model_server=self.model_server,
                 action_factory=self.action_factory,
-                model_directory=self.path,
-                init=False
+                model_directory=self.path
             )
             time.sleep(wait)
 
     def start_model_pulling_in_worker(self, wait):
         # type: (int) -> None
-
+        print('starting model pulling')
         worker = Thread(target=self._run_model_pulling_worker,
                         args=(wait,))
         worker.setDaemon(True)
