@@ -91,7 +91,6 @@ class Agent(object):
                              "instead.".format(path))
 
         if model_server:
-            print(model_server, action_factory, path)
             domain, ensemble, _hash = cls.init_model_from_server(
                 model_server=model_server,
                 action_factory=action_factory,
@@ -108,7 +107,7 @@ class Agent(object):
         _tracker_store = cls.create_tracker_store(tracker_store, domain)
 
         return cls(domain=domain,
-                   ensemble=ensemble,
+                   policies=ensemble,
                    interpreter=_interpreter,
                    tracker_store=_tracker_store,
                    model_server=model_server,
@@ -476,9 +475,7 @@ class Agent(object):
         if not is_url(model_server):
             raise requests.exceptions.InvalidURL(model_server)
         try:
-            print('going to pull model')
             new_hash = Agent._get_model_hash(model_server)
-            print('going to pull model')
             Agent._pull_model(model_server, model_directory)
             domain_path = os.path.join(os.path.basename(model_directory),
                                        "domain.yml")
@@ -486,9 +483,9 @@ class Agent(object):
             policy_ensemble = PolicyEnsemble.load(model_directory)
             return domain, policy_ensemble, new_hash
         except Exception as e:
-            print("Could not retrieve model from server "
-                  "URL {}:\n{}".format(model_server, e))
-            raise e
+            logger.exception("Could not retrieve model from server "
+                             "URL {}:\n{}".format(model_server, e))
+            return None, None, None
 
     def _update_model_from_server(self,
                                   model_server,  # type: Text
@@ -510,11 +507,11 @@ class Agent(object):
                 self.domain = TemplateDomain.load(domain_path, action_factory)
                 self.policy_ensemble = PolicyEnsemble.load(model_directory)
             else:
-                print("No new model found at "
-                      "URL {}".format(model_server))
+                logger.debug("No new model found at "
+                             "URL {}".format(model_server))
         except Exception as e:
-            print("Could not retrieve model from server "
-                  "URL:\n{}".format(e))
+            logger.exception("Could not retrieve model from server "
+                             "URL:\n{}".format(e))
 
     @staticmethod
     def _pull_model(model_server, model_directory):
@@ -534,7 +531,6 @@ class Agent(object):
 
     def _run_model_pulling_worker(self, wait):
         while True:
-            print('pulling model')
             self._update_model_from_server(
                 model_server=self.model_server,
                 action_factory=self.action_factory,
@@ -544,7 +540,6 @@ class Agent(object):
 
     def start_model_pulling_in_worker(self, wait):
         # type: (int) -> None
-        print('starting model pulling')
         worker = Thread(target=self._run_model_pulling_worker,
                         args=(wait,))
         worker.setDaemon(True)
