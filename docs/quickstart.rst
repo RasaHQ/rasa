@@ -13,9 +13,6 @@ Quickstart
 
     `Example Code on GitHub <https://github.com/RasaHQ/rasa_core/tree/master/examples/moodbot>`_
 
-.. runnable:: 
-   :code: print("hello, world!")
-
 Here we show how to create your first bot, adding all the pieces of a Rasa application.
 This might be easier to follow if you also look at :ref:`architecture`.
 
@@ -79,9 +76,42 @@ The domain defines the universe your bot lives in.
 Here is an example domain for our moodbot, ``domain.yml``:
 
 
-.. literalinclude:: ../examples/moodbot/domain.yml
-    :language: yaml
-    :name: domain.yml
+
+.. runnable:: 
+   :code:  domain_yml = """
+	   intents:
+	     - greet
+	     - goodbye
+	     - mood_affirm
+	     - mood_deny
+	     - mood_great
+	     - mood_unhappy
+	   slots:
+	     img_api_back:
+	       type: text
+	   actions:
+	   - utter_greet
+	   - utter_cheer_up
+	   - utter_did_that_help
+	   - utter_happy
+	   - utter_goodbye
+	   - utter_unclear
+	   - custom_actions.ApiAction
+	   templates:
+	     utter_greet:
+	     - text: "Hey! How are you?"
+	     utter_cheer_up:
+	     - text: "Here is something to cheer you up: {img_api_back}"
+	     utter_did_that_help:
+	     - text: "Did that help you?"
+	     utter_unclear:
+	     - text: "I am not sure what you are aiming for."
+	     utter_happy:
+	     - text: "Great carry on!"
+	     utter_goodbye:
+	     - text: "Bye"
+    	   """
+    	   %store domain_yml > domain.yml
     
 
 
@@ -132,16 +162,67 @@ handle in the `Rasa NLU training data format <https://nlu.rasa.com/dataformat.ht
 In this tutorial we are going to use Markdown Format for NLU training data.
 Let's create some intent examples in ``data/nlu_data.md``:
 
-.. literalinclude:: ../examples/moodbot/data/nlu.md
-    
-    :language: md
-
+.. runnable::
+   :code: import os
+     nlu_md = """
+     ## intent:greet
+     - hey
+     - hello
+     - hi
+     - good morning
+     - good evening
+     - hey there
+     ## intent:goodbye
+     - bye
+     - goodbye
+     - see you around
+     - see you later
+     ## intent:mood_affirm
+     - yes
+     - indeed
+     - of course
+     - that sounds good
+     - correct
+     ## intent:mood_deny
+     - no
+     - never
+     - I don't think so
+     - don't like that
+     - no way
+     - not really
+     ## intent:mood_great
+     - perfect
+     - very good
+     - great
+     - amazing
+     - wonderful
+     - I am feeling very good
+     - I am great
+     - I'm good
+     ## intent:mood_unhappy
+     - sad
+     - very sad
+     - unhappy
+     - bad
+     - very bad
+     - awful
+     - terrible
+     - not very good
+     - extremly sad
+     - so sad
+     """
+     with open(os.path.join(os.getcwd(),'data/nlu.md'), 'w') as f:
+         f.write(nlu_md)
 
 Furthermore, we need a configuration file, ``nlu_config.yml``, for the
 NLU model:
 
-.. literalinclude:: ../examples/moodbot/nlu_model_config.yml
-    
+.. runnable:: 
+   :code: nlu_config = """
+     pipeline: "tensorflow_embedding"
+     """
+     %store nlu_config > nlu_config.yml
+
 
 We can now train an NLU model using our examples (make sure to
 `install Rasa NLU <http://nlu.rasa.com/installation.html#setting-up-rasa-nlu>`_
@@ -150,10 +231,9 @@ first, as well as
 
 Let's run
 
-.. code-block:: bash
+.. runnable::
+   :code: !python -m rasa_nlu.train -c nlu_config.yml --data data/nlu_data.md -o models --fixed_model_name nlu --project current --verbose
 
-   python -m rasa_nlu.train -c nlu_config.yml --data data/nlu_data.md -o models
-   --fixed_model_name nlu --project current --verbose
 
 to train our NLU model. A new directory ``models/current/nlu`` should have been
 created containing the NLU model. Note that ``current`` stands for project name,
@@ -161,7 +241,7 @@ since this is specified in the train command.
 
 .. note::
 
-   To gather more insights about the above configuration and Rasa NLU features
+   To learn more about Rasa NLU
    head over to the `Rasa NLU documentation <https://nlu.rasa.com>`_.
 
 3. Define stories
