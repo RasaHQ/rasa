@@ -22,8 +22,3 @@ was predicted, and how often an incorrect action was predicted instead.
 The full list of options for the script is:
 
 .. program-output:: python -m rasa_core.evaluate -h
-
-Dialogue Generalisation
------------------------
-
-TODO

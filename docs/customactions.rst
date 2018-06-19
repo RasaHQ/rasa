@@ -52,9 +52,3 @@ Details of the ``run`` method:
 
 
 
-
-Actions Written in Other Languages
-----------------------------------
-
-You can in fact write your custom actions in any language you like. 
-TODO describe new sdk architecture.

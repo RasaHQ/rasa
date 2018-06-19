@@ -143,11 +143,3 @@ The deafult architecture is based on an LSTM, but you can override the
 .. literalinclude:: ../rasa_core/policies/keras_policy.py
    :pyobject: KerasPolicy.model_architecture
 
-
-Embedding Policy
-^^^^^^^^^^^^^^^^
-
-The embedding policy and tries to learn
-which actions are similar to others. 
-
-TODO
