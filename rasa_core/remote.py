@@ -192,11 +192,8 @@ class RemoteAgent(object):
     """A special agent that is connected to a model running on another server.
     """
 
-    def __init__(
-            self,
-            domain,  # type: Union[Text, Domain]
-            core_client  # type: RasaCoreClient
-    ):
+    def __init__(self, domain, core_client):
+        # type: (Optional[Union[Text, Domain]], RasaCoreClient) -> None
         self.domain = domain
         self.core_client = core_client
 
@@ -269,9 +266,8 @@ class RemoteAgent(object):
                     logger.error("Rasa Core did not return an action. "
                                  "Response: {}".format(response))
                     break
-
-        except Exception:
-            logger.exception("Failed to process message.")
+        except Exception as e:
+            logger.exception("Failed to process message:\n{}".format(e))
         else:
             logger.info("Done processing message")
 
@@ -280,7 +276,9 @@ class RemoteAgent(object):
              path,  # type: Text
              core_host,  # type: Text
              auth_token=None,  # type: Optional[Text]
-             action_factory=None  # type: Optional[Text]
+             action_factory=None,  # type: Optional[Text]
+             max_retries=5,  # type: int
+             upload_model=True  # type: bool
              ):
         # type: (...) -> RemoteAgent
 
@@ -288,6 +286,8 @@ class RemoteAgent(object):
                                      action_factory)
 
         core_client = RasaCoreClient(core_host, auth_token)
-        core_client.upload_model(path, max_retries=5)
+
+        if upload_model:
+            core_client.upload_model(path, max_retries=max_retries)
 
         return RemoteAgent(domain, core_client)

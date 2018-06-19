@@ -32,7 +32,7 @@ class DialogueStateTracker(object):
 
     @classmethod
     def from_dict(cls, sender_id, dump_as_dict, domain):
-        # type: (Text, List[Dict[Text, Any]]) -> DialogueStateTracker
+        # type: (Text, List[Dict[Text, Any]], Domain) -> DialogueStateTracker
         """Create a tracker from dump.
 
         The dump should be an array of dumped events. When restoring

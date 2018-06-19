@@ -156,7 +156,7 @@ def _create_agent(
         return None
 
 
-def create_app(model_directory=None,  # type: Text
+def create_app(model_directory,  # type: Text
                interpreter=None,  # type: Union[Text, NLI, None]
                loglevel="INFO",  # type: Optional[Text]
                logfile="rasa_core.log",  # type: Optional[Text]
@@ -175,13 +175,6 @@ def create_app(model_directory=None,  # type: Text
 
     if not cors_origins:
         cors_origins = []
-    model_directory = model_directory
-
-    interpreter = interpreter
-
-    tracker_store = tracker_store
-
-    action_factory = action_factory
 
     # this needs to be an array, so we can modify it in the nested functions...
     _agent = [_create_agent(model_directory, interpreter,
