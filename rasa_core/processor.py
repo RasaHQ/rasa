@@ -9,6 +9,7 @@ import warnings
 from types import LambdaType
 
 from apscheduler.schedulers.background import BackgroundScheduler
+from pytz import UnknownTimeZoneError
 from typing import Optional, List, Dict, Any
 from typing import Text
 
@@ -36,7 +37,7 @@ logger = logging.getLogger(__name__)
 try:
     scheduler = BackgroundScheduler()
     scheduler.start()
-except:
+except UnknownTimeZoneError:
     logger.warn("apscheduler failed to start. "
                 "This is probably because your system timezone is not set"
                 "Set it with e.g. echo \"Europe/Berlin\" > /etc/timezone")
