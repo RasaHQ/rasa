@@ -1,0 +1,2 @@
+#!/bin/bash
+!echo "Europe/Berlin" > /etc/timezone
