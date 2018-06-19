@@ -34,7 +34,6 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
     'sphinx.ext.doctest',
-    'nbsphinx',
     'sphinxcontrib.httpdomain',
     'sphinxcontrib.programoutput',
     'rasabaster.button',
