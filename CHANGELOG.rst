@@ -18,10 +18,26 @@ Changed
 -------
 - changed the logic inside AugmentedMemoizationPolicy to recall actions only if they are the same in training stories
 - moved AugmentedMemoizationPolicy to memoization.py
+- wrapped initialization of BackgroundScheduler in try/except to allow running on jupyterhub / binderhub/ colaboratory
 
 Removed
 -------
 - removed support for topics
+
+[0.9.6] - 2018-06-18
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed fallback policy data generation
+
+[0.9.5] - 2018-06-14
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- handling of max history configuration in policies
+- fixed instantiation issues of fallback policy
 
 [0.9.4] - 2018-06-07
 ^^^^^^^^^^^^^^^^^^^^
