@@ -200,7 +200,7 @@ class Agent(object):
             if hasattr(policy.featurizer, 'max_history'):
                 max_max_history = max(policy.featurizer.max_history,
                                       max_max_history)
-            else:
+            elif policy.featurizer is not None:
                 all_max_history_featurizers = False
 
         if unique_last_num_states is None:
