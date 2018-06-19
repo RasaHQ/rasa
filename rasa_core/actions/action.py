@@ -38,7 +38,7 @@ class Action(object):
         Args:
             tracker (DialogueStateTracker): the state tracker for the current user.
                 You can access slot values using ``tracker.get_slot(slot_name)``
-                and the most recent user message is ``tracker.latest_message``.
+                and the most recent user message is ``tracker.latest_message.text``.
             dispatcher (Dispatcher): the dispatcher which is used to send messages back
                 to the user. Use ``dipatcher.utter_message()`` or any other :class:`Dispatcher` method.
             domain (Domain): the bot's domain

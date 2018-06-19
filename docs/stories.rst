@@ -18,7 +18,7 @@ This is a guide to the story data format.
 Format
 ------
 
-Here's an example from the bAbi data:
+Here's an example from the `bAbI <https://research.fb.com/downloads/babi/>`_ data (converted into Rasa stories):
 
 .. code-block:: md
 
@@ -35,7 +35,9 @@ Here's an example from the bAbi data:
 
 
 This is what we call a **story**. A story starts with a name preceded by two
-hashes ``## story_03248462``, this is arbitrary but can be used for debugging.
+hashes ``## story_03248462``.
+You can call the story anything you like, but it can be very useful for debugging
+to give them descriptive names!
 The end of a story is denoted by a newline, and then a new story starts again with ``##``.
 
 

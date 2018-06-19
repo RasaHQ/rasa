@@ -36,6 +36,7 @@ extensions = [
     'sphinx.ext.doctest',
     'nbsphinx',
     'sphinxcontrib.httpdomain',
+    'sphinxcontrib.programoutput',
     'rasabaster.button',
     'rasabaster.card',
     'rasabaster.chatbubble'

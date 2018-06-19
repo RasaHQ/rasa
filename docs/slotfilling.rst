@@ -1,31 +1,16 @@
-.. _formfilling:
+.. _slotfilling:
 
-Form Filling
+Slot Filling
 ============
 
-
-.. note:: 
-   Here we go through some typical conversation patterns and explain how to implement
-   them with Rasa Core. 
-
-
-Rasa Core uses ML models to predict actions, and ``slots`` provide important
-information these models rely on to keep track of context and handle multi-turn dialogue.
-Slots are for storing information that's relevant over multiple turns. For example, in
-a restaurant bot, we would want to keep track of things like the cuisine and number of 
-people for the duration of the conversation. 
-
-
-
-Collecting Information to Complete a Request (Slot Filling)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Probably the most common pattern of all is to collect a few pieces of information
+One of the most common conversation patterns
+is to collect a few pieces of information
 from a user in order to do something (book a restaurant, call an API, search a database, etc.).
 This is also called **slot filling**.
 
 
-Form Filling with Regular Actions
+
+Slot Filling with Regular Actions
 ---------------------------------
 
 The `bAbI restaurant task <https://github.com/RasaHQ/rasa_core/tree/master/examples/restaurantbot>`_
@@ -35,7 +20,7 @@ searching.
 Your users will of course not provide all the information in the same order, so you will need multiple
 stories to cover the different ways people can provide information. Here is one example:
 
-.. code-block:: markdown
+.. code-block:: md
 
     ## story_07715946
     * greet
@@ -49,7 +34,7 @@ stories to cover the different ways people can provide information. Here is one 
        - action_ack_dosearch
 
 
-Form Filling with a ``FormAction``
+Slot Filling with a ``FormAction``
 ----------------------------------
 
 To make this easier, Rasa has a special action class called ``FormAction``.

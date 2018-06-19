@@ -41,13 +41,20 @@ your bot could execute the action ``ActionCheckRestaurants``, which might look l
          return [SlotSet("matches", result if result is not None else [])]
 
 
-The action's ``run`` method receives three arguments.
+The action's ``run`` method receives three arguments. You can access the values of slots and
+the latest message sent by the user using the ``tracker`` object, and you can send messages
+back to the user with the ``dispatcher`` object, by calling ``dispatcher.utter_template``,  
+``dispatcher.utter_message``, or any other :class:`Dispatcher` method. 
+
+Details of the ``run`` method:
 
 .. automethod:: rasa_core.actions.Action.run
+
+
 
 
 Actions Written in Other Languages
 ----------------------------------
 
 You can in fact write your custom actions in any language you like. 
-You will have to set up a web server that listens.
+TODO describe new sdk architecture.

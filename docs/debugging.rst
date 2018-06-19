@@ -1,7 +1,7 @@
 .. _debugging:
 
-Debugging a Rasa Bot
-====================
+Debugging
+=========
 
 .. note:: 
 

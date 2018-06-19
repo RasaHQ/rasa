@@ -67,21 +67,21 @@ The Rasa Core dialogue engine
    :hidden:
    :caption: User Guide
 
+   architecture
    connectors
    customactions
    slots
-   debugging
-   formfilling
+   slotfilling
    fallbacks
    policies
+   debugging
    evaluation
 
 .. toctree::
    :maxdepth: 1
    :hidden:
-   :caption: API Reference
+   :caption: Reference
 
-   architecture
    domains
    stories
    api/slots_api

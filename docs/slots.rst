@@ -46,7 +46,7 @@ You can provide an initial value for a slot in your domain file:
         initial_value: "human"
 
 
-There are two ways that slots are set during a conversation:
+There are multiple ways that slots are set during a conversation:
 
 Slots Set from NLU
 ~~~~~~~~~~~~~~~~~~
@@ -63,6 +63,28 @@ the slot will be set automatically. For example:
 
 In this case, you don't have to include the ``- slot{}`` part in the story, because 
 it is automatically picked up.
+
+
+Slots Set By Clicking Buttons
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can use buttons as a shortcut.
+Rasa Core will send messages starting with a ``/`` to the :class:`RegexInterpreter`,
+which expects NLU input in the same format as in story files, e.g. ``/intent{entities}``.
+For example, if you let users choose a color by clicking a button, the button payloads
+might be ``/choose{"color": "blue"}`` and ``/choose{"color": "red"}``
+
+You can specify this in your domain file like this: (see details in :ref:`domain`)
+
+.. code-block:: yaml
+
+  utter_ask_color:
+  - text: "what color would you like?"
+    buttons:
+    - title: "blue"
+      payload: "/choose{"color": "blue"}"
+    - title: "red"
+      payload: "/choose{"color": "red"}"
 
 
 Slots Set by Actions
@@ -124,10 +146,6 @@ take (in this case, ``utter_welcome_premuim`` or ``utter_welcome_basic``).
    stories using :ref:`interactive_learning` rather than writing them.
 
 
-Setting Slots when a Conversation Starts
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-TODO
 
 Custom Slot Types
 -----------------
@@ -290,9 +308,3 @@ Here are all of the predefined slot classes and what they're useful for:
        action the bot should run.
 
 
-An Example
-----------
-
-Here is an example story showing a few different slot types:
-
-TODO
