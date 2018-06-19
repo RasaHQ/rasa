@@ -39,7 +39,8 @@ extensions = [
     'sphinxcontrib.programoutput',
     'rasabaster.button',
     'rasabaster.card',
-    'rasabaster.chatbubble'
+    'rasabaster.chatbubble',
+    'rasabaster.runnable'
 #    'numpydoc',
 ]
 

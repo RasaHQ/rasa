@@ -13,6 +13,9 @@ Quickstart
 
     `Example Code on GitHub <https://github.com/RasaHQ/rasa_core/tree/master/examples/moodbot>`_
 
+.. runnable:: 
+   :code: print("hello, world!")
+
 Here we show how to create your first bot, adding all the pieces of a Rasa application.
 This might be easier to follow if you also look at :ref:`architecture`.
 

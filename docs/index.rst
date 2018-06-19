@@ -14,7 +14,7 @@ The Rasa Core dialogue engine
 
 .. chat-bubble::
    :text: Rasa is a framework for building conversational software:
-      Messenger/Slack bots, Alexa skills, etc. We'll abbreviate this as a **bot**
+      Messenger/Slack bots, Alexa skills, etc. We'll abbreviate this as a <strong>bot</strong>
       in this documentation. 
    :sender: bot
 
@@ -23,19 +23,19 @@ The Rasa Core dialogue engine
    :sender: user
 
 .. chat-bubble::
-   :text: Rather than a bunch of if/else statements, the logic of your bot is
+   :text: Rather than a bunch of <code>if/else</code> statements, the logic of your bot is
       based on a probabilistic model trained on example conversations.
    :sender: bot
 
 .. chat-bubble::
-   :text: That sounds harder than writing a few if statements
+   :text: That sounds harder than writing a few <code>if</code> statements.
    :sender: user
 
 
 .. chat-bubble::
    :text: In the beginning of a project, it seems easier to just hard code some logic.
       Rasa helps you when you want to go past that and create a bot that can handle more complexity.
-      This `blog post <https://medium.com/rasa-blog/a-new-approach-to-conversational-software-2e64a5d05f2a>`_ explains the philosophy behind Rasa Core.
+      This <a href="https://medium.com/rasa-blog/a-new-approach-to-conversational-software-2e64a5d05f2a" target="_blank">blog post </a> explains the philosophy behind Rasa Core.
    :sender: bot
 
 
@@ -45,9 +45,7 @@ The Rasa Core dialogue engine
     
 .. chat-bubble::
    :text: We thought you'd never ask!
-      You can build a full example without installing anything on `colab <https://colab.research.google.com/github/RasaHQ/rasa_core/blob/master/getting_started.ipynb>`_.
-      If you want to run stuff on your machine, follow the :ref:`installation`
-      and check out :ref:`quickstart` afterwards!
+      You can build a full example without installing anything, just go to the quickstart!
    :sender: bot
 
     
@@ -58,8 +56,9 @@ The Rasa Core dialogue engine
    :hidden:
    :caption: Getting Started
 
-   installation
    quickstart
+   installation
+
 
 
 .. toctree::
