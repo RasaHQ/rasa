@@ -31,7 +31,7 @@ jobs:
     - sudo apt-get update
     - pip install sphinx==1.5.2 sphinx-autobuild==0.6.0 sphinxcontrib-versioning==2.2.1 sphinxcontrib-httpdomain==1.5.0
       nbsphinx==0.2.13
-    - pip install -e git://github.com/RasaHQ/sphinx_rtd_theme.git#egg=sphinx_rtd_theme
+    - pip install git+https://${GITHUB_TOKEN}:x-oauth-basic@github.com/RasaHQ/rasabaster.git#egg=rasabaster
     - pip install -e .
     script:
     - eval "$(ssh-agent -s)"; touch docs/key; chmod 0600 docs/key
