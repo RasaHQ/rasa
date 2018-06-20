@@ -100,10 +100,10 @@ def test_regex_featurizer(sentence, expected, labeled_tokens, spacy_nlp):
         token_matches = token.get("pattern").values()
         if i in labeled_tokens:
             # if token i has a regex match, at least one token match should be True
-            assert True in token.get("pattern").values()
+            assert any(token.get("pattern").values())
         else:
             # if token i has a regex match, all token matches should be False
-            assert True not in token.get("pattern").values()
+            assert not any(token.get("pattern").values())
 
 
 def test_spacy_featurizer_casing(spacy_nlp):
