@@ -167,5 +167,5 @@ if __name__ == '__main__':
                          cmdline_args.nlu,
                          cmdline_args.history,
                          cmdline_args.dump_stories,
-                         cmdline_args.url
+                         cmdline_args.url,
                          additional_arguments)
