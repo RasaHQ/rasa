@@ -72,16 +72,17 @@ def test_ngram_featurizer(spacy_nlp):
 
 
 @pytest.mark.parametrize("sentence, expected, labeled_tokens", [
-    ("hey how are you today", [0., 1.], [0]),
-    ("hey 123 how are you", [1., 1.], [0, 1]),
-    ("blah balh random eh", [0., 0.], []),
-    ("looks really like 123 today", [1., 0.], [3]),
+    ("hey how are you today", [0., 1., 1.], [0, 4]),
+    ("hey 123 how are you", [1., 1., 0.], [0, 1]),
+    ("blah balh random eh", [0., 0., 0.], []),
+    ("looks really like 123 today", [1., 0., 1.], [0, 3]),
 ])
 def test_regex_featurizer(sentence, expected, labeled_tokens, spacy_nlp):
     from rasa_nlu.featurizers.regex_featurizer import RegexFeaturizer
     patterns = [
         {"pattern": '[0-9]+', "name": "number", "usage": "intent"},
-        {"pattern": '\\bhey*', "name": "hello", "usage": "intent"}
+        {"pattern": '\\bhey*', "name": "hello", "usage": "intent"},
+        {"pattern": '^[a-zA-Z]{5}$', "name": "5letters", "usage": "intent"}
     ]
     ftr = RegexFeaturizer(known_patterns=patterns)
 
@@ -92,6 +93,7 @@ def test_regex_featurizer(sentence, expected, labeled_tokens, spacy_nlp):
     tokenizer.process(message)
 
     result = ftr.features_for_patterns(message)
+    print(result)    
     assert np.allclose(result, expected, atol=1e-10)
 
     # the tokenizer should have added tokens
