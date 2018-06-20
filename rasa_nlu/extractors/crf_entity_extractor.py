@@ -78,7 +78,7 @@ class CRFEntityExtractor(EntityExtractor):
         'bias': lambda doc: 'bias',
         'upper': lambda doc: doc[0].isupper(),
         'digit': lambda doc: doc[0].isdigit(),
-        'pattern': lambda doc: str(doc[3]) if doc[3] is not None else 'N/A',
+        'pattern': lambda doc: doc[3],
     }
 
     def __init__(self, component_config=None, ent_tagger=None):
@@ -394,6 +394,7 @@ class CRFEntityExtractor(EntityExtractor):
 
         configured_features = self.component_config["features"]
         sentence_features = []
+
         for word_idx in range(len(sentence)):
             # word before(-1), current word(0), next word(+1)
             feature_span = len(configured_features)
@@ -414,9 +415,15 @@ class CRFEntityExtractor(EntityExtractor):
                     prefix = prefixes[f_i_from_zero]
                     features = configured_features[f_i_from_zero]
                     for feature in features:
-                        # append each feature to a feature vector
-                        value = self.function_dict[feature](word)
-                        word_features[prefix + ":" + feature] = value
+                        if feature == "pattern":
+                            # add all regexes as a feature with form { name : is_matced }
+                            regex_patterns = self.function_dict[feature](word)
+                            for pattern_name, matched in regex_patterns.items():
+                                word_features[prefix + ":" + pattern_name] = matched
+                        else:
+                            # append each feature to a feature vector
+                            value = self.function_dict[feature](word)
+                            word_features[prefix + ":" + feature] = value
             sentence_features.append(word_features)
         return sentence_features
 
