@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import argparse
 import logging
+import requests
 
 from builtins import str
 
@@ -16,6 +17,8 @@ from rasa_core.featurizers import \
     MaxHistoryTrackerFeaturizer, BinarySingleStateFeaturizer
 from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.memoization import MemoizationPolicy
+from rasa_core.tracker_store import TrackerStore
+from rasa_core.domain import TemplateDomain
 
 
 def create_argument_parser():
@@ -87,6 +90,11 @@ def create_argument_parser():
             action='store_true',
             help="If enabled, save flattened stories to a file")
 
+    parser.add_argument(
+            '--url',
+            default=None,
+            help="If supplied, downloads serialised trackers from a URL and trains them")
+
     utils.add_logging_option_arguments(parser)
     return parser
 
@@ -96,6 +104,7 @@ def train_dialogue_model(domain_file, stories_file, output_path,
                          nlu_model_path=None,
                          max_history=None,
                          dump_flattened_stories=False,
+                         url=None,
                          kwargs=None):
     if not kwargs:
         kwargs = {}
@@ -112,6 +121,12 @@ def train_dialogue_model(domain_file, stories_file, output_path,
                                                  "remove_duplicates",
                                                  "debug_plots"})
     training_data = agent.load_data(stories_file, **data_load_args)
+
+    if url is not None:
+        tracker_store = TrackerStore(TemplateDomain(domain_file))
+        serialised_tracs = requests.get(url).json.trackers
+        url_trackers = [tracker_store.deserialise_tracker(42, trac) for trac in serialised_tracs]
+        training_data.append(url_trackers)
 
     if use_online_learning:
         if nlu_model_path:
@@ -152,4 +167,5 @@ if __name__ == '__main__':
                          cmdline_args.nlu,
                          cmdline_args.history,
                          cmdline_args.dump_stories,
+                         cmdline_args.url
                          additional_arguments)
