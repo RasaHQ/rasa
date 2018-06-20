@@ -82,7 +82,6 @@ class RegexFeaturizer(Featurizer):
                     else:
                         patterns[exp["name"]] = False
                 else:
-                    patterns = t.get("pattern", default={})
                     patterns[exp["name"]] = False
                 t.set("pattern", patterns)
         found = [1.0 if m is not None else 0.0 for m in matches]
