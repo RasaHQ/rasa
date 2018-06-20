@@ -416,10 +416,11 @@ class CRFEntityExtractor(EntityExtractor):
                     features = configured_features[f_i_from_zero]
                     for feature in features:
                         if feature == "pattern":
-                            # add all regexes as a feature with form { pattern : name : is_matced }
+                            # add all regexes as a feature
                             regex_patterns = self.function_dict[feature](word)
-                            for pattern_name, matched in regex_patterns.items():
-                                word_features[prefix + ":" + feature + ":" + pattern_name] = matched
+                            for p_name, matched in regex_patterns.items():
+                                feature_name = prefix + ":" + feature + ":" + p_name
+                                word_features[feature_name] = matched
                         else:
                             # append each feature to a feature vector
                             value = self.function_dict[feature](word)
@@ -427,6 +428,7 @@ class CRFEntityExtractor(EntityExtractor):
             sentence_features.append(word_features)
         return sentence_features
 
+        
     @staticmethod
     def _sentence_to_labels(sentence):
         # type: (List[Tuple[Text, Text, Text, Text]]) -> List[Text]
