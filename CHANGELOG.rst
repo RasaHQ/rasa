@@ -27,6 +27,7 @@ Added
 - change persistence keywords in tensorflow embedding classifier (make previously trained models impossible to load)
 - intent_featurizer_count_vectors adds features to text_features instead of overwriting them
 - add basic OOV support to intent_featurizer_count_vectors (make previously trained models impossible to load)
+- add a feature for each regex in the training set for crf_entity_extractor
 
 Changed
 -------
