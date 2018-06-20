@@ -10,36 +10,116 @@ This is also called **slot filling**.
 
 
 
-Slot Filling with Regular Actions
----------------------------------
+Example: Providing the Weather
+------------------------------
 
-The `bAbI restaurant task <https://github.com/RasaHQ/rasa_core/tree/master/examples/restaurantbot>`_
-is an example of a bot that learns to ask the questions it needs in order to recommend a restaurant.
-Once the user has provided the location, price, cuisine, and number of people, the bot is ready to start
-searching.
-Your users will of course not provide all the information in the same order, so you will need multiple
-stories to cover the different ways people can provide information. Here is one example:
+
+Let's say you are building a weather bot ⛅️. If somebody asks you for the weather, you will
+need to know their location. Users might say that right away, e.g. `What's the weather in Caracas?`
+When they don't provide this information, you'll have to ask them for it. 
+We can provide two stories to Rasa Core, so that it can learn to handle both cases:
 
 .. code-block:: md
 
-    ## story_07715946
-    * greet
-       - action_ask_howcanhelp
-    * inform{"location": "rome", "price": "cheap"}
-       - action_on_it
-       - action_ask_cuisine
-    * inform{"cuisine": "spanish"}
-       - action_ask_numpeople
-    * inform{"people": "six"}
-       - action_ack_dosearch
+    # story1
+    * ask_weather{"location": "Caracas"}
+       - action_weather_api
+
+    # story2
+    * ask_weather
+       - utter_ask_location
+    * inform{"location": "Caracas"}
+       - action_weather_api
+
+Here we are assuming you have defined an ``inform`` intent, which captures the cases where a user 
+is just providing information.
+
+But :ref:`customactions` can also set slots, and these can also influence the conversation. 
+For example, a location like `San Jose` could refer to multiple places, in this case, probably in
+Costa Rica 🇨🇷  or California 🇺🇸
+
+Let's add a call to a location API to deal with this. 
+Start by defining a ``location_match`` slot:
+
+.. code-block:: md
+    
+    slots:
+      location_match:
+        type: categorical
+        values:
+        - zero
+        - one
+        - multiple
+
+
+And our location api action will have to use the API response to fill in this slot.
+It can ``return [SlotSet("location_match", value)]``, where ``value`` is one of ``"zero"``, ``"one"``, or 
+``"multiple"``, depending on what the API sends back. 
+
+We then define stories for each of these cases:
+
+
+.. code-block:: md
+    :emphasize-lines: 12-13, 18-19, 24-25
+
+    # story1
+    * ask_weather{"location": "Caracas"}
+       - action_location_api
+       - slot{"location_match": "one"}
+       - action_weather_api
+
+    # story2
+    * ask_weather
+       - utter_ask_location
+    * inform{"location": "Caracas"}
+       - action_location_api
+       - slot{"location_match": "one"}
+       - action_weather_api
+
+    # story3
+    * ask_weather{"location": "the Moon"}
+       - action_location_api
+       - slot{"location_match": "none"}
+       - utter_location_not_found
+
+    # story4
+    * ask_weather{"location": "San Jose"}
+       - action_location_api
+       - slot{"location_match": "multiple"}
+       - utter_ask_which_location
+
+
+Now we've given Rasa Core a few examples of how to handle the different values
+that the ``location_match`` slot can take. With so little data, your trained
+policy will still get things wrong sometimes, because the dialogue history went
+differently from exactly what's in the training data. :ref:`interactive_learning` is a
+great way to explore more conversations that aren't in your stories already.
+The best way to improve your model is to test it yourself, have other people test it,
+and correct the mistakes it makes. 
+
+
+Debugging
+~~~~~~~~~
+
+If something doesn't work as you expect, **don't panic**! 
+If you are just getting started,
+you probably only have a few hand-written stories. This is a great starting point, but 
+you should give your bot to people to test **as soon as possible**. One of the guiding principles
+behind Rasa Core is this:
+
+.. pull-quote:: Learning from real conversations is more important than designing hypothetical ones
+
+So don't try to cover every possiblity in your hand-written stories before giving it to testers.
+Real user behavior will always surprise you! 
 
 
 Slot Filling with a ``FormAction``
 ----------------------------------
 
-To make this easier, Rasa has a special action class called ``FormAction``.
-This lets you have a single action for this task, rather than separate actions for each question,
-e.g. ``utter_ask_cuisine``, ``utter_ask_numpeople``, etc. 
+If you need to collect multiple pieces of information in a row, it is sometimes easier
+to create a ``FormAction``.
+This lets you have a single action that is called multiple times, rather than separate actions for each question,
+e.g. ``utter_ask_cuisine``, ``utter_ask_numpeople``, in a restaurant bot. 
 
 
 .. note::
