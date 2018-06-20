@@ -97,11 +97,13 @@ def test_regex_featurizer(sentence, expected, labeled_tokens, spacy_nlp):
     # the tokenizer should have added tokens
     assert len(message.get("tokens", [])) > 0
     for i, token in enumerate(message.get("tokens")):
+        token_matches = token.get("pattern").values()
         if i in labeled_tokens:
-            assert token.get("pattern") in [0, 1]
+            # if token i has a regex match, at least one token match should be True
+            assert True in token.get("pattern").values()
         else:
-            # if the token is not part of a regex the pattern should not be set
-            assert token.get("pattern") is None
+            # if token i has a regex match, all token matches should be False
+            assert True not in token.get("pattern").values()
 
 
 def test_spacy_featurizer_casing(spacy_nlp):
