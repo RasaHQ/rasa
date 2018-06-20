@@ -72,17 +72,17 @@ def test_ngram_featurizer(spacy_nlp):
 
 
 @pytest.mark.parametrize("sentence, expected, labeled_tokens", [
-    ("hey how are you today", [0., 1., 1.], [0, 4]),
-    ("hey 123 how are you", [1., 1., 0.], [0, 1]),
+    ("hey how are you today", [0., 1., 0.], [0]),
+    ("hey 456 how are you", [1., 1., 0.], [1, 0]),
     ("blah balh random eh", [0., 0., 0.], []),
-    ("looks really like 123 today", [1., 0., 1.], [0, 3]),
-])
+    ("a 1 digit number", [1., 0., 1.], [1, 1])
+    ])
 def test_regex_featurizer(sentence, expected, labeled_tokens, spacy_nlp):
     from rasa_nlu.featurizers.regex_featurizer import RegexFeaturizer
     patterns = [
         {"pattern": '[0-9]+', "name": "number", "usage": "intent"},
         {"pattern": '\\bhey*', "name": "hello", "usage": "intent"},
-        {"pattern": '^[a-zA-Z]{5}$', "name": "5letters", "usage": "intent"}
+        {"pattern": '[0-1]+', "name": "binary", "usage": "intent"}
     ]
     ftr = RegexFeaturizer(known_patterns=patterns)
 
@@ -93,19 +93,15 @@ def test_regex_featurizer(sentence, expected, labeled_tokens, spacy_nlp):
     tokenizer.process(message)
 
     result = ftr.features_for_patterns(message)
-    print(result)    
     assert np.allclose(result, expected, atol=1e-10)
 
     # the tokenizer should have added tokens
     assert len(message.get("tokens", [])) > 0
+    # the number of regex matches on each token should match
     for i, token in enumerate(message.get("tokens")):
         token_matches = token.get("pattern").values()
-        if i in labeled_tokens:
-            # if token i has a regex match, at least one token match should be True
-            assert any(token.get("pattern").values())
-        else:
-            # if token i has a regex match, all token matches should be False
-            assert not any(token.get("pattern").values())
+        num_matches = sum(token_matches)
+        assert(num_matches == labeled_tokens.count(i))
 
 
 def test_spacy_featurizer_casing(spacy_nlp):

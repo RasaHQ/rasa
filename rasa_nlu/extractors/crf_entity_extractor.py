@@ -501,7 +501,10 @@ class CRFEntityExtractor(EntityExtractor):
 
     @staticmethod
     def __pattern_of_token(message, i):
-        return message.get("tokens")[i].get("pattern", {})
+        if message.get("tokens") is not None:
+            return message.get("tokens")[i].get("pattern", {})
+        else:
+            return {}
 
 
     @staticmethod
