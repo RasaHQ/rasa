@@ -71,8 +71,3 @@ example:
                               queue='rasa_core_events',
                               no_ack=True)
         channel.start_consuming()
-
-
-
-
-
