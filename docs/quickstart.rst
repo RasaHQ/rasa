@@ -338,6 +338,13 @@ If you are running the cells here in the docs, run this cell:
 
 Congratulations 🚀! You just built a bot from scratch,
 powered entirely by machine learning. 
+Why not play around with the code above? 
+
+1. Teach your bot to understand you better. Add more NLU data, retrain the NLU model and restart your bot.
+2. Add some more stories to provide more examples of how your bot should behave. Then retrain the Rasa Core model to try it!
+3. Edit the response templates in the domain, retrain your model and see the results!
+
+
 There is a lot more you can do with Rasa Core, so go and read the sections
 in the User Guide next.
 
