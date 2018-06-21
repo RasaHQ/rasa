@@ -6,8 +6,8 @@ cache:
   - "$HOME/build/amn41/rasa_core/data"
 python:
 - '2.7'
-- '3.5'
-- '3.6'
+#- '3.5'
+#- '3.6'
 install:
 - sudo apt-get update
 - sudo apt-get install graphviz graphviz-dev
@@ -16,8 +16,8 @@ install:
 - pip install -e .
 - pip install coveralls==1.3.0
 - pip list
-script:
-- travis_wait py.test tests --cov rasa_core --pep8 -v
+script: true
+#- travis_wait py.test tests --cov rasa_core --pep8 -v
 # - cd docs && make doctest   # can't do yet - doctests need to be cleaned up first
 after_success:
 - openssl aes-256-cbc -K $encrypted_050c822e99ef_key -iv $encrypted_050c822e99ef_iv
@@ -33,6 +33,7 @@ jobs:
       nbsphinx==0.2.13
     - pip install git+https://${GITHUB_TOKEN}:x-oauth-basic@github.com/RasaHQ/rasabaster.git#egg=rasabaster
     - pip install -e .
+    - pip list
     script:
     - eval "$(ssh-agent -s)"; touch docs/key; chmod 0600 docs/key
     - openssl aes-256-cbc

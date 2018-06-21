@@ -14,7 +14,7 @@
 import re
 import sys
 import os
-import rasabaster as alabaster
+import rasabaster
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -126,7 +126,7 @@ todo_include_todos = False
 # a list of builtin themes.
 
 
-html_theme = "alabaster"
+html_theme = "rasabaster"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -344,9 +344,9 @@ scv_priority = 'tags'
 scv_show_banner = True
 scv_banner_greatest_tag = True
 scv_sort = ('semver',)
-scv_overflow = ("-A", "html_theme=alabaster")
+scv_overflow = ("-A", "html_theme=rasabaster")
 scv_whitelist_branches = ('docs_reorg',)
-scv_whitelist_tags = ('None')
+scv_whitelist_tags = ('None',)
 #scv_whitelist_tags = (re.compile(r'^[123456789]+\.[0-9]+\.\d+$'),
 #                      re.compile(r'^0\.[9]+\.\d+$'),
 #                      '0.8.6',
