@@ -24,9 +24,9 @@ install: true
 #    fi
 #  - mv /tmp/cached/total_word_feature_extractor.dat data/total_word_feature_extractor.dat
 #  - pip list
-before_script:
-  - mkdir $HOME/tmp
-  - export TMPDIR=$HOME/tmp
+#before_script:
+#  - mkdir $HOME/tmp
+#  - export TMPDIR=$HOME/tmp
 script: true
 #  - py.test --pep8 -m pep8
 #  - py.test tests/base --cov rasa_nlu -v --cov-append
