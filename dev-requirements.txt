@@ -19,5 +19,4 @@ sphinx-autobuild==0.7.1
 sphinxcontrib-versioning==2.2.1
 sphinxcontrib-httpdomain==1.6.1
 sphinxcontrib-programoutput==0.11
-nbsphinx==0.3.3
 pygments==2.2.0

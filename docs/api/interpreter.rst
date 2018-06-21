@@ -6,9 +6,9 @@ Interpreters
 Rasa Core itself does not interpret text. You can use `Rasa NLU <https://nlu.rasa.com>`_ for this. 
 
 
-.. autoclass:: rasa_core.interpreter.RasaNLUHTTPInterpreter
+.. autoclass:: rasa_core.interpreter.RasaNLUHttpInterpreter
 
-   .. automethod:: RasaNLUHTTPInterpreter.parse
+   .. automethod:: RasaNLUHttpInterpreter.parse
 
 .. autoclass:: rasa_core.interpreter.RasaNLUInterpreter
 
