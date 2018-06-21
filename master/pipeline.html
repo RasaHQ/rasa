@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Processing Pipeline &mdash; Rasa NLU 0.13.0a1 documentation</title>
+  <title>Processing Pipeline &mdash; Rasa NLU 0.13.0a2 documentation</title>
   
 
   
@@ -39,7 +39,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="Rasa NLU 0.13.0a1 documentation" href="index.html"/>
+    <link rel="top" title="Rasa NLU 0.13.0a2 documentation" href="index.html"/>
         <link rel="next" title="Evaluation" href="evaluation.html"/>
         <link rel="prev" title="Language Support" href="languages.html"/> 
 
@@ -894,7 +894,7 @@ See <a class="reference external" href="https://arxiv.org/abs/1709.03856">starsp
 <tr class="field-even field"><th class="field-name">Outputs:</th><td class="field-body"><code class="docutils literal"><span class="pre">text_features</span></code> and <code class="docutils literal"><span class="pre">tokens.pattern</span></code></td>
 </tr>
 <tr class="field-odd field"><th class="field-name">Description:</th><td class="field-body">During training, the regex intent featurizer creates a list of <cite>regular expressions</cite> defined in the training data format.
-If an expression is found in the input, a feature will be set, that will later be fed into intent classifier / entity
+For each regex, a feature will be set marking whether this expression was found in the input, which will later be fed into intent classifier / entity
 extractor to simplify classification (assuming the classifier has learned during the training phase, that this set
 feature indicates a certain intent). Regex features for entity extraction are currently only supported by the
 <code class="docutils literal"><span class="pre">ner_crf</span></code> component!
@@ -1318,7 +1318,7 @@ final context dictionary is used to persist the model&#8217;s metadata.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.13.0a1',
+            VERSION:'0.13.0a2',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
