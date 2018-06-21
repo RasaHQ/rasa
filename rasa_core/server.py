@@ -44,7 +44,7 @@ def create_argument_parser():
     parser.add_argument(
             '-m', '--model_server',
             type=str,
-            help="URL from which to pull a Core model")
+            help="URL from which to pull a Core models")
     parser.add_argument(
             '-u', '--nlu',
             type=str,

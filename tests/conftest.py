@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import logging
 
 import matplotlib
+import os
 import pytest
 
 from rasa_core import train
@@ -21,6 +22,7 @@ from rasa_core.policies.memoization import \
 from rasa_core.processor import MessageProcessor
 from rasa_core.slots import Slot
 from rasa_core.tracker_store import InMemoryTrackerStore
+from rasa_core.utils import zip_folder
 
 matplotlib.use('Agg')
 
@@ -29,6 +31,8 @@ logging.basicConfig(level="DEBUG")
 DEFAULT_DOMAIN_PATH = "data/test_domains/default_with_slots.yml"
 
 DEFAULT_STORIES_FILE = "data/test_stories/stories_defaultdomain.md"
+
+MOODBOT_MODEL_PATH = "examples/moodbot/models/dialogue"
 
 
 class CustomSlot(Slot):
@@ -81,14 +85,26 @@ def default_processor(default_domain):
 
 @pytest.fixture(scope="session")
 def trained_moodbot_path():
-    model_path = "examples/moodbot/models/dialogue"
     train.train_dialogue_model(
-            domain_file="examples/moodbot/domain.yml",
-            stories_file="examples/moodbot/data/stories.md",
-            output_path=model_path,
-            use_online_learning=False,
-            nlu_model_path=None,
-            max_history=None,
-            kwargs=None
+        domain_file="examples/moodbot/domain.yml",
+        stories_file="examples/moodbot/data/stories.md",
+        output_path=MOODBOT_MODEL_PATH,
+        use_online_learning=False,
+        nlu_model_path=None,
+        max_history=None,
+        kwargs=None
     )
-    return model_path
+
+    return MOODBOT_MODEL_PATH
+
+
+@pytest.fixture(scope="session")
+def zipped_moodbot_model():
+    # train moodbot if necessary
+    policy_file = os.path.join(MOODBOT_MODEL_PATH, 'policy_metadata.json')
+    if not os.path.isfile(policy_file):
+        trained_moodbot_path()
+
+    zip_path = zip_folder(MOODBOT_MODEL_PATH)
+
+    return zip_path

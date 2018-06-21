@@ -6,12 +6,14 @@ from __future__ import unicode_literals
 import logging
 import os
 import shutil
+import tempfile
 import time
 from threading import Thread
 
 import requests
 import typing
 import zipfile
+import StringIO
 from six import string_types
 from typing import Text, List, Optional, Callable, Any, Dict, Union
 
@@ -91,11 +93,20 @@ class Agent(object):
                              "instead.".format(path))
 
         if model_server:
-            domain, ensemble, _hash = cls.init_model_from_server(
-                model_server=model_server,
-                action_factory=action_factory,
-                model_directory=path
-            )
+            try:
+                domain, ensemble, _hash = cls.init_model_from_server(
+                    model_server=model_server,
+                    action_factory=action_factory,
+                    model_directory=path
+                )
+            except Exception as e:
+                logger.exception("Could not retrieve model from server "
+                                 "URL: `{}`\nTrying to load from "
+                                 "path `{}` instead.".format(e, path))
+                domain = TemplateDomain.load(os.path.join(path, "domain.yml"),
+                                             action_factory)
+                ensemble = PolicyEnsemble.load(path)
+                _hash = None
         else:
             domain = TemplateDomain.load(os.path.join(path, "domain.yml"),
                                          action_factory)
@@ -477,7 +488,7 @@ class Agent(object):
         try:
             new_hash = Agent._get_model_hash(model_server)
             Agent._pull_model(model_server, model_directory)
-            domain_path = os.path.join(os.path.basename(model_directory),
+            domain_path = os.path.join(os.path.abspath(model_directory),
                                        "domain.yml")
             domain = TemplateDomain.load(domain_path, action_factory)
             policy_ensemble = PolicyEnsemble.load(model_directory)
@@ -485,7 +496,7 @@ class Agent(object):
         except Exception as e:
             logger.exception("Could not retrieve model from server "
                              "URL {}:\n{}".format(model_server, e))
-            return None, None, None
+            raise e
 
     def _update_model_from_server(self,
                                   model_server,  # type: Text
@@ -497,37 +508,27 @@ class Agent(object):
 
         if not is_url(model_server):
             raise requests.exceptions.InvalidURL(model_server)
-        try:
-            new_hash = Agent._get_model_hash(model_server)
-            if new_hash != self.model_hash:
-                self.model_hash = new_hash
-                self._pull_model(model_server, model_directory)
-                domain_path = os.path.join(os.path.basename(model_directory),
-                                           "domain.yml")
-                self.domain = TemplateDomain.load(domain_path, action_factory)
-                self.policy_ensemble = PolicyEnsemble.load(model_directory)
-            else:
-                logger.debug("No new model found at "
-                             "URL {}".format(model_server))
-        except Exception as e:
-            logger.exception("Could not retrieve model from server "
-                             "URL:\n{}".format(e))
+        new_hash = Agent._get_model_hash(model_server)
+        if new_hash != self.model_hash:
+            self.model_hash = new_hash
+            self._pull_model(model_server, model_directory)
+            domain_path = os.path.join(os.path.abspath(model_directory),
+                                       "domain.yml")
+            self.domain = TemplateDomain.load(domain_path, action_factory)
+            self.policy_ensemble = PolicyEnsemble.load(model_directory)
+        else:
+            logger.debug("No new model found at "
+                         "URL {}".format(model_server))
 
     @staticmethod
     def _pull_model(model_server, model_directory):
         # type: (Text, Text) -> None
         response = requests.get(model_server)
         response.raise_for_status()
-        temp_data_file = create_temporary_file(response.content,
-                                               suffix='.zip')
-
-        logger.debug("Downloaded model to {}".format(temp_data_file))
-
-        zip_ref = zipfile.ZipFile(temp_data_file, 'r')
+        zip_ref = zipfile.ZipFile(StringIO.StringIO(response.content))
         zip_ref.extractall(model_directory)
-        zip_ref.close()
-        logger.debug(
-            "Unzipped model to {}".format(os.path.abspateh(model_directory)))
+        logger.debug("Unzipped model to {}"
+                     "".format(os.path.abspath(model_directory)))
 
     def _run_model_pulling_worker(self, wait):
         while True:
