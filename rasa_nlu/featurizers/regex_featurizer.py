@@ -67,19 +67,24 @@ class RegexFeaturizer(Featurizer):
 
         Given a sentence, returns a vector of {1,0} values indicating which
         regexes did match. Furthermore, if the
-        message is tokenized, the function will mark the matching regex on
-        the tokens that are part of the match."""
+        message is tokenized, the function will mark all tokens with a dict
+        relating the name of the regex to whether it was matched."""
 
-        found = []
+        matches = []
         for i, exp in enumerate(self.known_patterns):
             match = re.search(exp["pattern"], message.text)
-            if match is not None:
-                for t in message.get("tokens", []):
+            matches.append(match)
+            for token_index, t in enumerate(message.get("tokens", [])):
+                patterns = t.get("pattern", default={})
+                if match is not None:
                     if t.offset < match.end() and t.end > match.start():
-                        t.set("pattern", i)
-                found.append(1.0)
-            else:
-                found.append(0.0)
+                        patterns[exp["name"]] = True
+                    else:
+                        patterns[exp["name"]] = False
+                else:
+                    patterns[exp["name"]] = False
+                t.set("pattern", patterns)
+        found = [1.0 if m is not None else 0.0 for m in matches]
         return np.array(found)
 
     @classmethod

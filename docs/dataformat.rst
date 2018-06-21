@@ -142,7 +142,7 @@ the zipcode example it might look like this:
     }
 
 The name doesn't define the entity nor the intent, it is just a human readable description for you to remember what
-this regex is used for. As you can see in the above example, you can also use the regex features to improve the intent
+this regex is used for and is the title of the corresponding pattern feature. As you can see in the above example, you can also use the regex features to improve the intent
 classification performance.
 
 Try to create your regular expressions in a way that they match as few words as possible. E.g. using ``hey[^\s]*``
