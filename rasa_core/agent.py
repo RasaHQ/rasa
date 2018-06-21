@@ -6,14 +6,13 @@ from __future__ import unicode_literals
 import logging
 import os
 import shutil
-import tempfile
 import time
+import zipfile
 from threading import Thread
 
 import requests
+import six
 import typing
-import zipfile
-import StringIO
 from six import string_types
 from typing import Text, List, Optional, Callable, Any, Dict, Union
 
@@ -28,12 +27,17 @@ from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.processor import MessageProcessor
 from rasa_core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa_core.trackers import DialogueStateTracker
-from rasa_nlu.utils import is_url, create_temporary_file
+from rasa_nlu.utils import is_url
 
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from rasa_core.interpreter import NaturalLanguageInterpreter as NLI
+
+if six.PY2:
+    from StringIO import StringIO as IOReader
+else:
+    from io import BytesIO as IOReader
 
 
 class Agent(object):
@@ -525,7 +529,8 @@ class Agent(object):
         # type: (Text, Text) -> None
         response = requests.get(model_server)
         response.raise_for_status()
-        zip_ref = zipfile.ZipFile(StringIO.StringIO(response.content))
+
+        zip_ref = zipfile.ZipFile(IOReader(response.content))
         zip_ref.extractall(model_directory)
         logger.debug("Unzipped model to {}"
                      "".format(os.path.abspath(model_directory)))
