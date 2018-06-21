@@ -87,7 +87,6 @@ class RegexFeaturizer(Featurizer):
         found = [1.0 if m is not None else 0.0 for m in matches]
         return np.array(found)
 
-
     @classmethod
     def load(cls,
              model_dir=None,   # type: Optional[Text]

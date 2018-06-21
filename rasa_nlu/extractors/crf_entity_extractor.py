@@ -428,7 +428,6 @@ class CRFEntityExtractor(EntityExtractor):
             sentence_features.append(word_features)
         return sentence_features
 
-        
     @staticmethod
     def _sentence_to_labels(sentence):
         # type: (List[Tuple[Text, Text, Text, Text]]) -> List[Text]
@@ -505,7 +504,6 @@ class CRFEntityExtractor(EntityExtractor):
             return message.get("tokens")[i].get("pattern", {})
         else:
             return {}
-
 
     @staticmethod
     def __tag_of_token(token):

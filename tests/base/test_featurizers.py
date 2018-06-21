@@ -76,7 +76,7 @@ def test_ngram_featurizer(spacy_nlp):
     ("hey 456 how are you", [1., 1., 0.], [1, 0]),
     ("blah balh random eh", [0., 0., 0.], []),
     ("a 1 digit number", [1., 0., 1.], [1, 1])
-    ])
+])
 def test_regex_featurizer(sentence, expected, labeled_tokens, spacy_nlp):
     from rasa_nlu.featurizers.regex_featurizer import RegexFeaturizer
     patterns = [
