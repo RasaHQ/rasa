@@ -85,4 +85,5 @@ Welcome to the Rasa Documentation!
    policies
    state
    migrations
+   brokers
    changelog

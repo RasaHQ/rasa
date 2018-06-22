@@ -11,15 +11,35 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+- options to prevent slack from making re-deliver message upon meeting failure condition.
+  the default is to ignore ``http_timeout``.
+- event streaming to a ``RabbitMQ`` message broker using ``Pika``
+- docs section on event brokers
 
 Changed
 -------
 - changed the logic inside AugmentedMemoizationPolicy to recall actions only if they are the same in training stories
 - moved AugmentedMemoizationPolicy to memoization.py
+- wrapped initialization of BackgroundScheduler in try/except to allow running on jupyterhub / binderhub/ colaboratory
 
 Removed
 -------
 - removed support for topics
+
+[0.9.6] - 2018-06-18
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- fixed fallback policy data generation
+
+[0.9.5] - 2018-06-14
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- handling of max history configuration in policies
+- fixed instantiation issues of fallback policy
 
 [0.9.4] - 2018-06-07
 ^^^^^^^^^^^^^^^^^^^^

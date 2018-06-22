@@ -35,41 +35,41 @@ def create_argument_parser():
     """Parse all the command line arguments for the server script."""
 
     parser = argparse.ArgumentParser(
-            description='starts server to serve an agent')
+        description='starts server to serve an agent')
     parser.add_argument(
-            '-d', '--core',
-            required=True,
-            type=str,
-            help="core model directory to run with the server")
+        '-d', '--core',
+        required=True,
+        type=str,
+        help="core model directory to run with the server")
     parser.add_argument(
-            '-m', '--model_server',
-            type=str,
-            help="URL from which to pull a Core models")
+        '-m', '--model_server',
+        type=str,
+        help="URL from which to pull a Core models")
     parser.add_argument(
-            '-u', '--nlu',
-            type=str,
-            help="nlu model to run with the server")
+        '-u', '--nlu',
+        type=str,
+        help="nlu model to run with the server")
     parser.add_argument(
-            '-p', '--port',
-            type=int,
-            default=5005,
-            help="port to run the server at")
+        '-p', '--port',
+        type=int,
+        default=5005,
+        help="port to run the server at")
     parser.add_argument(
-            '--cors',
-            nargs='*',
-            type=str,
-            help="enable CORS for the passed origin. "
-                 "Use * to whitelist all origins")
+        '--cors',
+        nargs='*',
+        type=str,
+        help="enable CORS for the passed origin. "
+             "Use * to whitelist all origins")
     parser.add_argument(
-            '--auth_token',
-            type=str,
-            help="Enable token based authentication. Requests need to provide "
-                 "the token to be accepted.")
+        '--auth_token',
+        type=str,
+        help="Enable token-based authentication. Requests need to provide "
+             "the token to be accepted.")
     parser.add_argument(
-            '-o', '--log_file',
-            type=str,
-            default="rasa_core.log",
-            help="store log file in specified file")
+        '-o', '--log_file',
+        type=str,
+        default="rasa_core.log",
+        help="store log file in specified file")
 
     utils.add_logging_option_arguments(parser)
     return parser
@@ -84,9 +84,9 @@ def ensure_loaded_agent(agent):
             __agent = agent()
             if not __agent:
                 return Response(
-                        "No agent loaded. To continue processing, a model "
-                        "of a trained agent needs to be loaded.",
-                        status=503)
+                    "No agent loaded. To continue processing, a model "
+                    "of a trained agent needs to be loaded.",
+                    status=503)
 
             return f(*args, **kwargs)
 
@@ -282,8 +282,8 @@ def create_app(model_directory,  # type: Text
 
         # dump and return tracker
         state = tracker.current_state(
-                should_include_events=should_include_events,
-                only_events_after_latest_restart=use_history)
+            should_include_events=should_include_events,
+            only_events_after_latest_restart=use_history)
         return jsonify(state)
 
     @app.route("/conversations/<sender_id>/tracker",
@@ -318,9 +318,9 @@ def create_app(model_directory,  # type: Text
             message = request_params.pop('q')
         else:
             return Response(
-                    jsonify(error="Invalid parse parameter specified."),
-                    status=400,
-                    mimetype="application/json")
+                jsonify(error="Invalid parse parameter specified."),
+                status=400,
+                mimetype="application/json")
 
         try:
             # Fetches the predicted action in a json format
@@ -392,7 +392,7 @@ def create_app(model_directory,  # type: Text
         zip_ref.extractall(model_directory)
         zip_ref.close()
         logger.debug("Unzipped model to {}".format(
-                os.path.abspath(model_directory)))
+            os.path.abspath(model_directory)))
 
         _agent[0] = _create_agent(model_directory, interpreter,
                                   action_factory, tracker_store)
