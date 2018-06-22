@@ -32,10 +32,9 @@ class WhitespaceTokenizer(Tokenizer, Component):
     def tokenize(self, text):
         # type: (Text) -> List[Token]
 
-        # replace punctuation with space to preserve character indices
-        # there is space after punctuation
+        # there is space or end of string after punctuation
         # because we do not want to replace 10.000 with 10 000
-        words = re.sub(r'[.,!?]\s', '  ', text + ' ')[:-1].split()
+        words = re.sub(r'[.,!?]+(\s|$)', ' ', text).split()
 
         running_offset = 0
         tokens = []
