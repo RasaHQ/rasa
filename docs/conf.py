@@ -19,6 +19,7 @@
 
 # -- General configuration ------------------------------------------------
 import re
+import rasabaster
 
 nitpicky = True
 linkcheck_anchors_ignore = [".*"]
