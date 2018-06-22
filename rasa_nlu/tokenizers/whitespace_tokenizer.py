@@ -36,10 +36,6 @@ class WhitespaceTokenizer(Tokenizer, Component):
         # there is space after punctuation
         # because we do not want to replace 10.000 with 10 000
         words = re.sub(r'[.,!?]\s', '  ', text + ' ')[:-1].split()
-        # words = text.split()
-        # token_pattern = r'(?u)\b\w+\b'
-        # token_pattern = re.compile(token_pattern)
-        # words = token_pattern.findall(text)
 
         running_offset = 0
         tokens = []
