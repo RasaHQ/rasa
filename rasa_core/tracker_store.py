@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import itertools
 import json
 import logging
 
@@ -54,7 +55,8 @@ class TrackerStore(object):
         # type: (DialogueStateTracker) -> None
         old_tracker = self.retrieve(tracker.sender_id)
         offset = len(old_tracker.events) if old_tracker else 0
-        for evt in tracker.events[offset:]: # type:
+        evts = tracker.events
+        for evt in list(itertools.islice(evts, offset, len(evts))):
             body = {
                 "sender_id": tracker.sender_id,
             }
