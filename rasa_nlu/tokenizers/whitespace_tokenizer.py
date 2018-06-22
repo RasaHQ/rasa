@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import re
 from typing import Any, List, Text
 
 from rasa_nlu.components import Component
@@ -31,7 +32,15 @@ class WhitespaceTokenizer(Tokenizer, Component):
     def tokenize(self, text):
         # type: (Text) -> List[Token]
 
-        words = text.split()
+        # replace punctuation with space to preserve character indices
+        # there is space after punctuation
+        # because we do not want to replace 10.000 with 10 000
+        words = re.sub(r'[.,!?]\s', '  ', text + ' ')[:-1].split()
+        # words = text.split()
+        # token_pattern = r'(?u)\b\w+\b'
+        # token_pattern = re.compile(token_pattern)
+        # words = token_pattern.findall(text)
+
         running_offset = 0
         tokens = []
         for word in words:
