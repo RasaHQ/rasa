@@ -4,6 +4,16 @@ Entity Extraction
 =================
 
 
+================    ================  ========================    ===================================
+Component           Requires          Model           	          notes
+================    ================  ========================    ===================================
+``ner_crf``         sklearn-crfsuite  conditional random field    good for training custom entities
+``ner_spacy``       spaCy             averaged perceptron         provides pre-trained entities
+``ner_duckling``    duckling          context-free grammar        provides pre-trained entities
+``ner_mitie``       MITIE             structured SVM              good for training custom entities
+================    ================  ========================    ===================================
+
+
 Custom Entities
 ^^^^^^^^^^^^^^^
 
@@ -49,3 +59,66 @@ package from PyPI and adding ``ner_duckling`` to your pipeline.
 Alternatively, you can run duckling separately (natively or in a docker container)
 and use the ``ner_duckling_http`` component. 
 
+
+Returned Entities Object
+------------------------
+In the object returned after parsing there are two fields that show information
+about how the pipeline impacted the entities returned. The ``extractor`` field
+of an entity tells you which entity extractor found this particular entity.
+The ``processors`` field contains the name of components that altered this
+specific entity.
+
+The use of synonyms can also cause the ``value`` field not match the ``text``
+exactly. Instead it will return the trained synonym.
+
+.. code-block:: json
+
+    {
+      "text": "show me chinese restaurants",
+      "intent": "restaurant_search",
+      "entities": [
+        {
+          "start": 8,
+          "end": 15,
+          "value": "chinese",
+          "entity": "cuisine",
+          "extractor": "ner_crf",
+          "confidence": 0.854,
+          "processors": []
+        }
+      ]
+    }
+
+
+Some extractors, like ``duckling``, may include additional information. For example:
+
+.. code-block:: json
+
+   {  
+     "additional_info":{  
+       "grain":"day",
+       "type":"value",
+       "value":"2018-06-21T00:00:00.000-07:00",
+       "values":[  
+         {  
+           "grain":"day",
+           "type":"value",
+           "value":"2018-06-21T00:00:00.000-07:00"
+         }
+       ]
+     },
+     "confidence":1.0,
+     "end":5,
+     "entity":"time",
+     "extractor":"ner_duckling_http",
+     "start":0,
+     "text":"today",
+     "value":"2018-06-21T00:00:00.000-07:00"
+   }
+
+.. note::
+
+    The `confidence` will be set by the CRF entity extractor
+    (`ner_crf` component). The duckling entity extractor will always return
+    `1`. The `ner_spacy` extractor does not provide this information and
+    returns `null`.
