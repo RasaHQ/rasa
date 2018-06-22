@@ -154,6 +154,9 @@ The story will look something like this:
 
 Some important things to consider:
 
+- The ``submit()`` method is called when the action is run and all slots are filled.
+  If you are just collecting some information and don't need to make an API call at the end, your ``submit()`` method
+  should just ``return []``.
 - Your domain needs to have a slot called ``requested_slot``. This can be unfeaturized, but if you want
   to support contextual questions like *"why do you need to know that information?"* it will help if you make this
   a categorical slot. 
