@@ -3,8 +3,6 @@
 HTTP API
 ========
 
-.. routingtable::
-
 
 .. http:post:: /conversations/(str:sender_id)/parse
    :synopsis: Returns posts by the specified tag for the user
