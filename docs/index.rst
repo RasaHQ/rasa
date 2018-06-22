@@ -29,7 +29,7 @@ and returning structured data like
 
 The intended audience is mainly people developing chatbots and voice apps.
 You can read about the advantages of using open source NLU in this `blog post <https://medium.com/rasa-blog/do-it-yourself-nlp-for-bot-developers-2e2da2817f3d>`_ .
-You can see independent benchmarks comparing Rasa NLU to various closed source tools, `here <link1>`_ and `here <link1>`_. 
+You can see an independent benchmark comparing Rasa NLU to various closed source tools `here <https://drive.google.com/file/d/0B0l-QQUtZzsdVEpaWEpyVzhZQzQ/view>`_. 
 
 
 .. toctree::

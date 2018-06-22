@@ -51,8 +51,8 @@ Great for getting started: spaCy + sklearn
 
 The ``spacy_sklearn`` pipeline combines a few different libraries and is a popular option.
 
-Installing spacy just requires (for more information
-visit the `spacy docu <https://spacy.io/usage/models>`_):
+You can install it with this command (for more information
+visit the `spacy docs <https://spacy.io/usage/models>`_):
 
 .. code-block:: bash
 
@@ -71,7 +71,7 @@ memory to run, but will somewhat reduce intent classification performance.
 First Alternative: Tensorflow
 -----------------------------
 
-To use the ``tensorflow_embedding`` pipeline you will need to install tensorflow as well as the scikit-learn and sklearn-crfsuite libraries.
+To use the ``tensorflow_embedding`` pipeline you will need to install tensorflow as well as the scikit-learn and sklearn-crfsuite libraries. To do this, run the following command:
 
 .. code-block:: bash
 
