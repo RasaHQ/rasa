@@ -53,7 +53,7 @@ jobs:
     - git config --global user.name "Travis CI"
     - git remote set-url --push origin "git@github.com:$TRAVIS_REPO_SLUG"
     - export ${!TRAVIS*}
-    - sphinx-versioning push -r docs_reorg docs newdocs .
+    - sphinx-versioning push -r docs_reorg docs newdocs . -- -b dirhtml
   - stage: deploy
     install: skip
     script: skip
