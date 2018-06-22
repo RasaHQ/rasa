@@ -61,6 +61,24 @@ The different parameters are:
 - ``-u``, which is the path to the Rasa NLU model.
 - ``-o``, which is the path to the log file.
 
+Fetching models from a server
+-----------------------------
+You can also configure the http server to fetch models from another URL:
+
+.. code-block:: bash
+
+    $ python -m rasa_core.server -d examples/babi/models/policy/current -u examples/babi/models/nlu/current_py2 --model_server_url http://my-server.com/models/default_core@latest -o out.log
+
+With one new parameter
+
+- ``--model_server_url`` which is the URL of the server Rasa Core regularly queries for zipped Rasa Core models
+
+.. note::
+
+    Your model server must provide zipped Rasa Core models, and have
+    ``{"model_hash": <hash_string>}`` as one of its headers.
+    It must also support ``HEAD`` requests delivering this header.
+
 .. _http_start_conversation:
 
 Starting a conversation

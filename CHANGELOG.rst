@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 [Unreleased 0.10.0.aX] - `master`_
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. note:: This version is not yet released and is under active development.
 
@@ -15,6 +15,9 @@ Added
   the default is to ignore ``http_timeout``.
 - event streaming to a ``RabbitMQ`` message broker using ``Pika``
 - docs section on event brokers
+- ``Agent()`` class supports a ``model_server_url``, which it regularly queries to fetch dialogue models
+- this can be used with ``rasa_core.server`` with a new option ``-s`` or ``--model_server``
+- docs on model fetching from a URL
 
 Changed
 -------

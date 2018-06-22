@@ -42,7 +42,7 @@ def create_argument_parser():
         type=str,
         help="core model directory to run with the server")
     parser.add_argument(
-        '-m', '--model_server',
+        '-s', '--model_server',
         type=str,
         help="URL from which to pull a Core models")
     parser.add_argument(
