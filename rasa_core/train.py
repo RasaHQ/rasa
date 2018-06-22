@@ -124,7 +124,7 @@ def train_dialogue_model(domain_file, stories_file, output_path,
 
     if url is not None:
         tracker_store = TrackerStore(TemplateDomain(domain_file))
-        serialised_tracs = requests.get(url).json()['trackers']
+        serialised_tracs = requests.get(url).json()
         url_trackers = [tracker_store.deserialise_tracker(42, trac) for trac in serialised_tracs]
         training_data.append(url_trackers)
 
