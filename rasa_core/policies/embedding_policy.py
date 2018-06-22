@@ -67,20 +67,26 @@ class EmbeddingPolicy(Policy):
         # regularization
         "C2": 0.001,
         "C_emb": 0.8,
+        # weight loss with inverse frequency of bot actions
+        "weight_loss_by_action_counts": True,
 
         "droprate_a": 0.0,
         "droprate_b": 0.0,
         "droprate_rnn": 0.1,
 
         # attention parameters
+        # flag to use attention over user input
+        # as an input to rnn
+        "attn_before_rnn": True,
+        # flag to use attention over prev bot actions
+        # and copy it to output bypassing rnn
+        "attn_after_rnn": True,
         "sparse_attention": False,  # flag to use sparsemax for probs
         "attn_shift_range": None,  # if None, mean dialogue length / 2
-        "attn_before_rnn": True,
-        "attn_after_rnn": True,
 
         # visualization of accuracy
-        "calc_acc_ones_in_epochs": 20,  # small values may hurt performance
-        "calc_acc_on_num_examples": 100  # large values may hurt performance
+        "evaluate_every_num_epochs": 20,  # small values may hurt performance
+        "evaluate_on_num_examples": 100  # large values may hurt performance
     }
 
     @staticmethod
@@ -160,6 +166,8 @@ class EmbeddingPolicy(Policy):
     def _load_regularization_params(self, config):
         self.C2 = config['C2']
         self.C_emb = config['C_emb']
+        self.weight_loss_by_action_counts = \
+                config['weight_loss_by_action_counts']
 
         self.droprate = dict()
         self.droprate['a'] = config['droprate_a']
@@ -182,10 +190,10 @@ class EmbeddingPolicy(Policy):
             self.num_attentions = 1
 
     def _load_visual_params(self, config):
-        self.calc_acc_ones_in_epochs = config['calc_acc_ones_in_epochs']
-        if self.calc_acc_ones_in_epochs < 1:
-            self.calc_acc_ones_in_epochs = self.epochs
-        self.calc_acc_on_num_examples = config['calc_acc_on_num_examples']
+        self.evaluate_every_num_epochs = config['evaluate_every_num_epochs']
+        if self.evaluate_every_num_epochs < 1:
+            self.evaluate_every_num_epochs = self.epochs
+        self.evaluate_on_num_examples = config['evaluate_on_num_examples']
 
     def _load_params(self, **kwargs):
         config = copy.deepcopy(self.defaults)
@@ -225,7 +233,6 @@ class EmbeddingPolicy(Policy):
             bot_embed=None,  # type: Optional[tf.Tensor]
             slot_embed=None,  # type: Optional[tf.Tensor]
             dial_embed=None,  # type: Optional[tf.Tensor]
-            skip_gate=None,
             copy_gate=None,
             attn_prev_act_embed=None,
             rnn_embed=None
@@ -274,7 +281,6 @@ class EmbeddingPolicy(Policy):
         self.slot_embed = slot_embed
         self.dial_embed = dial_embed
 
-        self.skip_gate = skip_gate
         self.copy_gate = copy_gate
         self.attn_prev_act_embed = attn_prev_act_embed
         self.rnn_embed = rnn_embed
@@ -397,11 +403,6 @@ class EmbeddingPolicy(Policy):
         else:
             out_layer = None
 
-        if self.attn_before_rnn:
-            input_size = [self.embed_dim, self.embed_dim]
-        else:
-            input_size = None
-
         keep_prob = 1.0 - (self.droprate['rnn'] *
                            tf.cast(self.is_training, tf.float32))
         cell = ChronoLayerNormBasicLSTMCell(
@@ -410,8 +411,7 @@ class EmbeddingPolicy(Policy):
                 dropout_keep_prob=keep_prob,
                 forget_bias=fbias,
                 input_bias=-fbias,
-                out_layer=out_layer,
-                input_size=None#input_size
+                out_layer=out_layer
         )
         return cell
 
@@ -432,16 +432,6 @@ class EmbeddingPolicy(Policy):
                     # we only attend to memory up to a current time
                     score_mask_value=0,  # it does not affect alignments
             )
-            # attn_mech_bot = tf.contrib.seq2seq.BahdanauAttention(
-            #     num_units=num_utter_units, memory=emb_prev_act,
-            #     memory_sequence_length=real_length,
-            #     normalize=True,
-            #     probability_fn=tf.identity,
-            #     # we only attend to memory up to a current time
-            #     score_mask_value=0,  # it does not affect alignments
-            # )
-            # attn_mech = [attn_mech_user, attn_mech_bot]
-            # num_mem_units = 2 * num_utter_units
         else:
             num_mem_units = 0
             attn_mech = None
@@ -469,7 +459,7 @@ class EmbeddingPolicy(Policy):
         def cell_input_fn(inputs, attention):
             if num_mem_units > 0:
                 res = tf.concat([inputs[:, :num_utter_units] +
-                                 attention[:, :num_mem_units],
+                                 attention[:, :num_utter_units],
                                  # attention[:, num_utter_units:num_mem_units],
                                  inputs[:, num_utter_units:]], -1)
                 # res = tf.concat([inputs, attention[:, :num_mem_units]], -1)
@@ -509,7 +499,6 @@ class EmbeddingPolicy(Policy):
         )
 
         # if output_attention=True,
-        self.skip_gate = cell_output[:, :, -2:-1]
         self.copy_gate = cell_output[:, :, -1:]
 
         if self.attn_after_rnn:
@@ -518,19 +507,14 @@ class EmbeddingPolicy(Policy):
                                                (self.embed_dim +
                                                 self.embed_dim)]
             self.attn_prev_act_embed = cell_output[:, :, (self.embed_dim +
-                                                          self.embed_dim #+
-                                                          # self.embed_dim +
-                                                          # self.embed_dim
-                                                          ):-2]
+                                                          self.embed_dim):-1]
 
             cell_output = cell_output[:, :, :self.embed_dim]
             emb_dial = cell_output
         else:
             # if output_attention=True,
             self.attn_prev_act_embed = cell_output[:, :, (self.rnn_size +
-                                                          self.rnn_size #+
-                                                          # self.embed_dim
-                                                          ):-2]
+                                                          self.rnn_size):-1]
 
             cell_output = cell_output[:, :, :self.rnn_size]
             emb_dial = self._create_embed(cell_output, name='out')
@@ -573,11 +557,14 @@ class EmbeddingPolicy(Policy):
                              "".format(self.similarity_type))
 
     def _regularization_loss(self):
-        return self.C2 * tf.add_n([
-                tf.nn.l2_loss(tf_var)
-                for tf_var in tf.trainable_variables()
-                if 'cell/embed_layer_out/kernel' in tf_var.name.lower()
-        ])
+        if self.attn_after_rnn:
+            return self.C2 * tf.add_n([
+                    tf.nn.l2_loss(tf_var)
+                    for tf_var in tf.trainable_variables()
+                    if 'cell/embed_layer_out/kernel' in tf_var.name.lower()
+            ])
+        else:
+            return 0
 
     def _tf_loss(self, sim, sim_act, mask, emb_dial, emb_act):
         """Define loss"""
@@ -585,19 +572,11 @@ class EmbeddingPolicy(Policy):
         sim_loss = self.mu_pos - sim[:, :, 0]
 
         if self.attn_after_rnn:
-            # norm_loss = 0.5 * tf.reduce_mean(tf.square(emb_dial -
-            #                                            emb_act[:, :, 0, :]),
-            #                                  -1) * self.C_emb
-
             emb_dial_norm = tf.norm(emb_dial, axis=-1)
             emb_act_norm = tf.norm(emb_act[:, :, 0, :], axis=-1)
 
             norm_loss = 0.5 * tf.square(emb_dial_norm -
                                         emb_act_norm) * self.C_emb
-            # norm_loss = tf.reduce_sum(emb_dial * emb_act[:, :, 0, :],
-            #                           -1) * self.C_emb
-            # norm_loss = (tf.square(emb_dial_norm - 1) +
-            #              tf.square(emb_act_norm - 1)) * self.C_emb
 
             loss = tf.where(sim_loss > 0, sim_loss, norm_loss)
         else:
@@ -610,19 +589,19 @@ class EmbeddingPolicy(Policy):
             max_margin = tf.maximum(0., self.mu_neg + sim[:, :, 1:])
             loss += tf.reduce_sum(max_margin, -1)
 
-        # emb_dial_norm = tf.norm(emb_dial, axis=-1)
-        # emb_act_norm = tf.norm(emb_act[:, :, 0, :], axis=-1)
-        # norm_loss = (tf.square(emb_dial_norm - 1) +
-        #              tf.square(emb_act_norm - 1)) * self.C2
-        # loss += norm_loss
+        if self.weight_loss_by_action_counts:
+            loss *= self.loss_weights
 
         # penalize max similarity between intent embeddings
         loss_act = tf.maximum(0., tf.reduce_max(sim_act, -1))
+        if self.weight_loss_by_action_counts:
+            loss_act *= tf.minimum(self.loss_weights, 1)
         loss += loss_act * self.C_emb
 
-        loss *= self.loss_weights
-        loss *= mask
+        # if self.weight_loss_by_action_counts:
+        #     loss *= self.loss_weights
 
+        loss *= mask
         loss = tf.reduce_sum(loss, -1) / tf.reduce_sum(mask, 1)
         # add regularization losses
         loss = (tf.reduce_mean(loss) +
@@ -656,6 +635,14 @@ class EmbeddingPolicy(Policy):
 
         return np.concatenate([batch_pos_b, batch_neg_b], -2)
 
+    def _linearly_increasing_batch_size(self, ep):
+        if self.epochs > 1:
+            return int(self.batch_size[0] +
+                       ep * (self.batch_size[1] - self.batch_size[0]) /
+                       (self.epochs - 1))
+        else:
+            return int(self.batch_size[0])
+
     @staticmethod
     def _count_actions(X, slots, prev_act, actions_for_X):
         """Count number of repeated actions"""
@@ -671,23 +658,16 @@ class EmbeddingPolicy(Policy):
         # do not include [-1 -1 ... -1 0] in averaging
         # and smooth it by taking sqrt
         return np.sqrt(np.mean(c[1:])/counts)
-
-    def _linearly_increasing_batch_size(self, ep):
-        if self.epochs > 1:
-            return int(self.batch_size[0] +
-                       ep * (self.batch_size[1] - self.batch_size[0]) /
-                       (self.epochs - 1))
-        else:
-            return int(self.batch_size[0])
+        # return np.minimum(np.sqrt(np.mean(c[1:])/counts), 1)
 
     def _train_tf(self, X, Y, slots, prev_act, actions_for_X, all_Y_d,
                   loss, mask):
         """Train tf graph"""
         self.session.run(tf.global_variables_initializer())
 
-        if self.calc_acc_on_num_examples:
+        if self.evaluate_on_num_examples:
             logger.info("Accuracy is updated every {} epochs"
-                        "".format(self.calc_acc_ones_in_epochs))
+                        "".format(self.evaluate_every_num_epochs))
         pbar = tqdm(range(self.epochs), desc="Epochs")
         train_acc = 0
         last_loss = 0
@@ -713,9 +693,13 @@ class EmbeddingPolicy(Policy):
                 batch_c = slots[ids[start_idx:end_idx]]
                 batch_b_prev = prev_act[ids[start_idx:end_idx]]
 
-                loss_weights_for_X = self._count_actions(batch_a, batch_c,
-                                                         batch_b_prev,
-                                                         actions_for_b)
+                if self.weight_loss_by_action_counts:
+                    loss_weights_for_X = self._count_actions(batch_a,
+                                                             batch_c,
+                                                             batch_b_prev,
+                                                             actions_for_b)
+                else:
+                    loss_weights_for_X = [[None]]
 
                 sess_out = self.session.run(
                         {'loss': loss, 'train_op': self.train_op},
@@ -728,9 +712,9 @@ class EmbeddingPolicy(Policy):
                 )
                 ep_loss += sess_out.get('loss') / batches_per_epoch
 
-            if self.calc_acc_on_num_examples:
+            if self.evaluate_on_num_examples:
                 if ((ep + 1) == 1 or
-                        (ep + 1) % self.calc_acc_ones_in_epochs == 0 or
+                        (ep + 1) % self.evaluate_every_num_epochs == 0 or
                         (ep + 1) == self.epochs):
                     train_acc = self._calc_train_acc(X, slots, prev_act,
                                                      actions_for_X, all_Y_d,
@@ -746,7 +730,7 @@ class EmbeddingPolicy(Policy):
                     "loss": "{:.3f}".format(ep_loss)
                 })
 
-        if self.calc_acc_on_num_examples:
+        if self.evaluate_on_num_examples:
             logger.info("Finished training embedding policy, "
                         "loss={:.3f}, train accuracy={:.3f}"
                         "".format(last_loss, train_acc))
@@ -755,7 +739,7 @@ class EmbeddingPolicy(Policy):
                         actions_for_X, all_Y_d, mask):
         """Calculate training accuracy"""
         # choose n examples to calculate train accuracy
-        n = self.calc_acc_on_num_examples
+        n = self.evaluate_on_num_examples
         ids = np.random.permutation(len(X))[:n]
         all_Y_d_x = np.stack([all_Y_d for _ in range(X[ids].shape[0])])
 
@@ -987,9 +971,6 @@ class EmbeddingPolicy(Policy):
             self.graph.add_to_collection('dial_embed',
                                          self.dial_embed)
 
-            self.graph.clear_collection('skip_gate')
-            self.graph.add_to_collection('skip_gate',
-                                         self.skip_gate)
             self.graph.clear_collection('copy_gate')
             self.graph.add_to_collection('copy_gate',
                                          self.copy_gate)
@@ -1059,7 +1040,6 @@ class EmbeddingPolicy(Policy):
                     slot_embed = tf.get_collection('slot_embed')[0]
                     dial_embed = tf.get_collection('dial_embed')[0]
 
-                    skip_gate = tf.get_collection('skip_gate')[0]
                     copy_gate = tf.get_collection('copy_gate')[0]
                     attn_prev_act_embed = tf.get_collection('attn_prev_act_embed')[0]
                     rnn_embed = tf.get_collection('rnn_embed')[0]
@@ -1083,7 +1063,6 @@ class EmbeddingPolicy(Policy):
                            bot_embed=bot_embed,
                            slot_embed=slot_embed,
                            dial_embed=dial_embed,
-                           skip_gate=skip_gate,
                            copy_gate=copy_gate,
                            attn_prev_act_embed=attn_prev_act_embed,
                            rnn_embed=rnn_embed)
@@ -1281,24 +1260,17 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             self._copy_gate = tf.layers.Dense(
                     1, tf.sigmoid,
                     # -4 is arbitrary, but we need
-                    # copy_gate to be zero at the beginning
+                    # copy_gate to be close to zero at the beginning
                     bias_initializer=tf.constant_initializer(-4),
                     name='copy_gate'
             )
         else:
             self._copy_gate = None
 
-        # self._skip_gate = tf.layers.Dense(
-        #     1, tf.sigmoid,
-        #     # -4 is arbitrary, but we need
-        #     # copy_gate to be zero at the beginning
-        #     bias_initializer=tf.constant_initializer(-1)
-        # )
-
     @property
     def output_size(self):
         if self._output_attention:
-            return self._attention_layer_size + 2 * self._cell.output_size + 2
+            return self._attention_layer_size + 2 * self._cell.output_size + 1
         else:
             return self._cell.output_size
 
@@ -1403,12 +1375,6 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         #          calculated attention value.
         cell_inputs = self._cell_input_fn(inputs, attention)
 
-        # old_pre_c = cell_state.c
-        s_g = tf.zeros_like(prev_out_for_attn[:, 0:1])
-        # s_g = self._skip_gate(cell_inputs)
-        # new_pre_c = (1 - s_g) * old_pre_c
-        # cell_state = tf.contrib.rnn.LSTMStateTuple(new_pre_c, cell_state.h)
-
         cell_output, next_cell_state = self._cell(cell_inputs, cell_state)
 
         h_old = cell_output
@@ -1419,7 +1385,6 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             cell_output = (c_g * attn_emb_prev_act +
                            (1 - c_g) * cell_output)
 
-            # new_c = s_g * old_pre_c + (1 - s_g) * next_cell_state.c
             if isinstance(cell_state, tf.contrib.rnn.LSTMStateTuple):
                 next_cell_state = tf.contrib.rnn.LSTMStateTuple(
                         tf.zeros_like(next_cell_state.c), cell_output)
@@ -1436,8 +1401,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
 
         if self._output_attention:
             # concatenate rnn cell output and attention
-            # c_g = self._copy_gate(prev_out_for_attn)
-            return tf.concat([cell_output, h_old, attention, s_g, c_g], 1), next_state
+            return tf.concat([cell_output, h_old, attention, c_g], 1), next_state
         else:
             return cell_output, next_state
 
@@ -1464,7 +1428,7 @@ class ChronoLayerNormBasicLSTMCell(tf.contrib.rnn.LayerNormBasicLSTMCell):
         super(ChronoLayerNormBasicLSTMCell, self).__init__(
                 num_units,
                 forget_bias=forget_bias,
-                input_size=None,
+                input_size=input_size,
                 activation=activation,
                 layer_norm=layer_norm,
                 norm_gain=norm_gain,
@@ -1475,7 +1439,6 @@ class ChronoLayerNormBasicLSTMCell(tf.contrib.rnn.LayerNormBasicLSTMCell):
         )
         self._input_bias = input_bias
         self._out_layer = out_layer
-        self._input_size = input_size
 
     @property
     def output_size(self):
@@ -1488,42 +1451,14 @@ class ChronoLayerNormBasicLSTMCell(tf.contrib.rnn.LayerNormBasicLSTMCell):
     def state_size(self):
         return tf.contrib.rnn.LSTMStateTuple(self._num_units, self.output_size)
 
-    def _linear(self, args, num_out=4, name=''):
-        out_size = num_out * self._num_units
-        proj_size = args.get_shape()[-1]
-        dtype = args.dtype
-        weights = tf.get_variable("kernel{}".format(name),
-                                  [proj_size, out_size], dtype=dtype)
-        out = tf.matmul(args, weights)
-        if not self._layer_norm:
-            bias = tf.get_variable("bias{}".format(name),
-                                   [out_size], dtype=dtype)
-            out = tf.nn.bias_add(out, bias)
-        return out
-
     def call(self, inputs, state):
         """LSTM cell with layer normalization and recurrent dropout."""
         c, h = state
-        if self._input_size is None:
-            args = tf.concat([inputs, h], 1)
-            concat = self._linear(args)
-            dtype = args.dtype
+        args = tf.concat([inputs, h], 1)
+        concat = self._linear(args)
+        dtype = args.dtype
 
-            i, j, f, o = tf.split(value=concat, num_or_size_splits=4, axis=1)
-        else:
-            gate_inputs = inputs[:, :(self._input_size[0] +
-                                      self._input_size[1])]
-            args = tf.concat([gate_inputs, h], 1)
-            concat = self._linear(args, num_out=3, name='_gate')
-            dtype = args.dtype
-
-            # calculate j separately
-            i, f, o = tf.split(value=concat, num_or_size_splits=3, axis=1)
-
-            # separate transform
-            transform_inputs = inputs[:, self._input_size[0]:]
-            j = self._linear(transform_inputs, num_out=1, name='_transform')
-
+        i, j, f, o = tf.split(value=concat, num_or_size_splits=4, axis=1)
         if self._layer_norm:
             i = self._norm(i, "input", dtype=dtype)
             j = self._norm(j, "transform", dtype=dtype)
