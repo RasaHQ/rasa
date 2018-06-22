@@ -21,10 +21,6 @@ Almost every chatbot and voice app will have some custom entities.
 In a restaurant bot, ``chinese`` is a cuisine, but in a language-learning app it would mean something very different. 
 The ``ner_crf`` component can learn custom entities in any language. 
 
-Regular Expressions (regex)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
 
 Extracting Places, Dates, People, Organisations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -58,6 +54,21 @@ duckling! You can use this component by installing the duckling
 package from PyPI and adding ``ner_duckling`` to your pipeline.
 Alternatively, you can run duckling separately (natively or in a docker container)
 and use the ``ner_duckling_http`` component. 
+
+
+Regular Expressions (regex)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You can use regular expressions to help the CRF model learn to recognize entities.
+In the :ref:`dataformat` you can provide a list of regular expressions, each of which provides
+the ``ner_crf`` with an extra binary feature, which says if the regex was found (1) or not (0). 
+
+For example, the names of German streets often end in ``strasse``. By adding this as a regex,
+we are telling the model to pay attention to words ending this way, and will quickly learn to
+associate that with a location entity. 
+
+If you just want to match regular expressions exactly, you can do this in your code,
+as a postprocessing step after receiving the response form Rasa NLU.
 
 
 Returned Entities Object

@@ -10,8 +10,6 @@ Data Format
 You can provide training data as markdown or as json, as a single file or as a directory containing multiple files.
 Note that markdown is usually easier to work with. 
 
-You can use `Chatito <https://rodrigopivi.github.io/Chatito/>`__ , a tool for generating training datasets in rasa's format using a simple DSL or `Tracy <https://yuukanoo.github.io/tracy>`__, a simple GUI to create training datasets for rasa.
-
 
 Markdown Format
 ---------------
@@ -86,6 +84,16 @@ For the demo data the output should look like this:
 
 If you use the json format it is **strongly** recommended that you view your training
 data in the GUI before training.
+
+Generating More Entity Examples
+-------------------------------
+
+It is sometimes helpful to generate a bunch of entity examples, for 
+example if you have a database of restaurant names. There are a couple 
+of great tools built by the community to help with that.
+
+You can use `Chatito <https://rodrigopivi.github.io/Chatito/>`__ , a tool for generating training datasets in rasa's format using a simple DSL or `Tracy <https://yuukanoo.github.io/tracy>`__, a simple GUI to create training datasets for rasa.
+
 
 
 Common Examples
@@ -223,11 +231,29 @@ Organization
 ------------
 
 The training data can either be stored in a single file or split into multiple files.
-For larger training examples, splitting the training data into multiple files, e.g. one per intent, increases maintainability.
+This can make it easier to keep things organised, or to share data between projects.
+For example, if you have a restaurant bot which can also handle some basic smalltalk,
+you could have a folder called ``nlu_data``:
 
-Storing files with different file formats, i.e. mixing markdown and JSON, is currently not supported.
+.. code-block:: text
+
+   nlu_data/
+   ├── restaurants.md
+   ├── smalltalk.md  
+
+To train a model with this data, pass the path to the directory to the train script:
+
+
+.. code-block:: console
+
+    $ python -m rasa_nlu.train \
+        --config config.yml \
+        --data nlu_data/ \
+        --path projects
+
 
 .. note::
     Splitting the training data into multiple files currently only works for markdown and JSON data.
-    For other file formats you have to use the single-file approach.
+    For other file formats you have to use the single-file approach. You also cannot mix markdown
+    and json
 
