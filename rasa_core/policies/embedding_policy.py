@@ -594,8 +594,8 @@ class EmbeddingPolicy(Policy):
 
         # penalize max similarity between intent embeddings
         loss_act = tf.maximum(0., tf.reduce_max(sim_act, -1))
-        if self.weight_loss_by_action_counts:
-            loss_act *= tf.minimum(self.loss_weights, 1)
+        # if self.weight_loss_by_action_counts:
+        #     loss_act *= tf.minimum(self.loss_weights, 1)
         loss += loss_act * self.C_emb
 
         # if self.weight_loss_by_action_counts:
@@ -657,8 +657,8 @@ class EmbeddingPolicy(Policy):
 
         # do not include [-1 -1 ... -1 0] in averaging
         # and smooth it by taking sqrt
-        return np.sqrt(np.mean(c[1:])/counts)
-        # return np.minimum(np.sqrt(np.mean(c[1:])/counts), 1)
+        # return np.sqrt(np.mean(c[1:])/counts)
+        return np.maximum(np.sqrt(np.mean(c[1:])/counts), 1)
 
     def _train_tf(self, X, Y, slots, prev_act, actions_for_X, all_Y_d,
                   loss, mask):
