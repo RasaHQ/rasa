@@ -282,6 +282,7 @@ class EmbeddingPolicy(Policy):
         # for continue training
         self.train_op = None
         self.is_training = None
+        self.loss_weights = None
 
     # data helpers:
     def _create_all_Y_d(self, dialogue_len):
@@ -387,16 +388,19 @@ class EmbeddingPolicy(Policy):
         fbias = np.log((self.characteristic_time - 2.0) *
                        np.random.random(self.rnn_size) + 1.0)
 
-        # reg = tf.contrib.layers.l2_regularizer(self.C2)
         if self.attn_after_rnn:
             out_layer = tf.layers.Dense(
                     units=self.embed_dim,
                     activation=None,
-                    # kernel_regularizer=reg,
                     name='embed_layer_out'
             )
         else:
             out_layer = None
+
+        if self.attn_before_rnn:
+            input_size = [self.embed_dim, self.embed_dim]
+        else:
+            input_size = None
 
         keep_prob = 1.0 - (self.droprate['rnn'] *
                            tf.cast(self.is_training, tf.float32))
@@ -406,17 +410,19 @@ class EmbeddingPolicy(Policy):
                 dropout_keep_prob=keep_prob,
                 forget_bias=fbias,
                 input_bias=-fbias,
-                out_layer=out_layer
+                out_layer=out_layer,
+                input_size=None#input_size
         )
         return cell
 
     def _create_attn_cell(self, cell, emb_utter, emb_prev_act,
                           real_length):
         """Wrap cell in attention wrapper with given memory"""
-
-        num_mem_units = 0
+        num_utter_units = int(emb_utter.shape[-1])
         if self.attn_before_rnn:
-            emb_mem = tf.concat([emb_utter, emb_prev_act], -1)
+            # emb_mem = tf.concat([emb_utter, emb_prev_act], -1)
+            emb_mem = emb_utter
+            # emb_mem = emb_prev_act
             num_mem_units = int(emb_mem.shape[-1])
             attn_mech = tf.contrib.seq2seq.BahdanauAttention(
                     num_units=num_mem_units, memory=emb_mem,
@@ -426,10 +432,20 @@ class EmbeddingPolicy(Policy):
                     # we only attend to memory up to a current time
                     score_mask_value=0,  # it does not affect alignments
             )
+            # attn_mech_bot = tf.contrib.seq2seq.BahdanauAttention(
+            #     num_units=num_utter_units, memory=emb_prev_act,
+            #     memory_sequence_length=real_length,
+            #     normalize=True,
+            #     probability_fn=tf.identity,
+            #     # we only attend to memory up to a current time
+            #     score_mask_value=0,  # it does not affect alignments
+            # )
+            # attn_mech = [attn_mech_user, attn_mech_bot]
+            # num_mem_units = 2 * num_utter_units
         else:
+            num_mem_units = 0
             attn_mech = None
 
-        attn_to_copy_fn = None
         if self.attn_after_rnn:
             num_prev_act_units = int(emb_prev_act.shape[-1])
             attn_prev_act = tf.contrib.seq2seq.BahdanauAttention(
@@ -447,13 +463,16 @@ class EmbeddingPolicy(Policy):
 
             def attn_to_copy_fn(attention):
                 return attention[:, num_mem_units:]
-
-        num_utter_units = int(emb_utter.shape[-1])
+        else:
+            attn_to_copy_fn = None
 
         def cell_input_fn(inputs, attention):
             if num_mem_units > 0:
-                res = tf.concat([attention[:, :num_mem_units],
+                res = tf.concat([inputs[:, :num_utter_units] +
+                                 attention[:, :num_mem_units],
+                                 # attention[:, num_utter_units:num_mem_units],
                                  inputs[:, num_utter_units:]], -1)
+                # res = tf.concat([inputs, attention[:, :num_mem_units]], -1)
             else:
                 res = inputs
             return res
@@ -499,16 +518,19 @@ class EmbeddingPolicy(Policy):
                                                (self.embed_dim +
                                                 self.embed_dim)]
             self.attn_prev_act_embed = cell_output[:, :, (self.embed_dim +
-                                                          self.embed_dim +
-                                                          self.embed_dim +
-                                                          self.embed_dim):-2]
+                                                          self.embed_dim #+
+                                                          # self.embed_dim +
+                                                          # self.embed_dim
+                                                          ):-2]
+
             cell_output = cell_output[:, :, :self.embed_dim]
             emb_dial = cell_output
         else:
             # if output_attention=True,
             self.attn_prev_act_embed = cell_output[:, :, (self.rnn_size +
-                                                          self.rnn_size +
-                                                          self.embed_dim):-2]
+                                                          self.rnn_size #+
+                                                          # self.embed_dim
+                                                          ):-2]
 
             cell_output = cell_output[:, :, :self.rnn_size]
             emb_dial = self._create_embed(cell_output, name='out')
@@ -550,6 +572,13 @@ class EmbeddingPolicy(Policy):
                              "should be 'cosine' or 'inner'"
                              "".format(self.similarity_type))
 
+    def _regularization_loss(self):
+        return self.C2 * tf.add_n([
+                tf.nn.l2_loss(tf_var)
+                for tf_var in tf.trainable_variables()
+                if 'cell/embed_layer_out/kernel' in tf_var.name.lower()
+        ])
+
     def _tf_loss(self, sim, sim_act, mask, emb_dial, emb_act):
         """Define loss"""
 
@@ -587,15 +616,18 @@ class EmbeddingPolicy(Policy):
         #              tf.square(emb_act_norm - 1)) * self.C2
         # loss += norm_loss
 
-        loss *= mask
-
         # penalize max similarity between intent embeddings
         loss_act = tf.maximum(0., tf.reduce_max(sim_act, -1))
         loss += loss_act * self.C_emb
 
+        loss *= self.loss_weights
+        loss *= mask
+
         loss = tf.reduce_sum(loss, -1) / tf.reduce_sum(mask, 1)
         # add regularization losses
-        loss = tf.reduce_mean(loss) + tf.losses.get_regularization_loss()
+        loss = (tf.reduce_mean(loss) +
+                self._regularization_loss() +
+                tf.losses.get_regularization_loss())
         return loss
 
     def _create_batch_b(self, batch_pos_b, intent_ids):
@@ -623,6 +655,22 @@ class EmbeddingPolicy(Policy):
                 batch_neg_b[b, h] = self.encoded_all_actions[negs]
 
         return np.concatenate([batch_pos_b, batch_neg_b], -2)
+
+    @staticmethod
+    def _count_actions(X, slots, prev_act, actions_for_X):
+        """Count number of repeated actions"""
+        full_X = np.concatenate([X, slots, prev_act,
+                                 actions_for_X[:, :, np.newaxis]], -1)
+        full_X = full_X.reshape((-1, full_X.shape[-1]))
+
+        _, i, c = np.unique(full_X, return_inverse=True,
+                            return_counts=True, axis=0)
+
+        counts = c[i].reshape((X.shape[0], X.shape[1]))
+
+        # do not include [-1 -1 ... -1 0] in averaging
+        # and smooth it by taking sqrt
+        return np.sqrt(np.mean(c[1:])/counts)
 
     def _linearly_increasing_batch_size(self, ep):
         if self.epochs > 1:
@@ -665,13 +713,18 @@ class EmbeddingPolicy(Policy):
                 batch_c = slots[ids[start_idx:end_idx]]
                 batch_b_prev = prev_act[ids[start_idx:end_idx]]
 
+                loss_weights_for_X = self._count_actions(batch_a, batch_c,
+                                                         batch_b_prev,
+                                                         actions_for_b)
+
                 sess_out = self.session.run(
                         {'loss': loss, 'train_op': self.train_op},
                         feed_dict={self.a_in: batch_a,
                                    self.b_in: batch_b,
                                    self.c_in: batch_c,
                                    self.b_prev_in: batch_b_prev,
-                                   self.is_training: True}
+                                   self.is_training: True,
+                                   self.loss_weights: loss_weights_for_X}
                 )
                 ep_loss += sess_out.get('loss') / batches_per_epoch
 
@@ -781,6 +834,9 @@ class EmbeddingPolicy(Policy):
                                             name='b_prev')
 
             self.is_training = tf.placeholder_with_default(False, shape=())
+
+            self.loss_weights = tf.placeholder(tf.float32,
+                                               (None, dialogue_len))
 
             (self.user_embed,
              self.bot_embed,
@@ -1094,6 +1150,8 @@ class TimedNTM(object):
         else:
             probs = tf.nn.softmax(probs)
 
+        # probs = tf.sigmoid(probs)
+
         if self.s_w is not None:
             s_w = self.s_w(cell_output)
 
@@ -1126,6 +1184,9 @@ class TimedNTM(object):
         powed_probs = tf.pow(probs, gamma)
         probs = (powed_probs /
                  (tf.reduce_sum(powed_probs, 1, keepdims=True) + 1e-32))
+
+        # remove current time from attention
+        probs = tf.concat([probs[:, :-1], tf.zeros_like(probs[:, -1:])], 1)
 
         return probs, next_probs_state
 
@@ -1221,7 +1282,8 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                     1, tf.sigmoid,
                     # -4 is arbitrary, but we need
                     # copy_gate to be zero at the beginning
-                    bias_initializer=tf.constant_initializer(-4)
+                    bias_initializer=tf.constant_initializer(-4),
+                    name='copy_gate'
             )
         else:
             self._copy_gate = None
@@ -1360,7 +1422,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             # new_c = s_g * old_pre_c + (1 - s_g) * next_cell_state.c
             if isinstance(cell_state, tf.contrib.rnn.LSTMStateTuple):
                 next_cell_state = tf.contrib.rnn.LSTMStateTuple(
-                        next_cell_state.c, cell_output)
+                        tf.zeros_like(next_cell_state.c), cell_output)
             else:
                 next_cell_state = cell_output
 
@@ -1402,7 +1464,7 @@ class ChronoLayerNormBasicLSTMCell(tf.contrib.rnn.LayerNormBasicLSTMCell):
         super(ChronoLayerNormBasicLSTMCell, self).__init__(
                 num_units,
                 forget_bias=forget_bias,
-                input_size=input_size,
+                input_size=None,
                 activation=activation,
                 layer_norm=layer_norm,
                 norm_gain=norm_gain,
@@ -1413,6 +1475,7 @@ class ChronoLayerNormBasicLSTMCell(tf.contrib.rnn.LayerNormBasicLSTMCell):
         )
         self._input_bias = input_bias
         self._out_layer = out_layer
+        self._input_size = input_size
 
     @property
     def output_size(self):
@@ -1425,14 +1488,42 @@ class ChronoLayerNormBasicLSTMCell(tf.contrib.rnn.LayerNormBasicLSTMCell):
     def state_size(self):
         return tf.contrib.rnn.LSTMStateTuple(self._num_units, self.output_size)
 
+    def _linear(self, args, num_out=4, name=''):
+        out_size = num_out * self._num_units
+        proj_size = args.get_shape()[-1]
+        dtype = args.dtype
+        weights = tf.get_variable("kernel{}".format(name),
+                                  [proj_size, out_size], dtype=dtype)
+        out = tf.matmul(args, weights)
+        if not self._layer_norm:
+            bias = tf.get_variable("bias{}".format(name),
+                                   [out_size], dtype=dtype)
+            out = tf.nn.bias_add(out, bias)
+        return out
+
     def call(self, inputs, state):
         """LSTM cell with layer normalization and recurrent dropout."""
         c, h = state
-        args = tf.concat([inputs, h], 1)
-        concat = self._linear(args)
-        dtype = args.dtype
+        if self._input_size is None:
+            args = tf.concat([inputs, h], 1)
+            concat = self._linear(args)
+            dtype = args.dtype
 
-        i, j, f, o = tf.split(value=concat, num_or_size_splits=4, axis=1)
+            i, j, f, o = tf.split(value=concat, num_or_size_splits=4, axis=1)
+        else:
+            gate_inputs = inputs[:, :(self._input_size[0] +
+                                      self._input_size[1])]
+            args = tf.concat([gate_inputs, h], 1)
+            concat = self._linear(args, num_out=3, name='_gate')
+            dtype = args.dtype
+
+            # calculate j separately
+            i, f, o = tf.split(value=concat, num_or_size_splits=3, axis=1)
+
+            # separate transform
+            transform_inputs = inputs[:, self._input_size[0]:]
+            j = self._linear(transform_inputs, num_out=1, name='_transform')
+
         if self._layer_norm:
             i = self._norm(i, "input", dtype=dtype)
             j = self._norm(j, "transform", dtype=dtype)
