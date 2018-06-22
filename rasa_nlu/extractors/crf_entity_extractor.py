@@ -128,6 +128,7 @@ class CRFEntityExtractor(EntityExtractor):
         # checks whether there is at least one
         # example with an entity annotation
         if training_data.entity_examples:
+            self._check_spacy_doc(training_data.training_examples[0])
 
             # filter out pre-trained entity examples
             filtered_entity_examples = self.filter_trainable_entities(
@@ -452,11 +453,12 @@ class CRFEntityExtractor(EntityExtractor):
             ents = self._bilou_tags_from_offsets(tokens, entity_offsets)
 
         if '-' in ents:
-            logger.warn("Misaligned entity annotation in sentence '{}'. "
-                        "Make sure the start and end values of the "
-                        "annotated training examples end at token "
-                        "boundaries (e.g. don't include trailing "
-                        "whitespaces).".format(message.text))
+            logger.warning("Misaligned entity annotation in sentence '{}'. "
+                           "Make sure the start and end values of the "
+                           "annotated training examples end at token "
+                           "boundaries (e.g. don't include trailing "
+                           "whitespaces or punctuation)."
+                           "".format(message.text))
         if not self.component_config["BILOU_flag"]:
             for i, label in enumerate(ents):
                 if self._bilou_from_label(label) in {"B", "I", "U", "L"}:
