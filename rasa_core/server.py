@@ -19,7 +19,6 @@ from typing import Union, Text, Optional
 from rasa_core import utils, events
 from rasa_core.agent import Agent
 from rasa_core.channels.direct import CollectingOutputChannel
-from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.tracker_store import TrackerStore
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.version import __version__
@@ -61,7 +60,7 @@ def create_argument_parser():
     parser.add_argument(
             '--auth_token',
             type=str,
-            help="Enable token based authentication. Requests need to provide "
+            help="Enable token-based authentication. Requests need to provide "
                  "the token to be accepted.")
     parser.add_argument(
             '-o', '--log_file',
@@ -133,12 +132,11 @@ def requires_auth(token=None):
     return decorator
 
 
-def _create_agent(
-        model_directory,  # type: Text
-        interpreter,  # type: Union[Text,NLI,None]
-        action_factory=None,  # type: Optional[Text]
-        tracker_store=None  # type: Optional[TrackerStore]
-):
+def _create_agent(model_directory,  # type: Text
+                  interpreter,  # type: Union[Text,NLI,None]
+                  action_factory=None,  # type: Optional[Text]
+                  tracker_store=None  # type: Optional[TrackerStore]
+                  ):
     # type: (...) -> Optional[Agent]
     try:
 

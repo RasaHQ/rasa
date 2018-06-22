@@ -13,6 +13,8 @@ Added
 -----
 - options to prevent slack from making re-deliver message upon meeting failure condition.
   the default is to ignore ``http_timeout``.
+- event streaming to a ``RabbitMQ`` message broker using ``Pika``
+- docs section on event brokers
 
 Changed
 -------
