@@ -41,10 +41,11 @@ def create_argument_parser():
                         nargs='+',
                         default=[],
                         help='Preload models into memory before starting the '
-                             'server. \nIf given `all` as input all the models'
-                             ' will be loaded.\nElse you can specify a list of'
-                             ' specific project names.\n Eg: python -m rasa_'
-                             'nlu.server -p project1 project2 --path projects')
+                             'server. \nIf given `all` as input all the models '
+                             'will be loaded.\nElse you can specify a list of '
+                             'specific project names.\nEg: python -m '
+                             'rasa_nlu.server --pre_load project1 --path projects '
+                             '-c config.yaml')
     parser.add_argument('-t', '--token',
                         help="auth token. If set, reject requests which don't "
                              "provide this token as a query parameter")
