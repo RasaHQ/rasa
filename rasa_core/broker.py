@@ -34,7 +34,7 @@ class PikaProducer(EventChannel):
         self.connection = pika.BlockingConnection(
             pika.ConnectionParameters(self.host, credentials=self.credentials))
         self.channel = self.connection.channel()
-        self.channel.queue_declare(self.queue)
+        self.channel.queue_declare(self.queue, durable=True)
 
     def _publish(self, body):
         self.channel.basic_publish('', self.queue, body)
