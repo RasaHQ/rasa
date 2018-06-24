@@ -160,7 +160,7 @@ class RegexInterpreter(NaturalLanguageInterpreter):
 
 
 class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
-    def __init__(self, model_name, token, server, project_name='default'):
+    def __init__(self, model_name=None, token=None, server, project_name='default'):
         self.model_name = model_name
         self.token = token
         self.server = server
