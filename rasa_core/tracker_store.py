@@ -85,10 +85,10 @@ class InMemoryTrackerStore(TrackerStore):
         super(InMemoryTrackerStore, self).__init__(domain, event_broker)
 
     def save(self, tracker):
-        serialised = InMemoryTrackerStore.serialise_tracker(tracker)
-        self.store[tracker.sender_id] = serialised
         if self.event_broker:
             self.stream_events(tracker)
+        serialised = InMemoryTrackerStore.serialise_tracker(tracker)
+        self.store[tracker.sender_id] = serialised
 
     def retrieve(self, sender_id):
         if sender_id in self.store:
