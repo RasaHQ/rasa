@@ -19,6 +19,7 @@ from rasa_core.policies.policy import Policy
 from rasa_core import utils
 from rasa_core.featurizers import \
     TrackerFeaturizer, MaxHistoryTrackerFeaturizer
+from rasa_core.events import ActionExecuted, SlotSet, UserUttered
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,12 @@ class MemoizationPolicy(Policy):
         recalls examples in the context of the current dialogue
         longer than `max_history`.
 
+        This policy is not supposed to be the only policy in an ensemble,
+        it is optimized for precision and not recall.
+        It should get a 100% precision because it emits probabilities of 1.0
+        along it's predictions, which makes every mistake fatal as
+        no other policy can overrule it.
+
         If it is needed to recall turns from training dialogues where
         some slots might not be set during prediction time, and there are
         training stories for this, use AugmentedMemoizationPolicy.
@@ -48,9 +55,8 @@ class MemoizationPolicy(Policy):
 
     USE_NLU_CONFIDENCE_AS_SCORE = False
 
-    @classmethod
-    def _standard_featurizer(cls, max_history=None):
-        max_history = max_history or cls.MAX_HISTORY_DEFAULT
+    @staticmethod
+    def _standard_featurizer(max_history=None):
         # Memoization policy always uses MaxHistoryTrackerFeaturizer
         # without state_featurizer
         return MaxHistoryTrackerFeaturizer(state_featurizer=None,
@@ -77,13 +83,6 @@ class MemoizationPolicy(Policy):
         # type: (bool) -> None
         self.is_enabled = activate
 
-    def _preprocess_states(self, states):
-        # type: (List[Dict[Text, float]]) -> List[List[Dict[Text, float]]]
-        """Helper method to preprocess tracker's states.
-            E.g., to a create list of states with deleted history
-            for augmented Memoization"""
-        return [states]
-
     def _add(self, trackers_as_states, trackers_as_actions,
              domain, online=False):
 
@@ -104,31 +103,31 @@ class MemoizationPolicy(Policy):
                     desc="Processed actions", disable=online)
         for states, actions in pbar:
             action = actions[0]
-            for i, states_aug in enumerate(self._preprocess_states(states)):
-                feature_key = self._create_feature_key(states_aug)
-                feature_item = domain.index_for_action(action)
 
-                if feature_key not in ambiguous_feature_keys:
-                    if feature_key in self.lookup.keys():
-                        if self.lookup[feature_key] != feature_item:
-                            if online and i == 0:
-                                logger.info("Original stories are "
-                                            "different for {} -- {}\n"
-                                            "Memorized the new ones for "
-                                            "now. Delete contradicting "
-                                            "examples after exporting "
-                                            "the new stories."
-                                            "".format(states_aug, action))
-                                self.lookup[feature_key] = feature_item
-                            else:
-                                # delete contradicting example created by
-                                # partial history augmentation from memory
-                                ambiguous_feature_keys.add(feature_key)
-                                del self.lookup[feature_key]
-                    else:
-                        self.lookup[feature_key] = feature_item
-                pbar.set_postfix({"# examples": "{:d}".format(
-                                                    len(self.lookup))})
+            feature_key = self._create_feature_key(states)
+            feature_item = domain.index_for_action(action)
+
+            if feature_key not in ambiguous_feature_keys:
+                if feature_key in self.lookup.keys():
+                    if self.lookup[feature_key] != feature_item:
+                        if online:
+                            logger.info("Original stories are "
+                                        "different for {} -- {}\n"
+                                        "Memorized the new ones for "
+                                        "now. Delete contradicting "
+                                        "examples after exporting "
+                                        "the new stories."
+                                        "".format(states, action))
+                            self.lookup[feature_key] = feature_item
+                        else:
+                            # delete contradicting example created by
+                            # partial history augmentation from memory
+                            ambiguous_feature_keys.add(feature_key)
+                            del self.lookup[feature_key]
+                else:
+                    self.lookup[feature_key] = feature_item
+            pbar.set_postfix({"# examples": "{:d}".format(
+                                                len(self.lookup))})
 
     def _create_feature_key(self, states):
         feature_str = json.dumps(states, sort_keys=True).replace("\"", "")
@@ -167,12 +166,7 @@ class MemoizationPolicy(Policy):
     def _recall_states(self, states):
         # type: (List[Dict[Text, float]]) -> Optional[int]
 
-        for states_aug in self._preprocess_states(states):
-            memorised = self.lookup.get(
-                self._create_feature_key(states_aug))
-            if memorised is not None:
-                return memorised
-        return None
+        return self.lookup.get(self._create_feature_key(states))
 
     def recall(self,
                states,  # type: List[Dict[Text, float]]
@@ -246,3 +240,91 @@ class MemoizationPolicy(Policy):
                         "File '{}' doesn't exist. Falling back to empty "
                         "turn memory.".format(memorized_file))
             return cls()
+
+
+class AugmentedMemoizationPolicy(MemoizationPolicy):
+    """The policy that remembers examples from training stories
+        for `max_history` turns.
+
+        If it is needed to recall turns from training dialogues
+        where some slots might not be set during prediction time,
+        add relevant stories without such slots to training data.
+        E.g. reminder stories.
+
+        Since `slots` that are set some time in the past are
+        preserved in all future feature vectors until they are set
+        to None, this policy has a capability to recall the turns
+        up to `max_history` from training stories during prediction
+        even if additional slots were filled in the past
+        for current dialogue.
+    """
+
+    @staticmethod
+    def _back_to_the_future_again(tracker):
+        """Send Marty to the past to get
+            the new featurization for the future"""
+
+        idx_of_first_action = None
+        idx_of_second_action = None
+
+        # we need to find second executed action
+        for e_i, event in enumerate(tracker.applied_events()):
+            # find second ActionExecuted
+            if isinstance(event, ActionExecuted):
+                if idx_of_first_action is None:
+                    idx_of_first_action = e_i
+                else:
+                    idx_of_second_action = e_i
+                    break
+
+        if idx_of_second_action is None:
+            return None
+        # make second ActionExecuted the first one
+        events = tracker.applied_events()[idx_of_second_action:]
+        if not events:
+            return None
+
+        mcfly_tracker = tracker.init_copy()
+        for e in events:
+            mcfly_tracker.update(e)
+
+        return mcfly_tracker
+
+    def _recall_using_delorean(self, old_states, tracker, domain):
+        """Recursively go to the past to correctly forget slots,
+            and then back to the future to recall."""
+
+        logger.debug("Launch DeLorean...")
+        mcfly_tracker = self._back_to_the_future_again(tracker)
+        while mcfly_tracker is not None:
+            tracker_as_states = self.featurizer.prediction_states(
+                    [mcfly_tracker], domain)
+            states = tracker_as_states[0]
+
+            if old_states != states:
+                # check if we like new futures
+                logger.debug("Current tracker state {}".format(states))
+                memorised = self._recall_states(states)
+                if memorised is not None:
+                    return memorised
+                old_states = states
+
+            # go back again
+            mcfly_tracker = self._back_to_the_future_again(mcfly_tracker)
+
+        # No match found
+        return None
+
+    def recall(self,
+               states,  # type: List[Dict[Text, float]]
+               tracker,  # type: DialogueStateTracker
+               domain  # type: Domain
+               ):
+        # type: (...) -> Optional[int]
+
+        recalled = self._recall_states(states)
+        if recalled is None:
+            # let's try a different method to recall that tracker
+            return self._recall_using_delorean(states, tracker, domain)
+        else:
+            return recalled

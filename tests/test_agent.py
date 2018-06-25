@@ -8,8 +8,7 @@ import pytest
 import rasa_core
 from rasa_core.agent import Agent
 from rasa_core.interpreter import RegexInterpreter, INTENT_MESSAGE_PREFIX
-from rasa_core.policies.augmented_memoization import \
-    AugmentedMemoizationPolicy
+from rasa_core.policies.memoization import AugmentedMemoizationPolicy
 from rasa_core.tracker_store import InMemoryTrackerStore
 
 

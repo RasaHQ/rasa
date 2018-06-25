@@ -200,7 +200,7 @@ class Agent(object):
             if hasattr(policy.featurizer, 'max_history'):
                 max_max_history = max(policy.featurizer.max_history,
                                       max_max_history)
-            else:
+            elif policy.featurizer is not None:
                 all_max_history_featurizers = False
 
         if unique_last_num_states is None:
@@ -323,13 +323,13 @@ class Agent(object):
                          "all old model files. Some files might be "
                          "overwritten.".format(model_path))
 
-    def persist(self, model_path):
+    def persist(self, model_path, dump_flattened_stories=False):
         # type: (Text) -> None
         """Persists this agent into a directory for later loading and usage."""
 
         self._clear_model_directory(model_path)
 
-        self.policy_ensemble.persist(model_path)
+        self.policy_ensemble.persist(model_path, dump_flattened_stories)
         self.domain.persist(os.path.join(model_path, "domain.yml"))
         self.domain.persist_specification(model_path)
 

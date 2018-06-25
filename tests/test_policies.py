@@ -15,9 +15,8 @@ import pytest
 from rasa_core.channels import UserMessage
 from rasa_core.domain import TemplateDomain
 from rasa_core.policies.keras_policy import KerasPolicy
-from rasa_core.policies.memoization import MemoizationPolicy
-from rasa_core.policies.augmented_memoization import \
-    AugmentedMemoizationPolicy
+from rasa_core.policies.memoization import \
+    MemoizationPolicy, AugmentedMemoizationPolicy
 from rasa_core.policies.sklearn_policy import SklearnPolicy
 from rasa_core.policies.fallback import FallbackPolicy
 from rasa_core.trackers import DialogueStateTracker
