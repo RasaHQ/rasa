@@ -275,7 +275,7 @@ class Interpreter(object):
 
         Args:
             model_dir (str): The path of the model to load
-            component_builder (ComponentBuilder): The 
+            component_builder (ComponentBuilder): The
                 :class:`ComponentBuilder` to use.
 
         Returns:

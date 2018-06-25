@@ -269,9 +269,9 @@ class Component(object):
         This is the components chance to train itself provided
         with the training data. The component can rely on
         any context attribute to be present, that gets created
-        by a call to :meth:`components.Component.pipeline_init` 
+        by a call to :meth:`components.Component.pipeline_init`
         of ANY component and
-        on any context attributes created by a call to 
+        on any context attributes created by a call to
         :meth:`components.Component.train`
         of components previous to this one."""
         pass
@@ -283,9 +283,9 @@ class Component(object):
         This is the components chance to process an incoming
         message. The component can rely on
         any context attribute to be present, that gets created
-        by a call to :meth:`components.Component.pipeline_init` 
+        by a call to :meth:`components.Component.pipeline_init`
         of ANY component and
-        on any context attributes created by a call to 
+        on any context attributes created by a call to
         :meth:`components.Component.process`
         of components previous to this one."""
         pass

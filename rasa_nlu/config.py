@@ -94,7 +94,7 @@ class RasaNLUModelConfig(object):
 
     def __init__(self, configuration_values=None):
         """
-        Create a model configuration, optionally overridding 
+        Create a model configuration, optionally overridding
         defaults with a dictionary ``configuration_values``.
         """
         if not configuration_values:
