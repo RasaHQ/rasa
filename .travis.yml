@@ -12,7 +12,7 @@ env:
   # needed to fix issues with boto during testing:
   # https://github.com/travis-ci/travis-ci/issues/7940
   global: BOTO_CONFIG=/dev/null
-install: true
+install: 
   - pip install git+https://github.com/tmbo/MITIE.git
   - pip install -r alt_requirements/requirements_dev.txt
   - pip install -e .
@@ -27,7 +27,7 @@ install: true
 before_script:
   - mkdir $HOME/tmp
   - export TMPDIR=$HOME/tmp
-cript: true
+script: 
   - py.test --pep8 -m pep8
   - py.test tests/base --cov rasa_nlu -v --cov-append
   - py.test tests/training --cov rasa_nlu -v --cov-append
