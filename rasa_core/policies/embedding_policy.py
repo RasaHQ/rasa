@@ -67,8 +67,8 @@ class EmbeddingPolicy(Policy):
         # regularization
         "C2": 0.001,
         "C_emb": 0.8,
-        # weight loss with inverse frequency of bot actions
-        "weight_loss_by_action_counts": True,
+        # scale loss with inverse frequency of bot actions
+        "scale_loss_by_action_counts": True,
 
         "droprate_a": 0.0,
         "droprate_b": 0.0,
@@ -166,8 +166,8 @@ class EmbeddingPolicy(Policy):
     def _load_regularization_params(self, config):
         self.C2 = config['C2']
         self.C_emb = config['C_emb']
-        self.weight_loss_by_action_counts = \
-                config['weight_loss_by_action_counts']
+        self.scale_loss_by_action_counts = \
+                config['scale_loss_by_action_counts']
 
         self.droprate = dict()
         self.droprate['a'] = config['droprate_a']
@@ -288,7 +288,7 @@ class EmbeddingPolicy(Policy):
         # for continue training
         self.train_op = None
         self.is_training = None
-        self.loss_weights = None
+        self.loss_scales = None
 
     # data helpers:
     def _create_all_Y_d(self, dialogue_len):
@@ -556,16 +556,6 @@ class EmbeddingPolicy(Policy):
                              "should be 'cosine' or 'inner'"
                              "".format(self.similarity_type))
 
-    def _regularization_loss(self):
-        if self.attn_after_rnn:
-            return self.C2 * tf.add_n([
-                    tf.nn.l2_loss(tf_var)
-                    for tf_var in tf.trainable_variables()
-                    if 'cell/embed_layer_out/kernel' in tf_var.name.lower()
-            ])
-        else:
-            return 0
-
     def _tf_loss(self, sim, sim_act, mask, emb_dial, emb_act):
         """Define loss"""
 
@@ -589,23 +579,17 @@ class EmbeddingPolicy(Policy):
             max_margin = tf.maximum(0., self.mu_neg + sim[:, :, 1:])
             loss += tf.reduce_sum(max_margin, -1)
 
-        if self.weight_loss_by_action_counts:
-            loss *= self.loss_weights
+        if self.scale_loss_by_action_counts:
+            loss *= self.loss_scales
 
         # penalize max similarity between intent embeddings
         loss_act = tf.maximum(0., tf.reduce_max(sim_act, -1))
-        # if self.weight_loss_by_action_counts:
-        #     loss_act *= tf.minimum(self.loss_weights, 1)
         loss += loss_act * self.C_emb
-
-        # if self.weight_loss_by_action_counts:
-        #     loss *= self.loss_weights
 
         loss *= mask
         loss = tf.reduce_sum(loss, -1) / tf.reduce_sum(mask, 1)
         # add regularization losses
         loss = (tf.reduce_mean(loss) +
-                self._regularization_loss() +
                 tf.losses.get_regularization_loss())
         return loss
 
@@ -657,7 +641,6 @@ class EmbeddingPolicy(Policy):
 
         # do not include [-1 -1 ... -1 0] in averaging
         # and smooth it by taking sqrt
-        # return np.sqrt(np.mean(c[1:])/counts)
         return np.maximum(np.sqrt(np.mean(c[1:])/counts), 1)
 
     def _train_tf(self, X, Y, slots, prev_act, actions_for_X, all_Y_d,
@@ -686,20 +669,20 @@ class EmbeddingPolicy(Policy):
                 batch_a = X[ids[start_idx:end_idx]]
 
                 batch_pos_b = Y[ids[start_idx:end_idx]]
-                actions_for_b = actions_for_X[ids[start_idx:end_idx]]
+                actions_for_a = actions_for_X[ids[start_idx:end_idx]]
                 # add negatives
-                batch_b = self._create_batch_b(batch_pos_b, actions_for_b)
+                batch_b = self._create_batch_b(batch_pos_b, actions_for_a)
 
                 batch_c = slots[ids[start_idx:end_idx]]
                 batch_b_prev = prev_act[ids[start_idx:end_idx]]
 
-                if self.weight_loss_by_action_counts:
-                    loss_weights_for_X = self._count_actions(batch_a,
+                if self.scale_loss_by_action_counts:
+                    loss_scales_for_a = self._count_actions(batch_a,
                                                              batch_c,
                                                              batch_b_prev,
-                                                             actions_for_b)
+                                                             actions_for_a)
                 else:
-                    loss_weights_for_X = [[None]]
+                    loss_scales_for_a = [[None]]
 
                 sess_out = self.session.run(
                         {'loss': loss, 'train_op': self.train_op},
@@ -708,7 +691,7 @@ class EmbeddingPolicy(Policy):
                                    self.c_in: batch_c,
                                    self.b_prev_in: batch_b_prev,
                                    self.is_training: True,
-                                   self.loss_weights: loss_weights_for_X}
+                                   self.loss_scales: loss_scales_for_a}
                 )
                 ep_loss += sess_out.get('loss') / batches_per_epoch
 
@@ -819,7 +802,7 @@ class EmbeddingPolicy(Policy):
 
             self.is_training = tf.placeholder_with_default(False, shape=())
 
-            self.loss_weights = tf.placeholder(tf.float32,
+            self.loss_scales = tf.placeholder(tf.float32,
                                                (None, dialogue_len))
 
             (self.user_embed,
@@ -1380,10 +1363,11 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         h_old = cell_output
         c_g = tf.zeros_like(prev_out_for_attn[:, 0:1])
         if self._copy_gate is not None:
-            c_g = self._copy_gate(prev_out_for_attn)
+            # c_g = self._copy_gate(prev_out_for_attn)
             attn_emb_prev_act = self._attn_to_copy_fn(attention)
-            cell_output = (c_g * attn_emb_prev_act +
-                           (1 - c_g) * cell_output)
+            # cell_output = (c_g * attn_emb_prev_act +
+            #                (1 - c_g) * cell_output)
+            cell_output = attn_emb_prev_act + cell_output
 
             if isinstance(cell_state, tf.contrib.rnn.LSTMStateTuple):
                 next_cell_state = tf.contrib.rnn.LSTMStateTuple(
