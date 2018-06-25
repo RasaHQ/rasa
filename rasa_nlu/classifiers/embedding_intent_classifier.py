@@ -224,16 +224,9 @@ class EmbeddingIntentClassifier(Component):
         # tf related instances
         self.session = session
         self.graph = graph
-<<<<<<< HEAD
-        self.intent_placeholder = intent_placeholder
-        self.embedding_placeholder = embedding_placeholder
-        self.similarity_op = similarity_op
-        self.a = a
-=======
         self.a_in = message_placeholder
         self.b_in = intent_placeholder
         self.sim_op = similarity_op
->>>>>>> master
 
         # persisted embeddings
         self.word_embed = word_embed
@@ -519,14 +512,6 @@ class EmbeddingIntentClassifier(Component):
 
             is_training = tf.placeholder_with_default(False, shape=())
 
-<<<<<<< HEAD
-            sim, loss = self._create_tf_graph(a_in, b_in, is_training)
-            self.similarity_op = sim
-            self.a = self._create_tf_embed_nn(a_in, is_training,
-                                     self.num_hidden_layers_a,
-                                     self.hidden_layer_size_a,
-                                     name='a')
-=======
             (self.word_embed,
              self.intent_embed) = self._create_tf_embed(self.a_in, self.b_in,
                                                         is_training)
@@ -534,7 +519,6 @@ class EmbeddingIntentClassifier(Component):
             self.sim_op, sim_emb = self._tf_sim(self.word_embed,
                                                 self.intent_embed)
             loss = self._tf_loss(self.sim_op, sim_emb)
->>>>>>> master
 
             train_op = tf.train.AdamOptimizer().minimize(loss)
 
@@ -543,13 +527,6 @@ class EmbeddingIntentClassifier(Component):
 
             self._train_tf(X, Y, intents_for_X,
                            loss, is_training, train_op)
-
-    def _calculate_embedding(self, X):
-        a = self.a
-        a_in = self.embedding_placeholder
-        sess = self.session
-        message_embed = sess.run(a, feed_dict={a_in: X})
-        return message_embed
 
     # process helpers
     def _calculate_message_sim(self, X, all_Y):
@@ -594,9 +571,6 @@ class EmbeddingIntentClassifier(Component):
             # to create candidates for test examples
             all_Y = self._create_all_Y(X.shape[0])
 
-            text_embed = self._calculate_embedding(X)
-            print("embedding of text:")
-            print(text_embed)
             # load tf graph and session
             intent_ids, message_sim = self._calculate_message_sim(X, all_Y)
 
@@ -685,15 +659,6 @@ class EmbeddingIntentClassifier(Component):
 
                 saver.restore(sess, checkpoint)
 
-<<<<<<< HEAD
-                embedding_placeholder = tf.get_collection(
-                    'embedding_placeholder')[0]
-                intent_placeholder = tf.get_collection(
-                    'intent_placeholder')[0]
-                similarity_op = tf.get_collection(
-                    'similarity_op')[0]
-                a = tf.get_collection('a')[0]
-=======
                 a_in = tf.get_collection('message_placeholder')[0]
                 b_in = tf.get_collection('intent_placeholder')[0]
 
@@ -701,7 +666,6 @@ class EmbeddingIntentClassifier(Component):
 
                 word_embed = tf.get_collection('word_embed')[0]
                 intent_embed = tf.get_collection('intent_embed')[0]
->>>>>>> master
 
             with io.open(os.path.join(
                     model_dir,
@@ -718,18 +682,11 @@ class EmbeddingIntentClassifier(Component):
                     encoded_all_intents=encoded_all_intents,
                     session=sess,
                     graph=graph,
-<<<<<<< HEAD
-                    intent_placeholder=intent_placeholder,
-                    embedding_placeholder=embedding_placeholder,
-                    similarity_op=similarity_op,
-                    a=a
-=======
                     message_placeholder=a_in,
                     intent_placeholder=b_in,
                     similarity_op=sim_op,
                     word_embed=word_embed,
                     intent_embed=intent_embed
->>>>>>> master
             )
 
         else:
@@ -737,54 +694,3 @@ class EmbeddingIntentClassifier(Component):
                            "doesn't exist"
                            "".format(os.path.abspath(model_dir)))
             return EmbeddingIntentClassifier(component_config=meta)
-<<<<<<< HEAD
-
-    def persist(self, model_dir):
-        # type: (Text) -> Dict[Text, Any]
-        """Persist this model into the passed directory.
-        Return the metadata necessary to load the model again."""
-        if self.session is None:
-            return {"classifier_file": None}
-
-        checkpoint = os.path.join(model_dir, self.name + ".ckpt")
-
-        try:
-            os.makedirs(os.path.dirname(checkpoint))
-        except OSError as e:
-            # be happy if someone already created the path
-            import errno
-            if e.errno != errno.EEXIST:
-                raise
-        with self.graph.as_default():
-            self.graph.clear_collection('embedding_placeholder')
-            self.graph.add_to_collection('embedding_placeholder',
-                                         self.embedding_placeholder)
-
-            self.graph.clear_collection('intent_placeholder')
-            self.graph.add_to_collection('intent_placeholder',
-                                         self.intent_placeholder)
-
-            self.graph.clear_collection('similarity_op')
-            self.graph.add_to_collection('similarity_op',
-                                         self.similarity_op)
-
-            self.graph.clear_collection('a')
-            self.graph.add_to_collection('a',
-                                         self.a)
-
-
-            saver = tf.train.Saver()
-            saver.save(self.session, checkpoint)
-
-        with io.open(os.path.join(
-                model_dir,
-                self.name + "_inv_intent_dict.pkl"), 'wb') as f:
-            pickle.dump(self.inv_intent_dict, f)
-        with io.open(os.path.join(
-                model_dir,
-                self.name + "_encoded_all_intents.pkl"), 'wb') as f:
-            pickle.dump(self.encoded_all_intents, f)
-
-        return {"classifier_file": self.name + ".ckpt"}
-=======
->>>>>>> master
