@@ -12,6 +12,8 @@ from rasa_core import utils
 from rasa_core.agent import Agent
 from rasa_core.channels.console import ConsoleInputChannel
 from rasa_core.interpreter import RasaNLUInterpreter, RegexInterpreter
+from rasa_core.featurizers import \
+    MaxHistoryTrackerFeaturizer, BinarySingleStateFeaturizer
 from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.memoization import MemoizationPolicy
 
@@ -79,6 +81,11 @@ def create_argument_parser():
             help="If enabled, will create plots showing checkpoints "
                  "and their connections between story blocks in a  "
                  "file called `story_blocks_connections.pdf`.")
+    parser.add_argument(
+            '--dump_stories',
+            default=False,
+            action='store_true',
+            help="If enabled, save flattened stories to a file")
 
     utils.add_logging_option_arguments(parser)
     return parser
@@ -88,13 +95,15 @@ def train_dialogue_model(domain_file, stories_file, output_path,
                          use_online_learning=False,
                          nlu_model_path=None,
                          max_history=None,
+                         dump_flattened_stories=False,
                          kwargs=None):
     if not kwargs:
         kwargs = {}
 
     agent = Agent(domain_file, policies=[
         MemoizationPolicy(max_history=max_history),
-        KerasPolicy()])
+        KerasPolicy(MaxHistoryTrackerFeaturizer(BinarySingleStateFeaturizer(),
+                                                max_history=max_history))])
 
     data_load_args, kwargs = utils.extract_args(kwargs,
                                                 {"use_story_concatenation",
@@ -117,7 +126,7 @@ def train_dialogue_model(domain_file, stories_file, output_path,
     else:
         agent.train(training_data, **kwargs)
 
-    agent.persist(output_path)
+    agent.persist(output_path, dump_flattened_stories)
 
 
 if __name__ == '__main__':
@@ -142,4 +151,5 @@ if __name__ == '__main__':
                          cmdline_args.online,
                          cmdline_args.nlu,
                          cmdline_args.history,
+                         cmdline_args.dump_stories,
                          additional_arguments)

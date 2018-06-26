@@ -50,7 +50,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
         self.domain = domain
 
     def past_states(self, domain):
-        # type: (Domain) -> Tuple[frozenset, ...]
+        # type: (Domain) -> deque
         """Return the states of the tracker based on the logged events."""
 
         # we need to make sure this is the same domain, otherwise things will
@@ -64,7 +64,7 @@ class TrackerWithCachedStates(DialogueStateTracker):
             self._states = super(TrackerWithCachedStates, self).past_states(
                     domain)
 
-        return tuple(self._states)
+        return self._states
 
     def clear_states(self):
         # type: () -> None
@@ -496,7 +496,7 @@ class TrainingDataGenerator(object):
         end_trackers = []  # for all steps
 
         for tracker in trackers:
-            states = tracker.past_states(self.domain)
+            states = tuple(tracker.past_states(self.domain))
             hashed = hash(states)
 
             # only continue with trackers that created a
@@ -535,7 +535,7 @@ class TrainingDataGenerator(object):
         # otherwise featurization does a lot of unnecessary work
 
         for tracker in trackers:
-            states = tracker.past_states(self.domain)
+            states = tuple(tracker.past_states(self.domain))
             hashed = hash(states)
 
             # only continue with trackers that created a

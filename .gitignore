@@ -16,6 +16,7 @@
 *~
 .env
 .cache/
+.pytest_cache/
 .coverage
 .idea/
 .vscode/

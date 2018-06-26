@@ -484,7 +484,8 @@ class FullDialogueTrackerFeaturizer(TrackerFeaturizer):
         trackers_as_actions = []
 
         logger.info("Creating states and action examples from "
-                    "collected trackers ({})...".format(type(self)))
+                    "collected trackers (by {})..."
+                    "".format(type(self).__name__))
         pbar = tqdm(trackers, desc="Processed trackers")
         for tracker in pbar:
             states = self._create_states(tracker, domain,
@@ -539,13 +540,15 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
     for prediction.
     Training data is padded up to the max_history with -1"""
 
-    def __init__(self, state_featurizer=None, max_history=5,
+    MAX_HISTORY_DEFAULT = 5
+
+    def __init__(self, state_featurizer=None, max_history=None,
                  remove_duplicates=True, use_intent_probabilities=False):
         # type: (Optional(SingleStateFeaturizer), int, bool, bool) -> None
         super(MaxHistoryTrackerFeaturizer, self).__init__(
                 state_featurizer, use_intent_probabilities
         )
-        self.max_history = max_history
+        self.max_history = max_history or self.MAX_HISTORY_DEFAULT
         self.remove_duplicates = remove_duplicates
 
     @staticmethod
@@ -587,7 +590,8 @@ class MaxHistoryTrackerFeaturizer(TrackerFeaturizer):
         hashed_examples = set()
 
         logger.info("Creating states and action examples from "
-                    "collected trackers ({})...".format(type(self)))
+                    "collected trackers (by {})..."
+                    "".format(type(self).__name__))
         pbar = tqdm(trackers, desc="Processed trackers")
         for tracker in pbar:
             states = self._create_states(tracker, domain, True)
