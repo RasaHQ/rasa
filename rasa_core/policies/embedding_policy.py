@@ -13,6 +13,7 @@ from tqdm import tqdm
 from typing import \
     Any, List, Optional, Text
 
+import collections
 import numpy as np
 import copy
 from rasa_core.policies import Policy
@@ -81,6 +82,7 @@ class EmbeddingPolicy(Policy):
         # flag to use attention over prev bot actions
         # and copy it to output bypassing rnn
         "attn_after_rnn": True,
+
         "sparse_attention": False,  # flag to use sparsemax for probs
         "attn_shift_range": None,  # if None, mean dialogue length / 2
 
@@ -556,6 +558,16 @@ class EmbeddingPolicy(Policy):
                              "should be 'cosine' or 'inner'"
                              "".format(self.similarity_type))
 
+    def _regularization_loss(self):
+        if self.attn_after_rnn:
+            return self.C2 * tf.add_n([
+                    tf.nn.l2_loss(tf_var)
+                    for tf_var in tf.trainable_variables()
+                    if 'cell/embed_layer_out/kernel' in tf_var.name.lower()
+            ])
+        else:
+            return 0
+
     def _tf_loss(self, sim, sim_act, mask, emb_dial, emb_act):
         """Define loss"""
 
@@ -590,6 +602,7 @@ class EmbeddingPolicy(Policy):
         loss = tf.reduce_sum(loss, -1) / tf.reduce_sum(mask, 1)
         # add regularization losses
         loss = (tf.reduce_mean(loss) +
+                self._regularization_loss() +
                 tf.losses.get_regularization_loss())
         return loss
 
@@ -1147,9 +1160,6 @@ class TimedNTM(object):
         probs = (powed_probs /
                  (tf.reduce_sum(powed_probs, 1, keepdims=True) + 1e-32))
 
-        # remove current time from attention
-        probs = tf.concat([probs[:, :-1], tf.zeros_like(probs[:, -1:])], 1)
-
         return probs, next_probs_state
 
 
@@ -1171,8 +1181,8 @@ def _compute_time_attention(attention_mechanism, cell_output, attention_state,
 
     # concatenate probs with zeros to get new alignments
     zeros = tf.zeros_like(scores)
-    alignments = tf.concat([probs, zeros[:, time+1:]], 1)
-    next_attention_state = tf.concat([next_probs_state, zeros[:, time+1:]], 1)
+    # remove current time from attention
+    alignments = tf.concat([probs[:, :-1], zeros[:, time:]], 1)
 
     # Reshape from [batch_size, memory_time] to [batch_size, 1, memory_time]
     expanded_alignments = tf.expand_dims(alignments, 1)
@@ -1194,7 +1204,52 @@ def _compute_time_attention(attention_mechanism, cell_output, attention_state,
     else:
         attention = context
 
+    # return current time to attention
+    alignments = tf.concat([probs, zeros[:, time+1:]], 1)
+    next_attention_state = tf.concat([next_probs_state,
+                                      zeros[:, time+1:]], 1)
     return attention, alignments, next_attention_state
+
+
+class TimeAttentionWrapperState(
+        collections.namedtuple("AttentionWrapperState",
+                               ("cell_state", "attention", "time", "alignments",
+                                "alignment_history", "attention_state",
+                                "all_cell_states"))):
+    """
+        modified  from tensorflow's tf.contrib.seq2seq.AttentionWrapperState
+
+        see there for description of the parameters
+    """
+
+    def clone(self, **kwargs):
+        """Clone this object, overriding components provided by kwargs.
+        The new state fields' shape must match original state fields' shape. This
+        will be validated, and original fields' shape will be propagated to new
+        fields.
+        Example:
+        ```python
+        initial_state = attention_wrapper.zero_state(dtype=..., batch_size=...)
+        initial_state = initial_state.clone(cell_state=encoder_state)
+        ```
+        Args:
+          **kwargs: Any properties of the state object to replace in the returned
+            `AttentionWrapperState`.
+        Returns:
+          A new `AttentionWrapperState` whose properties are the same as
+          this one, except any overridden properties as provided in `kwargs`.
+        """
+        def with_same_shape(old, new):
+            """Check and set new tensor's shape."""
+            if isinstance(old, tf.Tensor) and isinstance(new, tf.Tensor):
+                return tf.contrib.framework.with_same_shape(old, new)
+            return new
+
+        return tf.contrib.framework.nest.map_structure(
+                with_same_shape,
+                self,
+                super(TimeAttentionWrapperState, self)._replace(**kwargs)
+        )
 
 
 class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
@@ -1256,6 +1311,99 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             return self._attention_layer_size + 2 * self._cell.output_size + 1
         else:
             return self._cell.output_size
+
+    # @property
+    # def state_size(self):
+    #     """The `state_size` property of `AttentionWrapper`.
+    #     Returns:
+    #       An `AttentionWrapperState` tuple containing shapes used by this object.
+    #     """
+    #
+    #     if isinstance(self._cell.state_size, tf.contrib.rnn.LSTMStateTuple):
+    #         state_size = self._cell.state_size.c
+    #     else:
+    #         state_size = self._cell.state_size
+    #
+    #     return TimeAttentionWrapperState(
+    #         cell_state=self._cell.state_size,
+    #         time=tf.TensorShape([]),
+    #         attention=self._attention_layer_size,
+    #         alignments=self._item_or_tuple(
+    #             a.alignments_size for a in self._attention_mechanisms),
+    #         attention_state=self._item_or_tuple(
+    #             a.state_size for a in self._attention_mechanisms),
+    #         alignment_history=self._item_or_tuple(
+    #             a.alignments_size if self._alignment_history else ()
+    #             for a in self._attention_mechanisms),   # sometimes a TensorArray
+    #         all_cell_states=state_size)
+    #
+    # def zero_state(self, batch_size, dtype):
+    #     """Return an initial (zero) state tuple for this `AttentionWrapper`.
+    #     **NOTE** Please see the initializer documentation for details of how
+    #     to call `zero_state` if using an `AttentionWrapper` with a
+    #     `BeamSearchDecoder`.
+    #     Args:
+    #       batch_size: `0D` integer tensor: the batch size.
+    #       dtype: The internal state data type.
+    #     Returns:
+    #       An `AttentionWrapperState` tuple containing zeroed out tensors and,
+    #       possibly, empty `TensorArray` objects.
+    #     Raises:
+    #       ValueError: (or, possibly at runtime, InvalidArgument), if
+    #         `batch_size` does not match the output size of the encoder passed
+    #         to the wrapper object at initialization time.
+    #     """
+    #     from tensorflow.python.ops.rnn_cell_impl import _zero_state_tensors
+    #
+    #     with tf.name_scope(type(self).__name__ + "ZeroState", values=[batch_size]):
+    #         if self._initial_cell_state is not None:
+    #             cell_state = self._initial_cell_state
+    #         else:
+    #             cell_state = self._cell.zero_state(batch_size, dtype)
+    #         error_message = (
+    #                 "When calling zero_state of AttentionWrapper %s: " % self._base_name +
+    #                 "Non-matching batch sizes between the memory "
+    #                 "(encoder output) and the requested batch size.  Are you using "
+    #                 "the BeamSearchDecoder?  If so, make sure your encoder output has "
+    #                 "been tiled to beam_width via tf.contrib.seq2seq.tile_batch, and "
+    #                 "the batch_size= argument passed to zero_state is "
+    #                 "batch_size * beam_width.")
+    #         with tf.control_dependencies(
+    #                 self._batch_size_checks(batch_size, error_message)):
+    #             cell_state = tf.contrib.framework.nest.map_structure(
+    #                 lambda s: tf.identity(s, name="checked_cell_state"),
+    #                 cell_state)
+    #         initial_alignments = [
+    #             attention_mechanism.initial_alignments(batch_size, dtype)
+    #             for attention_mechanism in self._attention_mechanisms]
+    #
+    #         all_cell_states = tf.TensorArray(dtype, size=1,
+    #                                          dynamic_size=True,
+    #                                          clear_after_read=False)
+    #         if isinstance(self._cell.state_size, tf.contrib.rnn.LSTMStateTuple):
+    #             all_cell_states = all_cell_states.write(0, cell_state.c)
+    #         else:
+    #             all_cell_states = all_cell_states.write(0, cell_state)
+    #
+    #         return TimeAttentionWrapperState(
+    #             cell_state=cell_state,
+    #             time=tf.zeros([], dtype=tf.int32),
+    #             attention=_zero_state_tensors(self._attention_layer_size, batch_size,
+    #                                           dtype),
+    #             alignments=self._item_or_tuple(initial_alignments),
+    #             attention_state=self._item_or_tuple(
+    #                 attention_mechanism.initial_state(batch_size, dtype)
+    #                 for attention_mechanism in self._attention_mechanisms),
+    #             alignment_history=self._item_or_tuple(
+    #                 tf.TensorArray(
+    #                     dtype,
+    #                     size=0,
+    #                     dynamic_size=True,
+    #                     element_shape=alignment.shape)
+    #                 if self._alignment_history else ()
+    #                 for alignment in initial_alignments),
+    #             all_cell_states=all_cell_states
+    #         )
 
     def call(self, inputs, state):
         """Perform a step of attention-wrapped RNN.
@@ -1353,7 +1501,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             maybe_all_histories.append(alignment_history)
 
         attention = tf.concat(all_attentions, 1)
-
+        # alignments = tf.concat(all_alignments, 1)
         # Step 6: Calculate the true inputs to the cell based on the
         #          calculated attention value.
         cell_inputs = self._cell_input_fn(inputs, attention)
@@ -1362,6 +1510,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
 
         h_old = cell_output
         c_g = tf.zeros_like(prev_out_for_attn[:, 0:1])
+        # all_cell_states_c = None
         if self._copy_gate is not None:
             # c_g = self._copy_gate(prev_out_for_attn)
             attn_emb_prev_act = self._attn_to_copy_fn(attention)
@@ -1370,8 +1519,26 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             cell_output = attn_emb_prev_act + cell_output
 
             if isinstance(cell_state, tf.contrib.rnn.LSTMStateTuple):
+                # expanded_alignments = tf.expand_dims(self._attn_to_copy_fn(
+                #         alignments)[:, :state.time+1], 1)
+                #
+                # prev_all_cell_states = state.all_cell_states
+                #
+                # prev_cell_states = tf.transpose(prev_all_cell_states.stack(),
+                #                                 [1, 0, 2])
+                # prev_cell_states_c = tf.concat(
+                #         [prev_cell_states[:, :-1, :],
+                #          tf.expand_dims(next_cell_state.c, 1)],
+                #         1)
+                # next_cell_state_c = tf.squeeze(tf.matmul(expanded_alignments,
+                #                                prev_cell_states_c), [1])
+
                 next_cell_state = tf.contrib.rnn.LSTMStateTuple(
-                        tf.zeros_like(next_cell_state.c), cell_output)
+                        next_cell_state.c, cell_output)
+                        # tf.zeros_like(next_cell_state.c), cell_output)
+
+                # all_cell_states_c = prev_all_cell_states.write(
+                #         state.time+1, next_cell_state.c)
             else:
                 next_cell_state = cell_output
 
@@ -1382,6 +1549,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             attention_state=self._item_or_tuple(all_attention_states),
             alignments=self._item_or_tuple(all_alignments),
             alignment_history=self._item_or_tuple(maybe_all_histories))
+            # all_cell_states=all_cell_states_c)
 
         if self._output_attention:
             # concatenate rnn cell output and attention
