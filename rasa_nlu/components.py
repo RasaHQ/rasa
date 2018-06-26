@@ -220,11 +220,12 @@ class Component(object):
         # type: (...) -> Component
         """Load this component from file.
 
-        After a component got trained, it will be persisted by
+        After a component has been trained, it will be persisted by
         calling `persist`. When the pipeline gets loaded again,
         this component needs to be able to restore itself.
         Components can rely on any context attributes that are
-        created by :meth:`components.Component.pipeline_init` calls to components previous
+        created by :meth:`components.Component.pipeline_init`
+        calls to components previous
         to this one."""
         if cached_component:
             return cached_component
@@ -402,7 +403,8 @@ class ComponentBuilder(object):
         Args:
             component_name (str): the name of the component to load
             model_dir (str): the directory to read the model from
-            model_metadata (Metadata): the model's :class:`rasa_nlu.models.Metadata`
+            model_metadata (Metadata): the model's
+            :class:`rasa_nlu.models.Metadata`
 
         Returns:
             Component: the loaded component.
