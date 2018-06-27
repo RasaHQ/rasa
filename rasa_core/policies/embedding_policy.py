@@ -13,7 +13,6 @@ from tqdm import tqdm
 from typing import \
     Any, List, Optional, Text
 
-import collections
 import numpy as np
 import copy
 from rasa_core.policies import Policy
@@ -235,7 +234,7 @@ class EmbeddingPolicy(Policy):
             bot_embed=None,  # type: Optional[tf.Tensor]
             slot_embed=None,  # type: Optional[tf.Tensor]
             dial_embed=None,  # type: Optional[tf.Tensor]
-            copy_gate=None,
+            not_skip_gate=None,
             attn_prev_act_embed=None,
             rnn_embed=None
     ):
@@ -283,7 +282,7 @@ class EmbeddingPolicy(Policy):
         self.slot_embed = slot_embed
         self.dial_embed = dial_embed
 
-        self.copy_gate = copy_gate
+        self.not_skip_gate = not_skip_gate
         self.attn_prev_act_embed = attn_prev_act_embed
         self.rnn_embed = rnn_embed
 
@@ -393,11 +392,10 @@ class EmbeddingPolicy(Policy):
 
         # chrono initialization for forget bias
         # assuming that characteristic time is max dialogue length
-        fbias = ((np.log(self.characteristic_time - 1.0) + 3.0) *
-                 np.random.random(self.rnn_size) - 3.0)
+        bias_0 = -1.0
+        fbias = ((np.log(self.characteristic_time - 1.0) - bias_0) *
+                 np.random.random(self.rnn_size) + bias_0)
 
-        # ibias = -((np.log(self.characteristic_time - 1.0) + 3.0) *
-        #           np.random.random(self.rnn_size) - 3.0)
         if self.attn_after_rnn:
             out_layer = tf.layers.Dense(
                     units=self.embed_dim,
@@ -422,14 +420,10 @@ class EmbeddingPolicy(Policy):
     def _create_attn_cell(self, cell, emb_utter, emb_prev_act,
                           real_length):
         """Wrap cell in attention wrapper with given memory"""
-        num_utter_units = int(emb_utter.shape[-1])
         if self.attn_before_rnn:
-            # emb_mem = tf.concat([emb_utter, emb_prev_act], -1)
-            emb_mem = emb_utter
-            # emb_mem = emb_prev_act
-            num_mem_units = int(emb_mem.shape[-1])
+            num_mem_units = int(emb_utter.shape[-1])
             attn_mech = tf.contrib.seq2seq.BahdanauAttention(
-                    num_units=num_mem_units, memory=emb_mem,
+                    num_units=num_mem_units, memory=emb_utter,
                     memory_sequence_length=real_length,
                     normalize=True,
                     probability_fn=tf.identity,
@@ -459,6 +453,8 @@ class EmbeddingPolicy(Policy):
                 return attention[:, num_mem_units:]
         else:
             attn_to_copy_fn = None
+
+        num_utter_units = int(emb_utter.shape[-1])
 
         def cell_input_fn(inputs, attention):
             if num_mem_units > 0:
@@ -503,7 +499,7 @@ class EmbeddingPolicy(Policy):
         )
 
         # if output_attention=True,
-        self.copy_gate = cell_output[:, :, -1:]
+        self.not_skip_gate = cell_output[:, :, -1:]
 
         if self.attn_after_rnn:
             # if output_attention=True,
@@ -513,8 +509,7 @@ class EmbeddingPolicy(Policy):
             self.attn_prev_act_embed = cell_output[:, :, (self.embed_dim +
                                                           self.embed_dim):-1]
 
-            cell_output = cell_output[:, :, :self.embed_dim]
-            emb_dial = cell_output
+            emb_dial = cell_output[:, :, :self.embed_dim]
         else:
             # if output_attention=True,
             self.attn_prev_act_embed = cell_output[:, :, (self.rnn_size +
@@ -818,7 +813,7 @@ class EmbeddingPolicy(Policy):
             self.is_training = tf.placeholder_with_default(False, shape=())
 
             self.loss_scales = tf.placeholder(tf.float32,
-                                               (None, dialogue_len))
+                                              (None, dialogue_len))
 
             (self.user_embed,
              self.bot_embed,
@@ -830,13 +825,10 @@ class EmbeddingPolicy(Policy):
 
             # if there is at least one `-1` it should be masked
             mask = tf.sign(tf.reduce_max(self.a_in, -1) + 1)
-
             self.dial_embed = self._create_tf_dial_embed(self.user_embed,
                                                          self.slot_embed,
                                                          emb_prev_act, mask)
-
             self.sim_op, sim_act = self._tf_sim(self.dial_embed, self.bot_embed, mask)
-
             loss = self._tf_loss(self.sim_op, sim_act, mask,
                                  self.dial_embed, self.bot_embed)
 
@@ -969,9 +961,9 @@ class EmbeddingPolicy(Policy):
             self.graph.add_to_collection('dial_embed',
                                          self.dial_embed)
 
-            self.graph.clear_collection('copy_gate')
-            self.graph.add_to_collection('copy_gate',
-                                         self.copy_gate)
+            self.graph.clear_collection('not_skip_gate')
+            self.graph.add_to_collection('not_skip_gate',
+                                         self.not_skip_gate)
             self.graph.clear_collection('attn_prev_act_embed')
             self.graph.add_to_collection('attn_prev_act_embed',
                                          self.attn_prev_act_embed)
@@ -1038,7 +1030,7 @@ class EmbeddingPolicy(Policy):
                     slot_embed = tf.get_collection('slot_embed')[0]
                     dial_embed = tf.get_collection('dial_embed')[0]
 
-                    copy_gate = tf.get_collection('copy_gate')[0]
+                    not_skip_gate = tf.get_collection('not_skip_gate')[0]
                     attn_prev_act_embed = tf.get_collection('attn_prev_act_embed')[0]
                     rnn_embed = tf.get_collection('rnn_embed')[0]
 
@@ -1061,7 +1053,7 @@ class EmbeddingPolicy(Policy):
                            bot_embed=bot_embed,
                            slot_embed=slot_embed,
                            dial_embed=dial_embed,
-                           copy_gate=copy_gate,
+                           not_skip_gate=not_skip_gate,
                            attn_prev_act_embed=attn_prev_act_embed,
                            rnn_embed=rnn_embed)
             else:
@@ -1126,8 +1118,6 @@ class TimedNTM(object):
             probs = tf.contrib.sparsemax.sparsemax(probs)
         else:
             probs = tf.nn.softmax(probs)
-
-        # probs = tf.sigmoid(probs)
 
         if self.s_w is not None:
             s_w = self.s_w(cell_output)
@@ -1213,47 +1203,6 @@ def _compute_time_attention(attention_mechanism, cell_output, attention_state,
     return attention, alignments, next_attention_state
 
 
-class TimeAttentionWrapperState(
-        collections.namedtuple("AttentionWrapperState",
-                               ("cell_state", "attention", "time", "alignments",
-                                "alignment_history", "attention_state",
-                                "all_cell_states"))):
-    """
-        modified  from tensorflow's tf.contrib.seq2seq.AttentionWrapperState
-
-        see there for description of the parameters
-    """
-
-    def clone(self, **kwargs):
-        """Clone this object, overriding components provided by kwargs.
-        The new state fields' shape must match original state fields' shape. This
-        will be validated, and original fields' shape will be propagated to new
-        fields.
-        Example:
-        ```python
-        initial_state = attention_wrapper.zero_state(dtype=..., batch_size=...)
-        initial_state = initial_state.clone(cell_state=encoder_state)
-        ```
-        Args:
-          **kwargs: Any properties of the state object to replace in the returned
-            `AttentionWrapperState`.
-        Returns:
-          A new `AttentionWrapperState` whose properties are the same as
-          this one, except any overridden properties as provided in `kwargs`.
-        """
-        def with_same_shape(old, new):
-            """Check and set new tensor's shape."""
-            if isinstance(old, tf.Tensor) and isinstance(new, tf.Tensor):
-                return tf.contrib.framework.with_same_shape(old, new)
-            return new
-
-        return tf.contrib.framework.nest.map_structure(
-                with_same_shape,
-                self,
-                super(TimeAttentionWrapperState, self)._replace(**kwargs)
-        )
-
-
 class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
     """Custom AttentionWrapper that takes into account time
         when calculating attention.
@@ -1295,17 +1244,17 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                 self._timed_ntms.append(TimedNTM(attn_shift_range,
                                                  sparse_attention))
 
+        self._attn_to_copy_fn = attn_to_copy_fn
         if attn_to_copy_fn is not None:
-            self._attn_to_copy_fn = attn_to_copy_fn
-            self._copy_gate = tf.layers.Dense(
+            self._not_skip_gate = tf.layers.Dense(
                     1, tf.sigmoid,
                     # -4 is arbitrary, but we need
-                    # copy_gate to be close to zero at the beginning
+                    # not_skip_gate to be close to zero at the beginning
                     bias_initializer=tf.constant_initializer(-4),
-                    name='copy_gate'
+                    name='not_skip_gate'
             )
         else:
-            self._copy_gate = None
+            self._not_skip_gate = None
 
     @property
     def output_size(self):
@@ -1313,99 +1262,6 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             return self._attention_layer_size + 2 * self._cell.output_size + 1
         else:
             return self._cell.output_size
-
-    # @property
-    # def state_size(self):
-    #     """The `state_size` property of `AttentionWrapper`.
-    #     Returns:
-    #       An `AttentionWrapperState` tuple containing shapes used by this object.
-    #     """
-    #
-    #     if isinstance(self._cell.state_size, tf.contrib.rnn.LSTMStateTuple):
-    #         state_size = self._cell.state_size.c
-    #     else:
-    #         state_size = self._cell.state_size
-    #
-    #     return TimeAttentionWrapperState(
-    #         cell_state=self._cell.state_size,
-    #         time=tf.TensorShape([]),
-    #         attention=self._attention_layer_size,
-    #         alignments=self._item_or_tuple(
-    #             a.alignments_size for a in self._attention_mechanisms),
-    #         attention_state=self._item_or_tuple(
-    #             a.state_size for a in self._attention_mechanisms),
-    #         alignment_history=self._item_or_tuple(
-    #             a.alignments_size if self._alignment_history else ()
-    #             for a in self._attention_mechanisms),   # sometimes a TensorArray
-    #         all_cell_states=state_size)
-    #
-    # def zero_state(self, batch_size, dtype):
-    #     """Return an initial (zero) state tuple for this `AttentionWrapper`.
-    #     **NOTE** Please see the initializer documentation for details of how
-    #     to call `zero_state` if using an `AttentionWrapper` with a
-    #     `BeamSearchDecoder`.
-    #     Args:
-    #       batch_size: `0D` integer tensor: the batch size.
-    #       dtype: The internal state data type.
-    #     Returns:
-    #       An `AttentionWrapperState` tuple containing zeroed out tensors and,
-    #       possibly, empty `TensorArray` objects.
-    #     Raises:
-    #       ValueError: (or, possibly at runtime, InvalidArgument), if
-    #         `batch_size` does not match the output size of the encoder passed
-    #         to the wrapper object at initialization time.
-    #     """
-    #     from tensorflow.python.ops.rnn_cell_impl import _zero_state_tensors
-    #
-    #     with tf.name_scope(type(self).__name__ + "ZeroState", values=[batch_size]):
-    #         if self._initial_cell_state is not None:
-    #             cell_state = self._initial_cell_state
-    #         else:
-    #             cell_state = self._cell.zero_state(batch_size, dtype)
-    #         error_message = (
-    #                 "When calling zero_state of AttentionWrapper %s: " % self._base_name +
-    #                 "Non-matching batch sizes between the memory "
-    #                 "(encoder output) and the requested batch size.  Are you using "
-    #                 "the BeamSearchDecoder?  If so, make sure your encoder output has "
-    #                 "been tiled to beam_width via tf.contrib.seq2seq.tile_batch, and "
-    #                 "the batch_size= argument passed to zero_state is "
-    #                 "batch_size * beam_width.")
-    #         with tf.control_dependencies(
-    #                 self._batch_size_checks(batch_size, error_message)):
-    #             cell_state = tf.contrib.framework.nest.map_structure(
-    #                 lambda s: tf.identity(s, name="checked_cell_state"),
-    #                 cell_state)
-    #         initial_alignments = [
-    #             attention_mechanism.initial_alignments(batch_size, dtype)
-    #             for attention_mechanism in self._attention_mechanisms]
-    #
-    #         all_cell_states = tf.TensorArray(dtype, size=1,
-    #                                          dynamic_size=True,
-    #                                          clear_after_read=False)
-    #         if isinstance(self._cell.state_size, tf.contrib.rnn.LSTMStateTuple):
-    #             all_cell_states = all_cell_states.write(0, cell_state.c)
-    #         else:
-    #             all_cell_states = all_cell_states.write(0, cell_state)
-    #
-    #         return TimeAttentionWrapperState(
-    #             cell_state=cell_state,
-    #             time=tf.zeros([], dtype=tf.int32),
-    #             attention=_zero_state_tensors(self._attention_layer_size, batch_size,
-    #                                           dtype),
-    #             alignments=self._item_or_tuple(initial_alignments),
-    #             attention_state=self._item_or_tuple(
-    #                 attention_mechanism.initial_state(batch_size, dtype)
-    #                 for attention_mechanism in self._attention_mechanisms),
-    #             alignment_history=self._item_or_tuple(
-    #                 tf.TensorArray(
-    #                     dtype,
-    #                     size=0,
-    #                     dynamic_size=True,
-    #                     element_shape=alignment.shape)
-    #                 if self._alignment_history else ()
-    #                 for alignment in initial_alignments),
-    #             all_cell_states=all_cell_states
-    #         )
 
     def call(self, inputs, state):
         """Perform a step of attention-wrapped RNN.
@@ -1503,44 +1359,33 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             maybe_all_histories.append(alignment_history)
 
         attention = tf.concat(all_attentions, 1)
-        # alignments = tf.concat(all_alignments, 1)
+
         # Step 6: Calculate the true inputs to the cell based on the
         #          calculated attention value.
         cell_inputs = self._cell_input_fn(inputs, attention)
 
+        c_g = tf.ones_like(prev_out_for_attn[:, 0:1])
+        old_c = None
+        if self._not_skip_gate is not None:
+            c_g = self._not_skip_gate(prev_out_for_attn)
+            if isinstance(cell_state, tf.contrib.rnn.LSTMStateTuple):
+                old_c = cell_state.c
+                cell_state = tf.contrib.rnn.LSTMStateTuple(
+                        c_g * old_c, cell_state.h)
+            else:
+                cell_state = cell_state
+
         cell_output, next_cell_state = self._cell(cell_inputs, cell_state)
 
         h_old = cell_output
-        c_g = tf.zeros_like(prev_out_for_attn[:, 0:1])
-        # all_cell_states_c = None
-        if self._copy_gate is not None:
-            # c_g = self._copy_gate(prev_out_for_attn)
+        if self._attn_to_copy_fn is not None:
             attn_emb_prev_act = self._attn_to_copy_fn(attention)
-            # cell_output = (c_g * attn_emb_prev_act +
-            #                (1 - c_g) * cell_output)
             cell_output = attn_emb_prev_act + cell_output
 
             if isinstance(cell_state, tf.contrib.rnn.LSTMStateTuple):
-                # expanded_alignments = tf.expand_dims(self._attn_to_copy_fn(
-                #         alignments)[:, :state.time+1], 1)
-                #
-                # prev_all_cell_states = state.all_cell_states
-                #
-                # prev_cell_states = tf.transpose(prev_all_cell_states.stack(),
-                #                                 [1, 0, 2])
-                # prev_cell_states_c = tf.concat(
-                #         [prev_cell_states[:, :-1, :],
-                #          tf.expand_dims(next_cell_state.c, 1)],
-                #         1)
-                # next_cell_state_c = tf.squeeze(tf.matmul(expanded_alignments,
-                #                                prev_cell_states_c), [1])
-
+                new_c = c_g * next_cell_state.c + (1 - c_g) * old_c
                 next_cell_state = tf.contrib.rnn.LSTMStateTuple(
-                        next_cell_state.c, cell_output)
-                        # tf.zeros_like(next_cell_state.c), cell_output)
-
-                # all_cell_states_c = prev_all_cell_states.write(
-                #         state.time+1, next_cell_state.c)
+                        new_c, cell_output)
             else:
                 next_cell_state = cell_output
 
@@ -1551,7 +1396,6 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             attention_state=self._item_or_tuple(all_attention_states),
             alignments=self._item_or_tuple(all_alignments),
             alignment_history=self._item_or_tuple(maybe_all_histories))
-            # all_cell_states=all_cell_states_c)
 
         if self._output_attention:
             # concatenate rnn cell output and attention
