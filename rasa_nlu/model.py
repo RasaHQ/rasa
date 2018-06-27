@@ -60,8 +60,7 @@ class Metadata(object):
     @staticmethod
     def load(model_dir):
         # type: (Text) -> 'Metadata'
-        """
-        Loads the metadata from a models directory.
+        """Loads the metadata from a models directory.
 
         Args:
             model_dir (str): the directory where the model is saved.
@@ -270,8 +269,7 @@ class Interpreter(object):
 
     @staticmethod
     def load(model_dir, component_builder=None, skip_validation=False):
-        """
-        Create an interpreter based on a persisted model.
+        """Create an interpreter based on a persisted model.
 
         Args:
             model_dir (str): The path of the model to load
