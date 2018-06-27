@@ -304,7 +304,7 @@ class DialogueStateTracker(object):
     ###
     # Internal methods for the modification of the trackers state. Should
     # only be called by events, not directly. Rather update the tracker
-    # with an event that in its ``apply_on`` method modifies the tracker.
+    # with an event that in its ``apply_to`` method modifies the tracker.
     ###
     def _reset(self):
         # type: () -> None
