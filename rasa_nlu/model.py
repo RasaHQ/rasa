@@ -60,7 +60,13 @@ class Metadata(object):
     @staticmethod
     def load(model_dir):
         # type: (Text) -> 'Metadata'
-        """Loads the metadata from a models directory."""
+        """Loads the metadata from a models directory.
+
+        Args:
+            model_dir (str): the directory where the model is saved.
+        Returns:
+            Metadata: A metadata object describing the model
+        """
         try:
             metadata_file = os.path.join(model_dir, 'metadata.json')
             data = utils.read_json_file(metadata_file)
@@ -239,7 +245,7 @@ class Trainer(object):
 
 
 class Interpreter(object):
-    """Use a trained pipeline of components to parse text messages"""
+    """Use a trained pipeline of components to parse text messages."""
 
     # Defines all attributes (& default values)
     # that will be returned by `parse`
@@ -263,12 +269,20 @@ class Interpreter(object):
 
     @staticmethod
     def load(model_dir, component_builder=None, skip_validation=False):
-        """Creates an interpreter based on a persisted model."""
+        """Create an interpreter based on a persisted model.
+
+        Args:
+            model_dir (str): The path of the model to load
+            component_builder (ComponentBuilder): The
+                :class:`ComponentBuilder` to use.
+
+        Returns:
+            Interpreter: An interpreter that uses the loaded model.
+        """
 
         model_metadata = Metadata.load(model_dir)
 
         Interpreter.ensure_model_compatibility(model_metadata)
-
         return Interpreter.create(model_metadata,
                                   component_builder,
                                   skip_validation)

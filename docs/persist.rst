@@ -1,7 +1,7 @@
 .. _section_persistence:
 
-Model Persistence
-=================
+Storing Models in the Cloud
+===========================
 
 
 Rasa NLU supports using `S3 <https://aws.amazon.com/s3/>`_ and
