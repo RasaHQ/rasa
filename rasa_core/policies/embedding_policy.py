@@ -393,9 +393,11 @@ class EmbeddingPolicy(Policy):
 
         # chrono initialization for forget bias
         # assuming that characteristic time is max dialogue length
-        fbias = np.log((self.characteristic_time - 2.0) *
-                       np.random.random(self.rnn_size) + 1.0)
+        fbias = ((np.log(self.characteristic_time - 1.0) + 3.0) *
+                 np.random.random(self.rnn_size) - 3.0)
 
+        # ibias = -((np.log(self.characteristic_time - 1.0) + 3.0) *
+        #           np.random.random(self.rnn_size) - 3.0)
         if self.attn_after_rnn:
             out_layer = tf.layers.Dense(
                     units=self.embed_dim,
@@ -773,7 +775,7 @@ class EmbeddingPolicy(Policy):
                                                     domain,
                                                     **kwargs)
         # assume that characteristic time is the mean length of the dialogues
-        self.characteristic_time = np.mean(training_data.true_length)
+        self.characteristic_time = np.max(training_data.true_length)
         if self.attn_shift_range is None:
             self.attn_shift_range = int(self.characteristic_time / 2)
 
