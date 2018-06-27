@@ -16,7 +16,7 @@ apscheduler==3.5.1
 tqdm==4.23.3
 ConfigArgParse==0.13.0
 networkx==2.1
-fbmessenger==5.1.0
+fbmessenger==5.2.0
 pykwalify<=1.6.0
 coloredlogs==10.0
 flask==1.0.2
