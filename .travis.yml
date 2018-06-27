@@ -16,8 +16,8 @@ install:
 - pip install -e .
 - pip install coveralls==1.3.0
 - pip list
-script: true
--- travis_wait py.test tests --cov rasa_core --pep8 -v
+script:
+- travis_wait py.test tests --cov rasa_core --pep8 -v
  #- cd docs && make doctest   # can't do yet - doctests need to be cleaned up first
 after_success:
 - openssl aes-256-cbc -K $encrypted_050c822e99ef_key -iv $encrypted_050c822e99ef_iv
