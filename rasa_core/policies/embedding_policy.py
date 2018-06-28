@@ -82,6 +82,10 @@ class EmbeddingPolicy(Policy):
         # and copy it to output bypassing rnn
         "attn_after_rnn": True,
 
+        # flag to add a gate to skip hidden states of rnn
+        "skip_hidden_states": None,
+        "not_train_skip_gate_for_first_epochs": 40,
+
         "sparse_attention": False,  # flag to use sparsemax for probs
         "attn_shift_range": None,  # if None, mean dialogue length / 2
 
@@ -197,6 +201,15 @@ class EmbeddingPolicy(Policy):
         else:
             self.use_attention = True
             self.num_attentions = 1
+
+        self.skip_hidden_states = config['skip_hidden_states']
+        if self.skip_hidden_states is None:
+            self.skip_hidden_states = self.attn_after_rnn
+
+        self.not_train_skip_gate_for_first_epochs = config[
+                'not_train_skip_gate_for_first_epochs']
+        if self.not_train_skip_gate_for_first_epochs < 1:
+            self.not_train_skip_gate_for_first_epochs *= self.epochs
 
     def _load_visual_params(self, config):
         self.evaluate_every_num_epochs = config['evaluate_every_num_epochs']
@@ -483,6 +496,7 @@ class EmbeddingPolicy(Policy):
                 sparse_attention=self.sparse_attention,
                 cell_input_fn=cell_input_fn,
                 attn_to_copy_fn=attn_to_copy_fn,
+                skip_gate=self.skip_hidden_states,
                 output_attention=True,
                 alignment_history=True
         )
@@ -675,7 +689,7 @@ class EmbeddingPolicy(Policy):
                   loss, mask):
         """Train tf graph"""
 
-        # let's delay training of no_skip_gate
+        # delay training of no_skip_gate
         vars_for_partial_train = [
                 tf_var
                 for tf_var in tf.trainable_variables()
@@ -723,8 +737,8 @@ class EmbeddingPolicy(Policy):
                 else:
                     loss_scales_for_a = [[None]]
 
-                if ep < self.epochs * 0.01:
-                    # let's delay initial training of no_skip_gate
+                if ep < self.not_train_skip_gate_for_first_epochs:
+                    # initial delay of training of no_skip_gate
                     train_op = train_op_partial
                 else:
                     train_op = train_op_all
@@ -1263,6 +1277,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                  alignment_history=False,
                  cell_input_fn=None,
                  attn_to_copy_fn=None,
+                 skip_gate=False,
                  output_attention=False,
                  initial_cell_state=None,
                  name=None):
@@ -1286,7 +1301,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                                                  name=str(i)))
 
         self._attn_to_copy_fn = attn_to_copy_fn
-        if attn_to_copy_fn is not None:
+        if skip_gate:
             self._no_skip_gate = tf.layers.Dense(
                     1, tf.sigmoid,
                     # -4 is arbitrary, but we need
@@ -1416,7 +1431,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                 cell_state = c_g * old_c
         else:
             old_c = 0
-            # we need this tensor for output
+            # we need this tensor for the output
             c_g = tf.ones_like(prev_out_for_attn[:, 0:1])
 
         cell_output, next_cell_state = self._cell(cell_inputs, cell_state)
@@ -1428,6 +1443,8 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             # copy them to current output
             cell_output += attn_emb_prev_act
 
+        if (self._attn_to_copy_fn is not None or
+                self._no_skip_gate is not None):
             if isinstance(cell_state, tf.contrib.rnn.LSTMStateTuple):
                 new_c = c_g * next_cell_state.c + (1 - c_g) * old_c
                 next_cell_state = tf.contrib.rnn.LSTMStateTuple(
