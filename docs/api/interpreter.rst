@@ -3,11 +3,16 @@
 Interpreters
 ============
 
-The job of interpreting text is mostly outside the scope of Rasa Core.
-To turn text into structured data you can use Rasa NLU, or a cloud service like wit.ai.
-If your bot uses button clicks or other input which isn't natural language, you don't need
-an interepreter at all. You can define your own ``Interpreter`` subclass which does any custom
-logic you may need. You can look at the ``RegexInterpreter`` class as an example.
+Rasa Core itself does not interpret text. You can use `Rasa NLU <https://nlu.rasa.com>`_ for this. 
+
+
+.. autoclass:: rasa_core.interpreter.RasaNLUHttpInterpreter
+
+   .. automethod:: RasaNLUHttpInterpreter.parse
+
+.. autoclass:: rasa_core.interpreter.RasaNLUInterpreter
+
+   .. automethod:: RasaNLUInterpreter.parse
 
 
 To use something other than Rasa NLU, you just need to implement a
@@ -40,8 +45,13 @@ and returns a dict in the following format:
 
 .. _fixed_intent_format:
 
-Fixed intent & entity input
----------------------------
+Buttons and other Structured Input
+----------------------------------
+
+If your bot uses button clicks or other input which isn't natural language, you don't need
+an interpreter at all. You can define your own ``Interpreter`` subclass which does any custom
+logic you may need. You can look at the ``RegexInterpreter`` class as an example.
+
 
 Sometimes, you want to make sure a message is treated as being of a fixed
 intent containing defined entities. To achieve that, you can specify the

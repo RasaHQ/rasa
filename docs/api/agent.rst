@@ -1,8 +1,8 @@
 Agent
 =====
 
-The agent allows you to train a model, load, and use it. It is a facade to
-access most of Rasa Core's functionality using a simple API.
+The agent allows you to train a model, load, and use it. It is a simple API
+that lets you access most of Rasa Core's functionality.
 
 .. note::
 
@@ -10,9 +10,8 @@ access most of Rasa Core's functionality using a simple API.
     agent. Sometimes you need to orchestrate the different components (domain,
     policy, interpreter, and the tracker store) on your own to customize them.
 
-Here we go:
 
-.. automodule:: rasa_core.agent
+.. autoclass:: rasa_core.agent.Agent
     :members:
-    :undoc-members:
-    :show-inheritance:
+
+

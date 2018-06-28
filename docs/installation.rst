@@ -6,7 +6,11 @@ Installation
 Install Rasa Core to get started with the Rasa stack.
 
 .. note::
-    You can also get started without installing anything by using this `colab notebook <https://colab.research.google.com/github/RasaHQ/rasa_core/blob/master/getting_started.ipynb>`_.
+    You can also get started without installing anything by using this
+
+    .. button::
+       :text: colab notebook 
+       :link: https://colab.research.google.com/github/RasaHQ/rasa_core/blob/master/getting_started.ipynb
 
 Install Rasa Core
 -----------------
@@ -21,7 +25,6 @@ If you alredy have `rasa_core` installed and want to update it run:
 .. code-block:: bash
 
     pip install -U rasa_core
-
 
 Unless you've already got numpy & scipy installed, we highly recommend 
 that you install and use `Anaconda <https://www.continuum.io\/downloads>`_.
@@ -54,16 +57,7 @@ We use Rasa NLU for intent classification & entity extraction. To get it, run
 
 .. code-block:: bash
 
-    pip install rasa_nlu[spacy]
-
-Also make sure to install a language model for the language you need, e.g.
-
-
-.. code-block:: bash
-
-    python -m spacy download en_core_web_md
-    python -m spacy link en_core_web_md en
-
+    pip install rasa_nlu[tensorflow]
 
 Full instructions can be found `here <https://nlu.rasa.com/installation.html>`_.
 
@@ -74,5 +68,5 @@ rather than free text.
 Getting Started
 ---------------
 
-To see your newly installed Rasa Core in action, head over to the
-introductory tutorial :ref:`tutorial_basics`.
+To see your newly installed Rasa Core in action, head over to the 
+:ref:`quickstart`.
