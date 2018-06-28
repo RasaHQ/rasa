@@ -72,7 +72,7 @@ class DialogueStateTracker(object):
         self.follow_up_action = None
         self.latest_action_name = None
         self.latest_message = None
-        """stores the most recent message sent by the user."""
+        # Stores the most recent message sent by the user
         self.latest_bot_utterance = None
         self._reset()
 
