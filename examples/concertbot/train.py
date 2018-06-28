@@ -15,14 +15,14 @@ if __name__ == '__main__':
     model_path = 'models/dialogue'
 
     agent = Agent("concert_domain.yml",
-                  policies=[MemoizationPolicy(), KerasPolicy()])
+                  policies=[MemoizationPolicy(max_history=2),
+                            KerasPolicy()])
 
     training_data = agent.load_data(training_data_file)
 
     agent.train(
             training_data,
             augmentation_factor=50,
-            max_history=2,
             epochs=500,
             batch_size=10,
             validation_split=0.2
