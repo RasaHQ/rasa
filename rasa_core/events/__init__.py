@@ -49,14 +49,9 @@ def first_key(d, default_key):
 
 # noinspection PyProtectedMember
 class Event(object):
-    """An event is one of the following:
-    - something the user has said to the bot (starts a new turn)
-    - the topic has been set
-    - the bot has taken an action
-
-    Events are logged by the Tracker's update method.
-    This updates the list of turns so that the current state
-    can be recovered by consuming the list of turns."""
+    """Events describe everything that occurs in 
+    a conversation and tell the :class:`DialogueStateTracker`
+    how to update its state."""
 
     type_name = "event"
 

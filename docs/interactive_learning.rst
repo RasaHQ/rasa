@@ -1,15 +1,9 @@
-.. _tutorial_interactive_learning:
+.. _interactive_learning:
 
 Interactive Learning
 ====================
 
 .. note::
-
-    This is the place to start if you have a great idea for a bot but you
-    don't have any conversations to use as training data. We will assume that
-    you've already thought of what intents and entities you need (check out the
-    `Rasa NLU <http://nlu.rasa.com/tutorial.html#tutorial-a-simple-restaurant-search-bot>`_
-    docs if you don't know what those are).
 
     We're using this `Example Code on GitHub <https://github.com/RasaHQ/rasa_core/tree/master/examples/concertbot>`_.
 
@@ -244,5 +238,3 @@ bot to do a certain task, you can simply pretend to be a bot for a little
 while and at the end it will learn how to respond. This is a good way of
 learning how to make the conversation natural and flowing.
 
-.. raw:: html 
-   :file: poll.html

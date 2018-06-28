@@ -32,13 +32,20 @@ class Action(object):
 
     def run(self, dispatcher, tracker, domain):
         # type: (Dispatcher, DialogueStateTracker, Domain) -> List[Event]
-        """Execute the side effects of this action.
+        """
+        Execute the side effects of this action.
 
-        Return a list of events (i.e. instructions to update tracker state)
+        Args:
+            tracker (DialogueStateTracker): the state tracker for the current user.
+                You can access slot values using ``tracker.get_slot(slot_name)``
+                and the most recent user message is ``tracker.latest_message.text``.
+            dispatcher (Dispatcher): the dispatcher which is used to send messages back
+                to the user. Use ``dipatcher.utter_message()`` or any other :class:`Dispatcher` method.
+            domain (Domain): the bot's domain
 
-        :param tracker: user state tracker
-        :param dispatcher: communication channel
-        :param domain: bots custom domain
+        Returns:
+            List: A list of :class:`Event` instances
+
         """
 
         raise NotImplementedError

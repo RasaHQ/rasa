@@ -218,7 +218,9 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 max_confidence = confidence
                 result = probabilities
                 best_policy_name = 'policy_{}_{}'.format(i, type(p).__name__)
-
+        # normalize probablilities
+        if np.sum(result) != 0:
+            result = result / np.linalg.norm(result)
         logger.debug("Predicted next action using {}"
                      "".format(best_policy_name))
         return result
