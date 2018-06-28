@@ -30,17 +30,16 @@ from rasa_core.policies.ensemble import PolicyEnsemble
 from rasa_core.tracker_store import TrackerStore
 from rasa_core.trackers import DialogueStateTracker
 
-
-
 logger = logging.getLogger(__name__)
 
 try:
     scheduler = BackgroundScheduler()
     scheduler.start()
 except UnknownTimeZoneError:
-    logger.warn("apscheduler failed to start. "
-                "This is probably because your system timezone is not set"
-                "Set it with e.g. echo \"Europe/Berlin\" > /etc/timezone")
+    logger.warning("Apscheduler failed to start. "
+                   "This is probably because your system timezone is not set"
+                   "Set it with e.g. echo \"Europe/Berlin\" > /etc/timezone")
+
 
 class MessageProcessor(object):
     def __init__(self,
