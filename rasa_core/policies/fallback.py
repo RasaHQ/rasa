@@ -99,7 +99,9 @@ class FallbackPolicy(Policy):
                          "Predicting fallback action: {}"
                          "".format(nlu_confidence, self.nlu_threshold,
                                    self.fallback_action_name))
-            score = 1.0
+            # we set this to 1.1 to make sure fallback overrides
+            # the memoization policy
+            score = 1.1
         else:
             # NLU confidence threshold is met, so
             # predict fallback action with confidence `core_threshold`
