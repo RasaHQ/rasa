@@ -366,7 +366,7 @@ class EmbeddingPolicy(Policy):
                                 reuse=tf.AUTO_REUSE)
         return emb_x
 
-    def _create_tf_embed(self, a_in, b_in, c_in, b_prev_in):
+    def _create_tf_embeds(self, a_in, b_in, c_in, b_prev_in):
         """Create embedding vectors"""
 
         if self.share_embedding:
@@ -876,10 +876,10 @@ class EmbeddingPolicy(Policy):
             (self.user_embed,
              self.bot_embed,
              self.slot_embed,
-             emb_prev_act) = self._create_tf_embed(self.a_in,
-                                                   self.b_in,
-                                                   self.c_in,
-                                                   self.b_prev_in)
+             emb_prev_act) = self._create_tf_embeds(self.a_in,
+                                                    self.b_in,
+                                                    self.c_in,
+                                                    self.b_prev_in)
 
             # if there is at least one `-1` it should be masked
             mask = tf.sign(tf.reduce_max(self.a_in, -1) + 1)
