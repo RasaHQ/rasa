@@ -370,7 +370,7 @@ def dump_obj_as_yaml_to_string(obj):
         yaml.safe_dump(obj, str_io,
                        default_flow_style=False,
                        allow_unicode=True)
-        return str_io.get_value()
+        return str_io.getvalue()
     else:
         import ruamel.yaml
 
