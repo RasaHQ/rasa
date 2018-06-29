@@ -714,7 +714,8 @@ class EmbeddingPolicy(Policy):
                   loss, mask):
         """Train tf graph"""
 
-        # delay training of no_skip_gate
+        # create a list of training ops, from which
+        # one will be chosen depending on epoch
         train_ops = self._create_train_op_seq(loss)
 
         self.session.run(tf.global_variables_initializer())
@@ -750,6 +751,7 @@ class EmbeddingPolicy(Policy):
                 batch_loss_scales = self._scale_loss_by_count_actions(
                         batch_a, batch_c, batch_b_prev, actions_for_b)
 
+                # choose a training op for current epoch from a list of ops
                 train_op = self._choose_train_op(ep, train_ops)
                 _loss, _ = self.session.run(
                         [loss, train_op],
