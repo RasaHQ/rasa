@@ -634,6 +634,34 @@ class EmbeddingPolicy(Policy):
                 tf.losses.get_regularization_loss())
         return loss
 
+    def _create_train_op_seq(self, loss):
+        """Create a list of train ops to apply consequently,
+            for example ignore initial training of no_skip_gate"""
+        vars_for_partial_train = [
+            tf_var
+            for tf_var in tf.trainable_variables()
+            if 'no_skip_gate' not in tf_var.name
+        ]
+        return [self._train_op.minimize(
+                        loss, var_list=vars_for_partial_train),
+                self._train_op.minimize(loss)]
+
+    def _choose_train_op(self, epoch, train_ops):
+        """Choose train op from a list of ops for a given epoch"""
+        if epoch < self.not_train_skip_gate_for_first_epochs:
+            # initial delay of training of no_skip_gate
+            return train_ops[0]
+        else:
+            return train_ops[1]
+
+    def _linearly_increasing_batch_size(self, ep):
+        if self.epochs > 1:
+            return int(self.batch_size[0] +
+                       ep * (self.batch_size[1] - self.batch_size[0]) /
+                       (self.epochs - 1))
+        else:
+            return int(self.batch_size[0])
+
     def _create_batch_b(self, batch_pos_b, intent_ids):
         """Create batch of actions, where the first is correct action
         and the rest are wrong actions sampled randomly"""
@@ -660,44 +688,31 @@ class EmbeddingPolicy(Policy):
 
         return np.concatenate([batch_pos_b, batch_neg_b], -2)
 
-    def _linearly_increasing_batch_size(self, ep):
-        if self.epochs > 1:
-            return int(self.batch_size[0] +
-                       ep * (self.batch_size[1] - self.batch_size[0]) /
-                       (self.epochs - 1))
-        else:
-            return int(self.batch_size[0])
-
-    @staticmethod
-    def _count_actions(X, slots, prev_act, actions_for_Y):
+    def _scale_loss_by_count_actions(self, X, slots, prev_act, actions_for_Y):
         """Count number of repeated actions and
             output inverse proportionality"""
-        full_X = np.concatenate([X, slots, prev_act,
-                                 actions_for_Y[:, :, np.newaxis]], -1)
-        full_X = full_X.reshape((-1, full_X.shape[-1]))
+        if self.scale_loss_by_action_counts:
+            full_X = np.concatenate([X, slots, prev_act,
+                                     actions_for_Y[:, :, np.newaxis]], -1)
+            full_X = full_X.reshape((-1, full_X.shape[-1]))
 
-        _, i, c = np.unique(full_X, return_inverse=True,
-                            return_counts=True, axis=0)
+            _, i, c = np.unique(full_X, return_inverse=True,
+                                return_counts=True, axis=0)
 
-        counts = c[i].reshape((X.shape[0], X.shape[1]))
+            counts = c[i].reshape((X.shape[0], X.shape[1]))
 
-        # do not include [-1 -1 ... -1 0] in averaging
-        # and smooth it by taking sqrt
-        return np.maximum(np.sqrt(np.mean(c[1:])/counts), 1)
+            # do not include [-1 -1 ... -1 0] in averaging
+            # and smooth it by taking sqrt
+            return np.maximum(np.sqrt(np.mean(c[1:])/counts), 1)
+        else:
+            return [[None]]
 
     def _train_tf(self, X, Y, slots, prev_act, actions_for_Y, all_Y_d,
                   loss, mask):
         """Train tf graph"""
 
         # delay training of no_skip_gate
-        vars_for_partial_train = [
-                tf_var
-                for tf_var in tf.trainable_variables()
-                if 'no_skip_gate' not in tf_var.name
-        ]
-        train_op_partial = self._train_op.minimize(
-                loss, var_list=vars_for_partial_train)
-        train_op_all = self._train_op.minimize(loss)
+        train_ops = self._create_train_op_seq(loss)
 
         self.session.run(tf.global_variables_initializer())
 
@@ -729,30 +744,20 @@ class EmbeddingPolicy(Policy):
                 batch_c = slots[ids[start_idx:end_idx]]
                 batch_b_prev = prev_act[ids[start_idx:end_idx]]
 
-                if self.scale_loss_by_action_counts:
-                    loss_scales_for_a = self._count_actions(batch_a,
-                                                            batch_c,
-                                                            batch_b_prev,
-                                                            actions_for_b)
-                else:
-                    loss_scales_for_a = [[None]]
+                batch_loss_scales = self._scale_loss_by_count_actions(
+                        batch_a, batch_c, batch_b_prev, actions_for_b)
 
-                if ep < self.not_train_skip_gate_for_first_epochs:
-                    # initial delay of training of no_skip_gate
-                    train_op = train_op_partial
-                else:
-                    train_op = train_op_all
-
-                sess_out = self.session.run(
-                        {'loss': loss, '_train_op': train_op},
+                train_op = self._choose_train_op(ep, train_ops)
+                _loss, _ = self.session.run(
+                        [loss, train_op],
                         feed_dict={self.a_in: batch_a,
                                    self.b_in: batch_b,
                                    self.c_in: batch_c,
                                    self.b_prev_in: batch_b_prev,
                                    self._is_training: True,
-                                   self._loss_scales: loss_scales_for_a}
+                                   self._loss_scales: batch_loss_scales}
                 )
-                ep_loss += sess_out.get('loss') / batches_per_epoch
+                ep_loss += _loss / batches_per_epoch
 
             if self.evaluate_on_num_examples:
                 if ((ep + 1) == 1 or
@@ -920,13 +925,17 @@ class EmbeddingPolicy(Policy):
 
             batch_b = self._create_batch_b(batch_pos_b, actions_for_b)
 
+            batch_loss_scales = self._scale_loss_by_count_actions(
+                    batch_a, batch_c, batch_b_prev, actions_for_b)
+
             # fit to one extra example using updated trackers
             self.session.run(self._train_op,
                              feed_dict={self.a_in: batch_a,
                                         self.b_in: batch_b,
                                         self.c_in: batch_c,
                                         self.b_prev_in: batch_b_prev,
-                                        self._is_training: True})
+                                        self._is_training: True,
+                                        self._loss_scales: batch_loss_scales})
 
     def predict_action_probabilities(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> List[float]
