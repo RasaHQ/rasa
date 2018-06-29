@@ -311,7 +311,7 @@ def create_app(model_directory,  # type: Text
     @requires_auth(auth_token)
     @ensure_loaded_agent(agent)
     def get_domain_yaml():
-        """Use a list of events to set a conversations tracker to a state."""
+        """Get current domain in yaml format."""
         domain_yaml = agent().domain.to_yaml()
         return jsonify(domain_yaml)
 

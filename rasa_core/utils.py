@@ -17,9 +17,10 @@ import six
 from builtins import input, range, str
 from numpy import all, array
 from typing import Text, Any, List, Optional, Tuple, Dict, Set
-try:
+
+if six.PY2:
     from StringIO import StringIO
-except ImportError:
+else:
     from io import StringIO
 
 logger = logging.getLogger(__name__)
@@ -308,23 +309,10 @@ def fix_yaml_loader():
 
 def read_yaml_file(filename):
     """Read contents of `filename` interpreting them as yaml."""
+    return read_yaml_string(read_file(filename))
 
-    if six.PY2:
-        import yaml
-
-        fix_yaml_loader()
-        return yaml.load(read_file(filename, "utf-8"))
-    else:
-        import ruamel.yaml
-
-        yaml_parser = ruamel.yaml.YAML(typ="safe")
-        yaml_parser.allow_unicode = True
-        yaml_parser.unicode_supplementary = True
-
-        return yaml_parser.load(read_file(filename))
 
 def read_yaml_string(string):
-
     if six.PY2:
         import yaml
 
@@ -338,6 +326,7 @@ def read_yaml_string(string):
         yaml_parser.unicode_supplementary = True
 
         return yaml_parser.load(string)
+
 
 def dump_obj_as_yaml_to_file(filename, obj):
     """Writes data (python dict) to the filename in yaml repr."""

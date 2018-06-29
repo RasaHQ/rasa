@@ -169,7 +169,8 @@ def test_domain_fails_on_unknown_custom_slot_type(tmpdir):
 
 
 def test_domain_to_yaml():
-    test_yaml = """action_names:
+    test_yaml = """action_factory: null
+action_names:
 - utter_greet
 actions:
 - utter_greet
@@ -182,4 +183,5 @@ templates:
   utter_greet:
   - text: hey there!"""
     domain = TemplateDomain.load_from_yaml(test_yaml)
-    assert test_yaml in domain.to_yaml()
+    assert test_yaml.strip() == domain.to_yaml().strip()
+    domain = TemplateDomain.load_from_yaml(domain.to_yaml())

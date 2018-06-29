@@ -404,7 +404,7 @@ class TemplateDomain(Domain):
             action_factory = data.get("action_factory", None)
         slots = cls.collect_slots(data.get("slots", {}))
         additional_arguments = data.get("config", {})
-        return TemplateDomain(
+        return cls(
                 data.get("intents", []),
                 data.get("entities", []),
                 slots,
