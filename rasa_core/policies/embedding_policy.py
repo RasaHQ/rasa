@@ -83,11 +83,11 @@ class EmbeddingPolicy(Policy):
         "attn_after_rnn": True,
 
         # flag to add a gate to skip hidden states of rnn
-        "skip_hidden_states": None,
+        "skip_hidden_states": None,  # if None, set to attn_after_rnn
         "not_train_skip_gate_for_first_epochs": 40,
 
         "sparse_attention": False,  # flag to use sparsemax for probs
-        "attn_shift_range": None,  # if None, mean dialogue length / 2
+        "attn_shift_range": None,  # if None, set to mean dialogue length / 2
 
         # visualization of accuracy
         "evaluate_every_num_epochs": 20,  # small values may hurt performance
