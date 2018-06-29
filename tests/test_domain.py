@@ -4,13 +4,13 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import json
-import pytest
+# import pytest
 
 from rasa_core import training
 from rasa_core.domain import TemplateDomain
 from rasa_core.featurizers import MaxHistoryTrackerFeaturizer
-from tests import utilities
-from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
+# from tests import utilities
+# from tests.conftest import DEFAULT_DOMAIN_PATH, DEFAULT_STORIES_FILE
 
 
 def test_create_train_data_no_history(default_domain):
@@ -166,3 +166,20 @@ def test_domain_fails_on_unknown_custom_slot_type(tmpdir):
             - utter_greet""")
     with pytest.raises(ValueError):
         TemplateDomain.load(domain_path)
+
+
+def test_domain_to_yaml():
+    test_yaml = """action_names:
+- utter_greet
+actions:
+- utter_greet
+config:
+  store_entities_as_slots: true
+entities: []
+intents: []
+slots: {}
+templates:
+  utter_greet:
+  - text: hey there!"""
+    domain = TemplateDomain.load_from_yaml(test_yaml)
+    assert test_yaml in domain.to_yaml()

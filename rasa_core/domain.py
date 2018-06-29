@@ -28,7 +28,7 @@ from rasa_core.actions.factories import (
     ensure_action_name_uniqueness)
 from rasa_core.slots import Slot
 from rasa_core.trackers import DialogueStateTracker, SlotSet
-from rasa_core.utils import read_yaml_file
+from rasa_core.utils import read_yaml_file, read_yaml_string
 
 logger = logging.getLogger(__name__)
 
@@ -416,7 +416,27 @@ class TemplateDomain(Domain):
         )
 
     @classmethod
-    def validate_domain_yaml(cls, filename):
+    def load_from_yaml(cls, yaml, action_factory=None):
+        cls.validate_domain_yaml(yaml, string_input=True)
+        data = read_yaml_string(yaml)
+        utter_templates = cls.collect_templates(data.get("templates", {}))
+        if not action_factory:
+            action_factory = data.get("action_factory", None)
+        slots = cls.collect_slots(data.get("slots", {}))
+        additional_arguments = data.get("config", {})
+        return TemplateDomain(
+            data.get("intents", []),
+            data.get("entities", []),
+            slots,
+            utter_templates,
+            data.get("actions", []),
+            data.get("action_names", []),
+            action_factory,
+            **additional_arguments
+        )
+
+    @classmethod
+    def validate_domain_yaml(cls, input, string_input=False):
         """Validate domain yaml."""
         from pykwalify.core import Core
 
@@ -425,7 +445,11 @@ class TemplateDomain(Domain):
 
         schema_file = pkg_resources.resource_filename(__name__,
                                                       "schemas/domain.yml")
-        c = Core(source_data=utils.read_yaml_file(filename),
+        if not string_input:
+            source_data = utils.read_yaml_file(input)
+        else:
+            source_data = utils.read_yaml_string(input)
+        c = Core(source_data=source_data,
                  schema_files=[schema_file])
         try:
             c.validate(raise_exception=True)
@@ -434,7 +458,7 @@ class TemplateDomain(Domain):
                              "Make sure the file is correct, to do so"
                              "take a look at the errors logged during "
                              "validation previous to this exception. "
-                             "".format(os.path.abspath(filename)))
+                             "".format(os.path.abspath(input)))
 
     @staticmethod
     def collect_slots(slot_dict):
