@@ -29,7 +29,7 @@ class Element(dict):
 
         super(Element, self).__init__(*args, **kwargs)
 
-
+# Makes a named tuple with entries text and data
 BotMessage = namedtuple("BotMessage", "text data")
 
 
@@ -54,11 +54,15 @@ class Dispatcher(object):
         # type: (Dict[Text, Any]) -> None
         """Send a message to the client."""
 
+        # Sends custom elements
         if message.get("elements"):
             self.utter_custom_message(message.get("elements"))
+
+        # Sends a button message
         elif message.get("buttons"):
             self.utter_button_message(message.get("text"),
                                       message.get("buttons"))
+        # Sends a text message
         else:
             self.utter_message(message.get("text"))
 
@@ -70,9 +74,11 @@ class Dispatcher(object):
     def utter_message(self, text):
         # type: (Text) -> None
         """"Send a text to the output channel"""
-
+        # Adding the text to the latest bot messages (with no data)
         self.latest_bot_messages.append(BotMessage(text=text,
                                                    data=None))
+        # Sends the bot message to the output channel
+        # and adds to send messages list
         if self.sender_id is not None and self.output_channel is not None:
             for message_part in text.split("\n\n"):
                 self.output_channel.send_text_message(self.sender_id,
@@ -82,17 +88,20 @@ class Dispatcher(object):
     def utter_custom_message(self, *elements):
         # type: (*Dict[Text, Any]) -> None
         """Sends a message with custom elements to the output channel."""
-
         bot_message = BotMessage(text=None,
                                  data={"elements": elements})
+        # Adding the elements to the latest bot messages (with no text)
         self.latest_bot_messages.append(bot_message)
+        # Sends the bot message to the output channel
         self.output_channel.send_custom_message(self.sender_id, elements)
 
     def utter_button_message(self, text, buttons, **kwargs):
         # type: (Text, List[Dict[Text, Any]], **Any) -> None
         """Sends a message with buttons to the output channel."""
+        # Adding the text and data (buttons) to the latest bot messages
         self.latest_bot_messages.append(BotMessage(text=text,
                                                    data={"buttons": buttons}))
+        # Sends the bot message to the output channel
         self.output_channel.send_text_with_buttons(self.sender_id, text,
                                                    buttons,
                                                    **kwargs)
@@ -100,10 +109,11 @@ class Dispatcher(object):
     def utter_attachment(self, attachment):
         # type: (Text) -> None
         """Send a message to the client with attachments."""
-
         bot_message = BotMessage(text=None,
                                  data={"attachment": attachment})
+        # Adding the data (attachment) to the latest bot messages
         self.latest_bot_messages.append(bot_message)
+        # Sends the bot message to the output channel
         self.output_channel.send_image_url(self.sender_id, attachment)
 
     # TODO: deprecate this function

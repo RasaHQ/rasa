@@ -1,3 +1,4 @@
+# coding=utf-8
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -19,7 +20,7 @@ def test_dispatcher_utter_attachment(default_dispatcher_collecting):
 def test_dispatcher_utter_template(default_dispatcher_collecting):
     default_dispatcher_collecting.utter_template("utter_goodbye")
     collected = default_dispatcher_collecting.output_channel.latest_output()
-    assert collected['text'] in {"goodbye :(", "bye bye"}
+    assert collected['text'] in {"goodbye 😢", "bye bye 😢"}
 
 
 def test_dispatcher_handle_unknown_template(default_dispatcher_collecting):

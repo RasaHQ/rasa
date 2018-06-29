@@ -39,7 +39,10 @@ class FallbackPolicy(Policy):
         :param Text fallback_action_name:
           name of the action to execute as a fallback.
     """
-    MAX_HISTORY_DEFAULT = None
+
+    @staticmethod
+    def _standard_featurizer():
+        return None
 
     def __init__(self,
                  nlu_threshold=0.3,  # type: float
@@ -47,6 +50,7 @@ class FallbackPolicy(Policy):
                  fallback_action_name="action_listen"  # type: Text
                  ):
         # type: (...) -> None
+
         super(FallbackPolicy, self).__init__()
 
         self.nlu_threshold = nlu_threshold
@@ -95,7 +99,9 @@ class FallbackPolicy(Policy):
                          "Predicting fallback action: {}"
                          "".format(nlu_confidence, self.nlu_threshold,
                                    self.fallback_action_name))
-            score = 1.0
+            # we set this to 1.1 to make sure fallback overrides
+            # the memoization policy
+            score = 1.1
         else:
             # NLU confidence threshold is met, so
             # predict fallback action with confidence `core_threshold`

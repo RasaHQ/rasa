@@ -32,11 +32,11 @@ if typing.TYPE_CHECKING:
 
 
 class Agent(object):
-    """Public interface for common things to do.
+    """The Agent class provides a convenient interface for the most important
+     Rasa Core functionality.
 
-     This includes e.g. train an assistant (online or offline mode),
-     handle messages with an assistant, load a dialogue model,
-     get the next action, handle channel or toggle memoization"""
+     This includes training, handling messages, loading a dialogue model,
+     getting the next action, and handling a channel."""
 
     def __init__(
             self,
@@ -118,9 +118,9 @@ class Agent(object):
         function first and the return value is then used as the
         input for the dialogue engine.
 
-        The return value of this function depends on the `output_channel`. If
-        the output channel is not set, set to `None`, or set
-        to `CollectingOutputChannel` this function will return the messages
+        The return value of this function depends on the ``output_channel``. If
+        the output channel is not set, set to ``None``, or set
+        to ``CollectingOutputChannel`` this function will return the messages
         the bot wants to respond.
 
         :Example:
@@ -150,10 +150,10 @@ class Agent(object):
         """Toggles the memoization on and off.
 
         If a memoization policy is present in the ensemble, this will toggle
-        the prediction of that policy. When set to `false` the Memoization
+        the prediction of that policy. When set to ``False`` the Memoization
         policies present in the policy ensemble will not make any predictions.
         Hence, the prediction result from the ensemble always needs to come
-        from a different policy (e.g. `KerasPolicy`). Useful to test prediction
+        from a different policy (e.g. ``KerasPolicy``). Useful to test prediction
         capabilities of an ensemble when ignoring memorized turns from the
         training data."""
 
@@ -183,7 +183,7 @@ class Agent(object):
             if hasattr(policy.featurizer, 'max_history'):
                 max_max_history = max(policy.featurizer.max_history,
                                       max_max_history)
-            else:
+            elif policy.featurizer is not None:
                 all_max_history_featurizers = False
 
         if unique_last_num_states is None:
@@ -306,13 +306,13 @@ class Agent(object):
                          "all old model files. Some files might be "
                          "overwritten.".format(model_path))
 
-    def persist(self, model_path):
+    def persist(self, model_path, dump_flattened_stories=False):
         # type: (Text) -> None
         """Persists this agent into a directory for later loading and usage."""
 
         self._clear_model_directory(model_path)
 
-        self.policy_ensemble.persist(model_path)
+        self.policy_ensemble.persist(model_path, dump_flattened_stories)
         self.domain.persist(os.path.join(model_path, "domain.yml"))
         self.domain.persist_specification(model_path)
 

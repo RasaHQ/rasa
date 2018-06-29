@@ -17,9 +17,14 @@ class Dialogue(object):
     def __init__(self, name, events):
         # type: (Text, List[Event]) -> None
 
+        # This function initialises the dialogue with
+        # the dialogue name and the event list.
         self.name = name
         self.events = events
 
     def __str__(self):
+        # type: None -> Text
+
+        # This function returns the dialogue and turns.
         return "Dialogue with name '{}' and turns:\n{}".format(
                 self.name, "\n\n".join(["\t{}".format(t) for t in self.events]))

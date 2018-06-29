@@ -24,8 +24,7 @@ from rasa_core.channels import CollectingOutputChannel
 from rasa_core.events import (
     UserUttered, BotUttered, SlotSet, Event, ActionExecuted)
 from rasa_core.interpreter import RegexInterpreter
-from rasa_core.policies.augmented_memoization import \
-    AugmentedMemoizationPolicy
+from rasa_core.policies.memoization import AugmentedMemoizationPolicy
 from rasa_core.remote import RasaCoreClient
 from tests.conftest import DEFAULT_STORIES_FILE
 

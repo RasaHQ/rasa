@@ -31,8 +31,10 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         """Retrieve a named template from the domain."""
 
         filled_slots = tracker.current_slot_values()
+        # Fetching a random template for the passed template name
         r = copy.deepcopy(self._random_template_for(template_name,
                                                     output_channel))
+        # Filling the slots in the template and returning the template
         if r is not None:
             return self._fill_template_text(r, filled_slots, **kwargs)
         else:
@@ -40,7 +42,13 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
                             "".format(template_name)}
 
     def _fill_template_text(self, template, filled_slots=None, **kwargs):
+        # type: (Text, **Any) -> Dict[Text, Any]
+        """"Combine slot values and key word arguments to fill templates."""
+
+        # Getting the slot values in the template variables
         template_vars = self._template_variables(filled_slots, kwargs)
+
+        # Filling the template variables in the template
         if template_vars:
             try:
                 template["text"] = template["text"].format(**template_vars)
@@ -57,10 +65,13 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
 
     @staticmethod
     def _template_variables(filled_slots, kwargs):
+        # type: (Dict[Text, Any], Dict[Text, Any]) -> Dict[Text, Any]
         """Combine slot values and key word arguments to fill templates."""
 
         if filled_slots is None:
             filled_slots = {}
+
+        # Copying the filled slots in the template variables.
         template_vars = filled_slots.copy()
         template_vars.update(kwargs.items())
         return template_vars
