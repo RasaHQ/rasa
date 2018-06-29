@@ -667,7 +667,7 @@ class EmbeddingPolicy(Policy):
 
     def _create_batch_b(self, batch_pos_b, intent_ids):
         """Create batch of actions, where the first is correct action
-        and the rest are wrong actions sampled randomly"""
+            and the rest are wrong actions sampled randomly"""
 
         batch_pos_b = batch_pos_b[:, :, np.newaxis, :]
 
@@ -788,6 +788,7 @@ class EmbeddingPolicy(Policy):
     def _calc_train_acc(self, X, slots, prev_act,
                         actions_for_Y, all_Y_d, mask):
         """Calculate training accuracy"""
+
         # choose n examples to calculate train accuracy
         n = self.evaluate_on_num_examples
         ids = np.random.permutation(len(X))[:n]
@@ -802,10 +803,8 @@ class EmbeddingPolicy(Policy):
                            self._is_training: False}
         )
 
-        train_acc = np.sum((np.argmax(_sim, -1) ==
-                            actions_for_Y[ids]) * _mask)
-        train_acc /= np.sum(_mask)
-        return train_acc
+        return np.sum((np.argmax(_sim, -1) == actions_for_Y[ids]) *
+                      _mask) / np.sum(_mask)
 
     def train(self,
               training_trackers,  # type: List[DialogueStateTracker]
@@ -814,6 +813,7 @@ class EmbeddingPolicy(Policy):
               ):
         # type: (...) -> None
         """Trains the policy on given training trackers."""
+
         logger.debug('Started training embedding policy.')
         tf.reset_default_graph()
 
@@ -943,9 +943,10 @@ class EmbeddingPolicy(Policy):
     def predict_action_probabilities(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> List[float]
         """Predicts the next action the bot should take
-        after seeing the tracker.
+            after seeing the tracker.
 
-        Returns the list of probabilities for the next actions"""
+            Returns the list of probabilities for the next actions"""
+
         if self.session is None:
             logger.error("There is no trained tf.session: "
                          "component is either not trained or "
@@ -1032,7 +1033,7 @@ class EmbeddingPolicy(Policy):
         # type: (Text) -> EmbeddingPolicy
         """Loads a policy from the storage.
 
-        Needs to load its featurizer"""
+            Needs to load its featurizer"""
 
         if os.path.exists(path):
             featurizer = TrackerFeaturizer.load(path)
@@ -1124,7 +1125,6 @@ class TimedNTM(object):
     """
 
     def __init__(self, attn_shift_range, sparse_attention, name=None):
-        # with tf.variable_scope("TimedNTM"):
         # interpolation gate
         self.name = 'timed_ntm_' + name
         self.inter_gate = tf.layers.Dense(1, tf.sigmoid,
