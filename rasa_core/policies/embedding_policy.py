@@ -436,35 +436,32 @@ class EmbeddingPolicy(Policy):
         )
         return cell
 
+    @staticmethod
+    def _create_attn_mech(memory, real_length):
+        num_mem_units = int(memory.shape[-1])
+        attn_mech = tf.contrib.seq2seq.BahdanauAttention(
+                num_units=num_mem_units, memory=memory,
+                memory_sequence_length=real_length,
+                normalize=True,
+                probability_fn=tf.identity,
+                # we only attend to memory up to a current time
+                score_mask_value=0,  # it does not affect alignments
+        )
+        return attn_mech, num_mem_units
+
     def _create_attn_cell(self, cell, emb_utter, emb_prev_act,
                           real_length):
         """Wrap cell in attention wrapper with given memory"""
         if self.attn_before_rnn:
-            num_mem_units = int(emb_utter.shape[-1])
-            attn_mech = tf.contrib.seq2seq.BahdanauAttention(
-                    num_units=num_mem_units, memory=emb_utter,
-                    memory_sequence_length=real_length,
-                    normalize=True,
-                    probability_fn=tf.identity,
-                    # we only attend to memory up to a current time
-                    score_mask_value=0,  # it does not affect alignments
-                    name="attn_before_rnn"
-            )
+            (attn_mech,
+             num_mem_units) = self._create_attn_mech(emb_utter, real_length)
         else:
-            num_mem_units = 0
             attn_mech = None
+            num_mem_units = 0
 
         if self.attn_after_rnn:
-            num_prev_act_units = int(emb_prev_act.shape[-1])
-            attn_mech_after_rnn = tf.contrib.seq2seq.BahdanauAttention(
-                    num_units=num_prev_act_units, memory=emb_prev_act,
-                    memory_sequence_length=real_length,
-                    normalize=True,
-                    probability_fn=tf.identity,
-                    # we only attend to memory up to a current time
-                    score_mask_value=0,  # it does not affect alignments
-                    name="attn_after_rnn"
-            )
+            attn_mech_after_rnn, _ = self._create_attn_mech(emb_prev_act,
+                                                            real_length)
             if attn_mech is not None:
                 attn_mech = [attn_mech, attn_mech_after_rnn]
             else:
