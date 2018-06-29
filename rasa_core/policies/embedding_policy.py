@@ -485,7 +485,11 @@ class EmbeddingPolicy(Policy):
                                      attention[:, :num_utter_units],
                                      inputs[:, num_utter_units:]], -1)
                 else:
-                    res = None  # will raise an error
+                    raise ValueError("Number of memory units {} is not "
+                                     "equal to number of utter units {}. "
+                                     "Please modify cell input accordingly."
+                                     "".format(num_mem_units,
+                                               num_utter_units))
             else:
                 res = inputs
             return res
@@ -520,6 +524,8 @@ class EmbeddingPolicy(Policy):
         """Save intermediate tensors for debug purposes"""
         if self.use_attention:
             self.no_skip_gate = cell_output[:, :, -1:]
+        else:
+            self.no_skip_gate = cell_output[:, :, self.rnn_size:]
 
         if self.attn_after_rnn:
             self.rnn_embed = cell_output[:, :, self.embed_dim:
