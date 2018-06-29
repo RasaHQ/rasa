@@ -496,7 +496,7 @@ class TemplateDomain(Domain):
     def _slot_definitions(self):
         return {slot.name: slot.persistence_info() for slot in self.slots}
 
-    def persist(self, filename):
+    def _make_domain_data(self):
         additional_config = {
             "store_entities_as_slots": self.store_entities_as_slots}
         action_names = self.action_names[len(Domain.DEFAULT_ACTIONS):]
@@ -511,8 +511,15 @@ class TemplateDomain(Domain):
             "action_names": action_names,  # names in stories
             "action_factory": self._factory_name
         }
+        return domain_data
 
+    def persist(self, filename):
+        domain_data = self._make_domain_data()
         utils.dump_obj_as_yaml_to_file(filename, domain_data)
+
+    def to_yaml(self):
+        domain_data = self._make_domain_data()
+        return utils.dump_obj_as_yaml_to_string(domain_data)
 
     @utils.lazyproperty
     def templates(self):

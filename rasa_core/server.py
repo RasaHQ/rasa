@@ -305,6 +305,16 @@ def create_app(model_directory,  # type: Text
         agent().tracker_store.save(tracker)
         return jsonify(tracker.current_state(should_include_events=True))
 
+    @app.route("/domain",
+               methods=['GET'])
+    @cross_origin(origins=cors_origins)
+    @requires_auth(auth_token)
+    @ensure_loaded_agent(agent)
+    def get_domain_yaml():
+        """Use a list of events to set a conversations tracker to a state."""
+        domain_yaml = agent().domain.to_yaml()
+        return jsonify(domain_yaml)
+
     @app.route("/conversations/<sender_id>/parse",
                methods=['GET', 'POST', 'OPTIONS'])
     @cross_origin(origins=cors_origins)

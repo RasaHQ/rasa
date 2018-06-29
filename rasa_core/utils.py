@@ -17,6 +17,7 @@ import six
 from builtins import input, range, str
 from numpy import all, array
 from typing import Text, Any, List, Optional, Tuple, Dict, Set
+from cStringIO import StringIO
 
 logger = logging.getLogger(__name__)
 
@@ -341,6 +342,27 @@ def dump_obj_as_yaml_to_file(filename, obj):
         with io.open(filename, 'w', encoding="utf-8") as yaml_file:
             yaml_writer.dump(obj, yaml_file)
 
+def dump_obj_as_yaml_to_string(obj):
+    """Writes data (python dict) to a yaml string."""
+
+    if six.PY2:
+        import yaml
+        str_io = StringIO()
+
+        yaml.safe_dump(obj, str_io,
+                       default_flow_style=False,
+                       allow_unicode=True)
+        return str_io.get_value()
+    else:
+        import ruamel.yaml
+
+        yaml_writer = ruamel.yaml.YAML(pure=True, typ="safe")
+        yaml_writer.unicode_supplementary = True
+        yaml_writer.default_flow_style = False
+        yaml_writer.allow_unicode = True
+        str_io = StringIO()
+        yaml_writer.dump(obj, str_io)
+        return str_io.get_value()
 
 def read_file(filename, encoding="utf-8"):
     """Read text from a file."""
