@@ -487,9 +487,9 @@ class EmbeddingPolicy(Policy):
                 else:
                     raise ValueError("Number of memory units {} is not "
                                      "equal to number of utter units {}. "
-                                     "Please modify cell input accordingly."
-                                     "".format(num_mem_units,
-                                               num_utter_units))
+                                     "Please modify cell input function "
+                                     "accordingly.".format(num_mem_units,
+                                                           num_utter_units))
             else:
                 res = inputs
             return res
