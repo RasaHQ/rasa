@@ -12,7 +12,7 @@ env:
   # needed to fix issues with boto during testing:
   # https://github.com/travis-ci/travis-ci/issues/7940
   global: BOTO_CONFIG=/dev/null
-install:
+install: 
   - pip install git+https://github.com/tmbo/MITIE.git
   - pip install -r alt_requirements/requirements_dev.txt
   - pip install -e .
@@ -27,7 +27,7 @@ install:
 before_script:
   - mkdir $HOME/tmp
   - export TMPDIR=$HOME/tmp
-script:
+script: 
   - py.test --pep8 -m pep8
   - py.test tests/base --cov rasa_nlu -v --cov-append
   - py.test tests/training --cov rasa_nlu -v --cov-append
@@ -38,9 +38,12 @@ jobs:
   - stage: docs
     if: fork = false  # forked repository will skip building docss
     install:
-    - pip install sphinx==1.5.2 sphinx-autobuild==0.7.1 sphinxcontrib-versioning==2.2.1 sphinxcontrib-programoutput==0.11 nbsphinx==0.2.18
+    - pip install sphinx==1.7.5 sphinx-autobuild==0.7.1 sphinxcontrib-programoutput==0.11 nbsphinx==0.3.2 sphinxcontrib-httpdomain==1.5.0
+    - pip install git+https://${GITHUB_TOKEN}:x-oauth-basic@github.com/RasaHQ/sphinxcontrib-versioning.git@version_list
+    - pip install git+https://${GITHUB_TOKEN}:x-oauth-basic@github.com/RasaHQ/rasabaster.git#egg=rasabaster
     - pip install -e git://github.com/RasaHQ/sphinx_rtd_theme.git#egg=sphinx_rtd_theme
     - pip install -e .
+    - pip list
     script:
     - eval "$(ssh-agent -s)"; touch docs/key; chmod 0600 docs/key
     - openssl aes-256-cbc
@@ -53,7 +56,7 @@ jobs:
     - git config --global user.name "Travis CI"
     - git remote set-url --push origin "git@github.com:$TRAVIS_REPO_SLUG"
     - export ${!TRAVIS*}
-    - sphinx-versioning push docs docs .
+    - sphinx-versioning push docs newdocs . -- -b dirhtml  -A html_theme=rasabaster
   - stage: deploy
     install: skip
     script: skip

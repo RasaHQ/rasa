@@ -60,7 +60,13 @@ class Metadata(object):
     @staticmethod
     def load(model_dir):
         # type: (Text) -> 'Metadata'
-        """Loads the metadata from a models directory."""
+        """Loads the metadata from a models directory.
+
+        Args:
+            model_dir (str): the directory where the model is saved.
+        Returns:
+            Metadata: A metadata object describing the model
+        """
         try:
             metadata_file = os.path.join(model_dir, 'metadata.json')
             data = utils.read_json_file(metadata_file)
@@ -87,11 +93,9 @@ class Metadata(object):
             return []
 
     def for_component(self, name, defaults=None):
-        for c in self.get('pipeline', []):
-            if c.get("name") == name:
-                return override_defaults(defaults, c)
-        else:
-            return defaults or {}
+        return config.component_config_from_pipeline(name,
+                                                     self.get('pipeline', []),
+                                                     defaults)
 
     @property
     def language(self):
@@ -241,20 +245,20 @@ class Trainer(object):
 
 
 class Interpreter(object):
-    """Use a trained pipeline of components to parse text messages"""
+    """Use a trained pipeline of components to parse text messages."""
 
     # Defines all attributes (& default values)
     # that will be returned by `parse`
     @staticmethod
     def default_output_attributes():
-        return {"intent": {"name": "", "confidence": 0.0}, "entities": []}
+        return {"intent": {"name": None, "confidence": 0.0}, "entities": []}
 
     @staticmethod
     def ensure_model_compatibility(metadata):
         from packaging import version
 
         model_version = metadata.get("rasa_nlu_version", "0.0.0")
-        if version.parse(model_version) < version.parse("0.12.0a2"):
+        if version.parse(model_version) < version.parse("0.13.0a2"):
             raise UnsupportedModelError(
                 "The model version is to old to be "
                 "loaded by this Rasa NLU instance. "
@@ -265,12 +269,20 @@ class Interpreter(object):
 
     @staticmethod
     def load(model_dir, component_builder=None, skip_validation=False):
-        """Creates an interpreter based on a persisted model."""
+        """Create an interpreter based on a persisted model.
+
+        Args:
+            model_dir (str): The path of the model to load
+            component_builder (ComponentBuilder): The
+                :class:`ComponentBuilder` to use.
+
+        Returns:
+            Interpreter: An interpreter that uses the loaded model.
+        """
 
         model_metadata = Metadata.load(model_dir)
 
         Interpreter.ensure_model_compatibility(model_metadata)
-
         return Interpreter.create(model_metadata,
                                   component_builder,
                                   skip_validation)

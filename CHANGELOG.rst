@@ -9,18 +9,36 @@ This project adheres to `Semantic Versioning`_ starting with version 0.7.0.
 
 .. note:: This version is not yet released and is under active development.
 
+.. warning::
+
+  This is a release **breaking backwards compatibility**.
+  Unfortunately, it is not possible to load previously trained models as
+  the parameters for the tensorflow and CRF models changed.
+
 Added
 -----
 <<<<<<< HEAD
 - support for `tokenizer_jieba` load custom dictionary from config
 - doc link to a community contribution for Rasa NLU in Chinese
 - support for component ``count_vectors_featurizer`` use ``tokens`` feature provide by tokenizer
+- 2-character and a 5-character prefix features to ``ner_crf``
+- ``ner_crf`` with whitespaced tokens to ``tensorflow_embedding`` pipeline
+- predict empty string instead of None for intent name
+- update default parameters for tensorflow embedding classifier
+- do not predict anything if feature vector contains only zeros in tensorflow embedding classifier
+- change persistence keywords in tensorflow embedding classifier (make previously trained models impossible to load)
+- intent_featurizer_count_vectors adds features to text_features instead of overwriting them
+- add basic OOV support to intent_featurizer_count_vectors (make previously trained models impossible to load)
+- add a feature for each regex in the training set for crf_entity_extractor
 
 Changed
 -------
+- L1 and L2 regularisation defaults in ``ner_crf`` both set to 0.1
+- ``whitespace_tokenizer`` ignores punctuation ``.,!?`` before whitespace or end of string
 
 Removed
 -------
+- dependence on spaCy when training ``ner_crf`` without POS features
 
 Fixed
 -----
