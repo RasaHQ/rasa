@@ -580,12 +580,13 @@ tokenizer_jieba
     ``tokenizer_whitespace``. Can be used to define tokens for the
     MITIE entity extractor. Make sure to install Jieba, ``pip install jieba``.
 :Configuration:
+    User's custom dictionary files can be auto loaded by specific the files' directory path via ``dictionary_path``
 
     .. code-block:: yaml
 
         pipeline:
         - name: "tokenizer_jieba"
-          dictionary_path: "path/to/custom/dictionary/dir"  # or None (which is default value) means don't use custom dictionary
+          dictionary_path: "path/to/custom/dictionary/dir"  # or None (which is default value) means don't use custom dictionaries
 
 tokenizer_mitie
 ~~~~~~~~~~~~~~~
