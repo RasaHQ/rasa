@@ -401,7 +401,7 @@ class TemplateDomain(Domain):
 
     @classmethod
     def load_from_yaml(cls, yaml, action_factory=None):
-        cls.validate_domain_yaml(yaml, string_input=True)
+        cls.validate_domain_yaml(yaml)
         data = read_yaml_string(yaml)
         utter_templates = cls.collect_templates(data.get("templates", {}))
         if not action_factory:
