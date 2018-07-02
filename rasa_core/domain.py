@@ -392,9 +392,6 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
 class TemplateDomain(Domain):
 
     @classmethod
-    def
-
-    @classmethod
     def load(cls, filename, action_factory=None):
         if not os.path.isfile(filename):
             raise Exception(
