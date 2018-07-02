@@ -18,6 +18,13 @@ Changed
 Removed
 -------
 
+[0.9.7] - 2018-07-02
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- force fallback policy to be invoked over memoization
+
 [0.9.6] - 2018-06-18
 ^^^^^^^^^^^^^^^^^^^^
 
