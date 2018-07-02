@@ -420,7 +420,7 @@ class TemplateDomain(Domain):
         )
 
     @classmethod
-    def validate_domain_yaml(cls, input):
+    def validate_domain_yaml(cls, yaml):
         """Validate domain yaml."""
         from pykwalify.core import Core
 
@@ -429,7 +429,7 @@ class TemplateDomain(Domain):
 
         schema_file = pkg_resources.resource_filename(__name__,
                                                       "schemas/domain.yml")
-        source_data = utils.read_yaml_string(input)
+        source_data = utils.read_yaml_string(yaml)
         c = Core(source_data=source_data,
                  schema_files=[schema_file])
         try:
