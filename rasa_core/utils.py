@@ -328,14 +328,11 @@ def read_yaml_string(string):
         return yaml_parser.load(string)
 
 
-def dump_obj_as_yaml_to_file(filename, obj):
-    """Writes data (python dict) to the filename in yaml repr."""
-
+def _dump_yaml(obj, output):
     if six.PY2:
         import yaml
 
-        with io.open(filename, 'w', encoding="utf-8") as yaml_file:
-            yaml.safe_dump(obj, yaml_file,
+        yaml.safe_dump(obj, output,
                            default_flow_style=False,
                            allow_unicode=True)
     else:
@@ -346,30 +343,19 @@ def dump_obj_as_yaml_to_file(filename, obj):
         yaml_writer.default_flow_style = False
         yaml_writer.allow_unicode = True
 
-        with io.open(filename, 'w', encoding="utf-8") as yaml_file:
-            yaml_writer.dump(obj, yaml_file)
+        yaml_writer.dump(obj, output)
+
+def dump_obj_as_yaml_to_file(filename, obj):
+    """Writes data (python dict) to the filename in yaml repr."""
+    with io.open(filename, 'w', encoding="utf-8") as output:
+        _dump_yaml(obj, output)
+
 
 def dump_obj_as_yaml_to_string(obj):
     """Writes data (python dict) to a yaml string."""
-
-    if six.PY2:
-        import yaml
-        str_io = StringIO()
-
-        yaml.safe_dump(obj, str_io,
-                       default_flow_style=False,
-                       allow_unicode=True)
-        return str_io.getvalue()
-    else:
-        import ruamel.yaml
-
-        yaml_writer = ruamel.yaml.YAML(pure=True, typ="safe")
-        yaml_writer.unicode_supplementary = True
-        yaml_writer.default_flow_style = False
-        yaml_writer.allow_unicode = True
-        str_io = StringIO()
-        yaml_writer.dump(obj, str_io)
-        return str_io.getvalue()
+    str_io = StringIO()
+    _dump_yaml(obj, str_io)
+    return str_io.getvalue()
 
 def read_file(filename, encoding="utf-8"):
     """Read text from a file."""

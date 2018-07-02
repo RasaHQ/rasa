@@ -28,7 +28,7 @@ from rasa_core.actions.factories import (
     ensure_action_name_uniqueness)
 from rasa_core.slots import Slot
 from rasa_core.trackers import DialogueStateTracker, SlotSet
-from rasa_core.utils import read_yaml_file, read_yaml_string
+from rasa_core.utils import read_file, read_yaml_string
 
 logger = logging.getLogger(__name__)
 
@@ -390,30 +390,17 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
 
 
 class TemplateDomain(Domain):
+
+    @classmethod
+    def
+
     @classmethod
     def load(cls, filename, action_factory=None):
         if not os.path.isfile(filename):
             raise Exception(
                     "Failed to load domain specification from '{}'. "
                     "File not found!".format(os.path.abspath(filename)))
-
-        cls.validate_domain_yaml(filename)
-        data = read_yaml_file(filename)
-        utter_templates = cls.collect_templates(data.get("templates", {}))
-        if not action_factory:
-            action_factory = data.get("action_factory", None)
-        slots = cls.collect_slots(data.get("slots", {}))
-        additional_arguments = data.get("config", {})
-        return cls(
-                data.get("intents", []),
-                data.get("entities", []),
-                slots,
-                utter_templates,
-                data.get("actions", []),
-                data.get("action_names", []),
-                action_factory,
-                **additional_arguments
-        )
+        return cls.load_from_yaml(read_file(filename), action_factory=action_factory)
 
     @classmethod
     def load_from_yaml(cls, yaml, action_factory=None):
