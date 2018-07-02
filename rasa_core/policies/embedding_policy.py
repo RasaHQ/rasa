@@ -84,7 +84,7 @@ class EmbeddingPolicy(Policy):
 
         # flag to add a gate to skip hidden states of rnn
         "skip_hidden_states": None,  # if None, set to attn_after_rnn
-        "not_train_skip_gate_for_first_epochs": 40,
+        "not_train_skip_gate_for_first_epochs": 0.0,
 
         "sparse_attention": False,  # flag to use sparsemax for probs
         "attn_shift_range": None,  # if None, set to mean dialogue length / 2
@@ -416,25 +416,20 @@ class EmbeddingPolicy(Policy):
         if self.attn_after_rnn:
             # since attention is copied to rnn output,
             # embedding should be performed inside the cell
-            out_embed_layer = tf.layers.Dense(
-                    units=self.embed_dim,
-                    activation=None,
-                    name='embed_layer_out'
-            )
+            embed_layer_size = self.embed_dim
         else:
-            out_embed_layer = None
+            embed_layer_size = None
 
         keep_prob = 1.0 - (self.droprate['rnn'] *
                            tf.cast(self._is_training, tf.float32))
-        cell = ChronoLayerNormBasicLSTMCell(
+        return ChronoBiasLayerNormBasicLSTMCell(
                 num_units=self.rnn_size,
-                layer_norm=False,
-                dropout_keep_prob=keep_prob,
+                layer_norm=True,
                 forget_bias=fbias,
                 input_bias=-fbias,
-                out_layer=out_embed_layer
+                dropout_keep_prob=keep_prob,
+                out_layer_size=embed_layer_size
         )
-        return cell
 
     @staticmethod
     def _create_attn_mech(memory, real_length):
@@ -593,7 +588,7 @@ class EmbeddingPolicy(Policy):
             return self.C2 * tf.add_n([
                     tf.nn.l2_loss(tf_var)
                     for tf_var in tf.trainable_variables()
-                    if 'cell/embed_layer_out/kernel' in tf_var.name
+                    if 'cell/out_layer/kernel' in tf_var.name
             ])
         else:
             return 0
@@ -629,6 +624,12 @@ class EmbeddingPolicy(Policy):
         loss_act = tf.maximum(0., tf.reduce_max(sim_act, -1))
         loss += loss_act * self.C_emb
 
+        # if self.skip_hidden_states:
+        #     # sharpen no_skip_gate
+        #     gate_loss = tf.squeeze(self.no_skip_gate, [-1])
+        #     gate_loss = tf.where(gate_loss < 0.1, tf.zeros_like(gate_loss), 1 - gate_loss)
+        #     loss += self.C2 * gate_loss
+
         loss *= mask
         loss = tf.reduce_sum(loss, -1) / tf.reduce_sum(mask, 1)
         # add regularization losses
@@ -640,6 +641,9 @@ class EmbeddingPolicy(Policy):
     def _create_train_op_seq(self, loss):
         """Create a list of train ops to apply consequently,
             for example ignore initial training of no_skip_gate"""
+        # [print(tf_var.name)
+        #     for tf_var in tf.trainable_variables()]
+        # exit()
         vars_for_partial_train = [
             tf_var
             for tf_var in tf.trainable_variables()
@@ -655,7 +659,7 @@ class EmbeddingPolicy(Policy):
             # initial delay of training of no_skip_gate
             return train_ops[0]
         else:
-            return train_ops[1]
+            return train_ops[-1]
 
     def _linearly_increasing_batch_size(self, ep):
         if self.epochs > 1:
@@ -1150,8 +1154,8 @@ class TimedNTM(object):
             self.shift_weight = None
 
         # sharpening parameter
-        self.gamma = tf.layers.Dense(1, lambda a: tf.nn.softplus(a) + 1.0,
-                                     name=(self.name + '/gamma'))
+        self.gamma_sharp = tf.layers.Dense(1, lambda a: tf.nn.softplus(a) + 1.0,
+                                     name=(self.name + '/gamma_sharp'))
 
     def __call__(self, cell_output, probs, probs_state):
         # apply exponential moving average with interpolation gate weight
@@ -1200,9 +1204,9 @@ class TimedNTM(object):
             probs = tf.reverse(conv_probs, axis=[1])
 
         # Sharpening
-        gamma = self.gamma(cell_output)
+        g_sh = self.gamma_sharp(cell_output)
 
-        powed_probs = tf.pow(probs, gamma)
+        powed_probs = tf.pow(probs, g_sh)
         probs = (powed_probs /
                  (tf.reduce_sum(powed_probs, 1, keepdims=True) + 1e-32))
 
@@ -1481,7 +1485,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             return cell_output, next_state
 
 
-class ChronoLayerNormBasicLSTMCell(tf.contrib.rnn.LayerNormBasicLSTMCell):
+class ChronoBiasLayerNormBasicLSTMCell(tf.contrib.rnn.LayerNormBasicLSTMCell):
     """Custom LayerNormBasicLSTMCell that allows chrono initialization
         of gate biases.
 
@@ -1491,19 +1495,17 @@ class ChronoLayerNormBasicLSTMCell(tf.contrib.rnn.LayerNormBasicLSTMCell):
                  num_units,
                  forget_bias=1.0,
                  input_bias=0.0,
-                 out_layer=None,
-                 input_size=None,
                  activation=tf.tanh,
                  layer_norm=True,
                  norm_gain=1.0,
                  norm_shift=0.0,
                  dropout_keep_prob=1.0,
                  dropout_prob_seed=None,
+                 out_layer_size=None,
                  reuse=None):
-        super(ChronoLayerNormBasicLSTMCell, self).__init__(
+        super(ChronoBiasLayerNormBasicLSTMCell, self).__init__(
                 num_units,
                 forget_bias=forget_bias,
-                input_size=input_size,
                 activation=activation,
                 layer_norm=layer_norm,
                 norm_gain=norm_gain,
@@ -1513,18 +1515,29 @@ class ChronoLayerNormBasicLSTMCell(tf.contrib.rnn.LayerNormBasicLSTMCell):
                 reuse=reuse
         )
         self._input_bias = input_bias
-        self._out_layer = out_layer
+        self._out_layer_size = out_layer_size
 
     @property
     def output_size(self):
-        if self._out_layer is not None:
-            return self._out_layer.units
-        else:
-            return self._num_units
+        return self._out_layer_size or self._num_units
 
     @property
     def state_size(self):
-        return tf.contrib.rnn.LSTMStateTuple(self._num_units, self.output_size)
+        return tf.contrib.rnn.LSTMStateTuple(self._num_units,
+                                             self.output_size)
+
+    def _out_layer(self, args):
+        """Optional out projection layer"""
+        proj_size = args.get_shape()[-1]
+        dtype = args.dtype
+        weights = tf.get_variable("out_layer/kernel",
+                                  [proj_size, self._out_layer_size],
+                                  dtype=dtype)
+        bias = tf.get_variable("out_layer/bias",
+                               [self._out_layer_size],
+                               dtype=dtype)
+        out = tf.nn.bias_add(tf.matmul(args, weights), bias)
+        return out
 
     def call(self, inputs, state):
         """LSTM cell with layer normalization and recurrent dropout."""
@@ -1556,7 +1569,7 @@ class ChronoLayerNormBasicLSTMCell(tf.contrib.rnn.LayerNormBasicLSTMCell):
             new_h = tf.nn.dropout(new_h, self._keep_prob, seed=self._seed)
 
         # add postprocessing of the output
-        if self._out_layer is not None:
+        if self._out_layer_size is not None:
             new_h = self._out_layer(new_h)
 
         new_state = tf.contrib.rnn.LSTMStateTuple(new_c, new_h)
