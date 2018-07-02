@@ -420,7 +420,7 @@ class TemplateDomain(Domain):
         )
 
     @classmethod
-    def validate_domain_yaml(cls, input, string_input=False):
+    def validate_domain_yaml(cls, input):
         """Validate domain yaml."""
         from pykwalify.core import Core
 
@@ -429,10 +429,7 @@ class TemplateDomain(Domain):
 
         schema_file = pkg_resources.resource_filename(__name__,
                                                       "schemas/domain.yml")
-        if not string_input:
-            source_data = utils.read_yaml_file(input)
-        else:
-            source_data = utils.read_yaml_string(input)
+        source_data = utils.read_yaml_string(input)
         c = Core(source_data=source_data,
                  schema_files=[schema_file])
         try:
@@ -504,7 +501,7 @@ class TemplateDomain(Domain):
     def _slot_definitions(self):
         return {slot.name: slot.persistence_info() for slot in self.slots}
 
-    def _make_domain_data(self):
+    def as_dict(self):
         additional_config = {
             "store_entities_as_slots": self.store_entities_as_slots}
         action_names = self.action_names[len(Domain.DEFAULT_ACTIONS):]
@@ -522,11 +519,11 @@ class TemplateDomain(Domain):
         return domain_data
 
     def persist(self, filename):
-        domain_data = self._make_domain_data()
+        domain_data = self.as_dict()
         utils.dump_obj_as_yaml_to_file(filename, domain_data)
 
-    def to_yaml(self):
-        domain_data = self._make_domain_data()
+    def as_yaml(self):
+        domain_data = self.as_dict()
         return utils.dump_obj_as_yaml_to_string(domain_data)
 
     @utils.lazyproperty

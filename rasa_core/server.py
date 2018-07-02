@@ -310,10 +310,20 @@ def create_app(model_directory,  # type: Text
     @cross_origin(origins=cors_origins)
     @requires_auth(auth_token)
     @ensure_loaded_agent(agent)
-    def get_domain_yaml():
+    def get_domain():
         """Get current domain in yaml format."""
-        domain_yaml = agent().domain.to_yaml()
-        return jsonify(domain_yaml)
+        accepts = request.headers.get("Accept", default="application/json")
+        if accepts.endswith("json"):
+            domain = agent().domain.as_dict()
+            return jsonify(domain)
+        elif accepts.endswith("yml"):
+            domain_yaml = agent().domain.as_yaml()
+            return Response(domain_yaml, status=200, content_type="application/x-yml")
+        else:
+            return Response(
+                """Invalid accept header. Domain can be provided as json ("Accept: application/json") or yml ("Accept: application/x-yml"). Make sure you've set the appropriate Accept header.""",
+                status=406)
+
 
     @app.route("/conversations/<sender_id>/parse",
                methods=['GET', 'POST', 'OPTIONS'])
