@@ -2,7 +2,14 @@
 
 Installation
 ============
-
+Prerequisites
+~~~~~~~~~~~~~
+For windows
+-----------
+Install the Microsoft VC++ Compiler for dependency compilation.
+This can be got from : 
+https://visualstudio.microsoft.com/visual-cpp-build-tools/
+Download the installer and select VC++ Build tools in the list. 
 
 Setting up Rasa NLU
 ~~~~~~~~~~~~~~~~~~~
