@@ -6,8 +6,7 @@ Prerequisites
 ~~~~~~~~~~~~~
 For windows
 -----------
-Install the Microsoft VC++ Compiler for dependency compilation.
-This can be got from : 
+Make sure the Microsoft VC++ Compiler is installed, so python can compile any dependencies. You can get the compiler from: 
 https://visualstudio.microsoft.com/visual-cpp-build-tools/
 Download the installer and select VC++ Build tools in the list. 
 
