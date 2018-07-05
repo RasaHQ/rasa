@@ -53,6 +53,7 @@ class EmbeddingPolicy(Policy):
         "num_hidden_layers_b": 0,
         "hidden_layer_size_b": [],
         "rnn_size": 64,
+        "layer_norm": True,
         "batch_size": [8, 32],
         "epochs": 1,
 
@@ -84,7 +85,6 @@ class EmbeddingPolicy(Policy):
 
         # flag to add a gate to skip hidden states of rnn
         "skip_hidden_states": None,  # if None, set to attn_after_rnn
-        "not_train_skip_gate_for_first_epochs": 0.0,
 
         "sparse_attention": False,  # flag to use sparsemax for probs
         "attn_shift_range": None,  # if None, set to mean dialogue length / 2
@@ -162,6 +162,7 @@ class EmbeddingPolicy(Policy):
                 self.hidden_layer_size_b = self.hidden_layer_size_a
 
         self.rnn_size = config['rnn_size']
+        self.layer_norm = config['layer_norm']
 
         self.batch_size = config['batch_size']
         if not isinstance(self.batch_size, list):
@@ -205,11 +206,6 @@ class EmbeddingPolicy(Policy):
         self.skip_hidden_states = config['skip_hidden_states']
         if self.skip_hidden_states is None:
             self.skip_hidden_states = self.attn_after_rnn
-
-        self.not_train_skip_gate_for_first_epochs = config[
-                'not_train_skip_gate_for_first_epochs']
-        if self.not_train_skip_gate_for_first_epochs < 1:
-            self.not_train_skip_gate_for_first_epochs *= self.epochs
 
     def _load_visual_params(self, config):
         self.evaluate_every_num_epochs = config['evaluate_every_num_epochs']
@@ -424,7 +420,7 @@ class EmbeddingPolicy(Policy):
                            tf.cast(self._is_training, tf.float32))
         return ChronoBiasLayerNormBasicLSTMCell(
                 num_units=self.rnn_size,
-                layer_norm=True,
+                layer_norm=self.layer_norm,
                 forget_bias=fbias,
                 input_bias=-fbias,
                 dropout_keep_prob=keep_prob,
@@ -638,29 +634,6 @@ class EmbeddingPolicy(Policy):
                 tf.losses.get_regularization_loss())
         return loss
 
-    def _create_train_op_seq(self, loss):
-        """Create a list of train ops to apply consequently,
-            for example ignore initial training of no_skip_gate"""
-        # [print(tf_var.name)
-        #     for tf_var in tf.trainable_variables()]
-        # exit()
-        vars_for_partial_train = [
-            tf_var
-            for tf_var in tf.trainable_variables()
-            if 'no_skip_gate' not in tf_var.name
-        ]
-        return [self._train_op.minimize(
-                        loss, var_list=vars_for_partial_train),
-                self._train_op.minimize(loss)]
-
-    def _choose_train_op(self, epoch, train_ops):
-        """Choose train op from a list of ops for a given epoch"""
-        if epoch < self.not_train_skip_gate_for_first_epochs:
-            # initial delay of training of no_skip_gate
-            return train_ops[0]
-        else:
-            return train_ops[-1]
-
     def _linearly_increasing_batch_size(self, ep):
         if self.epochs > 1:
             return int(self.batch_size[0] +
@@ -718,10 +691,6 @@ class EmbeddingPolicy(Policy):
                   loss, mask):
         """Train tf graph"""
 
-        # create a list of training ops, from which
-        # one will be chosen depending on epoch
-        train_ops = self._create_train_op_seq(loss)
-
         self.session.run(tf.global_variables_initializer())
 
         if self.evaluate_on_num_examples:
@@ -755,10 +724,8 @@ class EmbeddingPolicy(Policy):
                 batch_loss_scales = self._scale_loss_by_count_actions(
                         batch_a, batch_c, batch_b_prev, actions_for_b)
 
-                # choose a training op for current epoch from a list of ops
-                train_op = self._choose_train_op(ep, train_ops)
                 _loss, _ = self.session.run(
-                        [loss, train_op],
+                        [loss, self._train_op],
                         feed_dict={self.a_in: batch_a,
                                    self.b_in: batch_b,
                                    self.c_in: batch_c,
@@ -897,17 +864,13 @@ class EmbeddingPolicy(Policy):
             loss = self._tf_loss(self.sim_op, sim_act, mask,
                                  self.dial_embed, self.bot_embed)
 
-            # we'll define what to minimize later
             self._train_op = tf.train.AdamOptimizer(
-                    learning_rate=0.001, epsilon=1e-16)
+                    learning_rate=0.001, epsilon=1e-16).minimize(loss)
             # train tensorflow graph
             self.session = tf.Session()
 
             self._train_tf(X, Y, slots, prev_act, actions_for_Y, all_Y_d,
                            loss, mask)
-
-            # overwrite with minimize for continue training
-            self._train_op = self._train_op.minimize(loss)
 
     def continue_training(self, training_trackers, domain, **kwargs):
         # type: (List[DialogueStateTracker], Domain, **Any) -> None
@@ -1319,16 +1282,30 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                                                  name=str(i)))
 
         self._attn_to_copy_fn = attn_to_copy_fn
-        if skip_gate:
-            self._no_skip_gate = tf.layers.Dense(
-                    1, tf.sigmoid,
-                    # -4 is arbitrary, but we need
-                    # no_skip_gate to be close to zero at the beginning
-                    bias_initializer=tf.constant_initializer(-4),
-                    name='no_skip_gate'
-            )
-        else:
-            self._no_skip_gate = None
+        self._skip_gate = skip_gate
+
+    @staticmethod
+    def _no_skip_gate(args):
+        """Optional no skip gate layer"""
+        proj_size = args.get_shape()[-1]
+        dtype = args.dtype
+        weights = tf.get_variable("no_skip_gate/kernel",
+                                  [proj_size, 1],
+                                  dtype=dtype)
+        bias = tf.get_variable("no_skip_gate/bias", [1],
+                               # `-4` is arbitrary, but we need `no_skip_gate`
+                               # to be close to zero at the beginning
+                               initializer=tf.constant_initializer(-4),
+                               dtype=dtype)
+        # mimic layer norm gain parameter
+        gamma = tf.get_variable("no_skip_gate/gamma", [1],
+                                # `2` is arbitrary, but we need `no_skip_gate`
+                                # to have higher learning rate
+                                initializer=tf.constant_initializer(2),
+                                dtype=dtype)
+        out = tf.sigmoid(tf.nn.bias_add(tf.matmul(args, weights) * gamma,
+                                        bias))
+        return out
 
     @property
     def output_size(self):
@@ -1438,7 +1415,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         #          calculated attention value.
         cell_inputs = self._cell_input_fn(inputs, attention)
 
-        if self._no_skip_gate is not None:
+        if self._skip_gate:
             c_g = self._no_skip_gate(prev_out_for_attn)
             if isinstance(cell_state, tf.contrib.rnn.LSTMStateTuple):
                 old_c = cell_state.c
@@ -1461,8 +1438,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             # copy them to current output
             cell_output += attn_emb_prev_act
 
-        if (self._attn_to_copy_fn is not None or
-                self._no_skip_gate is not None):
+        if self._attn_to_copy_fn is not None or self._skip_gate:
             if isinstance(cell_state, tf.contrib.rnn.LSTMStateTuple):
                 new_c = c_g * next_cell_state.c + (1 - c_g) * old_c
                 next_cell_state = tf.contrib.rnn.LSTMStateTuple(
@@ -1560,8 +1536,10 @@ class ChronoBiasLayerNormBasicLSTMCell(tf.contrib.rnn.LayerNormBasicLSTMCell):
         new_c = (
             c * tf.sigmoid(f + self._forget_bias) +
             g * tf.sigmoid(i + self._input_bias))  # added input_bias
-        if self._layer_norm:
-            new_c = self._norm(new_c, "state", dtype=dtype)
+        # do not do layer normalization on the new c,
+        # because there are no trainable weights
+        # if self._layer_norm:
+        #     new_c = self._norm(new_c, "state", dtype=dtype)
         new_h = self._activation(new_c) * tf.sigmoid(o)
 
         # added dropout to the hidden state h
