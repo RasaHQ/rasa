@@ -1117,8 +1117,8 @@ class TimedNTM(object):
             self.shift_weight = None
 
         # sharpening parameter
-        self.gamma_sharp = tf.layers.Dense(1, lambda a: tf.nn.softplus(a) + 1.0,
-                                     name=(self.name + '/gamma_sharp'))
+        self.gamma_sharp = tf.layers.Dense(1, lambda a: tf.nn.softplus(a) + 1,
+                                           name=(self.name + '/gamma_sharp'))
 
     def __call__(self, cell_output, probs, probs_state):
         # apply exponential moving average with interpolation gate weight
@@ -1170,8 +1170,8 @@ class TimedNTM(object):
         g_sh = self.gamma_sharp(cell_output)
 
         powed_probs = tf.pow(probs, g_sh)
-        probs = (powed_probs /
-                 (tf.reduce_sum(powed_probs, 1, keepdims=True) + 1e-32))
+        probs = powed_probs / (
+                    tf.reduce_sum(powed_probs, 1, keepdims=True) + 1e-32)
 
         return probs, next_probs_state
 
@@ -1249,8 +1249,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
 
         See the super class for other arguments description"""
 
-    def __init__(self,
-                 cell,
+    def __init__(self, cell,
                  attention_mechanism,
                  attn_shift_range=0,
                  sparse_attention=False,
@@ -1293,13 +1292,15 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                                   [proj_size, 1],
                                   dtype=dtype)
         bias = tf.get_variable("no_skip_gate/bias", [1],
-                               # `-4` is arbitrary, but we need `no_skip_gate`
+                               # `-4` is arbitrary,
+                               # but we need `no_skip_gate`
                                # to be close to zero at the beginning
                                initializer=tf.constant_initializer(-4),
                                dtype=dtype)
         # mimic layer norm gain parameter
         gamma = tf.get_variable("no_skip_gate/gamma", [1],
-                                # `2` is arbitrary, but we need `no_skip_gate`
+                                # `2` is arbitrary,
+                                # but we need `no_skip_gate`
                                 # to have higher learning rate
                                 initializer=tf.constant_initializer(2),
                                 dtype=dtype)
