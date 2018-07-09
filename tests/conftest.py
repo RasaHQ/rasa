@@ -4,13 +4,15 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import logging
+from builtins import str
 
 import matplotlib
 import pytest
+from pytest_localserver.http import WSGIServer
 
-from rasa_core import train
+from rasa_core import train, server
 from rasa_core.agent import Agent
-from rasa_core.channels import CollectingOutputChannel
+from rasa_core.channels import CollectingOutputChannel, RestInput
 from rasa_core.dispatcher import Dispatcher
 from rasa_core.domain import TemplateDomain
 from rasa_core.interpreter import RegexInterpreter
@@ -21,6 +23,7 @@ from rasa_core.policies.memoization import \
 from rasa_core.processor import MessageProcessor
 from rasa_core.slots import Slot
 from rasa_core.tracker_store import InMemoryTrackerStore
+from rasa_core.trackers import DialogueStateTracker
 
 matplotlib.use('Agg')
 
@@ -104,3 +107,35 @@ def trained_moodbot_path():
             kwargs=None
     )
     return model_path
+
+
+@pytest.fixture(scope="module")
+def http_app(request, core_server):
+    http_server = WSGIServer(application=core_server)
+    http_server.start()
+
+    request.addfinalizer(http_server.stop)
+    return http_server.url
+
+
+@pytest.fixture(scope="module")
+def core_server(tmpdir_factory):
+    model_path = tmpdir_factory.mktemp("model").strpath
+
+    agent = Agent("data/test_domains/default.yml",
+                  policies=[AugmentedMemoizationPolicy(max_history=3)])
+
+    training_data = agent.load_data(DEFAULT_STORIES_FILE)
+    agent.train(training_data)
+    agent.persist(model_path)
+
+    return server.create_app(model_path,
+                             interpreter=RegexInterpreter(),
+                             input_channels=[RestInput()])
+
+
+@pytest.fixture
+def default_tracker(default_domain):
+    import uuid
+    uid = str(uuid.uuid1())
+    return DialogueStateTracker(uid, default_domain.slots)

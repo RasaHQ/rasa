@@ -167,11 +167,6 @@ class OnlinePolicyEnsemble(PolicyEnsemble):
         logger.info("Stories got exported to '{}'.".format(
                 os.path.abspath(exported.path)))
 
-    def continue_training(self, trackers, domain, **kwargs):
-        # type: (List[DialogueStateTracker], Domain, **Any) -> None
-        for p in self.policies:
-            p.continue_training(trackers, domain, **kwargs)
-
     def _fit_example(self, tracker, domain):
         # takes the new example labelled and learns it
         # via taking `epochs` samples of n_batch-1 parts of the training data,
@@ -187,88 +182,3 @@ class OnlinePolicyEnsemble(PolicyEnsemble):
     def write_out_story(self, tracker):
         # takes our new example and writes it in markup story format
         self.stories.append(tracker.export_stories())
-
-    def _request_intent(self, tracker, domain):
-        # take in some argument and ask which intent it should have been
-        # save the intent to a json like file
-        colored_user_msg = utils.wrap_with_color(tracker.latest_message.text,
-                                                 utils.bcolors.OKGREEN)
-        print("------\n")
-        print("Message:\n")
-        print(tracker.latest_message.text)
-        print("User said:\t {}".format(colored_user_msg))
-        print("What intent is this?\t")
-        for idx, intent in enumerate(domain.intents):
-            print('\t{}\t{}'.format(idx, intent))
-        out = int(utils.request_input(
-                utils.str_range_list(0, len(domain.intents))))
-        json_example = {
-            'text': tracker.latest_message.text,
-            'intent': domain.intents[out]
-        }
-        self.extra_intent_examples.append(json_example)
-        intent_name = domain.intents[out]
-        return {'name': intent_name, 'confidence': 1.0}
-
-    def _print_history(self, tracker):
-        # prints the historical interactions between the bot and the user,
-        # to help with correctly identifying the action
-        latest_listen_flag = False
-        tr_json = []
-        for tr in tracker.generate_all_prior_trackers():
-            tr_json.append({
-                'action': tr.latest_action_name,
-                'intent': tr.latest_message.intent[
-                    'name'] if tr.latest_message.intent else "",
-                'entities': tr.latest_message.entities
-            })
-
-        print("------")
-        print("Chat history:\n")
-        tr_json = tr_json[-self.max_visual_history:]
-        n_history = len(tr_json)
-        for idx, hist_tracker in enumerate(tr_json):
-
-            print("\tbot did:\t{}\n".format(hist_tracker['action']))
-            if hist_tracker['action'] == 'action_listen':
-                if idx < n_history - 1:
-                    print("\tuser did:\t{}\n".format(hist_tracker['intent']))
-                    for entity in hist_tracker['entities']:
-                        print("\twith {}:\t{}\n".format(entity['entity'],
-                                                        entity['value']))
-                if idx == n_history - 1:
-                    print("\tuser said:\t{}\n".format(
-                            utils.wrap_with_color(tracker.latest_message.text,
-                                                  utils.bcolors.OKGREEN)))
-                    print("\t\t whose intent is:\t{}\n".format(
-                            hist_tracker['intent']))
-                    for entity in hist_tracker['entities']:
-                        print("\twith {}:\t{}\n".format(entity['entity'],
-                                                        entity['value']))
-                    latest_listen_flag = True
-        slot_strs = []
-        for k, s in tracker.slots.items():
-            colored_value = utils.wrap_with_color(str(s.value),
-                                                  utils.bcolors.WARNING)
-            slot_strs.append("{}: {}".format(k, colored_value))
-        print("we currently have slots: {}\n".format(", ".join(slot_strs)))
-
-        print("------")
-        return latest_listen_flag
-
-    def _request_action(self, predictions, domain, tracker):
-        # given the intent and the text (NOT IMPLEMENTED)
-        # what is the correct action?
-        self._print_history(tracker)
-        print("what is the next action for the bot?\n")
-
-        for idx in range(domain.num_actions):
-            action_name = domain.action_for_index(idx).name()
-            print("{:>10}{:>40}    {:03.2f}".format(idx, action_name,
-                                                    predictions[idx]))
-
-        out = int(utils.request_input(
-                utils.str_range_list(0, domain.num_actions)))
-        print("thanks! The bot will now "
-              "[{}]\n -----------".format(domain.action_for_index(out).name()))
-        return out

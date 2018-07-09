@@ -11,7 +11,6 @@ from policy import RestaurantPolicy
 from rasa_core import utils
 from rasa_core.actions import Action
 from rasa_core.agent import Agent
-from rasa_core.channels.console import ConsoleInputChannel
 from rasa_core.events import SlotSet
 from rasa_core.featurizers import (
     MaxHistoryTrackerFeaturizer,

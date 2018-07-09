@@ -27,3 +27,6 @@ run-cmdline:
 
 evaluate-nlu:
 	python -m rasa_nlu.evaluate  --model models/nlu/current --data ./data/nlu.md
+
+visualize:
+	python -m rasa_core.visualize -s data/stories.md -d domain.yml -o story_graph.png

@@ -15,9 +15,12 @@ from flask_cors import CORS, cross_origin
 from typing import Union, Text, Optional, List
 
 from rasa_core import events, utils
-from rasa_core.actions.action import EndpointConfig
+from rasa_core.events import Event
+from rasa_core.utils import EndpointConfig
 from rasa_core.agent import Agent
-from rasa_core.channels import CollectingOutputChannel, InputChannel
+from rasa_core.channels import (
+    CollectingOutputChannel, InputChannel,
+    UserMessage)
 from rasa_core.channels import channel
 from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.tracker_store import TrackerStore
@@ -104,10 +107,10 @@ def _create_agent(
         return None
 
 
-def create_app(model_directory, # type: Text
-               interpreter=None, # type: Union[Text, NLI, None]
+def create_app(model_directory,  # type: Optional[Text]
+               interpreter=None,  # type: Union[Text, NLI, None]
                input_channels=None,  # type: Optional[List[InputChannel]]
-               cors_origins=None, # type: Optional[List[Text]]
+               cors_origins=None,  # type: Optional[List[Text]]
                auth_token=None,  # type: Optional[Text]
                tracker_store=None,  # type: Optional[TrackerStore]
                action_endpoint=None,
@@ -130,6 +133,11 @@ def create_app(model_directory, # type: Text
             return _agent[0]
         else:
             return None
+
+    def set_agent(a):
+        _agent[0] = a
+
+    app.set_agent = set_agent
 
     def handle_message(text_mesage):
         def noop(text_message):
@@ -156,21 +164,69 @@ def create_app(model_directory, # type: Text
 
         return jsonify({'version': __version__})
 
+    # <sender_id> can be be 'default' if there's only 1 client
+    @app.route("/conversations/<sender_id>/execute",
+               methods=['POST', 'OPTIONS'])
+    @cross_origin(origins=cors_origins)
+    @requires_auth(auth_token)
+    @ensure_loaded_agent(agent)
+    def execute_action(sender_id):
+        request_params = request.get_json(force=True)
+        action_to_execute = request_params.get("action", None)
+
+        try:
+            out = CollectingOutputChannel()
+            agent().execute_action(sender_id,
+                                   action_to_execute,
+                                   out)
+
+            # retrieve tracker and set to requested state
+            tracker = agent().tracker_store.get_or_create_tracker(sender_id)
+            state = tracker.current_state(should_include_events=True)
+            return jsonify({"tracker": state,
+                            "messages": out.messages})
+
+        except ValueError as e:
+            return Response(jsonify(error=e.message),
+                            status=400,
+                            content_type="application/json")
+        except Exception as e:
+            logger.exception(e)
+            return Response(jsonify(error="Server failure. Error: {}"
+                                          "".format(e)),
+                            status=500,
+                            content_type="application/json")
+
     @app.route("/conversations/<sender_id>/tracker/events",
                methods=['POST', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
     @requires_auth(auth_token)
     @ensure_loaded_agent(agent)
-    def append_events(sender_id):
+    def append_event(sender_id):
         """Append a list of events to the state of a conversation"""
 
         request_params = request.get_json(force=True)
-        evts = events.deserialise_events(request_params)
+        evt = Event.from_parameters(request_params)
         tracker = agent().tracker_store.get_or_create_tracker(sender_id)
-        for e in evts:
-            tracker.update(e)
+        tracker.update(evt)
         agent().tracker_store.save(tracker)
-        return jsonify(tracker.current_state())
+        return jsonify(tracker.current_state(should_include_events=True))
+
+    @app.route("/conversations/<sender_id>/tracker/events",
+               methods=['PUT'])
+    @cross_origin(origins=cors_origins)
+    @requires_auth(auth_token)
+    @ensure_loaded_agent(agent)
+    def replace_events(sender_id):
+        """Use a list of events to set a conversations tracker to a state."""
+
+        request_params = request.get_json(force=True)
+        tracker = DialogueStateTracker.from_dict(sender_id,
+                                                 request_params,
+                                                 agent().domain.slots)
+        # will override an existing tracker with the same id!
+        agent().tracker_store.save(tracker)
+        return jsonify(tracker.current_state(should_include_events=True))
 
     @app.route("/conversations",
                methods=['GET', 'OPTIONS'])
@@ -204,23 +260,15 @@ def create_app(model_directory, # type: Text
                 only_events_after_latest_restart=use_history)
         return jsonify(state)
 
-    @app.route("/conversations/<sender_id>/tracker",
-               methods=['PUT', 'OPTIONS'])
+    @app.route("/domain", methods=['GET', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
     @requires_auth(auth_token)
     @ensure_loaded_agent(agent)
-    def update_tracker(sender_id):
-        """Use a list of events to set a conversations tracker to a state."""
+    def retrieve_domain():
+        """Get a dump of a conversations tracker including its events."""
 
-        request_params = request.get_json(force=True)
-        tracker = DialogueStateTracker.from_dict(sender_id,
-                                                 request_params,
-                                                 agent().domain.slos)
-        agent().tracker_store.save(tracker)
-
-        # will override an existing tracker with the same id!
-        agent().tracker_store.save(tracker)
-        return jsonify(tracker.current_state(should_include_events=True))
+        domain = agent().domain
+        return jsonify(domain.as_dict())
 
     @app.route("/conversations/<sender_id>/respond",
                methods=['GET', 'POST', 'OPTIONS'])
@@ -251,6 +299,83 @@ def create_app(model_directory, # type: Text
 
         except Exception as e:
             logger.exception("Caught an exception during respond.")
+            return Response(jsonify(error="Server failure. Error: {}"
+                                          "".format(e)),
+                            status=500,
+                            content_type="application/json")
+
+    @app.route("/model/finetune",
+               methods=['POST', 'OPTIONS'])
+    @cross_origin(origins=cors_origins)
+    @requires_auth(auth_token)
+    @ensure_loaded_agent(agent)
+    def continue_training():
+        request.headers.get("Accept")
+        epochs = request.args.get("epochs", 30)
+        batch_size = request.args.get("batch_size", 5)
+        request_params = request.get_json(force=True)
+        tracker = DialogueStateTracker.from_dict(UserMessage.DEFAULT_SENDER_ID,
+                                                 request_params,
+                                                 agent().domain.slots)
+
+        try:
+            # Fetches the appropriate bot response in a json format
+            responses = agent().continue_training(tracker,
+                                                  epochs=epochs,
+                                                  batch_size=batch_size)
+            return jsonify(responses)
+
+        except Exception as e:
+            logger.exception("Caught an exception during prediction.")
+            return Response(jsonify(®error="Server failure. Error: {}"
+                                          "".format(e)),
+                            status=500,
+                            content_type="application/json")
+
+    @app.route("/conversations/<sender_id>/predict",
+               methods=['POST', 'OPTIONS'])
+    @cross_origin(origins=cors_origins)
+    @requires_auth(auth_token)
+    @ensure_loaded_agent(agent)
+    def predict(sender_id):
+        try:
+            # Fetches the appropriate bot response in a json format
+            responses = agent().predict_next(sender_id)
+            return jsonify(responses)
+
+        except Exception as e:
+            logger.exception("Caught an exception during prediction.")
+            return Response(jsonify(error="Server failure. Error: {}"
+                                          "".format(e)),
+                            status=500,
+                            content_type="application/json")
+
+    @app.route("/conversations/<sender_id>/messages", methods=['POST'])
+    @cross_origin(origins=cors_origins)
+    @requires_auth(auth_token)
+    @ensure_loaded_agent(agent)
+    def log_message(sender_id):
+        request_params = request.get_json(force=True)
+        message = request_params.get("text")
+        sender = request_params.get("sender")
+        parse_data = request_params.get("parse_data")
+
+        # TODO: TB - implement properly for agent / bot
+        if sender != "user":
+            return Response(jsonify(error="Currently, onle user messages can "
+                                          "be passed to this endpoint. "
+                                          "Messages of sender '{}' can not be "
+                                          "handled. ".format(sender)),
+                            status=500,
+                            content_type="application/json")
+
+        try:
+            usermsg = UserMessage(message, None, sender_id, parse_data)
+            responses = agent().log_message(usermsg)
+            return jsonify(responses)
+
+        except Exception as e:
+            logger.exception("Caught an exception while logging message.")
             return Response(jsonify(error="Server failure. Error: {}"
                                           "".format(e)),
                             status=500,
@@ -294,6 +419,7 @@ def create_app(model_directory, # type: Text
 
 if __name__ == '__main__':
     from rasa_core import run
+
     # Running as standalone python application
     arg_parser = run.create_argument_parser()
     cmdline_args = arg_parser.parse_args()

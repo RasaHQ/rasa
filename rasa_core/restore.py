@@ -83,7 +83,7 @@ def replay_events(tracker, agent):
             agent.handle_message(event.text, sender_id=tracker.sender_id,
                                  output_channel=out)
             for m in out.messages:
-                console._print_bot_output(m)
+                console.print_bot_output(m)
 
             tracker = agent.tracker_store.retrieve(tracker.sender_id)
             last_prediction = evaluate.actions_since_last_utterance(tracker)
@@ -108,13 +108,20 @@ def load_tracker_from_json(tracker_dump, domain):
 
 def recreate_agent(model_directory,  # type: Text
                    nlu_model=None,  # type: Optional[Text]
-                   tracker_dump=None  # type: Optional[Text]
+                   tracker_dump=None,  # type: Optional[Text]
+                   endpoints=None
                    ):
     # type: (...) -> Tuple[Agent, DialogueStateTracker]
     """Recreate an agent instance."""
 
+    action_endpoint = utils.read_endpoint_config(endpoints, "action_endpoint")
+
+    nlg_endpoint = utils.read_endpoint_config(endpoints, "nlg_endpoint")
+
     logger.debug("Loading Rasa Core Agent")
-    agent = Agent.load(model_directory, nlu_model)
+    agent = Agent.load(model_directory, nlu_model,
+                       generator=nlg_endpoint,
+                       action_endpoint=action_endpoint)
 
     logger.debug("Finished loading agent. Loading stories now.")
 

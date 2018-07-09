@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import os
 import sys
 
+from rasa_core.agent import Agent
 from rasa_core.channels.file import replay_messages
 from rasa_core.interpreter import RegexInterpreter
 
@@ -13,7 +14,7 @@ from rasa_core.interpreter import RegexInterpreter
 def test_moodbot_example(trained_moodbot_path):
     from rasa_core import run
 
-    agent = run.main(trained_moodbot_path)
+    agent = Agent.load(trained_moodbot_path)
 
     responses = agent.handle_text("/greet")
     assert responses[0]['text'] == 'Hey! How are you?'
@@ -23,49 +24,6 @@ def test_moodbot_example(trained_moodbot_path):
 
     # (there is a 'I am on it' message in the middle we are not checking)
     assert len(responses) == 4
-
-
-def test_remote_example():
-    from rasa_core import train, run
-    from rasa_core.events import SlotSet
-
-    train.train_dialogue_model(
-            domain_file="examples/remotebot/concert_domain_remote.yml",
-            stories_file="examples/remotebot/data/stories.md",
-            output_path="examples/remotebot/models/dialogue",
-            use_online_learning=False,
-            nlu_model_path=None,
-            max_history=None,
-            kwargs=None
-    )
-    agent = run.main("examples/remotebot/models/dialogue")
-
-    response = agent.start_message_handling("/search_venues")
-    assert response.get("next_action") == 'search_venues'
-
-    reference = {
-        'slots': {'concerts': None, 'venues': None},
-        'events': None,
-        'sender_id': 'default',
-        'paused': False,
-        'latest_event_time': 1513023382.101372,
-        'latest_message': {
-            'text': '/search_venues',
-            'intent_ranking': [{'confidence': 1.0, 'name': 'search_venues'}],
-            'intent': {'confidence': 1.0, 'name': 'search_venues'},
-            'entities': []}}
-    result = response.get("tracker")
-
-    assert reference.keys() == result.keys()
-    del reference['latest_event_time']
-    del result['latest_event_time']
-    assert reference == result
-
-    venues = [{"name": "Big Arena", "reviews": 4.5}]
-    next_response = agent.continue_message_handling(
-            "default", "search_venues", [SlotSet("venues", venues)]
-    )
-    assert next_response.get("next_action") == "action_listen"
 
 
 def test_restaurantbot_example():

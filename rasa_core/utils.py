@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import copy
 import errno
 import inspect
 import io
@@ -448,34 +449,63 @@ def concat_url(base, subpath):
         return base
 
 
-def post_json_to_endpoint(json_data, endpoint, subpath=None):
-    from requests.auth import HTTPBasicAuth
-    import requests
-
-    if not endpoint:
-        raise Exception("Missing endpoint configuration.")
-
-    headers = endpoint.headers.copy()
-    headers["Content-Type"] = "application/json"
-
-    if endpoint.basic_auth:
-        auth = HTTPBasicAuth(endpoint.basic_auth["username"],
-                             endpoint.basic_auth["password"])
-    else:
-        auth = None
-
-    url = concat_url(endpoint.url, subpath)
-
-    return requests.post(url,
-                         headers=headers,
-                         params=endpoint.params,
-                         auth=auth,
-                         json=json_data)
-
-
 def all_subclasses(cls):
     # type: (Any) -> List[Any]
     """Returns all known (imported) subclasses of a class."""
 
     return cls.__subclasses__() + [g for s in cls.__subclasses__()
                                    for g in all_subclasses(s)]
+
+
+def read_endpoint_config(filename, endpoint_type):
+    if not filename:
+        return None
+
+    content = read_yaml_file(filename)
+    if endpoint_type in content:
+        return EndpointConfig.from_dict(content[endpoint_type])
+    else:
+        return None
+
+
+class EndpointConfig(object):
+    def __init__(self, url, params=None, headers=None, basic_auth=None,
+                 token=None):
+        self.url = url
+        self.params = params if params else {}
+        self.headers = headers if headers else {}
+        self.basic_auth = basic_auth
+        self.token = token
+
+    def request(self, json_data=None,
+                subpath=None,
+                method="post"):
+        from requests.auth import HTTPBasicAuth
+        import requests
+
+        headers = self.headers.copy()
+        headers["Content-Type"] = "application/json"
+
+        if self.basic_auth:
+            auth = HTTPBasicAuth(self.basic_auth["username"],
+                                 self.basic_auth["password"])
+        else:
+            auth = None
+
+        url = concat_url(self.url, subpath)
+
+        return requests.request(method,
+                                url,
+                                headers=headers,
+                                params=self.params,
+                                auth=auth,
+                                json=json_data)
+
+    @classmethod
+    def from_dict(cls, data):
+        return EndpointConfig(
+                data.get("url"),
+                data.get("params"),
+                data.get("headers"),
+                data.get("basic_auth"),
+                data.get("token"))

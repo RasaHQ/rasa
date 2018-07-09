@@ -25,8 +25,13 @@ class UserMessage(object):
 
     DEFAULT_SENDER_ID = "default"
 
-    def __init__(self, text, output_channel=None, sender_id=None):
-        # type: (Optional[Text], Optional[OutputChannel], Text) -> None
+    def __init__(self,
+                 text,  # type: Optional[Text]
+                 output_channel=None,  # type: Optional[OutputChannel]
+                 sender_id=None,  # type: Text
+                 parse_data=None   # type: Dict[Text, Any]
+                 ):
+        # type: (...) -> None
 
         self.text = text
 
@@ -39,6 +44,8 @@ class UserMessage(object):
             self.sender_id = sender_id
         else:
             self.sender_id = self.DEFAULT_SENDER_ID
+
+        self.parse_data = parse_data
 
 
 # TODO: TB - ensure backward compatibility with old webhooks

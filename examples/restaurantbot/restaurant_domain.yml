@@ -78,5 +78,5 @@ actions:
 - utter_ask_numpeople
 - utter_ask_price
 - utter_on_it
-- bot.ActionSearchRestaurants
-- bot.ActionSuggest
+- action_search_restaurants
+- action_suggest

@@ -12,6 +12,8 @@ import requests
 from builtins import str
 from typing import Text, List, Dict, Any
 
+from rasa_core.utils import EndpointConfig
+
 logger = logging.getLogger(__name__)
 
 INTENT_MESSAGE_PREFIX = "/"
@@ -160,10 +162,10 @@ class RegexInterpreter(NaturalLanguageInterpreter):
 
 
 class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
-    def __init__(self, model_name, token, server, project_name='default'):
+    def __init__(self, model_name, endpoint, project_name='default'):
+        # type: (Text, EndpointConfig, Text) -> None
         self.model_name = model_name
-        self.token = token
-        self.server = server
+        self.endpoint = endpoint
         self.project_name = project_name
 
     def parse(self, text):
@@ -182,19 +184,19 @@ class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
 
         Return `None` on failure."""
 
-        if not self.server:
+        if not self.endpoint:
             logger.error(
                     "Failed to parse text '{}' using rasa NLU over http. "
                     "No rasa NLU server specified!".format(text))
             return None
 
         params = {
-            "token": self.token,
+            "token": self.endpoint.token,
             "model": self.model_name,
             "project": self.project_name,
             "q": text
         }
-        url = "{}/parse".format(self.server)
+        url = "{}/parse".format(self.endpoint.url)
         try:
             result = requests.get(url, params=params)
             if result.status_code == 200:

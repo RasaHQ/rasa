@@ -12,7 +12,8 @@ from six import string_types
 from typing import Text, List, Optional, Callable, Any, Dict, Union
 
 from rasa_core import training
-from rasa_core.actions.action import EndpointConfig
+from rasa_core.dispatcher import Dispatcher
+from rasa_core.utils import EndpointConfig
 from rasa_core.channels import UserMessage, InputChannel, OutputChannel
 from rasa_core.domain import TemplateDomain, Domain, check_domain_sanity
 from rasa_core.interpreter import NaturalLanguageInterpreter
@@ -104,6 +105,44 @@ class Agent(object):
         processor = self._create_processor(message_preprocessor)
         return processor.handle_message(message)
 
+    def predict_next(
+            self,
+            sender_id,
+            **kwargs
+    ):
+        # type: (Text, **Any) -> Dict[Text, Any]
+        """Handle a single message."""
+
+        processor = self._create_processor()
+        return processor.predict_next(sender_id)
+
+    def log_message(
+            self,
+            message,  # type: UserMessage
+            message_preprocessor=None,  # type: Optional[Callable[[Text], Text]]
+            **kwargs
+    ):
+        # type: (...) -> Dict[Text, Any]
+        """Handle a single message."""
+
+        processor = self._create_processor(message_preprocessor)
+        return processor.log_message(message)
+
+    def execute_action(
+            self,
+            sender_id,
+            action,  # type: Text
+            output_channel
+    ):
+        # type: (...) -> DialogueStateTracker
+        """Handle a single message."""
+
+        processor = self._create_processor()
+        dispatcher = Dispatcher(sender_id,
+                                output_channel,
+                                self.nlg)
+        return processor.execute_action(sender_id, action, dispatcher)
+
     def handle_text(
             self,
             text_message,  # type: Union[Text, Dict[Text, Any]]
@@ -161,6 +200,15 @@ class Agent(object):
             # explicitly ignore inheritance (e.g. augmented memoization policy)
             if type(p) == MemoizationPolicy:
                 p.toggle(activate)
+
+    def continue_training(self,
+                          trackers,
+                          **kwargs
+                          ):
+        # type: (List[DialogueStateTracker], **Any) -> None
+        self.policy_ensemble.continue_training(trackers,
+                                               self.domain,
+                                               **kwargs)
 
     def load_data(self,
                   resource_name,  # type: Text
@@ -244,43 +292,6 @@ class Agent(object):
 
         self.policy_ensemble.train(training_trackers, self.domain,
                                    **kwargs)
-
-    def train_online(self,
-                     training_trackers,  # type: List[DialogueStateTracker]
-                     input_channel=None,  # type: Optional[InputChannel]
-                     max_visual_history=3,  # type: int
-                     **kwargs  # type: **Any
-                     ):
-        # type: (...) -> None
-        from rasa_core.policies.online_trainer import OnlinePolicyEnsemble
-        """Train a policy ensemble in online learning mode."""
-
-        if not self.interpreter:
-            raise ValueError(
-                    "When using online learning, you need to specify "
-                    "an interpreter for the agent to use.")
-
-        # TODO: DEPRECATED - remove in version 0.10
-        if isinstance(training_trackers, string_types):
-            # the user most likely passed in a file name to load training
-            # data from
-            logger.warning("Passing a file name to `agent.train_online(...)` "
-                           "is deprecated. Rather load the data with "
-                           "`data = agent.load_data(file_name)` and pass it "
-                           "to `agent.train_online(data)`.")
-            training_trackers = self.load_data(training_trackers)
-
-        logger.debug("Agent online trainer got kwargs: {}".format(kwargs))
-        check_domain_sanity(self.domain)
-
-        self.policy_ensemble.train(training_trackers, self.domain, **kwargs)
-
-        ensemble = OnlinePolicyEnsemble(self.policy_ensemble,
-                                        training_trackers,
-                                        max_visual_history)
-
-        ensemble.run_online_training(self.domain, self.interpreter,
-                                     input_channel)
 
     @staticmethod
     def _clear_model_directory(model_path):

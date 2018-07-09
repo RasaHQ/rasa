@@ -66,11 +66,15 @@ class Action(object):
         Execute the side effects of this action.
 
         Args:
-            tracker (DialogueStateTracker): the state tracker for the current user.
+            tracker (DialogueStateTracker): the state tracker for the current
+            user.
                 You can access slot values using ``tracker.get_slot(slot_name)``
-                and the most recent user message is ``tracker.latest_message.text``.
-            dispatcher (Dispatcher): the dispatcher which is used to send messages back
-                to the user. Use ``dipatcher.utter_message()`` or any other :class:`Dispatcher` method.
+                and the most recent user message is
+                ``tracker.latest_message.text``.
+            dispatcher (Dispatcher): the dispatcher which is used to send
+            messages back
+                to the user. Use ``dipatcher.utter_message()`` or any other
+                :class:`Dispatcher` method.
             domain (Domain): the bot's domain
 
         Returns:
@@ -135,22 +139,6 @@ class ActionRestart(Action):
         return [Restarted()]
 
 
-class EndpointConfig(object):
-    def __init__(self, url, params=None, headers=None, basic_auth=None):
-        self.url = url
-        self.params = params if params else {}
-        self.headers = headers if headers else {}
-        self.basic_auth = basic_auth
-
-    @classmethod
-    def from_dict(cls, data):
-        return EndpointConfig(
-                data.get("url"),
-                data.get("params"),
-                data.get("headers"),
-                data.get("basic_auth"))
-
-
 class RemoteAction(Action):
     def __init__(self, name, action_endpoint):
         # type: (Text, Optional[EndpointConfig]) -> None
@@ -210,13 +198,30 @@ class RemoteAction(Action):
                             "the docs and set an endpoint configuration."
                             "".format(self.name()))
 
-        response = utils.post_json_to_endpoint(json, self.action_endpoint)
-        # TODO: TB - properly handling failing status codes
-        response.raise_for_status()
+        try:
+            response = self.action_endpoint.request(json, method="post")
+            response.raise_for_status()
+            response_data = response.json()
 
-        response_data = response.json()
+            self._validate_action_result(response_data)
+        except requests.exceptions.ConnectionError as e:
 
-        self._validate_action_result(response_data)
+            logger.error("Failed to run custom action '{}'. Couldn't connect "
+                         "to the server at '{}'. Is the server running? "
+                         "Error: {}".format(self.name(),
+                                            self.action_endpoint.url,
+                                            e))
+            raise Exception("Failed to execute custom action.")
+        except requests.exceptions.HTTPError as e:
+
+            logger.error("Failed to run custom action '{}'. Action server "
+                         "responded with a non 200 status code of {}. "
+                         "Make sure your action server properly runs actions "
+                         "and returns a 200 once the action is executed. "
+                         "Error: {}".format(self.name(),
+                                            e.response.status_code,
+                                            e))
+            raise Exception("Failed to execute custom action.")
 
         events_json = response_data.get("events", [])
         responses = response_data.get("responses", [])
