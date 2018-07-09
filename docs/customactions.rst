@@ -3,15 +3,22 @@
 Custom Actions
 ==============
 
-There are two kinds of actions in Rasa Core. 
+There are two kinds of actions in Rasa Core.
 The simplest are ``UtterActions``, which just send a message to the user.
-You define them by adding an entry to the action list in your :class:`rasa_core.domain.Domain`.
+You define them by adding an entry to the action list in your domain file.
 There also needs to be a matching utterance. For example, if there's an action ``utter_greet``
 then there should also be an utterance template called ``utter_greet`` in your domain.
+These will be executed automatically by the core server.
 
 **What about more complicated actions?**
 In general, an action can run any code you like. Custom actions can turn on the lights,
 add an event to a calendar, check a user's bank balance, or anything else you can imagine.
+To execute these more complex actions, you need to run a separate server alongside the core server/
+If these are stored in a file called ``actions.py``, you can do this with our SDK as follows:
+
+.. code-block:: bash
+
+    python -m rasa_core_sdk.endpoint --actions actions
 
 
 Custom Actions Written in Python
@@ -41,14 +48,12 @@ your bot could execute the action ``ActionCheckRestaurants``, which might look l
          return [SlotSet("matches", result if result is not None else [])]
 
 
+You should add the the action name ``action_check_restaurants`` to the actions in your domain file.
 The action's ``run`` method receives three arguments. You can access the values of slots and
 the latest message sent by the user using the ``tracker`` object, and you can send messages
-back to the user with the ``dispatcher`` object, by calling ``dispatcher.utter_template``,  
-``dispatcher.utter_message``, or any other :class:`Dispatcher` method. 
+back to the user with the ``dispatcher`` object, by calling ``dispatcher.utter_template``,
+``dispatcher.utter_message``, or any other :class:`Dispatcher` method.
 
 Details of the ``run`` method:
 
 .. automethod:: rasa_core.actions.Action.run
-
-
-

@@ -5,7 +5,7 @@ Domain Format
 
 The ``Domain`` defines the universe in which your bot operates.
 It specifies the ``intents``, ``entities``, ``slots``, and ``actions``
-your bot should know about. 
+your bot should know about.
 Optionally, it can also include ``templates`` for the things your bot can say.
 
 
@@ -36,16 +36,16 @@ For a more complete example domain, check the :doc:`quickstart`.
 Custom Actions and Slots
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-To reference custom actions and slots in your domain,
-you need to reference them by their module path. 
-For example, if you have a module called ``my_actions`` containing
-a class ``MyAwesomeAction``, and module ``my_slots`` containing ``MyAwesomeSlot``,
-you would add these lines to the domain file:
+If the action server is running with your custom action modules loaded (see
+:ref:`customactions`) you need to add them to the actions list. A custom slot
+needs to be referenced by its module path. For example, if you have a custom
+action called ``my_awesome_action`` and a slot module ``my_slots`` containing
+the ``MyAwesomeSlot`` class, you would add this to your domain file:
 
 .. code-block:: yaml
 
    actions:
-     - my_actions.MyAwesomeAction
+     - my_awesome_action
      ...
 
    slots:
@@ -142,5 +142,3 @@ multiple responses and Rasa will randomly pick one of them, e.g.:
     utter_greeting:
     - text: "Hey, {name}. How are you?"
     - text: "Hey, {name}. How is your day going?"
-
-
