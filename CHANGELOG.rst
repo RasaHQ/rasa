@@ -30,11 +30,14 @@ Added
 - intent_featurizer_count_vectors adds features to text_features instead of overwriting them
 - add basic OOV support to intent_featurizer_count_vectors (make previously trained models impossible to load)
 - add a feature for each regex in the training set for crf_entity_extractor
+- Current training processes count for server and projects.
 
 Changed
 -------
 - L1 and L2 regularisation defaults in ``ner_crf`` both set to 0.1
 - ``whitespace_tokenizer`` ignores punctuation ``.,!?`` before whitespace or end of string
+- Allow multiple training processes per project
+- Changed AlreadyTrainingError to MaxTrainingError. The first one was used to indicate that the project was already training. The latest will show an error when the server isn't able to training more models.
 
 Removed
 -------
