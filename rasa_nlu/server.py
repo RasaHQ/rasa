@@ -163,11 +163,6 @@ def dump_to_data_file(data):
     return utils.create_temporary_file(data_string, "_training_data")
 
 
-def is_yaml_request(request):
-    return "yml" in next(
-            iter(request.requestHeaders.getRawHeaders("Content-Type", [])), "")
-
-
 class RasaNLU(object):
     """Class representing Rasa NLU http server"""
 
@@ -278,29 +273,71 @@ class RasaNLU(object):
         request.setHeader('Content-Type', 'application/json')
         return json_to_string(self.data_router.get_status())
 
+    def extract_json(self, content):
+        # test if json has config structure
+        json_config = simplejson.loads(content).get("data")
+
+        # if it does then this results in correct format.
+        if json_config:
+
+            model_config = simplejson.loads(content)
+            data = json_config
+
+        # otherwise use defaults.
+        else:
+
+            model_config = self.default_model_config
+            data = content
+
+        return model_config, data
+
+    def extract_data_and_config(self, request):
+
+        request_content = request.content.read().decode('utf-8', 'strict')
+        content_type = self.get_request_content_type(request)
+
+        if 'yml' in content_type:
+            # assumes the user submitted a model configuration with a data
+            # parameter attached to it
+
+            model_config = utils.read_yaml(request_content)
+            data = model_config.get("data")
+
+        elif 'json' in content_type:
+
+            model_config, data = self.extract_json(request_content)
+
+        else:
+
+            raise Exception("Content-Type must be 'application/x-yml' "
+                            "or 'application/json'")
+
+        return model_config, data
+
+    def get_request_content_type(self, request):
+        content_type = request.requestHeaders.getRawHeaders("Content-Type", [])
+
+        if len(content_type) is not 1:
+            raise Exception("The request must have exactly one content type")
+        else:
+            return content_type[0]
+
     @app.route("/train", methods=['POST', 'OPTIONS'])
     @requires_auth
     @check_cors
     @inlineCallbacks
     def train(self, request):
+
         # if not set will use the default project name, e.g. "default"
         project = parameter_or_default(request, "project", default=None)
         # if set will not generate a model name but use the passed one
         model_name = parameter_or_default(request, "model", default=None)
 
-        request_content = request.content.read().decode('utf-8', 'strict')
-
-        if is_yaml_request(request):
-            # assumes the user submitted a model configuration with a data
-            # parameter attached to it
-            model_config = utils.read_yaml(request_content)
-            data = model_config.get("data")
-        else:
-            # assumes the caller just provided training data without config
-            # this will use the default model config the server
-            # was started with
-            model_config = self.default_model_config
-            data = request_content
+        try:
+            model_config, data = self.extract_data_and_config(request)
+        except Exception as e:
+            request.setResponseCode(400)
+            returnValue(json_to_string({"error": "{}".format(e)}))
 
         data_file = dump_to_data_file(data)
 
