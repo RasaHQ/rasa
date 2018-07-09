@@ -25,7 +25,7 @@ from rasa_core.actions import Action, action
 from rasa_core.actions.action import ActionListen, ActionRestart
 from rasa_core.slots import Slot
 from rasa_core.trackers import DialogueStateTracker, SlotSet
-from rasa_core.utils import read_yaml_file
+from rasa_core.utils import read_file, read_yaml_string
 
 logger = logging.getLogger(__name__)
 
@@ -387,15 +387,21 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
 
 
 class TemplateDomain(Domain):
+
     @classmethod
     def load(cls, filename, action_endpoint=None):
         if not os.path.isfile(filename):
             raise Exception(
                     "Failed to load domain specification from '{}'. "
                     "File not found!".format(os.path.abspath(filename)))
-
         cls.validate_domain_yaml(filename)
         data = utils.read_yaml_file(filename)
+        return cls.from_dict(data, action_endpoint)
+
+    @classmethod
+    def from_yaml(cls, yaml, action_endpoint=None):
+        cls.validate_domain_yaml(yaml)
+        data = read_yaml_string(yaml)
         return cls.from_dict(data, action_endpoint)
 
     @classmethod
@@ -403,7 +409,7 @@ class TemplateDomain(Domain):
         utter_templates = cls.collect_templates(data.get("templates", {}))
         slots = cls.collect_slots(data.get("slots", {}))
         additional_arguments = data.get("config", {})
-        return TemplateDomain(
+        return cls(
                 data.get("intents", []),
                 data.get("entities", []),
                 slots,
@@ -414,7 +420,7 @@ class TemplateDomain(Domain):
         )
 
     @classmethod
-    def validate_domain_yaml(cls, filename):
+    def validate_domain_yaml(cls, yaml):
         """Validate domain yaml."""
         from pykwalify.core import Core
 
@@ -423,7 +429,8 @@ class TemplateDomain(Domain):
 
         schema_file = pkg_resources.resource_filename(__name__,
                                                       "schemas/domain.yml")
-        c = Core(source_data=utils.read_yaml_file(filename),
+        source_data = utils.read_yaml_string(yaml)
+        c = Core(source_data=source_data,
                  schema_files=[schema_file])
         try:
             c.validate(raise_exception=True)
@@ -432,7 +439,7 @@ class TemplateDomain(Domain):
                              "Make sure the file is correct, to do so"
                              "take a look at the errors logged during "
                              "validation previous to this exception. "
-                             "".format(os.path.abspath(filename)))
+                             "".format(os.path.abspath(input)))
 
     @staticmethod
     def collect_slots(slot_dict):
@@ -507,11 +514,12 @@ class TemplateDomain(Domain):
         }
 
     def persist(self, filename):
-        import yaml
-
         domain_data = self.as_dict()
-
         utils.dump_obj_as_yaml_to_file(filename, domain_data)
+
+    def as_yaml(self):
+        domain_data = self.as_dict()
+        return utils.dump_obj_as_yaml_to_string(domain_data)
 
     @utils.lazyproperty
     def templates(self):

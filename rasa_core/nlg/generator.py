@@ -3,7 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from rasa_core.actions.action import EndpointConfig
+from rasa_core.utils import EndpointConfig
 
 
 class NaturalLanguageGenerator(object):

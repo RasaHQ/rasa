@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import io
+import json
 import logging
 import time
 
@@ -95,6 +96,28 @@ class RasaCoreClient(object):
         result.raise_for_status()
         return result.json()
 
+    def respond(self, message, sender_id):
+        # type: (Text, Text) -> Optional[Dict[Text, Any]]
+        """Send a parse request to a rasa core server."""
+
+        url = "{}/conversations/{}/respond?token={}".format(
+                self.host, sender_id, quote_plus(self.token))
+
+        data = json.dumps({"query": message}, ensure_ascii=False)
+
+        response = requests.post(url, data=data.encode("utf-8"),
+                                 headers={
+                                     'Content-type': 'text/plain; '
+                                                     'charset=utf-8'})
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            logger.warn("Got a bad response from rasa core :( Status: {} "
+                        "Response: {}".format(response.status_code,
+                                              response.text))
+            return None
+
     def upload_model(self, model_dir, max_retries=1):
         # type: (Text, int) -> Optional[Dict[Text, Any]]
         """Upload a Rasa core model to the remote instance."""
@@ -130,3 +153,5 @@ class RasaCoreClient(object):
                         "Response: {})".format(response.status_code,
                                                response.text))
         return None
+
+

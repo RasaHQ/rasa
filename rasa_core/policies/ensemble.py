@@ -79,19 +79,6 @@ class PolicyEnsemble(object):
         # type: (DialogueStateTracker, Domain) -> List[float]
         raise NotImplementedError
 
-    def predict_next_action(self, tracker, domain):
-        # type: (DialogueStateTracker, Domain) -> int
-        """Predicts the next action the bot should take after seeing x.
-
-        This should be overwritten by more advanced policies to use ML to
-        predict the action. Returns the index of the next action"""
-        probabilities = self.probabilities_using_best_policy(tracker, domain)
-        max_index = int(np.argmax(probabilities))
-        logger.debug("Predicted next action '{}' with prob {:.2f}.".format(
-                domain.action_for_index(max_index).name(),
-                probabilities[max_index]))
-        return max_index
-
     def _max_histories(self):
         # type: () -> List[Optional[int]]
         """Return max history."""
@@ -202,6 +189,13 @@ class PolicyEnsemble(object):
         fingerprints = metadata.get("action_fingerprints", {})
         ensemble = ensemble_cls(policies, fingerprints)
         return ensemble
+
+    def continue_training(self, trackers, domain, **kwargs):
+        # type: (List[DialogueStateTracker], Domain, **Any) -> None
+
+        self.training_trackers.extend(trackers)
+        for p in self.policies:
+            p.continue_training(self.training_trackers, domain, **kwargs)
 
 
 class SimplePolicyEnsemble(PolicyEnsemble):

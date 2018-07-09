@@ -8,6 +8,7 @@ from rasa_core.channels import CollectingOutputChannel
 from rasa_core.dispatcher import Button, Element, Dispatcher
 from rasa_core.domain import TemplateDomain
 from rasa_core.nlg.template import TemplatedNaturalLanguageGenerator
+from rasa_core.trackers import DialogueStateTracker
 
 
 def test_dispatcher_utter_attachment(default_dispatcher_collecting):
@@ -17,28 +18,31 @@ def test_dispatcher_utter_attachment(default_dispatcher_collecting):
             'text': 'Image: http://my-attachment'} == collected
 
 
-def test_dispatcher_utter_template(default_dispatcher_collecting):
-    default_dispatcher_collecting.utter_template("utter_goodbye")
+def test_dispatcher_utter_template(default_dispatcher_collecting,
+                                   default_tracker):
+    default_dispatcher_collecting.utter_template("utter_goodbye",
+                                                 default_tracker)
     collected = default_dispatcher_collecting.output_channel.latest_output()
     assert collected['text'] in {"goodbye 😢", "bye bye 😢"}
 
 
-def test_dispatcher_handle_unknown_template(default_dispatcher_collecting):
-    default_dispatcher_collecting.utter_template("my_made_up_template")
+def test_dispatcher_handle_unknown_template(default_dispatcher_collecting,
+                                            default_tracker):
+    default_dispatcher_collecting.utter_template("my_made_up_template",
+                                                 default_tracker)
     collected = default_dispatcher_collecting.output_channel.latest_output()
     assert collected['text'].startswith("Undefined utter template")
 
 
 def test_dispatcher_template_invalid_vars():
-    domain = TemplateDomain(
-            [], [], [], {
+    templates = {
                 "my_made_up_template": [{
-                    "text": "a template referencing an invalid {variable}."}]},
-            [], [], None)
+                    "text": "a template referencing an invalid {variable}."}]}
     bot = CollectingOutputChannel()
-    nlg = TemplatedNaturalLanguageGenerator(domain)
+    nlg = TemplatedNaturalLanguageGenerator(templates)
     dispatcher = Dispatcher("my-sender", bot, nlg)
-    dispatcher.utter_template("my_made_up_template")
+    tracker = DialogueStateTracker("my-sender", slots=[])
+    dispatcher.utter_template("my_made_up_template", tracker)
     collected = dispatcher.output_channel.latest_output()
     assert collected['text'].startswith(
             "a template referencing an invalid {variable}.")
@@ -59,13 +63,13 @@ def test_dispatcher_utter_buttons(default_dispatcher_collecting):
     ]
 
 
-def test_dispatcher_utter_buttons_from_domain_templ():
+def test_dispatcher_utter_buttons_from_domain_templ(default_tracker):
     domain_file = "examples/moodbot/domain.yml"
     domain = TemplateDomain.load(domain_file)
     bot = CollectingOutputChannel()
-    nlg = TemplatedNaturalLanguageGenerator(domain)
+    nlg = TemplatedNaturalLanguageGenerator(domain.templates)
     dispatcher = Dispatcher("my-sender", bot, nlg)
-    dispatcher.utter_template("utter_greet")
+    dispatcher.utter_template("utter_greet", default_tracker)
     assert len(bot.messages) == 1
     assert bot.messages[0]['text'] == "Hey! How are you?"
     assert bot.messages[0]['data'] == [

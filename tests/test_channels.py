@@ -3,26 +3,30 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from httpretty import httpretty
+
 from rasa_core.channels import console
 
 
 def test_console_input():
     import rasa_core.channels.console
-    # Overwrites the input() function and when someone else tries to read
-    # something from the command line this function gets called. But instead of
-    # waiting input for the user, this simulates the input of
-    # "2", therefore it looks like the user is always typing "2" if someone
-    # requests a cmd input.
 
+    # Overwrites the input() function and when someone else tries to read
+    # something from the command line this function gets called.
     rasa_core.channels.console.input = lambda _=None: "Test Input"
 
-    recorded = []
+    httpretty.register_uri(httpretty.POST,
+                           'https://abc.defg/webhooks/rest/webhook',
+                           body='')
 
-    def on_message(message):
-        recorded.append(message)
+    httpretty.enable()
+    console.record_messages(
+            server_url="https://abc.defg",
+            max_message_limit=3)
+    httpretty.disable()
 
-    channel = console.record_messages(max_message_limit=3)
-    channel._record_messages(on_message, )
-    assert [r.text for r in recorded] == ["Test Input",
-                                          "Test Input",
-                                          "Test Input"]
+    assert httpretty.latest_requests[-1].path == \
+       "/webhooks/rest/webhook?stream=true&token="
+
+    assert httpretty.latest_requests[-1].body == \
+       """{"message": "Test Input", "sender": "default"}"""

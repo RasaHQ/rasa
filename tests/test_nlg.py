@@ -9,7 +9,7 @@ import pytest
 from flask import Flask, request, jsonify
 from pytest_localserver.http import WSGIServer
 
-from rasa_core.actions.action import EndpointConfig
+from rasa_core.utils import EndpointConfig
 from rasa_core.agent import Agent
 
 

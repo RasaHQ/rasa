@@ -10,6 +10,7 @@ from builtins import str
 
 from rasa_core import utils
 from rasa_core.agent import Agent
+from rasa_core.channels import online
 from rasa_core.interpreter import RasaNLUInterpreter, RegexInterpreter
 from rasa_core.featurizers import \
     MaxHistoryTrackerFeaturizer, BinarySingleStateFeaturizer
@@ -118,17 +119,14 @@ def train_dialogue_model(domain_file, stories_file, output_path,
         else:
             agent.interpreter = RegexInterpreter()
 
-        # TODO: TB - start server instead and then run cmd to communicate with
-        #       server
-        agent.train_online(
-                training_data,
-                input_channel=None,  # FIX!
-                model_path=output_path,
-                **kwargs)
-    else:
-        agent.train(training_data, **kwargs)
+    agent.train(training_data, **kwargs)
 
     agent.persist(output_path, dump_flattened_stories)
+
+    if use_online_learning:
+        online.serve_application(agent)
+
+    return agent
 
 
 if __name__ == '__main__':

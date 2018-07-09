@@ -11,7 +11,6 @@ from builtins import str
 from gevent.pywsgi import WSGIServer
 
 from rasa_core import utils, server
-from rasa_core.actions.action import EndpointConfig
 from rasa_core.channels import RestInput, console
 from rasa_core.channels.facebook import FacebookInput
 from rasa_core.channels.mattermost import MattermostInput
@@ -19,6 +18,9 @@ from rasa_core.channels.slack import SlackInput
 from rasa_core.channels.telegram import TelegramInput
 from rasa_core.channels.twilio import TwilioInput
 from rasa_core.constants import DEFAULT_SERVER_PORT, DEFAULT_SERVER_URL
+from rasa_core.interpreter import (
+    NaturalLanguageInterpreter,
+    RasaNLUHttpInterpreter)
 from rasa_core.utils import read_yaml_file
 
 logger = logging.getLogger()  # get the root logger
@@ -145,7 +147,10 @@ def _create_external_channel(channel, credentials_file):
 def create_http_input_channel(channel, credentials_file):
     """Instantiate the chosen input channel."""
 
-    if channel in ['facebook', 'slack', 'telegram', 'mattermost', 'twilio', 'cmdline']:
+    if channel is None:
+        return None
+    elif channel in {'facebook', 'slack', 'telegram',
+                     'mattermost', 'twilio', 'cmdline'}:
         return _create_external_channel(channel, credentials_file)
     else:
         try:
@@ -156,7 +161,6 @@ def create_http_input_channel(channel, credentials_file):
 
 
 def start_cmdline_io(server_url, on_finish):
-
     p = Thread(target=console.record_messages,
                kwargs={
                    "server_url": server_url,
@@ -164,37 +168,72 @@ def start_cmdline_io(server_url, on_finish):
     p.start()
 
 
-def read_endpoint_config(filename, endpoint_type):
-    if not filename:
-        return None
-
-    content = utils.read_yaml_file(filename)
-    if endpoint_type in content:
-        return EndpointConfig.from_dict(content[endpoint_type])
+def interpreter_from_args(nlu_model, nlu_endpoint):
+    name_parts = nlu_model.split("/")
+    if len(name_parts) == 1:
+        if nlu_endpoint:
+            # using the default project name
+            return RasaNLUHttpInterpreter(name_parts[0],
+                                          nlu_endpoint)
+        else:
+            return NaturalLanguageInterpreter.create(nlu_model)
+    elif len(name_parts) == 2:
+        if nlu_endpoint:
+            return RasaNLUHttpInterpreter(name_parts[0],
+                                          nlu_endpoint,
+                                          name_parts[1])
+        else:
+            return NaturalLanguageInterpreter.create(nlu_model)
     else:
-        return None
+        if nlu_endpoint:
+            raise Exception("You have configured an endpoint to use for "
+                            "the NLU model. To use it, you need to "
+                            "specify the model to use with "
+                            "`--nlu project/model`.")
+        else:
+            return None
 
 
-def start_server(model_directory, nlu_model=None, channel=None, port=None,
-                 credentials_file=None, cors=None, endpoints=None):
-
-    action_endpoint = read_endpoint_config(endpoints, "action_endpoint")
-
-    nlg_endpoint = read_endpoint_config(endpoints, "nlg_endpoint")
-
-    input_channel = create_http_input_channel(channel, credentials_file)
+def start_server(model_directory, nlu, input_channels,
+                 cors, auth_token, action_endpoint, nlg_endpoint, port):
     app = server.create_app(model_directory,
-                            nlu_model,
-                            [input_channel],
+                            nlu,
+                            input_channels,
                             cors,
-                            auth_token=cmdline_args.auth_token,
+                            auth_token=auth_token,
                             action_endpoint=action_endpoint,
                             nlg_endpoint=nlg_endpoint)
 
-    http_server = WSGIServer(('0.0.0.0', cmdline_args.port), app)
+    http_server = WSGIServer(('0.0.0.0', port), app)
     logger.info("Rasa Core server is up and running on "
                 "{}".format(DEFAULT_SERVER_URL))
     http_server.start()
+    return http_server
+
+
+def serve_application(model_directory,
+                      nlu_model=None,
+                      channel=None,
+                      port=DEFAULT_SERVER_PORT,
+                      credentials_file=None,
+                      cors=None,
+                      endpoints=None,
+                      auth_token=None
+                      ):
+    action_endpoint = utils.read_endpoint_config(endpoints, "action_endpoint")
+    nlg_endpoint = utils.read_endpoint_config(endpoints, "nlg_endpoint")
+    nlu_endpoint = utils.read_endpoint_config(endpoints, "nlu_endpoint")
+
+    nlu = interpreter_from_args(nlu_model, nlu_endpoint)
+
+    if channel:
+        input_channels = [create_http_input_channel(channel, credentials_file)]
+    else:
+        input_channels = []
+
+    http_server = start_server(model_directory, nlu, input_channels,
+                               cors, auth_token, action_endpoint, nlg_endpoint,
+                               port)
 
     if channel == "cmdline":
         start_cmdline_io(DEFAULT_SERVER_URL, http_server.stop)
@@ -219,10 +258,11 @@ if __name__ == '__main__':
 
     logger.info("Rasa process starting")
 
-    start_server(cmdline_args.core,
-                 cmdline_args.nlu,
-                 cmdline_args.connector,
-                 cmdline_args.port,
-                 cmdline_args.credentials,
-                 cmdline_args.cors,
-                 cmdline_args.endpoints)
+    serve_application(cmdline_args.core,
+                      cmdline_args.nlu,
+                      cmdline_args.connector,
+                      cmdline_args.port,
+                      cmdline_args.credentials,
+                      cmdline_args.cors,
+                      cmdline_args.endpoints,
+                      cmdline_args.auth_token)

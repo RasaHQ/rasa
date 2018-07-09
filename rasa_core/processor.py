@@ -8,6 +8,7 @@ import logging
 import warnings
 from types import LambdaType
 
+import numpy as np
 from apscheduler.schedulers.background import BackgroundScheduler
 from pytz import UnknownTimeZoneError
 from typing import Optional, List, Dict, Any
@@ -83,16 +84,46 @@ class MessageProcessor(object):
         else:
             return None
 
-    def _predict_next_and_return_state(self, tracker):
-        action = self._get_next_action(tracker)
+    def predict_next(self, sender_id):
+        # type: (Text) -> Dict[Text, Any]
+
+        # we have a Tracker instance for each user
+        # which maintains conversation state
+        tracker = self._get_tracker(sender_id)
+        probabilities = self._get_next_action_probabilities(tracker)
         # save tracker state to continue conversation from this state
-        if action.name() == ACTION_LISTEN_NAME:
-            # action listen always get logged automatically - no need to
-            # call continue
-            self._log_action_on_tracker(tracker, action.name(), [])
         self._save_tracker(tracker)
-        return {"next_action": action.name(),
-                "tracker": tracker.current_state()}
+        scores = [{"action": a.name(), "score": p}
+                  for p, a in zip(probabilities, self.domain.actions)]
+        return {"scores": scores,
+                "tracker": tracker.current_state(should_include_events=True)}
+
+    def log_message(self, message):
+        # type: (UserMessage) -> Dict[Text, Any]
+
+        # preprocess message if necessary
+        if self.message_preprocessor is not None:
+            message.text = self.message_preprocessor(message.text)
+        # we have a Tracker instance for each user
+        # which maintains conversation state
+        tracker = self._get_tracker(message.sender_id)
+        self._handle_message_with_tracker(message, tracker)
+        # save tracker state to continue conversation from this state
+        self._save_tracker(tracker)
+        return tracker.current_state(should_include_events=True)
+
+    def execute_action(self, sender_id, action_name, dispatcher):
+        # type: (Text, Text, Dispatcher) -> Optional[List[Text]]
+
+        # we have a Tracker instance for each user
+        # which maintains conversation state
+        tracker = self._get_tracker(sender_id)
+        action = self.domain.action_for_name(action_name)
+        self._run_action(action, tracker, dispatcher)
+
+        # save tracker state to continue conversation from this state
+        self._save_tracker(tracker)
+        return tracker
 
     def _log_slots(self, tracker):
         # Log currently set slots
@@ -163,7 +194,10 @@ class MessageProcessor(object):
     def _handle_message_with_tracker(self, message, tracker):
         # type: (UserMessage, DialogueStateTracker) -> None
 
-        parse_data = self._parse_message(message)
+        if message.parse_data:
+            parse_data = message.parse_data
+        else:
+            parse_data = self._parse_message(message)
 
         # don't ever directly mutate the tracker
         # - instead pass its events to log
@@ -198,7 +232,7 @@ class MessageProcessor(object):
                and self._should_handle_message(tracker)
                and num_predicted_actions < self.max_number_of_predictions):
             # this actually just calls the policy's method by the same name
-            action = self._get_next_action(tracker)
+            action = self.predict_next_action(tracker)
 
             should_predict_another_action = self._run_action(action,
                                                              tracker,
@@ -311,15 +345,40 @@ class MessageProcessor(object):
     def _save_tracker(self, tracker):
         self.tracker_store.save(tracker)
 
-    def _get_next_action(self, tracker):
+    def predict_next_action(self, tracker):
         # type: (DialogueStateTracker) -> Action
+        """Predicts the next action the bot should take after seeing x.
+
+        This should be overwritten by more advanced policies to use
+        ML to predict the action. Returns the index of the next action."""
+
+        probabilities = self._get_next_action_probabilities(tracker)
+
+        max_index = int(np.argmax(probabilities))
+        action = self.domain.action_for_index(max_index)
+        logger.debug("Predicted next action '{}' with prob {:.2f}.".format(
+                action.name(), probabilities[max_index]))
+        return action
+
+    def _prob_array_for_action(self, action):
+        # type: (Action) -> Optional[List[float]]
+        idx = self.domain.index_for_action(action.name())
+        if idx is not None:
+            result = [0.0] * self.domain.num_actions
+            result[idx] = 1.0
+            return result
+        else:
+            return None
+
+    def _get_next_action_probabilities(self, tracker):
+        # type: (DialogueStateTracker) -> List[float]
 
         follow_up_action = tracker.follow_up_action
         if follow_up_action:
             tracker.clear_follow_up_action()
-            if self.domain.index_for_action(
-                    follow_up_action.name()) is not None:
-                return follow_up_action
+            result = self._prob_array_for_action(follow_up_action)
+            if result:
+                return result
             else:
                 logger.error(
                         "Trying to run unknown follow up action '{}'!"
@@ -328,7 +387,7 @@ class MessageProcessor(object):
 
         if (tracker.latest_message.intent.get("name") ==
                 self.domain.restart_intent):
-            return ActionRestart()
+            return self._prob_array_for_action(ActionRestart())
 
-        idx = self.policy_ensemble.predict_next_action(tracker, self.domain)
-        return self.domain.action_for_index(idx)
+        return self.policy_ensemble.probabilities_using_best_policy(
+                tracker, self.domain)

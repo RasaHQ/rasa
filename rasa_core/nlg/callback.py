@@ -8,7 +8,7 @@ import logging
 import requests
 from rasa_core import utils
 
-from rasa_core.actions.action import EndpointConfig
+from rasa_core.utils import EndpointConfig
 from rasa_core.trackers import DialogueStateTracker
 from typing import Text, Any, Dict
 
@@ -58,7 +58,7 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
         body = self._nlg_api_format(template_name, tracker, output_channel,
                                     kwargs)
 
-        response = utils.post_json_to_endpoint(body, self.nlg_endpoint)
+        response = self.nlg_endpoint.request(body, method="post")
 
         response.raise_for_status()
         content = response.json()

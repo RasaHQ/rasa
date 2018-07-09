@@ -46,30 +46,6 @@ test_events = [
 
 
 @pytest.fixture(scope="module")
-def http_app(request, core_server):
-    http_server = WSGIServer(application=core_server)
-    http_server.start()
-
-    request.addfinalizer(http_server.stop)
-    return http_server.url
-
-
-@pytest.fixture(scope="module")
-def core_server(tmpdir_factory):
-    model_path = tmpdir_factory.mktemp("model").strpath
-
-    agent = Agent("data/test_domains/default.yml",
-                  policies=[AugmentedMemoizationPolicy(max_history=3)])
-
-    training_data = agent.load_data(DEFAULT_STORIES_FILE)
-    agent.train(training_data)
-    agent.persist(model_path)
-
-    return server.create_app(model_path,
-                             interpreter=RegexInterpreter())
-
-
-@pytest.fixture(scope="module")
 def app(core_server):
     return core_server.test_client()
 
@@ -103,61 +79,13 @@ def test_requesting_non_existent_tracker(app):
                                          "entities": []}
 
 
-def test_continue_on_non_existent_conversation(app):
-    data = json.dumps({"events": [], "executed_action": None})
-    response = app.post("http://dummy/conversations/myid/continue",
-                        data=data, content_type='application/json')
-    content = response.get_json()
-    assert response.status_code == 200
-    assert content["next_action"] == "action_listen"
-    assert content["tracker"]["events"] is None
-    assert content["tracker"]["paused"] is False
-    assert content["tracker"]["sender_id"] == "myid"
-    assert content["tracker"]["slots"] == {"location": None, "cuisine": None}
-    assert content["tracker"]["latest_message"] == {"text": None,
-                                                    "intent": {},
-                                                    "entities": []}
-
-
-def test_parse(app):
+def test_respond(app):
     data = json.dumps({"query": "/greet"})
-    response = app.post("http://dummy/conversations/myid/parse",
+    response = app.post("http://dummy/conversations/myid/respond",
                         data=data, content_type='application/json')
     content = response.get_json()
     assert response.status_code == 200
-    assert content["next_action"] == "utter_greet"
-    assert content["tracker"]["events"] is None
-    assert content["tracker"]["paused"] is False
-    assert content["tracker"]["sender_id"] == "myid"
-    assert content["tracker"]["slots"] == {"location": None, "cuisine": None}
-    assert content["tracker"]["latest_message"]["text"] == "/greet"
-    assert content["tracker"]["latest_message"]["intent"] == {
-        "confidence": 1.0,
-        "name": "greet"}
-
-
-def test_continue(app):
-    data = json.dumps({"query": "/greet"})
-    response = app.post("http://dummy/conversations/myid/parse",
-                        data=data, content_type='application/json')
-    content = response.get_json()
-    assert response.status_code == 200
-
-    data = json.dumps({"events": [], "executed_action": "utter_greet"})
-    response = app.post("http://dummy/conversations/myid/continue",
-                        data=data, content_type='application/json')
-    content = response.get_json()
-    assert response.status_code == 200
-
-    assert content["next_action"] == "action_listen"
-    assert content["tracker"]["events"] is None
-    assert content["tracker"]["paused"] is False
-    assert content["tracker"]["sender_id"] == "myid"
-    assert content["tracker"]["slots"] == {"location": None, "cuisine": None}
-    assert content["tracker"]["latest_message"]["text"] == "/greet"
-    assert content["tracker"]["latest_message"]["intent"] == {
-        "confidence": 1.0,
-        "name": "greet"}
+    assert content == [{'text': 'hey there!', 'recipient_id': 'myid'}]
 
 
 @pytest.mark.parametrize("event", test_events)
@@ -165,13 +93,7 @@ def test_pushing_events(app, event):
     cid = str(uuid.uuid1())
     conversation = "http://dummy/conversations/{}".format(cid)
     data = json.dumps({"query": "/greet"})
-    response = app.post("{}/parse".format(conversation),
-                        data=data, content_type='application/json')
-    content = response.get_json()
-    assert response.status_code == 200
-
-    data = json.dumps({"events": [], "executed_action": "utter_greet"})
-    response = app.post("{}/continue".format(conversation),
+    response = app.post("{}/respond".format(conversation),
                         data=data, content_type='application/json')
     content = response.get_json()
     assert response.status_code == 200
@@ -186,9 +108,9 @@ def test_pushing_events(app, event):
                                "".format(cid))
     tracker = tracker_response.get_json()
     assert tracker is not None
-    assert len(tracker.get("events")) == 5
+    assert len(tracker.get("events")) == 6
 
-    evt = tracker.get("events")[4]
+    evt = tracker.get("events")[5]
     assert Event.from_parameters(evt) == event
 
 
@@ -210,7 +132,7 @@ def test_put_tracker(app):
 
 def test_list_conversations(app):
     data = json.dumps({"query": "/greet"})
-    response = app.post("http://dummy/conversations/myid/parse",
+    response = app.post("http://dummy/conversations/myid/respond",
                         data=data, content_type='application/json')
     content = response.get_json()
     assert response.status_code == 200
@@ -235,7 +157,7 @@ def test_remote_clients(http_app):
     client = RasaCoreClient(http_app, None)
 
     cid = str(uuid.uuid1())
-    client.parse("/greet", cid)
+    client.respond("/greet", cid)
 
     clients = client.clients()
 
