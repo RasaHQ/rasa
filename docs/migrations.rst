@@ -3,6 +3,17 @@ Migration Guide
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+0.12.x to 0.13.0
+----------------
+
+.. warning::
+
+  This is a release **breaking backwards compatibility**.
+  Unfortunately, it is not possible to load previously trained models as
+  the parameters for the tensorflow and CRF models changed.
+
+
+
 0.11.x to 0.12.0
 ----------------
 

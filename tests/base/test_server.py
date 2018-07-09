@@ -95,7 +95,7 @@ def test_version(app):
     ResponseTest(
         "http://dummy-uri/parse?q=",
         {'project': 'default', 'entities': [], 'model': 'fallback',
-         'intent': {'confidence': 0.0, 'name': ''}, 'text': ''}
+         'intent': {'confidence': 0.0, 'name': None}, 'text': ''}
     ),
 ])
 @pytest.inlineCallbacks
@@ -185,6 +185,15 @@ def test_model_hot_reloading(app, rasa_default_train_data):
     app.flush()
     response = yield response
     assert response.code == 200, "Training should end successfully"
+
+    response = app.post(train_u,
+                        headers={b"Content-Type": b"application/json"},
+                        data=json.dumps(model_config))
+    time.sleep(3)
+    app.flush()
+    response = yield response
+    assert response.code == 200, "Training should end successfully"
+
     response = yield app.get(query)
     assert response.code == 200, "Project should now exist after it got trained"
 

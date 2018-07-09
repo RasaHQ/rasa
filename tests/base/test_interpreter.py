@@ -43,16 +43,17 @@ def test_interpreter(pipeline_template, component_builder, tmpdir):
 @pytest.mark.parametrize("metadata",
                          [{"rasa_nlu_version": "0.11.0"},
                           {"rasa_nlu_version": "0.10.2"},
-                          {"rasa_nlu_version": "0.12.0a1"}])
+                          {"rasa_nlu_version": "0.12.0a1"},
+                          {"rasa_nlu_version": "0.12.2"},
+                          {"rasa_nlu_version": "0.12.3"}])
 def test_model_not_compatible(metadata):
     with pytest.raises(rasa_nlu.model.UnsupportedModelError):
         Interpreter.ensure_model_compatibility(metadata)
 
 
 @pytest.mark.parametrize("metadata",
-                         [{"rasa_nlu_version": "0.12.0"},
-                          {"rasa_nlu_version": "0.12.2"},
-                          {"rasa_nlu_version": "0.12.0a2"}])
+                         [{"rasa_nlu_version": "0.13.0a2"},
+                          {"rasa_nlu_version": "0.13.0"}])
 def test_model_is_compatible(metadata):
     # should not raise an exception
     assert Interpreter.ensure_model_compatibility(metadata) is None

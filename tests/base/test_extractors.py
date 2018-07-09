@@ -10,9 +10,9 @@ from rasa_nlu.training_data import TrainingData, Message
 from tests import utilities
 
 
-def test_crf_extractor(spacy_nlp):
+def test_crf_extractor(spacy_nlp, ner_crf_pos_feature_config):
     from rasa_nlu.extractors.crf_entity_extractor import CRFEntityExtractor
-    ext = CRFEntityExtractor()
+    ext = CRFEntityExtractor(component_config=ner_crf_pos_feature_config)
     examples = [
         Message("anywhere in the west", {
             "intent": "restaurant_search",
@@ -58,10 +58,9 @@ def test_crf_extractor(spacy_nlp):
     }, 'Original examples are not mutated'
 
 
-def test_crf_json_from_BILOU(spacy_nlp):
+def test_crf_json_from_BILOU(spacy_nlp, ner_crf_pos_feature_config):
     from rasa_nlu.extractors.crf_entity_extractor import CRFEntityExtractor
-    ext = CRFEntityExtractor()
-    ext.BILOU_flag = True
+    ext = CRFEntityExtractor(component_config=ner_crf_pos_feature_config)
     sentence = u"I need a home cleaning close-by"
     doc = {"spacy_doc": spacy_nlp(sentence)}
     r = ext._from_crf_to_json(Message(sentence, doc),
@@ -86,9 +85,10 @@ def test_crf_json_from_BILOU(spacy_nlp):
                     'value': 'close-by', 'entity': 'where'}
 
 
-def test_crf_json_from_non_BILOU(spacy_nlp):
+def test_crf_json_from_non_BILOU(spacy_nlp, ner_crf_pos_feature_config):
     from rasa_nlu.extractors.crf_entity_extractor import CRFEntityExtractor
-    ext = CRFEntityExtractor(component_config={"BILOU_flag": False})
+    ner_crf_pos_feature_config.update({"BILOU_flag": False})
+    ext = CRFEntityExtractor(component_config=ner_crf_pos_feature_config)
     sentence = u"I need a home cleaning close-by"
     doc = {"spacy_doc": spacy_nlp(sentence)}
     rs = ext._from_crf_to_json(Message(sentence, doc),

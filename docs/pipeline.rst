@@ -1,7 +1,11 @@
 .. _section_pipeline:
 
-Processing Pipeline
-===================
+Pipeline and Component Configuration
+====================================
+
+.. contents::
+
+
 The process of incoming messages is split into different components. These components are executed one after another
 in a so called processing pipeline. There are components for entity extraction, for intent classification,
 pre-processing and there will be many more in the future.
@@ -58,6 +62,23 @@ the components and configure them separately:
     - name: "ner_synonyms"
     - name: "intent_classifier_sklearn"
 
+tensorflow_embedding
+~~~~~~~~~~~~~~~~~~~~
+
+to use it as a template:
+
+.. code-block:: yaml
+
+    language: "en"
+
+    pipeline: "tensorflow_embedding"
+
+The tensorflow pipeline supports any language that can be tokenized. The
+current tokenizer implementation relies on words being separated by spaces,
+so any languages that adheres to that can be trained with this pipeline.
+
+
+
 mitie
 ~~~~~
 
@@ -97,20 +118,10 @@ to use the components and configure them separately:
     - name: "intent_classifier_keyword"
 
 
-tensorflow_embedding
-~~~~~~~~~~~~~~~~~~~~
+.. _section_multiple_intents:
 
-to use it as a template:
-
-.. code-block:: yaml
-
-    language: "en"
-
-    pipeline: "tensorflow_embedding"
-
-The tensorflow pipeline supports any language that can be tokenized. The
-current tokenizer implementation relies on words being separated by spaces,
-so any languages that adheres to that can be trained with this pipeline.
+Multiple Intents
+~~~~~~~~~~~~~~~~
 
 If you want to split intents into multiple labels, e.g. for predicting multiple intents or for modeling hierarchical intent structure, use these flags:
 
@@ -125,6 +136,8 @@ Here's an example configuration:
     language: "en"
 
     pipeline:
+    - name: "tokenizer_whitespace"
+    - name: "ner_crf"
     - name: "intent_featurizer_count_vectors"
     - name: "intent_classifier_tensorflow_embedding"
       intent_tokenization_flag: true
@@ -265,14 +278,47 @@ intent_featurizer_count_vectors
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Short: Creates bag-of-words representation of intent features
-:Outputs: nothing, used as an input to intent classifiers that need bag-of-words representation of intent features (e.g. ``intent_classifier_tensorflow_embedding``)
+:Outputs: 
+   nothing, used as an input to intent classifiers that 
+   need bag-of-words representation of intent features  
+   (e.g. ``intent_classifier_tensorflow_embedding``)
 :Description:
     Creates bag-of-words representation of intent features using
-    `sklearn's CountVectorizer <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_. All tokens which consist only of digits (e.g. 123 and 99 but not a123d) will be assigned to the same feature.
+    `sklearn's CountVectorizer <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_. 
+    All tokens which consist only of digits (e.g. 123 and 99 but not a123d) will be assigned to the same feature.
+
+    .. note:: If the words in the model language cannot be split by whitespace, 
+        a language-specific tokenizer is required in the pipeline before this component
+        (e.g. using ``tokenizer_jieba`` for Chinese).
 
 :Configuration:
     See `sklearn's CountVectorizer docs <http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html>`_
     for detailed description of the configuration parameters
+
+    Handling Out-Of-Vacabulary (OOV) words:
+
+        Since the training is performed on limited vocabulary data, it cannot be guaranteed that during prediction
+        an algorithm will not encounter an unknown word (a word that were not seen during training).
+        In order to teach an algorithm how to treat unknown words, some words in training data can be substituted by generic word ``OOV_token``.
+        In this case during prediction all unknown words will be treated as this generic word ``OOV_token``.
+
+        For example, one might create separate intent ``outofscope`` in the training data containing messages of different number of ``OOV_token`` s and
+        maybe some additional general words. Then an algorithm will likely classify a message with unknown words as this intent ``outofscope``.
+
+        .. note::
+        
+            This featurizer creates a bag-of-words representation by **counting** words,
+            so the number of ``OOV_token`` s might be important.
+
+            - ``OOV_token`` set a keyword for unseen words; if training data contains ``OOV_token`` as words in some messages,
+              during prediction the words that were not seen during training will be substituted with provided ``OOV_token``;
+              if ``OOV_token=None`` (default behaviour) words that were not seen during training will be ignored during prediction time;
+            - ``OOV_words`` set a list of words to be treated as ``OOV_token`` during training; if a list of words that should be treated
+              as Out-Of-Vacabulary is known, it can be set to ``OOV_words`` instead of manually changing it in trainig data or using custom preprocessor.
+
+        .. note::
+            Providing ``OOV_words`` is optional, training data can contain ``OOV_token`` input manually or by custom additional preprocessor.
+            Unseen words will be substituted with ``OOV_token`` **only** if this token is present in the training data or ``OOV_words`` list is provided.
 
     .. code-block:: yaml
 
@@ -295,10 +341,16 @@ intent_featurizer_count_vectors
           # integer - absolute counts
           "max_df": 1.0  # float in range [0.0, 1.0] or int
           # set ngram range
-          "min_ngram": 1
-          "max_ngram": 1
+          "min_ngram": 1  # int
+          "max_ngram": 1  # int
           # limit vocabulary size
-          "max_features": None
+          "max_features": None  # int or None
+          # if convert all characters to lowercase
+          "lowercase": true  # bool
+          # handling Out-Of-Vacabulary (OOV) words
+          # will be converted to lowercase if lowercase is true
+          "OOV_token": None  # string or None
+          "OOV_words": []  # list of strings
 
 intent_classifier_keyword
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -421,13 +473,17 @@ intent_classifier_tensorflow_embedding
     It is recommended to use ``intent_featurizer_count_vectors`` that can be optionally preceded
     by ``nlp_spacy`` and ``tokenizer_spacy``.
 
+    .. note:: If during prediction time a message contains **only** words unseen during training,
+              and no Out-Of-Vacabulary preprocessor was used,
+              empty intent ``""`` is predicted with confidence ``0.0``.
+
 :Configuration:
     If you want to split intents into multiple labels, e.g. for predicting multiple intents or for
     modeling hierarchical intent structure, use these flags:
 
     - tokenization of intent labels:
-        - ``intent_tokenization_flag`` if ``true`` the algorithm will split the intent labels into tokens and use bag-of-words representations for them;
-        - ``intent_split_symbol`` sets the delimiter string to split the intent labels. Default ``_``
+        - ``intent_tokenization_flag`` if ``true`` the algorithm will split the intent labels into tokens and use bag-of-words representations for them, default ``false``;
+        - ``intent_split_symbol`` sets the delimiter string to split the intent labels, default ``_``.
 
 
     The algorithm also has hyperparameters to control:
@@ -451,6 +507,10 @@ intent_classifier_tensorflow_embedding
 
     .. note:: For ``cosine`` similarity ``mu_pos`` and ``mu_neg`` should be between ``-1`` and ``1``.
 
+    .. note:: There is an option to use linearly increasing batch size. The idea comes from `<https://arxiv.org/abs/1711.00489>`_.
+              In order to do it pass a list to ``batch_size``, e.g. ``"batch_size": [64, 256]`` (default behaviour).
+              If constant ``batch_size`` is required, pass an ``int``, e.g. ``"batch_size": 64``.
+
     In the config, you can specify these parameters:
 
     .. code-block:: yaml
@@ -462,14 +522,14 @@ intent_classifier_tensorflow_embedding
           "hidden_layer_size_a": [256, 128]
           "num_hidden_layers_b": 0
           "hidden_layer_size_b": []
-          "batch_size": 32
+          "batch_size": [64, 256]
           "epochs": 300
           # embedding parameters
-          "embed_dim": 10
+          "embed_dim": 20
           "mu_pos": 0.8  # should be 0.0 < ... < 1.0 for 'cosine'
           "mu_neg": -0.4  # should be -1.0 < ... < 1.0 for 'cosine'
           "similarity_type": "cosine"  # string 'cosine' or 'inner'
-          "num_neg": 10
+          "num_neg": 20
           "use_max_sim_neg": true  # flag which loss function to use
           # regularization
           "C2": 0.002
@@ -478,10 +538,14 @@ intent_classifier_tensorflow_embedding
           # flag if to tokenize intents
           "intent_tokenization_flag": false
           "intent_split_symbol": "_"
+          # visualization of accuracy
+          "evaluate_every_num_epochs": 10  # small values may hurt performance
+          "evaluate_on_num_examples": 1000  # large values may hurt performance
 
     .. note:: Parameter ``mu_neg`` is set to a negative value to mimic the original
               starspace algorithm in the case ``mu_neg = mu_pos`` and ``use_max_sim_neg = False``.
               See `starspace paper <https://arxiv.org/abs/1709.03856>`_ for details.
+
 
 intent_entity_featurizer_regex
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -490,10 +554,11 @@ intent_entity_featurizer_regex
 :Outputs: ``text_features`` and ``tokens.pattern``
 :Description:
     During training, the regex intent featurizer creates a list of `regular expressions` defined in the training data format.
-    If an expression is found in the input, a feature will be set, that will later be fed into intent classifier / entity
+    For each regex, a feature will be set marking whether this expression was found in the input, which will later be fed into intent classifier / entity
     extractor to simplify classification (assuming the classifier has learned during the training phase, that this set
     feature indicates a certain intent). Regex features for entity extraction are currently only supported by the
     ``ner_crf`` component!
+    .. note:: There needs to be a tokenizer previous to this featurizer in the pipeline!
 
 tokenizer_whitespace
 ~~~~~~~~~~~~~~~~~~~~
@@ -515,11 +580,13 @@ tokenizer_jieba
     ``tokenizer_whitespace``. Can be used to define tokens for the
     MITIE entity extractor. Make sure to install Jieba, ``pip install jieba``.
 :Configuration:
+    User's custom dictionary files can be auto loaded by specific the files' directory path via ``dictionary_path``
 
     .. code-block:: yaml
 
         pipeline:
         - name: "tokenizer_jieba"
+          dictionary_path: "path/to/custom/dictionary/dir"  # or None (which is default value) means don't use custom dictionaries
 
 tokenizer_mitie
 ~~~~~~~~~~~~~~~
@@ -594,7 +661,7 @@ ner_spacy
         }
 
 :Description:
-    Using spacy this component predicts the entities of a message. spacy uses a statistical BILUO transition model.
+    Using spacy this component predicts the entities of a message. spacy uses a statistical BILOU transition model.
     As of now, this component can only use the spacy builtin entity extraction models and can not be retrained.
     This extractor does not provide any confidence scores.
 
@@ -658,6 +725,7 @@ ner_crf
     and the states are entity classes. Features of the words (capitalisation, POS tagging,
     etc.) give probabilities to certain entity classes, as are transitions between
     neighbouring entity tags: the most likely set of tags is then calculated and returned.
+    If POS features are used (pos or pos2), spaCy has to be installed.
 :Configuration:
    .. code-block:: yaml
 
@@ -669,9 +737,10 @@ ner_crf
           # in array before will have the feature
           # "is the preceding word in title case?".
           # Available features are:
-          # ``low``, ``title``, ``word3``, ``word2``, ``pos``,
-          # ``pos2``, ``bias``, ``upper`` and ``digit``
-          features: [["low", "title"], ["bias", "word3"], ["upper", "pos", "pos2"]]
+          # ``low``, ``title``, ``suffix5``, ``suffix3``, ``suffix2``,
+          # ``suffix1``, ``pos``, ``pos2``, ``prefix5``, ``prefix2``,
+          # ``bias``, ``upper`` and ``digit``
+          features: [["low", "title"], ["bias", "suffix3"], ["upper", "pos", "pos2"]]
 
           # The flag determines whether to use BILOU tagging or not. BILOU
           # tagging is more rigorous however
@@ -684,11 +753,11 @@ ner_crf
 
           # This is the value given to sklearn_crfcuite.CRF tagger before training.
           # Specifies the L1 regularization coefficient.
-          L1_c: 1.0
+          L1_c: 0.1
 
           # This is the value given to sklearn_crfcuite.CRF tagger before training.
           # Specifies the L2 regularization coefficient.
-          L2_c: 1e-3
+          L2_c: 0.1
 
 .. _section_pipeline_duckling:
 
@@ -734,23 +803,11 @@ ner_duckling
 
 
 
-Creating new Components
------------------------
-You can create a custom Component to perform a specific task which NLU doesn't currently offer (e.g. sentiment analysis).
-A glimpse into the code of ``rasa_nlu.components.Component`` will reveal
-which functions need to be implemented to create a new component.
-You can add these to your pipeline by adding the module path to your pipeline, e.g. if you have a module called ``sentiment``
-containing a ``SentimentAnalyzer`` class:
-
-    .. code-block:: yaml
-
-        pipeline:
-        - name: "sentiment.SentimentAnalyzer"
-
+.. _section_component_lifecycle:
 
 Component Lifecycle
 -------------------
-Every component can implement several methods from the ``Component`` base class; in a pipeline these different methods
+Every component can implement several methods from the :class:`Component` base class; in a pipeline these different methods
 will be called in a specific order. Lets assume, we added the following pipeline to our config:
 ``"pipeline": ["Component A", "Component B", "Last Component"]``.
 The image shows the call order during the training of this pipeline :
@@ -765,3 +822,41 @@ component can retrieve these feature vectors from the context and do intent clas
 Initially the context is filled with all configuration values, the arrows in the image show the call order
 and visualize the path of the passed context. After all components are trained and persisted, the
 final context dictionary is used to persist the model's metadata.
+
+
+
+Returned Entities Object
+------------------------
+In the object returned after parsing there are two fields that show information
+about how the pipeline impacted the entities returned. The ``extractor`` field
+of an entity tells you which entity extractor found this particular entity.
+The ``processors`` field contains the name of components that altered this
+specific entity.
+
+The use of synonyms can also cause the ``value`` field not match the ``text``
+exactly. Instead it will return the trained synonym.
+
+.. code-block:: json
+
+    {
+      "text": "show me chinese restaurants",
+      "intent": "restaurant_search",
+      "entities": [
+        {
+          "start": 8,
+          "end": 15,
+          "value": "chinese",
+          "entity": "cuisine",
+          "extractor": "ner_crf",
+          "confidence": 0.854,
+          "processors": []
+        }
+      ]
+    }
+
+.. note::
+
+    The `confidence` will be set by the CRF entity extractor
+    (`ner_crf` component). The duckling entity extractor will always return
+    `1`. The `ner_spacy` extractor does not provide this information and
+    returns `null`.

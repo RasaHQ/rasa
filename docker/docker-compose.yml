@@ -1,0 +1,18 @@
+version: '3.0'
+
+services:
+  rasanlu:
+    image: rasa/rasa_nlu:latest-full
+    networks: ['rasa-network']
+    ports:
+    - "5000:5000"
+    volumes:
+    - "./rasa-app-data/projects:/app/projects"
+    - "./rasa-app-data/logs:/app/logs"
+  duckling:
+    image: rasa/duckling:latest
+    networks: ['rasa-network']
+    ports:
+    - "8000:8000"
+
+networks: {rasa-network: {}}

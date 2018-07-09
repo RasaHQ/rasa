@@ -39,6 +39,7 @@ install_requires = [
     "numpy>=1.13",
     "simplejson",
     "pyyaml",
+    'coloredlogs',
 ]
 
 extras_requires = {
@@ -50,6 +51,7 @@ extras_requires = {
               ],
     'tensorflow': ["scikit-learn",
                    "tensorflow",
+                   "sklearn-crfsuite"
                    ],
     'mitie': ["mitie"],
 }
