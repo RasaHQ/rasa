@@ -270,6 +270,28 @@ def create_app(model_directory,  # type: Optional[Text]
         domain = agent().domain
         return jsonify(domain.as_dict())
 
+    @app.route("/domain",
+               methods=['GET', 'OPTIONS'])
+    @cross_origin(origins=cors_origins)
+    @requires_auth(auth_token)
+    @ensure_loaded_agent(agent)
+    def get_domain():
+        """Get current domain in yaml or json format."""
+        accepts = request.headers.get("Accept", default="application/json")
+        if accepts.endswith("json"):
+            domain = agent().domain.as_dict()
+            return jsonify(domain)
+        elif accepts.endswith("yml"):
+            domain_yaml = agent().domain.as_yaml()
+            return Response(domain_yaml, status=200,
+                            content_type="application/x-yml")
+        else:
+            return Response(
+                    """Invalid accept header. Domain can be provided 
+                    as json ("Accept: application/json") or yml 
+                    ("Accept: application/x-yml"). Make sure you've set 
+                    the appropriate Accept header.""", status=406)
+
     @app.route("/conversations/<sender_id>/respond",
                methods=['GET', 'POST', 'OPTIONS'])
     @cross_origin(origins=cors_origins)
@@ -327,7 +349,7 @@ def create_app(model_directory,  # type: Optional[Text]
 
         except Exception as e:
             logger.exception("Caught an exception during prediction.")
-            return Response(jsonify(®error="Server failure. Error: {}"
+            return Response(jsonify(error="Server failure. Error: {}"
                                           "".format(e)),
                             status=500,
                             content_type="application/json")

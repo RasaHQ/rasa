@@ -162,11 +162,15 @@ class RegexInterpreter(NaturalLanguageInterpreter):
 
 
 class RasaNLUHttpInterpreter(NaturalLanguageInterpreter):
-    def __init__(self, model_name, endpoint, project_name='default'):
+    def __init__(self, model_name=None, endpoint=None, project_name='default'):
         # type: (Text, EndpointConfig, Text) -> None
         self.model_name = model_name
-        self.endpoint = endpoint
         self.project_name = project_name
+
+        if endpoint:
+            self.endpoint = endpoint
+        else:
+            self.endpoint = EndpointConfig('http://localhost:5000')
 
     def parse(self, text):
         """Parse a text message.
