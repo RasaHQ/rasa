@@ -89,7 +89,7 @@ def test_respond(app):
 
 
 @pytest.mark.parametrize("event", test_events)
-def test_pushing_events(app, event):
+def test_pushing_event(app, event):
     cid = str(uuid.uuid1())
     conversation = "http://dummy/conversations/{}".format(cid)
     data = json.dumps({"query": "/greet"})
@@ -98,7 +98,7 @@ def test_pushing_events(app, event):
     content = response.get_json()
     assert response.status_code == 200
 
-    data = json.dumps([event.as_dict()])
+    data = json.dumps(event.as_dict())
     response = app.post("{}/tracker/events".format(conversation),
                         data=data, content_type='application/json')
     content = response.get_json()
@@ -116,7 +116,7 @@ def test_pushing_events(app, event):
 
 def test_put_tracker(app):
     data = json.dumps([event.as_dict() for event in test_events])
-    response = app.put("http://dummy/conversations/pushtracker/tracker",
+    response = app.put("http://dummy/conversations/pushtracker/tracker/events",
                        data=data, content_type='application/json')
     content = response.get_json()
     assert response.status_code == 200
@@ -164,15 +164,16 @@ def test_remote_clients(http_app):
     assert cid in clients
 
 
-def test_remote_append_events(http_app):
+@pytest.mark.parametrize("event", test_events)
+def test_remote_append_events(http_app, event):
     client = RasaCoreClient(http_app, None)
 
     cid = str(uuid.uuid1())
 
-    client.append_events_to_tracker(cid, test_events[:2])
+    client.append_event_to_tracker(cid, event)
 
     tracker = client.tracker_json(cid)
 
     evts = tracker.get("events")
-    expected = [ActionExecuted(ACTION_LISTEN_NAME)] + test_events[:2]
+    expected = [ActionExecuted(ACTION_LISTEN_NAME), event]
     assert events.deserialise_events(evts) == expected

@@ -394,9 +394,7 @@ class TemplateDomain(Domain):
             raise Exception(
                     "Failed to load domain specification from '{}'. "
                     "File not found!".format(os.path.abspath(filename)))
-        cls.validate_domain_yaml(filename)
-        data = utils.read_yaml_file(filename)
-        return cls.from_dict(data, action_endpoint)
+        return cls.from_yaml(read_file(filename), action_endpoint)
 
     @classmethod
     def from_yaml(cls, yaml, action_endpoint=None):
@@ -435,11 +433,10 @@ class TemplateDomain(Domain):
         try:
             c.validate(raise_exception=True)
         except SchemaError:
-            raise ValueError("Failed to validate your domain yaml '{}'. "
+            raise ValueError("Failed to validate your domain yaml. "
                              "Make sure the file is correct, to do so"
                              "take a look at the errors logged during "
-                             "validation previous to this exception. "
-                             "".format(os.path.abspath(input)))
+                             "validation previous to this exception. ")
 
     @staticmethod
     def collect_slots(slot_dict):

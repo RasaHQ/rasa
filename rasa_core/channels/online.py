@@ -23,7 +23,7 @@ from rasa_core.events import (
 from rasa_core.interpreter import INTENT_MESSAGE_PREFIX
 from rasa_core.policies.online_trainer import (
     DEFAULT_FILE_EXPORT_PATH)
-from rasa_core.run import _interpreter_from_args
+from rasa_core.run import interpreter_from_args
 from rasa_core.training.structures import Story
 from rasa_core.utils import EndpointConfig
 
