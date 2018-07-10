@@ -24,18 +24,11 @@ or if none of the dialogue policies predict an action with confidence higher tha
                   policies=[KerasPolicy(), fallback])
 
 
-You also need to include a story to let Rasa Core know what to do after the fallback
-action. Most likely you just want to listen for the next user input, in which case your
-story will look like this:
-
-.. code-block:: md
-
-    ## fallback story
-    - utter_default
-
+``action_listen`` will always be predicted after the fallback action, meaning
+the bot will wait for the next user input.
 
 If you have a specific intent that will trigger this, let's say it's called ``out_of_scope``, then you
-should also add this as a story:
+should add this as a story:
 
 .. code-block:: md
 
