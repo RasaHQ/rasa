@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import errno
+import inspect
 import io
 import json
 import logging
@@ -77,14 +78,6 @@ def module_path_from_instance(inst):
     # type: (Any) -> Text
     """Return the module path of an instances class."""
     return inst.__module__ + "." + inst.__class__.__name__
-
-
-def all_subclasses(cls):
-    # type: (Any) -> List[Any]
-    """Returns all known (imported) subclasses of a class."""
-
-    return cls.__subclasses__() + [g for s in cls.__subclasses__()
-                                   for g in all_subclasses(s)]
 
 
 def dump_obj_as_json_to_file(filename, obj):
@@ -333,8 +326,8 @@ def _dump_yaml(obj, output):
         import yaml
 
         yaml.safe_dump(obj, output,
-                           default_flow_style=False,
-                           allow_unicode=True)
+                       default_flow_style=False,
+                       allow_unicode=True)
     else:
         import ruamel.yaml
 
@@ -344,6 +337,7 @@ def _dump_yaml(obj, output):
         yaml_writer.allow_unicode = True
 
         yaml_writer.dump(obj, output)
+
 
 def dump_obj_as_yaml_to_file(filename, obj):
     """Writes data (python dict) to the filename in yaml repr."""
@@ -356,6 +350,7 @@ def dump_obj_as_yaml_to_string(obj):
     str_io = StringIO()
     _dump_yaml(obj, str_io)
     return str_io.getvalue()
+
 
 def read_file(filename, encoding="utf-8"):
     """Read text from a file."""
@@ -434,3 +429,102 @@ def extract_args(kwargs,  # type: Dict[Text, Any]
             remaining[k] = v
 
     return extracted, remaining
+
+
+def arguments_of(func):
+    """Return the parameters of the function `func` as a list of their names."""
+
+    try:
+        # python 3.x is used
+        return inspect.signature(func).parameters.keys()
+    except AttributeError:
+        # python 2.x is used
+        return inspect.getargspec(func).args
+
+
+def concat_url(base, subpath):
+    if subpath:
+        url = base
+        if not base.endswith("/"):
+            url += "/"
+        if subpath.startswith("/"):
+            subpath = subpath[1:]
+        return url + subpath
+    else:
+        return base
+
+
+def all_subclasses(cls):
+    # type: (Any) -> List[Any]
+    """Returns all known (imported) subclasses of a class."""
+
+    return cls.__subclasses__() + [g for s in cls.__subclasses__()
+                                   for g in all_subclasses(s)]
+
+
+def read_endpoint_config(filename, endpoint_type):
+    if not filename:
+        return None
+
+    content = read_yaml_file(filename)
+    if endpoint_type in content:
+        return EndpointConfig.from_dict(content[endpoint_type])
+    else:
+        return None
+
+
+class EndpointConfig(object):
+    def __init__(self, url, params=None, headers=None, basic_auth=None,
+                 token=None):
+        self.url = url
+        self.params = params if params else {}
+        self.headers = headers if headers else {}
+        self.basic_auth = basic_auth
+        self.token = token
+
+    def request(self,
+                method="post",
+                subpath=None,
+                content_type="application/json",
+                **kwargs):
+        from requests.auth import HTTPBasicAuth
+        import requests
+
+        # create the appropriate headers
+        headers = self.headers.copy()
+        if content_type:
+            headers["Content-Type"] = content_type
+        if "headers" in kwargs:
+            headers.update(kwargs["headers"])
+            del kwargs["headers"]
+
+        # create authentication parameters
+        if self.basic_auth:
+            auth = HTTPBasicAuth(self.basic_auth["username"],
+                                 self.basic_auth["password"])
+        else:
+            auth = None
+
+        url = concat_url(self.url, subpath)
+
+        # construct GET parameters
+        params = self.params.copy()
+        if "params" in kwargs:
+            params.update(kwargs["params"])
+            del kwargs["params"]
+
+        return requests.request(method,
+                                url,
+                                headers=headers,
+                                params=self.params,
+                                auth=auth,
+                                **kwargs)
+
+    @classmethod
+    def from_dict(cls, data):
+        return EndpointConfig(
+                data.get("url"),
+                data.get("params"),
+                data.get("headers"),
+                data.get("basic_auth"),
+                data.get("token"))

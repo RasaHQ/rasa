@@ -16,7 +16,7 @@ from flask_cors import CORS, cross_origin
 from gevent.pywsgi import WSGIServer
 from typing import Union, Text, Optional
 
-from rasa_core import utils, events
+from rasa_core import utils, events, run
 from rasa_core.agent import Agent
 from rasa_core.channels.direct import CollectingOutputChannel
 from rasa_core.interpreter import NaturalLanguageInterpreter
@@ -68,6 +68,10 @@ def create_argument_parser():
             type=str,
             default="rasa_core.log",
             help="store log file in specified file")
+    parser.add_argument(
+            '--endpoints',
+            default=None,
+            help="Configuration file for the connectors as a yml file")
 
     utils.add_logging_option_arguments(parser)
     return parser
@@ -137,14 +141,16 @@ def _create_agent(
         model_directory,  # type: Text
         interpreter,  # type: Union[Text,NLI,None]
         action_factory=None,  # type: Optional[Text]
-        tracker_store=None  # type: Optional[TrackerStore]
+        tracker_store=None,  # type: Optional[TrackerStore]
+        generator=None
 ):
     # type: (...) -> Optional[Agent]
     try:
 
         return Agent.load(model_directory, interpreter,
                           tracker_store=tracker_store,
-                          action_factory=action_factory)
+                          action_factory=action_factory,
+                          generator=generator)
     except Exception as e:
         logger.warn("Failed to load any agent model. Running "
                     "Rasa Core server with out loaded model now. {}"
@@ -159,7 +165,8 @@ def create_app(model_directory,  # type: Text
                cors_origins=None,  # type: Optional[List[Text]]
                action_factory=None,  # type: Optional[Text]
                auth_token=None,  # type: Optional[Text]
-               tracker_store=None  # type: Optional[TrackerStore]
+               tracker_store=None,  # type: Optional[TrackerStore]
+               endpoints=None
                ):
     """Class representing a Rasa Core HTTP server."""
 
@@ -172,15 +179,19 @@ def create_app(model_directory,  # type: Text
         cors_origins = []
     model_directory = model_directory
 
-    interpreter = interpreter
+    nlg_endpoint = utils.read_endpoint_config(endpoints, "nlg_endpoint")
+
+    nlu_endpoint = utils.read_endpoint_config(endpoints, "nlu_endpoint")
 
     tracker_store = tracker_store
 
     action_factory = action_factory
 
+    _interpreter = run.interpreter_from_args(interpreter, nlu_endpoint)
+
     # this needs to be an array, so we can modify it in the nested functions...
-    _agent = [_create_agent(model_directory, interpreter,
-                            action_factory, tracker_store)]
+    _agent = [_create_agent(model_directory, _interpreter,
+                            action_factory, tracker_store, nlg_endpoint)]
 
     def agent():
         if _agent and _agent[0]:
@@ -416,7 +427,7 @@ def create_app(model_directory,  # type: Text
                 os.path.abspath(model_directory)))
 
         _agent[0] = _create_agent(model_directory, interpreter,
-                                  action_factory, tracker_store)
+                                  action_factory, tracker_store, nlg_endpoint)
         logger.debug("Finished loading new agent.")
         return jsonify({'success': 1})
 
@@ -437,7 +448,8 @@ if __name__ == '__main__':
                      cmdline_args.loglevel,
                      cmdline_args.log_file,
                      cmdline_args.cors,
-                     auth_token=cmdline_args.auth_token)
+                     auth_token=cmdline_args.auth_token,
+                     endpoints=cmdline_args.endpoints)
 
     logger.info("Started http server on port %s" % cmdline_args.port)
 

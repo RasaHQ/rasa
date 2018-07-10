@@ -23,6 +23,10 @@ class FileInputChannel(InputChannel):
     message. Either the whole message (if no capturing group is present) or the
     first capturing group will be used as the user message."""
 
+    @classmethod
+    def name(cls):
+        return "file"
+
     def __init__(self,
                  filename,
                  output_channel=None,
