@@ -18,6 +18,14 @@ Changed
 Removed
 -------
 
+[0.9.8] - 2018-07-10
+^^^^^^^^^^^^^^^^^^^^
+
+Fixed
+-----
+- force prediction of action_listen after fallback action (this removes the
+  need for a fallback story in your training data)
+
 [0.9.7] - 2018-07-02
 ^^^^^^^^^^^^^^^^^^^^
 
