@@ -30,11 +30,11 @@ RUN apt-get update -qq \
     && apt-get remove -y wget \
     && apt-get autoremove -y
 
-COPY sample_configs/config_mitie.json ${RASA_NLU_HOME}/config.json
+COPY sample_configs/config_mitie.yml ${RASA_NLU_HOME}/config.yml
 
 VOLUME ["/app/projects", "/app/logs", "/app/data"]
 
 EXPOSE 5000
 
 ENTRYPOINT ["./entrypoint.sh"]
-CMD ["start", "-c", "config.json"]
+CMD ["start", "-c", "config.yml"]
