@@ -20,6 +20,8 @@ ACTION_LISTEN_NAME = "action_listen"
 
 ACTION_RESTART_NAME = "action_restart"
 
+ACTION_FALLBACK_NAME = "action_fallback"
+
 
 class Action(object):
     """Next action to be taken in response to a dialogue state."""
@@ -105,3 +107,19 @@ class ActionRestart(Action):
         if domain.random_template_for("utter_restart") is not None:
             dispatcher.utter_template("utter_restart")
         return [Restarted()]
+
+
+class ActionFallback(Action):
+    """Executes the fallback action and goes back to the previous state
+    of the dialogue"""
+
+    def name(self):
+        return ACTION_FALLBACK_NAME
+
+    def run(self, dispatcher, tracker, domain):
+        from rasa_core.events import UserUtteranceReverted, ActionReverted
+
+        if domain.random_template_for("utter_default") is not None:
+            dispatcher.utter_template("utter_default")
+
+        return [ActionReverted(), UserUtteranceReverted()]

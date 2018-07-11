@@ -22,7 +22,7 @@ from typing import Text
 
 from rasa_core import utils
 from rasa_core.actions import Action
-from rasa_core.actions.action import ActionListen, ActionRestart
+from rasa_core.actions.action import ActionListen, ActionRestart, ActionFallback
 from rasa_core.actions.factories import (
     action_factory_by_name,
     ensure_action_name_uniqueness)
@@ -86,7 +86,7 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
     A Domain subclass provides the actions the bot can take, the intents
     and entities it can recognise"""
 
-    DEFAULT_ACTIONS = [ActionListen(), ActionRestart()]
+    DEFAULT_ACTIONS = [ActionListen(), ActionRestart(), ActionFallback()]
 
     def __init__(self, store_entities_as_slots=True,
                  restart_intent="restart"):
