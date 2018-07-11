@@ -4,3 +4,5 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from rasa_core.nlg.generator import NaturalLanguageGenerator
+from rasa_core.nlg.template import TemplatedNaturalLanguageGenerator
+from rasa_core.nlg.callback import CallbackNaturalLanguageGenerator

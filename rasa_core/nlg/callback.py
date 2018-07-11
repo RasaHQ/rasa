@@ -14,7 +14,10 @@ from rasa_core.utils import EndpointConfig
 logger = logging.getLogger(__name__)
 
 
-def _nlg_data_schema():
+def nlg_response_format():
+    """Expected response schema for an NLG endpoint.
+
+    Used for validation of the response returned from the NLG endpoint."""
     return {
         "type": "object",
         "properties": {
@@ -32,32 +35,42 @@ def _nlg_data_schema():
     }
 
 
+def nlg_request_format(template_name, tracker, output_channel, **kwargs):
+    # type: (Text, DialogueStateTracker, Text, **Any) -> Dict[Text, Any]
+    """Create the json body for the NLG json body for the request."""
+
+    filled_slots = tracker.current_slot_values()
+    return {
+        "template": template_name,
+        "slots": filled_slots,
+        "arguments": kwargs,
+        "channel": output_channel
+    }
+
+
 class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
+    """Generate bot utterances by using a remote endpoint for the generation.
+
+    The generator will call the endpoint for each message it wants to
+    generate. The endpoint needs to respond with a properly formatted
+    json. The generator will use this message to create a response for
+    the bot."""
+
     def __init__(self, endpoint_config):
         # type: (EndpointConfig) -> None
 
         self.nlg_endpoint = endpoint_config
 
-    @staticmethod
-    def _nlg_api_format(template_name, tracker, output_channel, kwargs):
-        filled_slots = tracker.current_slot_values()
-        return {
-            "template": template_name,
-            "slots": filled_slots,
-            "arguments": kwargs,
-            "channel": output_channel
-        }
-
     def generate(self, template_name, tracker, output_channel, **kwargs):
         # type: (Text, DialogueStateTracker, Text, **Any) -> Dict[Text, Any]
-        """Retrieve a named template from the domain."""
+        """Retrieve a named template from the domain using an endpoint."""
 
-        body = self._nlg_api_format(template_name, tracker, output_channel,
-                                    kwargs)
+        body = nlg_request_format(template_name, tracker, output_channel,
+                                  **kwargs)
 
         response = self.nlg_endpoint.request(method="post", json=body)
-
         response.raise_for_status()
+
         content = response.json()
         if self.validate_response(content):
             return content
@@ -67,20 +80,17 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
     @staticmethod
     def validate_response(content):
         # type: (content) -> bool
-        """Validate rasa training data format to ensure proper training.
-
-        Raises exception on failure."""
+        """Validate the NLG response. Raises exception on failure."""
         from jsonschema import validate
         from jsonschema import ValidationError
 
         try:
-            validate(content, _nlg_data_schema())
+            validate(content, nlg_response_format())
             return True
         except ValidationError as e:
             e.message += (
                 ". Failed to validate NLG response from API, make sure your "
                 "response from the NLG endpoint is valid. "
                 "For more information about the format visit "
-                # TODO: TB - DOCU add correct link
                 "https://nlu.rasa.com/...")
             raise e
