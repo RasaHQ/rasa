@@ -31,7 +31,6 @@ from rasa_core.tracker_store import TrackerStore
 from rasa_core.trackers import DialogueStateTracker
 
 
-
 logger = logging.getLogger(__name__)
 
 try:
@@ -41,6 +40,7 @@ except UnknownTimeZoneError:
     logger.warn("apscheduler failed to start. "
                 "This is probably because your system timezone is not set"
                 "Set it with e.g. echo \"Europe/Berlin\" > /etc/timezone")
+
 
 class MessageProcessor(object):
     def __init__(self,
@@ -312,8 +312,9 @@ class MessageProcessor(object):
                          "code.".format(action.name()), )
             logger.error(e, exc_info=True)
             events = []
-        self.log_bot_utterances_on_tracker(tracker, dispatcher)
+
         self._log_action_on_tracker(tracker, action.name(), events)
+        self.log_bot_utterances_on_tracker(tracker, dispatcher)
         self._schedule_reminders(events, dispatcher)
 
         return self.should_predict_another_action(action.name(), events)
