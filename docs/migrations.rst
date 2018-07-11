@@ -10,7 +10,7 @@ how you can migrate from one version to another.
 ---------------
 There is release is backwards compatible with models trained in 0.8.x.
 
-There have been some API changes as well as changes to the cmdline scripts:
+There have been some API changes to classes and methods:
 
 - if you use ``dispatcher.utter_template`` or
   ``dispatcher.utter_button_template`` in your custom actions run code,
