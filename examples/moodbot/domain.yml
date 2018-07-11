@@ -34,6 +34,3 @@ templates:
 
   utter_goodbye:
   - text: "Bye"
-
-  utter_default:
-  - text: "Please rephrase"
