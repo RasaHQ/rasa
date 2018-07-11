@@ -5,6 +5,40 @@ Migration Guide
 This page contains information about changes between major versions and
 how you can migrate from one version to another.
 
+
+0.9.x to 0.10.0
+---------------
+There is release is backwards compatible with models trained in 0.8.x.
+
+There have been some API changes as well as changes to the cmdline scripts:
+
+- if you use ``dispatcher.utter_template`` or
+  ``dispatcher.utter_button_template`` in your custom actions run code,
+  they now need the ``tracker`` as a second argument, e.g.
+  ``dispatcher.utter_template("utter_greet", tracker)``
+
+- all input and output channels should have a ``name``. If you are using a custom
+  channel, make sure to implement a classmethod that returns the name. The name
+  needs to be added to the **input channel and the output channel**. You
+  can find examples in ``rasa_core.channels.direct.CollectingOutputChannel``:
+
+  .. code-block:: python
+
+      @classmethod
+      def name(cls):
+          """Every channel needs a name"""
+          return "facebook"
+
+- the ``RasaNLUHttpInterpreter`` when created now needs to be passed an
+  instance of ``EndpointConfig`` instead of ``server`` and ``token``, e.g.:
+
+  .. code-block:: python
+
+      from rasa_core.utils import EndpointConfig
+
+      endpoint = EndpointConfig("http://localhost:500", token="mytoken")
+      interpreter = RasaNLUHttpInterpreter("mymodelname", endpoint)
+
 0.8.x to 0.9.0
 --------------
 
