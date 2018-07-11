@@ -21,6 +21,8 @@ Changed
 - changed the logic inside AugmentedMemoizationPolicy to recall actions only if they are the same in training stories
 - moved AugmentedMemoizationPolicy to memoization.py
 - wrapped initialization of BackgroundScheduler in try/except to allow running on jupyterhub / binderhub/ colaboratory
+- fixed order of events logged on a tracker: action executed is now always
+  logged before bot utterances that action created
 
 Removed
 -------
