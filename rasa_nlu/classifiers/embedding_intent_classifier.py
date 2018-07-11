@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import io
 import logging
 import os
+import math
 from tqdm import tqdm
 
 import typing
@@ -84,6 +85,10 @@ class EmbeddingIntentClassifier(Component):
         # flag if tokenize intents
         "intent_tokenization_flag": False,
         "intent_split_symbol": '_',
+
+        "out_of_scope_training_flag": False,
+        "out_of_scope_intent": None,
+        "out_of_scope_soft_threshold": 0.5,
 
         # visualization of accuracy
         "evaluate_every_num_epochs": 10,  # small values may hurt performance
@@ -232,6 +237,8 @@ class EmbeddingIntentClassifier(Component):
         self.word_embed = word_embed
         self.intent_embed = intent_embed
 
+        logging.warn("Using Georg's Fork of EmbeddingIntentClassifier")
+
     # training data helpers:
     @staticmethod
     def _create_intent_dict(training_data):
@@ -347,8 +354,29 @@ class EmbeddingIntentClassifier(Component):
                              "should be 'cosine' or 'inner'"
                              "".format(self.similarity_type))
 
-    def _tf_loss(self, sim, sim_emb):
-        """Define loss"""
+    def _tf_loss(self, sim, sim_emb, similarity_mask):
+        """Define loss
+
+        Arguments:
+        - sim:
+            Tensor of shape [batch_size, num_neg + 1]
+            For each element of the batch, its similarity to the correct
+            intent (first element) and to num_neg wrong intents.
+        - sim_emb:
+            Tensor of shape [batch_size, num_neg]
+            For each element of the batch, the similarity of the correct
+            intent to the num_neg negative intents.
+        - similarity_mask:
+            Tensor of shape [batch_size]
+            Indicates whether the example's similarity to its intent should
+            contribute to the loss.
+        """
+
+        # Set masked similarities to 1
+        sim = tf.concat([
+            tf.where(similarity_mask, sim[:, 0:1], tf.ones((tf.shape(sim)[0], 1), tf.float32)),
+            sim[:, 1:]
+        ], axis=1)
 
         if self.use_max_sim_neg:
             max_sim_neg = tf.reduce_max(sim[:, 1:], -1)
@@ -491,6 +519,12 @@ class EmbeddingIntentClassifier(Component):
         self.encoded_all_intents = self._create_encoded_intents(
                                         intent_dict)
 
+        if self.component_config["out_of_scope_training_flag"]:
+
+            out_of_scope_index = intent_dict.get(
+                self.component_config["out_of_scope_intent"], -1)
+            out_of_scope_vector = self.encoded_all_intents[out_of_scope_index]
+
         X, Y, intents_for_X = self._prepare_data_for_training(
                                 training_data, intent_dict)
 
@@ -512,13 +546,23 @@ class EmbeddingIntentClassifier(Component):
 
             is_training = tf.placeholder_with_default(False, shape=())
 
+            if self.component_config["out_of_scope_training_flag"]:
+                # Mask out out-of-scope examples, so they don't need to be
+                # pushed to the same vector
+                out_of_scope_vector = tf.constant(np.expand_dims(out_of_scope_vector, 0))
+                is_out_of_scope = tf.equal(self.b_in[:, 0, :], tf.cast(out_of_scope_vector, tf.float32))
+                is_out_of_scope = tf.reduce_min(tf.cast(is_out_of_scope, tf.int32), axis=1)
+                similarity_mask = tf.logical_not(tf.cast(is_out_of_scope, tf.bool))
+            else:
+                similarity_mask = tf.ones(tf.shape(self.a_in)[0], tf.bool)
+
             (self.word_embed,
              self.intent_embed) = self._create_tf_embed(self.a_in, self.b_in,
                                                         is_training)
 
             self.sim_op, sim_emb = self._tf_sim(self.word_embed,
                                                 self.intent_embed)
-            loss = self._tf_loss(self.sim_op, sim_emb)
+            loss = self._tf_loss(self.sim_op, sim_emb, similarity_mask)
 
             train_op = tf.train.AdamOptimizer().minimize(loss)
 
@@ -537,6 +581,15 @@ class EmbeddingIntentClassifier(Component):
                                                   self.b_in: all_Y})
         message_sim = message_sim.flatten()  # sim is a matrix
 
+        if self.component_config["out_of_scope_training_flag"]:
+            intent_dict = {v: k for k, v in self.inv_intent_dict.items()}
+            oos_index = intent_dict[self.component_config["out_of_scope_intent"]]
+            soft_threshold = self.component_config["out_of_scope_soft_threshold"]
+
+            message_sim[oos_index] = -math.inf
+            max_sim = message_sim.max()
+            message_sim[oos_index] = min(2 * soft_threshold - max_sim, 1.0)
+
         intent_ids = message_sim.argsort()[::-1]
         message_sim[::-1].sort()
 
@@ -544,6 +597,8 @@ class EmbeddingIntentClassifier(Component):
             # clip negative values to zero
             message_sim[message_sim < 0] = 0
         elif self.similarity_type == 'inner':
+            assert not self.component_config["out_of_scope_training_flag"], \
+                "Out of scope training not supported with 'inner' similarity."
             # normalize result to [0, 1] with softmax
             message_sim = np.exp(message_sim)
             message_sim /= np.sum(message_sim)
