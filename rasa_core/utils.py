@@ -9,6 +9,11 @@ import io
 import json
 import logging
 import os
+import requests
+
+from requests.auth import HTTPBasicAuth
+
+import rasa_core
 import sys
 from hashlib import sha1
 from random import Random
@@ -443,6 +448,14 @@ def arguments_of(func):
 
 
 def concat_url(base, subpath):
+    # type: (Text, Optional[Text]) -> Text
+    """Append a subpath to a base url.
+
+    Strips leading slashes from the subpath if necessary. This behaves
+    differently than `urlparse.urljoin` and will not treat the subpath
+    as a base url if it starts with `/` but will always append it to the
+    `base`."""
+
     if subpath:
         url = base
         if not base.endswith("/"):
@@ -463,6 +476,9 @@ def all_subclasses(cls):
 
 
 def read_endpoint_config(filename, endpoint_type):
+    # type: (Text, Text) -> Optional[rasa_core.utils.EndpointConfig]
+    """Read an endpoint configuration file from disk and extract one config. """
+
     if not filename:
         return None
 
@@ -474,21 +490,27 @@ def read_endpoint_config(filename, endpoint_type):
 
 
 class EndpointConfig(object):
+    """Configuration for an external HTTP endpoint."""
+
     def __init__(self, url, params=None, headers=None, basic_auth=None,
-                 token=None):
+                 token=None, token_name="token"):
         self.url = url
         self.params = params if params else {}
         self.headers = headers if headers else {}
         self.basic_auth = basic_auth
         self.token = token
+        self.token_name = token_name
 
     def request(self,
-                method="post",
-                subpath=None,
-                content_type="application/json",
-                **kwargs):
-        from requests.auth import HTTPBasicAuth
-        import requests
+                method="post",  # type: Text
+                subpath=None,  # type: Optional[Text]
+                content_type="application/json",  # type: Text
+                **kwargs  # type: Dict[Text, Any]
+                ):
+        """Send a HTTP request to the endpoint.
+
+        All additional arguments will get passed through
+        to `requests.request`."""
 
         # create the appropriate headers
         headers = self.headers.copy()
@@ -509,6 +531,11 @@ class EndpointConfig(object):
 
         # construct GET parameters
         params = self.params.copy()
+
+        # set the authentication token if present
+        if self.token:
+            params[self.token_name] = self.token
+
         if "params" in kwargs:
             params.update(kwargs["params"])
             del kwargs["params"]
@@ -527,4 +554,5 @@ class EndpointConfig(object):
                 data.get("params"),
                 data.get("headers"),
                 data.get("basic_auth"),
-                data.get("token"))
+                data.get("token"),
+                data.get("token_name"))

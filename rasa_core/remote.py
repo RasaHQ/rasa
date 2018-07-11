@@ -234,16 +234,16 @@ class RemoteAgent(object):
         action = self.domain.action_for_name(action_name)
         # events and return values are used to update
         # the tracker state after an action has been taken
-        # try:
-        action_events = action.run(dispatcher, tracker, self.domain)
-        # except Exception:
-        #     logger.exception(
-        #             "Encountered an exception while running action "
-        #             "'{}'. Bot will continue, but the actions "
-        #             "events are lost. Make sure to fix the "
-        #             "exception in your custom code."
-        #             "".format(action.name()))
-        #     action_events = []
+        try:
+            action_events = action.run(dispatcher, tracker, self.domain)
+        except Exception:
+            logger.exception(
+                    "Encountered an exception while running action "
+                    "'{}'. Bot will continue, but the actions "
+                    "events are lost. Make sure to fix the "
+                    "exception in your custom code."
+                    "".format(action.name()))
+            action_events = []
 
         # this is similar to what is done in the processor, but instead of
         # logging the events on the tracker we need to return them to the
