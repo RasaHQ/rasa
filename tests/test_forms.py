@@ -16,7 +16,7 @@ from rasa_core.actions.forms import (
     FreeTextFormField
 )
 from rasa_core.domain import TemplateDomain
-from rasa_core.nlg.template import TemplatedNaturalLanguageGenerator
+from rasa_core.nlg import TemplatedNaturalLanguageGenerator
 from rasa_core.tracker_store import InMemoryTrackerStore
 from rasa_core.channels.direct import CollectingOutputChannel
 from rasa_core.dispatcher import Dispatcher

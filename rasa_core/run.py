@@ -7,6 +7,7 @@ import argparse
 import logging
 
 from builtins import str
+from typing import Optional, Union, Text
 
 from rasa_core import utils, constants
 from rasa_core.agent import Agent
@@ -20,7 +21,7 @@ from rasa_core.channels.twilio import TwilioInput
 from rasa_core.interpreter import (
     NaturalLanguageInterpreter,
     RasaNLUHttpInterpreter)
-from rasa_core.utils import read_yaml_file
+from rasa_core.utils import read_yaml_file, EndpointConfig
 
 logger = logging.getLogger()  # get the root logger
 
@@ -144,7 +145,17 @@ def create_input_channel(channel, port, credentials_file):
             raise Exception("Unknown input channel for running main.")
 
 
-def interpreter_from_args(nlu_model, nlu_endpoint):
+def interpreter_from_args(
+        nlu_model,  # type: Union[Text, NaturalLanguageInterpreter, None]
+        nlu_endpoint  # type: Optional[EndpointConfig]
+        ):
+    # type: (...) -> Optional[NaturalLanguageInterpreter]
+    """Create an interpreter from the commandline arguments.
+
+    Depending on which values are passed for model and endpoint, this
+    will create the corresponding interpreter (either loading the model
+    locally or setting up an endpoint based interpreter)."""
+
     if isinstance(nlu_model, NaturalLanguageInterpreter):
         return nlu_model
 

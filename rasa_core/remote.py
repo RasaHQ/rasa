@@ -115,7 +115,7 @@ class RasaCoreClient(object):
                 subpath=url,
                 method="post",
                 data=data.encode("utf-8"),
-                headers={'Content-Type': 'text/plain; charset=utf-8'}
+                headers={'Content-Type': 'application/json; charset=utf-8'}
         )
         if response.status_code == 200:
             return response.json()

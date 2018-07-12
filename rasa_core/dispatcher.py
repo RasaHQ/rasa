@@ -10,7 +10,7 @@ import typing
 from typing import Text, List, Dict, Any
 
 from rasa_core.channels import OutputChannel
-from rasa_core.nlg.generator import NaturalLanguageGenerator
+from rasa_core.nlg import NaturalLanguageGenerator
 
 logger = logging.getLogger(__name__)
 

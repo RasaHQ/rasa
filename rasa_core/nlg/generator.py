@@ -15,7 +15,7 @@ class NaturalLanguageGenerator(object):
         There are a lot of different methods to implement this, e.g. the
         generation can be based on templates or be fully ML based by feeding
         the dialogue state into a machine learning NLG model."""
-        pass
+        raise NotImplementedError
 
     @staticmethod
     def create(obj, domain):
@@ -30,6 +30,6 @@ class NaturalLanguageGenerator(object):
             from rasa_core.nlg import TemplatedNaturalLanguageGenerator
             return TemplatedNaturalLanguageGenerator(domain.templates)
         else:
-            raise Exception("Can not create a NaturalLanguageGenerator "
+            raise Exception("Cannot create a NaturalLanguageGenerator "
                             "based on the passed object. Type: `{}`"
                             "".format(type(obj)))
