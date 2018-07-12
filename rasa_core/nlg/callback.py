@@ -14,7 +14,7 @@ from rasa_core.utils import EndpointConfig
 logger = logging.getLogger(__name__)
 
 
-def nlg_response_format():
+def nlg_response_format_spec():
     """Expected response schema for an NLG endpoint.
 
     Used for validation of the response returned from the NLG endpoint."""
@@ -35,16 +35,49 @@ def nlg_response_format():
     }
 
 
+def nlg_request_format_spec():
+    """Expected request schema for requests sent to an NLG endpoint."""
+
+    return {
+        "type": "object",
+        "properties": {
+            "template": {"type": "string"},
+            "arguments": {"type": "object"},
+            "tracker": {
+                "type": "object",
+                "properties": {
+                    "sender_id": {"type": "string"},
+                    "slots": {"type": "object"},
+                    "latest_message": {"type": "object"},
+                    "latest_event_time": {"type": "number"},
+                    "paused": {"type": "boolean"},
+                    "events": {"type": "array"}
+                }
+            },
+            "channel": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"}
+                }
+            }
+        },
+    }
+
+
 def nlg_request_format(template_name, tracker, output_channel, **kwargs):
     # type: (Text, DialogueStateTracker, Text, **Any) -> Dict[Text, Any]
     """Create the json body for the NLG json body for the request."""
 
-    filled_slots = tracker.current_slot_values()
+    tracker_state = tracker.current_state(
+            should_include_events=True, only_events_after_latest_restart=True)
+
     return {
         "template": template_name,
-        "slots": filled_slots,
         "arguments": kwargs,
-        "channel": output_channel
+        "tracker": tracker_state,
+        "channel": {
+            "name": output_channel
+        }
     }
 
 
@@ -65,7 +98,9 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
         # type: (Text, DialogueStateTracker, Text, **Any) -> Dict[Text, Any]
         """Retrieve a named template from the domain using an endpoint."""
 
-        body = nlg_request_format(template_name, tracker, output_channel,
+        body = nlg_request_format(template_name,
+                                  tracker,
+                                  output_channel,
                                   **kwargs)
 
         response = self.nlg_endpoint.request(method="post", json=body)
@@ -85,7 +120,7 @@ class CallbackNaturalLanguageGenerator(NaturalLanguageGenerator):
         from jsonschema import ValidationError
 
         try:
-            validate(content, nlg_response_format())
+            validate(content, nlg_response_format_spec())
             return True
         except ValidationError as e:
             e.message += (

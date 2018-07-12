@@ -103,7 +103,8 @@ class ActionRestart(Action):
     def run(self, dispatcher, tracker, domain):
         from rasa_core.events import Restarted
 
-        dispatcher.utter_template("utter_restart", tracker, silent_fail=True)
+        dispatcher.utter_template("utter_restart", tracker,
+                                  silent_fail=True)
         return [Restarted()]
 
 
@@ -118,6 +119,7 @@ class ActionDefaultFallback(Action):
         from rasa_core.events import UserUtteranceReverted
 
         if domain.random_template_for("utter_default") is not None:
-            dispatcher.utter_template("utter_default")
+            dispatcher.utter_template("utter_default", tracker,
+                                      silent_fail=True)
 
         return [UserUtteranceReverted()]

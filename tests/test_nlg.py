@@ -5,10 +5,12 @@ from __future__ import unicode_literals
 
 import uuid
 
+import jsonschema
 import pytest
 from flask import Flask, request, jsonify
 from pytest_localserver.http import WSGIServer
 
+from rasa_core.nlg.callback import nlg_request_format_spec
 from rasa_core.utils import EndpointConfig
 from rasa_core.agent import Agent
 
@@ -18,8 +20,13 @@ def nlg_app(base_url="/"):
 
     @app.route(base_url, methods=['POST'])
     def generate():
-        """Check if the server is running and responds with the version."""
+        """Simple HTTP NLG generator, checks that the incoming request
+        is format according to the spec."""
+
         nlg_call = request.json
+
+        jsonschema.validate(nlg_call, nlg_request_format_spec())
+
         if nlg_call.get("template") == "utter_greet":
             response = {"text": "Hey there!"}
         else:
