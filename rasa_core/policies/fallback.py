@@ -47,7 +47,7 @@ class FallbackPolicy(Policy):
     def __init__(self,
                  nlu_threshold=0.3,  # type: float
                  core_threshold=0.3,  # type: float
-                 fallback_action_name="action_listen"  # type: Text
+                 fallback_action_name="action_default_fallback"  # type: Text
                  ):
         # type: (...) -> None
 
@@ -93,7 +93,10 @@ class FallbackPolicy(Policy):
         # to not override standard behaviour
         nlu_confidence = nlu_data["intent"].get("confidence", 1.0)
 
-        if self.should_fallback(nlu_confidence, tracker.latest_action_name):
+        if tracker.latest_action_name == self.fallback_action_name:
+            idx = domain.index_for_action('action_listen')
+            score = 1.1
+        elif self.should_fallback(nlu_confidence, tracker.latest_action_name):
             logger.debug("NLU confidence {} is lower "
                          "than NLU threshold {}. "
                          "Predicting fallback action: {}"

@@ -15,12 +15,15 @@ Added
   the default is to ignore ``http_timeout``.
 - added ability to create domain from yaml string and export a domain to a yaml string
 - added server endpoint to fetch domain as json or yaml
+- new default action ActionFallback
 
 Changed
 -------
 - changed the logic inside AugmentedMemoizationPolicy to recall actions only if they are the same in training stories
 - moved AugmentedMemoizationPolicy to memoization.py
 - wrapped initialization of BackgroundScheduler in try/except to allow running on jupyterhub / binderhub/ colaboratory
+- fixed order of events logged on a tracker: action executed is now always
+  logged before bot utterances that action created
 
 Removed
 -------

@@ -8,7 +8,12 @@ how you can migrate from one version to another.
 
 0.9.x to 0.10.0
 ---------------
-There is release is backwards compatible with models trained in 0.8.x.
+.. warning::
+
+  This is a release **breaking backwards compatibility**.
+  You can no longer load old models with this version, due to the addition of
+  the default action ``ActionDefaultFallback``. Please make sure to retrain
+  your model before using this version
 
 There have been some API changes to classes and methods:
 
@@ -17,10 +22,11 @@ There have been some API changes to classes and methods:
   they now need the ``tracker`` as a second argument, e.g.
   ``dispatcher.utter_template("utter_greet", tracker)``
 
-- all input and output channels should have a ``name``. If you are using a custom
-  channel, make sure to implement a classmethod that returns the name. The name
-  needs to be added to the **input channel and the output channel**. You
-  can find examples in ``rasa_core.channels.direct.CollectingOutputChannel``:
+- all input and output channels should have a ``name``. If you are using a
+  custom channel, make sure to implement a class method that returns
+  the name. The name needs to be added to the
+  **input channel and the output channel**. You can find examples
+  in ``rasa_core.channels.direct.CollectingOutputChannel``:
 
   .. code-block:: python
 
@@ -38,6 +44,7 @@ There have been some API changes to classes and methods:
 
       endpoint = EndpointConfig("http://localhost:500", token="mytoken")
       interpreter = RasaNLUHttpInterpreter("mymodelname", endpoint)
+
 
 0.8.x to 0.9.0
 --------------
