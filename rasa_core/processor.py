@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import json
 import logging
+import time
 import warnings
 from types import LambdaType
 
@@ -372,6 +373,11 @@ class MessageProcessor(object):
             tracker.update(ActionExecuted(action_name))
 
         for e in events:
+            # this makes sure the events are ordered by timestamp -
+            # since the event objects are created somewhere else,
+            # the timestamp would indicate a time before the time
+            # of the action executed
+            e.timestamp = time.time()
             tracker.update(e)
 
     def _get_tracker(self, sender_id):
