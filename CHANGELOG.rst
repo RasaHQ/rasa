@@ -15,6 +15,7 @@ Added
   the default is to ignore ``http_timeout``.
 - added ability to create domain from yaml string and export a domain to a yaml string
 - added server endpoint to fetch domain as json or yaml
+- new default action ActionFallback
 
 Changed
 -------

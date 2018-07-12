@@ -71,11 +71,12 @@ def test_domain_action_instantiation():
             ["my_module.ActionTest", "utter_test"],
             ["action_test", "utter_test"],
             ["utter_test"])
-    assert len(instantiated_actions) == 4
+    assert len(instantiated_actions) == 5
     assert instantiated_actions[0].name() == "action_listen"
     assert instantiated_actions[1].name() == "action_restart"
-    assert instantiated_actions[2].name() == "action_test"
-    assert instantiated_actions[3].name() == "utter_test"
+    assert instantiated_actions[2].name() == "action_default_fallback"
+    assert instantiated_actions[3].name() == "action_test"
+    assert instantiated_actions[4].name() == "utter_test"
 
 
 def test_local_action_factory_module_import_fails_on_invalid():
