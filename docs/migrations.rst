@@ -8,9 +8,11 @@ how you can migrate from one version to another.
 0.9.x to 0.10.0
 ---------------
 
-- You can no longer load old models with this version, due to the addition of
-  the default action ``ActionFallback``. Please make sure to retrain your model
-  before using this version
+.. warning::
+
+  You can no longer load old models with this version, due to the addition of
+  the default action ``ActionDefaultFallback``. Please make sure to retrain
+  your model before using this version
 
 0.8.x to 0.9.0
 --------------

@@ -16,7 +16,7 @@ or if none of the dialogue policies predict an action with confidence higher tha
    from rasa_core.policies.keras_policy import KerasPolicy
    from rasa_core.agent import Agent
 
-   fallback = FallbackPolicy(fallback_action_name="action_fallback",
+   fallback = FallbackPolicy(fallback_action_name="action_default_fallback",
                              core_threshold=0.3,
                              nlu_threshold=0.3)
 
@@ -27,10 +27,17 @@ or if none of the dialogue policies predict an action with confidence higher tha
 ``action_fallback`` is a default action in Rasa Core, which will send the
 ``utter_default`` template message to the user. Make sure to specify this template
 in your domain file. It will also revert back to the state of the conversation
-before this action was executed, so that it will not influence the prediction of
-future actions. You can take a look at the source of the action below:
+before the user message that caused the fallback, so that it will not influence
+the prediction of future actions. You can take a look at the source of the
+action below:
 
-.. autoclass:: rasa_core.actions.action.ActionFallback
+.. autoclass:: rasa_core.actions.action.ActionDefaultFallback
+
+.. note::
+  You can also create your own custom action to use as a fallback. Be aware
+  that if this action does not return a ``UserUtteranceReverted`` event, the
+  next predictions of your bot may become inaccurate, as it very likely that the
+  fallback action is not present in your stories
 
 If you have a specific intent that will trigger this, let's say it's called ``out_of_scope``, then you
 should add this as a story:
@@ -39,4 +46,4 @@ should add this as a story:
 
     ## fallback story
     * out_of_scope
-      - action_fallback
+      - action_default_fallback
