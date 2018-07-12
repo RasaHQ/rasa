@@ -28,7 +28,7 @@ def nlg_response_format_spec():
             },
             "elements": {
                 "type": "array",
-                "items": {"type": "object",}
+                "items": {"type": "object"}
             },
             "attachment": {"type": "object"}
         },
