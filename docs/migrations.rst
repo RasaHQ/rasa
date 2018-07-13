@@ -33,7 +33,7 @@ There have been some API changes to classes and methods:
       @classmethod
       def name(cls):
           """Every channel needs a name"""
-          return "facebook"
+          return "collector"
 
 - the ``RasaNLUHttpInterpreter`` when created now needs to be passed an
   instance of ``EndpointConfig`` instead of ``server`` and ``token``, e.g.:

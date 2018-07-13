@@ -39,6 +39,16 @@ class TemplatedNaturalLanguageGenerator(NaturalLanguageGenerator):
         """Generate a response for the requested template."""
 
         filled_slots = tracker.current_slot_values()
+        return self.generate_from_slots(template_name,
+                                        filled_slots,
+                                        output_channel,
+                                        **kwargs)
+
+    def generate_from_slots(self, template_name, filled_slots, output_channel,
+                            **kwargs):
+        # type: (Text, Dict[Text, Any], Text, **Any) -> Dict[Text, Any]
+        """Generate a response for the requested template."""
+
         # Fetching a random template for the passed template name
         r = copy.deepcopy(self._random_template_for(template_name,
                                                     output_channel))
