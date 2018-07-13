@@ -543,7 +543,7 @@ class EndpointConfig(object):
         return requests.request(method,
                                 url,
                                 headers=headers,
-                                params=self.params,
+                                params=params,
                                 auth=auth,
                                 **kwargs)
 

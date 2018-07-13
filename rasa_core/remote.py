@@ -81,7 +81,7 @@ class RasaCoreClient(object):
                      ):
         """Retrieve a tracker's json representation from remote instance."""
 
-        url = "/conversations/{}/tracker?&ignore_restarts={}&events={}".format(
+        url = "/conversations/{}/tracker?ignore_restarts={}&events={}".format(
                 sender_id, use_history, include_events)
         if until:
             url += "&until={}".format(until)
