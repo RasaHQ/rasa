@@ -219,10 +219,10 @@ if __name__ == '__main__':
                                  cmdline_args.log_file)
 
     nlg_endpoint = utils.read_endpoint_config(cmdline_args.endpoints,
-                                              "nlg_endpoint")
+                                              "nlg")
 
     nlu_endpoint = utils.read_endpoint_config(cmdline_args.endpoints,
-                                              "nlu_endpoint")
+                                              "nlu")
 
     main(cmdline_args.core,
          cmdline_args.nlu,

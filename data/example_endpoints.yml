@@ -1,4 +1,4 @@
-nlg_endpoint:
+nlg:
   url: http://localhost:5055/nlg    # url of the nlg endpoint
   # you can also specify additional parameters, if you need them:
   # headers:

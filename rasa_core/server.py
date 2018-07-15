@@ -179,9 +179,9 @@ def create_app(model_directory,  # type: Text
         cors_origins = []
     model_directory = model_directory
 
-    nlg_endpoint = utils.read_endpoint_config(endpoints, "nlg_endpoint")
+    nlg_endpoint = utils.read_endpoint_config(endpoints, "nlg")
 
-    nlu_endpoint = utils.read_endpoint_config(endpoints, "nlu_endpoint")
+    nlu_endpoint = utils.read_endpoint_config(endpoints, "nlu")
 
     tracker_store = tracker_store
 
