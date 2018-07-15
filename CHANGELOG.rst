@@ -11,6 +11,8 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
+- allow bot responses to be managed externally (instead of putting them into
+  the ``domain.yml``)
 - options to prevent slack from making re-deliver message upon meeting failure condition.
   the default is to ignore ``http_timeout``.
 - added ability to create domain from yaml string and export a domain to a yaml string
