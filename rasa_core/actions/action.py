@@ -69,7 +69,7 @@ class UtterAction(Action):
         """Simple run implementation uttering a (hopefully defined) template."""
 
         dispatcher.utter_template(self.name(),
-                                  filled_slots=tracker.current_slot_values())
+                                  tracker)
         return []
 
     def name(self):
@@ -103,9 +103,8 @@ class ActionRestart(Action):
     def run(self, dispatcher, tracker, domain):
         from rasa_core.events import Restarted
 
-        # only utter the template if it is available
-        if domain.random_template_for("utter_restart") is not None:
-            dispatcher.utter_template("utter_restart")
+        dispatcher.utter_template("utter_restart", tracker,
+                                  silent_fail=True)
         return [Restarted()]
 
 
@@ -120,6 +119,7 @@ class ActionDefaultFallback(Action):
         from rasa_core.events import UserUtteranceReverted
 
         if domain.random_template_for("utter_default") is not None:
-            dispatcher.utter_template("utter_default")
+            dispatcher.utter_template("utter_default", tracker,
+                                      silent_fail=True)
 
         return [UserUtteranceReverted()]

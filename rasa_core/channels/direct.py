@@ -6,6 +6,10 @@ class CollectingOutputChannel(OutputChannel):
 
     (doesn't send them anywhere, just collects them)."""
 
+    @classmethod
+    def name(cls):
+        return "collector"
+
     def __init__(self):
         self.messages = []
 

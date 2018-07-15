@@ -16,17 +16,20 @@ from rasa_core.channels import UserMessage, InputChannel, OutputChannel
 from rasa_core.domain import TemplateDomain, Domain, check_domain_sanity
 from rasa_core.events import Event
 from rasa_core.interpreter import NaturalLanguageInterpreter
+from rasa_core.nlg import NaturalLanguageGenerator
 from rasa_core.policies import Policy
 from rasa_core.policies.ensemble import SimplePolicyEnsemble, PolicyEnsemble
 from rasa_core.policies.memoization import MemoizationPolicy
 from rasa_core.processor import MessageProcessor
 from rasa_core.tracker_store import InMemoryTrackerStore, TrackerStore
 from rasa_core.trackers import DialogueStateTracker
+from rasa_core.utils import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from rasa_core.interpreter import NaturalLanguageInterpreter as NLI
+    from rasa_core.nlg import NaturalLanguageGenerator as NLG
 
 
 class Agent(object):
@@ -41,12 +44,14 @@ class Agent(object):
             domain,  # type: Union[Text, Domain]
             policies=None,  # type: Union[PolicyEnsemble, List[Policy], None]
             interpreter=None,  # type: Union[NLI, Text, None]
+            generator=None,  # type: Union[EndpointConfig, NLG]
             tracker_store=None  # type: Optional[TrackerStore]
     ):
         # Initializing variables with the passed parameters.
         self.domain = self._create_domain(domain)
         self.policy_ensemble = self._create_ensemble(policies)
         self.interpreter = NaturalLanguageInterpreter.create(interpreter)
+        self.nlg = NaturalLanguageGenerator.create(generator, self.domain)
         self.tracker_store = self.create_tracker_store(
                 tracker_store, self.domain)
 
@@ -55,7 +60,8 @@ class Agent(object):
              path,  # type: Text
              interpreter=None,  # type: Union[NLI, Text, None]
              tracker_store=None,  # type: Optional[TrackerStore]
-             action_factory=None  # type: Optional[Text]
+             action_factory=None,  # type: Optional[Text]
+             generator=None  # type: Union[EndpointConfig, NLG]
              ):
         # type: (Text, Any, Optional[TrackerStore]) -> Agent
         """Load a persisted model from the passed path."""
@@ -77,10 +83,9 @@ class Agent(object):
                                      action_factory)
         # ensures the domain hasn't changed between test and train
         domain.compare_with_specification(path)
-        _interpreter = NaturalLanguageInterpreter.create(interpreter)
         _tracker_store = cls.create_tracker_store(tracker_store, domain)
 
-        return cls(domain, ensemble, _interpreter, _tracker_store)
+        return cls(domain, ensemble, interpreter, generator, _tracker_store)
 
     def handle_message(
             self,
@@ -375,7 +380,7 @@ class Agent(object):
         self._ensure_agent_is_prepared()
         return MessageProcessor(
                 self.interpreter, self.policy_ensemble, self.domain,
-                self.tracker_store, message_preprocessor=preprocessor)
+                self.tracker_store, self.nlg, message_preprocessor=preprocessor)
 
     @staticmethod
     def _create_domain(domain):
