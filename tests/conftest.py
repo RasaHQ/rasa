@@ -32,6 +32,8 @@ DEFAULT_DOMAIN_PATH = "data/test_domains/default_with_slots.yml"
 
 DEFAULT_STORIES_FILE = "data/test_stories/stories_defaultdomain.md"
 
+DEFAULT_ENDPOINTS_FILE = "data/example_endpoints.yml"
+
 
 class CustomSlot(Slot):
     def as_feature(self):

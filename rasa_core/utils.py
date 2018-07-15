@@ -556,3 +556,17 @@ class EndpointConfig(object):
                 data.get("basic_auth"),
                 data.get("token"),
                 data.get("token_name"))
+
+    def __eq__(self, other):
+        if isinstance(self, type(other)):
+            return (other.url == self.url and
+                    other.params == self.params and
+                    other.headers == self.headers and
+                    other.basic_auth == self.basic_auth and
+                    other.token == self.token and
+                    other.token_name == self.token_name)
+        else:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)

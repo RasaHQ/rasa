@@ -10,9 +10,11 @@ import pytest
 from flask import Flask, request, jsonify
 from pytest_localserver.http import WSGIServer
 
+from rasa_core import utils
 from rasa_core.nlg.callback import nlg_request_format_spec
 from rasa_core.utils import EndpointConfig
 from rasa_core.agent import Agent
+from tests.conftest import DEFAULT_ENDPOINTS_FILE
 
 
 def nlg_app(base_url="/"):
@@ -57,3 +59,11 @@ def test_nlg(http_nlg, default_agent_path):
     response = agent.handle_message("/greet", sender_id=sender)
     assert len(response) == 1
     assert response[0] == {"text": "Hey there!", "recipient_id": sender}
+
+
+def test_nlg_endpoint_config_loading():
+    cfg = utils.read_endpoint_config(DEFAULT_ENDPOINTS_FILE, "nlg")
+
+    assert cfg == EndpointConfig.from_dict({
+        "url": "http://localhost:5055/nlg"
+    })
