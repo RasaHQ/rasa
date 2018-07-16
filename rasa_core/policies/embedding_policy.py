@@ -930,7 +930,6 @@ class EmbeddingPolicy(Policy):
 
         X, slots, prev_act = self._create_X_slots_prev_acts(data_X)
         all_Y_d = self._create_all_Y_d(X.shape[1])
-        print(X.shape[1])
         all_Y_d_x = np.stack([all_Y_d for _ in range(X.shape[0])])
 
         _sim = self.session.run(self.sim_op,
@@ -1587,20 +1586,20 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         #          calculated attention value.
         cell_inputs = self._cell_input_fn(inputs, attention)
 
-        if self._skip_gate:
-            c_g = self._no_skip_gate(prev_out_for_attn)
-            # c_g = tf.where(c_g > 0.3, tf.ones_like(c_g), c_g)
-            if isinstance(cell_state, tf.contrib.rnn.LSTMStateTuple):
-                old_c = cell_state.c
-            #     cell_state = tf.contrib.rnn.LSTMStateTuple(
-            #             c_g * old_c, cell_state.h)
-            else:
-                old_c = cell_state
-            #     cell_state = c_g * old_c
-        else:
-            old_c = 0
-            # we need this tensor for the output
-            c_g = tf.ones_like(prev_out_for_attn[:, :2])
+        # if self._skip_gate:
+        #     c_g = self._no_skip_gate(prev_out_for_attn)
+        #     # c_g = tf.where(c_g > 0.3, tf.ones_like(c_g), c_g)
+        #     if isinstance(cell_state, tf.contrib.rnn.LSTMStateTuple):
+        #         old_c = cell_state.c
+        #     #     cell_state = tf.contrib.rnn.LSTMStateTuple(
+        #     #             c_g * old_c, cell_state.h)
+        #     else:
+        #         old_c = cell_state
+        #     #     cell_state = c_g * old_c
+        # else:
+        #     old_c = 0
+        #     # we need this tensor for the output
+        #     c_g = tf.ones_like(prev_out_for_attn[:, :2])
 
         cell_output, next_cell_state = self._cell(cell_inputs, cell_state)
         # s_g = cell_output[:, -1:]
@@ -1615,8 +1614,8 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
 
             prev_all_cell_states = state.all_cell_states
             if isinstance(cell_state, tf.contrib.rnn.LSTMStateTuple):
-                c_probs = tf.round(self._attn_to_copy_fn(
-                        all_alignments[1]))[:, :state.time]
+                c_probs = tf.round(all_alignments[1])[:, :state.time]
+                c_g = 1 - tf.reduce_sum(c_probs, 1, keepdims=True)
                 c_probs = tf.concat(
                         [c_probs,
                          1 - tf.reduce_sum(c_probs, 1, keepdims=True)], 1)
