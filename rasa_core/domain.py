@@ -224,16 +224,16 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
             self.slot_states + \
             self.prev_action_states
 
-    @staticmethod
-    def get_parsing_states(tracker):
+    def get_parsing_states(self, tracker):
         # type: (DialogueStateTracker) -> Dict[Text, float]
 
         state_dict = {}
 
         # Set all found entities with the state value 1.0
         for entity in tracker.latest_message.entities:
-            key = "entity_{0}".format(entity["entity"])
-            state_dict[key] = 1.0
+            if tracker.latest_message.intent.get("name") not in self.intents_ignore_entities:
+                key = "entity_{0}".format(entity["entity"])
+                state_dict[key] = 1.0
 
         # Set all set slots with the featurization of the stored value
         for key, slot in tracker.slots.items():
@@ -418,6 +418,7 @@ class TemplateDomain(Domain):
             data.get("actions", []),
             data.get("action_names", []),
             action_factory,
+            data.get("intents_ignore_entities", []),
             **additional_arguments
         )
 
@@ -479,7 +480,7 @@ class TemplateDomain(Domain):
         return templates
 
     def __init__(self, intents, entities, slots, templates, action_classes,
-                 action_names, action_factory, **kwargs):
+                 action_names, action_factory, intents_ignore_entities, **kwargs):
         self._intents = intents
         self._entities = entities
         self._slots = slots
@@ -489,6 +490,7 @@ class TemplateDomain(Domain):
         self._factory_name = action_factory
         self._actions = self.instantiate_actions(
                 action_factory, action_classes, action_names, templates)
+        self._intents_ignore_entities = intents_ignore_entities
         super(TemplateDomain, self).__init__(**kwargs)
 
     @staticmethod
@@ -516,7 +518,8 @@ class TemplateDomain(Domain):
             "templates": self.templates,
             "actions": self._action_classes,  # class names of the actions
             "action_names": action_names,  # names in stories
-            "action_factory": self._factory_name
+            "action_factory": self._factory_name,
+            "intents_ignore_entities": self._intents_ignore_entities
         }
         return domain_data
 
@@ -547,3 +550,7 @@ class TemplateDomain(Domain):
     @utils.lazyproperty
     def actions(self):
         return self._actions
+
+    @utils.lazyproperty
+    def intents_ignore_entities(self):
+        return self.intents_ignore_entities
