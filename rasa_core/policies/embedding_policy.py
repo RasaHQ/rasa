@@ -1582,7 +1582,6 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             maybe_all_histories.append(alignment_history)
 
         attention = tf.concat(all_attentions, 1)
-        alignments = tf.concat(all_alignments, 1)
 
         # Step 6: Calculate the true inputs to the cell based on the
         #          calculated attention value.
@@ -1617,7 +1616,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             prev_all_cell_states = state.all_cell_states
             if isinstance(cell_state, tf.contrib.rnn.LSTMStateTuple):
                 c_probs = tf.round(self._attn_to_copy_fn(
-                        alignments))[:, :state.time]
+                        all_alignments[1]))[:, :state.time]
                 c_probs = tf.concat(
                         [c_probs,
                          1 - tf.reduce_sum(c_probs, 1, keepdims=True)], 1)
