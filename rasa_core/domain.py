@@ -231,13 +231,16 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
 
         # Set all found entities with the state value 1.0
         for entity in tracker.latest_message.entities:
-            if tracker.latest_message.intent.get("name") not in self.intents_ignore_entities:
+            if (tracker.latest_message.intent.get("name") not in
+                    self.intents_ignore_entities):
                 key = "entity_{0}".format(entity["entity"])
                 state_dict[key] = 1.0
 
         # Set all set slots with the featurization of the stored value
         for key, slot in tracker.slots.items():
-            if slot is not None:
+            # TODO: check last event was a useruttered
+            if (slot is not None and tracker.latest_message.intent.get("name")
+                    not in self.intents_ignore_entities):
                 for i, slot_value in enumerate(slot.as_feature()):
                     if slot_value != 0:
                         slot_id = "slot_{}_{}".format(key, i)
