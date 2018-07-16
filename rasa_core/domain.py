@@ -553,4 +553,4 @@ class TemplateDomain(Domain):
 
     @utils.lazyproperty
     def intents_ignore_entities(self):
-        return self.intents_ignore_entities
+        return self._intents_ignore_entities
