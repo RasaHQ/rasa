@@ -245,7 +245,8 @@ class EmbeddingPolicy(Policy):
             dial_embed=None,  # type: Optional[tf.Tensor]
             rnn_embed=None,  # type: Optional[tf.Tensor]
             attn_embed=None,  # type: Optional[tf.Tensor]
-            no_skip_gate=None  # type: Optional[tf.Tensor]
+            no_skip_gate=None,  # type: Optional[tf.Tensor]
+            hidden_states=None
     ):
         # type: (...) -> None
         self._check_tensorflow()
@@ -284,6 +285,7 @@ class EmbeddingPolicy(Policy):
         # a list of tensors for each attention type
         # of length self.num_attentions
         self.alignment_history = alignment_history
+        self.hidden_states = hidden_states
 
         # persisted embeddings
         self.user_embed = user_embed
@@ -499,15 +501,17 @@ class EmbeddingPolicy(Policy):
         """Extract alignments history form final rnn cell state"""
         self.alignment_history = []
         if self.use_attention:
+            alignment_history = final_state.alignment_history
             if self.num_attentions == 1:
-                alignment_history = [final_state.alignment_history]
-            else:
-                alignment_history = final_state.alignment_history
+                alignment_history = [alignment_history]
 
             for alignments in alignment_history:
                 # Reshape to (batch, time, memory_time)
                 alignments = tf.transpose(alignments.stack(), [1, 0, 2])
                 self.alignment_history.append(alignments)
+
+        hidden_states = final_state.all_hidden_cell_states
+        self.hidden_states = tf.transpose(hidden_states.stack(), [1, 0, 2])
 
     def _process_cell_output(self, cell_output):
         """Save intermediate tensors for debug purposes"""
@@ -988,6 +992,7 @@ class EmbeddingPolicy(Policy):
             self._persist_tensor('rnn_embed', self.rnn_embed)
             self._persist_tensor('attn_embed', self.attn_embed)
             self._persist_tensor('no_skip_gate', self.no_skip_gate)
+            self._persist_tensor('hidden_states', self.hidden_states)
 
             saver = tf.train.Saver()
             saver.save(self.session, checkpoint)
@@ -1052,6 +1057,7 @@ class EmbeddingPolicy(Policy):
                     rnn_embed = tf.get_collection('rnn_embed')[0]
                     attn_embed = tf.get_collection('attn_embed')[0]
                     no_skip_gate = tf.get_collection('no_skip_gate')[0]
+                    hidden_states = tf.get_collection('hidden_states')[0]
 
                 with io.open(os.path.join(
                         path,
@@ -1074,7 +1080,8 @@ class EmbeddingPolicy(Policy):
                            dial_embed=dial_embed,
                            rnn_embed=rnn_embed,
                            attn_embed=attn_embed,
-                           no_skip_gate=no_skip_gate)
+                           no_skip_gate=no_skip_gate,
+                           hidden_states=hidden_states)
             else:
                 return cls(featurizer=featurizer)
 
@@ -1135,6 +1142,7 @@ class TimedNTM(object):
 
         # sharpening parameter
         self.gamma_sharp = tf.layers.Dense(1, lambda a: tf.nn.softplus(a) + 1,
+                                           # bias_initializer=tf.constant_initializer(1),
                                            name=(self.name + '/gamma_sharp'))
 
     def __call__(self, cell_output, probs, probs_state):
@@ -1248,7 +1256,7 @@ class TimeAttentionWrapperState(
         collections.namedtuple("AttentionWrapperState",
                                ("cell_state", "attention", "time", "alignments",
                                 "alignment_history", "attention_state",
-                                "all_cell_states"))):
+                                "all_hidden_cell_states"))):
     """
         modified  from tensorflow's tf.contrib.seq2seq.AttentionWrapperState
         see there for description of the parameters
@@ -1342,18 +1350,18 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
 
         self._attn_to_copy_fn = attn_to_copy_fn
         self._skip_gate = skip_gate
-        if skip_gate:
-            self._no_skip_gate = tf.layers.Dense(
-                    1, tf.sigmoid,
-                    # 1, tf.contrib.sparsemax.sparsemax,
-                    # -4 is arbitrary, but we need
-                    # no_skip_gate to be close to zero at the beginning
-                    bias_initializer=tf.constant_initializer(-4),
-                    # bias_initializer=tf.constant_initializer([-0.9, 0.9]),
-                    name='no_skip_gate'
-            )
-        else:
-            self._no_skip_gate = None
+        # if skip_gate:
+        #     self._no_skip_gate = tf.layers.Dense(
+        #             1, tf.sigmoid,
+        #             # 1, tf.contrib.sparsemax.sparsemax,
+        #             # -4 is arbitrary, but we need
+        #             # no_skip_gate to be close to zero at the beginning
+        #             bias_initializer=tf.constant_initializer(-4),
+        #             # bias_initializer=tf.constant_initializer([-0.9, 0.9]),
+        #             name='no_skip_gate'
+        #     )
+        # else:
+        #     self._no_skip_gate = None
 
     # @staticmethod
     # def _no_skip_gate(args):
@@ -1395,9 +1403,9 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         """
 
         if isinstance(self._cell.state_size, tf.contrib.rnn.LSTMStateTuple):
-            state_size = self._cell.state_size.c
+            hidden_state_size = self._cell.state_size.c
         else:
-            state_size = self._cell.state_size
+            hidden_state_size = self._cell.state_size
 
         return TimeAttentionWrapperState(
             cell_state=self._cell.state_size,
@@ -1409,8 +1417,8 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                 a.state_size for a in self._attention_mechanisms),
             alignment_history=self._item_or_tuple(
                 a.alignments_size if self._alignment_history else ()
-                for a in self._attention_mechanisms),   # sometimes a TensorArray
-            all_cell_states=state_size)
+                for a in self._attention_mechanisms),  # sometimes a TensorArray
+            all_hidden_cell_states=hidden_state_size)  # TensorArray
 
     def zero_state(self, batch_size, dtype):
         """Return an initial (zero) state tuple for this `AttentionWrapper`.
@@ -1452,13 +1460,13 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                 attention_mechanism.initial_alignments(batch_size, dtype)
                 for attention_mechanism in self._attention_mechanisms]
 
-            all_cell_states = tf.TensorArray(dtype, size=1,
-                                             dynamic_size=True,
-                                             clear_after_read=False)
+            all_hidden_cell_states = tf.TensorArray(dtype, size=1,
+                                                    dynamic_size=True,
+                                                    clear_after_read=False)
             if isinstance(self._cell.state_size, tf.contrib.rnn.LSTMStateTuple):
-                all_cell_states = all_cell_states.write(0, cell_state.c)
+                all_hidden_cell_states = all_hidden_cell_states.write(0, cell_state.c)
             else:
-                all_cell_states = all_cell_states.write(0, cell_state)
+                all_hidden_cell_states = all_hidden_cell_states.write(0, cell_state)
 
             return TimeAttentionWrapperState(
                 cell_state=cell_state,
@@ -1477,7 +1485,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                         element_shape=alignment.shape)
                     if self._alignment_history else ()
                     for alignment in initial_alignments),
-                all_cell_states=all_cell_states
+                all_hidden_cell_states=all_hidden_cell_states
             )
 
     def call(self, inputs, state):
@@ -1612,33 +1620,33 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             # copy them to current output
             cell_output += attn_emb_prev_act
 
-            prev_all_cell_states = state.all_cell_states
+            prev_all_hidden_cell_states = state.all_hidden_cell_states
             if isinstance(cell_state, tf.contrib.rnn.LSTMStateTuple):
-                c_probs = tf.round(all_alignments[1])[:, :state.time]
+                c_probs = tf.round(all_alignments[1][:, :state.time])
                 c_g = 1 - tf.reduce_sum(c_probs, 1, keepdims=True)
-                c_probs = tf.concat(
-                        [c_probs,
-                         1 - tf.reduce_sum(c_probs, 1, keepdims=True)], 1)
+                c_probs = tf.concat([c_probs, c_g], 1)
+
                 expanded_alignments = tf.expand_dims(c_probs, 1)
 
-                prev_cell_states = tf.transpose(prev_all_cell_states.stack(),
-                                                [1, 0, 2])
+                prev_cell_states = tf.transpose(
+                        prev_all_hidden_cell_states.stack(), [1, 0, 2])
                 prev_cell_states_c = tf.concat(
                         [prev_cell_states[:, 1:, :],
                          tf.expand_dims(next_cell_state.c, 1)],
                         1)
 
                 next_cell_state_c = tf.squeeze(tf.matmul(expanded_alignments,
-                                               prev_cell_states_c), [1])
+                                                         prev_cell_states_c),
+                                               [1])
 
                 next_cell_state = tf.contrib.rnn.LSTMStateTuple(
                     next_cell_state_c, cell_output)
 
-                all_cell_states_c = prev_all_cell_states.write(
-                        state.time+1, next_cell_state.c)
+                all_hidden_cell_states = prev_all_hidden_cell_states.write(
+                        state.time + 1, next_cell_state.c)
             else:
                 next_cell_state = cell_output
-                all_cell_states_c = prev_all_cell_states.write(
+                all_hidden_cell_states = prev_all_hidden_cell_states.write(
                     state.time + 1, next_cell_state)
 
         # if self._attn_to_copy_fn is not None or self._skip_gate:
@@ -1656,7 +1664,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             attention_state=self._item_or_tuple(all_attention_states),
             alignments=self._item_or_tuple(all_alignments),
             alignment_history=self._item_or_tuple(maybe_all_histories),
-            all_cell_states=all_cell_states_c)
+            all_hidden_cell_states=all_hidden_cell_states)
 
         if self._output_attention:
             # concatenate cell outputs, attention and no_skip_gate
