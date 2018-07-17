@@ -4,10 +4,25 @@ Change Log
 All notable changes to this project will be documented in this file.
 This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
-[Unreleased 0.10.0.aX] - `master`_
+[Unreleased 0.11.0.aX] - `master`_
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. note:: This version is not yet released and is under active development.
+
+Added
+-----
+
+Changed
+-------
+
+Removed
+-------
+
+Fixed
+-------
+
+[0.10.0] - 2018-07-17
+^^^^^^^^^^^^^^^^^^^^^
 
 .. warning::
 
@@ -23,7 +38,7 @@ Added
   the default is to ignore ``http_timeout``.
 - added ability to create domain from yaml string and export a domain to a yaml string
 - added server endpoint to fetch domain as json or yaml
-- new default action ActionFallback
+- new default action ActionDefaultFallback
 
 Changed
 -------
