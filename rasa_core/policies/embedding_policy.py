@@ -523,9 +523,9 @@ class EmbeddingPolicy(Policy):
 
         if self.attn_after_rnn:
             self.rnn_embed = cell_output[:, :, self.embed_dim:
-                                               (64 + #self.embed_dim +
+                                               (self.embed_dim +
                                                 self.embed_dim)]
-            self.attn_embed = cell_output[:, :, (64 + #self.embed_dim +
+            self.attn_embed = cell_output[:, :, (self.embed_dim +
                                                  self.embed_dim):-1]
             # embedding layer is inside rnn cell
             emb_dial = cell_output[:, :, :self.embed_dim]
@@ -1392,7 +1392,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
     @property
     def output_size(self):
         if self._output_attention:
-            return self._attention_layer_size + 64 + self._cell.output_size + 1
+            return self._attention_layer_size + 2 * self._cell.output_size + 1
         else:
             return self._cell.output_size
 
@@ -1632,18 +1632,15 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                 prev_cell_states = tf.transpose(
                         prev_all_hidden_cell_states.stack(), [1, 0, 2])
                 prev_cell_states_c = tf.concat(
-                        [prev_cell_states[:, 1:, :],
-                         tf.expand_dims(next_cell_state.c, 1)],
-                        1)
+                        [prev_cell_states[:, :-1, :],
+                         tf.expand_dims(next_cell_state.c, 1)], 1)
 
                 next_cell_state_c = tf.squeeze(tf.matmul(expanded_alignments,
                                                          prev_cell_states_c),
                                                [1])
-                zeros = tf.zeros_like(all_alignments[1])
-                c_probs = tf.concat([c_probs, zeros[:, state.time+1:]], 1)
+
                 next_cell_state = tf.contrib.rnn.LSTMStateTuple(
                     next_cell_state_c, cell_output)
-
 
                 all_hidden_cell_states = prev_all_hidden_cell_states.write(
                         state.time + 1, next_cell_state.c)
@@ -1671,7 +1668,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
 
         if self._output_attention:
             # concatenate cell outputs, attention and no_skip_gate
-            return tf.concat([cell_output, next_cell_state.c, attention, c_g[:, :1]], 1), next_state
+            return tf.concat([cell_output, h_old, attention, c_g[:, :1]], 1), next_state
         else:
             return cell_output, next_state
 
