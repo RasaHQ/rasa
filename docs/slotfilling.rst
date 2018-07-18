@@ -90,10 +90,10 @@ We then define stories for each of these cases:
 
 
 Now we've given Rasa Core a few examples of how to handle the different values
-that the ``location_match`` slot can take. With so little data, your trained
-policy will still get things wrong sometimes, because the dialogue history went
-differently from exactly what's in the training data. :ref:`interactive_learning` is a
-great way to explore more conversations that aren't in your stories already.
+that the ``location_match`` slot can take.
+Right now, we still only have four stories, which is not a lot of training data.
+:ref:`interactive_learning` is agreat way to explore more conversations 
+that aren't in your stories already.
 The best way to improve your model is to test it yourself, have other people test it,
 and correct the mistakes it makes. 
 
@@ -101,11 +101,11 @@ and correct the mistakes it makes.
 Debugging
 ~~~~~~~~~
 
-If something doesn't work as you expect, **don't panic**! 
-If you are just getting started,
-you probably only have a few hand-written stories. This is a great starting point, but 
+The first thing to try is to run your bot with the ``debug`` flag, see :ref:`debugging` for details.
+If you are just getting started, you probably only have a few hand-written stories.
+This is a great starting point, but 
 you should give your bot to people to test **as soon as possible**. One of the guiding principles
-behind Rasa Core is this:
+behind Rasa Core is:
 
 .. pull-quote:: Learning from real conversations is more important than designing hypothetical ones
 
@@ -137,7 +137,8 @@ The way this works is that every time you call this action, it will pick one of 
 ``REQUIRED_FIELDS`` that's still missing and ask the user for it. You can also ask a yes/no
 question with a ``BooleanFormField``.
 
-The story will look something like this:
+The form action will set a slot called ``requested_slot`` to keep track if what it has asked the user.
+So a story will look something like this:
 
 .. code-block:: md
 
@@ -147,23 +148,25 @@ The story will look something like this:
    * inform{"number": 3}
         - action_restaurant_form
         - slot{"people": 3}
-        - slot{"requested_slot": "time"}
-   * inform{"time": "8pm"}
-      - action_restaurant_form
-
+        - slot{"requested_slot": "cuisine"}
+   * inform{"cuisine": "chinese"}
+        - action_restaurant_form
+        - slot{"cuisine": "chinese"}
+        - slot{"requested_slot": "vegetarian"}
+   * deny
+        - action_restaurant_form
+        - slot{"vegetarian": false}
 
 Some important things to consider:
 
-- The ``submit()`` method is called when the action is run and all slots are filled.
+- The ``submit()`` method is called when the action is run and all slots are filled, in this case after the ``deny`` intent.
   If you are just collecting some information and don't need to make an API call at the end, your ``submit()`` method
   should just ``return []``.
-- Your domain needs to have a slot called ``requested_slot``. This can be unfeaturized, but if you want
-  to support contextual questions like *"why do you need to know that information?"* it will help if you make this
-  a categorical slot. 
+- Your domain needs to have a slot called ``requested_slot``. You can make this an unfeaturized slot.
 - You need to define utterances for asking for each slot in your domain, e.g. ``utter_ask_{slot_name}``.
 - We strongly recommend that you create these stories using interactive learning, because if you
-  type these by hand you will probably forget to add all of the slots.
-- Any slots that are already set won't be asked for. E.g. if someone says "I'd like a Chinese restaurant for 8 people" the ``submit`` function should get called right away.
+  type these by hand you will probably forget to include the lines for the ``requested_slot``.
+- Any slots that are already set won't be asked for. E.g. if someone says "I'd like a vegetarian Chinese restaurant for 8 people" the ``submit`` function should get called right away.
 
 
 Form Fields and Free-text Input
