@@ -232,13 +232,13 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
         # Set all found entities with the state value 1.0
         for entity in tracker.latest_message.entities:
             entity_name = entity.get("entity")
-            should_ignore_entities = (tracker.latest_message.intent.get("name")
-                                      in self.intents_ignore_entities)
+            should_ignore_entity = (tracker.latest_message.intent.get("name")
+                                    in self.intents_ignore_entities)
             entity_is_featurized_slot = (entity_name in tracker.slots.keys()
                                          and tracker.slots[entity_name].type_name
                                          != 'unfeaturized')
-            if (not should_ignore_entities or (should_ignore_entities and
-                                               entity_is_featurized_slot)):
+            if (not should_ignore_entity or (should_ignore_entity and
+                                             entity_is_featurized_slot)):
                 key = "entity_{0}".format(entity["entity"])
                 state_dict[key] = 1.0
 
