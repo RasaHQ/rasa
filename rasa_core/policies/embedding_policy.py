@@ -458,8 +458,10 @@ class EmbeddingPolicy(Policy):
                                                             real_length)
             if attn_mech is not None:
                 attn_mech = [attn_mech, attn_mech_after_rnn]
+                attn_shift_range = [0, self.attn_shift_range]
             else:
                 attn_mech = attn_mech_after_rnn
+                attn_shift_range = self.attn_shift_range
 
             def attn_to_copy_fn(attention):
                 return attention[:, num_mem_units:]
@@ -487,7 +489,7 @@ class EmbeddingPolicy(Policy):
 
         attn_cell = TimeAttentionWrapper(
                 cell, attn_mech,
-                attn_shift_range=self.attn_shift_range,
+                attn_shift_range=attn_shift_range,
                 sparse_attention=self.sparse_attention,
                 cell_input_fn=cell_input_fn,
                 attn_to_copy_fn=attn_to_copy_fn,
@@ -1143,28 +1145,28 @@ class TimedNTM(object):
 
         # sharpening parameter
         self.gamma_sharp = tf.layers.Dense(1, lambda a: tf.nn.softplus(a) + 1,
-                                           # bias_initializer=tf.constant_initializer(1),
+                                           bias_initializer=tf.constant_initializer(1),
                                            name=(self.name + '/gamma_sharp'))
 
-    def __call__(self, cell_output, probs, probs_state):
+    def __call__(self, cell_output, scores, scores_state):
         # apply exponential moving average with interpolation gate weight
         # to scores from previous time which are equal to probs at this point
         # different from original NTM where it is applied after softmax
         i_g = self.inter_gate(cell_output)
-        probs = tf.concat([i_g * probs[:, :-1] + (1 - i_g) * probs_state,
-                           probs[:, -1:]], 1)
+        scores = tf.concat([i_g * scores[:, :-1] + (1 - i_g) * scores_state,
+                           scores[:, -1:]], 1)
 
-        next_probs_state = probs
+        next_scores_state = scores
 
         # limit time probabilities for attention
         if self.sparse_attention is None:
             s_g = self.sparse_gate(cell_output)
-            probs = (s_g * tf.contrib.sparsemax.sparsemax(probs) +
-                     (1 - s_g) * tf.nn.softmax(probs))
+            probs = (s_g * tf.contrib.sparsemax.sparsemax(scores) +
+                     (1 - s_g) * tf.nn.softmax(scores))
         elif self.sparse_attention:
-            probs = tf.contrib.sparsemax.sparsemax(probs)
+            probs = tf.contrib.sparsemax.sparsemax(scores)
         else:
-            probs = tf.nn.softmax(probs)
+            probs = tf.nn.softmax(scores)
 
         if self.shift_weight is not None:
             s_w = self.shift_weight(cell_output)
@@ -1199,7 +1201,7 @@ class TimedNTM(object):
         probs = powed_probs / (
                     tf.reduce_sum(powed_probs, 1, keepdims=True) + 1e-32)
 
-        return probs, next_probs_state
+        return probs, next_scores_state
 
 
 def _compute_time_attention(attention_mechanism, cell_output, attention_state,
@@ -1213,10 +1215,11 @@ def _compute_time_attention(attention_mechanism, cell_output, attention_state,
     scores, _ = attention_mechanism(cell_output, state=attention_state)
 
     # take only scores form current and past times
-    probs = scores[:, :time+1]
-    probs_state = attention_state[:, :time]
+    timed_scores = scores[:, :time+1]
+    timed_scores_state = attention_state[:, :time]
     # pass these scores to NTM
-    probs, next_probs_state = timed_ntm(cell_output, probs, probs_state)
+    probs, next_scores_state = timed_ntm(cell_output, timed_scores,
+                                         timed_scores_state)
 
     # concatenate probs with zeros to get new alignments
     zeros = tf.zeros_like(scores)
@@ -1245,7 +1248,7 @@ def _compute_time_attention(attention_mechanism, cell_output, attention_state,
 
     # return current time to attention
     alignments = tf.concat([probs, zeros[:, time+1:]], 1)
-    next_attention_state = tf.concat([next_probs_state,
+    next_attention_state = tf.concat([next_scores_state,
                                       zeros[:, time+1:]], 1)
     return attention, alignments, next_attention_state
 
@@ -1320,7 +1323,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
 
     def __init__(self, cell,
                  attention_mechanism,
-                 attn_shift_range=0,
+                 attn_shift_range=None,
                  sparse_attention=False,
                  attention_layer_size=None,
                  alignment_history=False,
@@ -1340,12 +1343,16 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                 initial_cell_state,
                 name
         )
-        self._timed_ntms = [TimedNTM(attn_shift_range,
+        if not isinstance(attn_shift_range, list):
+            attn_shift_range = [attn_shift_range]
+        self._timed_ntms = [TimedNTM(attn_shift_range[0],
                                      sparse_attention,
                                      name='0')]
         if self._is_multi:
             for i in range(1, len(attention_mechanism)):
-                self._timed_ntms.append(TimedNTM(attn_shift_range,
+                if len(attn_shift_range) < i + 1:
+                    attn_shift_range.append(attn_shift_range[-1])
+                self._timed_ntms.append(TimedNTM(attn_shift_range[i],
                                                  sparse_attention,
                                                  name=str(i)))
 
@@ -1461,7 +1468,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                 attention_mechanism.initial_alignments(batch_size, dtype)
                 for attention_mechanism in self._attention_mechanisms]
 
-            all_hidden_cell_states = tf.TensorArray(dtype, size=1,
+            all_hidden_cell_states = tf.TensorArray(dtype, size=0,
                                                     dynamic_size=True,
                                                     clear_after_read=False)
             if isinstance(self._cell.state_size, tf.contrib.rnn.LSTMStateTuple):
@@ -1623,9 +1630,11 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
 
             prev_all_hidden_cell_states = state.all_hidden_cell_states
             if isinstance(cell_state, tf.contrib.rnn.LSTMStateTuple):
-                c_probs = tf.round(all_alignments[1][:, :state.time])
+                c_probs = tf.round(all_alignments[-1][:, :state.time])
                 c_g = 1 - tf.reduce_sum(c_probs, 1, keepdims=True)
                 c_probs = tf.concat([c_probs, c_g], 1)
+
+                # cell_output = c_g * cell_output + attn_emb_prev_act
 
                 expanded_alignments = tf.expand_dims(c_probs, 1)
 
@@ -1664,7 +1673,8 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             attention_state=self._item_or_tuple(all_attention_states),
             alignments=self._item_or_tuple(all_alignments),
             alignment_history=self._item_or_tuple(maybe_all_histories),
-            all_hidden_cell_states=all_hidden_cell_states)
+            all_hidden_cell_states=all_hidden_cell_states
+        )
 
         if self._output_attention:
             # concatenate cell outputs, attention and no_skip_gate
