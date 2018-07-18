@@ -148,9 +148,9 @@ So what do the different parts mean?
 +---------------+------------------------------------------------------------------------------------------------------+
 | ``templates`` | template strings for the things your bot can say                                                     |
 +---------------+------------------------------------------------------------------------------------------------------+
-| ``intents``   | things you expect users to say. See `Rasa NLU <https://nlu.rasa.com>`_                               |
+| ``intents``   | things you expect users to say. See `Rasa NLU <https://rasa.com/docs/nlu/>`_                         |
 +---------------+------------------------------------------------------------------------------------------------------+
-| ``entities``  | pieces of info you want to extract from messages. See `Rasa NLU <https://nlu.rasa.com>`_             |
+| ``entities``  | pieces of info you want to extract from messages. See `Rasa NLU <https://rasa.com/docs/nlu/>`_       |
 +---------------+------------------------------------------------------------------------------------------------------+
 | ``slots``     | information to keep track of during a conversation (e.g. a users age) - see :ref:`slots`             |
 +---------------+------------------------------------------------------------------------------------------------------+
@@ -207,6 +207,66 @@ If you are running the cells here in the docs, run this cell:
 
 .. runnable::
 
+    chatbot_html = """
+    <style type="text/css">#log p { margin: 5px; font-family: sans-serif; }</style>
+    <div id="log"
+         style="box-sizing: border-box;
+                width: 600px;
+                height: 32em;
+                border: 1px grey solid;
+                padding: 2px;
+                overflow: scroll;">
+    </div>
+    <input type="text" id="typehere" placeholder="type here!"
+           style="box-sizing: border-box;
+                  width: 600px;
+                  margin-top: 5px;">
+    <script>
+    function paraWithText(t) {
+        let tn = document.createTextNode(t);
+        let ptag = document.createElement('p');
+        ptag.appendChild(tn);
+        return ptag;
+    }
+    document.querySelector('#typehere').onchange = async function() {
+        let inputField = document.querySelector('#typehere');
+        let val = inputField.value;
+        inputField.value = "";
+        let resp = await getResp(val);
+        let objDiv = document.getElementById("log");
+        objDiv.appendChild(paraWithText('😀: ' + val));
+        objDiv.appendChild(paraWithText('🤖: ' + resp));
+        objDiv.scrollTop = objDiv.scrollHeight;
+    };
+    async function colabGetResp(val) {
+        let resp = await google.colab.kernel.invokeFunction(
+            'notebook.get_response', [val], {});
+        return resp.data['application/json']['result'];
+    }
+    async function webGetResp(val) {
+        let resp = await fetch("/response.json?sentence=" + 
+            encodeURIComponent(val));
+        let data = await resp.json();
+        return data['result'];
+    }
+    </script>
+    """ 
+
+.. runnable::
+
+    import IPython
+
+    display(IPython.display.HTML(chatbot_html + \
+                                 "<script>let getResp = colabGetResp;</script>"))
+
+    def get_response(val):
+        resp = chatbot.response_for(val)
+        return IPython.display.JSON({'result': resp})
+
+    output.register_callback('notebook.get_response', get_response)
+
+.. runnable::
+
    from rasa_core.agent import Agent
    from rasa_core.channels.console import ConsoleInputChannel
    agent = Agent.load('models/dialogue')
@@ -223,7 +283,7 @@ Language Understanding (NLU) and transforms the message into structured output.
 In this example we are going to use Rasa NLU for this purpose.
 
 In Rasa NLU, we need to define the user messages our bot should be able to
-handle in the `Rasa NLU training data format <https://nlu.rasa.com/dataformat.html>`_.
+handle in the `Rasa NLU training data format <https://rasa.com/docs/nlu/dataformat/>`_.
 In this tutorial we are going to use Markdown Format for NLU training data.
 Let's create some intent examples in a file called ``nlu.md``:
 
@@ -295,7 +355,7 @@ NLU model:
 
 
 We can now train an NLU model using our examples (make sure to
-`install Rasa NLU <http://nlu.rasa.com/installation.html#setting-up-rasa-nlu>`_
+`install Rasa NLU <http://rasa.com/docs/nlu/installation/>`_
 first).
 
 Let's run
@@ -312,7 +372,7 @@ since this is specified in the train command.
 .. note::
 
    To learn more about Rasa NLU
-   head over to the `Rasa NLU documentation <https://nlu.rasa.com>`_.
+   head over to the `Rasa NLU documentation <https://rasa.com/docs/nlu/>`_.
 
 6. Talking To Your Bot
 ^^^^^^^^^^^^^^^^^^^^^^
