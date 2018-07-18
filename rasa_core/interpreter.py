@@ -85,7 +85,15 @@ class RegexInterpreter(NaturalLanguageInterpreter):
         # type: (Text) -> float
         if confidence_str is None:
             return 1.0
-        return float(confidence_str.strip()[1:])
+
+        try:
+            return float(confidence_str.strip()[1:])
+        except Exception as e:
+            logger.warning("Invalid to parse confidence value in line "
+                           "'{}'. Make sure the intent confidence is an "
+                           "@ followed by a decimal number. "
+                           "Error: {}".format(confidence_str, e))
+            return 0.0
 
     @staticmethod
     def extract_intent_and_entities(user_input):
