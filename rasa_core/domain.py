@@ -244,10 +244,11 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
 
         # Set all set slots with the featurization of the stored value
         for key, slot in tracker.slots.items():
-            for i, slot_value in enumerate(slot.as_feature()):
-                if slot_value != 0:
-                    slot_id = "slot_{}_{}".format(key, i)
-                    state_dict[slot_id] = slot_value
+            if slot is not None:
+                for i, slot_value in enumerate(slot.as_feature()):
+                    if slot_value != 0:
+                        slot_id = "slot_{}_{}".format(key, i)
+                        state_dict[slot_id] = slot_value
 
         latest_msg = tracker.latest_message
 
