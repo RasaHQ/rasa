@@ -92,7 +92,7 @@ We then define stories for each of these cases:
 Now we've given Rasa Core a few examples of how to handle the different values
 that the ``location_match`` slot can take.
 Right now, we still only have four stories, which is not a lot of training data.
- :ref:`interactive_learning` is agreat way to explore more conversations 
+:ref:`interactive_learning` is agreat way to explore more conversations 
 that aren't in your stories already.
 The best way to improve your model is to test it yourself, have other people test it,
 and correct the mistakes it makes. 
@@ -101,7 +101,7 @@ and correct the mistakes it makes.
 Debugging
 ~~~~~~~~~
 
-The first thing to try is to run your bot with the ``debug`` flag, see :ref:`_debugging` for details.
+The first thing to try is to run your bot with the ``debug`` flag, see :ref:`debugging` for details.
 If you are just getting started, you probably only have a few hand-written stories.
 This is a great starting point, but 
 you should give your bot to people to test **as soon as possible**. One of the guiding principles
