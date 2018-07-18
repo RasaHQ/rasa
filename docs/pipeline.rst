@@ -6,9 +6,10 @@ Pipeline and Component Configuration
 .. contents::
 
 
-The process of incoming messages is split into different components. These components are executed one after another
+Incoming messages are processed by a sequence of components. These components are executed one after another
 in a so called processing pipeline. There are components for entity extraction, for intent classification,
-pre-processing and there will be many more in the future.
+pre-processing, and others. If you want to add your own component, for example to run a spell-check or to
+do sentiment analysis, check out :ref:`section_customcomponents`. 
 
 Each component processes the input and creates an output. The ouput can be used by any component that comes after
 this component in the pipeline. There are components which only produce information that is used by other components
