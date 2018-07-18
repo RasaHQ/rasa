@@ -231,20 +231,23 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
 
         # Set all found entities with the state value 1.0
         for entity in tracker.latest_message.entities:
-            if (tracker.latest_message.intent.get("name") not in
-                    self.intents_ignore_entities):
+            entity_name = entity.get("entity")
+            should_ignore_entities = (tracker.latest_message.intent.get("name")
+                                      in self.intents_ignore_entities)
+            entity_is_featurized_slot = (entity_name in tracker.slots.keys()
+                                         and tracker.slots[entity_name].type_name
+                                         != 'unfeaturized')
+            if (not should_ignore_entities or (should_ignore_entities and
+                                               entity_is_featurized_slot)):
                 key = "entity_{0}".format(entity["entity"])
                 state_dict[key] = 1.0
 
         # Set all set slots with the featurization of the stored value
         for key, slot in tracker.slots.items():
-            # TODO: check last event was a useruttered
-            if (slot is not None and tracker.latest_message.intent.get("name")
-                    not in self.intents_ignore_entities):
-                for i, slot_value in enumerate(slot.as_feature()):
-                    if slot_value != 0:
-                        slot_id = "slot_{}_{}".format(key, i)
-                        state_dict[slot_id] = slot_value
+            for i, slot_value in enumerate(slot.as_feature()):
+                if slot_value != 0:
+                    slot_id = "slot_{}_{}".format(key, i)
+                    state_dict[slot_id] = slot_value
 
         latest_msg = tracker.latest_message
 
@@ -413,6 +416,10 @@ class TemplateDomain(Domain):
             action_factory = data.get("action_factory", None)
         slots = cls.collect_slots(data.get("slots", {}))
         additional_arguments = data.get("config", {})
+        if data.get("intents_ignore_entities"):
+            logger.warn("Entities for specified intents will only be ignored"
+                        " if they do not also have a featurized slot with the"
+                        " same name")
         return cls(
             data.get("intents", []),
             data.get("entities", []),
