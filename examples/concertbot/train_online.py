@@ -10,11 +10,12 @@ from rasa_core.agent import Agent
 from rasa_core.interpreter import RegexInterpreter
 from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.memoization import MemoizationPolicy
+from rasa_core.channels import online
 
 logger = logging.getLogger(__name__)
 
 
-def run_concertbot_online(input_channel, interpreter,
+def run_concertbot_online(interpreter,
                           domain_file="concert_domain.yml",
                           training_data_file='data/stories.md'):
     agent = Agent(domain_file,
@@ -22,15 +23,15 @@ def run_concertbot_online(input_channel, interpreter,
                   interpreter=interpreter)
 
     training_data = agent.load_data(training_data_file)
-    agent.train_online(training_data,
-                       input_channel=input_channel,
-                       batch_size=50,
-                       epochs=200,
-                       max_training_samples=300)
+    agent.train(training_data,
+                batch_size=50,
+                epochs=200,
+                max_training_samples=300)
+    online.serve_application(agent)
 
     return agent
 
 
 if __name__ == '__main__':
     utils.configure_colored_logging(loglevel="INFO")
-    run_concertbot_online(ConsoleInputChannel(), RegexInterpreter())
+    run_concertbot_online(RegexInterpreter())

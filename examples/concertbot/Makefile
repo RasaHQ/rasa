@@ -20,3 +20,7 @@ run-actions:
 
 train-core:
 	python train.py
+
+run-online:
+	make run-actions&
+	python train_online.py
