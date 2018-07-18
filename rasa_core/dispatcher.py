@@ -131,14 +131,12 @@ class Dispatcher(object):
                                           tracker,
                                           silent_fail,
                                           **kwargs)
-        if not message:
-            return
-
-        if "buttons" not in message:
-            message["buttons"] = buttons
-        else:
-            message["buttons"].extend(buttons)
-        self.utter_response(message)
+        if message:
+            if "buttons" not in message:
+                message["buttons"] = buttons
+            else:
+                message["buttons"].extend(buttons)
+            self.utter_response(message)
 
     def utter_template(self,
                        template,  # type: Text
@@ -154,10 +152,8 @@ class Dispatcher(object):
                                           silent_fail,
                                           **kwargs)
 
-        if not message:
-            return
-
-        self.utter_response(message)
+        if message:
+            self.utter_response(message)
 
     def _generate_response(
             self,

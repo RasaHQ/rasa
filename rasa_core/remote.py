@@ -84,15 +84,14 @@ class RasaCoreClient(object):
         result.raise_for_status()
         return result.json()
 
-    def append_events_to_tracker(self, sender_id, events):
+    def append_event_to_tracker(self, sender_id, event):
         # type: (Text, List[Event]) -> None
         """Add some more events to the tracker of a conversation."""
 
         url = "{}/conversations/{}/tracker/events?token={}".format(
                 self.host, sender_id, self.token)
 
-        data = [event.as_dict() for event in events]
-        result = requests.post(url, json=data)
+        result = requests.post(url, json=event.as_dict())
         result.raise_for_status()
         return result.json()
 
