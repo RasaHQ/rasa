@@ -26,7 +26,7 @@ after_success:
 jobs:
   include:
   - stage: docs
-    if: fork = false
+    if: fork = false AND branch = "master"
     install:
     - sudo apt-get update
     - pip install sphinx==1.7.5 sphinx-autobuild==0.6.0 sphinxcontrib-httpdomain==1.5.0  sphinxcontrib-programoutput==0.11 
