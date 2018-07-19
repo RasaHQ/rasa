@@ -36,7 +36,7 @@ after_success:
 jobs:
   include:
   - stage: docs
-    if: fork = false  # forked repository will skip building docss
+    if: fork = false AND branch = "master" # forked repository will skip building docs, only master & PRs to it
     install:
     - pip install sphinx==1.7.5 sphinx-autobuild==0.7.1 sphinxcontrib-programoutput==0.11 nbsphinx==0.3.2 sphinxcontrib-httpdomain==1.5.0
     - pip install git+https://${GITHUB_TOKEN}:x-oauth-basic@github.com/RasaHQ/sphinxcontrib-versioning.git@version_list
