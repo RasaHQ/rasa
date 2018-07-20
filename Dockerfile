@@ -14,7 +14,7 @@ RUN apt-get update -qq && \
   libssl-dev \
   libffi6 \
   libffi-dev \
-  libpng12-dev \
+  libpng-dev \
   curl && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
