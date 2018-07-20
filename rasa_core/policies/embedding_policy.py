@@ -7,19 +7,21 @@ import io
 import os
 import logging
 import warnings
-import typing
 from tqdm import tqdm
+import collections
+import copy
+import typing
 
 from typing import \
     Any, List, Optional, Text
 
 import numpy as np
-import copy
 from rasa_core.policies import Policy
 from rasa_core.featurizers import \
     TrackerFeaturizer, FullDialogueTrackerFeaturizer, \
     LabelTokenizerSingleStateFeaturizer
 from rasa_core import utils
+from rasa_core.actions.action import ACTION_LISTEN_NAME
 
 if typing.TYPE_CHECKING:
     from rasa_core.domain import Domain
@@ -237,6 +239,10 @@ class EmbeddingPolicy(Policy):
             action_placeholder=None,  # type: Optional[tf.Tensor]
             slots_placeholder=None,  # type: Optional[tf.Tensor]
             prev_act_placeholder=None,  # type: Optional[tf.Tensor]
+            dialogue_len=None,  # type: Optional[tf.Tensor]
+            x_for_no_intent=None,
+            y_for_no_action=None,
+            y_for_action_listen=None,
             similarity_op=None,  # type: Optional[tf.Tensor]
             alignment_history=None,  # type: Optional[List[[tf.Tensor]]
             user_embed=None,  # type: Optional[tf.Tensor]
@@ -279,6 +285,10 @@ class EmbeddingPolicy(Policy):
         self.b_in = action_placeholder
         self.c_in = slots_placeholder
         self.b_prev_in = prev_act_placeholder
+        self._dialogue_len = dialogue_len
+        self._x_for_no_intent_in = x_for_no_intent
+        self._y_for_no_action_in = y_for_no_action
+        self._y_for_action_listen_in = y_for_action_listen
         self.sim_op = similarity_op
 
         # store attention probability distribution as
@@ -303,14 +313,6 @@ class EmbeddingPolicy(Policy):
         self._loss_scales = None
 
     # data helpers:
-    def _create_all_Y_d(self, dialogue_len):
-        """Stack encoded_all_intents on top of each other
-            to create candidates for training examples
-            to calculate training accuracy"""
-        all_Y_d = np.stack([self.encoded_all_actions
-                            for _ in range(dialogue_len)])
-        return all_Y_d
-
     def _create_X_slots_prev_acts(self, data_X):
         """Etract feature vectors for user input (X), slots and
             preveously executed actions from training data."""
@@ -336,6 +338,22 @@ class EmbeddingPolicy(Policy):
                       for action_ids in actions_for_Y])
 
         return Y, actions_for_Y
+
+    @staticmethod
+    def _create_zero_vector(X):
+        return np.zeros((1, X.shape[-1]), X.dtype)
+
+    def _create_y_for_action_listen(self, domain):
+        action_listen_idx = domain.index_for_action(ACTION_LISTEN_NAME)
+        return self.encoded_all_actions[action_listen_idx:action_listen_idx+1]
+
+    def _create_all_Y_d(self, dialogue_len):
+        """Stack encoded_all_intents on top of each other
+            to create candidates for training examples
+            to calculate training accuracy"""
+        all_Y_d = np.stack([self.encoded_all_actions
+                            for _ in range(dialogue_len)])
+        return all_Y_d
 
     # tf helpers:
     def _create_tf_nn(self, x_in, num_layers, layer_sizes, droprate, name):
@@ -364,7 +382,9 @@ class EmbeddingPolicy(Policy):
                                 reuse=tf.AUTO_REUSE)
         return emb_x
 
-    def _create_tf_embeds(self, a_in, b_in, c_in, b_prev_in):
+    def _create_tf_embeds(self, a_in, b_in, c_in, b_prev_in,
+                          x_for_no_intent_in, y_for_no_action_in,
+                          y_for_action_listen_in):
         """Create embedding vectors"""
 
         if self.share_embedding:
@@ -391,7 +411,6 @@ class EmbeddingPolicy(Policy):
         c = c_in  # no hidden layers for slots
         emb_slots = self._create_embed(c, name='slt')
 
-        # b_prev = no_scale_dropout(b_prev_in, rate=0.2, training=self._is_training)
         b_prev = self._create_tf_nn(b_prev_in,
                                     self.num_hidden_layers_b,
                                     self.hidden_layer_size_b,
@@ -399,7 +418,35 @@ class EmbeddingPolicy(Policy):
                                     name=name_b)
         emb_prev_act = self._create_embed(b_prev, name=name_b)
 
-        return emb_utter, emb_act, emb_slots, emb_prev_act
+        x_for_no_intent = self._create_tf_nn(
+                x_for_no_intent_in,
+                self.num_hidden_layers_a,
+                self.hidden_layer_size_a,
+                0, name=name_a
+        )
+        emb_for_no_intent = tf.stop_gradient(
+                self._create_embed(x_for_no_intent, name=name_a))
+
+        y_for_no_action = self._create_tf_nn(
+                y_for_no_action_in,
+                self.num_hidden_layers_b,
+                self.hidden_layer_size_b,
+                0, name=name_b
+        )
+        emb_for_no_action = tf.stop_gradient(
+                self._create_embed(y_for_no_action, name=name_b))
+
+        y_for_action_listen = self._create_tf_nn(
+                y_for_action_listen_in,
+                self.num_hidden_layers_b,
+                self.hidden_layer_size_b,
+                0, name=name_b
+        )
+        emb_for_action_listen = tf.stop_gradient(
+                self._create_embed(y_for_action_listen, name=name_b))
+
+        return (emb_utter, emb_act, emb_slots, emb_prev_act,
+                emb_for_no_intent, emb_for_no_action, emb_for_action_listen)
 
     def _create_rnn_cell(self):
         """Create one rnn cell"""
@@ -439,28 +486,44 @@ class EmbeddingPolicy(Policy):
                 normalize=True,
                 probability_fn=tf.identity,
                 # we only attend to memory up to a current time
-                score_mask_value=0,  # it does not affect alignments
+                # it does not affect alignments, but
+                # is important for interpolation gate
+                score_mask_value=0
         )
         return attn_mech, num_mem_units
 
     def _create_attn_cell(self, cell, emb_utter, emb_prev_act,
-                          real_length):
+                          real_length, emb_for_no_intent,
+                          emb_for_no_action,
+                          emb_for_action_listen):
         """Wrap cell in attention wrapper with given memory"""
         if self.attn_before_rnn:
             (attn_mech,
              num_mem_units) = self._create_attn_mech(emb_utter, real_length)
+            ignore_mask = tf.reduce_all(tf.equal(tf.expand_dims(
+                    emb_for_no_intent, 0), emb_utter), -1)
         else:
             attn_mech = None
+            ignore_mask = None
             num_mem_units = 0
 
         if self.attn_after_rnn:
             attn_mech_after_rnn, _ = self._create_attn_mech(emb_prev_act,
                                                             real_length)
+            ignore_mask_listen = tf.logical_or(
+                    tf.reduce_all(tf.equal(tf.expand_dims(
+                            emb_for_no_action, 0), emb_prev_act), -1),
+                    tf.reduce_all(tf.equal(tf.expand_dims(
+                            emb_for_action_listen, 0), emb_prev_act), -1)
+            )
+
             if attn_mech is not None:
                 attn_mech = [attn_mech, attn_mech_after_rnn]
+                ignore_mask = [ignore_mask, ignore_mask_listen]
                 attn_shift_range = [0, self.attn_shift_range]
             else:
                 attn_mech = attn_mech_after_rnn
+                ignore_mask = ignore_mask_listen
                 attn_shift_range = self.attn_shift_range
 
             def attn_to_copy_fn(attention):
@@ -489,10 +552,15 @@ class EmbeddingPolicy(Policy):
 
         attn_cell = TimeAttentionWrapper(
                 cell, attn_mech,
+                dialogue_len=self._dialogue_len,
                 attn_shift_range=attn_shift_range,
                 sparse_attention=self.sparse_attention,
                 cell_input_fn=cell_input_fn,
                 attn_to_copy_fn=attn_to_copy_fn,
+                binary_similarity_fn=lambda emb_1, emb_2: (
+                        self._tf_sim(emb_1, emb_2, None)),
+                ignore_mask=ignore_mask,
+                emb_for_action_listen=emb_for_action_listen,
                 skip_gate=self.skip_hidden_states,
                 output_attention=True,
                 alignment_history=True
@@ -513,13 +581,17 @@ class EmbeddingPolicy(Policy):
                 self.alignment_history.append(alignments)
 
         hidden_states = final_state.all_hidden_cell_states
-        self.hidden_states = tf.transpose(hidden_states.stack(),
-                                          [1, 0, 2])[:, 1:, :]
+        if isinstance(hidden_states, tf.contrib.rnn.LSTMStateTuple):
+            self.hidden_states = tf.transpose(hidden_states.h.stack(),
+                                              [1, 0, 2])[:, 1:, :]
+        else:
+            self.hidden_states = tf.transpose(hidden_states.stack(),
+                                              [1, 0, 2])[:, 1:, :]
 
     def _process_cell_output(self, cell_output):
         """Save intermediate tensors for debug purposes"""
         if self.use_attention:
-            self.no_skip_gate = cell_output[:, :, -1:]
+            self.no_skip_gate = cell_output[:, :, -4:]
         else:
             self.no_skip_gate = cell_output[:, :, self.rnn_size:]
 
@@ -528,12 +600,12 @@ class EmbeddingPolicy(Policy):
                                                (self.embed_dim +
                                                 self.embed_dim)]
             self.attn_embed = cell_output[:, :, (self.embed_dim +
-                                                 self.embed_dim):-1]
+                                                 self.embed_dim):-4]
             # embedding layer is inside rnn cell
             emb_dial = cell_output[:, :, :self.embed_dim]
         else:
             self.attn_embed = cell_output[:, :, (self.rnn_size +
-                                                 self.rnn_size):-1]
+                                                 self.rnn_size):-4]
             # add embedding layer to rnn cell output
             emb_dial = self._create_embed(cell_output[:, :, :self.rnn_size],
                                           name='out')
@@ -541,7 +613,9 @@ class EmbeddingPolicy(Policy):
 
         return emb_dial
 
-    def _create_tf_dial_embed(self, emb_utter, emb_slots, emb_prev_act, mask):
+    def _create_tf_dial_embed(self, emb_utter, emb_slots, emb_prev_act, mask,
+                              emb_for_no_intent, emb_for_no_action,
+                              emb_for_action_listen):
         """Create rnn for dialogue level embedding"""
 
         cell_input = tf.concat([emb_utter, emb_slots, emb_prev_act], -1)
@@ -552,7 +626,9 @@ class EmbeddingPolicy(Policy):
 
         if self.use_attention:
             cell = self._create_attn_cell(cell, emb_utter, emb_prev_act,
-                                          real_length)
+                                          real_length, emb_for_no_intent,
+                                          emb_for_no_action,
+                                          emb_for_action_listen)
 
         cell_output, final_state = tf.nn.dynamic_rnn(
                 cell, cell_input,
@@ -573,14 +649,23 @@ class EmbeddingPolicy(Policy):
             emb_dial = tf.nn.l2_normalize(emb_dial, -1)
 
         if self.similarity_type in {'cosine', 'inner'}:
-            sim = tf.reduce_sum(tf.expand_dims(emb_dial, -2) * emb_act, -1)
-            sim *= tf.expand_dims(mask, 2)
+            if len(emb_act.shape) == 4:
+                sim = tf.reduce_sum(tf.expand_dims(emb_dial, -2) * emb_act, -1)
+                sim *= tf.expand_dims(mask, 2)
 
-            sim_act = tf.reduce_sum(emb_act[:, :, :1, :] *
-                                    emb_act[:, :, 1:, :], -1)
-            sim_act *= tf.expand_dims(mask, 2)
+                sim_act = tf.reduce_sum(emb_act[:, :, :1, :] *
+                                        emb_act[:, :, 1:, :], -1)
+                sim_act *= tf.expand_dims(mask, 2)
 
-            return sim, sim_act
+                return sim, sim_act
+
+            elif len(emb_dial.shape) == len(emb_act.shape):
+                sim = tf.reduce_sum(emb_dial * emb_act, -1, keepdims=True)
+                sim = tf.where(sim > (self.mu_pos - self.mu_neg) / 2.0,
+                               tf.ones_like(sim),
+                               tf.zeros_like(sim))
+
+                return sim
         else:
             raise ValueError("Wrong similarity type {}, "
                              "should be 'cosine' or 'inner'"
@@ -699,7 +784,8 @@ class EmbeddingPolicy(Policy):
             return [[None]]
 
     def _train_tf(self, X, Y, slots, prev_act, actions_for_Y, all_Y_d,
-                  loss, mask):
+                  loss, mask, x_for_no_intent,
+                  y_for_no_action, y_for_action_listen):
         """Train tf graph"""
 
         self.session.run(tf.global_variables_initializer())
@@ -741,6 +827,10 @@ class EmbeddingPolicy(Policy):
                                    self.b_in: batch_b,
                                    self.c_in: batch_c,
                                    self.b_prev_in: batch_b_prev,
+                                   self._dialogue_len: X.shape[1],
+                                   self._x_for_no_intent_in: x_for_no_intent,
+                                   self._y_for_no_action_in: y_for_no_action,
+                                   self._y_for_action_listen_in: y_for_action_listen,
                                    self._is_training: True,
                                    self._loss_scales: batch_loss_scales}
                 )
@@ -752,7 +842,9 @@ class EmbeddingPolicy(Policy):
                         (ep + 1) == self.epochs):
                     train_acc = self._calc_train_acc(X, slots, prev_act,
                                                      actions_for_Y, all_Y_d,
-                                                     mask)
+                                                     mask, x_for_no_intent,
+                                                     y_for_no_action,
+                                                     y_for_action_listen)
                     last_loss = ep_loss
 
                 pbar.set_postfix({
@@ -770,7 +862,9 @@ class EmbeddingPolicy(Policy):
                         "".format(last_loss, train_acc))
 
     def _calc_train_acc(self, X, slots, prev_act,
-                        actions_for_Y, all_Y_d, mask):
+                        actions_for_Y, all_Y_d, mask,
+                        x_for_no_intent, y_for_no_action,
+                        y_for_action_listen):
         """Calculate training accuracy"""
 
         # choose n examples to calculate train accuracy
@@ -784,6 +878,10 @@ class EmbeddingPolicy(Policy):
                            self.b_in: all_Y_d_x,
                            self.c_in: slots[ids],
                            self.b_prev_in: prev_act[ids],
+                           self._dialogue_len: X.shape[1],
+                           self._x_for_no_intent_in: x_for_no_intent,
+                           self._y_for_no_action_in: y_for_no_action,
+                           self._y_for_action_listen_in: y_for_action_listen,
                            self._is_training: False}
         )
 
@@ -829,10 +927,15 @@ class EmbeddingPolicy(Policy):
         X, slots, prev_act = self._create_X_slots_prev_acts(training_data.X)
         Y, actions_for_Y = self._create_Y_actions_for_Y(training_data.y)
 
+        x_for_no_intent = self._create_zero_vector(X)
+        y_for_no_action = self._create_zero_vector(prev_act)
+        y_for_action_listen = self._create_y_for_action_listen(domain)
+
         # is needed to calculate train accuracy
         all_Y_d = self._create_all_Y_d(X.shape[1])
 
         self.graph = tf.Graph()
+
         with self.graph.as_default():
             dialogue_len = None  # use dynamic time for rnn
             self.a_in = tf.placeholder(tf.float32,
@@ -851,6 +954,20 @@ class EmbeddingPolicy(Policy):
                                             (None, dialogue_len,
                                              Y.shape[-1]),
                                             name='b_prev')
+            self._dialogue_len = tf.placeholder(tf.int32, shape=(),
+                                                name='dialogue_len')
+            self._x_for_no_intent_in = tf.placeholder(
+                    tf.float32, (1, X.shape[-1]),
+                    name='x_for_no_intent'
+            )
+            self._y_for_no_action_in = tf.placeholder(
+                    tf.float32, (1, Y.shape[-1]),
+                    name='y_for_no_action'
+            )
+            self._y_for_action_listen_in = tf.placeholder(
+                    tf.float32, (1, Y.shape[-1]),
+                    name='y_for_action_listen'
+            )
 
             self._is_training = tf.placeholder_with_default(False, shape=())
 
@@ -860,16 +977,27 @@ class EmbeddingPolicy(Policy):
             (self.user_embed,
              self.bot_embed,
              self.slot_embed,
-             emb_prev_act) = self._create_tf_embeds(self.a_in,
-                                                    self.b_in,
-                                                    self.c_in,
-                                                    self.b_prev_in)
+             emb_prev_act,
+             emb_for_no_intent,
+             emb_for_no_action,
+             emb_for_action_listen) = self._create_tf_embeds(
+                    self.a_in,
+                    self.b_in,
+                    self.c_in,
+                    self.b_prev_in,
+                    self._x_for_no_intent_in,
+                    self._y_for_no_action_in,
+                    self._y_for_action_listen_in
+            )
 
             # if there is at least one `-1` it should be masked
             mask = tf.sign(tf.reduce_max(self.a_in, -1) + 1)
             self.dial_embed = self._create_tf_dial_embed(self.user_embed,
                                                          self.slot_embed,
-                                                         emb_prev_act, mask)
+                                                         emb_prev_act, mask,
+                                                         emb_for_no_intent,
+                                                         emb_for_no_action,
+                                                         emb_for_action_listen)
             self.sim_op, sim_act = self._tf_sim(self.dial_embed,
                                                 self.bot_embed, mask)
             loss = self._tf_loss(self.sim_op, sim_act, mask,
@@ -881,7 +1009,8 @@ class EmbeddingPolicy(Policy):
             self.session = tf.Session()
 
             self._train_tf(X, Y, slots, prev_act, actions_for_Y, all_Y_d,
-                           loss, mask)
+                           loss, mask, x_for_no_intent,
+                           y_for_no_action, y_for_action_listen)
 
     def continue_training(self, training_trackers, domain, **kwargs):
         # type: (List[DialogueStateTracker], Domain, **Any) -> None
@@ -911,12 +1040,20 @@ class EmbeddingPolicy(Policy):
             batch_loss_scales = self._scale_loss_by_count_actions(
                     batch_a, batch_c, batch_b_prev, actions_for_b)
 
+            x_for_no_intent = self._create_zero_vector(batch_a)
+            y_for_no_action = self._create_zero_vector(batch_b_prev)
+            y_for_action_listen = self._create_y_for_action_listen(domain)
+
             # fit to one extra example using updated trackers
             self.session.run(self._train_op,
                              feed_dict={self.a_in: batch_a,
                                         self.b_in: batch_b,
                                         self.c_in: batch_c,
                                         self.b_prev_in: batch_b_prev,
+                                        self._dialogue_len: batch_a.shape[1],
+                                        self._x_for_no_intent_in: x_for_no_intent,
+                                        self._y_for_no_action_in: y_for_no_action,
+                                        self._y_for_action_listen_in: y_for_action_listen,
                                         self._is_training: True,
                                         self._loss_scales: batch_loss_scales})
 
@@ -936,6 +1073,11 @@ class EmbeddingPolicy(Policy):
         data_X = self.featurizer.create_X([tracker], domain)
 
         X, slots, prev_act = self._create_X_slots_prev_acts(data_X)
+
+        x_for_no_intent = self._create_zero_vector(X)
+        y_for_no_action = self._create_zero_vector(prev_act)
+        y_for_action_listen = self._create_y_for_action_listen(domain)
+
         all_Y_d = self._create_all_Y_d(X.shape[1])
         all_Y_d_x = np.stack([all_Y_d for _ in range(X.shape[0])])
 
@@ -943,7 +1085,11 @@ class EmbeddingPolicy(Policy):
                                 feed_dict={self.a_in: X,
                                            self.b_in: all_Y_d_x,
                                            self.c_in: slots,
-                                           self.b_prev_in: prev_act})
+                                           self.b_prev_in: prev_act,
+                                           self._dialogue_len: X.shape[1],
+                                           self._x_for_no_intent_in: x_for_no_intent,
+                                           self._y_for_no_action_in: y_for_no_action,
+                                           self._y_for_action_listen_in: y_for_action_listen})
 
         result = _sim[0, -1, :]
         if self.similarity_type == 'cosine':
@@ -980,6 +1126,10 @@ class EmbeddingPolicy(Policy):
             self._persist_tensor('action_placeholder', self.b_in)
             self._persist_tensor('slots_placeholder', self.c_in)
             self._persist_tensor('prev_act_placeholder', self.b_prev_in)
+            self._persist_tensor('dialogue_len', self._dialogue_len)
+            self._persist_tensor('x_for_no_intent', self._x_for_no_intent_in)
+            self._persist_tensor('y_for_no_action', self._y_for_no_action_in)
+            self._persist_tensor('y_for_action_listen', self._y_for_action_listen_in)
 
             self._persist_tensor('similarity_op', self.sim_op)
 
@@ -1034,6 +1184,10 @@ class EmbeddingPolicy(Policy):
                     b_in = tf.get_collection('action_placeholder')[0]
                     c_in = tf.get_collection('slots_placeholder')[0]
                     b_prev_in = tf.get_collection('prev_act_placeholder')[0]
+                    dialogue_len = tf.get_collection('dialogue_len')[0]
+                    x_for_no_intent = tf.get_collection('x_for_no_intent')[0]
+                    y_for_no_action = tf.get_collection('y_for_no_action')[0]
+                    y_for_action_listen = tf.get_collection('y_for_action_listen')[0]
 
                     sim_op = tf.get_collection('similarity_op')[0]
 
@@ -1075,6 +1229,10 @@ class EmbeddingPolicy(Policy):
                            action_placeholder=b_in,
                            slots_placeholder=c_in,
                            prev_act_placeholder=b_prev_in,
+                           dialogue_len=dialogue_len,
+                           x_for_no_intent=x_for_no_intent,
+                           y_for_no_action=y_for_no_action,
+                           y_for_action_listen=y_for_action_listen,
                            similarity_op=sim_op,
                            alignment_history=alignment_history,
                            user_embed=user_embed,
@@ -1094,19 +1252,6 @@ class EmbeddingPolicy(Policy):
 
 
 # Attentional interface
-# modified tensorflow methods
-def no_scale_dropout(x, rate=0.5, noise_shape=None, training=None):
-    if training is None:
-        keep_prob = 1.0 - rate
-    else:
-        keep_prob = 1.0 - (rate *
-                           tf.cast(training, tf.float32))
-    # rescale x back
-    x_dropped = keep_prob * tf.nn.dropout(x, keep_prob=keep_prob,
-                                          noise_shape=noise_shape)
-    return x_dropped
-
-
 class TimedNTM(object):
     """Timed Neural Turing Machine
       paper:
@@ -1120,19 +1265,18 @@ class TimedNTM(object):
         a flag if use sparsemax instead of softmax for probs or gate if None
     """
 
-    def __init__(self, attn_shift_range, sparse_attention, name=None):
+    def __init__(self, attn_shift_range, sparse_attention, dialogue_len,
+                 name=None):
         # interpolation gate
         self.name = 'timed_ntm_' + name
+
+        self._dialogue_len = dialogue_len
+
         self.inter_gate = tf.layers.Dense(1, tf.sigmoid,
                                           name=self.name + '/inter_gate')
 
         # if use sparsemax instead of softmax for probs or gate
         self.sparse_attention = sparse_attention
-        if self.sparse_attention is None:
-            # the gate between sparsemax and softmax for probs
-            self.sparse_gate = tf.layers.Dense(1, tf.sigmoid,
-                                               name=(self.name +
-                                                     '/sparse_gate'))
 
         # shift weighting if range is provided
         if attn_shift_range:
@@ -1148,22 +1292,33 @@ class TimedNTM(object):
                                            bias_initializer=tf.constant_initializer(1),
                                            name=(self.name + '/gamma_sharp'))
 
-    def __call__(self, cell_output, scores, scores_state):
+    def __call__(self, cell_output, scores, scores_state, ignore_mask):
         # apply exponential moving average with interpolation gate weight
         # to scores from previous time which are equal to probs at this point
         # different from original NTM where it is applied after softmax
         i_g = self.inter_gate(cell_output)
-        scores = tf.concat([i_g * scores[:, :-1] + (1 - i_g) * scores_state,
-                           scores[:, -1:]], 1)
 
+        # scores limited by time
+        scores = tf.concat([i_g * scores[:, :-1] + (1 - i_g) * scores_state,
+                            scores[:, -1:]], 1)
         next_scores_state = scores
 
-        # limit time probabilities for attention
-        if self.sparse_attention is None:
-            s_g = self.sparse_gate(cell_output)
-            probs = (s_g * tf.contrib.sparsemax.sparsemax(scores) +
-                     (1 - s_g) * tf.nn.softmax(scores))
-        elif self.sparse_attention:
+        # create probabilities for attention
+
+        # add action_listens to avoid
+        # probability saturation for longer sequences
+        # dummy_scores = tf.tile(tf.stop_gradient(scores[:, 0:1]),
+        #                        [1, tf.nn.relu(self._dialogue_len-time-1)])
+        # scores = tf.concat([dummy_scores, scores], 1)
+
+        # set scores for no_intent or action_listen to -inf
+        # scores = tf.where(ignore_mask, -5000 * tf.ones_like(scores), scores)
+        # scores = tf.concat([tf.where(ignore_mask,
+        #                              -5000 * tf.ones_like(scores[:, :-1]),
+        #                              scores[:, :-1]),
+        #                     scores[:, -1:]], 1)
+
+        if self.sparse_attention:
             probs = tf.contrib.sparsemax.sparsemax(scores)
         else:
             probs = tf.nn.softmax(scores)
@@ -1194,6 +1349,11 @@ class TimedNTM(object):
 
             probs = tf.reverse(conv_probs, axis=[1])
 
+        # probs = tf.concat([tf.where(ignore_mask,
+        #                             tf.zeros_like(probs[:, :-1]),
+        #                             probs[:, :-1]),
+        #                    probs[:, -1:]], 1)
+
         # Sharpening
         g_sh = self.gamma_sharp(cell_output)
 
@@ -1201,12 +1361,17 @@ class TimedNTM(object):
         probs = powed_probs / (
                     tf.reduce_sum(powed_probs, 1, keepdims=True) + 1e-32)
 
+        # probs = probs[:, -time-1:]
+        probs = tf.concat([tf.where(ignore_mask,
+                                    tf.zeros_like(probs[:, :-1]),
+                                    probs[:, :-1]),
+                           probs[:, -1:]], 1)
         return probs, next_scores_state
 
 
 def _compute_time_attention(attention_mechanism, cell_output, attention_state,
                             # time is added to calculate time attention
-                            time, timed_ntm, attention_layer):
+                            time, timed_ntm, ignore_mask, attention_layer):
     """Computes the attention and alignments limited by time
         for a given attention_mechanism.
 
@@ -1217,9 +1382,12 @@ def _compute_time_attention(attention_mechanism, cell_output, attention_state,
     # take only scores form current and past times
     timed_scores = scores[:, :time+1]
     timed_scores_state = attention_state[:, :time]
+    timed_ignore_mask = ignore_mask[:, :time]
+
     # pass these scores to NTM
     probs, next_scores_state = timed_ntm(cell_output, timed_scores,
-                                         timed_scores_state)
+                                         timed_scores_state,
+                                         timed_ignore_mask)
 
     # concatenate probs with zeros to get new alignments
     zeros = tf.zeros_like(scores)
@@ -1251,9 +1419,6 @@ def _compute_time_attention(attention_mechanism, cell_output, attention_state,
     next_attention_state = tf.concat([next_scores_state,
                                       zeros[:, time+1:]], 1)
     return attention, alignments, next_attention_state
-
-
-import collections
 
 
 class TimeAttentionWrapperState(
@@ -1323,12 +1488,16 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
 
     def __init__(self, cell,
                  attention_mechanism,
+                 dialogue_len,
                  attn_shift_range=None,
                  sparse_attention=False,
                  attention_layer_size=None,
                  alignment_history=False,
                  cell_input_fn=None,
                  attn_to_copy_fn=None,
+                 binary_similarity_fn=None,
+                 ignore_mask=None,
+                 emb_for_action_listen=None,
                  skip_gate=False,
                  output_attention=False,
                  initial_cell_state=None,
@@ -1343,10 +1512,12 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                 initial_cell_state,
                 name
         )
+        self._dialogue_len = dialogue_len
         if not isinstance(attn_shift_range, list):
             attn_shift_range = [attn_shift_range]
         self._timed_ntms = [TimedNTM(attn_shift_range[0],
                                      sparse_attention,
+                                     dialogue_len,
                                      name='0')]
         if self._is_multi:
             for i in range(1, len(attention_mechanism)):
@@ -1354,8 +1525,14 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                     attn_shift_range.append(attn_shift_range[-1])
                 self._timed_ntms.append(TimedNTM(attn_shift_range[i],
                                                  sparse_attention,
+                                                 dialogue_len,
                                                  name=str(i)))
-
+        self._bin_sim_fn = binary_similarity_fn
+        self._emb_for_action_listen = emb_for_action_listen
+        if not isinstance(ignore_mask, list):
+            self._ignore_mask = [ignore_mask]
+        else:
+            self._ignore_mask = ignore_mask
         self._attn_to_copy_fn = attn_to_copy_fn
         self._skip_gate = skip_gate
         # if skip_gate:
@@ -1399,7 +1576,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
     @property
     def output_size(self):
         if self._output_attention:
-            return self._attention_layer_size + 2 * self._cell.output_size + 1
+            return self._attention_layer_size + 2 * self._cell.output_size + 4
         else:
             return self._cell.output_size
 
@@ -1468,13 +1645,23 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                 attention_mechanism.initial_alignments(batch_size, dtype)
                 for attention_mechanism in self._attention_mechanisms]
 
-            all_hidden_cell_states = tf.TensorArray(dtype, size=0,
-                                                    dynamic_size=True,
-                                                    clear_after_read=False)
             if isinstance(self._cell.state_size, tf.contrib.rnn.LSTMStateTuple):
-                all_hidden_cell_states = all_hidden_cell_states.write(0, cell_state.c)
+                all_hidden_cell_states = tf.contrib.rnn.LSTMStateTuple(
+                        tf.TensorArray(dtype, size=self._dialogue_len + 1,
+                                       # dynamic_size=True,
+                                       clear_after_read=False
+                                       ).write(0, cell_state.c),
+                        tf.TensorArray(dtype, size=self._dialogue_len + 1,
+                                       # dynamic_size=True,
+                                       clear_after_read=False
+                                       ).write(0, cell_state.h)
+                )
             else:
-                all_hidden_cell_states = all_hidden_cell_states.write(0, cell_state)
+                all_hidden_cell_states = tf.TensorArray(
+                        dtype, size=0,
+                        dynamic_size=True,
+                        clear_after_read=False
+                ).write(0, cell_state)
 
             return TimeAttentionWrapperState(
                 cell_state=cell_state,
@@ -1578,6 +1765,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         all_attentions = []
         all_attention_states = []
         maybe_all_histories = []
+
         for i, attention_mechanism in enumerate(self._attention_mechanisms):
             (attention, alignments,
              next_attention_state) = _compute_time_attention(
@@ -1585,6 +1773,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                     previous_attention_state[i],
                     # time is added to calculate time attention
                     state.time, self._timed_ntms[i],
+                    self._ignore_mask[i],
                     self._attention_layers[i]
                     if self._attention_layers else None)
 
@@ -1600,7 +1789,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
 
         # Step 6: Calculate the true inputs to the cell based on the
         #          calculated attention value.
-        cell_inputs = self._cell_input_fn(inputs, attention)
+        cell_inputs = self._cell_input_fn(inputs, all_attentions[0])
 
         # if self._skip_gate:
         #     c_g = self._no_skip_gate(prev_out_for_attn)
@@ -1624,37 +1813,93 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         h_old = cell_output
         if self._attn_to_copy_fn is not None:
             # get relevant previous bot actions from history
-            attn_emb_prev_act = self._attn_to_copy_fn(attention)
+            attn_emb_prev_act = all_attentions[-1]  # self._attn_to_copy_fn(attention)
             # copy them to current output
             cell_output += attn_emb_prev_act
 
+            # c_probs = tf.round(all_alignments[-1][:, :state.time])
+
+            c_probs = tf.stop_gradient(all_alignments[-1][:, :state.time])
+            c_probs = tf.where(self._ignore_mask[-1][:, :state.time],
+                               tf.zeros_like(c_probs), c_probs)
+
+            c_probs_max = tf.reduce_max(c_probs, axis=1, keepdims=True)
+            # c_probs_max = tf.where(c_probs_max > 0.2,
+            #                        c_probs_max,
+            #                        -c_probs_max)
+            c_probs = tf.where(tf.equal(c_probs, c_probs_max),
+                               tf.ones_like(c_probs),
+                               tf.zeros_like(c_probs))
+
+            bin_sim_listen = tf.stop_gradient(self._bin_sim_fn(
+                    cell_output, self._emb_for_action_listen))
+
+            c_probs *= 1 - bin_sim_listen
+
+            c_g = 1 - tf.reduce_sum(c_probs, 1, keepdims=True)
+            # c_probs = tf.concat([c_probs, c_g], 1)
+
+            expanded_alignments = tf.stop_gradient(tf.expand_dims(
+                    tf.concat([c_probs, c_g], 1), 1))
+
             prev_all_hidden_cell_states = state.all_hidden_cell_states
+
+            def new_next_cell_state(_prev_all_hidden_cell_states, _state, _alignments):
+                _prev_cell_states = tf.transpose(
+                        _prev_all_hidden_cell_states.gather(
+                                tf.range(0, state.time + 1)), [1, 0, 2])
+                _prev_cell_states = tf.concat(
+                        [_prev_cell_states[:, :-1, :],
+                         tf.expand_dims(_state, 1)], 1)
+
+                if _alignments is not None:
+                    return tf.squeeze(tf.matmul(
+                            _alignments, _prev_cell_states), [1])
+                else:
+                    return _prev_cell_states
+
             if isinstance(cell_state, tf.contrib.rnn.LSTMStateTuple):
-                c_probs = tf.round(all_alignments[-1][:, :state.time])
+                prev_cell_states_h = new_next_cell_state(
+                        prev_all_hidden_cell_states.h,
+                        cell_output, None
+                )
+                next_cell_state_h = tf.squeeze(tf.matmul(
+                        expanded_alignments, prev_cell_states_h), [1])
+
+                bin_sim = self._bin_sim_fn(cell_output, next_cell_state_h)
+                c_probs *= bin_sim
+
                 c_g = 1 - tf.reduce_sum(c_probs, 1, keepdims=True)
-                c_probs = tf.concat([c_probs, c_g], 1)
+                # c_probs = tf.concat([c_probs, c_g], 1)
 
-                # cell_output = c_g * cell_output + attn_emb_prev_act
+                expanded_alignments = tf.stop_gradient(tf.expand_dims(
+                        tf.concat([c_probs, c_g], 1), 1))
 
-                expanded_alignments = tf.expand_dims(c_probs, 1)
+                next_cell_state_h = tf.squeeze(tf.matmul(
+                        expanded_alignments, prev_cell_states_h), [1])
 
-                prev_cell_states = tf.transpose(
-                        prev_all_hidden_cell_states.stack(), [1, 0, 2])
-                prev_cell_states_c = tf.concat(
-                        [prev_cell_states[:, :-1, :],
-                         tf.expand_dims(next_cell_state.c, 1)], 1)
-
-                next_cell_state_c = tf.squeeze(tf.matmul(expanded_alignments,
-                                                         prev_cell_states_c),
-                                               [1])
+                next_cell_state_c = new_next_cell_state(
+                        prev_all_hidden_cell_states.c,
+                        next_cell_state.c,
+                        expanded_alignments
+                )
 
                 next_cell_state = tf.contrib.rnn.LSTMStateTuple(
-                    next_cell_state_c, cell_output)
+                        next_cell_state_c, next_cell_state_h)
 
-                all_hidden_cell_states = prev_all_hidden_cell_states.write(
-                        state.time + 1, next_cell_state.c)
+                all_hidden_cell_states = tf.contrib.rnn.LSTMStateTuple(
+                        prev_all_hidden_cell_states.c.write(
+                                state.time + 1, next_cell_state.c),
+                        prev_all_hidden_cell_states.h.write(
+                                state.time + 1, next_cell_state.h),
+                )
             else:
-                next_cell_state = cell_output
+                next_cell_state = new_next_cell_state(
+                        prev_all_hidden_cell_states,
+                        expanded_alignments,
+                        cell_output
+                )
+
                 all_hidden_cell_states = prev_all_hidden_cell_states.write(
                     state.time + 1, next_cell_state)
 
@@ -1678,7 +1923,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
 
         if self._output_attention:
             # concatenate cell outputs, attention and no_skip_gate
-            return tf.concat([cell_output, h_old, attention, c_g[:, :1]], 1), next_state
+            return tf.concat([cell_output, h_old, attention, c_g, c_probs_max, bin_sim, bin_sim_listen], 1), next_state
         else:
             return cell_output, next_state
 
@@ -1700,7 +1945,6 @@ class ChronoBiasLayerNormBasicLSTMCell(tf.contrib.rnn.LayerNormBasicLSTMCell):
                  dropout_keep_prob=1.0,
                  dropout_prob_seed=None,
                  out_layer_size=None,
-                 # num_paths=2,  # TODO = 1
                  reuse=None):
         super(ChronoBiasLayerNormBasicLSTMCell, self).__init__(
                 num_units,
@@ -1715,7 +1959,6 @@ class ChronoBiasLayerNormBasicLSTMCell(tf.contrib.rnn.LayerNormBasicLSTMCell):
         )
         self._input_bias = input_bias
         self._out_layer_size = out_layer_size
-        # self._num_paths = num_paths
 
     @property
     def output_size(self):
@@ -1758,31 +2001,16 @@ class ChronoBiasLayerNormBasicLSTMCell(tf.contrib.rnn.LayerNormBasicLSTMCell):
         if (not isinstance(self._keep_prob, float)) or self._keep_prob < 1:
             g = tf.nn.dropout(g, self._keep_prob, seed=self._seed)
 
-        # # if self._num_paths == 2:
-        # with tf.variable_scope('split_gate'):
-        #     s_g = tf.sigmoid(self._dense_layer(args, 1))
-        # # elif self._num_paths > 2:
-        # #     with tf.variable_scope('split_gate'):
-        # #         s_g = self._dense_layer(args, self._num_paths)
-
         new_c = (
             c * tf.sigmoid(f + self._forget_bias) +
             g * tf.sigmoid(i + self._input_bias))  # added input_bias
+
         # do not do layer normalization on the new c,
         # because there are no trainable weights
         # if self._layer_norm:
         #     new_c = self._norm(new_c, "state", dtype=dtype)
 
-        # c_1, c_2 = tf.split(value=c, num_or_size_splits=2, axis=1)
-        # new_c_1, new_c_2 = tf.split(value=new_c, num_or_size_splits=2, axis=1)
-        # new_c_1 = tf.round(s_g) * new_c_1 + (1 - tf.round(s_g)) * c_1
-        # new_c_2 = (1 - tf.round(s_g)) * new_c_2 + tf.round(s_g) * c_2
-        # new_c = tf.concat([new_c_1, new_c_2], 1)
-        #
         new_h = self._activation(new_c) * tf.sigmoid(o)
-        #
-        # new_h_1, new_h_2 = tf.split(value=new_h, num_or_size_splits=2, axis=1)
-        # new_h = s_g * new_h_1 + (1 - s_g) * new_h_2
 
         # added dropout to the hidden state h
         if (not isinstance(self._keep_prob, float)) or self._keep_prob < 1:
