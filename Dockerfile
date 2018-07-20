@@ -25,11 +25,11 @@ WORKDIR /app
 # Copy as early as possible so we can cache ...
 ADD requirements.txt .
 
-RUN pip install -r requirements.txt
+RUN pip install -r requirements.txt --no-cache-dir
 
 ADD . .
 
-RUN pip install -e .
+RUN pip install -e . --no-cache-dir
 
 VOLUME ["/app/dialogue", "/app/nlu", "/app/out"]
 
