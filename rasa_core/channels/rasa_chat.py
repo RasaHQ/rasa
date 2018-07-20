@@ -21,12 +21,40 @@ class NoOutputChannel(OutputChannel):
     def send_text_message(self, recipient_id, message):
         # type: (Text, Text) -> None
         """Just ignore everything."""
+
         pass
 
 
 class RasaChatInput(HttpInputComponent):
+    """Chat input channel for Rasa Platform"""
+
     def __init__(self, host):
         self.host = host
+
+    def _check_token(self, token):
+        url = "{}/users/me".format(self.host)
+        headers = {"Authorization": token}
+        result = requests.get(url, headers=headers)
+
+        if result.status_code == 200:
+            return result.json()
+        else:
+            logger.info("Failed to check token: {}. "
+                        "Content: {}".format(token, request.data))
+            return None
+
+    def fetch_user(self, req):
+        """Fetch user from the Rasa Platform Admin API"""
+
+        if req.headers.get("Authorization"):
+            user = self._check_token(req.headers.get("Authorization"))
+            if user:
+                return user
+
+        user = self._check_token(req.args.get('token', default=None))
+        if user:
+            return user
+        abort(401)
 
     def blueprint(self, on_new_message):
         rasa_chat = Blueprint('rasa_chat', __name__)
@@ -39,7 +67,7 @@ class RasaChatInput(HttpInputComponent):
         @rasa_chat.route("/send", methods=['GET', 'POST'])
         @cross_origin()
         def receive():
-            user = fetch_user(self.host, request)
+            user = self.fetch_user(request)
             msg = request.json["message"]
             if user.get("role") == "admin":
                 conversation_id = request.args.get("conversation",
@@ -52,29 +80,3 @@ class RasaChatInput(HttpInputComponent):
             return jsonify({"status": "ok"})
 
         return rasa_chat
-
-
-def check_token(host, token):
-    url = "{}/users/me".format(host)
-    headers = {"Authorization": token}
-    result = requests.get(url, headers=headers)
-
-    if result.status_code == 200:
-        return result.json()
-    else:
-        logger.info("Failed to check token: {}. "
-                    "Content: {}".format(token, request.data))
-        return None
-
-
-def fetch_user(host, req):
-    user = None
-    if req.headers.get("Authorization"):
-        user = check_token(host, req.headers.get("Authorization"))
-    if user:
-        return user
-
-    user = check_token(host, req.args.get('token', default=None))
-    if user:
-        return user
-    abort(401)
