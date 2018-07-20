@@ -4,22 +4,28 @@ Custom Actions
 ==============
 
 There are two kinds of actions in Rasa Core.
-The simplest are ``UtterActions``, which just send a message to the user.
-You define them by adding an entry to the action list in your domain file.
-There also needs to be a matching utterance. For example, if there's an action ``utter_greet``
-then there should also be an utterance template called ``utter_greet`` in your domain.
-These will be executed automatically by the core server.
+The simplest are ``UtterActions``, which just send a message to the user
+(see :ref:`responses`).
+
 
 **What about more complicated actions?**
 In general, an action can run any code you like. Custom actions can turn on the lights,
 add an event to a calendar, check a user's bank balance, or anything else you can imagine.
-To execute these more complex actions, you need to run a separate server alongside the core server/
+To execute these more complex actions, you need to run a separate server alongside the core server.
 If these are stored in a file called ``actions.py``, you can do this with our SDK as follows:
 
 .. code-block:: bash
 
     python -m rasa_core_sdk.endpoint --actions actions
 
+You can also choose to start the server with actions in a different language.
+Whichever option you go for, you will then need to add an entry into your
+``endpoints.yml`` as follows:
+
+.. code-block:: yaml
+
+   action_endpoint:
+     url: http://localhost:5055/webhook
 
 Custom Actions Written in Python
 --------------------------------
