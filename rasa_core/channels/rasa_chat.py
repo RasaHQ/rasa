@@ -9,20 +9,11 @@ import requests
 from flask import Blueprint, request, jsonify, abort
 from flask_cors import CORS, cross_origin
 
-from rasa_core.channels.channel import UserMessage, OutputChannel
+from rasa_core.channels import CollectingOutputChannel
+from rasa_core.channels.channel import UserMessage
 from rasa_core.channels.rest import HttpInputComponent
 
 logger = logging.getLogger(__name__)
-
-
-class NoOutputChannel(OutputChannel):
-    """Output channel that does nothing. Really, just nothing."""
-
-    def send_text_message(self, recipient_id, message):
-        # type: (Text, Text) -> None
-        """Just ignore everything."""
-
-        pass
 
 
 class RasaChatInput(HttpInputComponent):
@@ -54,6 +45,7 @@ class RasaChatInput(HttpInputComponent):
         user = self._check_token(req.args.get('token', default=None))
         if user:
             return user
+
         abort(401)
 
     def blueprint(self, on_new_message):
@@ -69,13 +61,8 @@ class RasaChatInput(HttpInputComponent):
         def receive():
             user = self.fetch_user(request)
             msg = request.json["message"]
-            if user.get("role") == "admin":
-                conversation_id = request.args.get("conversation",
-                                                   user["username"])
-            else:
-                conversation_id = user["username"]
-            on_new_message(UserMessage(msg, NoOutputChannel(),
-                                       sender_id=conversation_id))
+            on_new_message(UserMessage(msg, CollectingOutputChannel(),
+                                       sender_id=user["username"]))
 
             return jsonify({"status": "ok"})
 
