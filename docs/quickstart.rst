@@ -85,7 +85,7 @@ and save it in a file called ``stories.md``.
      - utter_cheer_up
      - utter_did_that_help
    * mood_deny
-     - utter_goodbye\n
+     - utter_goodbye
 
    ## say goodbye
    * goodbye
