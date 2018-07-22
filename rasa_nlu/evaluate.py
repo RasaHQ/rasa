@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import io
 import itertools
 import logging
 import shutil
@@ -10,6 +11,7 @@ from collections import defaultdict
 from collections import namedtuple
 
 import numpy as np
+import json
 
 from rasa_nlu import training_data, utils, config
 from rasa_nlu.config import RasaNLUModelConfig
@@ -56,6 +58,15 @@ def create_argument_parser():
 
     parser.add_argument('-f', '--folds', required=False, default=10,
                         help="number of CV folds (crossvalidation only)")
+    
+    parser.add_argument('--errors', required=False, default="errors.json",
+                        help="output path for the json with wrong predictions")
+
+    parser.add_argument('--histogram', required=False, default="hist.png",
+                        help="output path for the confidence histogram")
+
+    parser.add_argument('--confmat', required=False, default="confmat.png",
+                        help="output path for the confusion matrix plot")
 
     utils.add_logging_option_arguments(parser, default=logging.INFO)
 
@@ -101,6 +112,21 @@ def plot_confusion_matrix(cm, classes,
     plt.xlabel('Predicted label')
 
 
+def plot_histogram(hist_data):  # pragma: no cover
+    """Plots a histogram of the confidence distribution of the predictions
+        and saves it to file"""
+    import matplotlib.pyplot as plt
+
+    plt.xlim([0, 1])
+    plt.hist(hist_data, bins=[0.05 * i for i in range(1, 21)])
+    plt.title('Intent Prediction Confidence Distribution')
+    plt.xlabel('Confidence')
+    plt.ylabel('Number of Samples')
+    fig = plt.gcf()
+    fig.set_size_inches(15, 15)
+    fig.savefig(cmdline_args.histogram, bbox_inches='tight')
+
+
 def log_evaluation_table(targets, predictions):  # pragma: no cover
     """Logs the sklearn evaluation metrics"""
     report, precision, f1, accuracy = get_evaluation_metrics(targets,
@@ -135,12 +161,14 @@ def remove_empty_intent_examples(targets, predictions):
     mask = (targets != "") & (targets != None)  # noqa
     targets = targets[mask]
     predictions = np.array(predictions)[mask]
+    messages = np.array(messages)[mask]
+    confidences = np.array(confidences)[mask]
 
     # substitute None values with empty string
     # to enable sklearn evaluation
     predictions[predictions == None] = ""  # noqa
 
-    return targets, predictions
+    return targets, predictions, messages, confidences
 
 
 def clean_intent_labels(labels):
@@ -163,9 +191,32 @@ def drop_intents_below_freq(td, cutoff=5):
     return TrainingData(keep_examples, td.entity_synonyms, td.regex_features)
 
 
-def evaluate_intents(targets, predictions):  # pragma: no cover
-    """Creates a confusion matrix and summary statistics for intent predictions.
+def show_nlu_errors(targets, preds, messages, conf):  # pragma: no cover
+    """Log messages which result in wrong predictions and save them to file"""
 
+    errors = {}
+    errors['nlu'] = [
+        {"text": messages[i],
+            "true_label": targets[i],
+            "prediction": preds[i],
+            "confidence": conf[i]}
+        for i in range(len(messages)) if not (targets[i] == preds[i])]
+
+    if errors['nlu']:
+        errors = json.dumps(errors, indent=4)
+        logger.info("\n\nThese intent examples could not be classified "
+                    "correctly \n{}".format(errors))
+        with io.open(cmdline_args.errors, 'w') as error_file:
+            error_file.write(errors)
+        logger.info("Errors were saved to file {}.".format(cmdline_args.errors))
+    else:
+        logger.info("No prediction errors were found. You are AWESOME!")
+
+
+def evaluate_intents(targets, preds, messages, conf):  # pragma: no cover
+    """Creates a confusion matrix and summary statistics for intent predictions.
+    Log samples which could not be classified correctly and save them to file.
+    Creates a confidence histogram which is saved to file.
     Only considers those examples with a set intent.
     Others are filtered out."""
     from sklearn.metrics import confusion_matrix
@@ -174,17 +225,32 @@ def evaluate_intents(targets, predictions):  # pragma: no cover
 
     # remove empty intent targets
     num_examples = len(targets)
-    targets, predictions = remove_empty_intent_examples(targets, predictions)
+    targets, preds, messages, conf = remove_empty_intent_examples(
+                                                targets, preds, messages, conf)
+
     logger.info("Intent Evaluation: Only considering those "
                 "{} examples that have a defined intent out "
                 "of {} examples".format(targets.size, num_examples))
-    log_evaluation_table(targets, predictions)
+    log_evaluation_table(targets, preds)
 
-    cnf_matrix = confusion_matrix(targets, predictions)
-    labels = unique_labels(targets, predictions)
-    plot_confusion_matrix(cnf_matrix,
-                          classes=labels,
+    # log and save misclassified samples to file for debugging
+    show_nlu_errors(targets, preds, messages, conf)
+
+    cnf_matrix = confusion_matrix(targets, preds)
+    labels = unique_labels(targets, preds)
+    plot_confusion_matrix(cnf_matrix, classes=labels,
                           title='Intent Confusion matrix')
+    # save confusion matrix to file before showing it
+    fig = plt.gcf()
+    fig.set_size_inches(15, 15)
+    fig.savefig(cmdline_args.confmat, bbox_inches='tight')
+
+    plt.show()
+
+    # create histogram of confidence distribution, save to file and display
+    plt.gcf().clear()
+    hist = [conf[i] for i in range(len(messages)) if (targets[i] == preds[i])]
+    plot_histogram(hist)
 
     plt.show()
 
