@@ -229,7 +229,9 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
 
         state_dict = {}
 
-        # Set all found entities with the state value 1.0
+        # Set all found entities with the state value 1.0, unless they should
+        # be ignored for the current intent and are not associated with a
+        # featurized slot
         for entity in tracker.latest_message.entities:
             entity_name = entity.get("entity")
             should_ignore_entity = (tracker.latest_message.intent.get("name")
