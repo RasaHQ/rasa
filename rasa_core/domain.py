@@ -239,8 +239,7 @@ class Domain(with_metaclass(abc.ABCMeta, object)):
             entity_is_featurized_slot = (entity_name in tracker.slots.keys()
                                          and tracker.slots[entity_name].type_name
                                          != 'unfeaturized')
-            if (not should_ignore_entity or (should_ignore_entity and
-                                             entity_is_featurized_slot)):
+            if not should_ignore_entity or entity_is_featurized_slot:
                 key = "entity_{0}".format(entity["entity"])
                 state_dict[key] = 1.0
 
