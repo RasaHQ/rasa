@@ -244,8 +244,7 @@ class EmbeddingPolicy(Policy):
             dial_embed=None,  # type: Optional[tf.Tensor]
             rnn_embed=None,  # type: Optional[tf.Tensor]
             attn_embed=None,  # type: Optional[tf.Tensor]
-            no_skip_gate=None,  # type: Optional[tf.Tensor]
-            hidden_states=None
+            no_skip_gate=None  # type: Optional[tf.Tensor]
     ):
         # type: (...) -> None
         self._check_tensorflow()
@@ -288,7 +287,6 @@ class EmbeddingPolicy(Policy):
         # a list of tensors for each attention type
         # of length self.num_attentions
         self.alignment_history = alignment_history
-        self.hidden_states = hidden_states
 
         # persisted embeddings
         self.user_embed = user_embed
@@ -574,6 +572,7 @@ class EmbeddingPolicy(Policy):
     def _extract_alignments_history(self, final_state):
         """Extract alignments history form final rnn cell state"""
         self.alignment_history = []
+
         if self.use_attention:
             alignment_history = final_state.alignment_history
             if self.num_attentions == 1:
@@ -583,14 +582,6 @@ class EmbeddingPolicy(Policy):
                 # Reshape to (batch, time, memory_time)
                 alignments = tf.transpose(alignments.stack(), [1, 0, 2])
                 self.alignment_history.append(alignments)
-
-        hidden_states = final_state.all_hidden_cell_states
-        if isinstance(hidden_states, tf.contrib.rnn.LSTMStateTuple):
-            self.hidden_states = tf.transpose(hidden_states.h.stack(),
-                                              [1, 0, 2])[:, 1:, :]
-        else:
-            self.hidden_states = tf.transpose(hidden_states.stack(),
-                                              [1, 0, 2])[:, 1:, :]
 
     def _process_cell_output(self, cell_output):
         """Save intermediate tensors for debug purposes"""
@@ -991,23 +982,19 @@ class EmbeddingPolicy(Policy):
              emb_for_no_intent,
              emb_for_no_action,
              emb_for_action_listen) = self._create_tf_embeds(
-                    self.a_in,
-                    self.b_in,
-                    self.c_in,
-                    self.b_prev_in,
+                    self.a_in, self.b_in, self.c_in, self.b_prev_in,
                     self._x_for_no_intent_in,
                     self._y_for_no_action_in,
                     self._y_for_action_listen_in
             )
-
             # if there is at least one `-1` it should be masked
             mask = tf.sign(tf.reduce_max(self.a_in, -1) + 1)
-            self.dial_embed, sim_rnn = self._create_tf_dial_embed(self.user_embed,
-                                                         self.slot_embed,
-                                                         emb_prev_act, mask,
-                                                         emb_for_no_intent,
-                                                         emb_for_no_action,
-                                                         emb_for_action_listen)
+
+            self.dial_embed, sim_rnn = self._create_tf_dial_embed(
+                    self.user_embed, self.slot_embed, emb_prev_act, mask,
+                    emb_for_no_intent, emb_for_no_action,
+                    emb_for_action_listen
+            )
             self.sim_op, sim_act = self._tf_sim(self.dial_embed,
                                                 self.bot_embed, mask)
             loss = self._tf_loss(self.sim_op, sim_act, sim_rnn, mask,
@@ -1155,7 +1142,6 @@ class EmbeddingPolicy(Policy):
             self._persist_tensor('rnn_embed', self.rnn_embed)
             self._persist_tensor('attn_embed', self.attn_embed)
             self._persist_tensor('no_skip_gate', self.no_skip_gate)
-            self._persist_tensor('hidden_states', self.hidden_states)
 
             saver = tf.train.Saver()
             saver.save(self.session, checkpoint)
@@ -1224,7 +1210,6 @@ class EmbeddingPolicy(Policy):
                     rnn_embed = tf.get_collection('rnn_embed')[0]
                     attn_embed = tf.get_collection('attn_embed')[0]
                     no_skip_gate = tf.get_collection('no_skip_gate')[0]
-                    hidden_states = tf.get_collection('hidden_states')[0]
 
                 with io.open(os.path.join(
                         path,
@@ -1251,8 +1236,7 @@ class EmbeddingPolicy(Policy):
                            dial_embed=dial_embed,
                            rnn_embed=rnn_embed,
                            attn_embed=attn_embed,
-                           no_skip_gate=no_skip_gate,
-                           hidden_states=hidden_states)
+                           no_skip_gate=no_skip_gate)
             else:
                 return cls(featurizer=featurizer)
 
