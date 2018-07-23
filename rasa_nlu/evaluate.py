@@ -472,13 +472,29 @@ def extract_entities(result):  # pragma: no cover
     return result.get('entities', [])
 
 
+def extract_message(result):  # pragma: no cover
+    """Extracts the original message from a parsing result."""
+    return result.get('text', {})
+
+
+def extract_confidence(result):  # pragma: no cover
+    """Extracts the confidence from a parsing result."""
+    return result.get('intent', {}).get('confidence')
+
+
 def get_intent_predictions(interpreter, test_data):  # pragma: no cover
-    """Runs the model for the test set and extracts intent predictions"""
+    """Runs the model for the test set and extracts intent predictions.
+        Returns intent predictions, the original messages
+        and the confidences of the predictions"""
     intent_predictions = []
+    messages = []
+    confidences = []
     for e in test_data.training_examples:
         res = interpreter.parse(e.text, only_output_properties=False)
         intent_predictions.append(extract_intent(res))
-    return intent_predictions
+        messages.append(extract_message(res))
+        confidences.append(extract_confidence(res))
+    return intent_predictions, messages, confidences
 
 
 def get_entity_predictions(interpreter, test_data):  # pragma: no cover
@@ -583,9 +599,11 @@ def run_evaluation(data_path, model_path,
 
     if is_intent_classifier_present(interpreter):
         intent_targets = get_intent_targets(test_data)
-        intent_predictions = get_intent_predictions(interpreter, test_data)
+        intent_predictions, messages, confidences = get_intent_predictions(
+                                                        interpreter, test_data)
         logger.info("Intent evaluation results:")
-        evaluate_intents(intent_targets, intent_predictions)
+        evaluate_intents(intent_targets, intent_predictions, messages,
+                         confidences)
 
     if extractors:
         entity_targets = get_entity_targets(test_data)
@@ -679,9 +697,11 @@ def compute_intent_metrics(interpreter, corpus):
     if not is_intent_classifier_present(interpreter):
         return {}
     intent_targets = get_intent_targets(corpus)
-    intent_predictions = get_intent_predictions(interpreter, corpus)
-    intent_targets, intent_predictions = remove_empty_intent_examples(
-            intent_targets, intent_predictions)
+    intent_predictions, messages, confidences = get_intent_predictions(
+                                                            interpreter, corpus)
+    intent_targets, intent_predictions, messages, confidences = \
+        remove_empty_intent_examples(intent_targets, intent_predictions,
+                                     messages, confidences)
 
     # compute fold metrics
     _, precision, f1, accuracy = get_evaluation_metrics(intent_targets,

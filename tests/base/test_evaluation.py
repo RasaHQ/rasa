@@ -243,11 +243,15 @@ def test_run_cv_evaluation():
 def test_empty_intent_removal():
     targets = ["", "greet"]
     predicted = ["restaurant_search", "greet"]
-
-    targets_r, predicted_r = remove_empty_intent_examples(targets, predicted)
+    messages = ["I am hungry", "hello"]
+    conf = ["0.12345", "0.98765"]
+    targets_r, predicted_r, messages_r, conf_r = remove_empty_intent_examples(
+                                            targets, predicted, messages, conf)
 
     assert targets_r == ["greet"]
     assert predicted_r == ["greet"]
+    assert messages_r == ["hello"]
+    assert conf_r == ["0.98765"]
 
 
 def test_evaluate_entities():
