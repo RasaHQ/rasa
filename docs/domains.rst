@@ -5,8 +5,10 @@ Domain Format
 
 The ``Domain`` defines the universe in which your bot operates.
 It specifies the ``intents``, ``entities``, ``slots``, and ``actions``
-your bot should know about. 
+your bot should know about.
 Optionally, it can also include ``templates`` for the things your bot can say.
+You can also define a list of intents, under ``intents_ignore_entities``, for
+which Rasa Core should ignore any entities found. By default no entities will be ignored.
 
 
 As an example, the ``DefaultDomain`` has the following yaml definition:
@@ -37,7 +39,7 @@ Custom Actions and Slots
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 To reference custom actions and slots in your domain,
-you need to reference them by their module path. 
+you need to reference them by their module path.
 For example, if you have a module called ``my_actions`` containing
 a class ``MyAwesomeAction``, and module ``my_slots`` containing ``MyAwesomeSlot``,
 you would add these lines to the domain file:
@@ -143,4 +145,15 @@ multiple responses and Rasa will randomly pick one of them, e.g.:
     - text: "Hey, {name}. How are you?"
     - text: "Hey, {name}. How is your day going?"
 
+Ignoring entities for certain intents
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+If you want entities to be ignored for certain intents, list the intents under
+``intents_ignore_entities``. This means that if the entities for those intents
+don't have a featurized slot associated with them, Rasa Core will unfeaturize
+them and therefore will not impact its predictions. This is useful when you have
+an intent where you don't care about the entities being picked up.
+
+.. note::
+    If your slot of the same name as an entity does not have a type ``unfeaturized``
+    that entity will not be unfeaturized.
