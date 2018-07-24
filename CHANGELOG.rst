@@ -11,8 +11,6 @@ This project adheres to `Semantic Versioning`_ starting with version 0.2.0.
 
 Added
 -----
-- new ``RasaChatInput`` channel
-- option to ignore entities for certain intents
 
 Changed
 -------
@@ -22,6 +20,18 @@ Removed
 
 Fixed
 -------
+
+[0.10.2] - 2018-07-24
+^^^^^^^^^^^^^^^^^^^^^
+
+Added
+-----
+- new ``RasaChatInput`` channel
+- option to ignore entities for certain intents
+
+Fixed
+-----
+- loading of NLU model
 
 [0.10.1] - 2018-07-18
 ^^^^^^^^^^^^^^^^^^^^^
