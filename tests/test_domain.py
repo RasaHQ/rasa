@@ -184,5 +184,5 @@ templates:
   utter_greet:
   - text: hey there!"""
     domain = TemplateDomain.load_from_yaml(test_yaml)
-    assert test_yaml.strip() == domain.as_yaml().strip()
+    assert domain.as_yaml().strip().endswith(test_yaml.strip())
     domain = TemplateDomain.load_from_yaml(domain.as_yaml())
