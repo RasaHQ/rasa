@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import json
 import logging
+import time
 import warnings
 from types import LambdaType
 
@@ -26,9 +27,11 @@ from rasa_core.interpreter import (
     NaturalLanguageInterpreter,
     INTENT_MESSAGE_PREFIX)
 from rasa_core.interpreter import RegexInterpreter
+from rasa_core.nlg import NaturalLanguageGenerator
 from rasa_core.policies.ensemble import PolicyEnsemble
 from rasa_core.tracker_store import TrackerStore
 from rasa_core.trackers import DialogueStateTracker
+
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +39,9 @@ try:
     scheduler = BackgroundScheduler()
     scheduler.start()
 except UnknownTimeZoneError:
-    logger.warning("Apscheduler failed to start. "
-                   "This is probably because your system timezone is not set"
-                   "Set it with e.g. echo \"Europe/Berlin\" > /etc/timezone")
+    logger.warn("apscheduler failed to start. "
+                "This is probably because your system timezone is not set"
+                "Set it with e.g. echo \"Europe/Berlin\" > /etc/timezone")
 
 
 class MessageProcessor(object):
@@ -47,11 +50,13 @@ class MessageProcessor(object):
                  policy_ensemble,  # type: PolicyEnsemble
                  domain,  # type: Domain
                  tracker_store,  # type: TrackerStore
+                 generator,  # type: NaturalLanguageGenerator
                  max_number_of_predictions=10,  # type: int
                  message_preprocessor=None,  # type: Optional[LambdaType]
                  on_circuit_break=None  # type: Optional[LambdaType]
                  ):
         self.interpreter = interpreter
+        self.nlg = generator
         self.policy_ensemble = policy_ensemble
         self.domain = domain
         self.tracker_store = tracker_store
@@ -249,7 +254,7 @@ class MessageProcessor(object):
 
         dispatcher = Dispatcher(message.sender_id,
                                 message.output_channel,
-                                self.domain)
+                                self.nlg)
         # keep taking actions decided by the policy until it chooses to 'listen'
         should_predict_another_action = True
         num_predicted_actions = 0
@@ -311,8 +316,9 @@ class MessageProcessor(object):
                          "code.".format(action.name()), )
             logger.error(e, exc_info=True)
             events = []
-        self.log_bot_utterances_on_tracker(tracker, dispatcher)
+
         self._log_action_on_tracker(tracker, action.name(), events)
+        self.log_bot_utterances_on_tracker(tracker, dispatcher)
         self._schedule_reminders(events, dispatcher)
 
         return self.should_predict_another_action(action.name(), events)
@@ -370,6 +376,11 @@ class MessageProcessor(object):
             tracker.update(ActionExecuted(action_name))
 
         for e in events:
+            # this makes sure the events are ordered by timestamp -
+            # since the event objects are created somewhere else,
+            # the timestamp would indicate a time before the time
+            # of the action executed
+            e.timestamp = time.time()
             tracker.update(e)
 
     def _get_tracker(self, sender_id):

@@ -106,6 +106,10 @@ class Messenger(BaseMessenger):
 class MessengerBot(OutputChannel):
     """A bot that uses fb-messenger to communicate."""
 
+    @classmethod
+    def name(cls):
+        return "facebook"
+
     def __init__(self, messenger_client):
         # type: (MessengerClient) -> None
 
@@ -202,6 +206,10 @@ class MessengerBot(OutputChannel):
 
 class FacebookInput(HttpInputComponent):
     """Facebook input channel implementation. Based on the HTTPInputChannel."""
+
+    @classmethod
+    def name(cls):
+        return "facebook"
 
     def __init__(self, fb_verify, fb_secret, fb_access_token):
         # type: (Text, Text, Text) -> None

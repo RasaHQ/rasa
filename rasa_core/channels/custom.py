@@ -16,6 +16,10 @@ logger = logging.getLogger(__name__)
 class CustomOutput(OutputChannel):
     """A bot that uses a custom channel to communicate."""
 
+    @classmethod
+    def name(cls):
+        return "rest"
+
     def __init__(self, url, access_token):
         self.access_token = access_token
         self.url = url
@@ -41,6 +45,10 @@ class CustomInput(HttpInputComponent):
     This implementation is the basis for a custom implementation of a chat
     frontend. You can customize this to send messages to Rasa Core and
     retrieve responses from the agent."""
+
+    @classmethod
+    def name(cls):
+        return "rest"
 
     def __init__(self, url, access_token=None):
         self.out_channel = CustomOutput(url, access_token)

@@ -118,7 +118,7 @@ def test_domain_from_template():
     domain_file = DEFAULT_DOMAIN_PATH
     domain = TemplateDomain.load(domain_file)
     assert len(domain.intents) == 10
-    assert len(domain.actions) == 5
+    assert len(domain.actions) == 6
 
 
 def test_utter_templates():
@@ -158,11 +158,11 @@ def test_domain_fails_on_unknown_custom_slot_type(tmpdir):
         slots:
             custom:
              type: tests.conftest.Unknown
-        
+
         templates:
             utter_greet:
              - hey there!
-        
+
         actions:
             - utter_greet""")
     with pytest.raises(ValueError):
