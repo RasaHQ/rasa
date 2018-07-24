@@ -3,6 +3,11 @@ mapping:
   intents:
     type: !!python/str "seq"
     sequence:
+    - type: !!python/str "map"
+      mapping:
+        use_entities:
+          type: !!python/str "bool"
+      allowempty: True
     - type: !!python/str "str"
   action_factory:
     type: !!python/str "str"
