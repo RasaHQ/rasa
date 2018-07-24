@@ -3,25 +3,25 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import io
-import os
-import logging
-import warnings
-from tqdm import tqdm
 import collections
 import copy
-import typing
-
-from typing import \
-    Any, List, Optional, Text
+import io
+import logging
+import os
+import warnings
 
 import numpy as np
-from rasa_core.policies import Policy
-from rasa_core.featurizers import \
-    TrackerFeaturizer, FullDialogueTrackerFeaturizer, \
-    LabelTokenizerSingleStateFeaturizer
+import typing
+from tqdm import tqdm
+from typing import (
+    Any, List, Optional, Text)
+
 from rasa_core import utils
 from rasa_core.actions.action import ACTION_LISTEN_NAME
+from rasa_core.featurizers import (
+    TrackerFeaturizer, FullDialogueTrackerFeaturizer,
+    LabelTokenizerSingleStateFeaturizer)
+from rasa_core.policies import Policy
 
 if typing.TYPE_CHECKING:
     from rasa_core.domain import Domain
@@ -42,11 +42,6 @@ logger = logging.getLogger(__name__)
 
 class EmbeddingPolicy(Policy):
     SUPPORTS_ONLINE_TRAINING = True
-
-    @classmethod
-    def _standard_featurizer(cls):
-        return FullDialogueTrackerFeaturizer(
-                    LabelTokenizerSingleStateFeaturizer())
 
     defaults = {
         # nn architecture
@@ -93,13 +88,17 @@ class EmbeddingPolicy(Policy):
         "evaluate_on_num_examples": 100  # large values may hurt performance
     }
 
+    @classmethod
+    def _standard_featurizer(cls):
+        return FullDialogueTrackerFeaturizer(
+                LabelTokenizerSingleStateFeaturizer())
+
     @staticmethod
     def _check_tensorflow():
         if tf is None:
-            raise ImportError(
-                'Failed to import `tensorflow`. '
-                'Please install `tensorflow`. '
-                'For example with `pip install tensorflow`.')
+            raise ImportError("Failed to import `tensorflow`. "
+                              "Please install `tensorflow`. "
+                              "For example with `pip install tensorflow`.")
 
     @staticmethod
     def _check_hidden_layer_sizes(num_layers, layer_size, name=''):
@@ -132,95 +131,6 @@ class EmbeddingPolicy(Policy):
             layer_size = [layer_size for _ in range(num_layers)]
 
         return num_layers, layer_size
-
-    def _load_nn_architecture_params(self, config):
-        self.num_hidden_layers_a = config['num_hidden_layers_a']
-        self.hidden_layer_size_a = config['hidden_layer_size_a']
-        (self.num_hidden_layers_a,
-         self.hidden_layer_size_a) = self._check_hidden_layer_sizes(
-                                            self.num_hidden_layers_a,
-                                            self.hidden_layer_size_a,
-                                            name='a')
-
-        self.num_hidden_layers_b = config['num_hidden_layers_b']
-        self.hidden_layer_size_b = config['hidden_layer_size_b']
-        (self.num_hidden_layers_b,
-         self.hidden_layer_size_b) = self._check_hidden_layer_sizes(
-                                            self.num_hidden_layers_b,
-                                            self.hidden_layer_size_b,
-                                            name='b')
-        if self.share_embedding:
-            if (self.num_hidden_layers_a != self.num_hidden_layers_b or
-                    self.hidden_layer_size_a != self.hidden_layer_size_b):
-                logger.debug("Due to sharing vocabulary in featurizer, "
-                             "embedding weights are shared as well. "
-                             "So num_hidden_layers_b and "
-                             "hidden_layer_size_b are set to the ones "
-                             "for `a`.")
-                self.num_hidden_layers_b = self.num_hidden_layers_a
-                self.hidden_layer_size_b = self.hidden_layer_size_a
-
-        self.rnn_size = config['rnn_size']
-        self.layer_norm = config['layer_norm']
-
-        self.batch_size = config['batch_size']
-        if not isinstance(self.batch_size, list):
-            self.batch_size = [self.batch_size, self.batch_size]
-        self.epochs = config['epochs']
-
-    def _load_embedding_params(self, config):
-        self.embed_dim = config['embed_dim']
-        self.mu_pos = config['mu_pos']
-        self.mu_neg = config['mu_neg']
-        self.similarity_type = config['similarity_type']
-        self.num_neg = config['num_neg']
-        self.use_max_sim_neg = config['use_max_sim_neg']
-
-    def _load_regularization_params(self, config):
-        self.C2 = config['C2']
-        self.C_emb = config['C_emb']
-        self.scale_loss_by_action_counts = \
-                config['scale_loss_by_action_counts']
-
-        self.droprate = dict()
-        self.droprate['a'] = config['droprate_a']
-        self.droprate['b'] = config['droprate_b']
-        self.droprate['rnn'] = config['droprate_rnn']
-
-    def _load_attn_params(self, config):
-        self.sparse_attention = config['sparse_attention']
-        self.attn_shift_range = config['attn_shift_range']
-        self.attn_after_rnn = config['attn_after_rnn']
-        self.attn_before_rnn = config['attn_before_rnn']
-        if not self.attn_after_rnn and not self.attn_before_rnn:
-            self.use_attention = False
-            self.num_attentions = 0
-        elif self.attn_after_rnn and self.attn_before_rnn:
-            self.use_attention = True
-            self.num_attentions = 2
-        else:
-            self.use_attention = True
-            self.num_attentions = 1
-
-    def _load_visual_params(self, config):
-        self.evaluate_every_num_epochs = config['evaluate_every_num_epochs']
-        if self.evaluate_every_num_epochs < 1:
-            self.evaluate_every_num_epochs = self.epochs
-        self.evaluate_on_num_examples = config['evaluate_on_num_examples']
-
-    def _load_params(self, **kwargs):
-        config = copy.deepcopy(self.defaults)
-        config.update(kwargs)
-        # nn architecture parameters
-        self._load_nn_architecture_params(config)
-        # embedding parameters
-        self._load_embedding_params(config)
-        # regularization
-        self._load_regularization_params(config)
-        # attention parameters
-        self._load_attn_params(config)
-        # visualization of accuracy
-        self._load_visual_params(config)
 
     def __init__(
             self,
@@ -303,14 +213,103 @@ class EmbeddingPolicy(Policy):
         self._is_training = None
         self._loss_scales = None
 
+    def _load_nn_architecture_params(self, config):
+        self.num_hidden_layers_a = config['num_hidden_layers_a']
+        self.hidden_layer_size_a = config['hidden_layer_size_a']
+        (self.num_hidden_layers_a,
+         self.hidden_layer_size_a) = self._check_hidden_layer_sizes(
+                self.num_hidden_layers_a,
+                self.hidden_layer_size_a,
+                name='a')
+
+        self.num_hidden_layers_b = config['num_hidden_layers_b']
+        self.hidden_layer_size_b = config['hidden_layer_size_b']
+        (self.num_hidden_layers_b,
+         self.hidden_layer_size_b) = self._check_hidden_layer_sizes(
+                self.num_hidden_layers_b,
+                self.hidden_layer_size_b,
+                name='b')
+        if self.share_embedding:
+            if (self.num_hidden_layers_a != self.num_hidden_layers_b or
+                    self.hidden_layer_size_a != self.hidden_layer_size_b):
+                logger.debug("Due to sharing vocabulary in featurizer, "
+                             "embedding weights are shared as well. "
+                             "So num_hidden_layers_b and "
+                             "hidden_layer_size_b are set to the ones "
+                             "for `a`.")
+                self.num_hidden_layers_b = self.num_hidden_layers_a
+                self.hidden_layer_size_b = self.hidden_layer_size_a
+
+        self.rnn_size = config['rnn_size']
+        self.layer_norm = config['layer_norm']
+
+        self.batch_size = config['batch_size']
+        if not isinstance(self.batch_size, list):
+            self.batch_size = [self.batch_size, self.batch_size]
+        self.epochs = config['epochs']
+
+    def _load_embedding_params(self, config):
+        self.embed_dim = config['embed_dim']
+        self.mu_pos = config['mu_pos']
+        self.mu_neg = config['mu_neg']
+        self.similarity_type = config['similarity_type']
+        self.num_neg = config['num_neg']
+        self.use_max_sim_neg = config['use_max_sim_neg']
+
+    def _load_regularization_params(self, config):
+        self.C2 = config['C2']
+        self.C_emb = config['C_emb']
+        self.scale_loss_by_action_counts = config['scale_loss_by_action_counts']
+
+        self.droprate = dict()
+        self.droprate['a'] = config['droprate_a']
+        self.droprate['b'] = config['droprate_b']
+        self.droprate['rnn'] = config['droprate_rnn']
+
+    def _load_attn_params(self, config):
+        self.sparse_attention = config['sparse_attention']
+        self.attn_shift_range = config['attn_shift_range']
+        self.attn_after_rnn = config['attn_after_rnn']
+        self.attn_before_rnn = config['attn_before_rnn']
+        if not self.attn_after_rnn and not self.attn_before_rnn:
+            self.use_attention = False
+            self.num_attentions = 0
+        elif self.attn_after_rnn and self.attn_before_rnn:
+            self.use_attention = True
+            self.num_attentions = 2
+        else:
+            self.use_attention = True
+            self.num_attentions = 1
+
+    def _load_visual_params(self, config):
+        self.evaluate_every_num_epochs = config['evaluate_every_num_epochs']
+        if self.evaluate_every_num_epochs < 1:
+            self.evaluate_every_num_epochs = self.epochs
+        self.evaluate_on_num_examples = config['evaluate_on_num_examples']
+
+    def _load_params(self, **kwargs):
+        config = copy.deepcopy(self.defaults)
+        config.update(kwargs)
+        # nn architecture parameters
+        self._load_nn_architecture_params(config)
+        # embedding parameters
+        self._load_embedding_params(config)
+        # regularization
+        self._load_regularization_params(config)
+        # attention parameters
+        self._load_attn_params(config)
+        # visualization of accuracy
+        self._load_visual_params(config)
+
     # data helpers:
+    # noinspection PyPep8Naming
     def _create_X_slots_prev_acts(self, data_X):
-        """Etract feature vectors for user input (X), slots and
-            preveously executed actions from training data."""
+        """Extract feature vectors for user input (X), slots and
+            previously executed actions from training data."""
         slot_start = \
             self.featurizer.state_featurizer.user_feature_len
         prev_start = slot_start + \
-            self.featurizer.state_featurizer.slot_feature_len
+                     self.featurizer.state_featurizer.slot_feature_len
 
         X = data_X[:, :, :slot_start]
         slots = data_X[:, :, slot_start:prev_start]
@@ -318,8 +317,9 @@ class EmbeddingPolicy(Policy):
 
         return X, slots, prev_act
 
+    # noinspection PyPep8Naming
     def _create_Y_actions_for_Y(self, data_Y):
-        """Prepare Y data for training: extract actions indeces and
+        """Prepare Y data for training: extract actions indices and
             features for action labels."""
 
         actions_for_Y = data_Y.argmax(axis=-1)
@@ -336,8 +336,9 @@ class EmbeddingPolicy(Policy):
 
     def _create_y_for_action_listen(self, domain):
         action_listen_idx = domain.index_for_action(ACTION_LISTEN_NAME)
-        return self.encoded_all_actions[action_listen_idx:action_listen_idx+1]
+        return self.encoded_all_actions[action_listen_idx:action_listen_idx + 1]
 
+    # noinspection PyPep8Naming
     def _create_all_Y_d(self, dialogue_len):
         """Stack encoded_all_intents on top of each other
             to create candidates for training examples
@@ -561,7 +562,7 @@ class EmbeddingPolicy(Policy):
                 attn_input_fn=attn_input_fn,
                 copy_attn_to_out=self.attn_after_rnn,
                 similarity_fn=lambda emb_1, emb_2: (
-                        self._tf_sim(emb_1, emb_2, None)),
+                    self._tf_sim(emb_1, emb_2, None)),
                 ignore_mask=ignore_mask,
                 emb_for_action_listen=emb_for_action_listen,
                 output_attention=True,
@@ -739,7 +740,7 @@ class EmbeddingPolicy(Policy):
                 # create negative indexes out of possible ones
                 # except for correct index of b
                 negative_indexes = [i for i in range(
-                                        self.encoded_all_actions.shape[0])
+                        self.encoded_all_actions.shape[0])
                                     if i != intent_ids[b, h]]
 
                 negs = np.random.choice(negative_indexes, size=self.num_neg)
@@ -763,7 +764,7 @@ class EmbeddingPolicy(Policy):
 
             # do not include [-1 -1 ... -1 0] in averaging
             # and smooth it by taking sqrt
-            return np.maximum(np.sqrt(np.mean(c[1:])/counts), 1)
+            return np.maximum(np.sqrt(np.mean(c[1:]) / counts), 1)
         else:
             return [[None]]
 
@@ -807,16 +808,18 @@ class EmbeddingPolicy(Policy):
 
                 _loss, _ = self.session.run(
                         [loss, self._train_op],
-                        feed_dict={self.a_in: batch_a,
-                                   self.b_in: batch_b,
-                                   self.c_in: batch_c,
-                                   self.b_prev_in: batch_b_prev,
-                                   self._dialogue_len: X.shape[1],
-                                   self._x_for_no_intent_in: x_for_no_intent,
-                                   self._y_for_no_action_in: y_for_no_action,
-                                   self._y_for_action_listen_in: y_for_action_listen,
-                                   self._is_training: True,
-                                   self._loss_scales: batch_loss_scales}
+                        feed_dict={
+                            self.a_in: batch_a,
+                            self.b_in: batch_b,
+                            self.c_in: batch_c,
+                            self.b_prev_in: batch_b_prev,
+                            self._dialogue_len: X.shape[1],
+                            self._x_for_no_intent_in: x_for_no_intent,
+                            self._y_for_no_action_in: y_for_no_action,
+                            self._y_for_action_listen_in: y_for_action_listen,
+                            self._is_training: True,
+                            self._loss_scales: batch_loss_scales
+                        }
                 )
                 ep_loss += _loss / batches_per_epoch
 
@@ -858,15 +861,17 @@ class EmbeddingPolicy(Policy):
 
         _sim, _mask = self.session.run(
                 [self.sim_op, mask],
-                feed_dict={self.a_in: X[ids],
-                           self.b_in: all_Y_d_x,
-                           self.c_in: slots[ids],
-                           self.b_prev_in: prev_act[ids],
-                           self._dialogue_len: X.shape[1],
-                           self._x_for_no_intent_in: x_for_no_intent,
-                           self._y_for_no_action_in: y_for_no_action,
-                           self._y_for_action_listen_in: y_for_action_listen,
-                           self._is_training: False}
+                feed_dict={
+                    self.a_in: X[ids],
+                    self.b_in: all_Y_d_x,
+                    self.c_in: slots[ids],
+                    self.b_prev_in: prev_act[ids],
+                    self._dialogue_len: X.shape[1],
+                    self._x_for_no_intent_in: x_for_no_intent,
+                    self._y_for_no_action_in: y_for_no_action,
+                    self._y_for_action_listen_in: y_for_action_listen,
+                    self._is_training: False
+                }
         )
 
         return np.sum((np.argmax(_sim, -1) == actions_for_Y[ids]) *
@@ -898,7 +903,7 @@ class EmbeddingPolicy(Policy):
 
         self.encoded_all_actions = \
             self.featurizer.state_featurizer.create_encoded_all_actions(
-                domain)
+                    domain)
 
         # check if number of negatives is less than number of actions
         logger.debug("Check if num_neg {} is smaller "
@@ -995,8 +1000,8 @@ class EmbeddingPolicy(Policy):
         # type: (List[DialogueStateTracker], Domain, **Any) -> None
         """Continues training an already trained policy."""
 
-        batch_size = kwargs.get('batch_size', 5)
-        epochs = kwargs.get('epochs', 50)
+        batch_size = kwargs.get("batch_size", 5)
+        epochs = kwargs.get("epochs", 50)
 
         num_samples = batch_size - 1
         num_prev_examples = len(training_trackers) - 1
@@ -1024,17 +1029,20 @@ class EmbeddingPolicy(Policy):
             y_for_action_listen = self._create_y_for_action_listen(domain)
 
             # fit to one extra example using updated trackers
-            self.session.run(self._train_op,
-                             feed_dict={self.a_in: batch_a,
-                                        self.b_in: batch_b,
-                                        self.c_in: batch_c,
-                                        self.b_prev_in: batch_b_prev,
-                                        self._dialogue_len: batch_a.shape[1],
-                                        self._x_for_no_intent_in: x_for_no_intent,
-                                        self._y_for_no_action_in: y_for_no_action,
-                                        self._y_for_action_listen_in: y_for_action_listen,
-                                        self._is_training: True,
-                                        self._loss_scales: batch_loss_scales})
+            self.session.run(
+                    self._train_op,
+                    feed_dict={
+                        self.a_in: batch_a,
+                        self.b_in: batch_b,
+                        self.c_in: batch_c,
+                        self.b_prev_in: batch_b_prev,
+                        self._dialogue_len: batch_a.shape[1],
+                        self._x_for_no_intent_in: x_for_no_intent,
+                        self._y_for_no_action_in: y_for_no_action,
+                        self._y_for_action_listen_in: y_for_action_listen,
+                        self._is_training: True,
+                        self._loss_scales: batch_loss_scales
+                    })
 
     def predict_action_probabilities(self, tracker, domain):
         # type: (DialogueStateTracker, Domain) -> List[float]
@@ -1060,15 +1068,18 @@ class EmbeddingPolicy(Policy):
         all_Y_d = self._create_all_Y_d(X.shape[1])
         all_Y_d_x = np.stack([all_Y_d for _ in range(X.shape[0])])
 
-        _sim = self.session.run(self.sim_op,
-                                feed_dict={self.a_in: X,
-                                           self.b_in: all_Y_d_x,
-                                           self.c_in: slots,
-                                           self.b_prev_in: prev_act,
-                                           self._dialogue_len: X.shape[1],
-                                           self._x_for_no_intent_in: x_for_no_intent,
-                                           self._y_for_no_action_in: y_for_no_action,
-                                           self._y_for_action_listen_in: y_for_action_listen})
+        _sim = self.session.run(
+                self.sim_op,
+                feed_dict={
+                    self.a_in: X,
+                    self.b_in: all_Y_d_x,
+                    self.c_in: slots,
+                    self.b_prev_in: prev_act,
+                    self._dialogue_len: X.shape[1],
+                    self._x_for_no_intent_in: x_for_no_intent,
+                    self._y_for_no_action_in: y_for_no_action,
+                    self._y_for_action_listen_in: y_for_action_listen
+                })
 
         result = _sim[0, -1, :]
         if self.similarity_type == 'cosine':
@@ -1101,14 +1112,22 @@ class EmbeddingPolicy(Policy):
         utils.create_dir_for_file(checkpoint)
 
         with self.graph.as_default():
-            self._persist_tensor('intent_placeholder', self.a_in)
-            self._persist_tensor('action_placeholder', self.b_in)
-            self._persist_tensor('slots_placeholder', self.c_in)
-            self._persist_tensor('prev_act_placeholder', self.b_prev_in)
-            self._persist_tensor('dialogue_len', self._dialogue_len)
-            self._persist_tensor('x_for_no_intent', self._x_for_no_intent_in)
-            self._persist_tensor('y_for_no_action', self._y_for_no_action_in)
-            self._persist_tensor('y_for_action_listen', self._y_for_action_listen_in)
+            self._persist_tensor('intent_placeholder',
+                                 self.a_in)
+            self._persist_tensor('action_placeholder',
+                                 self.b_in)
+            self._persist_tensor('slots_placeholder',
+                                 self.c_in)
+            self._persist_tensor('prev_act_placeholder',
+                                 self.b_prev_in)
+            self._persist_tensor('dialogue_len',
+                                 self._dialogue_len)
+            self._persist_tensor('x_for_no_intent',
+                                 self._x_for_no_intent_in)
+            self._persist_tensor('y_for_no_action',
+                                 self._y_for_no_action_in)
+            self._persist_tensor('y_for_action_listen',
+                                 self._y_for_action_listen_in)
 
             self._persist_tensor('similarity_op', self.sim_op)
 
@@ -1144,87 +1163,87 @@ class EmbeddingPolicy(Policy):
 
             Needs to load its featurizer"""
 
-        if os.path.exists(path):
-            featurizer = TrackerFeaturizer.load(path)
-
-            file_name = 'tensorflow_embedding.ckpt'
-            checkpoint = os.path.join(path, file_name)
-
-            if os.path.exists(checkpoint + '.meta'):
-                graph = tf.Graph()
-                with graph.as_default():
-                    sess = tf.Session()
-                    saver = tf.train.import_meta_graph(checkpoint + '.meta')
-
-                    saver.restore(sess, checkpoint)
-
-                    a_in = tf.get_collection('intent_placeholder')[0]
-                    b_in = tf.get_collection('action_placeholder')[0]
-                    c_in = tf.get_collection('slots_placeholder')[0]
-                    b_prev_in = tf.get_collection('prev_act_placeholder')[0]
-                    dialogue_len = tf.get_collection('dialogue_len')[0]
-                    x_for_no_intent = tf.get_collection('x_for_no_intent')[0]
-                    y_for_no_action = tf.get_collection('y_for_no_action')[0]
-                    y_for_action_listen = tf.get_collection('y_for_action_listen')[0]
-
-                    sim_op = tf.get_collection('similarity_op')[0]
-
-                    # attention probability distribution is
-                    # a list of tensors for each attention type
-                    # of length num_attentions
-                    with io.open(os.path.join(
-                            path,
-                            file_name + ".num_attentions.pkl"), 'rb') as f:
-                        num_attentions = pickle.load(f)
-
-                    alignment_history = []
-                    for i in range(num_attentions):
-                        alignment_history.extend(
-                                tf.get_collection('alignment_history_{}'
-                                                  ''.format(i))
-                        )
-
-                    user_embed = tf.get_collection('user_embed')[0]
-                    bot_embed = tf.get_collection('bot_embed')[0]
-                    slot_embed = tf.get_collection('slot_embed')[0]
-                    dial_embed = tf.get_collection('dial_embed')[0]
-
-                    rnn_embed = tf.get_collection('rnn_embed')[0]
-                    attn_embed = tf.get_collection('attn_embed')[0]
-                    no_skip_gate = tf.get_collection('no_skip_gate')[0]
-
-                with io.open(os.path.join(
-                        path,
-                        file_name + ".encoded_all_actions.pkl"), 'rb') as f:
-                    encoded_all_actions = pickle.load(f)
-
-                return cls(featurizer,
-                           encoded_all_actions=encoded_all_actions,
-                           session=sess,
-                           graph=graph,
-                           intent_placeholder=a_in,
-                           action_placeholder=b_in,
-                           slots_placeholder=c_in,
-                           prev_act_placeholder=b_prev_in,
-                           dialogue_len=dialogue_len,
-                           x_for_no_intent=x_for_no_intent,
-                           y_for_no_action=y_for_no_action,
-                           y_for_action_listen=y_for_action_listen,
-                           similarity_op=sim_op,
-                           alignment_history=alignment_history,
-                           user_embed=user_embed,
-                           bot_embed=bot_embed,
-                           slot_embed=slot_embed,
-                           dial_embed=dial_embed,
-                           rnn_embed=rnn_embed,
-                           attn_embed=attn_embed,
-                           no_skip_gate=no_skip_gate)
-            else:
-                return cls(featurizer=featurizer)
-
-        else:
+        if not os.path.exists(path):
             raise Exception("Failed to load dialogue model. Path {} "
                             "doesn't exist".format(os.path.abspath(path)))
+
+        featurizer = TrackerFeaturizer.load(path)
+
+        file_name = 'tensorflow_embedding.ckpt'
+        checkpoint = os.path.join(path, file_name)
+
+        if not os.path.exists(checkpoint + '.meta'):
+            return cls(featurizer=featurizer)
+
+        graph = tf.Graph()
+        with graph.as_default():
+            sess = tf.Session()
+            saver = tf.train.import_meta_graph(checkpoint + '.meta')
+
+            saver.restore(sess, checkpoint)
+
+            a_in = tf.get_collection('intent_placeholder')[0]
+            b_in = tf.get_collection('action_placeholder')[0]
+            c_in = tf.get_collection('slots_placeholder')[0]
+            b_prev_in = tf.get_collection('prev_act_placeholder')[0]
+            dialogue_len = tf.get_collection('dialogue_len')[0]
+            x_for_no_intent = tf.get_collection('x_for_no_intent')[0]
+            y_for_no_action = tf.get_collection('y_for_no_action')[0]
+            y_for_action_listen = tf.get_collection('y_for_action_listen')[0]
+
+            sim_op = tf.get_collection('similarity_op')[0]
+
+            # attention probability distribution is
+            # a list of tensors for each attention type
+            # of length num_attentions
+            with io.open(os.path.join(
+                    path,
+                    file_name + ".num_attentions.pkl"), 'rb') as f:
+                num_attentions = pickle.load(f)
+
+            alignment_history = []
+            for i in range(num_attentions):
+                alignment_history.extend(
+                        tf.get_collection('alignment_history_{}'
+                                          ''.format(i))
+                )
+
+            user_embed = tf.get_collection('user_embed')[0]
+            bot_embed = tf.get_collection('bot_embed')[0]
+            slot_embed = tf.get_collection('slot_embed')[0]
+            dial_embed = tf.get_collection('dial_embed')[0]
+
+            rnn_embed = tf.get_collection('rnn_embed')[0]
+            attn_embed = tf.get_collection('attn_embed')[0]
+            no_skip_gate = tf.get_collection('no_skip_gate')[0]
+
+        encoded_actions_file = os.path.join(
+                path, "{}.encoded_all_actions.pkl".format(file_name))
+
+        with io.open(encoded_actions_file, 'rb') as f:
+            encoded_all_actions = pickle.load(f)
+
+        return cls(featurizer,
+                   encoded_all_actions=encoded_all_actions,
+                   session=sess,
+                   graph=graph,
+                   intent_placeholder=a_in,
+                   action_placeholder=b_in,
+                   slots_placeholder=c_in,
+                   prev_act_placeholder=b_prev_in,
+                   dialogue_len=dialogue_len,
+                   x_for_no_intent=x_for_no_intent,
+                   y_for_no_action=y_for_no_action,
+                   y_for_action_listen=y_for_action_listen,
+                   similarity_op=sim_op,
+                   alignment_history=alignment_history,
+                   user_embed=user_embed,
+                   bot_embed=bot_embed,
+                   slot_embed=slot_embed,
+                   dial_embed=dial_embed,
+                   rnn_embed=rnn_embed,
+                   attn_embed=attn_embed,
+                   no_skip_gate=no_skip_gate)
 
 
 # Attentional interface
@@ -1248,25 +1267,29 @@ class TimedNTM(object):
 
         self._dialogue_len = dialogue_len
 
-        self.inter_gate = tf.layers.Dense(1, tf.sigmoid,
-                                          name=self.name + '/inter_gate')
+        self.inter_gate = tf.layers.Dense(
+                units=1,
+                activation=tf.sigmoid,
+                name=self.name + '/inter_gate')
 
         # if use sparsemax instead of softmax for probs or gate
         self.sparse_attention = sparse_attention
 
         # shift weighting if range is provided
         if attn_shift_range:
-            self.shift_weight = tf.layers.Dense(2 * attn_shift_range + 1,
-                                                tf.nn.softmax,
-                                                name=(self.name +
-                                                      '/shift_weight'))
+            self.shift_weight = tf.layers.Dense(
+                    units=2 * attn_shift_range + 1,
+                    activation=tf.nn.softmax,
+                    name=(self.name + '/shift_weight'))
         else:
             self.shift_weight = None
 
         # sharpening parameter
-        self.gamma_sharp = tf.layers.Dense(1, lambda a: tf.nn.softplus(a) + 1,
-                                           bias_initializer=tf.constant_initializer(1),
-                                           name=(self.name + '/gamma_sharp'))
+        self.gamma_sharp = tf.layers.Dense(
+                units=1,
+                activation=lambda a: tf.nn.softplus(a) + 1,
+                bias_initializer=tf.constant_initializer(1),
+                name=(self.name + '/gamma_sharp'))
 
     def __call__(self, cell_output, scores, scores_state, ignore_mask):
         # apply exponential moving average with interpolation gate weight
@@ -1316,7 +1339,7 @@ class TimedNTM(object):
 
         powed_probs = tf.pow(probs, g_sh)
         probs = powed_probs / (
-                    tf.reduce_sum(powed_probs, 1, keepdims=True) + 1e-32)
+                tf.reduce_sum(powed_probs, 1, keepdims=True) + 1e-32)
 
         # set probs for no intents and action_listens to zero
         if ignore_mask is not None:
@@ -1338,7 +1361,7 @@ def _compute_time_attention(attention_mechanism, cell_output, attention_state,
     scores, _ = attention_mechanism(cell_output, state=attention_state)
 
     # take only scores form current and past times
-    timed_scores = scores[:, :time+1]
+    timed_scores = scores[:, :time + 1]
     timed_scores_state = attention_state[:, :time]
     if ignore_mask is not None:
         timed_ignore_mask = ignore_mask[:, :time]
@@ -1376,16 +1399,20 @@ def _compute_time_attention(attention_mechanism, cell_output, attention_state,
         attention = context
 
     # return current time to attention
-    alignments = tf.concat([probs, zeros[:, time+1:]], 1)
+    alignments = tf.concat([probs, zeros[:, time + 1:]], 1)
     next_attention_state = tf.concat([next_scores_state,
-                                      zeros[:, time+1:]], 1)
+                                      zeros[:, time + 1:]], 1)
     return attention, alignments, next_attention_state
 
 
 class TimeAttentionWrapperState(
         collections.namedtuple("AttentionWrapperState",
-                               ("cell_state", "attention", "time", "alignments",
-                                "alignment_history", "attention_state",
+                               ("cell_state",
+                                "attention",
+                                "time",
+                                "alignments",
+                                "alignment_history",
+                                "attention_state",
                                 "all_hidden_cell_states"))):
     """
         modified  from tensorflow's tf.contrib.seq2seq.AttentionWrapperState
@@ -1394,7 +1421,8 @@ class TimeAttentionWrapperState(
 
     def clone(self, **kwargs):
         """Clone this object, overriding components provided by kwargs.
-        The new state fields' shape must match original state fields' shape. This
+        The new state fields' shape must match original state fields' shape.
+        This
         will be validated, and original fields' shape will be propagated to new
         fields.
         Example:
@@ -1403,12 +1431,14 @@ class TimeAttentionWrapperState(
         initial_state = initial_state.clone(cell_state=encoder_state)
         ```
         Args:
-          **kwargs: Any properties of the state object to replace in the returned
+          **kwargs: Any properties of the state object to replace in the
+          returned
             `AttentionWrapperState`.
         Returns:
           A new `AttentionWrapperState` whose properties are the same as
           this one, except any overridden properties as provided in `kwargs`.
         """
+
         def with_same_shape(old, new):
             """Check and set new tensor's shape."""
             if isinstance(old, tf.Tensor) and isinstance(new, tf.Tensor):
@@ -1502,7 +1532,11 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
     @property
     def output_size(self):
         if self._output_attention:
-            return self._attention_layer_size + 2 * self._cell.output_size + 2 + 4
+            return (self._attention_layer_size
+                    + 2
+                    * self._cell.output_size
+                    + 2
+                    + 4)
         else:
             return self._cell.output_size
 
@@ -1510,7 +1544,8 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
     def state_size(self):
         """The `state_size` property of `AttentionWrapper`.
         Returns:
-          An `AttentionWrapperState` tuple containing shapes used by this object.
+          An `AttentionWrapperState` tuple containing shapes used by this
+          object.
         """
 
         if isinstance(self._cell.state_size, tf.contrib.rnn.LSTMStateTuple):
@@ -1519,17 +1554,18 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             hidden_state_size = self._cell.state_size
 
         return TimeAttentionWrapperState(
-            cell_state=self._cell.state_size,
-            time=tf.TensorShape([]),
-            attention=self._attention_layer_size,
-            alignments=self._item_or_tuple(
-                a.alignments_size for a in self._attention_mechanisms),
-            attention_state=self._item_or_tuple(
-                a.state_size for a in self._attention_mechanisms),
-            alignment_history=self._item_or_tuple(
-                a.alignments_size if self._alignment_history else ()
-                for a in self._attention_mechanisms),  # sometimes a TensorArray
-            all_hidden_cell_states=hidden_state_size)  # TensorArray
+                cell_state=self._cell.state_size,
+                time=tf.TensorShape([]),
+                attention=self._attention_layer_size,
+                alignments=self._item_or_tuple(
+                        a.alignments_size for a in self._attention_mechanisms),
+                attention_state=self._item_or_tuple(
+                        a.state_size for a in self._attention_mechanisms),
+                alignment_history=self._item_or_tuple(
+                        a.alignments_size if self._alignment_history else ()
+                        for a in self._attention_mechanisms),
+                # sometimes a TensorArray
+                all_hidden_cell_states=hidden_state_size)  # TensorArray
 
     def zero_state(self, batch_size, dtype):
         """Return an initial (zero) state tuple for this `AttentionWrapper`.
@@ -1549,30 +1585,34 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         """
         from tensorflow.python.ops.rnn_cell_impl import _zero_state_tensors
 
-        with tf.name_scope(type(self).__name__ + "ZeroState", values=[batch_size]):
+        with tf.name_scope(type(self).__name__ + "ZeroState",
+                           values=[batch_size]):
             if self._initial_cell_state is not None:
                 cell_state = self._initial_cell_state
             else:
                 cell_state = self._cell.zero_state(batch_size, dtype)
             error_message = (
-                    "When calling zero_state of AttentionWrapper %s: " % self._base_name +
-                    "Non-matching batch sizes between the memory "
-                    "(encoder output) and the requested batch size.  Are you using "
-                    "the BeamSearchDecoder?  If so, make sure your encoder output has "
-                    "been tiled to beam_width via tf.contrib.seq2seq.tile_batch, and "
-                    "the batch_size= argument passed to zero_state is "
-                    "batch_size * beam_width.")
+                "When calling zero_state of AttentionWrapper {}: "
+                "Non-matching batch sizes between the memory "
+                "(encoder output) and the requested batch size.  "
+                "Are you using the BeamSearchDecoder?  If so, make sure "
+                "your encoder output has "
+                "been tiled to beam_width via "
+                "tf.contrib.seq2seq.tile_batch, and "
+                "the batch_size= argument passed to zero_state is "
+                "batch_size * beam_width.").format(self._base_name)
             with tf.control_dependencies(
                     self._batch_size_checks(batch_size, error_message)):
                 cell_state = tf.contrib.framework.nest.map_structure(
-                    lambda s: tf.identity(s, name="checked_cell_state"),
-                    cell_state)
+                        lambda s: tf.identity(s, name="checked_cell_state"),
+                        cell_state)
             initial_alignments = [
                 attention_mechanism.initial_alignments(batch_size, dtype)
                 for attention_mechanism in self._attention_mechanisms]
 
             if self._copy_attn_to_out:
-                if isinstance(self._cell.state_size, tf.contrib.rnn.LSTMStateTuple):
+                if isinstance(self._cell.state_size,
+                              tf.contrib.rnn.LSTMStateTuple):
                     all_hidden_cell_states = tf.contrib.rnn.LSTMStateTuple(
                             tf.TensorArray(dtype, size=self._dialogue_len + 1,
                                            dynamic_size=False,
@@ -1594,23 +1634,25 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                 all_hidden_cell_states = None
 
             return TimeAttentionWrapperState(
-                cell_state=cell_state,
-                time=tf.zeros([], dtype=tf.int32),
-                attention=_zero_state_tensors(self._attention_layer_size, batch_size,
-                                              dtype),
-                alignments=self._item_or_tuple(initial_alignments),
-                attention_state=self._item_or_tuple(
-                    attention_mechanism.initial_state(batch_size, dtype)
-                    for attention_mechanism in self._attention_mechanisms),
-                alignment_history=self._item_or_tuple(
-                    tf.TensorArray(
-                        dtype,
-                        size=0,
-                        dynamic_size=True,
-                        element_shape=alignment.shape)
-                    if self._alignment_history else ()
-                    for alignment in initial_alignments),
-                all_hidden_cell_states=all_hidden_cell_states
+                    cell_state=cell_state,
+                    time=tf.zeros([], dtype=tf.int32),
+                    attention=_zero_state_tensors(self._attention_layer_size,
+                                                  batch_size,
+                                                  dtype),
+                    alignments=self._item_or_tuple(initial_alignments),
+                    attention_state=self._item_or_tuple(
+                            attention_mechanism.initial_state(batch_size, dtype)
+                            for attention_mechanism in
+                            self._attention_mechanisms),
+                    alignment_history=self._item_or_tuple(
+                            tf.TensorArray(
+                                    dtype,
+                                    size=0,
+                                    dynamic_size=True,
+                                    element_shape=alignment.shape)
+                            if self._alignment_history else ()
+                            for alignment in initial_alignments),
+                    all_hidden_cell_states=all_hidden_cell_states
             )
 
     @staticmethod
@@ -1634,7 +1676,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         return tf.squeeze(tf.matmul(expanded_alignments, history_states), [1])
 
     def _new_next_cell_state(self, prev_all_hidden_cell_states,
-                            state, alignments, time):
+                             state, alignments, time):
         """Helper method to look into rnn history"""
 
         # do not include current time because
@@ -1661,15 +1703,18 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
           `normalizer` and limit them by time.
         - Step 4: Calculate the context vector as the inner product between the
           alignments and the attention_mechanism's values (memory).
-        - Step 5: Calculate the attention output by concatenating the cell output
+        - Step 5: Calculate the attention output by concatenating the cell
+        output
           and context through the attention layer (a linear layer with
           `attention_layer_size` outputs).
         - Step 6: Mix the `inputs` and `attention` output via
           `cell_input_fn`.
-        - Step 7: Call the wrapped `cell` with this input and its previous state.
+        - Step 7: Call the wrapped `cell` with this input and its previous
+        state.
 
         Args:
-          inputs: (Possibly nested tuple of) Tensor, the input at this time step.
+          inputs: (Possibly nested tuple of) Tensor, the input at this time
+          step.
           state: An instance of `AttentionWrapperState` containing
             tensors from the previous time step.
 
@@ -1684,8 +1729,9 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
           TypeError: If `state` is not an instance of `AttentionWrapperState`.
         """
         if not isinstance(state, TimeAttentionWrapperState):
-            raise TypeError("Expected state to be instance of AttentionWrapperState. "
-                            "Received type %s instead." % type(state))
+            raise TypeError("Expected state to be instance of "
+                            "AttentionWrapperState. "
+                            "Received type {} instead.".format(type(state)))
 
         # Step 1: Calculate attention based on
         #          the previous output and current input
@@ -1708,7 +1754,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         with tf.control_dependencies(
                 self._batch_size_checks(cell_batch_size, error_message)):
             prev_out_for_attn = tf.identity(
-                prev_out_for_attn, name="checked_prev_out_for_attn")
+                    prev_out_for_attn, name="checked_prev_out_for_attn")
 
         if self._is_multi:
             previous_attention_state = state.attention_state
@@ -1734,7 +1780,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                     if self._attention_layers else None)
 
             alignment_history = previous_alignment_history[i].write(
-                state.time, alignments) if self._alignment_history else ()
+                    state.time, alignments) if self._alignment_history else ()
 
             all_attention_states.append(next_attention_state)
             all_alignments.append(alignments)
@@ -1754,7 +1800,8 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
 
         if self._copy_attn_to_out:
             # get relevant previous bot actions from history
-            attn_emb_prev_act = all_attentions[-1]  # self._attn_to_copy_fn(attention)
+            # self._attn_to_copy_fn(attention)
+            attn_emb_prev_act = all_attentions[-1]
             # copy them to current output
             cell_output += attn_emb_prev_act
 
@@ -1839,7 +1886,7 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
                         state.time
                 )
                 all_hidden_cell_states = prev_all_hidden_cell_states.write(
-                    state.time + 1, next_cell_state)
+                        state.time + 1, next_cell_state)
         else:
             c_g = tf.ones_like(prev_out_for_attn[:, :1])
             c_probs_max = tf.zeros_like(prev_out_for_attn[:, :1])
@@ -1852,13 +1899,13 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
             all_hidden_cell_states = None
 
         next_state = TimeAttentionWrapperState(
-            time=state.time + 1,
-            cell_state=next_cell_state,
-            attention=attention,
-            attention_state=self._item_or_tuple(all_attention_states),
-            alignments=self._item_or_tuple(all_alignments),
-            alignment_history=self._item_or_tuple(maybe_all_histories),
-            all_hidden_cell_states=all_hidden_cell_states
+                time=state.time + 1,
+                cell_state=next_cell_state,
+                attention=attention,
+                attention_state=self._item_or_tuple(all_attention_states),
+                alignments=self._item_or_tuple(all_alignments),
+                alignment_history=self._item_or_tuple(maybe_all_histories),
+                all_hidden_cell_states=all_hidden_cell_states
         )
 
         if self._output_attention:
@@ -1944,8 +1991,8 @@ class ChronoBiasLayerNormBasicLSTMCell(tf.contrib.rnn.LayerNormBasicLSTMCell):
             g = tf.nn.dropout(g, self._keep_prob, seed=self._seed)
 
         new_c = (
-            c * tf.sigmoid(f + self._forget_bias) +
-            g * tf.sigmoid(i + self._input_bias))  # added input_bias
+                c * tf.sigmoid(f + self._forget_bias) +
+                g * tf.sigmoid(i + self._input_bias))  # added input_bias
 
         # do not do layer normalization on the new c,
         # because there are no trainable weights
