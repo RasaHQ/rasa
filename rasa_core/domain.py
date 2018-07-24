@@ -415,9 +415,6 @@ class TemplateDomain(Domain):
         additional_arguments = data.get("config", {})
         print(data.get("intents"))
         intents = cls.collect_intents(data.get("intents", {}))
-        if data.get("intents_ignore_entities"):
-            logger.warn("Entities for specified intents will not be ignored if"
-                        " they have a featurized slot with the same name")
         return cls(
             intents,
             data.get("entities", []),
