@@ -463,8 +463,7 @@ class TemplateDomain(Domain):
     @staticmethod
     def collect_intents(intent_list):
         intents = {}
-        # reverse the list so the dict is in the correct order
-        for intent in intent_list[::-1]:
+        for intent in intent_list:
             if isinstance(intent, dict):
                 intents.update(intent)
             else:
@@ -552,7 +551,7 @@ class TemplateDomain(Domain):
 
     @utils.lazyproperty
     def intents(self):
-        return self._intents.keys()
+        return sorted(self._intents.keys())
 
     @utils.lazyproperty
     def entities(self):
