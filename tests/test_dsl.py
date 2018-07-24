@@ -53,24 +53,8 @@ def test_can_read_test_story_with_checkpoint_after_or(default_domain):
             tracker_limit=1000,
             remove_duplicates=False
     )
-    # the result should be identical as in the test above
-    assert len(trackers) == 7
-    # this should be the story simple_story_with_only_end -> show_it_all
-    # the generated stories are in a non stable order - therefore we need to
-    # do some trickery to find the one we want to test
-    tracker = [t for t in trackers if len(t.events) == 5][0]
-    assert tracker.events[0] == ActionExecuted("action_listen")
-    assert tracker.events[1] == UserUttered(
-            "simple",
-            intent={"name": "simple", "confidence": 1.0},
-            parse_data={'text': 'simple',
-                        'intent_ranking': [{'confidence': 1.0,
-                                            'name': 'simple'}],
-                        'intent': {'confidence': 1.0, 'name': 'simple'},
-                        'entities': []})
-    assert tracker.events[2] == ActionExecuted("utter_default")
-    assert tracker.events[3] == ActionExecuted("utter_greet")
-    assert tracker.events[4] == ActionExecuted("action_listen")
+    # there should be only 2 trackers
+    assert len(trackers) == 2
 
 
 def test_persist_and_read_test_story_graph(tmpdir, default_domain):

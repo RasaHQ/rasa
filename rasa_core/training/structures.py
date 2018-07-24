@@ -344,15 +344,15 @@ class StoryGraph(object):
             updated = step.create_copy(use_new_id=False)
             updated.start_checkpoints = self._checkpoint_difference(
                     updated.start_checkpoints, unused_overlapping_cps)
-            if step.start_checkpoints and not updated.start_checkpoints:
-                # remove story step if the generated checkpoints were unique
-                k_to_remove.add(k)
 
             # remove generated unused end checkpoints
             updated.end_checkpoints = self._checkpoint_difference(
                     updated.end_checkpoints, unused_genr_cps)
-            if step.end_checkpoints and not updated.end_checkpoints:
-                # remove story step if the generated checkpoints were unique
+
+            if (step.start_checkpoints and not updated.start_checkpoints or
+                    step.end_checkpoints and not updated.end_checkpoints):
+                # remove story step if the generated checkpoints
+                # were the only ones
                 k_to_remove.add(k)
 
             story_steps[k] = updated
