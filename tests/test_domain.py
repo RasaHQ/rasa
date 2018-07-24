@@ -184,6 +184,7 @@ templates:
   utter_greet:
   - text: hey there!"""
     domain = TemplateDomain.load_from_yaml(test_yaml)
-    # python 3 and 2 are different here, python 3 will have a leading set of --- at the begining of the yml
+    # python 3 and 2 are different here, python 3 will have a leading set 
+    # of --- at the begining of the yml
     assert domain.as_yaml().strip().endswith(test_yaml.strip())
     domain = TemplateDomain.load_from_yaml(domain.as_yaml())
