@@ -579,7 +579,7 @@ class EmbeddingPolicy(Policy):
                 alignment_history = [alignment_history]
 
             for alignments in alignment_history:
-                # Reshape to (batch, time, memory_time)
+                # reshape to (batch, time, memory_time)
                 alignments = tf.transpose(alignments.stack(), [1, 0, 2])
                 self.alignment_history.append(alignments)
 
@@ -1640,6 +1640,8 @@ class TimeAttentionWrapper(tf.contrib.seq2seq.AttentionWrapper):
         # do not include current time because
         # we do not want to pay attention to it,
         # but we need to read it because of TensorArray
+
+        # reshape to (batch, time, memory_time)
         prev_cell_states = tf.transpose(
                 prev_all_hidden_cell_states.gather(
                         tf.range(0, time + 1)), [1, 0, 2]
