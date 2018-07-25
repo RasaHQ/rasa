@@ -484,10 +484,9 @@ class EmbeddingPolicy(Policy):
     def num_mem_units(memory):
         return memory.shape[-1].value
 
-    @staticmethod
-    def _create_attn_mech(memory, real_length):
+    def _create_attn_mech(self, memory, real_length):
         attn_mech = tf.contrib.seq2seq.BahdanauAttention(
-                num_units=EmbeddingPolicy.num_mem_units(memory),
+                num_units=self.num_mem_units(memory),
                 memory=memory,
                 memory_sequence_length=real_length,
                 normalize=True,
