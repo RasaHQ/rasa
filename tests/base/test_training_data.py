@@ -356,18 +356,6 @@ def test_url_data_format():
                 "value": "NYC"
               }
             ]
-          },
-          {
-            "text": "show me flights to nyc",
-            "intent": "unk",
-            "entities": [
-              {
-                "entity": "destination",
-                "start": 19,
-                "end": 22,
-                "value": "nyc"
-              }
-            ]
           }
         ]
       }
@@ -376,5 +364,5 @@ def test_url_data_format():
                                         suffix="_tmp_training_data.json",
                                         mode="w+b")
     data = utils.read_json_file(fname)
-    validate_rasa_nlu_data(data)
     assert data is not None
+    validate_rasa_nlu_data(data)
