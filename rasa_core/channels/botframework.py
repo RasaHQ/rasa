@@ -51,7 +51,8 @@ class BotFramework(OutputChannel):
                 token_data = token_response.json()
                 access_token = token_data['access_token']
                 token_expiration = token_data['expires_in']
-                BotFramework.token_expiration_date = datetime.datetime.now() + \
+                BotFramework.token_expiration_date = \
+                    datetime.datetime.now() + \
                     datetime.timedelta(seconds=int(token_expiration))
                 BotFramework.headers = {"content-type": "application/json",
                                  "Authorization": "Bearer %s" % access_token}

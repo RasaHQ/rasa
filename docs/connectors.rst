@@ -345,34 +345,34 @@ listen for messages on ``/app/webhook``.
 
     For more information on the Twilio REST API, go to https://www.twilio.com/docs/iam/api
 
-.. _teams_connector:
+.. _botframework_connector:
 
-Microsoft Teams Setup
+Microsoft Bot Framework Setup
 --------------
 
 Directly using python
 ^^^^^^^^^^^^^^^^^^^^^
 
-A ``TeamsInput`` instance provides a flask blueprint for creating
+A ``BotFrameworkInput`` instance provides a flask blueprint for creating
 a webserver. This lets you seperate the exact endpoints and implementation
 from your webserver creation logic.
 
-Code to create a Microsoft Teams-compatible webserver looks like this:
+Code to create a Microsoft Bot Framework-compatible webserver looks like this:
 
 .. code-block:: python
     :linenos:
 
     from rasa_core.channels import HttpInputChannel
-    from rasa_core.channels.teams import TeamsInput
+    from rasa_core.channels.botframework import BotFrameworkInput
     from rasa_core.agent import Agent
     from rasa_core.interpreter import RegexInterpreter
 
     # load your trained agent
     agent = Agent.load("dialogue", interpreter=RegexInterpreter())
 
-    input_channel = TeamsInput(
-      teams_id="YOUR_TEAMS_ID", # you get this from your Teams account
-      teams_secret="YOUR_TEAMS_SECRET" # also from your Teams account
+    input_channel = BotFrameworkInput(
+      bf_id="YOUR_BOT_FRAMEWORK_ID", # you get this from your Bot Framework account
+      bf_secret="YOUR_BOT_FRAMEWORK_SECRET" # also from your Bot Framework account
     )
 
     agent.handle_channel(HttpInputChannel(5004, "/app", input_channel))
