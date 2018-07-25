@@ -1,5 +1,5 @@
 ## simple_story_without_checkpoint
-* simple                       <!-- user utterance in _intent[entities] format -->
+* simple
     - utter_default
     - utter_greet
 

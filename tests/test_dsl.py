@@ -45,6 +45,18 @@ def test_can_read_test_story(default_domain):
     assert tracker.events[4] == ActionExecuted("action_listen")
 
 
+def test_can_read_test_story_with_checkpoint_after_or(default_domain):
+    trackers = training.load_data(
+            "data/test_stories/stories_checkpoint_after_or.md",
+            default_domain,
+            use_story_concatenation=False,
+            tracker_limit=1000,
+            remove_duplicates=False
+    )
+    # there should be only 2 trackers
+    assert len(trackers) == 2
+
+
 def test_persist_and_read_test_story_graph(tmpdir, default_domain):
     graph = training.extract_story_graph("data/test_stories/stories.md",
                                          default_domain)
