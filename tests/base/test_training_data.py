@@ -377,3 +377,4 @@ def test_url_data_format():
                                         mode="w+b")
     data = utils.read_json_file(fname)
     validate_rasa_nlu_data(data)
+    assert data is not None
