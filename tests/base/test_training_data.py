@@ -6,8 +6,6 @@ from __future__ import unicode_literals
 
 import tempfile
 
-import requests
-
 import pytest
 from jsonschema import ValidationError
 
@@ -337,7 +335,43 @@ def test_training_data_conversion(tmpdir, data_file, gold_standard_file,
 
 
 def test_url_data_format():
-    test_url = 'http://website-demo.rasa.com/api/default/data.json?api_token=e8c436157a24b007ed5cdc9ba4d062ed66c4f63d'
-    r = requests.get(test_url)
-    data = r.json()
+    data = u"""
+    {
+      "rasa_nlu_data": {
+        "entity_synonyms": [
+          {
+            "value": "nyc",
+            "synonyms": ["New York City", "nyc", "the big apple"]
+          }
+        ],
+        "common_examples" : [
+          {
+            "text": "show me flights to New York City",
+            "intent": "unk",
+            "entities": [
+              {
+                "entity": "destination",
+                "start": 19,
+                "end": 32,
+                "value": "NYC"
+              }
+            ]
+          },
+          {
+            "text": "show me flights to nyc",
+            "intent": "unk",
+            "entities": [
+              {
+                "entity": "destination",
+                "start": 19,
+                "end": 22,
+                "value": "nyc"
+              }
+            ]
+          }
+        ]
+      }
+    }"""
+    fname = utils.create_temporary_file(data.encode("utf-8"), suffix="_tmp_training_data.json")
+    data = utils.read_json_file(fname)
     validate_rasa_nlu_data(data)
