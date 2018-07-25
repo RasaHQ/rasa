@@ -266,11 +266,11 @@ class EmbeddingPolicy(Policy):
         self.C2 = config['C2']
         self.C_emb = config['C_emb']
         self.scale_loss_by_action_counts = config['scale_loss_by_action_counts']
-
-        self.droprate = dict()
-        self.droprate['a'] = config['droprate_a']
-        self.droprate['b'] = config['droprate_b']
-        self.droprate['rnn'] = config['droprate_rnn']
+        self.droprate = {
+            "a": config['droprate_a'],
+            "b": config['droprate_b'],
+            "rnn": config['droprate_rnn'],
+        }
 
     def _load_attn_params(self, config):
         self.sparse_attention = config['sparse_attention']
@@ -278,20 +278,17 @@ class EmbeddingPolicy(Policy):
         self.attn_after_rnn = config['attn_after_rnn']
         self.attn_before_rnn = config['attn_before_rnn']
 
-        if not self.attn_after_rnn and not self.attn_before_rnn:
-            self.use_attention = False
-            self.num_attentions = 0
-        elif self.attn_after_rnn and self.attn_before_rnn:
-            self.use_attention = True
-            self.num_attentions = 2
-        else:
-            self.use_attention = True
-            self.num_attentions = 1
+    def is_using_attention(self):
+        return self.attn_after_rnn or self.attn_before_rnn
+
+    def num_attentions(self):
+        return int(self.attn_after_rnn) + int(self.attn_before_rnn)
 
     def _load_visual_params(self, config):
         self.evaluate_every_num_epochs = config['evaluate_every_num_epochs']
         if self.evaluate_every_num_epochs < 1:
             self.evaluate_every_num_epochs = self.epochs
+
         self.evaluate_on_num_examples = config['evaluate_on_num_examples']
 
     def _load_params(self, **kwargs):
@@ -328,8 +325,8 @@ class EmbeddingPolicy(Policy):
     def action_features_for_Y(self, actions_for_Y):
         """Prepare Y data for training: features for action labels."""
         return np.stack([np.stack([self.encoded_all_actions[action_idx]
-                                  for action_idx in action_ids])
-                        for action_ids in actions_for_Y])
+                                   for action_idx in action_ids])
+                         for action_ids in actions_for_Y])
 
     @staticmethod
     def _create_zero_vector(X):
@@ -457,9 +454,10 @@ class EmbeddingPolicy(Policy):
 
         # chrono initialization for forget bias
         # assuming that characteristic time is max dialogue length
-        # left border that inits forget gate close to 0
+        # left border that initializes forget gate close to 0
         bias_0 = -1.0
-        # right border that inits forget gate close to 1
+
+        # right border that initializes forget gate close to 1
         bias_1 = np.log(self.characteristic_time - 1.0)
         fbias = (bias_1 - bias_0) * np.random.random(self.rnn_size) + bias_0
 
@@ -472,6 +470,7 @@ class EmbeddingPolicy(Policy):
 
         keep_prob = 1.0 - (self.droprate['rnn'] *
                            tf.cast(self._is_training, tf.float32))
+
         return ChronoBiasLayerNormBasicLSTMCell(
                 num_units=self.rnn_size,
                 layer_norm=self.layer_norm,
@@ -482,10 +481,14 @@ class EmbeddingPolicy(Policy):
         )
 
     @staticmethod
+    def num_mem_units(memory):
+        return memory.shape[-1].value
+
+    @staticmethod
     def _create_attn_mech(memory, real_length):
-        num_mem_units = memory.shape[-1].value
         attn_mech = tf.contrib.seq2seq.BahdanauAttention(
-                num_units=num_mem_units, memory=memory,
+                num_units=EmbeddingPolicy.num_mem_units(memory),
+                memory=memory,
                 memory_sequence_length=real_length,
                 normalize=True,
                 probability_fn=tf.identity,
@@ -494,16 +497,16 @@ class EmbeddingPolicy(Policy):
                 # is important for interpolation gate
                 score_mask_value=0
         )
-        return attn_mech, num_mem_units
+        return attn_mech
 
     def _create_attn_cell(self, cell, emb_utter, emb_prev_act,
                           real_length, emb_for_no_intent,
-                          emb_for_no_action,
-                          emb_for_action_listen):
+                          emb_for_no_action, emb_for_action_listen):
         """Wrap cell in attention wrapper with given memory"""
+
         if self.attn_before_rnn:
-            (attn_mech,
-             num_mem_units) = self._create_attn_mech(emb_utter, real_length)
+            num_mem_units = self.num_mem_units(emb_utter)
+            attn_mech = self._create_attn_mech(emb_utter, real_length)
             ignore_mask = tf.reduce_all(tf.equal(tf.expand_dims(
                     emb_for_no_intent, 0), emb_utter), -1)
             # do not use attention by location before rnn
@@ -515,8 +518,8 @@ class EmbeddingPolicy(Policy):
             attn_shift_range = None
 
         if self.attn_after_rnn:
-            attn_mech_after_rnn, _ = self._create_attn_mech(emb_prev_act,
-                                                            real_length)
+            attn_mech_after_rnn = self._create_attn_mech(emb_prev_act,
+                                                         real_length)
             ignore_mask_listen = tf.logical_or(
                     tf.reduce_all(tf.equal(tf.expand_dims(
                             emb_for_no_action, 0), emb_prev_act), -1),
@@ -533,15 +536,15 @@ class EmbeddingPolicy(Policy):
                 ignore_mask = ignore_mask_listen
                 attn_shift_range = self.attn_shift_range
 
-        num_utter_units = emb_utter.shape[-1].value
+        num_utter_units = self.num_mem_units(emb_utter)
 
         def cell_input_fn(inputs, attention):
             if num_mem_units > 0:
                 if num_mem_units == num_utter_units:
                     # if memory before attn is the same size as emb_utter
-                    res = tf.concat([inputs[:, :num_utter_units] +
-                                     attention[:, :num_utter_units],
-                                     inputs[:, num_utter_units:]], -1)
+                    return tf.concat([inputs[:, :num_utter_units] +
+                                      attention[:, :num_utter_units],
+                                      inputs[:, num_utter_units:]], -1)
                 else:
                     raise ValueError("Number of memory units {} is not "
                                      "equal to number of utter units {}. "
@@ -549,9 +552,9 @@ class EmbeddingPolicy(Policy):
                                      "accordingly.".format(num_mem_units,
                                                            num_utter_units))
             else:
-                res = inputs
-            return res
+                return inputs
 
+        # noinspection PyUnusedLocal
         def attn_input_fn(inputs, cell_state):
             # the hidden state c is not included, in hope that algorithm
             # would learn correct attention
@@ -587,9 +590,9 @@ class EmbeddingPolicy(Policy):
 
         alignment_history = []
 
-        if self.use_attention:
+        if self.is_using_attention():
             alignment_history = final_state.alignment_history
-            if self.num_attentions == 1:
+            if self.num_attentions() == 1:
                 alignment_history = [alignment_history]
 
             for alignments in alignment_history:
@@ -602,7 +605,7 @@ class EmbeddingPolicy(Policy):
     def _sim_rnn_from(self, cell_output):
         """Save intermediate tensors for debug purposes"""
 
-        if self.use_attention:
+        if self.is_using_attention():
             self.no_skip_gate = cell_output[:, :, -6:]
             sim_attn = cell_output[:, :, -2]
             sim_state = cell_output[:, :, -1]
@@ -615,16 +618,21 @@ class EmbeddingPolicy(Policy):
         """Save intermediate tensors for debug purposes"""
 
         if self.attn_after_rnn:
-            self.rnn_embed = cell_output[:, :, self.embed_dim:
-                                               (self.embed_dim +
-                                                self.embed_dim)]
-            self.attn_embed = cell_output[:, :, (self.embed_dim +
-                                                 self.embed_dim):-6]
+            self.rnn_embed = cell_output[
+                             :,
+                             :,
+                             self.embed_dim:(self.embed_dim + self.embed_dim)]
+            self.attn_embed = cell_output[
+                              :,
+                              :,
+                              (self.embed_dim + self.embed_dim):-6]
             # embedding layer is inside rnn cell
             emb_dial = cell_output[:, :, :self.embed_dim]
         else:
-            self.attn_embed = cell_output[:, :, (self.rnn_size +
-                                                 self.rnn_size):-6]
+            self.attn_embed = cell_output[
+                              :,
+                              :,
+                              (self.rnn_size + self.rnn_size):-6]
             # add embedding layer to rnn cell output
             emb_dial = self._create_embed(cell_output[:, :, :self.rnn_size],
                                           name='out')
@@ -643,7 +651,7 @@ class EmbeddingPolicy(Policy):
 
         real_length = tf.cast(tf.reduce_sum(mask, 1), tf.int32)
 
-        if self.use_attention:
+        if self.is_using_attention():
             cell = self._create_attn_cell(cell, emb_utter, emb_prev_act,
                                           real_length, emb_for_no_intent,
                                           emb_for_no_action,
@@ -1175,7 +1183,7 @@ class EmbeddingPolicy(Policy):
         with io.open(os.path.join(
                 path,
                 file_name + ".num_attentions.pkl"), 'wb') as f:
-            pickle.dump(self.num_attentions, f)
+            pickle.dump(self.num_attentions(), f)
 
     @classmethod
     def load(cls, path):
