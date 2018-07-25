@@ -332,3 +332,37 @@ def test_training_data_conversion(tmpdir, data_file, gold_standard_file,
     # to dump to the file and diff using git
     # with io.open(gold_standard_file) as f:
     #     f.write(td.as_json(indent=2))
+
+
+def test_url_data_format():
+    data = u"""
+    {
+      "rasa_nlu_data": {
+        "entity_synonyms": [
+          {
+            "value": "nyc",
+            "synonyms": ["New York City", "nyc", "the big apple"]
+          }
+        ],
+        "common_examples" : [
+          {
+            "text": "show me flights to New York City",
+            "intent": "unk",
+            "entities": [
+              {
+                "entity": "destination",
+                "start": 19,
+                "end": 32,
+                "value": "NYC"
+              }
+            ]
+          }
+        ]
+      }
+    }"""
+    fname = utils.create_temporary_file(data.encode("utf-8"),
+                                        suffix="_tmp_training_data.json",
+                                        mode="w+b")
+    data = utils.read_json_file(fname)
+    assert data is not None
+    validate_rasa_nlu_data(data)
