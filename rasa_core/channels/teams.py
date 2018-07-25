@@ -18,31 +18,31 @@ from rasa_core.channels.rest import HttpInputComponent
 logger = logging.getLogger(__name__)
 
 
-class Teams(OutputChannel):
-    """A Microsoft Teams communication channel. Not using any library yet."""
+class BotFramework(OutputChannel):
+    """A Microsoft Bot Framework communication channel."""
 
     token_expiration_date = datetime.datetime.now()
     headers = None
 
-    def __init__(self, teams_id, teams_secret, conversation, bot_id,
+    def __init__(self, bf_id, bf_secret, conversation, bot_id,
                  service_url):
         # type: (Text, Text, Dict[Text]) -> None
 
-        self.teams_id = teams_id
-        self.teams_secret = teams_secret
+        self.bf_id = bf_id
+        self.bf_secret = bf_secret
         self.conversation = conversation
         self.global_uri = "%sv3/" % service_url
         self.bot_id = bot_id
 
     def get_headers(self):
-        if Teams.token_expiration_date < datetime.datetime.now():
+        if BotFramework.token_expiration_date < datetime.datetime.now():
             microsoft_oauth2_url = 'https://login.microsoftonline.com'
             microsoft_oauth2_path = 'botframework.com/oauth2/v2.0/token'
             uri = "%s/%s" % (microsoft_oauth2_url, microsoft_oauth2_path)
             grant_type = 'client_credentials'
             scope = 'https://api.botframework.com/.default'
-            payload = {'client_id': self.teams_id,
-                       'client_secret': self.teams_secret,
+            payload = {'client_id': self.bf_id,
+                       'client_secret': self.bf_secret,
                        'grant_type': grant_type,
                        'scope': scope}
 
@@ -51,15 +51,15 @@ class Teams(OutputChannel):
                 token_data = token_response.json()
                 access_token = token_data['access_token']
                 token_expiration = token_data['expires_in']
-                Teams.token_expiration_date = datetime.datetime.now() + \
+                BotFramework.token_expiration_date = datetime.datetime.now() + \
                     datetime.timedelta(seconds=int(token_expiration))
-                Teams.headers = {"content-type": "application/json",
-                                "Authorization": "Bearer %s" % access_token}
-                return Teams.headers
+                BotFramework.headers = {"content-type": "application/json",
+                                 "Authorization": "Bearer %s" % access_token}
+                return BotFramework.headers
             else:
-                logger.error('Could not get Teams token')
+                logger.error('Could not get BotFramework token')
         else:
-            return Teams.headers
+            return BotFramework.headers
 
     def send(self, recipient_id, message_data):
         # type: (Text, Dict[Text, Any]) -> None
@@ -84,7 +84,6 @@ class Teams(OutputChannel):
                              headers=headers,
                              data=json.dumps(data))
 
-        # status_code = send_response.status_code
         if not send_response.ok:
             logger.error('Error in send: %s', send_response.text)
 
@@ -121,41 +120,38 @@ class Teams(OutputChannel):
         self.send(recipient_id, elements[0])
 
 
-class TeamsInput(HttpInputComponent):
-    """Teams input channel implementation. Based on the HTTPInputChannel."""
+class BotFrameworkInput(HttpInputComponent):
+    """Bot Framework input channel implementation."""
 
-    def __init__(self, teams_id, teams_secret):
+    def __init__(self, bf_id, bf_secret):
         # type: (Text, Text) -> None
-        """Create a facebook input channel.
+        """Create a Bot Framework input channel.
 
-        Needs a couple of settings to properly authenticate and validate
-        messages.
-
-        :param teams_id: Teams' API id
-        :param teams_secret: Teams application secret
+        :param bf_id: Bot Framework's API id
+        :param bf_secret: Bot Framework application secret
         """
 
-        self.teams_id = teams_id
-        self.teams_secret = teams_secret
+        self.bf_id = bf_id
+        self.bf_secret = bf_secret
 
     def blueprint(self, on_new_message):
 
-        teams_webhook = Blueprint('teams_webhook', __name__)
+        bf_webhook = Blueprint('bf_webhook', __name__)
 
-        @teams_webhook.route("/", methods=['GET'])
+        @bf_webhook.route("/", methods=['GET'])
         def health():
             return jsonify({"status": "ok"})
 
-        @teams_webhook.route("/api/messages", methods=['POST'])
+        @bf_webhook.route("/api/messages", methods=['POST'])
         def webhook():
             postdata = request.get_json(force=True)
             # logger.info(postdata)
             try:
                 if postdata["type"] == "message":
-                    out_channel = Teams(self.teams_id, self.teams_secret,
-                                        postdata["conversation"],
-                                        postdata["recipient"],
-                                        postdata["serviceUrl"])
+                    out_channel = BotFramework(self.bf_id, self.bf_secret,
+                                               postdata["conversation"],
+                                               postdata["recipient"],
+                                               postdata["serviceUrl"])
                     user_msg = UserMessage(postdata["text"], out_channel,
                                            postdata["from"]["id"])
                     on_new_message(user_msg)
@@ -169,4 +165,4 @@ class TeamsInput(HttpInputComponent):
 
             return "success"
 
-        return teams_webhook
+        return bf_webhook
