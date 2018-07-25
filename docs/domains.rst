@@ -153,7 +153,7 @@ parameter to the intent in your domain file like this:
 
   intents:
     - greet:
-      use_entities: false
+        use_entities: false
 
 This means that entities for those intents will be unfeaturized and therefore
 will not impact the next action predictions. This is useful when you have
