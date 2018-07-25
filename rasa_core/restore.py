@@ -105,13 +105,17 @@ def load_tracker_from_json(tracker_dump, domain):
 
 def recreate_agent(model_directory,  # type: Text
                    nlu_model=None,  # type: Optional[Text]
-                   tracker_dump=None  # type: Optional[Text]
+                   tracker_dump=None,  # type: Optional[Text]
+                   endpoints=None
                    ):
     # type: (...) -> Tuple[Agent, DialogueStateTracker]
     """Recreate an agent instance."""
 
+    nlg_endpoint = utils.read_endpoint_config(endpoints, "nlg")
+
     logger.debug("Loading Rasa Core Agent")
-    agent = Agent.load(model_directory, nlu_model)
+    agent = Agent.load(model_directory, nlu_model,
+                       generator=nlg_endpoint)
 
     logger.debug("Finished loading agent. Loading stories now.")
 

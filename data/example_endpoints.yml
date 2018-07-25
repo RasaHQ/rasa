@@ -1,0 +1,10 @@
+nlg:
+  url: http://localhost:5055/nlg    # url of the nlg endpoint
+  # you can also specify additional parameters, if you need them:
+  # headers:
+  #   my-custom-header: value
+  # token: "my_authentication_token"    # will be passed as a get parameter
+  # basic_auth:
+  #   username: user
+  #   password: pass
+

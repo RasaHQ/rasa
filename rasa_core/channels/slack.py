@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 import json
 import logging
 
-from flask import Blueprint, request, jsonify, make_response
+from flask import Blueprint, request, jsonify, make_response, Response
 from slackclient import SlackClient
 from typing import Text, Optional
 
@@ -18,6 +18,10 @@ logger = logging.getLogger(__name__)
 
 class SlackBot(SlackClient, OutputChannel):
     """A Slack communication channel"""
+
+    @classmethod
+    def name(cls):
+        return "slack"
 
     def __init__(self, token, slack_channel=None):
         # type: (Text, Optional[Text]) -> None
@@ -68,8 +72,13 @@ class SlackBot(SlackClient, OutputChannel):
 class SlackInput(HttpInputComponent):
     """Slack input channel implementation. Based on the HTTPInputChannel."""
 
-    def __init__(self, slack_token, slack_channel=None):
-        # type: (Text, Optional[Text]) -> None
+    @classmethod
+    def name(cls):
+        return "slack"
+
+    def __init__(self, slack_token, slack_channel=None,
+                 errors_ignore_retry=None):
+        # type: (Text, Optional[Text], Optional[List[Text]]) -> None
         """Create a Slack input channel.
 
         Needs a couple of settings to properly authenticate and validate
@@ -83,9 +92,14 @@ class SlackInput(HttpInputComponent):
             the bot posts, or channel name
             (e.g. 'C1234ABC', 'bot-test' or '#bot-test')
             If unset, messages will be sent back to the user they came from.
+        :param errors_ignore_retry: If error code given by slack
+            included in this list then it will ignore the event.
+            The code is listed here:
+            https://api.slack.com/events-api#errors
         """
         self.slack_token = slack_token
         self.slack_channel = slack_channel
+        self.errors_ignore_retry = errors_ignore_retry or ('http_timeout',)
 
     @staticmethod
     def _is_user_message(slack_event):
@@ -104,6 +118,30 @@ class SlackInput(HttpInputComponent):
     def _get_button_reply(slack_event):
         return json.loads(slack_event['payload'][0])['actions'][0]['name']
 
+    def process_message(self, on_new_message, text, sender_id):
+        """Slack retry to post messages up to 3 times based on
+        failure conditions defined here:
+        https://api.slack.com/events-api#failure_conditions
+        """
+        retry_reason = request.headers.environ.get('HTTP_X_SLACK_RETRY_REASON')
+        retry_count = request.headers.environ.get('HTTP_X_SLACK_RETRY_NUM')
+        if retry_count and retry_reason in self.errors_ignore_retry:
+            logger.warning("Received retry #{} request from slack"
+                           " due to {}".format(retry_count, retry_reason))
+
+            return Response(status=201, headers={'X-Slack-No-Retry': 1})
+
+        try:
+            out_channel = SlackBot(self.slack_token)
+            user_msg = UserMessage(text, out_channel, sender_id)
+            on_new_message(user_msg)
+        except Exception as e:
+            logger.error("Exception when trying to handle "
+                         "message.{0}".format(e))
+            logger.error(str(e), exc_info=True)
+
+        return make_response()
+
     def blueprint(self, on_new_message):
         slack_webhook = Blueprint('slack_webhook', __name__)
 
@@ -120,30 +158,18 @@ class SlackInput(HttpInputComponent):
                     return make_response(output.get("challenge"), 200,
                                          {"content_type": "application/json"})
                 elif self._is_user_message(output):
-                    text = output['event']['text']
-                    sender_id = output.get('event').get('user')
-                else:
-                    return make_response()
+                    return self.process_message(
+                        on_new_message,
+                        text=output['event']['text'],
+                        sender_id=output.get('event').get('user'))
             elif request.form:
                 output = dict(request.form)
                 if self._is_button_reply(output):
-                    text = self._get_button_reply(output)
-                    sender_id = json.loads(output['payload'][0]).get(
-                        'user').get('id')
-                else:
-                    return make_response()
-            else:
-                return make_response()
-
-            try:
-                out_channel = SlackBot(self.slack_token)
-                user_msg = UserMessage(text, out_channel, sender_id)
-                on_new_message(user_msg)
-            except Exception as e:
-                logger.error("Exception when trying to handle "
-                             "message.{0}".format(e))
-                logger.error(e, exc_info=True)
-                pass
+                    return self.process_message(
+                        on_new_message,
+                        text=self._get_button_reply(output),
+                        sender_id=json.loads(
+                            output['payload'][0]).get('user').get('id'))
 
             return make_response()
 

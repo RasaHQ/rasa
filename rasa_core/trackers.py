@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 if typing.TYPE_CHECKING:
     from rasa_core.actions import Action
+    from rasa_core.domain import Domain
 
 
 class DialogueStateTracker(object):
@@ -71,6 +72,7 @@ class DialogueStateTracker(object):
         self.follow_up_action = None
         self.latest_action_name = None
         self.latest_message = None
+        # Stores the most recent message sent by the user
         self.latest_bot_utterance = None
         self._reset()
 
@@ -104,6 +106,13 @@ class DialogueStateTracker(object):
             "paused": self.is_paused(),
             "events": evts
         }
+
+    def past_states(self, domain):
+        # type: (Domain) -> deque
+        """Generate the past states of this tracker based on the history."""
+
+        generated_states = domain.states_for_tracker_history(self)
+        return deque((frozenset(s.items()) for s in generated_states))
 
     def current_slot_values(self):
         # type: () -> Dict[Text, Any]
@@ -160,7 +169,8 @@ class DialogueStateTracker(object):
         from rasa_core.channels import UserMessage
 
         return DialogueStateTracker(UserMessage.DEFAULT_SENDER_ID,
-                                    self.slots.values())
+                                    self.slots.values(),
+                                    self._max_event_history)
 
     def generate_all_prior_trackers(self):
         # type: () -> Generator[DialogueStateTracker, None, None]
@@ -295,7 +305,7 @@ class DialogueStateTracker(object):
     ###
     # Internal methods for the modification of the trackers state. Should
     # only be called by events, not directly. Rather update the tracker
-    # with an event that in its ``apply_on`` method modifies the tracker.
+    # with an event that in its ``apply_to`` method modifies the tracker.
     ###
     def _reset(self):
         # type: () -> None
@@ -334,7 +344,7 @@ class DialogueStateTracker(object):
         return deque(evts, self._max_event_history)
 
     def __eq__(self, other):
-        if isinstance(other, type(self)):
+        if isinstance(self, type(other)):
             return (other.events == self.events and
                     self.sender_id == other.sender_id)
         else:

@@ -39,14 +39,18 @@ class FallbackPolicy(Policy):
         :param Text fallback_action_name:
           name of the action to execute as a fallback.
     """
-    MAX_HISTORY_DEFAULT = None
+
+    @staticmethod
+    def _standard_featurizer():
+        return None
 
     def __init__(self,
                  nlu_threshold=0.3,  # type: float
                  core_threshold=0.3,  # type: float
-                 fallback_action_name="action_listen"  # type: Text
+                 fallback_action_name="action_default_fallback"  # type: Text
                  ):
         # type: (...) -> None
+
         super(FallbackPolicy, self).__init__()
 
         self.nlu_threshold = nlu_threshold
@@ -89,13 +93,18 @@ class FallbackPolicy(Policy):
         # to not override standard behaviour
         nlu_confidence = nlu_data["intent"].get("confidence", 1.0)
 
-        if self.should_fallback(nlu_confidence, tracker.latest_action_name):
+        if tracker.latest_action_name == self.fallback_action_name:
+            idx = domain.index_for_action('action_listen')
+            score = 1.1
+        elif self.should_fallback(nlu_confidence, tracker.latest_action_name):
             logger.debug("NLU confidence {} is lower "
                          "than NLU threshold {}. "
                          "Predicting fallback action: {}"
                          "".format(nlu_confidence, self.nlu_threshold,
                                    self.fallback_action_name))
-            score = 1.0
+            # we set this to 1.1 to make sure fallback overrides
+            # the memoization policy
+            score = 1.1
         else:
             # NLU confidence threshold is met, so
             # predict fallback action with confidence `core_threshold`

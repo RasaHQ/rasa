@@ -24,9 +24,9 @@ from rasa_core.channels.direct import CollectingOutputChannel
 from rasa_core.events import (
     UserUttered, BotUttered, SlotSet, Event, ActionExecuted)
 from rasa_core.interpreter import RegexInterpreter
-from rasa_core.policies.augmented_memoization import \
-    AugmentedMemoizationPolicy
+from rasa_core.policies.memoization import AugmentedMemoizationPolicy
 from rasa_core.remote import RasaCoreClient, RemoteAgent
+from rasa_core.utils import EndpointConfig
 from tests.conftest import DEFAULT_STORIES_FILE
 
 # a couple of event instances that we can use for testing
@@ -230,7 +230,7 @@ def test_remote_client(http_app, default_agent, tmpdir):
     default_agent.persist(model_path)
 
     remote_agent = RemoteAgent.load(model_path,
-                                    http_app)
+                                    EndpointConfig(http_app))
 
     message = UserMessage("""/greet{"name":"Rasa"}""",
                           output_channel=CollectingOutputChannel())
@@ -256,7 +256,7 @@ def test_remote_client(http_app, default_agent, tmpdir):
 
 
 def test_remote_status(http_app):
-    client = RasaCoreClient(http_app, None)
+    client = RasaCoreClient(EndpointConfig(http_app))
 
     status = client.status()
 
@@ -264,7 +264,7 @@ def test_remote_status(http_app):
 
 
 def test_remote_clients(http_app):
-    client = RasaCoreClient(http_app, None)
+    client = RasaCoreClient(EndpointConfig(http_app))
 
     cid = str(uuid.uuid1())
     client.parse("/greet", cid)
@@ -275,7 +275,7 @@ def test_remote_clients(http_app):
 
 
 def test_remote_append_events(http_app):
-    client = RasaCoreClient(http_app, None)
+    client = RasaCoreClient(EndpointConfig(http_app))
 
     cid = str(uuid.uuid1())
 

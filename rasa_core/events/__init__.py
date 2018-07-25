@@ -49,14 +49,9 @@ def first_key(d, default_key):
 
 # noinspection PyProtectedMember
 class Event(object):
-    """An event is one of the following:
-    - something the user has said to the bot (starts a new turn)
-    - the topic has been set
-    - the bot has taken an action
-
-    Events are logged by the Tracker's update method.
-    This updates the list of turns so that the current state
-    can be recovered by consuming the list of turns."""
+    """Events describe everything that occurs in 
+    a conversation and tell the :class:`DialogueStateTracker`
+    how to update its state."""
 
     type_name = "event"
 
@@ -421,10 +416,11 @@ class Restarted(Event):
 
 # noinspection PyProtectedMember
 class UserUtteranceReverted(Event):
-    """Bot undoes its last action.
-
-    Shouldn't be used during actual user interactions, mostly for train.
-    As a side effect the ``Tracker``'s last turn is removed."""
+    """Bot reverts everything until before the most recent user message. 
+    
+    The bot will revert all events after the latest `UserUttered`, this 
+    also means that the last event on the tracker is usually `action_listen` 
+    and the bot is waiting for a new user message."""
 
     type_name = "rewind"
 
@@ -550,8 +546,11 @@ class ReminderScheduled(Event):
 class ActionReverted(Event):
     """Bot undoes its last action.
 
-    Shouldn't be used during actual user interactions, mostly for train.
-    As a side effect the ``Tracker``'s last turn is removed."""
+    The bot everts everything until before the most recent action.
+    This includes the action itself, as well as any events that 
+    action created, like set slot events - the bot will now 
+    predict a new action using the state before the most recent 
+    action."""
 
     type_name = "undo"
 

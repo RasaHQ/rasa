@@ -12,6 +12,7 @@ import time
 import requests
 from future.moves.urllib.parse import quote_plus
 from requests.exceptions import RequestException
+from six import string_types
 from typing import Callable, Union
 from typing import Text, List, Optional, Dict, Any
 
@@ -23,7 +24,9 @@ from rasa_core.dispatcher import Dispatcher
 from rasa_core.domain import Domain, TemplateDomain
 from rasa_core.events import BotUttered
 from rasa_core.events import Event
+from rasa_core.nlg import NaturalLanguageGenerator
 from rasa_core.trackers import DialogueStateTracker
+from rasa_core.utils import EndpointConfig
 
 logger = logging.getLogger(__name__)
 
@@ -33,25 +36,23 @@ class RasaCoreClient(object):
 
     Used to retrieve information about models and conversations."""
 
-    def __init__(self, host, token):
-        # type: (Text, Optional[Text]) -> None
+    def __init__(self, core_endpoint):
+        # type: (EndpointConfig) -> None
 
-        self.host = host
-        self.token = token if token else ""
+        self.core_endpoint = core_endpoint
 
     def status(self):
         """Get the status of the remote core server (e.g. the version.)"""
 
-        url = "{}/version?token={}".format(self.host, self.token)
-        result = requests.get(url)
+        result = self.core_endpoint.request(subpath="/version", method="get")
         result.raise_for_status()
         return result.json()
 
     def clients(self):
         """Get a list of all conversations."""
 
-        url = "{}/conversations?token={}".format(self.host, self.token)
-        result = requests.get(url)
+        result = self.core_endpoint.request(subpath="/conversations",
+                                            method="get")
         result.raise_for_status()
         return result.json()
 
@@ -80,14 +81,13 @@ class RasaCoreClient(object):
                      ):
         """Retrieve a tracker's json representation from remote instance."""
 
-        url = ("{}/conversations/{}/tracker?token={}"
-               "&ignore_restarts={}"
-               "&events={}").format(self.host, sender_id, self.token,
-                                    use_history, include_events)
+        url = "/conversations/{}/tracker?ignore_restarts={}&events={}".format(
+                sender_id, use_history, include_events)
         if until:
             url += "&until={}".format(until)
 
-        result = requests.get(url)
+        result = self.core_endpoint.request(subpath=url,
+                                            method="get")
         result.raise_for_status()
         return result.json()
 
@@ -95,11 +95,11 @@ class RasaCoreClient(object):
         # type: (Text, List[Event]) -> None
         """Add some more events to the tracker of a conversation."""
 
-        url = "{}/conversations/{}/tracker/events?token={}".format(
-                self.host, sender_id, self.token)
+        url = "/conversations/{}/tracker/events".format(sender_id)
 
         data = [event.as_dict() for event in events]
-        result = requests.post(url, json=data)
+        result = self.core_endpoint.request(subpath=url, method="post",
+                                            json=data)
         result.raise_for_status()
         return result.json()
 
@@ -107,16 +107,16 @@ class RasaCoreClient(object):
         # type: (Text, Text) -> Optional[Dict[Text, Any]]
         """Send a parse request to a rasa core server."""
 
-        url = "{}/conversations/{}/parse?token={}".format(
-                self.host, sender_id, quote_plus(self.token))
+        url = "/conversations/{}/parse".format(sender_id)
 
         data = json.dumps({"query": message}, ensure_ascii=False)
 
-        response = requests.post(url, data=data.encode("utf-8"),
-                                 headers={
-                                     'Content-type': 'text/plain; '
-                                                     'charset=utf-8'})
-
+        response = self.core_endpoint.request(
+                subpath=url,
+                method="post",
+                data=data.encode("utf-8"),
+                headers={'Content-Type': 'application/json; charset=utf-8'}
+        )
         if response.status_code == 200:
             return response.json()
         else:
@@ -129,7 +129,6 @@ class RasaCoreClient(object):
         # type: (Text, int) -> Optional[Dict[Text, Any]]
         """Upload a Rasa core model to the remote instance."""
 
-        url = "{}/load?token={}".format(self.host, quote_plus(self.token))
         logger.debug("Uploading model to rasa core server.")
 
         model_zip = utils.zip_folder(model_dir)
@@ -140,7 +139,11 @@ class RasaCoreClient(object):
 
             try:
                 with io.open(model_zip, "rb") as f:
-                    response = requests.post(url, files={"model": f})
+                    response = self.core_endpoint.request(
+                            method="post",
+                            subpath="/load",
+                            files={"model": f},
+                            content_type=None)
 
                 if response.status_code == 200:
                     logger.debug("Finished uploading")
@@ -166,18 +169,18 @@ class RasaCoreClient(object):
         """Send a continue request to rasa core to get next action
         prediction."""
 
-        url = "{}/conversations/{}/continue?token={}".format(
-                self.host, sender_id, quote_plus(self.token))
+        url = "/conversations/{}/continue".format(sender_id)
         dumped_events = []
         for e in events:
             dumped_events.append(e.as_dict())
         data = json.dumps(
                 {"executed_action": action_name, "events": dumped_events},
                 ensure_ascii=False)
-        response = requests.post(url, data=data.encode('utf-8'),
-                                 headers={
-                                     'Content-type': 'text/plain; '
-                                                     'charset=utf-8'})
+        response = self.core_endpoint.request(
+                method="post",
+                subpath=url,
+                data=data.encode('utf-8'),
+                headers={'Content-type': 'text/plain; charset=utf-8'})
 
         if response.status_code == 200:
             return response.json()
@@ -195,10 +198,12 @@ class RemoteAgent(object):
     def __init__(
             self,
             domain,  # type: Union[Text, Domain]
-            core_client  # type: RasaCoreClient
+            core_client,  # type: RasaCoreClient
+            nlg_endpoint  # type: Optional[EndpointConfig]
     ):
         self.domain = domain
         self.core_client = core_client
+        self.nlg = NaturalLanguageGenerator.create(nlg_endpoint, self.domain)
 
     def handle_channel(
             self,
@@ -224,7 +229,7 @@ class RemoteAgent(object):
                                            self.domain)
         dispatcher = Dispatcher(message.sender_id,
                                 message.output_channel,
-                                self.domain)
+                                self.nlg)
 
         action = self.domain.action_for_name(action_name)
         # events and return values are used to update
@@ -278,16 +283,22 @@ class RemoteAgent(object):
     @classmethod
     def load(cls,
              path,  # type: Text
-             core_host,  # type: Text
-             auth_token=None,  # type: Optional[Text]
+             core_endpoint,  # type: EndpointConfig
+             nlg_endpoint=None,  # type: EndpointConfig
              action_factory=None  # type: Optional[Text]
              ):
         # type: (...) -> RemoteAgent
 
+        if isinstance(core_endpoint, string_types):
+            raise Exception("This API has changed. Instead of passing in a url "
+                            "for Rasa Core, you now need to pass in an "
+                            "instance of 'EndpointConfig'. "
+                            "(from rasa_core.utils import EndpointConfig )")
+
         domain = TemplateDomain.load(os.path.join(path, "domain.yml"),
                                      action_factory)
 
-        core_client = RasaCoreClient(core_host, auth_token)
+        core_client = RasaCoreClient(core_endpoint)
         core_client.upload_model(path, max_retries=5)
 
-        return RemoteAgent(domain, core_client)
+        return RemoteAgent(domain, core_client, nlg_endpoint)

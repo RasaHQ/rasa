@@ -18,6 +18,6 @@ pygraphviz==1.3.1
 sphinx-autobuild==0.7.1
 sphinxcontrib-versioning==2.2.1
 sphinxcontrib-httpdomain==1.6.1
-nbsphinx==0.3.3
+sphinxcontrib-programoutput==0.11
+https://storage.googleapis.com/docs-theme/rasabaster-0.7.10.tar.gz
 pygments==2.2.0
--e git://github.com/RasaHQ/sphinx_rtd_theme.git#egg=sphinx_rtd_theme

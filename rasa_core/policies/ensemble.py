@@ -119,7 +119,7 @@ class PolicyEnsemble(object):
             action_fingerprints[k] = {"slots": slots}
         return action_fingerprints
 
-    def _persist_metadata(self, path):
+    def _persist_metadata(self, path, dump_flattened_stories=False):
         # type: (Text) -> None
         """Persists the domain specification to storage."""
 
@@ -145,13 +145,17 @@ class PolicyEnsemble(object):
         }
 
         utils.dump_obj_as_json_to_file(domain_spec_path, metadata)
-        training.persist_data(self.training_trackers, training_data_path)
 
-    def persist(self, path):
+        # if there are lots of stories, saving flattened stories takes a long
+        # time, so this is turned off by default
+        if dump_flattened_stories:
+            training.persist_data(self.training_trackers, training_data_path)
+
+    def persist(self, path, dump_flattened_stories=False):
         # type: (Text) -> None
         """Persists the policy to storage."""
 
-        self._persist_metadata(path)
+        self._persist_metadata(path, dump_flattened_stories)
 
         for i, policy in enumerate(self.policies):
             dir_name = 'policy_{}_{}'.format(i, type(policy).__name__)
@@ -170,7 +174,7 @@ class PolicyEnsemble(object):
         from packaging import version
 
         model_version = metadata.get("rasa_core", "0.0.0")
-        if version.parse(model_version) < version.parse("0.9.0"):
+        if version.parse(model_version) < version.parse("0.10.0a3"):
             raise UnsupportedDialogueModelError(
                 "The model version is to old to be "
                 "loaded by this Rasa Core instance. "
@@ -214,7 +218,9 @@ class SimplePolicyEnsemble(PolicyEnsemble):
                 max_confidence = confidence
                 result = probabilities
                 best_policy_name = 'policy_{}_{}'.format(i, type(p).__name__)
-
+        # normalize probablilities
+        if np.sum(result) != 0:
+            result = result / np.linalg.norm(result)
         logger.debug("Predicted next action using {}"
                      "".format(best_policy_name))
         return result
