@@ -119,7 +119,7 @@ In custom code, you can retrieve a template by using:
 
       def run(self, dispatcher, tracker, domain):
          # send utter default template to user
-         dispatcher.utter_template("utter_default")
+         dispatcher.utter_template("utter_default", tracker)
          # ... other code
          return []
 
@@ -128,7 +128,7 @@ values for the fields by passing them as key word arguments to ``utter_template`
 
 .. code-block:: python
 
-  dispatcher.utter_template("utter_default", my_variable="my text")
+  dispatcher.utter_template("utter_default", tracker, my_variable="my text")
 
 Variations
 ----------
