@@ -331,11 +331,13 @@ def pycloud_pickle(file_name, obj):
         cloudpickle.dump(obj, f)
 
 
-def create_temporary_file(data, suffix=""):
-    """Creates a tempfile.NamedTemporaryFile object for data"""
+def create_temporary_file(data, suffix="", mode="w+"):
+    """Creates a tempfile.NamedTemporaryFile object for data.
+
+    mode defines NamedTemporaryFile's  mode parameter in py3."""
 
     if PY3:
-        f = tempfile.NamedTemporaryFile("w+b", suffix=suffix,
+        f = tempfile.NamedTemporaryFile(mode=mode, suffix=suffix,
                                         delete=False)
         f.write(data)
     else:
