@@ -375,4 +375,3 @@ def test_url_data_format():
     fname = utils.create_temporary_file(data.encode("utf-8"), suffix="_tmp_training_data.json")
     data = utils.read_json_file(fname)
     validate_rasa_nlu_data(data)
-    
