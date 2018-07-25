@@ -6,6 +6,8 @@ from __future__ import unicode_literals
 
 import tempfile
 
+import requests
+
 import pytest
 from jsonschema import ValidationError
 
@@ -332,3 +334,10 @@ def test_training_data_conversion(tmpdir, data_file, gold_standard_file,
     # to dump to the file and diff using git
     # with io.open(gold_standard_file) as f:
     #     f.write(td.as_json(indent=2))
+
+
+def test_url_data_format():
+    test_url = 'http://website-demo.rasa.com/api/default/data.json?api_token=e8c436157a24b007ed5cdc9ba4d062ed66c4f63d'
+    r = requests.get(test_url)
+    data = r.json()
+    validate_rasa_nlu_data(data)
