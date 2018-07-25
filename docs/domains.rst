@@ -152,13 +152,12 @@ parameter to the intent in your domain file like this:
 .. code-block:: yaml
 
   intents:
-    - greet:
-        use_entities: false
+    - greet: {use_entities: false}
 
 This means that entities for those intents will be unfeaturized and therefore
 will not impact the next action predictions. This is useful when you have
 an intent where you don't care about the entities being picked up. If you list
-your intents as normal without this flag, the entities will be featurized as normal.
+your intents as normal without this parameter, the entities will be featurized as normal.
 
 .. note::
 
