@@ -17,6 +17,7 @@ from rasa_core.channels.rest import HttpInputChannel
 from rasa_core.channels.slack import SlackInput
 from rasa_core.channels.mattermost import MattermostInput
 from rasa_core.channels.twilio import TwilioInput
+from rasa_core.channels.botframework import BotFrameworkInput
 from rasa_core.utils import read_yaml_file
 
 logger = logging.getLogger()  # get the root logger
@@ -55,7 +56,7 @@ def create_argument_parser():
         '-c', '--connector',
         default="cmdline",
         choices=["facebook", "slack", "telegram", "mattermost", "cmdline",
-                 "twilio"],
+                 "twilio", "botframework"],
         help="service to connect to")
 
     utils.add_logging_option_arguments(parser)
@@ -73,6 +74,8 @@ def _raise_missing_credentials_exception(channel):
         channel_doc_link = "mattermost"
     elif channel == "twilio":
         channel_doc_link = "twilio"
+    elif channel == "botframework":
+        channel_doc_link = "botframework"
     else:
         channel_doc_link = ""
 
@@ -115,6 +118,10 @@ def _create_external_channel(channel, port, credentials_file):
             credentials.get("account_sid"),
             credentials.get("auth_token"),
             credentials.get("twilio_number"))
+    elif channel == "botframework":
+        input_blueprint = BotFrameworkInput(
+            credentials.get("bf_id"),
+            credentials.get("bf_secret"))
     else:
         Exception("This script currently only supports the facebook,"
                   " telegram, mattermost and slack connectors.")
@@ -125,7 +132,7 @@ def _create_external_channel(channel, port, credentials_file):
 def create_input_channel(channel, port, credentials_file):
     """Instantiate the chosen input channel."""
 
-    if channel in ['facebook', 'slack', 'telegram', 'mattermost', 'twilio']:
+    if channel in ['facebook', 'slack', 'telegram', 'mattermost', 'twilio', 'botframework']:
         return _create_external_channel(channel, port, credentials_file)
     elif channel == "cmdline":
         return ConsoleInputChannel()
