@@ -10,6 +10,7 @@ import tempfile
 import zipfile
 from functools import wraps
 
+import typing
 from builtins import str
 from flask import Flask, request, abort, Response, jsonify
 from flask_cors import CORS, cross_origin
@@ -19,13 +20,9 @@ from typing import Union, Text, Optional
 from rasa_core import utils, events, run
 from rasa_core.agent import Agent
 from rasa_core.channels.direct import CollectingOutputChannel
-from rasa_core.interpreter import NaturalLanguageInterpreter
 from rasa_core.tracker_store import TrackerStore
 from rasa_core.trackers import DialogueStateTracker
 from rasa_core.version import __version__
-
-from typing import Union
-import typing
 
 if typing.TYPE_CHECKING:
     from rasa_core.interpreter import NaturalLanguageInterpreter as NLI
@@ -109,7 +106,7 @@ def bool_arg(name, default=True):
 
 def request_parameters():
     if request.method == 'GET':
-        return request.args
+        return request.args.to_dict()
     else:
 
         try:
@@ -329,12 +326,16 @@ def create_app(model_directory,  # type: Text
             return jsonify(domain)
         elif accepts.endswith("yml"):
             domain_yaml = agent().domain.as_yaml()
-            return Response(domain_yaml, status=200, content_type="application/x-yml")
+            return Response(domain_yaml,
+                            status=200,
+                            content_type="application/x-yml")
         else:
             return Response(
-                """Invalid accept header. Domain can be provided as json ("Accept: application/json") or yml ("Accept: application/x-yml"). Make sure you've set the appropriate Accept header.""",
-                status=406)
-
+                    """Invalid accept header. Domain can be provided 
+                    as json ("Accept: application/json")  
+                    or yml ("Accept: application/x-yml"). 
+                    Make sure you've set the appropriate Accept header.""",
+                    status=406)
 
     @app.route("/conversations/<sender_id>/parse",
                methods=['GET', 'POST', 'OPTIONS'])
