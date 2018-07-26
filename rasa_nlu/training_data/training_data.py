@@ -49,7 +49,6 @@ class TrainingData(object):
         self.regex_features = regex_features if regex_features else []
         self.sort_regex_features()
 
-        self.validate()
         self.print_stats()
 
     def merge(self, *others):

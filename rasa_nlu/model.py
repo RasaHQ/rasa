@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import abc
 import copy
 import datetime
 import logging
@@ -115,6 +116,16 @@ class Metadata(object):
         write_json_to_file(filename, metadata, indent=4)
 
 
+class TrainingDataPreprocessor(abc.ABC):
+
+    def __init__(self, config):
+        self.config = config
+
+    abc.abstractmethod
+    def preprocess(self, training_data):
+        pass
+
+
 class Trainer(object):
     """Trainer will load the data and train all components.
 
@@ -148,6 +159,15 @@ class Trainer(object):
         # build pipeline
         self.pipeline = self._build_pipeline(cfg, component_builder)
 
+        # Load Training Data Preprocessor
+        self.training_data_preprocessors = []
+        if "training_data_preprocessors" in cfg:
+            for preprocessor_config in cfg["training_data_preprocessors"]:
+                module_path = preprocessor_config["name"]
+                preprocessor_class = utils.class_from_module_path(module_path)
+                self.training_data_preprocessors.append(
+                    preprocessor_class(preprocessor_config))
+
     @staticmethod
     def _build_pipeline(cfg, component_builder):
         # type: (RasaNLUModelConfig, ComponentBuilder) -> List
@@ -166,7 +186,11 @@ class Trainer(object):
         # type: (TrainingData) -> Interpreter
         """Trains the underlying pipeline using the provided training data."""
 
+        for training_data_preprocessor in self.training_data_preprocessors:
+            data = training_data_preprocessor.preprocess(data)
+
         self.training_data = data
+        self.training_data.validate()
 
         context = kwargs  # type: Dict[Text, Any]
 
