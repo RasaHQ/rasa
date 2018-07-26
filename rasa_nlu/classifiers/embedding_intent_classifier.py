@@ -374,6 +374,10 @@ class EmbeddingIntentClassifier(Component):
 
         # Set masked similarities to 1
         if similarity_mask is not None:
+            # For debugging:
+            # similarity_mask = tf.Print(similarity_mask,
+            #     [tf.reduce_sum(tf.cast(similarity_mask, tf.int32))],
+            #     message="Number of masked similarities")
             logging.warn("Masking some similarities")
             sim = tf.concat([
                 tf.where(similarity_mask, sim[:, 0:1], tf.ones((tf.shape(sim)[0], 1), tf.float32)),
