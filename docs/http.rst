@@ -138,13 +138,14 @@ also returns a list of available projects the server can use to fulfill ``/parse
 ``GET /version``
 ^^^^^^^^^^^^^^^^
 
-This will return the current version of the Rasa NLU instance.
+This will return the current version of the Rasa NLU instance, as well as the minimum model version required for laoding models.
 
 .. code-block:: bash
 
     $ curl localhost:5000/version | python -mjson.tool
     {
-      "version" : "0.8.2"
+      "version" : "0.13.0",
+      "minimum_compatible_version": "0.13.0"
     }
 
     
