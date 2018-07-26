@@ -9,7 +9,7 @@ import os
 
 import numpy as np
 import typing
-from builtins import range
+from builtins import range, str
 from typing import Optional, Any, List
 
 from rasa_core import utils
@@ -249,7 +249,7 @@ class OnlinePolicyEnsemble(PolicyEnsemble):
                     latest_listen_flag = True
         slot_strs = []
         for k, s in tracker.slots.items():
-            colored_value = utils.wrap_with_color(unicode(s.value),
+            colored_value = utils.wrap_with_color(str(s.value),
                                                   utils.bcolors.WARNING)
             slot_strs.append("{}: {}".format(k, colored_value))
         print("we currently have slots: {}\n".format(", ".join(slot_strs)))
