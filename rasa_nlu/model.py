@@ -260,7 +260,7 @@ class Interpreter(object):
         from packaging import version
 
         if version_to_check is None:
-            version_to_check=MINIMUM_COMPATIBLE_VERSION
+            version_to_check = MINIMUM_COMPATIBLE_VERSION
 
         model_version = metadata.get("rasa_nlu_version", "0.0.0")
         if version.parse(model_version) < version.parse(version_to_check):
