@@ -2,4 +2,6 @@ language: "en"
 
 pipeline: []
 
+training_data_preprocessors: []
+
 data:

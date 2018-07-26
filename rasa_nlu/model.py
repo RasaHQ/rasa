@@ -117,12 +117,18 @@ class Metadata(object):
 
 
 class TrainingDataPreprocessor(abc.ABC):
+    """Base class for training data preprocessors.
+
+    Preprocessors consume an existing training dataset and return a new one.
+    This can be used for augmentation and training data generation.
+    """
 
     def __init__(self, config):
         self.config = config
 
     abc.abstractmethod
     def preprocess(self, training_data):
+        # type: (TrainingData) -> TrainingData
         pass
 
 
