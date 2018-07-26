@@ -354,7 +354,7 @@ class EmbeddingIntentClassifier(Component):
                              "should be 'cosine' or 'inner'"
                              "".format(self.similarity_type))
 
-    def _tf_loss(self, sim, sim_emb, similarity_mask):
+    def _tf_loss(self, sim, sim_emb, similarity_mask=None):
         """Define loss
 
         Arguments:
@@ -366,17 +366,19 @@ class EmbeddingIntentClassifier(Component):
             Tensor of shape [batch_size, num_neg]
             For each element of the batch, the similarity of the correct
             intent to the num_neg negative intents.
-        - similarity_mask:
+        - similarity_mask(optional):
             Tensor of shape [batch_size]
             Indicates whether the example's similarity to its intent should
             contribute to the loss.
         """
 
         # Set masked similarities to 1
-        sim = tf.concat([
-            tf.where(similarity_mask, sim[:, 0:1], tf.ones((tf.shape(sim)[0], 1), tf.float32)),
-            sim[:, 1:]
-        ], axis=1)
+        if similarity_mask is not None:
+            logging.warn("Masking some similarities")
+            sim = tf.concat([
+                tf.where(similarity_mask, sim[:, 0:1], tf.ones((tf.shape(sim)[0], 1), tf.float32)),
+                sim[:, 1:]
+            ], axis=1)
 
         if self.use_max_sim_neg:
             max_sim_neg = tf.reduce_max(sim[:, 1:], -1)
@@ -504,6 +506,28 @@ class EmbeddingIntentClassifier(Component):
         train_acc = np.mean(np.argmax(train_sim, -1) == intents_for_X[ids])
         return train_acc
 
+    def _out_of_scope_mask(self, intent_dict):
+        """If Flag is enabled, mask out out-of-scope examples, so they don't
+        need to be pushed to the same vector"""
+
+        if self.component_config["out_of_scope_training_flag"]:
+
+            out_of_scope_index = intent_dict.get(
+                self.component_config["out_of_scope_intent"], -1)
+
+            out_of_scope_vector = self.encoded_all_intents[out_of_scope_index]
+            out_of_scope_vector = tf.constant(np.expand_dims(out_of_scope_vector, 0))
+
+            is_out_of_scope = tf.equal(self.b_in[:, 0, :], tf.cast(out_of_scope_vector, tf.float32))
+            is_out_of_scope = tf.reduce_min(tf.cast(is_out_of_scope, tf.int32), axis=1)
+
+            mask = tf.logical_not(tf.cast(is_out_of_scope, tf.bool))
+
+        else:
+            mask = None
+
+        return mask
+
     def train(self, training_data, cfg=None, **kwargs):
         # type: (TrainingData, Optional[RasaNLUModelConfig], **Any) -> None
         """Train the embedding intent classifier on a data set."""
@@ -518,12 +542,6 @@ class EmbeddingIntentClassifier(Component):
         self.inv_intent_dict = {v: k for k, v in intent_dict.items()}
         self.encoded_all_intents = self._create_encoded_intents(
                                         intent_dict)
-
-        if self.component_config["out_of_scope_training_flag"]:
-
-            out_of_scope_index = intent_dict.get(
-                self.component_config["out_of_scope_intent"], -1)
-            out_of_scope_vector = self.encoded_all_intents[out_of_scope_index]
 
         X, Y, intents_for_X = self._prepare_data_for_training(
                                 training_data, intent_dict)
@@ -544,17 +562,9 @@ class EmbeddingIntentClassifier(Component):
             self.b_in = tf.placeholder(tf.float32, (None, None, Y.shape[-1]),
                                        name='b')
 
-            is_training = tf.placeholder_with_default(False, shape=())
+            out_of_scope_mask = self._out_of_scope_mask(intent_dict)
 
-            if self.component_config["out_of_scope_training_flag"]:
-                # Mask out out-of-scope examples, so they don't need to be
-                # pushed to the same vector
-                out_of_scope_vector = tf.constant(np.expand_dims(out_of_scope_vector, 0))
-                is_out_of_scope = tf.equal(self.b_in[:, 0, :], tf.cast(out_of_scope_vector, tf.float32))
-                is_out_of_scope = tf.reduce_min(tf.cast(is_out_of_scope, tf.int32), axis=1)
-                similarity_mask = tf.logical_not(tf.cast(is_out_of_scope, tf.bool))
-            else:
-                similarity_mask = tf.ones(tf.shape(self.a_in)[0], tf.bool)
+            is_training = tf.placeholder_with_default(False, shape=())
 
             (self.word_embed,
              self.intent_embed) = self._create_tf_embed(self.a_in, self.b_in,
@@ -562,7 +572,7 @@ class EmbeddingIntentClassifier(Component):
 
             self.sim_op, sim_emb = self._tf_sim(self.word_embed,
                                                 self.intent_embed)
-            loss = self._tf_loss(self.sim_op, sim_emb, similarity_mask)
+            loss = self._tf_loss(self.sim_op, sim_emb, out_of_scope_mask)
 
             train_op = tf.train.AdamOptimizer().minimize(loss)
 
